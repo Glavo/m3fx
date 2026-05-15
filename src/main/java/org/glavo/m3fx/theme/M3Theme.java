@@ -79,4 +79,9 @@ public record M3Theme(
     public String toRootStyleDeclarations() {
         return tokens.toRootStyleDeclarations();
     }
+
+    /// Converts component tokens into JavaFX CSS rules for m3fx controls.
+    public String toControlStyleRules() {
+        return tokens.toControlStyleRules();
+    }
 }

@@ -104,6 +104,35 @@ public record M3ComponentTokens(
         return builder.toString().trim();
     }
 
+    /// Converts component tokens into JavaFX CSS rules for m3fx controls.
+    public String toControlStyleRules() {
+        StringBuilder builder = new StringBuilder();
+        appendButtonRule(builder, ".m3-filled-button", filledButton);
+        appendButtonRule(builder, ".m3-tonal-button", tonalButton);
+        appendButtonRule(builder, ".m3-outlined-button", outlinedButton);
+        appendButtonRule(builder, ".m3-text-button", textButton);
+        appendButtonRule(builder, ".m3-elevated-button", elevatedButton);
+        appendButtonRule(builder, ".m3-icon-button", iconButton);
+        appendFieldRule(builder, ".m3-text-field, .m3-password-field", field);
+        appendFilledFieldRule(builder, ".m3-filled-field", field);
+        appendOutlinedFieldRule(builder, ".m3-outlined-field", field);
+        appendSelectionRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch", selection);
+        appendSwitchRule(builder, ".m3-switch", selection);
+        appendSwitchBoxRule(builder, ".m3-switch .box", selection);
+        appendSliderRule(builder, ".m3-slider", slider);
+        appendSliderTrackRule(builder, ".m3-slider .track", slider);
+        appendSliderThumbRule(builder, ".m3-slider .thumb", slider);
+        appendChipRule(builder, ".m3-chip", chip);
+        appendProgressBarRule(builder, ".m3-progress-bar", progress);
+        appendProgressBarTrackRule(builder, ".m3-progress-bar .track", progress);
+        appendProgressBarTrackRule(builder, ".m3-progress-bar .bar", progress);
+        appendProgressIndicatorRule(builder, ".m3-progress-indicator", progress);
+        appendCardRule(builder, ".m3-card", card);
+        appendDialogRule(builder, ".m3-dialog-pane", dialog);
+        appendSnackbarRule(builder, ".m3-snackbar", snackbar);
+        return builder.toString().stripTrailing();
+    }
+
     /// Appends button token declarations.
     private static void append(StringBuilder builder, String prefix, ButtonTokens tokens) {
         M3TokenCss.append(builder, "-m3-" + prefix + "-container-height", M3TokenCss.pixels(tokens.height()));
@@ -162,6 +191,166 @@ public record M3ComponentTokens(
     private static void append(StringBuilder builder, SnackbarTokens tokens) {
         M3TokenCss.append(builder, "-m3-snackbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-snackbar-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+    }
+
+    /// Appends a button token CSS rule.
+    private static void appendButtonRule(StringBuilder builder, String selector, ButtonTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.height()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(tokens.containerShape()));
+        endRule(builder);
+    }
+
+    /// Appends a field token CSS rule.
+    private static void appendFieldRule(StringBuilder builder, String selector, FieldTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.height()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a filled field shape CSS rule.
+    private static void appendFilledFieldRule(StringBuilder builder, String selector, FieldTokens tokens) {
+        String radius = M3TokenCss.pixels(tokens.containerShape());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", radius + " " + radius + " 0 0");
+        endRule(builder);
+    }
+
+    /// Appends an outlined field shape CSS rule.
+    private static void appendOutlinedFieldRule(StringBuilder builder, String selector, FieldTokens tokens) {
+        String radius = M3TokenCss.pixels(tokens.containerShape());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", radius);
+        appendDeclaration(builder, "-fx-border-radius", radius);
+        endRule(builder);
+    }
+
+    /// Appends a selection token CSS rule.
+    private static void appendSelectionRule(StringBuilder builder, String selector, SelectionTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
+        endRule(builder);
+    }
+
+    /// Appends a switch token CSS rule.
+    private static void appendSwitchRule(StringBuilder builder, String selector, SelectionTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.trackShape()));
+        endRule(builder);
+    }
+
+    /// Appends a switch box shape CSS rule.
+    private static void appendSwitchBoxRule(StringBuilder builder, String selector, SelectionTokens tokens) {
+        String radius = M3TokenCss.pixels(tokens.trackShape());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", radius);
+        appendDeclaration(builder, "-fx-border-radius", radius);
+        endRule(builder);
+    }
+
+    /// Appends a slider token CSS rule.
+    private static void appendSliderRule(StringBuilder builder, String selector, SliderTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.trackThickness()));
+        appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.trackShape()));
+        appendDeclaration(builder, "-m3-thumb-size", M3TokenCss.pixels(tokens.thumbSize()));
+        appendDeclaration(builder, "-m3-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
+        endRule(builder);
+    }
+
+    /// Appends a slider track visual CSS rule.
+    private static void appendSliderTrackRule(StringBuilder builder, String selector, SliderTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.trackShape()));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.trackThickness()));
+        endRule(builder);
+    }
+
+    /// Appends a slider thumb visual CSS rule.
+    private static void appendSliderThumbRule(StringBuilder builder, String selector, SliderTokens tokens) {
+        String thumbInset = M3TokenCss.pixels(tokens.thumbSize() / 2.0);
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.trackShape()));
+        appendDeclaration(builder, "-fx-padding", thumbInset);
+        endRule(builder);
+    }
+
+    /// Appends a chip token CSS rule.
+    private static void appendChipRule(StringBuilder builder, String selector, ChipTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.height()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(tokens.containerShape()));
+        endRule(builder);
+    }
+
+    /// Appends a progress bar token CSS rule.
+    private static void appendProgressBarRule(StringBuilder builder, String selector, ProgressTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.thickness()));
+        appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.shape()));
+        endRule(builder);
+    }
+
+    /// Appends a progress bar track visual CSS rule.
+    private static void appendProgressBarTrackRule(StringBuilder builder, String selector, ProgressTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.shape()));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.thickness()));
+        endRule(builder);
+    }
+
+    /// Appends a progress indicator token CSS rule.
+    private static void appendProgressIndicatorRule(StringBuilder builder, String selector, ProgressTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
+        endRule(builder);
+    }
+
+    /// Appends a dialog pane token CSS rule.
+    private static void appendDialogRule(StringBuilder builder, String selector, DialogTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a card token CSS rule.
+    private static void appendCardRule(StringBuilder builder, String selector, CardTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
+        endRule(builder);
+    }
+
+    /// Appends a snackbar token CSS rule.
+    private static void appendSnackbarRule(StringBuilder builder, String selector, SnackbarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a CSS rule header.
+    private static void beginRule(StringBuilder builder, String selector) {
+        builder.append(selector).append(" {\n");
+    }
+
+    /// Appends a CSS declaration line.
+    private static void appendDeclaration(StringBuilder builder, String name, String value) {
+        builder.append("    ").append(name).append(": ").append(value).append(";\n");
+    }
+
+    /// Appends a CSS rule footer.
+    private static void endRule(StringBuilder builder) {
+        builder.append("}\n\n");
     }
 
     /// Tokens shared by button variants.

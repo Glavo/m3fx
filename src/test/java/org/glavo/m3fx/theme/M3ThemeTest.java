@@ -4,6 +4,9 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3Chip;
+import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.monetfx.Brightness;
@@ -48,6 +51,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-indicator-size"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
@@ -70,6 +75,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
+        assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
+        assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
@@ -88,7 +95,39 @@ final class M3ThemeTest {
         assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
         assertSame(theme, root.getProperties().get(M3ThemeManager.THEME_PROPERTY_KEY));
         assertTrue(root.getStyle().contains("-m3-color-primary"));
-        assertEquals(1, scene.getStylesheets().size());
+        assertEquals(2, scene.getStylesheets().size());
         assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
+    }
+
+    /// Verifies that generated component stylesheets apply theme tokens to controls.
+    @Test
+    void installsGeneratedComponentStylesheet() {
+        M3Button button = new M3Button("Button");
+        M3TextField textField = new M3TextField();
+        M3Chip chip = new M3Chip("Chip");
+        Pane root = new Pane(button, textField, chip);
+        Scene scene = new Scene(root);
+
+        M3Theme expressiveTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT,
+                M3Density.standard()
+        );
+        M3ThemeManager.install(scene, expressiveTheme);
+        root.applyCss();
+
+        assertEquals(48.0, button.getContainerHeight(), 0.0001);
+        assertEquals(64.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(36.0, chip.getContainerHeight(), 0.0001);
+
+        M3Theme baselineTheme = M3Theme.defaultTheme();
+        M3ThemeManager.install(scene, baselineTheme);
+        root.applyCss();
+
+        assertEquals(40.0, button.getContainerHeight(), 0.0001);
+        assertEquals(56.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(32.0, chip.getContainerHeight(), 0.0001);
+        assertEquals(2, scene.getStylesheets().size());
     }
 }
