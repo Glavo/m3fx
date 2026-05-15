@@ -78,7 +78,7 @@ public record M3ComponentTokens(
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
                 new ChipTokens(chipHeight, shapeTokens.small(), 16.0),
                 new ProgressTokens(4.0, shapeTokens.full(), 48.0),
-                new CardTokens(shapeTokens.medium(), 1.0),
+                new CardTokens(shapeTokens.medium(), 16.0, 1.0),
                 new DialogTokens(shapeTokens.extraLarge(), 24.0),
                 new SnackbarTokens(shapeTokens.extraSmall(), 16.0)
         );
@@ -178,6 +178,7 @@ public record M3ComponentTokens(
     /// Appends card token declarations.
     private static void append(StringBuilder builder, CardTokens tokens) {
         M3TokenCss.append(builder, "-m3-card-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-card-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         M3TokenCss.append(builder, "-m3-card-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
     }
 
@@ -317,6 +318,8 @@ public record M3ComponentTokens(
     /// Appends a dialog pane token CSS rule.
     private static void appendDialogRule(StringBuilder builder, String selector, DialogTokens tokens) {
         beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.contentPadding()));
         endRule(builder);
@@ -326,6 +329,7 @@ public record M3ComponentTokens(
     private static void appendCardRule(StringBuilder builder, String selector, CardTokens tokens) {
         beginRule(builder, selector);
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         appendDeclaration(builder, "-m3-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
         endRule(builder);
     }
@@ -470,15 +474,18 @@ public record M3ComponentTokens(
     /// Tokens used by cards.
     ///
     /// @param containerShape the card container radius
+    /// @param contentPadding the card content padding
     /// @param outlineWidth the outlined card border width
     @NotNullByDefault
     public record CardTokens(
             double containerShape,
+            double contentPadding,
             double outlineWidth
     ) {
         /// Creates card tokens.
         public CardTokens {
             validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(contentPadding, "contentPadding");
             validateNonNegative(outlineWidth, "outlineWidth");
         }
     }

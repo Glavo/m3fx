@@ -46,6 +46,24 @@ public record M3ElevationTokens(
         return builder.toString().trim();
     }
 
+    /// Converts elevation tokens into JavaFX CSS rules for m3fx controls.
+    public String toControlStyleRules() {
+        StringBuilder builder = new StringBuilder();
+        appendShadowRule(builder, ".m3-elevated-button", level3, level1);
+        appendShadowRule(builder, ".m3-elevated-card .m3-card-container", level4, Math.max(level1, level2 - level1));
+        return builder.toString().stripTrailing();
+    }
+
+    /// Appends a dropshadow CSS rule.
+    private static void appendShadowRule(StringBuilder builder, String selector, double radius, double offsetY) {
+        builder.append(selector)
+                .append(" {\n    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), ")
+                .append(M3TokenCss.format(radius))
+                .append(", 0.18, 0, ")
+                .append(M3TokenCss.format(offsetY))
+                .append(");\n}\n\n");
+    }
+
     /// Validates an elevation token.
     private static void validate(double value, String name) {
         if (value < 0.0) {

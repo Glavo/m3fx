@@ -87,6 +87,10 @@ public record M3TokenSet(
 
     /// Converts component tokens into JavaFX CSS rules for m3fx controls.
     public String toControlStyleRules() {
-        return componentTokens.toControlStyleRules();
+        return componentTokens.toControlStyleRules()
+                + "\n\n"
+                + stateLayerTokens.toControlStyleRules()
+                + "\n\n"
+                + elevationTokens.toControlStyleRules();
     }
 }

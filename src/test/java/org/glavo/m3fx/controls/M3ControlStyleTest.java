@@ -112,6 +112,22 @@ final class M3ControlStyleTest {
         assertEquals(24.0, snackbar.getContentPadding(), 0.0001);
     }
 
+    /// Verifies that dialog pane component token properties are styleable from CSS.
+    @Test
+    void dialogPaneTokensAreStyleable() {
+        M3DialogPane dialogPane = new M3DialogPane();
+        dialogPane.setStyle("-m3-container-shape: 20px; -m3-content-padding: 28px;");
+
+        applyCss(dialogPane);
+
+        assertEquals(20.0, dialogPane.getContainerShape(), 0.0001);
+        assertEquals(28.0, dialogPane.getContentPadding(), 0.0001);
+        assertEquals(28.0, dialogPane.getPadding().getTop(), 0.0001);
+        assertEquals(28.0, dialogPane.getPadding().getRight(), 0.0001);
+        assertEquals(28.0, dialogPane.getPadding().getBottom(), 0.0001);
+        assertEquals(28.0, dialogPane.getPadding().getLeft(), 0.0001);
+    }
+
     /// Verifies that text field component token properties are styleable from CSS.
     @Test
     void textFieldTokensAreStyleable() {

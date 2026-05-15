@@ -44,6 +44,43 @@ public record M3StateLayerTokens(
                 + "-m3-state-disabled-content-opacity: " + M3TokenCss.format(disabledContentOpacity) + ";";
     }
 
+    /// Converts state layer tokens into JavaFX CSS rules for m3fx controls.
+    public String toControlStyleRules() {
+        StringBuilder builder = new StringBuilder();
+        appendOpacityRule(
+                builder,
+                ".m3-button:hover, .m3-chip:hover, .m3-icon-button:hover",
+                1.0 - hoverOpacity
+        );
+        appendOpacityRule(
+                builder,
+                ".m3-button:focused, .m3-chip:focused, .m3-icon-button:focused",
+                1.0 - focusOpacity
+        );
+        appendOpacityRule(
+                builder,
+                ".m3-button:pressed, .m3-chip:pressed, .m3-icon-button:pressed",
+                1.0 - pressedOpacity
+        );
+        appendOpacityRule(
+                builder,
+                ".m3-button:disabled, .m3-chip:disabled, .m3-icon-button:disabled, "
+                        + ".m3-text-field:disabled, .m3-password-field:disabled, "
+                        + ".m3-checkbox:disabled, .m3-radio-button:disabled, .m3-switch:disabled, .m3-slider:disabled, "
+                        + ".m3-progress-bar:disabled, .m3-progress-indicator:disabled",
+                disabledContentOpacity
+        );
+        return builder.toString().stripTrailing();
+    }
+
+    /// Appends an opacity CSS rule.
+    private static void appendOpacityRule(StringBuilder builder, String selector, double opacity) {
+        builder.append(selector)
+                .append(" {\n    -fx-opacity: ")
+                .append(M3TokenCss.format(opacity))
+                .append(";\n}\n\n");
+    }
+
     /// Validates an opacity token.
     private static void validate(double value, String name) {
         if (value < 0.0 || value > 1.0) {
