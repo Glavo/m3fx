@@ -162,6 +162,7 @@ public final class M3FXDemoApp extends Application {
     private Node createContent() {
         VBox content = new VBox(28.0);
         content.getStyleClass().add("demo-content");
+        content.setFillWidth(true);
         content.getChildren().addAll(
                 createButtonSection(),
                 createInputSection(),
@@ -326,6 +327,7 @@ public final class M3FXDemoApp extends Application {
     private Node createSection(String title, Node content) {
         VBox section = new VBox(14.0);
         section.getStyleClass().add("demo-section");
+        section.setMaxWidth(Double.MAX_VALUE);
 
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("demo-section-title");
@@ -339,6 +341,7 @@ public final class M3FXDemoApp extends Application {
         FlowPane flow = new FlowPane(16.0, 16.0);
         flow.getStyleClass().add("demo-flow");
         flow.setAlignment(Pos.CENTER_LEFT);
+        flow.setMaxWidth(Double.MAX_VALUE);
         return flow;
     }
 
