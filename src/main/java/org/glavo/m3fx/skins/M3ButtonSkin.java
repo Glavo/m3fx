@@ -4,14 +4,19 @@ import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
-import javafx.scene.control.skin.ButtonSkin;
+import javafx.event.EventHandler;
+import javafx.scene.control.skin.LabeledSkinBase;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3Button;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default animated skin for {@link M3Button}.
 @NotNullByDefault
-public class M3ButtonSkin extends ButtonSkin {
+public class M3ButtonSkin extends LabeledSkinBase<M3Button> {
     /// The scale applied while the button is pressed.
     private static final double PRESSED_SCALE = 0.98;
 
@@ -24,15 +29,41 @@ public class M3ButtonSkin extends ButtonSkin {
     /// The press animation timeline.
     private final Timeline animation = new Timeline();
 
+    /// Handles primary mouse presses.
+    private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
+
+    /// Handles primary mouse releases.
+    private final EventHandler<MouseEvent> mouseReleasedHandler = this::handleMouseReleased;
+
+    /// Handles pointer entry while a mouse press is active.
+    private final EventHandler<MouseEvent> mouseEnteredHandler = this::handleMouseEntered;
+
+    /// Handles pointer exit while a mouse press is active.
+    private final EventHandler<MouseEvent> mouseExitedHandler = this::handleMouseExited;
+
+    /// Handles keyboard activation presses.
+    private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
+
+    /// Handles keyboard activation releases.
+    private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
+
+    /// Whether the current interaction was started by a primary mouse press.
+    private boolean mousePressed;
+
+    /// Whether the space key currently owns the armed state.
+    private boolean spaceKeyPressed;
+
     /// Creates a button skin.
     public M3ButtonSkin(M3Button control) {
         super(control);
         control.setScaleX(1.0);
         control.setScaleY(1.0);
+        installInteractionHandlers(control);
         control.armedProperty().addListener((observable, oldValue, newValue) -> animatePressedState(newValue));
         control.disabledProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 animation.stop();
+                control.disarm();
                 control.setScaleX(1.0);
                 control.setScaleY(1.0);
             }
@@ -43,12 +74,117 @@ public class M3ButtonSkin extends ButtonSkin {
     @Override
     public void dispose() {
         animation.stop();
+        uninstallInteractionHandlers(getSkinnable());
         super.dispose();
+    }
+
+    /// Installs mouse and keyboard behavior handlers.
+    private void installInteractionHandlers(M3Button button) {
+        button.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        button.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        button.addEventHandler(MouseEvent.MOUSE_ENTERED, mouseEnteredHandler);
+        button.addEventHandler(MouseEvent.MOUSE_EXITED, mouseExitedHandler);
+        button.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        button.addEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+    }
+
+    /// Removes mouse and keyboard behavior handlers.
+    private void uninstallInteractionHandlers(M3Button button) {
+        button.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        button.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        button.removeEventHandler(MouseEvent.MOUSE_ENTERED, mouseEnteredHandler);
+        button.removeEventHandler(MouseEvent.MOUSE_EXITED, mouseExitedHandler);
+        button.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        button.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+    }
+
+    /// Arms the button on primary mouse press.
+    private void handleMousePressed(MouseEvent event) {
+        M3Button button = getSkinnable();
+        if (button.isDisabled() || event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+
+        mousePressed = true;
+        if (button.isFocusTraversable()) {
+            button.requestFocus();
+        }
+        button.arm();
+        event.consume();
+    }
+
+    /// Fires the button when a primary mouse press is released inside the control.
+    private void handleMouseReleased(MouseEvent event) {
+        M3Button button = getSkinnable();
+        if (!mousePressed || event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+
+        boolean shouldFire = button.isArmed() && button.contains(event.getX(), event.getY());
+        mousePressed = false;
+        button.disarm();
+        if (shouldFire) {
+            button.fire();
+        }
+        event.consume();
+    }
+
+    /// Re-arms the button when a pressed pointer re-enters the control.
+    private void handleMouseEntered(MouseEvent event) {
+        M3Button button = getSkinnable();
+        if (mousePressed && !button.isDisabled()) {
+            button.arm();
+            event.consume();
+        }
+    }
+
+    /// Disarms the button when a pressed pointer exits the control.
+    private void handleMouseExited(MouseEvent event) {
+        M3Button button = getSkinnable();
+        if (mousePressed && !button.isDisabled()) {
+            button.disarm();
+            event.consume();
+        }
+    }
+
+    /// Handles keyboard activation for enter and space.
+    private void handleKeyPressed(KeyEvent event) {
+        M3Button button = getSkinnable();
+        if (button.isDisabled()) {
+            return;
+        }
+
+        if (event.getCode() == KeyCode.SPACE) {
+            if (!spaceKeyPressed) {
+                spaceKeyPressed = true;
+                button.arm();
+            }
+            event.consume();
+        } else if (event.getCode() == KeyCode.ENTER) {
+            button.fire();
+            event.consume();
+        }
+    }
+
+    /// Fires the button when a space key activation is released.
+    private void handleKeyReleased(KeyEvent event) {
+        M3Button button = getSkinnable();
+        if (event.getCode() != KeyCode.SPACE || !spaceKeyPressed) {
+            return;
+        }
+
+        boolean shouldFire = button.isArmed() && !button.isDisabled();
+        spaceKeyPressed = false;
+        button.disarm();
+        if (shouldFire) {
+            button.fire();
+        }
+        event.consume();
     }
 
     /// Animates the skinnable button into or out of the pressed state.
     private void animatePressedState(boolean pressed) {
-        M3Button button = (M3Button) getSkinnable();
+        M3Button button = getSkinnable();
         if (button.isDisabled()) {
             return;
         }

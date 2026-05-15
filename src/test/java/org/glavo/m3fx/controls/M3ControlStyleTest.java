@@ -1,9 +1,14 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.event.EventType;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
@@ -15,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -59,6 +65,33 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertInstanceOf(M3ButtonSkin.class, button.getSkin());
+    }
+
+    /// Verifies that the button skin handles mouse and keyboard activation.
+    @Test
+    void buttonSkinHandlesActivationEvents() {
+        M3Button button = new M3Button("Button");
+        AtomicInteger fireCount = new AtomicInteger();
+        button.setOnAction(event -> fireCount.incrementAndGet());
+
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root, 200.0, 100.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        button.resize(100.0, 40.0);
+
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        assertTrue(button.isArmed());
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
+        assertEquals(1, fireCount.get());
+
+        button.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+        assertTrue(button.isArmed());
+        button.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+        assertEquals(2, fireCount.get());
+
+        button.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+        assertEquals(3, fireCount.get());
     }
 
     /// Verifies that button component token properties are styleable from CSS.
@@ -322,5 +355,39 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
+    }
+
+    /// Creates a primary mouse event for control behavior tests.
+    private static MouseEvent primaryMouseEvent(
+            EventType<MouseEvent> eventType,
+            double x,
+            double y,
+            boolean primaryButtonDown
+    ) {
+        return new MouseEvent(
+                eventType,
+                x,
+                y,
+                x,
+                y,
+                MouseButton.PRIMARY,
+                1,
+                false,
+                false,
+                false,
+                false,
+                primaryButtonDown,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null
+        );
+    }
+
+    /// Creates a key event for control behavior tests.
+    private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
+        return new KeyEvent(eventType, "", "", code, false, false, false, false);
     }
 }
