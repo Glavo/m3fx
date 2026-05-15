@@ -22,5 +22,4 @@ final class M3Css {
         }
         return value;
     }
-
 }

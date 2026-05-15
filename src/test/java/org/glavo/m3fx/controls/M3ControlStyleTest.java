@@ -74,6 +74,19 @@ final class M3ControlStyleTest {
         assertEquals(18.0, button.getPadding().getRight(), 0.0001);
     }
 
+    /// Verifies that icon buttons stay square when size tokens change.
+    @Test
+    void iconButtonSizeTracksContainerHeightToken() {
+        M3IconButton button = new M3IconButton();
+        button.setStyle("-m3-container-height: 48px;");
+
+        applyCss(button);
+
+        assertEquals(48.0, button.getContainerHeight(), 0.0001);
+        assertEquals(48.0, button.getPrefWidth(), 0.0001);
+        assertEquals(48.0, button.getPrefHeight(), 0.0001);
+    }
+
     /// Verifies that card component token properties are styleable from CSS.
     @Test
     void cardTokensAreStyleable() {
@@ -97,6 +110,119 @@ final class M3ControlStyleTest {
 
         assertEquals(10.0, snackbar.getContainerShape(), 0.0001);
         assertEquals(24.0, snackbar.getContentPadding(), 0.0001);
+    }
+
+    /// Verifies that text field component token properties are styleable from CSS.
+    @Test
+    void textFieldTokensAreStyleable() {
+        M3TextField textField = new M3TextField();
+        textField.setStyle("-m3-container-height: 64px; -m3-container-shape: 12px; -m3-horizontal-padding: 22px;");
+
+        applyCss(textField);
+
+        assertEquals(64.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(12.0, textField.getContainerShape(), 0.0001);
+        assertEquals(22.0, textField.getHorizontalPadding(), 0.0001);
+        assertEquals(64.0, textField.getPrefHeight(), 0.0001);
+        assertEquals(22.0, textField.getPadding().getLeft(), 0.0001);
+        assertEquals(22.0, textField.getPadding().getRight(), 0.0001);
+    }
+
+    /// Verifies that password field component token properties are styleable from CSS.
+    @Test
+    void passwordFieldTokensAreStyleable() {
+        M3PasswordField passwordField = new M3PasswordField();
+        passwordField.setStyle("-m3-container-height: 60px; -m3-container-shape: 10px; -m3-horizontal-padding: 20px;");
+
+        applyCss(passwordField);
+
+        assertEquals(60.0, passwordField.getContainerHeight(), 0.0001);
+        assertEquals(10.0, passwordField.getContainerShape(), 0.0001);
+        assertEquals(20.0, passwordField.getHorizontalPadding(), 0.0001);
+        assertEquals(60.0, passwordField.getPrefHeight(), 0.0001);
+        assertEquals(20.0, passwordField.getPadding().getLeft(), 0.0001);
+        assertEquals(20.0, passwordField.getPadding().getRight(), 0.0001);
+    }
+
+    /// Verifies that chip component token properties are styleable from CSS.
+    @Test
+    void chipTokensAreStyleable() {
+        M3Chip chip = new M3Chip("Chip");
+        chip.setStyle("-m3-container-height: 36px; -m3-container-shape: 16px; -m3-horizontal-padding: 14px;");
+
+        applyCss(chip);
+
+        assertEquals(36.0, chip.getContainerHeight(), 0.0001);
+        assertEquals(16.0, chip.getContainerShape(), 0.0001);
+        assertEquals(14.0, chip.getHorizontalPadding(), 0.0001);
+        assertEquals(36.0, chip.getPrefHeight(), 0.0001);
+        assertEquals(14.0, chip.getPadding().getLeft(), 0.0001);
+        assertEquals(14.0, chip.getPadding().getRight(), 0.0001);
+    }
+
+    /// Verifies that selection component token properties are styleable from CSS.
+    @Test
+    void selectionTokensAreStyleable() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        checkBox.setStyle("-m3-touch-target-size: 44px;");
+
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        radioButton.setStyle("-m3-touch-target-size: 46px;");
+
+        M3Switch switchControl = new M3Switch("Switch");
+        switchControl.setStyle("-m3-touch-target-size: 48px; -m3-track-shape: 18px;");
+
+        applyCss(checkBox);
+        applyCss(radioButton);
+        applyCss(switchControl);
+
+        assertEquals(44.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(44.0, checkBox.getPrefHeight(), 0.0001);
+        assertEquals(46.0, radioButton.getTouchTargetSize(), 0.0001);
+        assertEquals(46.0, radioButton.getPrefHeight(), 0.0001);
+        assertEquals(48.0, switchControl.getTouchTargetSize(), 0.0001);
+        assertEquals(18.0, switchControl.getTrackShape(), 0.0001);
+        assertEquals(48.0, switchControl.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that slider component token properties are styleable from CSS.
+    @Test
+    void sliderTokensAreStyleable() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        slider.setStyle(
+                "-m3-track-thickness: 8px; "
+                        + "-m3-track-shape: 12px; "
+                        + "-m3-thumb-size: 28px; "
+                        + "-m3-touch-target-size: 56px;"
+        );
+
+        applyCss(slider);
+
+        assertEquals(8.0, slider.getTrackThickness(), 0.0001);
+        assertEquals(12.0, slider.getTrackShape(), 0.0001);
+        assertEquals(28.0, slider.getThumbSize(), 0.0001);
+        assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
+        assertEquals(56.0, slider.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that progress component token properties are styleable from CSS.
+    @Test
+    void progressTokensAreStyleable() {
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        progressBar.setStyle("-m3-track-thickness: 6px; -m3-track-shape: 18px;");
+
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        progressIndicator.setStyle("-m3-indicator-size: 72px;");
+
+        applyCss(progressBar);
+        applyCss(progressIndicator);
+
+        assertEquals(6.0, progressBar.getTrackThickness(), 0.0001);
+        assertEquals(18.0, progressBar.getTrackShape(), 0.0001);
+        assertEquals(6.0, progressBar.getPrefHeight(), 0.0001);
+        assertEquals(72.0, progressIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(72.0, progressIndicator.getPrefWidth(), 0.0001);
+        assertEquals(72.0, progressIndicator.getPrefHeight(), 0.0001);
     }
 
     /// Verifies style classes for container controls.

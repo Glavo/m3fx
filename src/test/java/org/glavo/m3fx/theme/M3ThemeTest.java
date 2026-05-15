@@ -45,7 +45,12 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-label-large-font-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-indicator-size"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
+        assertNotNull(theme.tokens().componentTokens().slider());
+        assertNotNull(theme.tokens().componentTokens().chip());
     }
 
     /// Verifies that the expressive profile creates a complete token set.
@@ -63,7 +68,11 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
+        assertNotNull(theme.tokens().componentTokens().slider());
+        assertNotNull(theme.tokens().componentTokens().chip());
     }
 
     /// Verifies that installing a theme on a scene is idempotent.

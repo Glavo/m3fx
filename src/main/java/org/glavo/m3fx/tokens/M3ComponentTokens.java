@@ -14,6 +14,8 @@ import java.util.Objects;
 /// @param iconButton tokens used by icon buttons
 /// @param field tokens used by text input controls
 /// @param selection tokens used by selection controls
+/// @param slider tokens used by sliders
+/// @param chip tokens used by chips
 /// @param progress tokens used by progress controls
 /// @param card tokens used by cards
 /// @param dialog tokens used by dialogs
@@ -28,6 +30,8 @@ public record M3ComponentTokens(
         ButtonTokens iconButton,
         FieldTokens field,
         SelectionTokens selection,
+        SliderTokens slider,
+        ChipTokens chip,
         ProgressTokens progress,
         CardTokens card,
         DialogTokens dialog,
@@ -43,6 +47,8 @@ public record M3ComponentTokens(
         Objects.requireNonNull(iconButton, "iconButton");
         Objects.requireNonNull(field, "field");
         Objects.requireNonNull(selection, "selection");
+        Objects.requireNonNull(slider, "slider");
+        Objects.requireNonNull(chip, "chip");
         Objects.requireNonNull(progress, "progress");
         Objects.requireNonNull(card, "card");
         Objects.requireNonNull(dialog, "dialog");
@@ -58,6 +64,7 @@ public record M3ComponentTokens(
         double buttonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double iconButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
 
         return new M3ComponentTokens(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
@@ -68,7 +75,9 @@ public record M3ComponentTokens(
                 new ButtonTokens(iconButtonSize, shapeTokens.full(), 0.0),
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
-                new ProgressTokens(4.0, shapeTokens.full()),
+                new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
+                new ChipTokens(chipHeight, shapeTokens.small(), 16.0),
+                new ProgressTokens(4.0, shapeTokens.full(), 48.0),
                 new CardTokens(shapeTokens.medium(), 1.0),
                 new DialogTokens(shapeTokens.extraLarge(), 24.0),
                 new SnackbarTokens(shapeTokens.extraSmall(), 16.0)
@@ -86,6 +95,8 @@ public record M3ComponentTokens(
         append(builder, "button-icon", iconButton);
         append(builder, field);
         append(builder, selection);
+        append(builder, slider);
+        append(builder, chip);
         append(builder, progress);
         append(builder, card);
         append(builder, dialog);
@@ -113,10 +124,26 @@ public record M3ComponentTokens(
         M3TokenCss.append(builder, "-m3-selection-track-shape", M3TokenCss.pixels(tokens.trackShape()));
     }
 
+    /// Appends slider token declarations.
+    private static void append(StringBuilder builder, SliderTokens tokens) {
+        M3TokenCss.append(builder, "-m3-slider-track-thickness", M3TokenCss.pixels(tokens.trackThickness()));
+        M3TokenCss.append(builder, "-m3-slider-track-shape", M3TokenCss.pixels(tokens.trackShape()));
+        M3TokenCss.append(builder, "-m3-slider-thumb-size", M3TokenCss.pixels(tokens.thumbSize()));
+        M3TokenCss.append(builder, "-m3-slider-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
+    }
+
+    /// Appends chip token declarations.
+    private static void append(StringBuilder builder, ChipTokens tokens) {
+        M3TokenCss.append(builder, "-m3-chip-container-height", M3TokenCss.pixels(tokens.height()));
+        M3TokenCss.append(builder, "-m3-chip-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-chip-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+    }
+
     /// Appends progress token declarations.
     private static void append(StringBuilder builder, ProgressTokens tokens) {
         M3TokenCss.append(builder, "-m3-progress-thickness", M3TokenCss.pixels(tokens.thickness()));
         M3TokenCss.append(builder, "-m3-progress-shape", M3TokenCss.pixels(tokens.shape()));
+        M3TokenCss.append(builder, "-m3-progress-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
     }
 
     /// Appends card token declarations.
@@ -191,19 +218,63 @@ public record M3ComponentTokens(
         }
     }
 
+    /// Tokens shared by sliders.
+    ///
+    /// @param trackThickness the slider track thickness
+    /// @param trackShape the slider track radius
+    /// @param thumbSize the slider thumb size
+    /// @param touchTargetSize the preferred slider touch target size
+    @NotNullByDefault
+    public record SliderTokens(
+            double trackThickness,
+            double trackShape,
+            double thumbSize,
+            double touchTargetSize
+    ) {
+        /// Creates slider tokens.
+        public SliderTokens {
+            validateNonNegative(trackThickness, "trackThickness");
+            validateNonNegative(trackShape, "trackShape");
+            validateNonNegative(thumbSize, "thumbSize");
+            validateNonNegative(touchTargetSize, "touchTargetSize");
+        }
+    }
+
+    /// Tokens shared by chip variants.
+    ///
+    /// @param height the preferred chip height
+    /// @param containerShape the chip container radius
+    /// @param horizontalPadding the horizontal content padding
+    @NotNullByDefault
+    public record ChipTokens(
+            double height,
+            double containerShape,
+            double horizontalPadding
+    ) {
+        /// Creates chip tokens.
+        public ChipTokens {
+            validateNonNegative(height, "height");
+            validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+        }
+    }
+
     /// Tokens shared by progress indicators.
     ///
     /// @param thickness the default track thickness
     /// @param shape the progress indicator radius
+    /// @param indicatorSize the circular indicator size
     @NotNullByDefault
     public record ProgressTokens(
             double thickness,
-            double shape
+            double shape,
+            double indicatorSize
     ) {
         /// Creates progress tokens.
         public ProgressTokens {
             validateNonNegative(thickness, "thickness");
             validateNonNegative(shape, "shape");
+            validateNonNegative(indicatorSize, "indicatorSize");
         }
     }
 

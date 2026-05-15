@@ -47,8 +47,6 @@
 .m3-icon-button {
     -m3-container-height: 40px;
     -m3-horizontal-padding: 0px;
-    -fx-min-width: 40px;
-    -fx-pref-width: 40px;
 }
 
 .m3-button:hover,
@@ -72,9 +70,9 @@
 
 .m3-text-field,
 .m3-password-field {
-    -fx-min-height: 56px;
-    -fx-pref-height: 56px;
-    -fx-padding: 8px 16px 8px 16px;
+    -m3-container-height: 56px;
+    -m3-container-shape: 4px;
+    -m3-horizontal-padding: 16px;
     -fx-font-size: 16px;
     -fx-text-fill: -m3-color-on-surface;
     -fx-prompt-text-fill: -m3-color-on-surface-variant;
@@ -110,8 +108,13 @@
 .m3-checkbox,
 .m3-radio-button,
 .m3-switch {
+    -m3-touch-target-size: 40px;
     -fx-text-fill: -m3-color-on-surface;
     -fx-font-size: 14px;
+}
+
+.m3-switch {
+    -m3-track-shape: 999px;
 }
 
 .m3-checkbox:selected .box,
@@ -138,6 +141,13 @@
     -fx-border-color: -m3-color-primary;
 }
 
+.m3-slider {
+    -m3-track-thickness: 4px;
+    -m3-track-shape: 999px;
+    -m3-thumb-size: 20px;
+    -m3-touch-target-size: 48px;
+}
+
 .m3-slider .track {
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-background-radius: 999px;
@@ -150,9 +160,9 @@
 }
 
 .m3-chip {
-    -fx-min-height: 32px;
-    -fx-pref-height: 32px;
-    -fx-padding: 0 16px 0 16px;
+    -m3-container-height: 32px;
+    -m3-container-shape: 8px;
+    -m3-horizontal-padding: 16px;
     -fx-background-radius: 8px;
     -fx-border-radius: 8px;
     -fx-font-size: 14px;
@@ -183,6 +193,8 @@
 }
 
 .m3-progress-bar {
+    -m3-track-thickness: 4px;
+    -m3-track-shape: 999px;
     -fx-accent: -m3-color-primary;
 }
 
@@ -197,6 +209,7 @@
 }
 
 .m3-progress-indicator {
+    -m3-indicator-size: 48px;
     -fx-progress-color: -m3-color-primary;
 }
 

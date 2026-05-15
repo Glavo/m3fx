@@ -20,10 +20,24 @@ public class M3IconButton extends M3Button {
         super("", graphic);
         M3ControlStyles.add(this, STYLE_CLASS);
         setVariant(M3ButtonVariant.TEXT);
+        initializeIconMetrics();
     }
 
     /// Returns the default graphic value.
     private static @Nullable Node nullGraphic() {
         return null;
+    }
+
+    /// Keeps icon buttons square when container size tokens change.
+    private void initializeIconMetrics() {
+        containerHeightProperty().addListener(observable -> updateIconMetrics());
+        updateIconMetrics();
+    }
+
+    /// Applies the current container size token to horizontal layout metrics.
+    private void updateIconMetrics() {
+        double size = getContainerHeight();
+        setMinWidth(size);
+        setPrefWidth(size);
     }
 }
