@@ -20,6 +20,8 @@ import java.util.Objects;
 /// @param card tokens used by cards
 /// @param dialog tokens used by dialogs
 /// @param snackbar tokens used by snackbar controls
+/// @param divider tokens used by dividers
+/// @param badge tokens used by badges
 @NotNullByDefault
 public record M3ComponentTokens(
         ButtonTokens filledButton,
@@ -35,7 +37,9 @@ public record M3ComponentTokens(
         ProgressTokens progress,
         CardTokens card,
         DialogTokens dialog,
-        SnackbarTokens snackbar
+        SnackbarTokens snackbar,
+        DividerTokens divider,
+        BadgeTokens badge
 ) {
     /// Creates component tokens.
     public M3ComponentTokens {
@@ -53,6 +57,8 @@ public record M3ComponentTokens(
         Objects.requireNonNull(card, "card");
         Objects.requireNonNull(dialog, "dialog");
         Objects.requireNonNull(snackbar, "snackbar");
+        Objects.requireNonNull(divider, "divider");
+        Objects.requireNonNull(badge, "badge");
     }
 
     /// Creates component tokens for a profile.
@@ -65,6 +71,8 @@ public record M3ComponentTokens(
         double iconButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
+        double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
+        double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
 
         return new M3ComponentTokens(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
@@ -80,7 +88,9 @@ public record M3ComponentTokens(
                 new ProgressTokens(4.0, shapeTokens.full(), 48.0),
                 new CardTokens(shapeTokens.medium(), 16.0, 1.0),
                 new DialogTokens(shapeTokens.extraLarge(), 24.0),
-                new SnackbarTokens(shapeTokens.extraSmall(), 16.0)
+                new SnackbarTokens(shapeTokens.extraSmall(), 16.0),
+                new DividerTokens(1.0, 0.0, 0.0),
+                new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeHeight, badgeLargeHeight / 2.0, 4.0)
         );
     }
 
@@ -101,6 +111,8 @@ public record M3ComponentTokens(
         append(builder, card);
         append(builder, dialog);
         append(builder, snackbar);
+        append(builder, divider);
+        append(builder, badge);
         return builder.toString().trim();
     }
 
@@ -130,6 +142,8 @@ public record M3ComponentTokens(
         appendCardRule(builder, ".m3-card", card);
         appendDialogRule(builder, ".m3-dialog-pane", dialog);
         appendSnackbarRule(builder, ".m3-snackbar", snackbar);
+        appendDividerRule(builder, ".m3-divider", divider);
+        appendBadgeRule(builder, ".m3-badge", badge);
         return builder.toString().stripTrailing();
     }
 
@@ -192,6 +206,22 @@ public record M3ComponentTokens(
     private static void append(StringBuilder builder, SnackbarTokens tokens) {
         M3TokenCss.append(builder, "-m3-snackbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-snackbar-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+    }
+
+    /// Appends divider token declarations.
+    private static void append(StringBuilder builder, DividerTokens tokens) {
+        M3TokenCss.append(builder, "-m3-divider-thickness", M3TokenCss.pixels(tokens.thickness()));
+        M3TokenCss.append(builder, "-m3-divider-inset-start", M3TokenCss.pixels(tokens.insetStart()));
+        M3TokenCss.append(builder, "-m3-divider-inset-end", M3TokenCss.pixels(tokens.insetEnd()));
+    }
+
+    /// Appends badge token declarations.
+    private static void append(StringBuilder builder, BadgeTokens tokens) {
+        M3TokenCss.append(builder, "-m3-badge-small-size", M3TokenCss.pixels(tokens.smallSize()));
+        M3TokenCss.append(builder, "-m3-badge-large-height", M3TokenCss.pixels(tokens.largeHeight()));
+        M3TokenCss.append(builder, "-m3-badge-large-min-width", M3TokenCss.pixels(tokens.largeMinWidth()));
+        M3TokenCss.append(builder, "-m3-badge-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-badge-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
     }
 
     /// Appends a button token CSS rule.
@@ -339,6 +369,26 @@ public record M3ComponentTokens(
         beginRule(builder, selector);
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a divider token CSS rule.
+    private static void appendDividerRule(StringBuilder builder, String selector, DividerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-thickness", M3TokenCss.pixels(tokens.thickness()));
+        appendDeclaration(builder, "-m3-inset-start", M3TokenCss.pixels(tokens.insetStart()));
+        appendDeclaration(builder, "-m3-inset-end", M3TokenCss.pixels(tokens.insetEnd()));
+        endRule(builder);
+    }
+
+    /// Appends a badge token CSS rule.
+    private static void appendBadgeRule(StringBuilder builder, String selector, BadgeTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-small-size", M3TokenCss.pixels(tokens.smallSize()));
+        appendDeclaration(builder, "-m3-large-height", M3TokenCss.pixels(tokens.largeHeight()));
+        appendDeclaration(builder, "-m3-large-min-width", M3TokenCss.pixels(tokens.largeMinWidth()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         endRule(builder);
     }
 
@@ -519,6 +569,50 @@ public record M3ComponentTokens(
         public SnackbarTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(contentPadding, "contentPadding");
+        }
+    }
+
+    /// Tokens used by dividers.
+    ///
+    /// @param thickness the divider line thickness
+    /// @param insetStart the leading inset before the divider line
+    /// @param insetEnd the trailing inset after the divider line
+    @NotNullByDefault
+    public record DividerTokens(
+            double thickness,
+            double insetStart,
+            double insetEnd
+    ) {
+        /// Creates divider tokens.
+        public DividerTokens {
+            validateNonNegative(thickness, "thickness");
+            validateNonNegative(insetStart, "insetStart");
+            validateNonNegative(insetEnd, "insetEnd");
+        }
+    }
+
+    /// Tokens used by badges.
+    ///
+    /// @param smallSize the dot badge size
+    /// @param largeHeight the text badge height
+    /// @param largeMinWidth the text badge minimum width
+    /// @param containerShape the text badge container radius
+    /// @param horizontalPadding the text badge horizontal padding
+    @NotNullByDefault
+    public record BadgeTokens(
+            double smallSize,
+            double largeHeight,
+            double largeMinWidth,
+            double containerShape,
+            double horizontalPadding
+    ) {
+        /// Creates badge tokens.
+        public BadgeTokens {
+            validateNonNegative(smallSize, "smallSize");
+            validateNonNegative(largeHeight, "largeHeight");
+            validateNonNegative(largeMinWidth, "largeMinWidth");
+            validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
         }
     }
 

@@ -1,9 +1,12 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
+import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -241,6 +244,44 @@ final class M3ControlStyleTest {
         assertEquals(72.0, progressIndicator.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that divider component token properties are styleable from CSS.
+    @Test
+    void dividerTokensAreStyleable() {
+        M3Divider divider = new M3Divider(Orientation.VERTICAL);
+        divider.setStyle("-m3-thickness: 2px; -m3-inset-start: 12px; -m3-inset-end: 8px;");
+
+        applyCss(divider);
+
+        assertEquals(2.0, divider.getThickness(), 0.0001);
+        assertEquals(12.0, divider.getInsetStart(), 0.0001);
+        assertEquals(8.0, divider.getInsetEnd(), 0.0001);
+        assertInstanceOf(M3DividerSkin.class, divider.getSkin());
+    }
+
+    /// Verifies that badge component token properties are styleable from CSS.
+    @Test
+    void badgeTokensAreStyleable() {
+        M3Badge badge = new M3Badge("1234");
+        badge.setMaxCharacterCount(2);
+        badge.setStyle(
+                "-m3-small-size: 8px; "
+                        + "-m3-large-height: 18px; "
+                        + "-m3-large-min-width: 20px; "
+                        + "-m3-container-shape: 9px; "
+                        + "-m3-horizontal-padding: 6px;"
+        );
+
+        applyCss(badge);
+
+        assertEquals("12+", badge.getDisplayText());
+        assertEquals(8.0, badge.getSmallSize(), 0.0001);
+        assertEquals(18.0, badge.getLargeHeight(), 0.0001);
+        assertEquals(20.0, badge.getLargeMinWidth(), 0.0001);
+        assertEquals(9.0, badge.getContainerShape(), 0.0001);
+        assertEquals(6.0, badge.getHorizontalPadding(), 0.0001);
+        assertInstanceOf(M3BadgeSkin.class, badge.getSkin());
+    }
+
     /// Verifies style classes for container controls.
     @Test
     void containerControlsExposeStyleClasses() {
@@ -271,6 +312,8 @@ final class M3ControlStyleTest {
         assertTrue(new M3Slider().getStyleClass().contains(M3Slider.STYLE_CLASS));
         assertTrue(chip.getStyleClass().contains(M3Chip.STYLE_CLASS));
         assertTrue(chip.getStyleClass().contains(M3ChipVariant.FILTER.getStyleClass()));
+        assertTrue(new M3Divider().getStyleClass().contains(M3Divider.STYLE_CLASS));
+        assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
     }
 
     /// Applies the m3fx stylesheet to a control in a scene.

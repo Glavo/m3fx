@@ -3,6 +3,7 @@ package org.glavo.m3fx.demo;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -21,6 +22,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
@@ -29,6 +31,7 @@ import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DialogPane;
+import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
@@ -167,6 +170,7 @@ public final class M3FXDemoApp extends Application {
                 createButtonSection(),
                 createInputSection(),
                 createSelectionSection(),
+                createUtilitySection(),
                 createProgressSection(),
                 createContainmentSection()
         );
@@ -253,6 +257,27 @@ public final class M3FXDemoApp extends Application {
                 suggestionChip
         );
         return createSection("Selection", controls);
+    }
+
+    /// Creates the badge and divider showcase section.
+    private Node createUtilitySection() {
+        M3Badge dotBadge = new M3Badge();
+        M3Badge countBadge = new M3Badge("7");
+        M3Badge overflowBadge = new M3Badge("1234");
+
+        M3Divider fullDivider = new M3Divider();
+        fullDivider.setPrefWidth(260.0);
+
+        M3Divider insetDivider = new M3Divider();
+        insetDivider.setInsetStart(24.0);
+        insetDivider.setPrefWidth(260.0);
+
+        M3Divider verticalDivider = new M3Divider(Orientation.VERTICAL);
+        verticalDivider.setPrefHeight(48.0);
+
+        FlowPane controls = createFlow();
+        controls.getChildren().addAll(dotBadge, countBadge, overflowBadge, fullDivider, insetDivider, verticalDivider);
+        return createSection("Utility", controls);
     }
 
     /// Creates the progress showcase section.

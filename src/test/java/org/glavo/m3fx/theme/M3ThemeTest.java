@@ -4,10 +4,12 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3DialogPane;
+import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -54,13 +56,18 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-indicator-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-content-padding"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-divider-thickness"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-badge"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.92"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
+        assertNotNull(theme.tokens().componentTokens().divider());
+        assertNotNull(theme.tokens().componentTokens().badge());
     }
 
     /// Verifies that the expressive profile creates a complete token set.
@@ -82,11 +89,14 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-shape: 32px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 8px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
+        assertNotNull(theme.tokens().componentTokens().divider());
+        assertNotNull(theme.tokens().componentTokens().badge());
     }
 
     /// Verifies that installing a theme on a scene is idempotent.
@@ -136,6 +146,32 @@ final class M3ThemeTest {
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
         assertEquals(2, scene.getStylesheets().size());
+    }
+
+    /// Verifies that generated component stylesheets apply utility component tokens.
+    @Test
+    void generatedComponentStylesheetAppliesUtilityTokens() {
+        M3Divider divider = new M3Divider();
+        M3Badge badge = new M3Badge("12");
+        Pane root = new Pane(divider, badge);
+        Scene scene = new Scene(root);
+
+        M3Theme expressiveTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT,
+                M3Density.standard()
+        );
+        M3ThemeManager.install(scene, expressiveTheme);
+        root.applyCss();
+
+        assertEquals(1.0, divider.getThickness(), 0.0001);
+        assertEquals(0.0, divider.getInsetStart(), 0.0001);
+        assertEquals(0.0, divider.getInsetEnd(), 0.0001);
+        assertEquals(8.0, badge.getSmallSize(), 0.0001);
+        assertEquals(18.0, badge.getLargeHeight(), 0.0001);
+        assertEquals(18.0, badge.getLargeMinWidth(), 0.0001);
+        assertEquals(9.0, badge.getContainerShape(), 0.0001);
     }
 
     /// Verifies that generated component stylesheets apply container tokens.

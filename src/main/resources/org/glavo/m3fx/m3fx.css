@@ -213,6 +213,33 @@
     -fx-progress-color: -m3-color-primary;
 }
 
+.m3-divider {
+    -m3-thickness: 1px;
+    -m3-inset-start: 0px;
+    -m3-inset-end: 0px;
+    -fx-background-color: transparent;
+}
+
+.m3-divider-line {
+    -fx-background-color: -m3-color-outline-variant;
+}
+
+.m3-badge {
+    -m3-small-size: 6px;
+    -m3-large-height: 16px;
+    -m3-large-min-width: 16px;
+    -m3-container-shape: 8px;
+    -m3-horizontal-padding: 4px;
+}
+
+.m3-badge-label {
+    -fx-alignment: center;
+    -fx-background-color: -m3-color-error;
+    -fx-text-fill: -m3-color-on-error;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+}
+
 .m3-card {
     -m3-container-shape: 12px;
     -m3-content-padding: 16px;
