@@ -3,24 +3,20 @@ package org.glavo.m3fx.tokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 elevation system tokens.
+///
+/// @param level0 elevation level zero
+/// @param level1 elevation level one
+/// @param level2 elevation level two
+/// @param level3 elevation level three
+/// @param level4 elevation level four
+/// @param level5 elevation level five
 @NotNullByDefault
 public record M3ElevationTokens(
-        /// Elevation level zero.
         double level0,
-
-        /// Elevation level one.
         double level1,
-
-        /// Elevation level two.
         double level2,
-
-        /// Elevation level three.
         double level3,
-
-        /// Elevation level four.
         double level4,
-
-        /// Elevation level five.
         double level5
 ) {
     /// Creates elevation tokens.

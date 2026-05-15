@@ -5,24 +5,20 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Holds Material Design 3 typography system tokens.
+///
+/// @param displayLarge the display large text style
+/// @param headlineMedium the headline medium text style
+/// @param titleLarge the title large text style
+/// @param labelLarge the label large text style
+/// @param bodyLarge the body large text style
+/// @param bodyMedium the body medium text style
 @NotNullByDefault
 public record M3TypographyTokens(
-        /// The display large text style.
         M3TextStyle displayLarge,
-
-        /// The headline medium text style.
         M3TextStyle headlineMedium,
-
-        /// The title large text style.
         M3TextStyle titleLarge,
-
-        /// The label large text style.
         M3TextStyle labelLarge,
-
-        /// The body large text style.
         M3TextStyle bodyLarge,
-
-        /// The body medium text style.
         M3TextStyle bodyMedium
 ) {
     /// Creates typography tokens.

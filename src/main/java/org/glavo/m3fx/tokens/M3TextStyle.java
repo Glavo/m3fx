@@ -5,18 +5,16 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Defines a typography style token.
+///
+/// @param fontFamily the JavaFX font family name
+/// @param size the font size in pixels
+/// @param lineHeight the line height in pixels
+/// @param weight the numeric font weight
 @NotNullByDefault
 public record M3TextStyle(
-        /// The JavaFX font family name.
         String fontFamily,
-
-        /// The font size in pixels.
         double size,
-
-        /// The line height in pixels.
         double lineHeight,
-
-        /// The numeric font weight.
         int weight
 ) {
     /// Creates a typography style token.

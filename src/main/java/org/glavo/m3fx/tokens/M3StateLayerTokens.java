@@ -3,24 +3,20 @@ package org.glavo.m3fx.tokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 state layer opacity tokens.
+///
+/// @param hoverOpacity the hover state layer opacity
+/// @param focusOpacity the focus state layer opacity
+/// @param pressedOpacity the pressed state layer opacity
+/// @param draggedOpacity the dragged state layer opacity
+/// @param disabledContainerOpacity the disabled container opacity
+/// @param disabledContentOpacity the disabled content opacity
 @NotNullByDefault
 public record M3StateLayerTokens(
-        /// The hover state layer opacity.
         double hoverOpacity,
-
-        /// The focus state layer opacity.
         double focusOpacity,
-
-        /// The pressed state layer opacity.
         double pressedOpacity,
-
-        /// The dragged state layer opacity.
         double draggedOpacity,
-
-        /// The disabled container opacity.
         double disabledContainerOpacity,
-
-        /// The disabled content opacity.
         double disabledContentOpacity
 ) {
     /// Creates state layer tokens.

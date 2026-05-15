@@ -3,24 +3,20 @@ package org.glavo.m3fx.tokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 shape system tokens.
+///
+/// @param extraSmall the extra-small corner radius
+/// @param small the small corner radius
+/// @param medium the medium corner radius
+/// @param large the large corner radius
+/// @param extraLarge the extra-large corner radius
+/// @param full the full corner radius used for pills
 @NotNullByDefault
 public record M3ShapeTokens(
-        /// The extra-small corner radius.
         double extraSmall,
-
-        /// The small corner radius.
         double small,
-
-        /// The medium corner radius.
         double medium,
-
-        /// The large corner radius.
         double large,
-
-        /// The extra-large corner radius.
         double extraLarge,
-
-        /// The full corner radius used for pills.
         double full
 ) {
     /// Creates shape tokens.

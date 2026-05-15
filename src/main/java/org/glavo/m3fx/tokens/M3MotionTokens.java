@@ -3,15 +3,14 @@ package org.glavo.m3fx.tokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 motion duration tokens in milliseconds.
+///
+/// @param shortDuration the short duration token
+/// @param mediumDuration the medium duration token
+/// @param longDuration the long duration token
 @NotNullByDefault
 public record M3MotionTokens(
-        /// The short duration token.
         int shortDuration,
-
-        /// The medium duration token.
         int mediumDuration,
-
-        /// The long duration token.
         int longDuration
 ) {
     /// Creates motion tokens.

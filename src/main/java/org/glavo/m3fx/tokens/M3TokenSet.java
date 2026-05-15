@@ -6,30 +6,24 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Aggregates all Material Design 3 tokens used by a theme.
+///
+/// @param profile the profile that produced this token set
+/// @param colorTokens the color tokens
+/// @param typographyTokens the typography tokens
+/// @param shapeTokens the shape tokens
+/// @param elevationTokens the elevation tokens
+/// @param motionTokens the motion tokens
+/// @param stateLayerTokens the state layer tokens
+/// @param componentTokens the component tokens
 @NotNullByDefault
 public record M3TokenSet(
-        /// The profile that produced this token set.
         M3Profile profile,
-
-        /// The color tokens.
         M3ColorTokens colorTokens,
-
-        /// The typography tokens.
         M3TypographyTokens typographyTokens,
-
-        /// The shape tokens.
         M3ShapeTokens shapeTokens,
-
-        /// The elevation tokens.
         M3ElevationTokens elevationTokens,
-
-        /// The motion tokens.
         M3MotionTokens motionTokens,
-
-        /// The state layer tokens.
         M3StateLayerTokens stateLayerTokens,
-
-        /// The component tokens.
         M3ComponentTokens componentTokens
 ) {
     /// Creates a token set.

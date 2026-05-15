@@ -10,9 +10,10 @@ import java.util.List;
 import java.util.Objects;
 
 /// Wraps MonetFX color scheme output as m3fx color tokens.
+///
+/// @param colorScheme the MonetFX color scheme used by this token set
 @NotNullByDefault
 public record M3ColorTokens(
-        /// The MonetFX color scheme used by this token set.
         ColorScheme colorScheme
 ) {
     /// The default CSS prefix used for Monet color roles.

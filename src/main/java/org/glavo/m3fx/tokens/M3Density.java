@@ -3,9 +3,10 @@ package org.glavo.m3fx.tokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Describes the density scale applied to layout-sensitive component tokens.
+///
+/// @param scale the density scale where zero is the baseline Material density
 @NotNullByDefault
 public record M3Density(
-        /// The density scale where zero is the baseline Material density.
         double scale
 ) {
     /// Creates a density value after validating its supported range.

@@ -11,18 +11,16 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Describes a complete m3fx theme.
+///
+/// @param profile the Material Design 3 token profile
+/// @param colorScheme the MonetFX color scheme
+/// @param density the density applied to layout-sensitive component tokens
+/// @param tokens the complete token set for this theme
 @NotNullByDefault
 public record M3Theme(
-        /// The Material Design 3 token profile.
         M3Profile profile,
-
-        /// The MonetFX color scheme.
         ColorScheme colorScheme,
-
-        /// The density applied to layout-sensitive component tokens.
         M3Density density,
-
-        /// The complete token set for this theme.
         M3TokenSet tokens
 ) {
     /// The default seed color used by m3fx.
