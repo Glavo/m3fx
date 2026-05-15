@@ -87,3 +87,10 @@
     -fx-font-size: 13px;
     -fx-text-fill: -m3-color-on-surface-variant;
 }
+
+.demo-list {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 0 8px 0;
+    -fx-max-width: 520px;
+}

@@ -10,6 +10,7 @@ import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
+import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -58,9 +59,11 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-content-padding"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-divider-thickness"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
         assertTrue(theme.toControlStyleRules().contains(".m3-badge"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.92"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
@@ -68,6 +71,7 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().chip());
         assertNotNull(theme.tokens().componentTokens().divider());
         assertNotNull(theme.tokens().componentTokens().badge());
+        assertNotNull(theme.tokens().componentTokens().listItem());
     }
 
     /// Verifies that the expressive profile creates a complete token set.
@@ -90,6 +94,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-shape: 32px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 8px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height: 64px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
@@ -97,6 +102,7 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().chip());
         assertNotNull(theme.tokens().componentTokens().divider());
         assertNotNull(theme.tokens().componentTokens().badge());
+        assertNotNull(theme.tokens().componentTokens().listItem());
     }
 
     /// Verifies that installing a theme on a scene is idempotent.
@@ -172,6 +178,31 @@ final class M3ThemeTest {
         assertEquals(18.0, badge.getLargeHeight(), 0.0001);
         assertEquals(18.0, badge.getLargeMinWidth(), 0.0001);
         assertEquals(9.0, badge.getContainerShape(), 0.0001);
+    }
+
+    /// Verifies that generated component stylesheets apply list item tokens.
+    @Test
+    void generatedComponentStylesheetAppliesListItemTokens() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        Pane root = new Pane(listItem);
+        Scene scene = new Scene(root);
+
+        M3Theme expressiveTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT,
+                M3Density.standard()
+        );
+        M3ThemeManager.install(scene, expressiveTheme);
+        root.applyCss();
+
+        assertEquals(64.0, listItem.getOneLineHeight(), 0.0001);
+        assertEquals(80.0, listItem.getTwoLineHeight(), 0.0001);
+        assertEquals(96.0, listItem.getThreeLineHeight(), 0.0001);
+        assertEquals(10.0, listItem.getContainerShape(), 0.0001);
+        assertEquals(16.0, listItem.getHorizontalPadding(), 0.0001);
+        assertEquals(8.0, listItem.getVerticalPadding(), 0.0001);
+        assertEquals(16.0, listItem.getContentSpacing(), 0.0001);
     }
 
     /// Verifies that generated component stylesheets apply container tokens.

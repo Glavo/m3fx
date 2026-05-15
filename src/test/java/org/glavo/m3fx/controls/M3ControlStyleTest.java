@@ -12,6 +12,7 @@ import javafx.scene.input.MouseEvent;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
+import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -315,6 +316,52 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3BadgeSkin.class, badge.getSkin());
     }
 
+    /// Verifies that list item component token properties are styleable from CSS.
+    @Test
+    void listItemTokensAreStyleable() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        listItem.setSupportingText("Supporting");
+        listItem.setStyle(
+                "-m3-one-line-height: 60px; "
+                        + "-m3-two-line-height: 76px; "
+                        + "-m3-three-line-height: 92px; "
+                        + "-m3-container-shape: 12px; "
+                        + "-m3-horizontal-padding: 20px; "
+                        + "-m3-vertical-padding: 10px; "
+                        + "-m3-content-spacing: 18px;"
+        );
+
+        applyCss(listItem);
+
+        assertEquals(60.0, listItem.getOneLineHeight(), 0.0001);
+        assertEquals(76.0, listItem.getTwoLineHeight(), 0.0001);
+        assertEquals(92.0, listItem.getThreeLineHeight(), 0.0001);
+        assertEquals(12.0, listItem.getContainerShape(), 0.0001);
+        assertEquals(20.0, listItem.getHorizontalPadding(), 0.0001);
+        assertEquals(10.0, listItem.getVerticalPadding(), 0.0001);
+        assertEquals(18.0, listItem.getContentSpacing(), 0.0001);
+        assertInstanceOf(M3ListItemSkin.class, listItem.getSkin());
+    }
+
+    /// Verifies that list items expose selected state and action behavior.
+    @Test
+    void listItemSupportsSelectionAndAction() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        AtomicInteger fireCount = new AtomicInteger();
+        listItem.setOnAction(event -> fireCount.incrementAndGet());
+        listItem.setSelected(true);
+
+        applyCss(listItem);
+
+        assertTrue(listItem.isSelected());
+        listItem.fire();
+        assertEquals(1, fireCount.get());
+        listItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 10.0, 10.0, false));
+        assertEquals(2, fireCount.get());
+        listItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+        assertEquals(3, fireCount.get());
+    }
+
     /// Verifies style classes for container controls.
     @Test
     void containerControlsExposeStyleClasses() {
@@ -347,6 +394,7 @@ final class M3ControlStyleTest {
         assertTrue(chip.getStyleClass().contains(M3ChipVariant.FILTER.getStyleClass()));
         assertTrue(new M3Divider().getStyleClass().contains(M3Divider.STYLE_CLASS));
         assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
+        assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));
     }
 
     /// Applies the m3fx stylesheet to a control in a scene.

@@ -22,6 +22,7 @@ import java.util.Objects;
 /// @param snackbar tokens used by snackbar controls
 /// @param divider tokens used by dividers
 /// @param badge tokens used by badges
+/// @param listItem tokens used by list items
 @NotNullByDefault
 public record M3ComponentTokens(
         ButtonTokens filledButton,
@@ -39,7 +40,8 @@ public record M3ComponentTokens(
         DialogTokens dialog,
         SnackbarTokens snackbar,
         DividerTokens divider,
-        BadgeTokens badge
+        BadgeTokens badge,
+        ListItemTokens listItem
 ) {
     /// Creates component tokens.
     public M3ComponentTokens {
@@ -59,6 +61,7 @@ public record M3ComponentTokens(
         Objects.requireNonNull(snackbar, "snackbar");
         Objects.requireNonNull(divider, "divider");
         Objects.requireNonNull(badge, "badge");
+        Objects.requireNonNull(listItem, "listItem");
     }
 
     /// Creates component tokens for a profile.
@@ -73,6 +76,9 @@ public record M3ComponentTokens(
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
+        double listItemOneLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
+        double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
 
         return new M3ComponentTokens(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
@@ -90,7 +96,16 @@ public record M3ComponentTokens(
                 new DialogTokens(shapeTokens.extraLarge(), 24.0),
                 new SnackbarTokens(shapeTokens.extraSmall(), 16.0),
                 new DividerTokens(1.0, 0.0, 0.0),
-                new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeHeight, badgeLargeHeight / 2.0, 4.0)
+                new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeHeight, badgeLargeHeight / 2.0, 4.0),
+                new ListItemTokens(
+                        listItemOneLineHeight,
+                        listItemTwoLineHeight,
+                        listItemThreeLineHeight,
+                        profile == M3Profile.EXPRESSIVE_2025 ? shapeTokens.small() : 0.0,
+                        16.0,
+                        8.0,
+                        16.0
+                )
         );
     }
 
@@ -113,6 +128,7 @@ public record M3ComponentTokens(
         append(builder, snackbar);
         append(builder, divider);
         append(builder, badge);
+        append(builder, listItem);
         return builder.toString().trim();
     }
 
@@ -144,6 +160,7 @@ public record M3ComponentTokens(
         appendSnackbarRule(builder, ".m3-snackbar", snackbar);
         appendDividerRule(builder, ".m3-divider", divider);
         appendBadgeRule(builder, ".m3-badge", badge);
+        appendListItemRule(builder, ".m3-list-item", listItem);
         return builder.toString().stripTrailing();
     }
 
@@ -222,6 +239,17 @@ public record M3ComponentTokens(
         M3TokenCss.append(builder, "-m3-badge-large-min-width", M3TokenCss.pixels(tokens.largeMinWidth()));
         M3TokenCss.append(builder, "-m3-badge-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-badge-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+    }
+
+    /// Appends list item token declarations.
+    private static void append(StringBuilder builder, ListItemTokens tokens) {
+        M3TokenCss.append(builder, "-m3-list-item-one-line-height", M3TokenCss.pixels(tokens.oneLineHeight()));
+        M3TokenCss.append(builder, "-m3-list-item-two-line-height", M3TokenCss.pixels(tokens.twoLineHeight()));
+        M3TokenCss.append(builder, "-m3-list-item-three-line-height", M3TokenCss.pixels(tokens.threeLineHeight()));
+        M3TokenCss.append(builder, "-m3-list-item-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-list-item-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-list-item-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
+        M3TokenCss.append(builder, "-m3-list-item-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
     }
 
     /// Appends a button token CSS rule.
@@ -389,6 +417,19 @@ public record M3ComponentTokens(
         appendDeclaration(builder, "-m3-large-min-width", M3TokenCss.pixels(tokens.largeMinWidth()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a list item token CSS rule.
+    private static void appendListItemRule(StringBuilder builder, String selector, ListItemTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.oneLineHeight()));
+        appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.twoLineHeight()));
+        appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.threeLineHeight()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         endRule(builder);
     }
 
@@ -613,6 +654,37 @@ public record M3ComponentTokens(
             validateNonNegative(largeMinWidth, "largeMinWidth");
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+        }
+    }
+
+    /// Tokens used by list items.
+    ///
+    /// @param oneLineHeight the preferred one-line item height
+    /// @param twoLineHeight the preferred two-line item height
+    /// @param threeLineHeight the preferred three-line item height
+    /// @param containerShape the list item container radius
+    /// @param horizontalPadding the horizontal content padding
+    /// @param verticalPadding the vertical content padding
+    /// @param contentSpacing the spacing between content regions
+    @NotNullByDefault
+    public record ListItemTokens(
+            double oneLineHeight,
+            double twoLineHeight,
+            double threeLineHeight,
+            double containerShape,
+            double horizontalPadding,
+            double verticalPadding,
+            double contentSpacing
+    ) {
+        /// Creates list item tokens.
+        public ListItemTokens {
+            validateNonNegative(oneLineHeight, "oneLineHeight");
+            validateNonNegative(twoLineHeight, "twoLineHeight");
+            validateNonNegative(threeLineHeight, "threeLineHeight");
+            validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(verticalPadding, "verticalPadding");
+            validateNonNegative(contentSpacing, "contentSpacing");
         }
     }
 

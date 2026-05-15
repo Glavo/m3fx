@@ -33,6 +33,7 @@ import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
@@ -171,6 +172,7 @@ public final class M3FXDemoApp extends Application {
                 createInputSection(),
                 createSelectionSection(),
                 createUtilitySection(),
+                createListSection(),
                 createProgressSection(),
                 createContainmentSection()
         );
@@ -278,6 +280,37 @@ public final class M3FXDemoApp extends Application {
         FlowPane controls = createFlow();
         controls.getChildren().addAll(dotBadge, countBadge, overflowBadge, fullDivider, insetDivider, verticalDivider);
         return createSection("Utility", controls);
+    }
+
+    /// Creates the list item showcase section.
+    private Node createListSection() {
+        M3ListItem oneLineItem = new M3ListItem("One-line list item");
+        oneLineItem.setLeading(new M3Badge());
+
+        M3ListItem twoLineItem = new M3ListItem("Two-line list item");
+        twoLineItem.setSupportingText("Supporting text describes the item.");
+        twoLineItem.setTrailing(new M3Badge("3"));
+
+        M3ListItem threeLineItem = new M3ListItem("Three-line list item");
+        threeLineItem.setOverlineText("Overline");
+        threeLineItem.setSupportingText("Supporting text can span a denser row while keeping token-driven height.");
+
+        M3ListItem selectedItem = new M3ListItem("Selected list item");
+        selectedItem.setSupportingText("Selected state uses the active theme colors.");
+        selectedItem.setSelected(true);
+
+        VBox list = new VBox();
+        list.getStyleClass().add("demo-list");
+        list.getChildren().addAll(
+                oneLineItem,
+                new M3Divider(),
+                twoLineItem,
+                new M3Divider(),
+                threeLineItem,
+                new M3Divider(),
+                selectedItem
+        );
+        return createSection("List items", list);
     }
 
     /// Creates the progress showcase section.
