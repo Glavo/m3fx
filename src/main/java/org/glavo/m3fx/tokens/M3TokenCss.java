@@ -18,4 +18,14 @@ final class M3TokenCss {
         }
         return String.format(Locale.ROOT, "%.3f", value).replaceAll("0+$", "").replaceAll("\\.$", "");
     }
+
+    /// Formats a decimal number as a pixel value.
+    static String pixels(double value) {
+        return format(value) + "px";
+    }
+
+    /// Appends a CSS declaration to a string builder.
+    static void append(StringBuilder builder, String name, String value) {
+        builder.append(name).append(": ").append(value).append("; ");
+    }
 }

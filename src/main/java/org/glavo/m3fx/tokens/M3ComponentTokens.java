@@ -75,6 +75,68 @@ public record M3ComponentTokens(
         );
     }
 
+    /// Converts component tokens into inline JavaFX CSS declarations.
+    public String toStyleDeclarations() {
+        StringBuilder builder = new StringBuilder();
+        append(builder, "button-filled", filledButton);
+        append(builder, "button-tonal", tonalButton);
+        append(builder, "button-outlined", outlinedButton);
+        append(builder, "button-text", textButton);
+        append(builder, "button-elevated", elevatedButton);
+        append(builder, "button-icon", iconButton);
+        append(builder, field);
+        append(builder, selection);
+        append(builder, progress);
+        append(builder, card);
+        append(builder, dialog);
+        append(builder, snackbar);
+        return builder.toString().trim();
+    }
+
+    /// Appends button token declarations.
+    private static void append(StringBuilder builder, String prefix, ButtonTokens tokens) {
+        M3TokenCss.append(builder, "-m3-" + prefix + "-container-height", M3TokenCss.pixels(tokens.height()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+    }
+
+    /// Appends field token declarations.
+    private static void append(StringBuilder builder, FieldTokens tokens) {
+        M3TokenCss.append(builder, "-m3-field-container-height", M3TokenCss.pixels(tokens.height()));
+        M3TokenCss.append(builder, "-m3-field-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-field-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+    }
+
+    /// Appends selection token declarations.
+    private static void append(StringBuilder builder, SelectionTokens tokens) {
+        M3TokenCss.append(builder, "-m3-selection-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
+        M3TokenCss.append(builder, "-m3-selection-track-shape", M3TokenCss.pixels(tokens.trackShape()));
+    }
+
+    /// Appends progress token declarations.
+    private static void append(StringBuilder builder, ProgressTokens tokens) {
+        M3TokenCss.append(builder, "-m3-progress-thickness", M3TokenCss.pixels(tokens.thickness()));
+        M3TokenCss.append(builder, "-m3-progress-shape", M3TokenCss.pixels(tokens.shape()));
+    }
+
+    /// Appends card token declarations.
+    private static void append(StringBuilder builder, CardTokens tokens) {
+        M3TokenCss.append(builder, "-m3-card-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-card-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
+    }
+
+    /// Appends dialog token declarations.
+    private static void append(StringBuilder builder, DialogTokens tokens) {
+        M3TokenCss.append(builder, "-m3-dialog-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-dialog-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+    }
+
+    /// Appends snackbar token declarations.
+    private static void append(StringBuilder builder, SnackbarTokens tokens) {
+        M3TokenCss.append(builder, "-m3-snackbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-snackbar-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+    }
+
     /// Tokens shared by button variants.
     ///
     /// @param height the preferred button height

@@ -4,6 +4,8 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.Skin;
+import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,6 +60,12 @@ public class M3Button extends Button {
     /// Returns the button variant property.
     public final ObjectProperty<M3ButtonVariant> variantProperty() {
         return variant;
+    }
+
+    /// Creates the default animated Material Design 3 button skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3ButtonSkin(this);
     }
 
     /// Adds base style classes and applies the default variant.

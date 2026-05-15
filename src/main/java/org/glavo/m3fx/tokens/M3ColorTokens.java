@@ -19,6 +19,9 @@ public record M3ColorTokens(
     /// The default CSS prefix used for Monet color roles.
     public static final String DEFAULT_CSS_PREFIX = "-monet";
 
+    /// The m3fx CSS prefix used for Material color roles.
+    public static final String M3_CSS_PREFIX = "-m3-color";
+
     /// Creates color tokens.
     public M3ColorTokens {
         Objects.requireNonNull(colorScheme, "colorScheme");
@@ -43,10 +46,9 @@ public record M3ColorTokens(
     public String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
         for (ColorRole role : roles()) {
-            builder.append(role.getVariableName(DEFAULT_CSS_PREFIX))
-                    .append(": ")
-                    .append(toRgb(get(role)))
-                    .append("; ");
+            String color = toRgb(get(role));
+            M3TokenCss.append(builder, role.getVariableName(DEFAULT_CSS_PREFIX), color);
+            M3TokenCss.append(builder, role.getVariableName(M3_CSS_PREFIX), color);
         }
         return builder.toString().trim();
     }

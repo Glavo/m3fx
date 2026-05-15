@@ -20,6 +20,7 @@ final class M3ColorTokensTest {
 
         assertEquals(colorScheme.getColor(ColorRole.PRIMARY), tokens.get(ColorRole.PRIMARY));
         assertTrue(tokens.toStyleDeclarations().contains("-monet-primary"));
+        assertTrue(tokens.toStyleDeclarations().contains("-m3-color-primary"));
         assertTrue(tokens.toStyleSheet("m3-root").contains(".m3-root"));
     }
 }

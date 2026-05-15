@@ -34,6 +34,18 @@ public record M3ElevationTokens(
         return new M3ElevationTokens(0.0, 1.0, 3.0, 6.0, 8.0, 12.0);
     }
 
+    /// Converts elevation tokens into inline JavaFX CSS declarations.
+    public String toStyleDeclarations() {
+        StringBuilder builder = new StringBuilder();
+        M3TokenCss.append(builder, "-m3-elevation-level0", M3TokenCss.pixels(level0));
+        M3TokenCss.append(builder, "-m3-elevation-level1", M3TokenCss.pixels(level1));
+        M3TokenCss.append(builder, "-m3-elevation-level2", M3TokenCss.pixels(level2));
+        M3TokenCss.append(builder, "-m3-elevation-level3", M3TokenCss.pixels(level3));
+        M3TokenCss.append(builder, "-m3-elevation-level4", M3TokenCss.pixels(level4));
+        M3TokenCss.append(builder, "-m3-elevation-level5", M3TokenCss.pixels(level5));
+        return builder.toString().trim();
+    }
+
     /// Validates an elevation token.
     private static void validate(double value, String name) {
         if (value < 0.0) {

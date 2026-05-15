@@ -42,6 +42,9 @@ final class M3ThemeTest {
         assertEquals(M3Profile.BASELINE_2021, theme.profile());
         assertSame(theme.colorScheme(), theme.tokens().colorTokens().colorScheme());
         assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-label-large-font-size"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
     }
 
@@ -58,6 +61,8 @@ final class M3ThemeTest {
         assertEquals(M3Profile.EXPRESSIVE_2025, theme.profile());
         assertSame(theme.colorScheme(), theme.tokens().colorTokens().colorScheme());
         assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
     }
 
@@ -73,7 +78,7 @@ final class M3ThemeTest {
 
         assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
         assertSame(theme, root.getProperties().get(M3ThemeManager.THEME_PROPERTY_KEY));
-        assertTrue(root.getStyle().contains("-monet-primary"));
+        assertTrue(root.getStyle().contains("-m3-color-primary"));
         assertEquals(1, scene.getStylesheets().size());
         assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
     }

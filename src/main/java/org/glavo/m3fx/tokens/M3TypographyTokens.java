@@ -54,4 +54,24 @@ public record M3TypographyTokens(
                 new M3TextStyle("System", 15.0, 22.0, 400)
         );
     }
+
+    /// Converts typography tokens into inline JavaFX CSS declarations.
+    public String toStyleDeclarations() {
+        StringBuilder builder = new StringBuilder();
+        append(builder, "display-large", displayLarge);
+        append(builder, "headline-medium", headlineMedium);
+        append(builder, "title-large", titleLarge);
+        append(builder, "label-large", labelLarge);
+        append(builder, "body-large", bodyLarge);
+        append(builder, "body-medium", bodyMedium);
+        return builder.toString().trim();
+    }
+
+    /// Appends declarations for a typography token.
+    private static void append(StringBuilder builder, String name, M3TextStyle style) {
+        M3TokenCss.append(builder, "-m3-typescale-" + name + "-font-family", "\"" + style.fontFamily() + "\"");
+        M3TokenCss.append(builder, "-m3-typescale-" + name + "-font-size", M3TokenCss.pixels(style.size()));
+        M3TokenCss.append(builder, "-m3-typescale-" + name + "-line-height", M3TokenCss.pixels(style.lineHeight()));
+        M3TokenCss.append(builder, "-m3-typescale-" + name + "-font-weight", Integer.toString(style.weight()));
+    }
 }

@@ -1,11 +1,11 @@
 .demo-root {
-    -fx-background-color: -monet-surface;
+    -fx-background-color: -m3-color-surface;
 }
 
 .demo-header {
     -fx-padding: 20px 28px 18px 28px;
-    -fx-background-color: -monet-surface-container;
-    -fx-border-color: transparent transparent -monet-outline-variant transparent;
+    -fx-background-color: -m3-color-surface-container;
+    -fx-border-color: transparent transparent -m3-color-outline-variant transparent;
     -fx-border-width: 0 0 1px 0;
 }
 
@@ -16,12 +16,12 @@
 .demo-title {
     -fx-font-size: 30px;
     -fx-font-weight: 600;
-    -fx-text-fill: -monet-on-surface;
+    -fx-text-fill: -m3-color-on-surface;
 }
 
 .demo-subtitle {
     -fx-font-size: 14px;
-    -fx-text-fill: -monet-on-surface-variant;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .demo-seed-buttons {
@@ -33,7 +33,7 @@
     -fx-min-height: 32px;
     -fx-pref-width: 32px;
     -fx-pref-height: 32px;
-    -fx-border-color: -monet-outline-variant;
+    -fx-border-color: -m3-color-outline-variant;
     -fx-border-radius: 999px;
     -fx-border-width: 1px;
 }
@@ -58,19 +58,19 @@
 .demo-section-title {
     -fx-font-size: 22px;
     -fx-font-weight: 500;
-    -fx-text-fill: -monet-on-surface;
+    -fx-text-fill: -m3-color-on-surface;
 }
 
 .demo-flow {
     -fx-padding: 18px;
-    -fx-background-color: -monet-surface-container-low;
+    -fx-background-color: -m3-color-surface-container-low;
     -fx-background-radius: 16px;
 }
 
 .demo-icon-label {
     -fx-font-size: 16px;
     -fx-font-weight: 700;
-    -fx-text-fill: -monet-primary;
+    -fx-text-fill: -m3-color-primary;
 }
 
 .demo-card-content {
@@ -80,10 +80,10 @@
 .demo-card-title {
     -fx-font-size: 16px;
     -fx-font-weight: 600;
-    -fx-text-fill: -monet-on-surface;
+    -fx-text-fill: -m3-color-on-surface;
 }
 
 .demo-card-body {
     -fx-font-size: 13px;
-    -fx-text-fill: -monet-on-surface-variant;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }

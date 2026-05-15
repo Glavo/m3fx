@@ -39,6 +39,18 @@ public record M3ShapeTokens(
         return new M3ShapeTokens(6.0, 10.0, 16.0, 24.0, 32.0, 999.0);
     }
 
+    /// Converts shape tokens into inline JavaFX CSS declarations.
+    public String toStyleDeclarations() {
+        StringBuilder builder = new StringBuilder();
+        M3TokenCss.append(builder, "-m3-shape-corner-extra-small", M3TokenCss.pixels(extraSmall));
+        M3TokenCss.append(builder, "-m3-shape-corner-small", M3TokenCss.pixels(small));
+        M3TokenCss.append(builder, "-m3-shape-corner-medium", M3TokenCss.pixels(medium));
+        M3TokenCss.append(builder, "-m3-shape-corner-large", M3TokenCss.pixels(large));
+        M3TokenCss.append(builder, "-m3-shape-corner-extra-large", M3TokenCss.pixels(extraLarge));
+        M3TokenCss.append(builder, "-m3-shape-corner-full", M3TokenCss.pixels(full));
+        return builder.toString().trim();
+    }
+
     /// Validates a radius token.
     private static void validate(double value, String name) {
         if (value < 0.0) {

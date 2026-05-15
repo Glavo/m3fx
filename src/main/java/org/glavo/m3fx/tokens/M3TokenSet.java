@@ -72,6 +72,16 @@ public record M3TokenSet(
     public String toRootStyleDeclarations() {
         return colorTokens.toStyleDeclarations()
                 + " "
-                + stateLayerTokens.toStyleDeclarations();
+                + typographyTokens.toStyleDeclarations()
+                + " "
+                + shapeTokens.toStyleDeclarations()
+                + " "
+                + elevationTokens.toStyleDeclarations()
+                + " "
+                + motionTokens.toStyleDeclarations()
+                + " "
+                + stateLayerTokens.toStyleDeclarations()
+                + " "
+                + componentTokens.toStyleDeclarations();
     }
 }

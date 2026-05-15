@@ -25,6 +25,15 @@ public record M3MotionTokens(
         return new M3MotionTokens(100, 250, 500);
     }
 
+    /// Converts motion tokens into inline JavaFX CSS declarations.
+    public String toStyleDeclarations() {
+        StringBuilder builder = new StringBuilder();
+        M3TokenCss.append(builder, "-m3-motion-duration-short", shortDuration + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-medium", mediumDuration + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-long", longDuration + "ms");
+        return builder.toString().trim();
+    }
+
     /// Validates a duration token.
     private static void validate(int value, String name) {
         if (value < 0) {
