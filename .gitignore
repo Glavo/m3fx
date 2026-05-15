@@ -1,9 +1,13 @@
 .gradle
+/.gradle-*/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 .kotlin
+/external/
+.codex
+/teavm-local.properties
 
 ### IntelliJ IDEA ###
 .idea/
