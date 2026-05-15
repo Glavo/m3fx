@@ -1,0 +1,256 @@
+.m3-root {
+    -fx-font-family: "System";
+    -fx-background-color: -monet-surface;
+    -fx-text-fill: -monet-on-surface;
+}
+
+.m3-button {
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-padding: 0 24px 0 24px;
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+}
+
+.m3-filled-button {
+    -fx-background-color: -monet-primary;
+    -fx-text-fill: -monet-on-primary;
+}
+
+.m3-tonal-button {
+    -fx-background-color: -monet-secondary-container;
+    -fx-text-fill: -monet-on-secondary-container;
+}
+
+.m3-outlined-button {
+    -fx-background-color: transparent;
+    -fx-border-color: -monet-outline;
+    -fx-border-width: 1px;
+    -fx-text-fill: -monet-primary;
+}
+
+.m3-text-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 12px 0 12px;
+    -fx-text-fill: -monet-primary;
+}
+
+.m3-elevated-button {
+    -fx-background-color: -monet-surface-container-low;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 1);
+    -fx-text-fill: -monet-primary;
+}
+
+.m3-icon-button {
+    -fx-min-width: 40px;
+    -fx-pref-width: 40px;
+    -fx-padding: 0;
+}
+
+.m3-button:hover,
+.m3-chip:hover,
+.m3-icon-button:hover {
+    -fx-opacity: 0.92;
+}
+
+.m3-button:pressed,
+.m3-chip:pressed,
+.m3-icon-button:pressed {
+    -fx-opacity: 0.86;
+}
+
+.m3-button:disabled,
+.m3-chip:disabled,
+.m3-text-field:disabled,
+.m3-password-field:disabled {
+    -fx-opacity: 0.38;
+}
+
+.m3-text-field,
+.m3-password-field {
+    -fx-min-height: 56px;
+    -fx-pref-height: 56px;
+    -fx-padding: 8px 16px 8px 16px;
+    -fx-font-size: 16px;
+    -fx-text-fill: -monet-on-surface;
+    -fx-prompt-text-fill: -monet-on-surface-variant;
+    -fx-highlight-fill: -monet-primary;
+    -fx-highlight-text-fill: -monet-on-primary;
+}
+
+.m3-filled-field {
+    -fx-background-color: -monet-surface-container-highest;
+    -fx-background-radius: 4px 4px 0 0;
+    -fx-border-color: transparent transparent -monet-on-surface-variant transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.m3-filled-field:focused {
+    -fx-border-color: transparent transparent -monet-primary transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
+.m3-outlined-field {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-color: -monet-outline;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+}
+
+.m3-outlined-field:focused {
+    -fx-border-color: -monet-primary;
+    -fx-border-width: 2px;
+}
+
+.m3-checkbox,
+.m3-radio-button,
+.m3-switch {
+    -fx-text-fill: -monet-on-surface;
+    -fx-font-size: 14px;
+}
+
+.m3-checkbox:selected .box,
+.m3-radio-button:selected .radio {
+    -fx-background-color: -monet-primary;
+    -fx-border-color: -monet-primary;
+}
+
+.m3-checkbox .box,
+.m3-radio-button .radio {
+    -fx-background-color: transparent;
+    -fx-border-color: -monet-on-surface-variant;
+}
+
+.m3-switch .box {
+    -fx-background-color: -monet-surface-container-highest;
+    -fx-background-radius: 999px;
+    -fx-border-color: -monet-outline;
+    -fx-border-radius: 999px;
+}
+
+.m3-switch:selected .box {
+    -fx-background-color: -monet-primary;
+    -fx-border-color: -monet-primary;
+}
+
+.m3-slider .track {
+    -fx-background-color: -monet-surface-container-highest;
+    -fx-background-radius: 999px;
+    -fx-pref-height: 4px;
+}
+
+.m3-slider .thumb {
+    -fx-background-color: -monet-primary;
+    -fx-background-radius: 999px;
+}
+
+.m3-chip {
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 0 16px 0 16px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+}
+
+.m3-assist-chip,
+.m3-suggestion-chip,
+.m3-input-chip {
+    -fx-background-color: transparent;
+    -fx-border-color: -monet-outline;
+    -fx-border-width: 1px;
+    -fx-text-fill: -monet-on-surface;
+}
+
+.m3-filter-chip {
+    -fx-background-color: transparent;
+    -fx-border-color: -monet-outline;
+    -fx-border-width: 1px;
+    -fx-text-fill: -monet-on-surface;
+}
+
+.m3-filter-chip:selected {
+    -fx-background-color: -monet-secondary-container;
+    -fx-border-color: -monet-secondary-container;
+    -fx-text-fill: -monet-on-secondary-container;
+}
+
+.m3-progress-bar {
+    -fx-accent: -monet-primary;
+}
+
+.m3-progress-bar .track {
+    -fx-background-color: -monet-secondary-container;
+    -fx-background-radius: 999px;
+}
+
+.m3-progress-bar .bar {
+    -fx-background-color: -monet-primary;
+    -fx-background-radius: 999px;
+}
+
+.m3-progress-indicator {
+    -fx-progress-color: -monet-primary;
+}
+
+.m3-card {
+    -fx-background-color: transparent;
+}
+
+.m3-card-container {
+    -fx-padding: 16px;
+    -fx-background-radius: 12px;
+}
+
+.m3-filled-card .m3-card-container {
+    -fx-background-color: -monet-surface-container-highest;
+}
+
+.m3-elevated-card .m3-card-container {
+    -fx-background-color: -monet-surface-container-low;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.16, 0, 2);
+}
+
+.m3-outlined-card .m3-card-container {
+    -fx-background-color: -monet-surface;
+    -fx-border-color: -monet-outline-variant;
+    -fx-border-radius: 12px;
+    -fx-border-width: 1px;
+}
+
+.m3-dialog-pane {
+    -fx-background-color: -monet-surface-container-high;
+    -fx-background-radius: 28px;
+    -fx-padding: 24px;
+}
+
+.m3-dialog-pane .content {
+    -fx-text-fill: -monet-on-surface-variant;
+}
+
+.m3-snackbar {
+    -fx-background-color: transparent;
+}
+
+.m3-snackbar-container {
+    -fx-alignment: center-left;
+    -fx-spacing: 16px;
+    -fx-padding: 8px 8px 8px 16px;
+    -fx-background-color: -monet-inverse-surface;
+    -fx-background-radius: 4px;
+}
+
+.m3-snackbar-text {
+    -fx-text-fill: -monet-inverse-on-surface;
+    -fx-font-size: 14px;
+}
+
+.m3-snackbar-action {
+    -fx-text-fill: -monet-inverse-primary;
+}
