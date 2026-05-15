@@ -2,6 +2,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
@@ -35,10 +36,13 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         actionButton.textProperty().bind(control.actionTextProperty());
         actionButton.setOnAction(this::fireAction);
         control.actionTextProperty().addListener((observable, oldValue, newValue) -> updateActionVisibility(newValue));
+        control.containerShapeProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
+        control.contentPaddingProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
 
         container.getChildren().addAll(textLabel, actionButton);
         getChildren().add(container);
         updateActionVisibility(control.getActionText());
+        updateTokenStyles();
     }
 
     /// Fires the snackbar action handler if one is present.
@@ -54,5 +58,22 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         boolean visible = actionText != null && !actionText.isBlank();
         actionButton.setVisible(visible);
         actionButton.setManaged(visible);
+    }
+
+    /// Applies styleable component tokens to the snackbar container.
+    private void updateTokenStyles() {
+        M3Snackbar snackbar = getSkinnable();
+        double padding = snackbar.getContentPadding();
+        container.setPadding(new Insets(padding / 2.0, padding / 2.0, padding / 2.0, padding));
+        String shape = formatPixels(snackbar.getContainerShape());
+        container.setStyle("-fx-background-radius: " + shape + ";");
+    }
+
+    /// Formats a CSS pixel value.
+    private static String formatPixels(double value) {
+        if (Math.rint(value) == value) {
+            return Long.toString((long) value) + "px";
+        }
+        return Double.toString(value) + "px";
     }
 }

@@ -5,9 +5,9 @@
 }
 
 .m3-button {
-    -fx-min-height: 40px;
-    -fx-pref-height: 40px;
-    -fx-padding: 0 24px 0 24px;
+    -m3-container-height: 40px;
+    -m3-container-shape: 999px;
+    -m3-horizontal-padding: 24px;
     -fx-background-radius: 999px;
     -fx-border-radius: 999px;
     -fx-font-size: 14px;
@@ -33,8 +33,8 @@
 }
 
 .m3-text-button {
+    -m3-horizontal-padding: 12px;
     -fx-background-color: transparent;
-    -fx-padding: 0 12px 0 12px;
     -fx-text-fill: -m3-color-primary;
 }
 
@@ -45,9 +45,10 @@
 }
 
 .m3-icon-button {
+    -m3-container-height: 40px;
+    -m3-horizontal-padding: 0px;
     -fx-min-width: 40px;
     -fx-pref-width: 40px;
-    -fx-padding: 0;
 }
 
 .m3-button:hover,
@@ -200,6 +201,9 @@
 }
 
 .m3-card {
+    -m3-container-shape: 12px;
+    -m3-content-padding: 16px;
+    -m3-outline-width: 1px;
     -fx-background-color: transparent;
 }
 
@@ -235,6 +239,8 @@
 }
 
 .m3-snackbar {
+    -m3-container-shape: 4px;
+    -m3-content-padding: 16px;
     -fx-background-color: transparent;
 }
 

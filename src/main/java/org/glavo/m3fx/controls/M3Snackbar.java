@@ -4,6 +4,11 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Control;
@@ -12,6 +17,9 @@ import org.glavo.m3fx.skins.M3SnackbarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 snackbar.
@@ -19,6 +27,12 @@ import java.util.Objects;
 public class M3Snackbar extends Control {
     /// The base style class for m3fx snackbars.
     public static final String STYLE_CLASS = "m3-snackbar";
+
+    /// The default snackbar container shape radius.
+    private static final double DEFAULT_CONTAINER_SHAPE = 4.0;
+
+    /// The default snackbar content padding.
+    private static final double DEFAULT_CONTENT_PADDING = 16.0;
 
     /// The snackbar message text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
@@ -28,6 +42,12 @@ public class M3Snackbar extends Control {
 
     /// The action event handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction = new SimpleObjectProperty<>(this, "onAction");
+
+    /// The styleable container shape token.
+    private StyleableDoubleProperty containerShape;
+
+    /// The styleable content padding token.
+    private StyleableDoubleProperty contentPadding;
 
     /// Creates an empty snackbar.
     public M3Snackbar() {
@@ -85,9 +105,150 @@ public class M3Snackbar extends Control {
         return onAction;
     }
 
+    /// Returns the snackbar container shape radius token.
+    public final double getContainerShape() {
+        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
+    }
+
+    /// Sets the snackbar container shape radius token.
+    public final void setContainerShape(double containerShape) {
+        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
+    }
+
+    /// Returns the snackbar container shape radius token property.
+    public final StyleableDoubleProperty containerShapeProperty() {
+        if (containerShape == null) {
+            containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
+                /// Validates updated shape tokens.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "containerShape");
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Snackbar.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "containerShape";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3Snackbar, Number> getCssMetaData() {
+                    return StyleableProperties.CONTAINER_SHAPE;
+                }
+            };
+        }
+        return containerShape;
+    }
+
+    /// Returns the snackbar content padding token.
+    public final double getContentPadding() {
+        return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
+    }
+
+    /// Sets the snackbar content padding token.
+    public final void setContentPadding(double contentPadding) {
+        contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
+    }
+
+    /// Returns the snackbar content padding token property.
+    public final StyleableDoubleProperty contentPaddingProperty() {
+        if (contentPadding == null) {
+            contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
+                /// Validates updated padding tokens.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "contentPadding");
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Snackbar.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "contentPadding";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3Snackbar, Number> getCssMetaData() {
+                    return StyleableProperties.CONTENT_PADDING;
+                }
+            };
+        }
+        return contentPadding;
+    }
+
     /// Creates the default snackbar skin.
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SnackbarSkin(this);
+    }
+
+    /// Returns the CSS metadata for this control class.
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
+    /// CSS metadata for m3fx snackbar component tokens.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the container shape token.
+        private static final CssMetaData<M3Snackbar, Number> CONTAINER_SHAPE =
+                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Snackbar control) {
+                        return M3Css.isSettable(control.containerShapeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
+                        return control.containerShapeProperty();
+                    }
+                };
+
+        /// CSS metadata for the content padding token.
+        private static final CssMetaData<M3Snackbar, Number> CONTENT_PADDING =
+                new CssMetaData<>("-m3-content-padding", SizeConverter.getInstance(), DEFAULT_CONTENT_PADDING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Snackbar control) {
+                        return M3Css.isSettable(control.contentPaddingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
+                        return control.contentPaddingProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(CONTAINER_SHAPE);
+            styleables.add(CONTENT_PADDING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
+        }
     }
 }
