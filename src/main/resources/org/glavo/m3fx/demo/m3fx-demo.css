@@ -1,0 +1,89 @@
+.demo-root {
+    -fx-background-color: -monet-surface;
+}
+
+.demo-header {
+    -fx-padding: 20px 28px 18px 28px;
+    -fx-background-color: -monet-surface-container;
+    -fx-border-color: transparent transparent -monet-outline-variant transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.demo-title-box {
+    -fx-alignment: center-left;
+}
+
+.demo-title {
+    -fx-font-size: 30px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -monet-on-surface;
+}
+
+.demo-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: -monet-on-surface-variant;
+}
+
+.demo-seed-buttons {
+    -fx-alignment: center;
+}
+
+.demo-seed-button {
+    -fx-min-width: 32px;
+    -fx-min-height: 32px;
+    -fx-pref-width: 32px;
+    -fx-pref-height: 32px;
+    -fx-border-color: -monet-outline-variant;
+    -fx-border-radius: 999px;
+    -fx-border-width: 1px;
+}
+
+.demo-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.demo-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.demo-content {
+    -fx-padding: 28px;
+}
+
+.demo-section {
+    -fx-padding: 0;
+}
+
+.demo-section-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -monet-on-surface;
+}
+
+.demo-flow {
+    -fx-padding: 18px;
+    -fx-background-color: -monet-surface-container-low;
+    -fx-background-radius: 16px;
+}
+
+.demo-icon-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -monet-primary;
+}
+
+.demo-card-content {
+    -fx-min-height: 92px;
+}
+
+.demo-card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -monet-on-surface;
+}
+
+.demo-card-body {
+    -fx-font-size: 13px;
+    -fx-text-fill: -monet-on-surface-variant;
+}
