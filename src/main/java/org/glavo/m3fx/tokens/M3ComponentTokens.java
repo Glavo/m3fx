@@ -50,6 +50,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by search components.
     SearchTokens search();
 
+    /// Returns tokens used by sheet containers.
+    SheetTokens sheet();
+
     /// Returns tokens used by selection controls.
     SelectionTokens selection();
 
@@ -110,6 +113,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             TextAreaTokens textArea,
             MenuTokens menu,
             SearchTokens search,
+            SheetTokens sheet,
             SelectionTokens selection,
             SliderTokens slider,
             ChipTokens chip,
@@ -140,6 +144,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 textArea,
                 menu,
                 search,
+                sheet,
                 selection,
                 slider,
                 chip,
@@ -177,6 +182,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
         double searchBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double searchViewResultHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double sideSheetWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 384.0 : 360.0);
+        double bottomSheetHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 360.0 : 320.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
@@ -221,6 +228,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new TextAreaTokens(textAreaHeight, shapeTokens.extraSmall(), 16.0, 16.0),
                 new MenuTokens(shapeTokens.extraSmall(), 8.0, menuItemHeight, shapeTokens.extraSmall(), 12.0, 12.0),
                 new SearchTokens(searchBarHeight, shapeTokens.full(), 16.0, 12.0, 28.0, 8.0, searchViewResultHeight),
+                new SheetTokens(
+                        sideSheetWidth,
+                        shapeTokens.extraLarge(),
+                        bottomSheetHeight,
+                        shapeTokens.extraLarge(),
+                        24.0,
+                        24.0,
+                        32.0,
+                        4.0
+                ),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
                 new ChipTokens(chipHeight, shapeTokens.small(), 16.0),
@@ -293,6 +310,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, textArea());
         append(builder, menu());
         append(builder, search());
+        append(builder, sheet());
         append(builder, selection());
         append(builder, slider());
         append(builder, chip());
@@ -356,6 +374,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendSearchBarRule(builder, ".m3-search-bar.m3-search-bar", search());
         appendSearchViewRule(builder, ".m3-search-view.m3-search-view", search());
         appendSearchViewResultRule(builder, ".m3-search-view .m3-list-item.m3-list-item", search());
+        appendSideSheetRule(builder, ".m3-side-sheet.m3-side-sheet", sheet());
+        appendBottomSheetRule(builder, ".m3-bottom-sheet.m3-bottom-sheet", sheet());
+        appendSheetHeaderRule(builder, ".m3-side-sheet .m3-sheet-header, .m3-bottom-sheet .m3-sheet-header", sheet());
+        appendSheetContentRule(
+                builder,
+                ".m3-side-sheet .m3-sheet-content, .m3-bottom-sheet .m3-sheet-content",
+                sheet()
+        );
+        appendBottomSheetDragHandleRule(builder, ".m3-bottom-sheet .m3-bottom-sheet-drag-handle", sheet());
         appendSelectionRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch", selection());
         appendSwitchRule(builder, ".m3-switch", selection());
         appendSwitchBoxRule(builder, ".m3-switch .box", selection());
@@ -455,6 +482,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-search-view-container-shape", M3TokenCss.pixels(tokens.viewContainerShape()));
         M3TokenCss.append(builder, "-m3-search-view-result-padding", M3TokenCss.pixels(tokens.viewResultPadding()));
         M3TokenCss.append(builder, "-m3-search-view-result-height", M3TokenCss.pixels(tokens.resultHeight()));
+    }
+
+    /// Appends sheet token declarations.
+    private static void append(StringBuilder builder, SheetTokens tokens) {
+        M3TokenCss.append(builder, "-m3-sheet-side-container-width", M3TokenCss.pixels(tokens.sideContainerWidth()));
+        M3TokenCss.append(builder, "-m3-sheet-side-container-shape", M3TokenCss.pixels(tokens.sideContainerShape()));
+        M3TokenCss.append(builder, "-m3-sheet-bottom-container-height", M3TokenCss.pixels(tokens.bottomContainerHeight()));
+        M3TokenCss.append(builder, "-m3-sheet-bottom-container-shape", M3TokenCss.pixels(tokens.bottomContainerShape()));
+        M3TokenCss.append(builder, "-m3-sheet-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        M3TokenCss.append(builder, "-m3-sheet-header-padding", M3TokenCss.pixels(tokens.headerPadding()));
+        M3TokenCss.append(builder, "-m3-sheet-drag-handle-width", M3TokenCss.pixels(tokens.dragHandleWidth()));
+        M3TokenCss.append(builder, "-m3-sheet-drag-handle-height", M3TokenCss.pixels(tokens.dragHandleHeight()));
     }
 
     /// Appends selection token declarations.
@@ -790,6 +829,55 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.barContainerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.barHorizontalPadding()));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.barContentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a side sheet token CSS rule.
+    private static void appendSideSheetRule(StringBuilder builder, String selector, SheetTokens tokens) {
+        String radius = M3TokenCss.pixels(tokens.sideContainerShape());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.sideContainerWidth()));
+        appendDeclaration(builder, "-fx-background-radius", radius + " 0 0 " + radius);
+        endRule(builder);
+    }
+
+    /// Appends a bottom sheet token CSS rule.
+    private static void appendBottomSheetRule(StringBuilder builder, String selector, SheetTokens tokens) {
+        String radius = M3TokenCss.pixels(tokens.bottomContainerShape());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.bottomContainerHeight()));
+        appendDeclaration(builder, "-fx-background-radius", radius + " " + radius + " 0 0");
+        endRule(builder);
+    }
+
+    /// Appends a sheet header token CSS rule.
+    private static void appendSheetHeaderRule(StringBuilder builder, String selector, SheetTokens tokens) {
+        String padding = M3TokenCss.pixels(tokens.headerPadding());
+        String bottomPadding = M3TokenCss.pixels(tokens.headerPadding() / 3.0);
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-padding", padding + " " + padding + " " + bottomPadding + " " + padding);
+        endRule(builder);
+    }
+
+    /// Appends a sheet content token CSS rule.
+    private static void appendSheetContentRule(StringBuilder builder, String selector, SheetTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a bottom sheet drag handle token CSS rule.
+    private static void appendBottomSheetDragHandleRule(StringBuilder builder, String selector, SheetTokens tokens) {
+        String handleWidth = M3TokenCss.pixels(tokens.dragHandleWidth());
+        String handleHeight = M3TokenCss.pixels(tokens.dragHandleHeight());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-width", handleWidth);
+        appendDeclaration(builder, "-fx-pref-width", handleWidth);
+        appendDeclaration(builder, "-fx-max-width", handleWidth);
+        appendDeclaration(builder, "-fx-min-height", handleHeight);
+        appendDeclaration(builder, "-fx-pref-height", handleHeight);
+        appendDeclaration(builder, "-fx-max-height", handleHeight);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.dragHandleHeight() / 2.0));
         endRule(builder);
     }
 
@@ -1262,6 +1350,40 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(viewContainerShape, "viewContainerShape");
             validateNonNegative(viewResultPadding, "viewResultPadding");
             validateNonNegative(resultHeight, "resultHeight");
+        }
+    }
+
+    /// Component tokens for sheet containers.
+    ///
+    /// @param sideContainerWidth the side sheet container width
+    /// @param sideContainerShape the side sheet leading corner radius
+    /// @param bottomContainerHeight the bottom sheet container height
+    /// @param bottomContainerShape the bottom sheet top corner radius
+    /// @param contentPadding the sheet content padding
+    /// @param headerPadding the sheet header edge padding
+    /// @param dragHandleWidth the bottom sheet drag handle width
+    /// @param dragHandleHeight the bottom sheet drag handle height
+    @NotNullByDefault
+    public record SheetTokens(
+            double sideContainerWidth,
+            double sideContainerShape,
+            double bottomContainerHeight,
+            double bottomContainerShape,
+            double contentPadding,
+            double headerPadding,
+            double dragHandleWidth,
+            double dragHandleHeight
+    ) {
+        /// Validates sheet tokens.
+        public SheetTokens {
+            validateNonNegative(sideContainerWidth, "sideContainerWidth");
+            validateNonNegative(sideContainerShape, "sideContainerShape");
+            validateNonNegative(bottomContainerHeight, "bottomContainerHeight");
+            validateNonNegative(bottomContainerShape, "bottomContainerShape");
+            validateNonNegative(contentPadding, "contentPadding");
+            validateNonNegative(headerPadding, "headerPadding");
+            validateNonNegative(dragHandleWidth, "dragHandleWidth");
+            validateNonNegative(dragHandleHeight, "dragHandleHeight");
         }
     }
 

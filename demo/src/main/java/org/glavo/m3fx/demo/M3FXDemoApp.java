@@ -30,6 +30,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3BottomAppBar;
+import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
@@ -59,6 +60,8 @@ import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
+import org.glavo.m3fx.controls.M3SheetVariant;
+import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3Switch;
@@ -222,6 +225,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Badges", "Dot, count, overflow, and attached badges", this::createBadgesPage),
                 new DemoPage("Dividers", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
                 new DemoPage("Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
+                new DemoPage("Sheets", "Side and bottom containment surfaces", this::createSheetsPage),
                 new DemoPage("Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
                 new DemoPage("Snackbars", "Snackbar host with action and stacked messages", this::createSnackbarsPage),
                 new DemoPage("Tooltips", "Plain and longer contextual help", this::createTooltipsPage)
@@ -669,6 +673,29 @@ public final class M3FXDemoApp extends Application {
         return createGallery(createShowcaseGroup("Cards", filled, outlined, elevated));
     }
 
+    /// Creates the sheet component page.
+    private Node createSheetsPage() {
+        M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent());
+        sideSheet.getActions().add(createIconButton("X"));
+
+        M3SideSheet modalSideSheet = new M3SideSheet("Filters", createSheetContent());
+        modalSideSheet.setVariant(M3SheetVariant.MODAL);
+        modalSideSheet.getActions().add(createIconButton("X"));
+
+        M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent());
+        bottomSheet.getActions().add(createIconButton("X"));
+        bottomSheet.setPrefWidth(520.0);
+
+        M3BottomSheet compactBottomSheet = new M3BottomSheet("Compact", createSheetContent());
+        compactBottomSheet.setDragHandleVisible(false);
+        compactBottomSheet.setPrefWidth(520.0);
+
+        return createGallery(
+                createShowcaseGroup("Side Sheets", sideSheet, modalSideSheet),
+                createShowcaseGroup("Bottom Sheets", bottomSheet, compactBottomSheet)
+        );
+    }
+
     /// Creates the dialog component page.
     private Node createDialogsPage() {
         M3Button dialogButton = createButton("Open dialog", M3ButtonVariant.FILLED);
@@ -996,6 +1023,22 @@ public final class M3FXDemoApp extends Application {
         card.setVariant(variant);
         card.setPrefWidth(260.0);
         return card;
+    }
+
+    /// Creates sample sheet content.
+    private static VBox createSheetContent() {
+        M3ListItem first = new M3ListItem("Overview");
+        first.setSupportingText("Primary sheet content");
+        first.setLeading(createNavigationIcon("O"));
+        M3ListItem second = new M3ListItem("Activity");
+        second.setSupportingText("Recent updates and state");
+        second.setLeading(createNavigationIcon("A"));
+        M3ListItem third = new M3ListItem("Settings");
+        third.setLeading(createNavigationIcon("S"));
+
+        VBox content = new VBox(first, second, third);
+        content.getStyleClass().add("demo-sheet-content");
+        return content;
     }
 
     /// Plays the determinate progress showcase animation.

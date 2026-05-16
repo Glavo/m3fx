@@ -34,7 +34,7 @@
   - Buttons: filled, tonal, outlined, text, elevated, icon button, and floating action button.
   - Inputs: filled and outlined text field, plus password field.
   - Selection: checkbox, radio button, switch, slider, chips, segmented buttons, and segmented button groups.
-  - Navigation, feedback, utility, and containment: tabs, top app bar, bottom app bar, navigation bar, navigation rail, navigation drawer, navigation item, linear progress, circular progress, divider, badge, list item, card, dialog, snackbar, and snackbar host.
+  - Navigation, feedback, utility, and containment: tabs, top app bar, bottom app bar, navigation bar, navigation rail, navigation drawer, navigation item, linear progress, circular progress, divider, badge, list item, card, side sheet, bottom sheet, dialog, snackbar, and snackbar host.
 - Implement controls with JavaFX `Control`, `Skin`, `CssMetaData`, and pseudo-class support.
 - Give each control a control-specific `getUserAgentStylesheet()` so default styles are loaded with the control.
 
@@ -68,4 +68,4 @@
 - The first release prioritizes baseline Material Design 3 visuals.
 - M3 Expressive support starts with token and profile compatibility, not full visual parity for every component.
 - SASS is not introduced in the first implementation pass.
-  - Pickers, bottom sheet, carousel, data table, and other full MD3 components are out of scope for the first pass.
+  - Pickers, carousel, data table, and other full MD3 components are out of scope for the first pass.

@@ -833,6 +833,59 @@ final class M3ControlStyleTest {
         assertEquals(result, searchView.getResults().get(0));
     }
 
+    /// Verifies that sheet controls own content, actions, and variants.
+    @Test
+    void sheetControlsOwnContentActionsAndVariants() {
+        Label sideContent = new Label("Side content");
+        M3SideSheet sideSheet = new M3SideSheet("Details", sideContent);
+        M3IconButton closeAction = new M3IconButton();
+        sideSheet.getActions().add(closeAction);
+        sideSheet.setVariant(M3SheetVariant.MODAL);
+
+        Label bottomContent = new Label("Bottom content");
+        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent);
+        bottomSheet.setDragHandleVisible(false);
+
+        assertEquals("Details", sideSheet.getHeadline());
+        assertEquals(sideContent, sideSheet.getContent());
+        assertEquals(closeAction, sideSheet.getActions().get(0));
+        assertEquals(M3SheetVariant.MODAL, sideSheet.getVariant());
+        assertTrue(sideSheet.getStyleClass().contains(M3SheetVariant.MODAL.getStyleClass()));
+        assertEquals("Queue", bottomSheet.getHeadline());
+        assertEquals(bottomContent, bottomSheet.getContent());
+        assertFalse(bottomSheet.isDragHandleVisible());
+    }
+
+    /// Verifies that sheet component token metrics apply through the active theme.
+    @Test
+    void sheetComponentsApplyTokenMetrics() {
+        M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Content"));
+        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Content"));
+        Pane root = new Pane(sideSheet, bottomSheet);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);
+        assertEquals(320.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(
+                24.0,
+                lookupRegion(sideSheet, "." + M3SideSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(
+                24.0,
+                lookupRegion(bottomSheet, "." + M3BottomSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(
+                32.0,
+                lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefWidth(),
+                0.0001
+        );
+    }
+
     /// Verifies that focused text input states keep Material field colors.
     @Test
     void textInputStateStylesPreserveVariantColors() {
@@ -2304,6 +2357,8 @@ final class M3ControlStyleTest {
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
         M3TopAppBar topAppBar = new M3TopAppBar();
         M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        M3SideSheet sideSheet = new M3SideSheet();
+        M3BottomSheet bottomSheet = new M3BottomSheet();
         M3NavigationBar navigationBar = new M3NavigationBar();
         M3NavigationRail navigationRail = new M3NavigationRail();
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
@@ -2314,6 +2369,8 @@ final class M3ControlStyleTest {
         assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBar.STYLE_CLASS));
         assertTrue(bottomAppBar.getStyleClass().contains(M3BottomAppBar.STYLE_CLASS));
+        assertTrue(sideSheet.getStyleClass().contains(M3SideSheet.STYLE_CLASS));
+        assertTrue(bottomSheet.getStyleClass().contains(M3BottomSheet.STYLE_CLASS));
         assertTrue(navigationBar.getStyleClass().contains(M3NavigationBar.STYLE_CLASS));
         assertTrue(navigationRail.getStyleClass().contains(M3NavigationRail.STYLE_CLASS));
         assertTrue(navigationDrawer.getStyleClass().contains(M3NavigationDrawer.STYLE_CLASS));
@@ -2374,6 +2431,8 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Menu(), "/styles/controls/menu.css");
         assertUserAgentStylesheet(new M3SearchBar(), "/styles/controls/search.css");
         assertUserAgentStylesheet(new M3SearchView(), "/styles/controls/search.css");
+        assertUserAgentStylesheet(new M3SideSheet(), "/styles/controls/sheet.css");
+        assertUserAgentStylesheet(new M3BottomSheet(), "/styles/controls/sheet.css");
         assertUserAgentStylesheet(new M3CheckBox(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3RadioButton(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3Switch(), "/styles/controls/selection.css");
