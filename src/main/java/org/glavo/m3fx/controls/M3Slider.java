@@ -8,8 +8,10 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.scene.control.Skin;
 import javafx.scene.control.Slider;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3SliderSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -237,6 +239,12 @@ public class M3Slider extends Slider {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Creates the default Material Design 3 slider skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3SliderSkin(this);
     }
 
     /// Returns the user-agent stylesheet for m3fx sliders.

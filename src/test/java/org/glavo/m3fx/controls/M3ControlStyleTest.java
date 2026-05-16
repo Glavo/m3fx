@@ -7,17 +7,20 @@ import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.geometry.Orientation;
+import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.layout.Pane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.Pane;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
+import org.glavo.m3fx.skins.M3SliderSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -571,6 +574,67 @@ final class M3ControlStyleTest {
         assertEquals(0.9, slider.getOpacity(), 0.0001);
         assertEquals(0.9, listItem.getOpacity(), 0.0001);
         assertEquals(0.38, card.getOpacity(), 0.0001);
+    }
+
+    /// Verifies that m3fx sliders create the Material Design 3 slider skin.
+    @Test
+    void sliderCreatesMaterialSkin() {
+        M3Slider slider = new M3Slider();
+
+        applyCss(slider);
+
+        assertInstanceOf(M3SliderSkin.class, slider.getSkin());
+    }
+
+    /// Verifies that slider track layout remains bounded by the slider control.
+    @Test
+    void sliderTrackStaysInsideControlBoundsInFlowLayout() {
+        M3CheckBox checkBox = new M3CheckBox("Checkbox");
+        M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
+        slider.setPrefWidth(220.0);
+        M3SegmentedButtonGroup segmentedButtons = new M3SegmentedButtonGroup(
+                new M3SegmentedButton("Day"),
+                new M3SegmentedButton("Week"),
+                new M3SegmentedButton("Month")
+        );
+        FlowPane flow = new FlowPane(16.0, 16.0);
+        flow.getChildren().addAll(checkBox, slider, segmentedButtons);
+        Scene scene = new Scene(flow, 900.0, 160.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        flow.resize(900.0, 160.0);
+        flow.applyCss();
+        flow.layout();
+
+        Node track = slider.lookup(".track");
+        assertInstanceOf(Node.class, track);
+        assertTrue(slider.getWidth() <= 220.0 + 0.0001);
+        assertTrue(track.getBoundsInParent().getMinX() >= -0.0001);
+        assertTrue(track.getBoundsInParent().getMaxX() <= slider.getWidth() + 0.0001);
+    }
+
+    /// Verifies that the slider skin updates values from pointer and keyboard input.
+    @Test
+    void sliderSkinHandlesPointerAndKeyboardInput() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 240.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+
+        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
+        assertTrue(slider.getValue() > 95.0);
+        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 24.0, false));
+        assertTrue(slider.getValue() < 5.0);
+
+        slider.setValue(50.0);
+        slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertTrue(slider.getValue() > 50.0);
+        slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+        assertEquals(50.0, slider.getValue(), 0.0001);
     }
 
     /// Verifies style classes for container controls.
