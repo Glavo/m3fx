@@ -3,9 +3,14 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
-import javafx.geometry.Insets;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3Card;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -17,6 +22,15 @@ public class M3CardSkin extends SkinBase<M3Card> {
     /// The container that hosts the card content.
     private final StackPane container = new StackPane();
 
+    /// The bounded state layer for card feedback.
+    private final M3StateLayer stateLayer = new M3StateLayer();
+
+    /// Handles primary mouse presses on the card surface.
+    private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
+
+    /// Handles keyboard activation feedback.
+    private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
+
     /// Creates a card skin.
     public M3CardSkin(M3Card control) {
         super(control);
@@ -24,18 +38,36 @@ public class M3CardSkin extends SkinBase<M3Card> {
         getChildren().add(container);
         updateContent(control.getContent());
         updateTokenStyles();
+        installInteractionHandlers(control);
         control.contentProperty().addListener((observable, oldValue, newValue) -> updateContent(newValue));
         control.containerShapeProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
         control.contentPaddingProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
         control.outlineWidthProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
     }
 
+    /// Removes interaction handlers before the skin is disposed.
+    @Override
+    public void dispose() {
+        M3Card card = getSkinnable();
+        stateLayer.reset();
+        card.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        card.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        super.dispose();
+    }
+
+    /// Lays out the card surface and bounded state layer.
+    @Override
+    protected void layoutChildren(double x, double y, double width, double height) {
+        container.resizeRelocate(x, y, width, height);
+        stateLayer.layoutLayer(0.0, 0.0, width, height, getSkinnable().getContainerShape());
+    }
+
     /// Updates the content hosted by this skin.
     private void updateContent(@Nullable Node content) {
         if (content == null) {
-            container.getChildren().clear();
+            container.getChildren().setAll(stateLayer);
         } else {
-            container.getChildren().setAll(content);
+            container.getChildren().setAll(stateLayer, content);
         }
     }
 
@@ -56,5 +88,33 @@ public class M3CardSkin extends SkinBase<M3Card> {
             return Long.toString((long) value) + "px";
         }
         return Double.toString(value) + "px";
+    }
+
+    /// Installs feedback handlers for pointer and keyboard interactions.
+    private void installInteractionHandlers(M3Card card) {
+        card.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        card.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+    }
+
+    /// Plays card feedback for primary pointer presses on the card surface.
+    private void handleMousePressed(MouseEvent event) {
+        if (getSkinnable().isDisabled() || event.getButton() != MouseButton.PRIMARY || !isCardSurfaceEvent(event)) {
+            return;
+        }
+        stateLayer.playRipple(event.getX(), event.getY());
+    }
+
+    /// Plays card feedback for enter and space keyboard presses.
+    private void handleKeyPressed(KeyEvent event) {
+        KeyCode code = event.getCode();
+        if ((code == KeyCode.ENTER || code == KeyCode.SPACE) && !getSkinnable().isDisabled()) {
+            stateLayer.playCenteredRipple();
+        }
+    }
+
+    /// Returns whether the event originated from the card surface instead of hosted content.
+    private boolean isCardSurfaceEvent(MouseEvent event) {
+        Object target = event.getTarget();
+        return target == getSkinnable() || target == container;
     }
 }

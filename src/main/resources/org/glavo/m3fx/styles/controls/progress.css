@@ -35,6 +35,22 @@
     -fx-accent: -m3-color-primary;
 }
 
+.m3-progress-indicator.m3-progress-indicator .track,
+.m3-progress-indicator.m3-progress-indicator:focused .track,
+.m3-progress-indicator.m3-progress-indicator:indeterminate .track {
+    -fx-fill: transparent;
+    -fx-stroke: -m3-color-secondary-container;
+    -fx-stroke-width: 4px;
+}
+
+.m3-progress-indicator.m3-progress-indicator .indicator,
+.m3-progress-indicator.m3-progress-indicator:focused .indicator,
+.m3-progress-indicator.m3-progress-indicator:indeterminate .indicator {
+    -fx-fill: transparent;
+    -fx-stroke: -m3-color-primary;
+    -fx-stroke-width: 4px;
+}
+
 .m3-progress-bar:disabled,
 .m3-progress-indicator:disabled {
     -fx-opacity: 0.38;

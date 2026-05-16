@@ -77,7 +77,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-icon-button:hover .m3-state-layer, .m3-fab:hover .m3-state-layer, "
                 + ".m3-segmented-button:hover .m3-state-layer, .m3-checkbox:hover .m3-state-layer, "
                 + ".m3-radio-button:hover .m3-state-layer, .m3-switch:hover .m3-state-layer, "
-                + ".m3-slider:hover .m3-state-layer, .m3-list-item:hover .m3-state-layer";
+                + ".m3-slider:hover .m3-state-layer, .m3-list-item:hover .m3-state-layer, "
+                + ".m3-card:hover .m3-state-layer";
     }
 
     /// Returns selectors for controls that expose focus state layer feedback.
@@ -86,7 +87,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-icon-button:focused .m3-state-layer, .m3-fab:focused .m3-state-layer, "
                 + ".m3-segmented-button:focused .m3-state-layer, .m3-checkbox:focused .m3-state-layer, "
                 + ".m3-radio-button:focused .m3-state-layer, .m3-switch:focused .m3-state-layer, "
-                + ".m3-slider:focused .m3-state-layer, .m3-list-item:focused .m3-state-layer";
+                + ".m3-slider:focused .m3-state-layer, .m3-list-item:focused .m3-state-layer, "
+                + ".m3-card:focused .m3-state-layer";
     }
 
     /// Returns selectors for controls that expose pressed state layer feedback.
@@ -95,7 +97,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-icon-button:pressed .m3-state-layer, .m3-fab:pressed .m3-state-layer, "
                 + ".m3-segmented-button:pressed .m3-state-layer, .m3-checkbox:pressed .m3-state-layer, "
                 + ".m3-radio-button:pressed .m3-state-layer, .m3-switch:pressed .m3-state-layer, "
-                + ".m3-slider:pressed .m3-state-layer, .m3-list-item:pressed .m3-state-layer";
+                + ".m3-slider:pressed .m3-state-layer, .m3-list-item:pressed .m3-state-layer, "
+                + ".m3-card:pressed .m3-state-layer";
     }
 
     /// Returns selectors for controls that expose disabled content opacity.

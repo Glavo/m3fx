@@ -10,6 +10,11 @@
     -fx-background-radius: 12px;
 }
 
+.m3-card .m3-state-layer,
+.m3-card .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
+}
+
 .m3-filled-card .m3-card-container {
     -fx-background-color: -m3-color-surface-container-highest;
 }

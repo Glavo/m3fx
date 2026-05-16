@@ -19,13 +19,18 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.shape.Arc;
+import javafx.scene.shape.Shape;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
+import org.glavo.m3fx.skins.M3CardSkin;
 import org.glavo.m3fx.skins.M3CheckBoxSkin;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
+import org.glavo.m3fx.skins.M3ProgressBarSkin;
+import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
@@ -311,6 +316,34 @@ final class M3ControlStyleTest {
         assertEquals(18.0, card.getContainerShape(), 0.0001);
         assertEquals(20.0, card.getContentPadding(), 0.0001);
         assertEquals(2.0, card.getOutlineWidth(), 0.0001);
+    }
+
+    /// Verifies that m3fx cards create the Material Design 3 skin.
+    @Test
+    void cardCreatesMaterialSkin() {
+        M3Card card = new M3Card();
+
+        applyCss(card);
+
+        assertInstanceOf(M3CardSkin.class, card.getSkin());
+    }
+
+    /// Verifies that card skins expose bounded surface ripple feedback.
+    @Test
+    void cardSkinPlaysBoundedRippleOnSurfacePress() {
+        M3Card card = new M3Card();
+        Pane root = new Pane(card);
+        Scene scene = new Scene(root, 220.0, 120.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        card.resize(180.0, 80.0);
+        card.layout();
+
+        assertInstanceOf(Region.class, card.lookup(".m3-state-layer"));
+        card.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 20.0, 20.0, true));
+
+        assertTrue(lookupRegion(card, ".m3-ripple").getOpacity() > 0.0);
     }
 
     /// Verifies that snackbar component token properties are styleable from CSS.
@@ -717,6 +750,38 @@ final class M3ControlStyleTest {
         assertEquals(72.0, progressIndicator.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that m3fx progress controls create Material Design 3 skins.
+    @Test
+    void progressControlsCreateMaterialSkins() {
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+
+        applyCss(progressBar);
+        applyCss(progressIndicator);
+
+        assertInstanceOf(M3ProgressBarSkin.class, progressBar.getSkin());
+        assertInstanceOf(M3ProgressIndicatorSkin.class, progressIndicator.getSkin());
+    }
+
+    /// Verifies that the progress bar skin lays out determinate progress without Modena internals.
+    @Test
+    void progressBarSkinLaysOutDeterminateProgress() {
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        Pane root = new Pane(progressBar);
+        Scene scene = new Scene(root, 240.0, 40.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        progressBar.resize(200.0, 16.0);
+        progressBar.layout();
+
+        Region track = lookupRegion(progressBar, ".track");
+        Region bar = lookupRegion(progressBar, ".bar");
+        assertEquals(200.0, track.getWidth(), 0.0001);
+        assertEquals(100.0, bar.getWidth(), 0.0001);
+        assertTrue(bar.getBoundsInParent().getMaxX() <= track.getBoundsInParent().getMaxX() + 0.0001);
+    }
+
     /// Verifies that progress bar subnodes keep Material colors.
     @Test
     void progressBarStateStylesPreserveMaterialColors() {
@@ -735,6 +800,27 @@ final class M3ControlStyleTest {
         assertNoBorder(track);
         assertRegionFill(bar, Color.rgb(1, 2, 3));
         assertNoBorder(bar);
+    }
+
+    /// Verifies that progress indicator subnodes keep Material colors and determinate geometry.
+    @Test
+    void progressIndicatorStateStylesPreserveMaterialColors() {
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.25);
+        Pane root = new Pane(progressIndicator);
+        Scene scene = new Scene(root, 80.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + buttonStateTestColors());
+        progressIndicator.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
+        root.applyCss();
+        progressIndicator.resize(48.0, 48.0);
+        progressIndicator.layout();
+
+        Shape track = lookupShape(progressIndicator, ".track");
+        Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
+        assertEquals(Color.rgb(7, 8, 9), track.getStroke());
+        assertEquals(Color.rgb(1, 2, 3), indicator.getStroke());
+        assertEquals(-90.0, indicator.getLength(), 0.0001);
     }
 
     /// Verifies that divider component token properties are styleable from CSS.
@@ -891,14 +977,16 @@ final class M3ControlStyleTest {
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
         M3ListItem listItem = new M3ListItem("Headline");
         M3Card card = new M3Card();
-        Pane root = new Pane(checkBox, slider, listItem, card);
+        M3Card disabledCard = new M3Card();
+        Pane root = new Pane(checkBox, slider, listItem, card, disabledCard);
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         checkBox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         slider.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         listItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
-        card.setDisable(true);
+        card.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        disabledCard.setDisable(true);
         root.applyCss();
 
         assertEquals(1.0, checkBox.getOpacity(), 0.0001);
@@ -907,7 +995,9 @@ final class M3ControlStyleTest {
         assertEquals(0.1, lookupRegion(slider, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, listItem.getOpacity(), 0.0001);
         assertEquals(0.1, lookupRegion(listItem, ".m3-state-layer").getOpacity(), 0.0001);
-        assertEquals(0.38, card.getOpacity(), 0.0001);
+        assertEquals(1.0, card.getOpacity(), 0.0001);
+        assertEquals(0.08, lookupRegion(card, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(0.38, disabledCard.getOpacity(), 0.0001);
     }
 
     /// Verifies that m3fx sliders create the Material Design 3 slider skin.
@@ -1097,6 +1187,13 @@ final class M3ControlStyleTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Region.class, child);
         return (Region) child;
+    }
+
+    /// Returns a shape looked up below a node.
+    private static Shape lookupShape(Node node, String selector) {
+        Node child = node.lookup(selector);
+        assertInstanceOf(Shape.class, child);
+        return (Shape) child;
     }
 
     /// Returns the radio indicator region.

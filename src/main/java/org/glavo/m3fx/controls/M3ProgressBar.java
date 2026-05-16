@@ -10,7 +10,9 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.scene.control.Control;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -140,6 +142,12 @@ public class M3ProgressBar extends ProgressBar {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Creates the default progress bar skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3ProgressBarSkin(this);
     }
 
     /// Returns the user-agent stylesheet for m3fx progress controls.
