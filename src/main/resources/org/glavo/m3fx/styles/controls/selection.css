@@ -10,16 +10,57 @@
     -m3-track-shape: 999px;
 }
 
-.m3-checkbox:selected .box,
-.m3-radio-button:selected .radio {
+.m3-checkbox:selected .box {
     -fx-background-color: -m3-color-primary;
     -fx-border-color: -m3-color-primary;
 }
 
-.m3-checkbox .box,
-.m3-radio-button .radio {
+.m3-checkbox .box {
     -fx-background-color: transparent;
     -fx-border-color: -m3-color-on-surface-variant;
+}
+
+.m3-radio-button .radio,
+.m3-radio-button:hover .radio,
+.m3-radio-button:focused .radio,
+.m3-radio-button:armed .radio,
+.m3-radio-button:pressed .radio {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-border-color: -m3-color-on-surface-variant;
+    -fx-border-insets: 0;
+    -fx-border-radius: 999px;
+    -fx-border-width: 2px;
+    -fx-padding: 4px;
+}
+
+.m3-radio-button:selected .radio,
+.m3-radio-button:selected:hover .radio,
+.m3-radio-button:selected:focused .radio,
+.m3-radio-button:selected:armed .radio,
+.m3-radio-button:selected:pressed .radio {
+    -fx-background-color: transparent;
+    -fx-border-color: -m3-color-primary;
+}
+
+.m3-radio-button .radio .dot,
+.m3-radio-button:hover .radio .dot,
+.m3-radio-button:focused .radio .dot,
+.m3-radio-button:armed .radio .dot,
+.m3-radio-button:pressed .radio .dot {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-padding: 5px;
+}
+
+.m3-radio-button:selected .radio .dot,
+.m3-radio-button:selected:hover .radio .dot,
+.m3-radio-button:selected:focused .radio .dot,
+.m3-radio-button:selected:armed .radio .dot,
+.m3-radio-button:selected:pressed .radio .dot {
+    -fx-background-color: -m3-color-primary;
 }
 
 .m3-switch .box {

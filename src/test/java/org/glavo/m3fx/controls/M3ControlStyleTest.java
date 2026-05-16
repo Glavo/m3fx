@@ -16,6 +16,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
@@ -446,6 +447,37 @@ final class M3ControlStyleTest {
         assertEquals(48.0, switchControl.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that radio indicators use circular Material styling.
+    @Test
+    void radioButtonIndicatorUsesCircularMaterialShape() {
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        Pane root = new Pane(radioButton);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle()
+                + " -m3-color-primary: rgb(1,2,3);"
+                + " -m3-color-on-surface-variant: rgb(4,5,6);");
+        applyInteractivePseudoClasses(radioButton);
+        root.applyCss();
+
+        Region radio = radioIndicator(radioButton);
+        Region dot = radioDot(radioButton);
+        assertRegionFill(radio, Color.TRANSPARENT);
+        assertBorderColor(radio, Color.rgb(4, 5, 6));
+        assertEquals(2.0, radio.getBorder().getStrokes().get(0).getWidths().getTop(), 0.0001);
+        assertTrue(radio.getBorder().getStrokes().get(0).getRadii().getTopLeftHorizontalRadius() > 20.0);
+        assertRegionFill(dot, Color.TRANSPARENT);
+
+        radioButton.setSelected(true);
+        root.applyCss();
+
+        assertRegionFill(radio, Color.TRANSPARENT);
+        assertBorderColor(radio, Color.rgb(1, 2, 3));
+        assertRegionFill(dot, Color.rgb(1, 2, 3));
+        assertTrue(dot.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius() > 20.0);
+    }
+
     /// Verifies that slider component token properties are styleable from CSS.
     @Test
     void sliderTokensAreStyleable() {
@@ -797,6 +829,32 @@ final class M3ControlStyleTest {
         assertEquals(1, control.getBackground().getFills().size());
         assertEquals(expectedBackground, control.getBackground().getFills().get(0).getFill());
         assertEquals(expectedText, control.getTextFill());
+    }
+
+    /// Returns the radio indicator region.
+    private static Region radioIndicator(M3RadioButton radioButton) {
+        Node radio = radioButton.lookup(".radio");
+        assertInstanceOf(Region.class, radio);
+        return (Region) radio;
+    }
+
+    /// Returns the radio indicator dot region.
+    private static Region radioDot(M3RadioButton radioButton) {
+        Node dot = radioButton.lookup(".dot");
+        assertInstanceOf(Region.class, dot);
+        return (Region) dot;
+    }
+
+    /// Verifies the first background fill for a region.
+    private static void assertRegionFill(Region region, Color expectedFill) {
+        assertEquals(1, region.getBackground().getFills().size());
+        assertEquals(expectedFill, region.getBackground().getFills().get(0).getFill());
+    }
+
+    /// Verifies the first border stroke color for a region.
+    private static void assertBorderColor(Region region, Color expectedColor) {
+        assertEquals(1, region.getBorder().getStrokes().size());
+        assertEquals(expectedColor, region.getBorder().getStrokes().get(0).getTopStroke());
     }
 
     /// Verifies a list item's line count property and pseudo-class state.
