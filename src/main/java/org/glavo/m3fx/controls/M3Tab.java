@@ -3,7 +3,10 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -13,7 +16,6 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
-import javafx.scene.control.ToggleButton;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TabSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -26,9 +28,12 @@ import java.util.Objects;
 
 /// A Material Design 3 tab.
 @NotNullByDefault
-public class M3Tab extends ToggleButton {
+public class M3Tab extends ButtonBase {
     /// The base style class for M3FX tabs.
     public static final String STYLE_CLASS = "m3-tab";
+
+    /// The selected pseudo-class used by tabs.
+    private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The default tab container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 48.0;
@@ -60,6 +65,15 @@ public class M3Tab extends ToggleButton {
     /// The styleable active indicator shape token.
     private StyleableDoubleProperty activeIndicatorShape;
 
+    /// The selected state property.
+    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
+        /// Updates selected pseudo-class state.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+        }
+    };
+
     /// Creates an empty tab.
     public M3Tab() {
         this("", null);
@@ -74,6 +88,21 @@ public class M3Tab extends ToggleButton {
     public M3Tab(String text, @Nullable Node graphic) {
         super(Objects.requireNonNull(text, "text"), graphic);
         initialize();
+    }
+
+    /// Returns whether this tab is selected.
+    public final boolean isSelected() {
+        return selected.get();
+    }
+
+    /// Sets whether this tab is selected.
+    public final void setSelected(boolean selected) {
+        this.selected.set(selected);
+    }
+
+    /// Returns the selected state property.
+    public final BooleanProperty selectedProperty() {
+        return selected;
     }
 
     /// Returns the tab container height token.
@@ -202,14 +231,13 @@ public class M3Tab extends ToggleButton {
         return getClassCssMetaData();
     }
 
-    /// Fires this tab without deselecting it when it already owns a toggle group selection.
+    /// Selects and fires this tab.
     @Override
     public void fire() {
-        if (getToggleGroup() != null && isSelected()) {
-            fireEvent(new ActionEvent());
-            return;
+        if (!isDisabled()) {
+            setSelected(true);
+            fireEvent(new ActionEvent(this, this));
         }
-        super.fire();
     }
 
     /// Creates the default Material Design 3 tab skin.

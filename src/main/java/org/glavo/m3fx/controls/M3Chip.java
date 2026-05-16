@@ -3,17 +3,20 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
-import javafx.scene.control.ToggleButton;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -25,9 +28,12 @@ import java.util.Objects;
 
 /// A Material Design 3 chip.
 @NotNullByDefault
-public class M3Chip extends ToggleButton {
+public class M3Chip extends ButtonBase {
     /// The base style class for m3fx chips.
     public static final String STYLE_CLASS = "m3-chip";
+
+    /// The selected pseudo-class used by chips.
+    private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The default chip container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 32.0;
@@ -60,6 +66,15 @@ public class M3Chip extends ToggleButton {
     /// The styleable horizontal padding token.
     private StyleableDoubleProperty horizontalPadding;
 
+    /// The selected state property.
+    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
+        /// Updates selected pseudo-class state.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+        }
+    };
+
     /// Creates an empty assist chip.
     public M3Chip() {
         this("");
@@ -69,6 +84,21 @@ public class M3Chip extends ToggleButton {
     public M3Chip(String text) {
         super(text);
         initialize();
+    }
+
+    /// Returns whether this chip is selected.
+    public final boolean isSelected() {
+        return selected.get();
+    }
+
+    /// Sets whether this chip is selected.
+    public final void setSelected(boolean selected) {
+        this.selected.set(selected);
+    }
+
+    /// Returns the selected state property.
+    public final BooleanProperty selectedProperty() {
+        return selected;
     }
 
     /// Returns the chip variant.
@@ -225,6 +255,15 @@ public class M3Chip extends ToggleButton {
         return getClassCssMetaData();
     }
 
+    /// Toggles and fires this chip.
+    @Override
+    public void fire() {
+        if (!isDisabled()) {
+            setSelected(!isSelected());
+            fireEvent(new ActionEvent(this, this));
+        }
+    }
+
     /// Creates the default Material Design 3 chip skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -240,6 +279,7 @@ public class M3Chip extends ToggleButton {
     /// Adds base style classes and applies the default variant.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setFocusTraversable(true);
         updateVariantStyle();
         updateMetrics();
     }

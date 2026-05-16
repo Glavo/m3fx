@@ -3,12 +3,15 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 segmented button group that lays out adjacent segments.
@@ -32,17 +35,32 @@ public class M3SegmentedButtonGroup extends HBox {
     /// The default spacing that lets adjacent segment borders overlap.
     private static final double DEFAULT_SPACING = -1.0;
 
-    /// Updates segment position style classes when children change.
+    /// The selected-state listeners installed on segmented buttons.
+    private final Map<M3SegmentedButton, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
+
+    /// Updates segment position style classes and selection listeners when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
             for (Node child : change.getRemoved()) {
                 if (child instanceof M3SegmentedButton button) {
+                    uninstallButton(button);
                     clearSegmentStyle(button);
+                }
+            }
+            for (Node child : change.getAddedSubList()) {
+                if (child instanceof M3SegmentedButton button) {
+                    installButton(button);
+                    if (button.isSelected()) {
+                        selectButton(button);
+                    }
                 }
             }
         }
         updateSegmentStyles();
     };
+
+    /// Whether the group is currently synchronizing selected states.
+    private boolean updatingSelection;
 
     /// Creates an empty segmented button group.
     public M3SegmentedButtonGroup() {
@@ -59,6 +77,15 @@ public class M3SegmentedButtonGroup extends HBox {
         getChildren().addAll(buttons);
     }
 
+    /// Selects a segmented button that belongs to this group.
+    public final void select(M3SegmentedButton button) {
+        Objects.requireNonNull(button, "button");
+        if (!getChildren().contains(button)) {
+            throw new IllegalArgumentException("button must belong to this segmented button group");
+        }
+        selectButton(button);
+    }
+
     /// Returns the user-agent stylesheet for m3fx segmented button groups.
     @Override
     public String getUserAgentStylesheet() {
@@ -71,6 +98,47 @@ public class M3SegmentedButtonGroup extends HBox {
         setSpacing(DEFAULT_SPACING);
         getChildren().addListener(childrenListener);
         updateSegmentStyles();
+    }
+
+    /// Installs a selected-state listener on a segmented button.
+    private void installButton(M3SegmentedButton button) {
+        ChangeListener<Boolean> listener = (observable, oldValue, newValue) ->
+                handleButtonSelectedChanged(button, newValue);
+        selectedListeners.put(button, listener);
+        button.selectedProperty().addListener(listener);
+    }
+
+    /// Removes the selected-state listener from a segmented button.
+    private void uninstallButton(M3SegmentedButton button) {
+        ChangeListener<Boolean> listener = selectedListeners.remove(button);
+        if (listener != null) {
+            button.selectedProperty().removeListener(listener);
+        }
+    }
+
+    /// Keeps selected segmented buttons mutually exclusive.
+    private void handleButtonSelectedChanged(M3SegmentedButton button, boolean selected) {
+        if (updatingSelection) {
+            return;
+        }
+
+        if (selected) {
+            selectButton(button);
+        }
+    }
+
+    /// Selects a segmented button and clears selection from the remaining segments.
+    private void selectButton(M3SegmentedButton button) {
+        updatingSelection = true;
+        try {
+            for (Node child : getChildren()) {
+                if (child instanceof M3SegmentedButton segmentedButton) {
+                    segmentedButton.setSelected(segmentedButton == button);
+                }
+            }
+        } finally {
+            updatingSelection = false;
+        }
     }
 
     /// Applies first, middle, last, or single segment style classes.

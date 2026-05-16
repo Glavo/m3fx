@@ -681,13 +681,9 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a segmented button group sample.
     private static M3SegmentedButtonGroup createSegmentedGroup(String first, String second, String third) {
-        ToggleGroup group = new ToggleGroup();
         M3SegmentedButton firstButton = new M3SegmentedButton(first);
         M3SegmentedButton secondButton = new M3SegmentedButton(second);
         M3SegmentedButton thirdButton = new M3SegmentedButton(third);
-        firstButton.setToggleGroup(group);
-        secondButton.setToggleGroup(group);
-        thirdButton.setToggleGroup(group);
         secondButton.setSelected(true);
         return new M3SegmentedButtonGroup(firstButton, secondButton, thirdButton);
     }

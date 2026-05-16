@@ -3,16 +3,19 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
-import javafx.scene.control.ToggleButton;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -24,9 +27,12 @@ import java.util.List;
 
 /// A Material Design 3 segmented button.
 @NotNullByDefault
-public class M3SegmentedButton extends ToggleButton {
+public class M3SegmentedButton extends ButtonBase {
     /// The base style class for m3fx segmented buttons.
     public static final String STYLE_CLASS = "m3-segmented-button";
+
+    /// The selected pseudo-class used by segmented buttons.
+    private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The default segmented button container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 40.0;
@@ -46,6 +52,15 @@ public class M3SegmentedButton extends ToggleButton {
     /// The styleable horizontal padding token.
     private StyleableDoubleProperty horizontalPadding;
 
+    /// The selected state property.
+    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
+        /// Updates selected pseudo-class state.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+        }
+    };
+
     /// Creates an empty segmented button.
     public M3SegmentedButton() {
         this("");
@@ -61,6 +76,21 @@ public class M3SegmentedButton extends ToggleButton {
     public M3SegmentedButton(String text, @Nullable Node graphic) {
         super(text, graphic);
         initialize();
+    }
+
+    /// Returns whether this segmented button is selected.
+    public final boolean isSelected() {
+        return selected.get();
+    }
+
+    /// Sets whether this segmented button is selected.
+    public final void setSelected(boolean selected) {
+        this.selected.set(selected);
+    }
+
+    /// Returns the selected state property.
+    public final BooleanProperty selectedProperty() {
+        return selected;
     }
 
     /// Returns the preferred container height token.
@@ -202,6 +232,15 @@ public class M3SegmentedButton extends ToggleButton {
         return getClassCssMetaData();
     }
 
+    /// Selects and fires this segmented button.
+    @Override
+    public void fire() {
+        if (!isDisabled()) {
+            setSelected(true);
+            fireEvent(new ActionEvent(this, this));
+        }
+    }
+
     /// Creates the default Material Design 3 segmented button skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -217,6 +256,7 @@ public class M3SegmentedButton extends ToggleButton {
     /// Adds base style classes and applies token metrics.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setFocusTraversable(true);
         updateMetrics();
     }
 

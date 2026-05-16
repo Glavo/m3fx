@@ -10,13 +10,13 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 tab bar.
@@ -25,35 +25,39 @@ public class M3TabBar extends HBox {
     /// The base style class for M3FX tab bars.
     public static final String STYLE_CLASS = "m3-tab-bar";
 
-    /// The toggle group that owns tab selection.
-    private final ToggleGroup toggleGroup = new ToggleGroup();
-
     /// The currently selected tab.
     private final ReadOnlyObjectWrapper<@Nullable M3Tab> selectedTab =
             new ReadOnlyObjectWrapper<>(this, "selectedTab");
 
-    /// Updates tab toggle groups when children change.
+    /// The selected-state listeners installed on tabs.
+    private final Map<M3Tab, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
+
+    /// Updates tab selection listeners when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
             for (Node child : change.getRemoved()) {
-                if (child instanceof M3Tab tab && tab.getToggleGroup() == toggleGroup) {
-                    tab.setToggleGroup(null);
+                if (child instanceof M3Tab tab) {
+                    uninstallTab(tab);
+                    if (selectedTab.get() == tab) {
+                        selectedTab.set(null);
+                    }
+                    tab.setSelected(false);
                 }
             }
             for (Node child : change.getAddedSubList()) {
                 if (child instanceof M3Tab tab) {
-                    tab.setToggleGroup(toggleGroup);
+                    installTab(tab);
+                    if (tab.isSelected()) {
+                        selectTab(tab);
+                    }
                 }
             }
         }
         selectFirstTabIfNeeded();
     };
 
-    /// Tracks the selected tab from the internal toggle group.
-    private final ChangeListener<@Nullable Toggle> selectedToggleListener = (observable, oldValue, newValue) -> {
-        selectedTab.set(newValue instanceof M3Tab tab ? tab : null);
-        selectFirstTabIfNeeded();
-    };
+    /// Whether the tab bar is currently synchronizing selected states.
+    private boolean updatingSelection;
 
     /// Creates an empty tab bar.
     public M3TabBar() {
@@ -91,14 +95,14 @@ public class M3TabBar extends HBox {
         if (!getChildren().contains(tab)) {
             throw new IllegalArgumentException("tab must belong to this tab bar");
         }
-        tab.setSelected(true);
+        selectTab(tab);
     }
 
     /// Selects the first tab when one exists.
     public final void selectFirst() {
         M3Tab firstTab = firstTab();
         if (firstTab != null) {
-            firstTab.setSelected(true);
+            selectTab(firstTab);
         }
     }
 
@@ -113,17 +117,61 @@ public class M3TabBar extends HBox {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAlignment(Pos.CENTER_LEFT);
         getChildren().addListener(childrenListener);
-        toggleGroup.selectedToggleProperty().addListener(selectedToggleListener);
+    }
+
+    /// Installs a selected-state listener on a tab.
+    private void installTab(M3Tab tab) {
+        ChangeListener<Boolean> listener = (observable, oldValue, newValue) ->
+                handleTabSelectedChanged(tab, newValue);
+        selectedListeners.put(tab, listener);
+        tab.selectedProperty().addListener(listener);
+    }
+
+    /// Removes the selected-state listener from a tab.
+    private void uninstallTab(M3Tab tab) {
+        ChangeListener<Boolean> listener = selectedListeners.remove(tab);
+        if (listener != null) {
+            tab.selectedProperty().removeListener(listener);
+        }
+    }
+
+    /// Keeps externally changed tab selected states mutually exclusive.
+    private void handleTabSelectedChanged(M3Tab tab, boolean selected) {
+        if (updatingSelection) {
+            return;
+        }
+
+        if (selected) {
+            selectTab(tab);
+        } else if (selectedTab.get() == tab) {
+            selectedTab.set(null);
+            selectFirstTabIfNeeded();
+        }
     }
 
     /// Selects the first tab when selection is empty.
     private void selectFirstTabIfNeeded() {
         M3Tab firstTab = firstTab();
-        if (toggleGroup.getSelectedToggle() != null || firstTab == null) {
+        if (selectedTab.get() != null || firstTab == null) {
             return;
         }
 
-        firstTab.setSelected(true);
+        selectTab(firstTab);
+    }
+
+    /// Selects a tab and clears selection from the remaining tabs.
+    private void selectTab(@Nullable M3Tab tab) {
+        updatingSelection = true;
+        try {
+            for (Node child : getChildren()) {
+                if (child instanceof M3Tab item) {
+                    item.setSelected(item == tab);
+                }
+            }
+            selectedTab.set(tab);
+        } finally {
+            updatingSelection = false;
+        }
     }
 
     /// Returns the first tab child.

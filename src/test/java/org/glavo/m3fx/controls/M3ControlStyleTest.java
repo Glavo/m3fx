@@ -787,20 +787,23 @@ final class M3ControlStyleTest {
         assertEquals(18.0, button.getPadding().getRight(), 0.0001);
     }
 
-    /// Verifies that segmented buttons can participate in a single-selection toggle group.
+    /// Verifies that segmented button groups keep a single selected segment.
     @Test
-    void segmentedButtonSupportsToggleGroupSelection() {
-        javafx.scene.control.ToggleGroup group = new javafx.scene.control.ToggleGroup();
+    void segmentedButtonGroupKeepsSingleSelection() {
         M3SegmentedButton first = new M3SegmentedButton("First");
         M3SegmentedButton second = new M3SegmentedButton("Second");
-        first.setToggleGroup(group);
-        second.setToggleGroup(group);
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(first, second);
 
         first.setSelected(true);
         second.setSelected(true);
 
+        assertFalse(first.isSelected());
         assertTrue(second.isSelected());
-        assertEquals(second, group.getSelectedToggle());
+
+        group.select(first);
+
+        assertTrue(first.isSelected());
+        assertFalse(second.isSelected());
     }
 
     /// Verifies that m3fx segmented buttons create the Material Design 3 skin.
@@ -1770,7 +1773,7 @@ final class M3ControlStyleTest {
 
         navigationRail.getItems().remove(search);
 
-        assertNull(search.getToggleGroup());
+        assertFalse(search.isSelected());
         assertTrue(home.isSelected());
         assertEquals(home, navigationRail.getSelectedItem());
     }
@@ -2182,6 +2185,15 @@ final class M3ControlStyleTest {
         assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
         assertTrue(new M3NavigationItem("Home").getStyleClass().contains(M3NavigationItem.STYLE_CLASS));
         assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));
+    }
+
+    /// Verifies that M3FX selectable controls do not inherit JavaFX ToggleButton.
+    @Test
+    void selectableControlsDoNotExtendToggleButton() {
+        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
+        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
+        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Tab.class));
+        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3NavigationItem.class));
     }
 
     /// Verifies that controls expose their default styles through user-agent stylesheets.
