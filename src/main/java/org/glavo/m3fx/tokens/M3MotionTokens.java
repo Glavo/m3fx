@@ -1,5 +1,6 @@
 package org.glavo.m3fx.tokens;
 
+import org.glavo.m3fx.internal.tokens.M3MotionTokensImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 motion duration tokens in milliseconds.
@@ -26,31 +27,5 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
         M3TokenCss.append(builder, "-m3-motion-duration-medium", mediumDuration() + "ms");
         M3TokenCss.append(builder, "-m3-motion-duration-long", longDuration() + "ms");
         return builder.toString().trim();
-    }
-}
-
-/// Default immutable implementation of {@link M3MotionTokens}.
-///
-/// @param shortDuration the short duration token
-/// @param mediumDuration the medium duration token
-/// @param longDuration the long duration token
-@NotNullByDefault
-record M3MotionTokensImpl(
-        int shortDuration,
-        int mediumDuration,
-        int longDuration
-) implements M3MotionTokens {
-    /// Creates motion tokens.
-    M3MotionTokensImpl {
-        validate(shortDuration, "shortDuration");
-        validate(mediumDuration, "mediumDuration");
-        validate(longDuration, "longDuration");
-    }
-
-    /// Validates a duration token.
-    private static void validate(int value, String name) {
-        if (value < 0) {
-            throw new IllegalArgumentException(name + " must not be negative");
-        }
     }
 }

@@ -1,6 +1,7 @@
 package org.glavo.m3fx.theme;
 
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.internal.theme.M3ThemeImpl;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.m3fx.tokens.M3TokenSet;
@@ -71,33 +72,5 @@ public sealed interface M3Theme permits M3ThemeImpl {
     /// Converts component tokens into JavaFX CSS rules for m3fx controls.
     default String toControlStyleRules() {
         return tokens().toControlStyleRules();
-    }
-}
-
-/// Default immutable implementation of {@link M3Theme}.
-///
-/// @param profile the Material Design 3 token profile
-/// @param colorScheme the MonetFX color scheme
-/// @param density the density applied to layout-sensitive component tokens
-/// @param tokens the complete token set for this theme
-@NotNullByDefault
-record M3ThemeImpl(
-        M3Profile profile,
-        ColorScheme colorScheme,
-        M3Density density,
-        M3TokenSet tokens
-) implements M3Theme {
-    /// Creates a theme implementation.
-    M3ThemeImpl {
-        Objects.requireNonNull(profile, "profile");
-        Objects.requireNonNull(colorScheme, "colorScheme");
-        Objects.requireNonNull(density, "density");
-        Objects.requireNonNull(tokens, "tokens");
-        if (tokens.profile() != profile) {
-            throw new IllegalArgumentException("Token profile must match theme profile");
-        }
-        if (!tokens.colorTokens().colorScheme().equals(colorScheme)) {
-            throw new IllegalArgumentException("Token color scheme must match theme color scheme");
-        }
     }
 }

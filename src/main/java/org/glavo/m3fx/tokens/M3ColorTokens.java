@@ -1,13 +1,13 @@
 package org.glavo.m3fx.tokens;
 
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.internal.tokens.M3ColorTokensImpl;
 import org.glavo.monetfx.ColorRole;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
-import java.util.Objects;
 
 /// Wraps MonetFX color scheme output as m3fx color tokens.
 @NotNullByDefault
@@ -63,16 +63,5 @@ public sealed interface M3ColorTokens permits M3ColorTokensImpl {
     /// Converts a color channel into an integer CSS channel.
     private static int toChannel(double value) {
         return (int) Math.round(value * 255.0);
-    }
-}
-
-/// Default immutable implementation of {@link M3ColorTokens}.
-///
-/// @param colorScheme the MonetFX color scheme used by this token set
-@NotNullByDefault
-record M3ColorTokensImpl(ColorScheme colorScheme) implements M3ColorTokens {
-    /// Creates color tokens.
-    M3ColorTokensImpl {
-        Objects.requireNonNull(colorScheme, "colorScheme");
     }
 }

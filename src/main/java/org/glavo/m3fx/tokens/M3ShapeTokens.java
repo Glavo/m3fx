@@ -1,5 +1,6 @@
 package org.glavo.m3fx.tokens;
 
+import org.glavo.m3fx.internal.tokens.M3ShapeTokensImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 shape system tokens.
@@ -43,40 +44,5 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
         M3TokenCss.append(builder, "-m3-shape-corner-extra-large", M3TokenCss.pixels(extraLarge()));
         M3TokenCss.append(builder, "-m3-shape-corner-full", M3TokenCss.pixels(full()));
         return builder.toString().trim();
-    }
-}
-
-/// Default immutable implementation of {@link M3ShapeTokens}.
-///
-/// @param extraSmall the extra-small corner radius
-/// @param small the small corner radius
-/// @param medium the medium corner radius
-/// @param large the large corner radius
-/// @param extraLarge the extra-large corner radius
-/// @param full the full corner radius used for pills
-@NotNullByDefault
-record M3ShapeTokensImpl(
-        double extraSmall,
-        double small,
-        double medium,
-        double large,
-        double extraLarge,
-        double full
-) implements M3ShapeTokens {
-    /// Creates shape tokens.
-    M3ShapeTokensImpl {
-        validate(extraSmall, "extraSmall");
-        validate(small, "small");
-        validate(medium, "medium");
-        validate(large, "large");
-        validate(extraLarge, "extraLarge");
-        validate(full, "full");
-    }
-
-    /// Validates a radius token.
-    private static void validate(double value, String name) {
-        if (value < 0.0) {
-            throw new IllegalArgumentException(name + " must not be negative");
-        }
     }
 }

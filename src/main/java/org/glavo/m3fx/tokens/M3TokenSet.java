@@ -1,5 +1,6 @@
 package org.glavo.m3fx.tokens;
 
+import org.glavo.m3fx.internal.tokens.M3TokenSetImpl;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -86,39 +87,5 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
                 + stateLayerTokens().toControlStyleRules()
                 + "\n\n"
                 + elevationTokens().toControlStyleRules();
-    }
-}
-
-/// Default immutable implementation of {@link M3TokenSet}.
-///
-/// @param profile the profile that produced this token set
-/// @param colorTokens the color tokens
-/// @param typographyTokens the typography tokens
-/// @param shapeTokens the shape tokens
-/// @param elevationTokens the elevation tokens
-/// @param motionTokens the motion tokens
-/// @param stateLayerTokens the state layer tokens
-/// @param componentTokens the component tokens
-@NotNullByDefault
-record M3TokenSetImpl(
-        M3Profile profile,
-        M3ColorTokens colorTokens,
-        M3TypographyTokens typographyTokens,
-        M3ShapeTokens shapeTokens,
-        M3ElevationTokens elevationTokens,
-        M3MotionTokens motionTokens,
-        M3StateLayerTokens stateLayerTokens,
-        M3ComponentTokens componentTokens
-) implements M3TokenSet {
-    /// Creates a token set implementation.
-    M3TokenSetImpl {
-        Objects.requireNonNull(profile, "profile");
-        Objects.requireNonNull(colorTokens, "colorTokens");
-        Objects.requireNonNull(typographyTokens, "typographyTokens");
-        Objects.requireNonNull(shapeTokens, "shapeTokens");
-        Objects.requireNonNull(elevationTokens, "elevationTokens");
-        Objects.requireNonNull(motionTokens, "motionTokens");
-        Objects.requireNonNull(stateLayerTokens, "stateLayerTokens");
-        Objects.requireNonNull(componentTokens, "componentTokens");
     }
 }
