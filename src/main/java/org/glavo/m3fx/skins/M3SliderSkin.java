@@ -60,6 +60,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         track.setMouseTransparent(true);
         thumb.setMouseTransparent(true);
         getChildren().addAll(track, stateLayer, thumb);
+        stateLayer.installStateTransitions(control);
 
         control.valueProperty().addListener(layoutInvalidation);
         control.minProperty().addListener(layoutInvalidation);
@@ -92,6 +93,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         control.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         control.disabledProperty().removeListener(disabledInvalidation);
+        stateLayer.uninstallStateTransitions();
         stateLayer.reset();
         super.dispose();
     }

@@ -80,6 +80,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         container.getChildren().addAll(leadingSlot, textBox, trailingSlot);
         getChildren().addAll(container, stateLayer);
 
+        stateLayer.installStateTransitions(control);
         updateText();
         updateSlots();
         updateMetrics();
@@ -103,6 +104,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     @Override
     public void dispose() {
         M3ListItem item = getSkinnable();
+        stateLayer.uninstallStateTransitions();
         stateLayer.reset();
         item.overlineTextProperty().removeListener(textInvalidation);
         item.headlineTextProperty().removeListener(textInvalidation);

@@ -3,10 +3,13 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.value.ChangeListener;
+import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
@@ -18,6 +21,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// A bounded Material Design 3 state layer with ripple animation support.
 @NotNullByDefault
@@ -37,6 +41,12 @@ final class M3StateLayer extends Pane {
     /// The duration used by the ripple expansion.
     private static final Duration RIPPLE_DURATION = Duration.millis(360.0);
 
+    /// The duration used when a state layer appears.
+    private static final Duration STATE_LAYER_ENTER_DURATION = Duration.millis(120.0);
+
+    /// The duration used when a state layer disappears.
+    private static final Duration STATE_LAYER_EXIT_DURATION = Duration.millis(90.0);
+
     /// The persistent overlay node controlled by CSS pseudo-class rules.
     private final Region overlay = new Region();
 
@@ -48,6 +58,16 @@ final class M3StateLayer extends Pane {
 
     /// The ripple animation timeline.
     private final Timeline rippleAnimation = new Timeline();
+
+    /// The overlay opacity animation timeline.
+    private final Timeline overlayOpacityAnimation = new Timeline();
+
+    /// Handles interaction state changes that should animate CSS-resolved opacity.
+    private final ChangeListener<Boolean> interactionStateListener =
+            (observable, oldValue, newValue) -> animateOverlayOpacityFromCss();
+
+    /// The control whose interaction states drive this layer.
+    private @Nullable Node stateOwner;
 
     /// The radius currently applied to the overlay background.
     private double overlayTopLeftRadius = Double.NaN;
@@ -76,6 +96,34 @@ final class M3StateLayer extends Pane {
         clip.setFill(Color.BLACK);
         getChildren().addAll(overlay, ripple);
         setClip(clip);
+    }
+
+    /// Installs opacity transitions driven by the owner node's interaction states.
+    void installStateTransitions(Node owner) {
+        if (stateOwner == owner) {
+            return;
+        }
+        uninstallStateTransitions();
+        stateOwner = owner;
+        owner.hoverProperty().addListener(interactionStateListener);
+        owner.focusedProperty().addListener(interactionStateListener);
+        owner.pressedProperty().addListener(interactionStateListener);
+        owner.disabledProperty().addListener(interactionStateListener);
+    }
+
+    /// Removes opacity transition listeners from the current owner.
+    void uninstallStateTransitions() {
+        Node owner = stateOwner;
+        if (owner == null) {
+            return;
+        }
+
+        owner.hoverProperty().removeListener(interactionStateListener);
+        owner.focusedProperty().removeListener(interactionStateListener);
+        owner.pressedProperty().removeListener(interactionStateListener);
+        owner.disabledProperty().removeListener(interactionStateListener);
+        stateOwner = null;
+        overlayOpacityAnimation.stop();
     }
 
     /// Lays out the state layer within the skinnable component.
@@ -142,10 +190,49 @@ final class M3StateLayer extends Pane {
 
     /// Stops ripple animation and clears transient ripple state.
     void reset() {
+        overlayOpacityAnimation.stop();
+        overlay.setOpacity(0.0);
         rippleAnimation.stop();
         ripple.setOpacity(0.0);
         ripple.setScaleX(0.0);
         ripple.setScaleY(0.0);
+    }
+
+    /// Returns whether the overlay opacity is currently animating.
+    boolean isOverlayOpacityAnimationRunning() {
+        return overlayOpacityAnimation.getStatus() == Animation.Status.RUNNING;
+    }
+
+    /// Animates from the current overlay opacity to the owner CSS-resolved opacity.
+    void animateOverlayOpacityFromCss() {
+        Node owner = stateOwner;
+        if (owner == null) {
+            return;
+        }
+
+        double startOpacity = overlay.getOpacity();
+        overlayOpacityAnimation.stop();
+        owner.applyCss();
+        double targetOpacity = owner.isDisabled() ? 0.0 : overlay.getOpacity();
+        overlay.setOpacity(startOpacity);
+
+        if (Double.compare(startOpacity, targetOpacity) == 0) {
+            overlay.setOpacity(targetOpacity);
+            return;
+        }
+
+        Duration duration = targetOpacity > startOpacity ? STATE_LAYER_ENTER_DURATION : STATE_LAYER_EXIT_DURATION;
+        overlayOpacityAnimation.getKeyFrames().setAll(
+                new KeyFrame(
+                        Duration.ZERO,
+                        new KeyValue(overlay.opacityProperty(), startOpacity, Interpolator.EASE_BOTH)
+                ),
+                new KeyFrame(
+                        duration,
+                        new KeyValue(overlay.opacityProperty(), targetOpacity, Interpolator.EASE_BOTH)
+                )
+        );
+        overlayOpacityAnimation.playFromStart();
     }
 
     /// Computes the ripple diameter needed to cover this layer from an origin point.

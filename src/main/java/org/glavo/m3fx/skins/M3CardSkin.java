@@ -47,6 +47,7 @@ public class M3CardSkin extends SkinBase<M3Card> {
         getChildren().add(container);
         updateContent(control.getContent());
         updateTokenStyles();
+        stateLayer.installStateTransitions(control);
         installInteractionHandlers(control);
         control.contentProperty().addListener(contentListener);
         control.containerShapeProperty().addListener(tokenInvalidation);
@@ -58,6 +59,7 @@ public class M3CardSkin extends SkinBase<M3Card> {
     @Override
     public void dispose() {
         M3Card card = getSkinnable();
+        stateLayer.uninstallStateTransitions();
         stateLayer.reset();
         card.contentProperty().removeListener(contentListener);
         card.containerShapeProperty().removeListener(tokenInvalidation);

@@ -75,6 +75,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         container.setAlignment(Pos.CENTER_LEFT);
         indicatorSlot.setAlignment(Pos.CENTER);
         bindLabel(control);
+        stateLayer.installStateTransitions(control);
         indicatorSlot.getChildren().add(stateLayer);
         container.getChildren().addAll(indicatorSlot, label);
         getChildren().add(container);
@@ -87,6 +88,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     public void dispose() {
         C control = getSkinnable();
         resetInteractionState();
+        stateLayer.uninstallStateTransitions();
         control.disabledProperty().removeListener(disabledListener);
         unbindLabel();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);

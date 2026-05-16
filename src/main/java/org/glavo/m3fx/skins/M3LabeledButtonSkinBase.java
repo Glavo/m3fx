@@ -84,6 +84,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     M3LabeledButtonSkinBase(C control) {
         super(control);
         getChildren().add(0, stateLayer);
+        stateLayer.installStateTransitions(control);
         control.setScaleX(1.0);
         control.setScaleY(1.0);
         installInteractionHandlers(control);
@@ -104,6 +105,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         getSkinnable().armedProperty().removeListener(armedListener);
         getSkinnable().disabledProperty().removeListener(disabledListener);
         resetInteractionState();
+        stateLayer.uninstallStateTransitions();
         uninstallInteractionHandlers(getSkinnable());
         super.dispose();
     }
