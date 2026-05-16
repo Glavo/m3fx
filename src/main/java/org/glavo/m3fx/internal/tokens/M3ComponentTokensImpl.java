@@ -29,6 +29,7 @@ import java.util.Objects;
 /// @param divider tokens used by dividers
 /// @param badge tokens used by badges
 /// @param navigationBar tokens used by navigation bars
+/// @param navigationRail tokens used by navigation rails
 /// @param listItem tokens used by list items
 @NotNullByDefault
 public record M3ComponentTokensImpl(
@@ -51,6 +52,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.DividerTokens divider,
         M3ComponentTokens.BadgeTokens badge,
         M3ComponentTokens.NavigationBarTokens navigationBar,
+        M3ComponentTokens.NavigationRailTokens navigationRail,
         M3ComponentTokens.ListItemTokens listItem
 ) implements M3ComponentTokens {
     /// Creates component token implementation.
@@ -74,6 +76,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(divider, "divider");
         Objects.requireNonNull(badge, "badge");
         Objects.requireNonNull(navigationBar, "navigationBar");
+        Objects.requireNonNull(navigationRail, "navigationRail");
         Objects.requireNonNull(listItem, "listItem");
     }
 }

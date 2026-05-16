@@ -1,0 +1,23 @@
+.m3-navigation-rail {
+    -fx-background-color: -m3-color-surface-container;
+    -fx-padding: 16px 8px 16px 8px;
+    -fx-spacing: 8px;
+    -fx-min-width: 96px;
+    -fx-pref-width: 96px;
+    -fx-alignment: top-center;
+    -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+
+.m3-navigation-rail .m3-navigation-item.m3-navigation-item,
+.m3-navigation-rail .m3-navigation-item.m3-navigation-item:hover,
+.m3-navigation-rail .m3-navigation-item.m3-navigation-item:focused,
+.m3-navigation-rail .m3-navigation-item.m3-navigation-item:armed,
+.m3-navigation-rail .m3-navigation-item.m3-navigation-item:pressed,
+.m3-navigation-rail .m3-navigation-item.m3-navigation-item:selected {
+    -m3-container-height: 80px;
+    -m3-item-width: 80px;
+    -m3-indicator-width: 56px;
+    -m3-indicator-height: 32px;
+    -m3-indicator-shape: 16px;
+}

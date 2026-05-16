@@ -73,6 +73,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-content-padding"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-divider-thickness"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-regular-fab"));
@@ -85,6 +86,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-card:focus-visible .m3-state-layer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
         assertTrue(theme.toControlStyleRules().contains(".m3-badge"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-navigation-rail"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.08"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.1"));
@@ -99,6 +101,8 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().chip());
         assertNotNull(theme.tokens().componentTokens().divider());
         assertNotNull(theme.tokens().componentTokens().badge());
+        assertNotNull(theme.tokens().componentTokens().navigationBar());
+        assertNotNull(theme.tokens().componentTokens().navigationRail());
         assertNotNull(theme.tokens().componentTokens().listItem());
     }
 
@@ -124,6 +128,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-shape: 32px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 8px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 112px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height: 64px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
@@ -134,6 +139,8 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().chip());
         assertNotNull(theme.tokens().componentTokens().divider());
         assertNotNull(theme.tokens().componentTokens().badge());
+        assertNotNull(theme.tokens().componentTokens().navigationBar());
+        assertNotNull(theme.tokens().componentTokens().navigationRail());
         assertNotNull(theme.tokens().componentTokens().listItem());
     }
 

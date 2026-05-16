@@ -68,6 +68,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by navigation bars.
     NavigationBarTokens navigationBar();
 
+    /// Returns tokens used by navigation rails.
+    NavigationRailTokens navigationRail();
+
     /// Returns tokens used by list items.
     ListItemTokens listItem();
 
@@ -92,6 +95,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             DividerTokens divider,
             BadgeTokens badge,
             NavigationBarTokens navigationBar,
+            NavigationRailTokens navigationRail,
             ListItemTokens listItem
     ) {
         return new M3ComponentTokensImpl(
@@ -114,6 +118,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 divider,
                 badge,
                 navigationBar,
+                navigationRail,
                 listItem
         );
     }
@@ -138,6 +143,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double navigationItemWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
         double navigationIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
         double navigationIndicatorHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
+        double navigationRailWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 112.0 : 96.0);
+        double navigationRailItemWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
+        double navigationRailIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double listItemOneLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
         double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
@@ -180,6 +188,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         4.0,
                         8.0
                 ),
+                new NavigationRailTokens(
+                        navigationRailWidth,
+                        navigationBarHeight,
+                        navigationRailItemWidth,
+                        navigationRailIndicatorWidth,
+                        navigationIndicatorHeight,
+                        shapeTokens.full(),
+                        4.0,
+                        16.0,
+                        8.0,
+                        8.0
+                ),
                 new ListItemTokens(
                         listItemOneLineHeight,
                         listItemTwoLineHeight,
@@ -214,6 +234,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, divider());
         append(builder, badge());
         append(builder, navigationBar());
+        append(builder, navigationRail());
         append(builder, listItem());
         return builder.toString().trim();
     }
@@ -272,6 +293,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendNavigationBarRule(builder, ".m3-navigation-bar", navigationBar());
         appendNavigationItemRule(builder, ".m3-navigation-item", navigationBar());
         appendNavigationIndicatorRule(builder, ".m3-navigation-item-indicator", navigationBar());
+        appendNavigationRailRule(builder, ".m3-navigation-rail", navigationRail());
+        appendNavigationRailItemRule(builder, ".m3-navigation-rail .m3-navigation-item", navigationRail());
+        appendNavigationRailIndicatorRule(
+                builder,
+                ".m3-navigation-rail .m3-navigation-item-indicator",
+                navigationRail()
+        );
         appendListItemRule(builder, ".m3-list-item", listItem());
         return builder.toString().stripTrailing();
     }
@@ -375,6 +403,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-navigation-bar-indicator-shape", M3TokenCss.pixels(tokens.indicatorShape()));
         M3TokenCss.append(builder, "-m3-navigation-bar-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         M3TokenCss.append(builder, "-m3-navigation-bar-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+    }
+
+    /// Appends navigation rail token declarations.
+    private static void append(StringBuilder builder, NavigationRailTokens tokens) {
+        M3TokenCss.append(builder, "-m3-navigation-rail-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        M3TokenCss.append(builder, "-m3-navigation-rail-item-height", M3TokenCss.pixels(tokens.itemHeight()));
+        M3TokenCss.append(builder, "-m3-navigation-rail-item-width", M3TokenCss.pixels(tokens.itemWidth()));
+        M3TokenCss.append(builder, "-m3-navigation-rail-indicator-width", M3TokenCss.pixels(tokens.indicatorWidth()));
+        M3TokenCss.append(builder, "-m3-navigation-rail-indicator-height", M3TokenCss.pixels(tokens.indicatorHeight()));
+        M3TokenCss.append(builder, "-m3-navigation-rail-indicator-shape", M3TokenCss.pixels(tokens.indicatorShape()));
+        M3TokenCss.append(builder, "-m3-navigation-rail-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        M3TokenCss.append(builder, "-m3-navigation-rail-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
+        M3TokenCss.append(builder, "-m3-navigation-rail-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-navigation-rail-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
     }
 
     /// Appends list item token declarations.
@@ -653,6 +695,41 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends a navigation selected indicator token CSS rule.
     private static void appendNavigationIndicatorRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.indicatorShape()));
+        endRule(builder);
+    }
+
+    /// Appends a navigation rail token CSS rule.
+    private static void appendNavigationRailRule(StringBuilder builder, String selector, NavigationRailTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.containerWidth()));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.containerWidth()));
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.verticalPadding())
+                + " "
+                + M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a navigation rail item token CSS rule.
+    private static void appendNavigationRailItemRule(StringBuilder builder, String selector, NavigationRailTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.itemHeight()));
+        appendDeclaration(builder, "-m3-item-width", M3TokenCss.pixels(tokens.itemWidth()));
+        appendDeclaration(builder, "-m3-indicator-width", M3TokenCss.pixels(tokens.indicatorWidth()));
+        appendDeclaration(builder, "-m3-indicator-height", M3TokenCss.pixels(tokens.indicatorHeight()));
+        appendDeclaration(builder, "-m3-indicator-shape", M3TokenCss.pixels(tokens.indicatorShape()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a navigation rail selected indicator token CSS rule.
+    private static void appendNavigationRailIndicatorRule(
+            StringBuilder builder,
+            String selector,
+            NavigationRailTokens tokens
+    ) {
         beginRule(builder, selector);
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.indicatorShape()));
         endRule(builder);
@@ -960,6 +1037,46 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(indicatorShape, "indicatorShape");
             validateNonNegative(contentSpacing, "contentSpacing");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+        }
+    }
+
+    /// Tokens used by navigation rails.
+    ///
+    /// @param containerWidth the navigation rail container width
+    /// @param itemHeight the preferred navigation item height
+    /// @param itemWidth the preferred navigation item width
+    /// @param indicatorWidth the selected indicator width
+    /// @param indicatorHeight the selected indicator height
+    /// @param indicatorShape the selected indicator radius
+    /// @param contentSpacing the spacing between item icon and label
+    /// @param verticalPadding the vertical padding around items
+    /// @param horizontalPadding the horizontal padding around items
+    /// @param itemSpacing the spacing between items
+    @NotNullByDefault
+    public record NavigationRailTokens(
+            double containerWidth,
+            double itemHeight,
+            double itemWidth,
+            double indicatorWidth,
+            double indicatorHeight,
+            double indicatorShape,
+            double contentSpacing,
+            double verticalPadding,
+            double horizontalPadding,
+            double itemSpacing
+    ) {
+        /// Creates navigation rail tokens.
+        public NavigationRailTokens {
+            validateNonNegative(containerWidth, "containerWidth");
+            validateNonNegative(itemHeight, "itemHeight");
+            validateNonNegative(itemWidth, "itemWidth");
+            validateNonNegative(indicatorWidth, "indicatorWidth");
+            validateNonNegative(indicatorHeight, "indicatorHeight");
+            validateNonNegative(indicatorShape, "indicatorShape");
+            validateNonNegative(contentSpacing, "contentSpacing");
+            validateNonNegative(verticalPadding, "verticalPadding");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(itemSpacing, "itemSpacing");
         }
     }
 

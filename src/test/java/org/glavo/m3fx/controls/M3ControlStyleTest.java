@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests style classes and skins for m3fx controls.
@@ -1631,6 +1632,50 @@ final class M3ControlStyleTest {
         assertEquals(search, navigationBar.getSelectedItem());
     }
 
+    /// Verifies that navigation rails group items and keep a selected item.
+    @Test
+    void navigationRailGroupsItemsAndKeepsSelection() {
+        M3NavigationItem home = new M3NavigationItem("Home");
+        M3NavigationItem search = new M3NavigationItem("Search");
+        M3NavigationRail navigationRail = new M3NavigationRail(home, search);
+
+        assertTrue(home.isSelected());
+        assertEquals(home, navigationRail.getSelectedItem());
+
+        search.fire();
+
+        assertFalse(home.isSelected());
+        assertTrue(search.isSelected());
+        assertEquals(search, navigationRail.getSelectedItem());
+
+        search.fire();
+
+        assertTrue(search.isSelected());
+        assertEquals(search, navigationRail.getSelectedItem());
+
+        navigationRail.getItems().remove(search);
+
+        assertNull(search.getToggleGroup());
+        assertTrue(home.isSelected());
+        assertEquals(home, navigationRail.getSelectedItem());
+    }
+
+    /// Verifies that navigation rail token rules override bar item metrics.
+    @Test
+    void navigationRailAppliesRailItemMetrics() {
+        M3NavigationItem home = new M3NavigationItem("Home");
+        M3NavigationRail navigationRail = new M3NavigationRail(home);
+        Pane root = new Pane(navigationRail);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertEquals(96.0, navigationRail.getPrefWidth(), 0.0001);
+        assertEquals(80.0, home.getItemWidth(), 0.0001);
+        assertEquals(56.0, home.getIndicatorWidth(), 0.0001);
+    }
+
     /// Verifies that navigation item skins expose the selected indicator and ripple feedback.
     @Test
     void navigationItemSkinLaysOutIndicatorAndRipple() {
@@ -1858,12 +1903,14 @@ final class M3ControlStyleTest {
         M3Snackbar snackbar = new M3Snackbar("Message");
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
         M3NavigationBar navigationBar = new M3NavigationBar();
+        M3NavigationRail navigationRail = new M3NavigationRail();
 
         assertTrue(card.getStyleClass().contains(M3Card.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.getStyleClass()));
         assertTrue(snackbar.getStyleClass().contains(M3Snackbar.STYLE_CLASS));
         assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
         assertTrue(navigationBar.getStyleClass().contains(M3NavigationBar.STYLE_CLASS));
+        assertTrue(navigationRail.getStyleClass().contains(M3NavigationRail.STYLE_CLASS));
     }
 
     /// Verifies style classes for input and selection controls.
@@ -1911,6 +1958,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Divider(), "/styles/controls/divider.css");
         assertUserAgentStylesheet(new M3Badge(), "/styles/controls/badge.css");
         assertUserAgentStylesheet(new M3NavigationBar(), "/styles/controls/navigation-bar.css");
+        assertUserAgentStylesheet(new M3NavigationRail(), "/styles/controls/navigation-rail.css");
         assertUserAgentStylesheet(new M3NavigationItem(), "/styles/controls/navigation-bar.css");
         assertUserAgentStylesheet(new M3ListItem(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");

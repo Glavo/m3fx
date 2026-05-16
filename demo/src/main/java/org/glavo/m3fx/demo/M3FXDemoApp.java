@@ -45,6 +45,7 @@ import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationItem;
+import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
@@ -197,6 +198,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
                 new DemoPage("Segmented Buttons", "Single-select segmented control states", this::createSegmentedButtonsPage),
                 new DemoPage("Navigation", "Bottom navigation items and selected indicators", this::createNavigationPage),
+                new DemoPage("Navigation Rail", "Vertical destinations for wide layouts", this::createNavigationRailPage),
                 new DemoPage("Progress", "Linear and circular progress indicators", this::createProgressPage),
                 new DemoPage("Lists", "One-line, two-line, three-line, and selected rows", this::createListPage),
                 new DemoPage("Badges", "Dot, count, overflow, and attached badges", this::createBadgesPage),
@@ -424,6 +426,17 @@ public final class M3FXDemoApp extends Application {
         );
     }
 
+    /// Creates the navigation rail component page.
+    private Node createNavigationRailPage() {
+        M3NavigationRail primary = createNavigationRail("Home", "Search", "Profile", "Settings");
+        M3NavigationRail compact = createNavigationRail("Inbox", "Tasks", "Done");
+
+        return createGallery(
+                createShowcaseGroup("Four Items", primary),
+                createShowcaseGroup("Three Items", compact)
+        );
+    }
+
     /// Creates the progress component page.
     private Node createProgressPage() {
         M3ProgressBar determinateBar = new M3ProgressBar(0.32);
@@ -635,6 +648,29 @@ public final class M3FXDemoApp extends Application {
         );
         navigationBar.selectFirst();
         return navigationBar;
+    }
+
+    /// Creates a navigation rail sample.
+    private M3NavigationRail createNavigationRail(String first, String second, String third) {
+        M3NavigationRail navigationRail = new M3NavigationRail(
+                createNavigationItem(first, first.substring(0, 1)),
+                createNavigationItem(second, second.substring(0, 1)),
+                createNavigationItem(third, third.substring(0, 1))
+        );
+        navigationRail.selectFirst();
+        return navigationRail;
+    }
+
+    /// Creates a navigation rail sample.
+    private M3NavigationRail createNavigationRail(String first, String second, String third, String fourth) {
+        M3NavigationRail navigationRail = new M3NavigationRail(
+                createNavigationItem(first, first.substring(0, 1)),
+                createNavigationItem(second, second.substring(0, 1)),
+                createNavigationItem(third, third.substring(0, 1)),
+                createNavigationItem(fourth, fourth.substring(0, 1))
+        );
+        navigationRail.selectFirst();
+        return navigationRail;
     }
 
     /// Creates a sample navigation item.
