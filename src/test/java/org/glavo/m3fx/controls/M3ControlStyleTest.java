@@ -783,6 +783,65 @@ final class M3ControlStyleTest {
         assertFalse(avatar.getStyleClass().contains(M3AvatarVariant.PRIMARY.getStyleClass()));
     }
 
+    /// Verifies that icon size and color variants update style classes.
+    @Test
+    void iconSizeAndVariantUpdateStyleClasses() {
+        M3Icon icon = new M3Icon("A");
+
+        assertEquals(M3IconSize.MEDIUM, icon.getSize());
+        assertEquals(M3IconVariant.ON_SURFACE_VARIANT, icon.getVariant());
+        assertTrue(icon.getStyleClass().contains(M3Icon.STYLE_CLASS));
+        assertTrue(icon.getStyleClass().contains(M3IconSize.MEDIUM.getStyleClass()));
+        assertTrue(icon.getStyleClass().contains(M3IconVariant.ON_SURFACE_VARIANT.getStyleClass()));
+
+        icon.setSize(M3IconSize.LARGE);
+        icon.setVariant(M3IconVariant.PRIMARY);
+
+        assertEquals(M3IconSize.LARGE, icon.getSize());
+        assertEquals(M3IconVariant.PRIMARY, icon.getVariant());
+        assertEquals(32.0, icon.getIconSize(), 0.0001);
+        assertTrue(icon.getStyleClass().contains(M3IconSize.LARGE.getStyleClass()));
+        assertTrue(icon.getStyleClass().contains(M3IconVariant.PRIMARY.getStyleClass()));
+        assertFalse(icon.getStyleClass().contains(M3IconSize.MEDIUM.getStyleClass()));
+        assertFalse(icon.getStyleClass().contains(M3IconVariant.ON_SURFACE_VARIANT.getStyleClass()));
+    }
+
+    /// Verifies that icon font tokens apply through CSS.
+    @Test
+    void iconTokensAreStyleable() {
+        M3Icon icon = new M3Icon("A", M3IconSize.EXTRA_LARGE, M3IconVariant.TERTIARY);
+        icon.setStyle("-m3-icon-size: 28px; -m3-icon-font-weight: 700;");
+
+        applyCss(icon);
+
+        assertEquals(28.0, icon.getIconSize(), 0.0001);
+        assertEquals(700.0, icon.getIconFontWeight(), 0.0001);
+        assertEquals(28.0, icon.getFont().getSize(), 0.0001);
+        assertEquals(28.0, icon.getPrefWidth(), 0.0001);
+        assertEquals(28.0, icon.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that icon size roles provide default size tokens through user-agent CSS.
+    @Test
+    void iconSizeRoleAppliesDefaultCssToken() {
+        M3Icon icon = new M3Icon("A", M3IconSize.LARGE, M3IconVariant.PRIMARY);
+
+        applyCss(icon);
+
+        assertEquals(32.0, icon.getIconSize(), 0.0001);
+        assertEquals(32.0, icon.getFont().getSize(), 0.0001);
+    }
+
+    /// Verifies that icon button factories create configured M3FX icon graphics.
+    @Test
+    void iconButtonFactoryCreatesIconGraphic() {
+        M3IconButton button = M3IconButton.withIcon("A", M3IconSize.SMALL, M3IconVariant.ERROR);
+        M3Icon icon = assertInstanceOf(M3Icon.class, button.getGraphic());
+
+        assertEquals(M3IconSize.SMALL, icon.getSize());
+        assertEquals(M3IconVariant.ERROR, icon.getVariant());
+    }
+
     /// Verifies that text typography roles update style classes.
     @Test
     void textRoleUpdatesStyleClasses() {
@@ -814,6 +873,16 @@ final class M3ControlStyleTest {
         assertEquals(57.0, text.getFont().getSize(), 0.0001);
         assertEquals(64.0, text.getTypographyLineHeight(), 0.0001);
         assertEquals(7.0, text.getLineSpacing(), 0.0001);
+    }
+
+    /// Verifies that typography font weight tokens support unitless CSS values.
+    @Test
+    void textFontWeightTokenAcceptsUnitlessCssValue() {
+        M3Text text = new M3Text("Title", M3TextRole.TITLE_MEDIUM);
+
+        applyCss(text);
+
+        assertEquals(500.0, text.getTypographyFontWeight(), 0.0001);
     }
 
     /// Verifies that surfaces expose variant, elevation, and metric tokens.
@@ -2536,6 +2605,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3TextArea().getStyleClass().contains(M3TextArea.STYLE_CLASS));
         assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
         assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
+        assertTrue(new M3Icon("A").getStyleClass().contains(M3Icon.STYLE_CLASS));
         assertTrue(new M3Text("Text").getStyleClass().contains(M3Text.STYLE_CLASS));
         assertTrue(new M3Surface().getStyleClass().contains(M3Surface.STYLE_CLASS));
         assertTrue(new M3BadgedBox().getStyleClass().contains(M3BadgedBox.STYLE_CLASS));
@@ -2579,6 +2649,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3Avatar(), "/styles/controls/avatar.css");
+        assertUserAgentStylesheet(new M3Icon(), "/styles/controls/icon.css");
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
         assertUserAgentStylesheet(new M3Surface(), "/styles/controls/surface.css");
         assertUserAgentStylesheet(new M3BadgedBox(), "/styles/controls/badge.css");

@@ -46,7 +46,10 @@ import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
+import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3IconSize;
+import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
@@ -215,6 +218,7 @@ public final class M3FXDemoApp extends Application {
         return List.of(
                 new DemoPage("Buttons", "Variants, icon buttons, and floating actions", this::createButtonsPage),
                 new DemoPage("Typography", "Token-driven Material type roles", this::createTypographyPage),
+                new DemoPage("Icons", "Size roles and semantic icon colors", this::createIconsPage),
                 new DemoPage("Text Fields", "Filled, outlined, populated, and disabled fields", this::createTextFieldsPage),
                 new DemoPage("Search", "Search bars, actions, and result surfaces", this::createSearchPage),
                 new DemoPage("Checkboxes", "Checked, unchecked, and disabled states", this::createCheckboxesPage),
@@ -373,6 +377,38 @@ public final class M3FXDemoApp extends Application {
                         new M3Text("Label Large", M3TextRole.LABEL_LARGE),
                         new M3Text("Body Large text follows the active theme typography tokens.", M3TextRole.BODY_LARGE),
                         new M3Text("Body Medium text", M3TextRole.BODY_MEDIUM)
+                )
+        );
+    }
+
+    /// Creates the icon component page.
+    private Node createIconsPage() {
+        M3Icon disabledIcon = createDemoIcon("D", M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT);
+        disabledIcon.setDisable(true);
+
+        return createGallery(
+                createShowcaseGroup(
+                        "Sizes",
+                        createDemoIcon("S", M3IconSize.SMALL, M3IconVariant.PRIMARY),
+                        createDemoIcon("M", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
+                        createDemoIcon("L", M3IconSize.LARGE, M3IconVariant.PRIMARY),
+                        createDemoIcon("X", M3IconSize.EXTRA_LARGE, M3IconVariant.PRIMARY)
+                ),
+                createShowcaseGroup(
+                        "Color Variants",
+                        createDemoIcon("P", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
+                        createDemoIcon("S", M3IconSize.MEDIUM, M3IconVariant.SECONDARY),
+                        createDemoIcon("T", M3IconSize.MEDIUM, M3IconVariant.TERTIARY),
+                        createDemoIcon("E", M3IconSize.MEDIUM, M3IconVariant.ERROR),
+                        createDemoIcon("O", M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE),
+                        disabledIcon
+                ),
+                createShowcaseGroup(
+                        "Button Usage",
+                        createIconButton("i"),
+                        createIconButton("+"),
+                        createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
+                        createFab("*", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.REGULAR)
                 )
         );
     }
@@ -1043,9 +1079,9 @@ public final class M3FXDemoApp extends Application {
         return new M3NavigationItem(text, createNavigationIcon(iconText));
     }
 
-    /// Creates a sample navigation icon label.
-    private static Label createNavigationIcon(String iconText) {
-        Label icon = new Label(iconText);
+    /// Creates a sample navigation icon.
+    private static M3Icon createNavigationIcon(String iconText) {
+        M3Icon icon = new M3Icon(iconText, M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT);
         icon.getStyleClass().add("demo-navigation-icon");
         return icon;
     }
@@ -1067,9 +1103,9 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the sample icon button.
     private static M3IconButton createIconButton(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().add("demo-icon-label");
-        return new M3IconButton(label);
+        M3Icon icon = new M3Icon(text, M3IconSize.SMALL, M3IconVariant.PRIMARY);
+        icon.getStyleClass().add("demo-icon-label");
+        return new M3IconButton(icon);
     }
 
     /// Creates a sample floating action button.
@@ -1078,12 +1114,19 @@ public final class M3FXDemoApp extends Application {
             M3FloatingActionButtonVariant variant,
             M3FloatingActionButtonSize size
     ) {
-        Label label = new Label(iconText);
-        label.getStyleClass().add("demo-fab-icon");
-        M3FloatingActionButton button = new M3FloatingActionButton(label);
+        M3Icon icon = new M3Icon(iconText, M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE);
+        icon.getStyleClass().add("demo-fab-icon");
+        M3FloatingActionButton button = new M3FloatingActionButton(icon);
         button.setVariant(variant);
         button.setSize(size);
         return button;
+    }
+
+    /// Creates a sample standalone icon.
+    private static M3Icon createDemoIcon(String text, M3IconSize size, M3IconVariant variant) {
+        M3Icon icon = new M3Icon(text, size, variant);
+        icon.getStyleClass().add("demo-sample-icon");
+        return icon;
     }
 
     /// Creates a sample extended floating action button.

@@ -10,6 +10,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
 import javafx.css.StyleableProperty;
+import javafx.css.converter.FontConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.css.converter.StringConverter;
 import javafx.scene.control.Label;
@@ -39,7 +40,7 @@ public class M3Text extends Label {
     private static final double DEFAULT_TYPOGRAPHY_LINE_HEIGHT = 24.0;
 
     /// The default typography font weight.
-    private static final double DEFAULT_TYPOGRAPHY_FONT_WEIGHT = 400.0;
+    private static final FontWeight DEFAULT_TYPOGRAPHY_FONT_WEIGHT = FontWeight.NORMAL;
 
     /// The typography role property.
     private final ObjectProperty<M3TextRole> role =
@@ -65,7 +66,7 @@ public class M3Text extends Label {
     private StyleableDoubleProperty typographyLineHeight;
 
     /// The styleable typography font weight token.
-    private StyleableDoubleProperty typographyFontWeight;
+    private StyleableObjectProperty<FontWeight> typographyFontWeight;
 
     /// Creates an empty body-large text label.
     public M3Text() {
@@ -234,7 +235,7 @@ public class M3Text extends Label {
 
     /// Returns the typography font weight token.
     public final double getTypographyFontWeight() {
-        return typographyFontWeight == null ? DEFAULT_TYPOGRAPHY_FONT_WEIGHT : typographyFontWeight.get();
+        return getTypographyFontWeightValue().getWeight();
     }
 
     /// Sets the typography font weight token.
@@ -243,13 +244,16 @@ public class M3Text extends Label {
     }
 
     /// Returns the typography font weight token property.
-    public final StyleableDoubleProperty typographyFontWeightProperty() {
+    public final StyleableObjectProperty<FontWeight> typographyFontWeightProperty() {
         if (typographyFontWeight == null) {
-            typographyFontWeight = new StyleableDoubleProperty(DEFAULT_TYPOGRAPHY_FONT_WEIGHT) {
+            typographyFontWeight = new StyleableObjectProperty<>(DEFAULT_TYPOGRAPHY_FONT_WEIGHT) {
                 /// Applies updated font weight tokens.
                 @Override
                 protected void invalidated() {
-                    validateFontWeight(get());
+                    if (get() == null) {
+                        set(DEFAULT_TYPOGRAPHY_FONT_WEIGHT);
+                        return;
+                    }
                     updateFont();
                 }
 
@@ -267,7 +271,7 @@ public class M3Text extends Label {
 
                 /// Returns the CSS metadata for this property.
                 @Override
-                public CssMetaData<M3Text, Number> getCssMetaData() {
+                public CssMetaData<M3Text, FontWeight> getCssMetaData() {
                     return StyleableProperties.TYPOGRAPHY_FONT_WEIGHT;
                 }
             };
@@ -327,18 +331,23 @@ public class M3Text extends Label {
         double fontSize = getTypographyFontSize();
         setFont(Font.font(
                 getTypographyFontFamily(),
-                FontWeight.findByWeight((int) Math.round(getTypographyFontWeight())),
+                getTypographyFontWeightValue(),
                 fontSize
         ));
         setLineSpacing(Math.max(0.0, getTypographyLineHeight() - fontSize));
     }
 
+    /// Returns the resolved typography font weight token.
+    private FontWeight getTypographyFontWeightValue() {
+        return typographyFontWeight == null ? DEFAULT_TYPOGRAPHY_FONT_WEIGHT : typographyFontWeight.get();
+    }
+
     /// Validates a font weight token.
-    private static double validateFontWeight(double value) {
+    private static FontWeight validateFontWeight(double value) {
         if (value < 1.0 || value > 1000.0) {
             throw new IllegalArgumentException("typographyFontWeight must be between 1 and 1000");
         }
-        return value;
+        return FontWeight.findByWeight((int) Math.round(value));
     }
 
     /// CSS metadata for M3FX text typography tokens.
@@ -385,21 +394,21 @@ public class M3Text extends Label {
                 };
 
         /// CSS metadata for the typography font weight token.
-        private static final CssMetaData<M3Text, Number> TYPOGRAPHY_FONT_WEIGHT =
+        private static final CssMetaData<M3Text, FontWeight> TYPOGRAPHY_FONT_WEIGHT =
                 new CssMetaData<>(
                         "-m3-typography-font-weight",
-                        SizeConverter.getInstance(),
+                        FontConverter.FontWeightConverter.getInstance(),
                         DEFAULT_TYPOGRAPHY_FONT_WEIGHT
                 ) {
                     /// Returns whether this property can be set by CSS.
                     @Override
                     public boolean isSettable(M3Text control) {
-                        return M3Css.isSettable(control.typographyFontWeightProperty());
+                        return !control.typographyFontWeightProperty().isBound();
                     }
 
                     /// Returns the styleable property for a control.
                     @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Text control) {
+                    public StyleableProperty<FontWeight> getStyleableProperty(M3Text control) {
                         return control.typographyFontWeightProperty();
                     }
                 };

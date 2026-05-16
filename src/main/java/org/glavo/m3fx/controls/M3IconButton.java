@@ -26,6 +26,16 @@ public class M3IconButton extends M3Button {
         initializeIconMetrics();
     }
 
+    /// Creates an icon button with an M3FX icon label.
+    public static M3IconButton withIcon(String iconText) {
+        return new M3IconButton(new M3Icon(iconText));
+    }
+
+    /// Creates an icon button with an M3FX icon label, size, and color variant.
+    public static M3IconButton withIcon(String iconText, M3IconSize iconSize, M3IconVariant iconVariant) {
+        return new M3IconButton(new M3Icon(iconText, iconSize, iconVariant));
+    }
+
     /// Returns the default graphic value.
     private static @Nullable Node nullGraphic() {
         return null;
