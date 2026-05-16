@@ -66,10 +66,12 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
-/// A demo application that showcases the first M3FX controls.
+/// A demo application that showcases M3FX controls.
 @NotNullByDefault
 public final class M3FXDemoApp extends Application {
     /// Seed colors shown in the demo header.
@@ -90,11 +92,17 @@ public final class M3FXDemoApp extends Application {
     /// The current theme brightness.
     private Brightness brightness = Brightness.LIGHT;
 
-    /// Animations owned by the demo scene.
-    private final List<Animation> animations = new java.util.ArrayList<>();
+    /// Animations owned by the active demo page.
+    private final List<Animation> animations = new ArrayList<>();
+
+    /// Sidebar items used to switch component pages.
+    private final List<M3ListItem> sidebarItems = new ArrayList<>();
 
     /// The active JavaFX scene.
     private @Nullable Scene scene;
+
+    /// The page host replaced when sidebar selection changes.
+    private @Nullable StackPane pageHost;
 
     /// The snackbar host used by demo actions.
     private @Nullable M3SnackbarHost snackbarHost;
@@ -108,20 +116,22 @@ public final class M3FXDemoApp extends Application {
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
         this.snackbarHost = snackbarHost;
 
-        StackPane centerStack = new StackPane(createContent(), snackbarHost);
+        List<DemoPage> pages = createPages();
+        StackPane centerStack = new StackPane(createContent(pages), snackbarHost);
         StackPane.setAlignment(snackbarHost, Pos.BOTTOM_CENTER);
 
         root.setTop(createHeader());
         root.setCenter(centerStack);
 
-        Scene scene = new Scene(root, 1120.0, 820.0);
+        Scene scene = new Scene(root, 1180.0, 820.0);
         scene.getStylesheets().add(demoStylesheetUrl());
         this.scene = scene;
         applyTheme();
+        showPage(pages.get(0));
 
         stage.setTitle("M3FX Demo");
-        stage.setMinWidth(900.0);
-        stage.setMinHeight(640.0);
+        stage.setMinWidth(960.0);
+        stage.setMinHeight(680.0);
         stage.setScene(scene);
         stage.show();
     }
@@ -175,212 +185,510 @@ public final class M3FXDemoApp extends Application {
         return header;
     }
 
-    /// Creates the scrollable demo content.
-    private Node createContent() {
-        VBox content = new VBox(28.0);
-        content.getStyleClass().add("demo-content");
-        content.setFillWidth(true);
-        content.getChildren().addAll(
-                createButtonSection(),
-                createInputSection(),
-                createSelectionSection(),
-                createNavigationSection(),
-                createUtilitySection(),
-                createListSection(),
-                createProgressSection(),
-                createContainmentSection()
+    /// Creates all component demo pages.
+    private List<DemoPage> createPages() {
+        return List.of(
+                new DemoPage("Buttons", "Variants, icon buttons, and floating actions", this::createButtonsPage),
+                new DemoPage("Text Fields", "Filled, outlined, populated, and disabled fields", this::createTextFieldsPage),
+                new DemoPage("Checkboxes", "Checked, unchecked, and disabled states", this::createCheckboxesPage),
+                new DemoPage("Radio Buttons", "Grouped single selection states", this::createRadioButtonsPage),
+                new DemoPage("Switches", "On, off, and disabled switch states", this::createSwitchesPage),
+                new DemoPage("Sliders", "Different values and disabled slider states", this::createSlidersPage),
+                new DemoPage("Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
+                new DemoPage("Segmented Buttons", "Single-select segmented control states", this::createSegmentedButtonsPage),
+                new DemoPage("Navigation", "Bottom navigation items and selected indicators", this::createNavigationPage),
+                new DemoPage("Progress", "Linear and circular progress indicators", this::createProgressPage),
+                new DemoPage("Lists", "One-line, two-line, three-line, and selected rows", this::createListPage),
+                new DemoPage("Badges", "Dot, count, overflow, and attached badges", this::createBadgesPage),
+                new DemoPage("Dividers", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
+                new DemoPage("Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
+                new DemoPage("Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
+                new DemoPage("Snackbars", "Snackbar host with action and stacked messages", this::createSnackbarsPage)
         );
+    }
 
-        ScrollPane scrollPane = new ScrollPane(content);
+    /// Creates the main content shell with sidebar and page host.
+    private Node createContent(List<DemoPage> pages) {
+        BorderPane shell = new BorderPane();
+        shell.getStyleClass().add("demo-shell");
+        shell.setLeft(createSidebar(pages));
+        shell.setCenter(createPageScrollPane());
+        return shell;
+    }
+
+    /// Creates the component sidebar.
+    private Node createSidebar(List<DemoPage> pages) {
+        VBox sidebar = new VBox(6.0);
+        sidebar.getStyleClass().add("demo-sidebar");
+
+        Label heading = new Label("Components");
+        heading.getStyleClass().add("demo-sidebar-title");
+        sidebar.getChildren().add(heading);
+
+        sidebarItems.clear();
+        for (DemoPage page : pages) {
+            M3ListItem item = new M3ListItem(page.title());
+            item.getStyleClass().add("demo-sidebar-item");
+            item.setOnAction(event -> showPage(page));
+            sidebarItems.add(item);
+            sidebar.getChildren().add(item);
+        }
+        return sidebar;
+    }
+
+    /// Creates the scrollable page host.
+    private Node createPageScrollPane() {
+        StackPane host = new StackPane();
+        host.getStyleClass().add("demo-page-host");
+        pageHost = host;
+
+        ScrollPane scrollPane = new ScrollPane(host);
         scrollPane.getStyleClass().add("demo-scroll-pane");
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         return scrollPane;
     }
 
-    /// Creates the button showcase section.
-    private Node createButtonSection() {
-        FlowPane controls = createFlow();
-        controls.getChildren().addAll(
-                createButton("Filled", M3ButtonVariant.FILLED),
-                createButton("Tonal", M3ButtonVariant.TONAL),
-                createButton("Outlined", M3ButtonVariant.OUTLINED),
-                createButton("Text", M3ButtonVariant.TEXT),
-                createButton("Elevated", M3ButtonVariant.ELEVATED),
-                createIconButton(),
-                createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
-                createFab("+", M3FloatingActionButtonVariant.SECONDARY, M3FloatingActionButtonSize.SMALL),
-                createFab("*", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.LARGE),
-                createExtendedFab()
+    /// Shows a component page in the center pane.
+    private void showPage(DemoPage page) {
+        stopPageAnimations();
+        StackPane host = pageHost;
+        if (host == null) {
+            return;
+        }
+
+        for (M3ListItem item : sidebarItems) {
+            item.setSelected(item.getHeadlineText().equals(page.title()));
+        }
+
+        VBox pageNode = new VBox(24.0);
+        pageNode.getStyleClass().add("demo-page");
+
+        Label title = new Label(page.title());
+        title.getStyleClass().add("demo-page-title");
+        Label subtitle = new Label(page.subtitle());
+        subtitle.getStyleClass().add("demo-page-subtitle");
+        subtitle.setWrapText(true);
+
+        pageNode.getChildren().addAll(title, subtitle, page.createContent());
+        host.getChildren().setAll(pageNode);
+    }
+
+    /// Stops animations owned by the previous page.
+    private void stopPageAnimations() {
+        for (Animation animation : animations) {
+            animation.stop();
+        }
+        animations.clear();
+    }
+
+    /// Creates the button component page.
+    private Node createButtonsPage() {
+        M3Button disabledFilled = createButton("Disabled", M3ButtonVariant.FILLED);
+        disabledFilled.setDisable(true);
+        M3IconButton disabledIcon = createIconButton("i");
+        disabledIcon.setDisable(true);
+
+        return createGallery(
+                createShowcaseGroup(
+                        "Button Variants",
+                        createButton("Filled", M3ButtonVariant.FILLED),
+                        createButton("Tonal", M3ButtonVariant.TONAL),
+                        createButton("Outlined", M3ButtonVariant.OUTLINED),
+                        createButton("Text", M3ButtonVariant.TEXT),
+                        createButton("Elevated", M3ButtonVariant.ELEVATED),
+                        disabledFilled
+                ),
+                createShowcaseGroup(
+                        "Icon Buttons",
+                        createIconButton("i"),
+                        createIconButton("+"),
+                        disabledIcon
+                ),
+                createShowcaseGroup(
+                        "Floating Action Buttons",
+                        createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
+                        createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
+                        createFab("*", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.LARGE),
+                        createExtendedFab()
+                )
         );
-        return createSection("Buttons", controls);
     }
 
-    /// Creates the input showcase section.
-    private Node createInputSection() {
-        M3TextField filledField = new M3TextField();
-        filledField.setPromptText("Filled text field");
-        filledField.setPrefWidth(280.0);
+    /// Creates the text field component page.
+    private Node createTextFieldsPage() {
+        M3TextField filled = createTextField("Filled text field", "", M3TextInputVariant.FILLED, false);
+        M3TextField filledText = createTextField("Filled with text", "support@example.com", M3TextInputVariant.FILLED, false);
+        M3TextField filledDisabled = createTextField("Disabled filled", "Read only", M3TextInputVariant.FILLED, true);
+        M3TextField outlined = createTextField("Outlined text field", "", M3TextInputVariant.OUTLINED, false);
+        M3TextField outlinedText = createTextField("Outlined with text", "M3FX", M3TextInputVariant.OUTLINED, false);
+        M3PasswordField password = new M3PasswordField();
+        password.setPromptText("Password");
+        password.setVariant(M3TextInputVariant.OUTLINED);
+        password.setPrefWidth(280.0);
 
-        M3TextField outlinedField = new M3TextField();
-        outlinedField.setPromptText("Outlined text field");
-        outlinedField.setVariant(M3TextInputVariant.OUTLINED);
-        outlinedField.setPrefWidth(280.0);
-
-        M3PasswordField passwordField = new M3PasswordField();
-        passwordField.setPromptText("Password");
-        passwordField.setVariant(M3TextInputVariant.OUTLINED);
-        passwordField.setPrefWidth(280.0);
-
-        FlowPane controls = createFlow();
-        controls.getChildren().addAll(filledField, outlinedField, passwordField);
-        return createSection("Inputs", controls);
+        return createGallery(
+                createShowcaseGroup("Filled", filled, filledText, filledDisabled),
+                createShowcaseGroup("Outlined", outlined, outlinedText, password)
+        );
     }
 
-    /// Creates the selection control showcase section.
-    private Node createSelectionSection() {
-        M3CheckBox checkbox = new M3CheckBox("Checkbox");
-        checkbox.setSelected(true);
+    /// Creates the checkbox component page.
+    private Node createCheckboxesPage() {
+        M3CheckBox checked = new M3CheckBox("Checked");
+        checked.setSelected(true);
+        M3CheckBox unchecked = new M3CheckBox("Unchecked");
+        M3CheckBox disabled = new M3CheckBox("Disabled");
+        disabled.setDisable(true);
 
+        return createGallery(createShowcaseGroup("States", checked, unchecked, disabled));
+    }
+
+    /// Creates the radio button component page.
+    private Node createRadioButtonsPage() {
         ToggleGroup radioGroup = new ToggleGroup();
         M3RadioButton radioOne = new M3RadioButton("Radio A");
         M3RadioButton radioTwo = new M3RadioButton("Radio B");
+        M3RadioButton radioDisabled = new M3RadioButton("Disabled");
         radioOne.setToggleGroup(radioGroup);
         radioTwo.setToggleGroup(radioGroup);
+        radioDisabled.setDisable(true);
         radioOne.setSelected(true);
 
-        M3Switch switchControl = new M3Switch("Switch");
-        switchControl.setSelected(true);
-
-        M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
-        slider.setPrefWidth(220.0);
-
-        M3Chip assistChip = new M3Chip("Assist");
-        M3Chip filterChip = new M3Chip("Filter");
-        filterChip.setVariant(M3ChipVariant.FILTER);
-        filterChip.setSelected(true);
-        M3Chip inputChip = new M3Chip("Input");
-        inputChip.setVariant(M3ChipVariant.INPUT);
-        M3Chip suggestionChip = new M3Chip("Suggestion");
-        suggestionChip.setVariant(M3ChipVariant.SUGGESTION);
-
-        ToggleGroup segmentedGroup = new ToggleGroup();
-        M3SegmentedButton daySegment = new M3SegmentedButton("Day");
-        M3SegmentedButton weekSegment = new M3SegmentedButton("Week");
-        M3SegmentedButton monthSegment = new M3SegmentedButton("Month");
-        daySegment.setToggleGroup(segmentedGroup);
-        weekSegment.setToggleGroup(segmentedGroup);
-        monthSegment.setToggleGroup(segmentedGroup);
-        weekSegment.setSelected(true);
-        M3SegmentedButtonGroup segmentedButtons =
-                new M3SegmentedButtonGroup(daySegment, weekSegment, monthSegment);
-
-        FlowPane controls = createFlow();
-        controls.getChildren().addAll(
-                checkbox,
-                radioOne,
-                radioTwo,
-                switchControl,
-                slider,
-                segmentedButtons,
-                assistChip,
-                filterChip,
-                inputChip,
-                suggestionChip
-        );
-        return createSection("Selection", controls);
+        return createGallery(createShowcaseGroup("Group", radioOne, radioTwo, radioDisabled));
     }
 
-    /// Creates the navigation showcase section.
-    private Node createNavigationSection() {
-        M3NavigationItem home = createNavigationItem("Home", "H");
-        M3NavigationItem search = createNavigationItem("Search", "S");
-        M3NavigationItem profile = createNavigationItem("Profile", "P");
-        M3NavigationItem settings = createNavigationItem("Settings", "G");
+    /// Creates the switch component page.
+    private Node createSwitchesPage() {
+        M3Switch enabledSwitch = new M3Switch("On");
+        enabledSwitch.setSelected(true);
+        M3Switch offSwitch = new M3Switch("Off");
+        M3Switch disabledSwitch = new M3Switch("Disabled");
+        disabledSwitch.setDisable(true);
 
-        M3NavigationBar navigationBar = new M3NavigationBar(home, search, profile, settings);
-        navigationBar.select(home);
+        return createGallery(createShowcaseGroup("States", enabledSwitch, offSwitch, disabledSwitch));
+    }
 
-        FlowPane controls = createFlow();
-        controls.getChildren().add(navigationBar);
-        return createSection("Navigation", controls);
+    /// Creates the slider component page.
+    private Node createSlidersPage() {
+        return createGallery(createShowcaseGroup(
+                "Values",
+                createSlider(24.0, false),
+                createSlider(64.0, false),
+                createSlider(50.0, true)
+        ));
+    }
+
+    /// Creates the chip component page.
+    private Node createChipsPage() {
+        M3Chip assist = new M3Chip("Assist");
+        M3Chip suggestion = new M3Chip("Suggestion");
+        suggestion.setVariant(M3ChipVariant.SUGGESTION);
+        M3Chip input = new M3Chip("Input");
+        input.setVariant(M3ChipVariant.INPUT);
+        M3Chip filter = new M3Chip("Filter");
+        filter.setVariant(M3ChipVariant.FILTER);
+        M3Chip selectedFilter = new M3Chip("Selected");
+        selectedFilter.setVariant(M3ChipVariant.FILTER);
+        selectedFilter.setSelected(true);
+        M3Chip disabled = new M3Chip("Disabled");
+        disabled.setDisable(true);
+
+        return createGallery(
+                createShowcaseGroup("Variants", assist, suggestion, input, filter),
+                createShowcaseGroup("States", selectedFilter, disabled)
+        );
+    }
+
+    /// Creates the segmented button component page.
+    private Node createSegmentedButtonsPage() {
+        M3SegmentedButtonGroup dateRange = createSegmentedGroup("Day", "Week", "Month");
+        M3SegmentedButtonGroup priority = createSegmentedGroup("Low", "Medium", "High");
+        ((M3SegmentedButton) priority.getChildren().get(2)).setDisable(true);
+
+        return createGallery(
+                createShowcaseGroup("Date Range", dateRange),
+                createShowcaseGroup("Availability", priority)
+        );
+    }
+
+    /// Creates the navigation component page.
+    private Node createNavigationPage() {
+        M3NavigationBar primary = createNavigationBar("Home", "Search", "Profile", "Settings");
+        M3NavigationBar compact = createNavigationBar("Inbox", "Tasks", "Done");
+        compact.setStyle("-fx-pref-height: 88px; -fx-padding: 0 24px;");
+
+        return createGallery(
+                createShowcaseGroup("Four Items", primary),
+                createShowcaseGroup("Three Items", compact)
+        );
+    }
+
+    /// Creates the progress component page.
+    private Node createProgressPage() {
+        M3ProgressBar determinateBar = new M3ProgressBar(0.32);
+        determinateBar.setPrefWidth(380.0);
+        M3ProgressBar indeterminateBar = new M3ProgressBar();
+        indeterminateBar.setPrefWidth(380.0);
+        M3ProgressIndicator determinateIndicator = new M3ProgressIndicator(0.32);
+        determinateIndicator.setPrefSize(64.0, 64.0);
+        M3ProgressIndicator indeterminateIndicator = new M3ProgressIndicator();
+        indeterminateIndicator.setPrefSize(64.0, 64.0);
+
+        playProgressShowcaseAnimation(determinateBar, determinateIndicator);
+
+        return createGallery(
+                createShowcaseGroup("Linear", determinateBar, indeterminateBar),
+                createShowcaseGroup("Circular", determinateIndicator, indeterminateIndicator)
+        );
+    }
+
+    /// Creates the list component page.
+    private Node createListPage() {
+        M3ListItem oneLine = new M3ListItem("One-line item");
+        oneLine.setLeading(new M3Badge());
+
+        M3ListItem twoLine = new M3ListItem("Two-line item");
+        twoLine.setSupportingText("Supporting text");
+        twoLine.setTrailing(new M3Badge("3"));
+
+        M3ListItem threeLine = new M3ListItem("Three-line item");
+        threeLine.setOverlineText("Overline");
+        threeLine.setSupportingText("Supporting text can span a denser row.");
+
+        M3ListItem selected = new M3ListItem("Selected item");
+        selected.setSupportingText("Current destination");
+        selected.setSelected(true);
+
+        VBox list = new VBox();
+        list.getStyleClass().add("demo-list");
+        list.getChildren().addAll(
+                oneLine,
+                new M3Divider(),
+                twoLine,
+                new M3Divider(),
+                threeLine,
+                new M3Divider(),
+                selected
+        );
+
+        return createGallery(createShowcaseGroup("Rows", list));
+    }
+
+    /// Creates the badge component page.
+    private Node createBadgesPage() {
+        StackPane buttonWithBadge = new StackPane();
+        M3Button button = createButton("Inbox", M3ButtonVariant.TONAL);
+        M3Badge badge = new M3Badge("9");
+        StackPane.setAlignment(badge, Pos.TOP_RIGHT);
+        buttonWithBadge.getChildren().addAll(button, badge);
+
+        return createGallery(
+                createShowcaseGroup("Badges", new M3Badge(), new M3Badge("7"), new M3Badge("1234")),
+                createShowcaseGroup("Attached", buttonWithBadge)
+        );
+    }
+
+    /// Creates the divider component page.
+    private Node createDividersPage() {
+        M3Divider full = new M3Divider();
+        full.setPrefWidth(360.0);
+        M3Divider inset = new M3Divider();
+        inset.setInsetStart(32.0);
+        inset.setPrefWidth(360.0);
+        M3Divider middle = new M3Divider();
+        middle.setInsetStart(32.0);
+        middle.setInsetEnd(32.0);
+        middle.setPrefWidth(360.0);
+        M3Divider vertical = new M3Divider(Orientation.VERTICAL);
+        vertical.setPrefHeight(72.0);
+
+        return createGallery(
+                createShowcaseGroup("Horizontal", full, inset, middle),
+                createShowcaseGroup("Vertical", vertical)
+        );
+    }
+
+    /// Creates the card component page.
+    private Node createCardsPage() {
+        M3Card filled = createSampleCard("Filled card", M3CardVariant.FILLED);
+        M3Card outlined = createSampleCard("Outlined card", M3CardVariant.OUTLINED);
+        M3Card elevated = createSampleCard("Elevated card", M3CardVariant.ELEVATED);
+
+        return createGallery(createShowcaseGroup("Cards", filled, outlined, elevated));
+    }
+
+    /// Creates the dialog component page.
+    private Node createDialogsPage() {
+        M3Button dialogButton = createButton("Open dialog", M3ButtonVariant.FILLED);
+        dialogButton.setOnAction(event -> showDemoDialog());
+
+        M3DialogPane inlinePane = new M3DialogPane();
+        inlinePane.setHeaderText("Dialog title");
+        inlinePane.setContentText("The active theme is applied to this dialog pane.");
+        inlinePane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
+        inlinePane.setPrefWidth(420.0);
+
+        return createGallery(
+                createShowcaseGroup("Launcher", dialogButton),
+                createShowcaseGroup("Pane", inlinePane)
+        );
+    }
+
+    /// Creates the snackbar component page.
+    private Node createSnackbarsPage() {
+        M3Button messageButton = createButton("Show message", M3ButtonVariant.FILLED);
+        messageButton.setOnAction(event -> showSnackbar());
+        M3Button actionButton = createButton("Show action", M3ButtonVariant.TONAL);
+        actionButton.setOnAction(event -> showActionSnackbar());
+
+        return createGallery(createShowcaseGroup("Snackbar Host", messageButton, actionButton));
+    }
+
+    /// Creates a page gallery.
+    private static VBox createGallery(Node... groups) {
+        VBox gallery = new VBox(18.0);
+        gallery.getStyleClass().add("demo-gallery");
+        gallery.getChildren().addAll(groups);
+        return gallery;
+    }
+
+    /// Creates one showcase group.
+    private static VBox createShowcaseGroup(String title, Node... nodes) {
+        Label label = new Label(title);
+        label.getStyleClass().add("demo-group-title");
+
+        FlowPane flow = new FlowPane(16.0, 16.0);
+        flow.getStyleClass().add("demo-flow");
+        flow.setAlignment(Pos.CENTER_LEFT);
+        flow.setMaxWidth(Double.MAX_VALUE);
+        flow.getChildren().addAll(nodes);
+
+        VBox group = new VBox(10.0, label, flow);
+        group.getStyleClass().add("demo-showcase-group");
+        group.setMaxWidth(Double.MAX_VALUE);
+        return group;
+    }
+
+    /// Creates a button configured with the requested variant.
+    private static M3Button createButton(String text, M3ButtonVariant variant) {
+        M3Button button = new M3Button(text);
+        button.setVariant(variant);
+        return button;
+    }
+
+    /// Creates a text field for the page gallery.
+    private static M3TextField createTextField(
+            String prompt,
+            String text,
+            M3TextInputVariant variant,
+            boolean disabled
+    ) {
+        M3TextField textField = new M3TextField();
+        textField.setPromptText(prompt);
+        textField.setText(text);
+        textField.setVariant(variant);
+        textField.setDisable(disabled);
+        textField.setPrefWidth(280.0);
+        return textField;
+    }
+
+    /// Creates a slider sample.
+    private static M3Slider createSlider(double value, boolean disabled) {
+        M3Slider slider = new M3Slider(0.0, 100.0, value);
+        slider.setPrefWidth(260.0);
+        slider.setDisable(disabled);
+        return slider;
+    }
+
+    /// Creates a segmented button group sample.
+    private static M3SegmentedButtonGroup createSegmentedGroup(String first, String second, String third) {
+        ToggleGroup group = new ToggleGroup();
+        M3SegmentedButton firstButton = new M3SegmentedButton(first);
+        M3SegmentedButton secondButton = new M3SegmentedButton(second);
+        M3SegmentedButton thirdButton = new M3SegmentedButton(third);
+        firstButton.setToggleGroup(group);
+        secondButton.setToggleGroup(group);
+        thirdButton.setToggleGroup(group);
+        secondButton.setSelected(true);
+        return new M3SegmentedButtonGroup(firstButton, secondButton, thirdButton);
+    }
+
+    /// Creates a navigation bar sample.
+    private M3NavigationBar createNavigationBar(String first, String second, String third) {
+        M3NavigationBar navigationBar = new M3NavigationBar(
+                createNavigationItem(first, first.substring(0, 1)),
+                createNavigationItem(second, second.substring(0, 1)),
+                createNavigationItem(third, third.substring(0, 1))
+        );
+        navigationBar.selectFirst();
+        return navigationBar;
+    }
+
+    /// Creates a navigation bar sample.
+    private M3NavigationBar createNavigationBar(String first, String second, String third, String fourth) {
+        M3NavigationBar navigationBar = new M3NavigationBar(
+                createNavigationItem(first, first.substring(0, 1)),
+                createNavigationItem(second, second.substring(0, 1)),
+                createNavigationItem(third, third.substring(0, 1)),
+                createNavigationItem(fourth, fourth.substring(0, 1))
+        );
+        navigationBar.selectFirst();
+        return navigationBar;
     }
 
     /// Creates a sample navigation item.
-    private M3NavigationItem createNavigationItem(String text, String iconText) {
+    private static M3NavigationItem createNavigationItem(String text, String iconText) {
         Label icon = new Label(iconText);
         icon.getStyleClass().add("demo-navigation-icon");
         return new M3NavigationItem(text, icon);
     }
 
-    /// Creates the badge and divider showcase section.
-    private Node createUtilitySection() {
-        M3Badge dotBadge = new M3Badge();
-        M3Badge countBadge = new M3Badge("7");
-        M3Badge overflowBadge = new M3Badge("1234");
-
-        M3Divider fullDivider = new M3Divider();
-        fullDivider.setPrefWidth(260.0);
-
-        M3Divider insetDivider = new M3Divider();
-        insetDivider.setInsetStart(24.0);
-        insetDivider.setPrefWidth(260.0);
-
-        M3Divider verticalDivider = new M3Divider(Orientation.VERTICAL);
-        verticalDivider.setPrefHeight(48.0);
-
-        FlowPane controls = createFlow();
-        controls.getChildren().addAll(dotBadge, countBadge, overflowBadge, fullDivider, insetDivider, verticalDivider);
-        return createSection("Utility", controls);
+    /// Creates the sample icon button.
+    private static M3IconButton createIconButton(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("demo-icon-label");
+        return new M3IconButton(label);
     }
 
-    /// Creates the list item showcase section.
-    private Node createListSection() {
-        M3ListItem oneLineItem = new M3ListItem("One-line list item");
-        oneLineItem.setLeading(new M3Badge());
-
-        M3ListItem twoLineItem = new M3ListItem("Two-line list item");
-        twoLineItem.setSupportingText("Supporting text describes the item.");
-        twoLineItem.setTrailing(new M3Badge("3"));
-
-        M3ListItem threeLineItem = new M3ListItem("Three-line list item");
-        threeLineItem.setOverlineText("Overline");
-        threeLineItem.setSupportingText("Supporting text can span a denser row while keeping token-driven height.");
-
-        M3ListItem selectedItem = new M3ListItem("Selected list item");
-        selectedItem.setSupportingText("Selected state uses the active theme colors.");
-        selectedItem.setSelected(true);
-
-        VBox list = new VBox();
-        list.getStyleClass().add("demo-list");
-        list.getChildren().addAll(
-                oneLineItem,
-                new M3Divider(),
-                twoLineItem,
-                new M3Divider(),
-                threeLineItem,
-                new M3Divider(),
-                selectedItem
-        );
-        return createSection("List items", list);
+    /// Creates a sample floating action button.
+    private static M3FloatingActionButton createFab(
+            String iconText,
+            M3FloatingActionButtonVariant variant,
+            M3FloatingActionButtonSize size
+    ) {
+        Label label = new Label(iconText);
+        label.getStyleClass().add("demo-fab-icon");
+        M3FloatingActionButton button = new M3FloatingActionButton(label);
+        button.setVariant(variant);
+        button.setSize(size);
+        return button;
     }
 
-    /// Creates the progress showcase section.
-    private Node createProgressSection() {
-        M3ProgressBar progressBar = new M3ProgressBar(0.62);
-        progressBar.setPrefWidth(360.0);
+    /// Creates a sample extended floating action button.
+    private static M3FloatingActionButton createExtendedFab() {
+        M3FloatingActionButton button = new M3FloatingActionButton("Create");
+        button.setVariant(M3FloatingActionButtonVariant.SURFACE);
+        return button;
+    }
 
-        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.62);
-        progressIndicator.setPrefSize(64.0, 64.0);
+    /// Creates a sample card.
+    private static M3Card createSampleCard(String title, M3CardVariant variant) {
+        VBox content = new VBox(6.0);
+        content.getStyleClass().add("demo-card-content");
 
-        M3ProgressIndicator indeterminateIndicator = new M3ProgressIndicator();
-        indeterminateIndicator.setPrefSize(64.0, 64.0);
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("demo-card-title");
+        Label bodyLabel = new Label("Project summary with active state, shape, and color tokens.");
+        bodyLabel.getStyleClass().add("demo-card-body");
+        bodyLabel.setWrapText(true);
 
-        playProgressShowcaseAnimation(progressBar, progressIndicator);
+        content.getChildren().addAll(titleLabel, bodyLabel);
 
-        FlowPane controls = createFlow();
-        controls.getChildren().addAll(progressBar, progressIndicator, indeterminateIndicator);
-        return createSection("Progress", controls);
+        M3Card card = new M3Card(content);
+        card.setVariant(variant);
+        card.setPrefWidth(260.0);
+        return card;
     }
 
     /// Plays the determinate progress showcase animation.
@@ -413,101 +721,6 @@ public final class M3FXDemoApp extends Application {
         animations.add(animation);
     }
 
-    /// Creates the card, dialog, and snackbar showcase section.
-    private Node createContainmentSection() {
-        M3Card filledCard = createSampleCard("Filled card", M3CardVariant.FILLED);
-        M3Card outlinedCard = createSampleCard("Outlined card", M3CardVariant.OUTLINED);
-        M3Card elevatedCard = createSampleCard("Elevated card", M3CardVariant.ELEVATED);
-
-        M3Button dialogButton = new M3Button("Open dialog");
-        dialogButton.setVariant(M3ButtonVariant.FILLED);
-        dialogButton.setOnAction(event -> showDemoDialog());
-
-        M3Button snackbarButton = new M3Button("Show snackbar");
-        snackbarButton.setVariant(M3ButtonVariant.TONAL);
-        snackbarButton.setOnAction(event -> showSnackbar());
-
-        FlowPane controls = createFlow();
-        controls.getChildren().addAll(filledCard, outlinedCard, elevatedCard, dialogButton, snackbarButton);
-        return createSection("Containment", controls);
-    }
-
-    /// Creates a button configured with the requested variant.
-    private M3Button createButton(String text, M3ButtonVariant variant) {
-        M3Button button = new M3Button(text);
-        button.setVariant(variant);
-        return button;
-    }
-
-    /// Creates the sample icon button.
-    private M3IconButton createIconButton() {
-        Label label = new Label("i");
-        label.getStyleClass().add("demo-icon-label");
-        return new M3IconButton(label);
-    }
-
-    /// Creates a sample floating action button.
-    private M3FloatingActionButton createFab(
-            String iconText,
-            M3FloatingActionButtonVariant variant,
-            M3FloatingActionButtonSize size
-    ) {
-        Label label = new Label(iconText);
-        label.getStyleClass().add("demo-fab-icon");
-        M3FloatingActionButton button = new M3FloatingActionButton(label);
-        button.setVariant(variant);
-        button.setSize(size);
-        return button;
-    }
-
-    /// Creates a sample extended floating action button.
-    private M3FloatingActionButton createExtendedFab() {
-        M3FloatingActionButton button = new M3FloatingActionButton("Create");
-        button.setVariant(M3FloatingActionButtonVariant.SURFACE);
-        return button;
-    }
-
-    /// Creates a sample card for the containment section.
-    private M3Card createSampleCard(String title, M3CardVariant variant) {
-        VBox content = new VBox(6.0);
-        content.getStyleClass().add("demo-card-content");
-
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("demo-card-title");
-        Label bodyLabel = new Label("Surface, shape, and state tokens are applied through M3FX CSS.");
-        bodyLabel.getStyleClass().add("demo-card-body");
-        bodyLabel.setWrapText(true);
-
-        content.getChildren().addAll(titleLabel, bodyLabel);
-
-        M3Card card = new M3Card(content);
-        card.setVariant(variant);
-        card.setPrefWidth(260.0);
-        return card;
-    }
-
-    /// Creates a titled demo section.
-    private Node createSection(String title, Node content) {
-        VBox section = new VBox(14.0);
-        section.getStyleClass().add("demo-section");
-        section.setMaxWidth(Double.MAX_VALUE);
-
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("demo-section-title");
-
-        section.getChildren().addAll(titleLabel, content);
-        return section;
-    }
-
-    /// Creates a wrapping flow layout for controls.
-    private FlowPane createFlow() {
-        FlowPane flow = new FlowPane(16.0, 16.0);
-        flow.getStyleClass().add("demo-flow");
-        flow.setAlignment(Pos.CENTER_LEFT);
-        flow.setMaxWidth(Double.MAX_VALUE);
-        return flow;
-    }
-
     /// Opens the demo dialog.
     private void showDemoDialog() {
         Dialog<Void> dialog = new Dialog<>();
@@ -534,7 +747,15 @@ public final class M3FXDemoApp extends Application {
         if (snackbarHost == null) {
             return;
         }
+        snackbarHost.show("Theme-aware snackbar");
+    }
 
+    /// Shows the demo snackbar with an action.
+    private void showActionSnackbar() {
+        M3SnackbarHost snackbarHost = this.snackbarHost;
+        if (snackbarHost == null) {
+            return;
+        }
         snackbarHost.show("Theme-aware snackbar", "Action", event -> snackbarHost.show("Action pressed"));
     }
 
@@ -575,5 +796,39 @@ public final class M3FXDemoApp extends Application {
     private static String toHexChannel(double value) {
         String hex = Integer.toHexString((int) Math.round(value * 255.0));
         return hex.length() == 1 ? "0" + hex : hex;
+    }
+
+    /// Describes one demo component page.
+    private static final class DemoPage {
+        /// The page title.
+        private final String title;
+
+        /// The page subtitle.
+        private final String subtitle;
+
+        /// Creates page content on demand.
+        private final Supplier<Node> contentFactory;
+
+        /// Creates a demo page descriptor.
+        private DemoPage(String title, String subtitle, Supplier<Node> contentFactory) {
+            this.title = Objects.requireNonNull(title, "title");
+            this.subtitle = Objects.requireNonNull(subtitle, "subtitle");
+            this.contentFactory = Objects.requireNonNull(contentFactory, "contentFactory");
+        }
+
+        /// Returns the page title.
+        private String title() {
+            return title;
+        }
+
+        /// Returns the page subtitle.
+        private String subtitle() {
+            return subtitle;
+        }
+
+        /// Creates page content.
+        private Node createContent() {
+            return contentFactory.get();
+        }
     }
 }
