@@ -538,12 +538,48 @@ final class M3ControlStyleTest {
         assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));
     }
 
+    /// Verifies that controls expose their default styles through user-agent stylesheets.
+    @Test
+    void controlsExposeUserAgentStylesheets() {
+        assertUserAgentStylesheet(new M3Button(), "/styles/controls/button.css");
+        assertUserAgentStylesheet(new M3IconButton(), "/styles/controls/button.css");
+        assertUserAgentStylesheet(new M3FloatingActionButton(), "/styles/controls/floating-action-button.css");
+        assertUserAgentStylesheet(new M3TextField(), "/styles/controls/text-field.css");
+        assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
+        assertUserAgentStylesheet(new M3CheckBox(), "/styles/controls/selection.css");
+        assertUserAgentStylesheet(new M3RadioButton(), "/styles/controls/selection.css");
+        assertUserAgentStylesheet(new M3Switch(), "/styles/controls/selection.css");
+        assertUserAgentStylesheet(new M3Slider(), "/styles/controls/slider.css");
+        assertUserAgentStylesheet(new M3Chip(), "/styles/controls/chip.css");
+        assertUserAgentStylesheet(new M3SegmentedButton(), "/styles/controls/segmented-button.css");
+        assertUserAgentStylesheet(new M3SegmentedButtonGroup(), "/styles/controls/segmented-button.css");
+        assertUserAgentStylesheet(new M3ProgressBar(), "/styles/controls/progress.css");
+        assertUserAgentStylesheet(new M3ProgressIndicator(), "/styles/controls/progress.css");
+        assertUserAgentStylesheet(new M3Divider(), "/styles/controls/divider.css");
+        assertUserAgentStylesheet(new M3Badge(), "/styles/controls/badge.css");
+        assertUserAgentStylesheet(new M3ListItem(), "/styles/controls/list-item.css");
+        assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");
+        assertUserAgentStylesheet(new M3DialogPane(), "/styles/controls/dialog.css");
+        assertUserAgentStylesheet(new M3Snackbar(), "/styles/controls/snackbar.css");
+    }
+
     /// Applies the m3fx stylesheet to a control in a scene.
     private static void applyCss(javafx.scene.Node node) {
         Pane root = new Pane(node);
         Scene scene = new Scene(root);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
+    }
+
+    /// Verifies that a node user-agent stylesheet has the expected bundled suffix.
+    private static void assertUserAgentStylesheet(Object node, String suffix) {
+        try {
+            Object stylesheet = node.getClass().getMethod("getUserAgentStylesheet").invoke(node);
+            assertTrue(stylesheet instanceof String);
+            assertTrue(((String) stylesheet).endsWith(suffix));
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
     }
 
     /// Creates a primary mouse event for control behavior tests.

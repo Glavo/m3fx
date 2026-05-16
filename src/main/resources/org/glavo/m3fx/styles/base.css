@@ -1,0 +1,5 @@
+.m3-root {
+    -fx-font-family: "System";
+    -fx-background-color: -m3-color-surface;
+    -fx-text-fill: -m3-color-on-surface;
+}

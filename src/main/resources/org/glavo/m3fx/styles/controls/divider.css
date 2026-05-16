@@ -1,0 +1,10 @@
+.m3-divider {
+    -m3-thickness: 1px;
+    -m3-inset-start: 0px;
+    -m3-inset-end: 0px;
+    -fx-background-color: transparent;
+}
+
+.m3-divider-line {
+    -fx-background-color: -m3-color-outline-variant;
+}

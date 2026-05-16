@@ -134,6 +134,7 @@ final class M3ThemeTest {
         assertTrue(root.getStyle().contains("-m3-color-primary"));
         assertEquals(2, scene.getStylesheets().size());
         assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
+        assertTrue(M3ThemeManager.stylesheetUrl().endsWith("/styles/base.css"));
     }
 
     /// Verifies that generated component stylesheets apply theme tokens to controls.

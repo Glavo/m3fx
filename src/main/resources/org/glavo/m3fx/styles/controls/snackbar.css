@@ -1,0 +1,22 @@
+.m3-snackbar {
+    -m3-container-shape: 4px;
+    -m3-content-padding: 16px;
+    -fx-background-color: transparent;
+}
+
+.m3-snackbar-container {
+    -fx-alignment: center-left;
+    -fx-spacing: 16px;
+    -fx-padding: 8px 8px 8px 16px;
+    -fx-background-color: -m3-color-inverse-surface;
+    -fx-background-radius: 4px;
+}
+
+.m3-snackbar-text {
+    -fx-text-fill: -m3-color-inverse-on-surface;
+    -fx-font-size: 14px;
+}
+
+.m3-snackbar-action {
+    -fx-text-fill: -m3-color-inverse-primary;
+}

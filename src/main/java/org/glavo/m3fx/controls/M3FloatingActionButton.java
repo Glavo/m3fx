@@ -12,6 +12,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -258,6 +259,12 @@ public class M3FloatingActionButton extends Button {
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3FloatingActionButtonSkin(this);
+    }
+
+    /// Returns the user-agent stylesheet for m3fx floating action buttons.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("floating-action-button.css");
     }
 
     /// Returns the CSS metadata for this control class.

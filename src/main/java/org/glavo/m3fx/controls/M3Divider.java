@@ -10,6 +10,7 @@ import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -220,6 +221,12 @@ public class M3Divider extends Control {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Returns the user-agent stylesheet for m3fx dividers.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("divider.css");
     }
 
     /// CSS metadata for m3fx divider component tokens.

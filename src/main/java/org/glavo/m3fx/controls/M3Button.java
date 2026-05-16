@@ -11,6 +11,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -221,6 +222,12 @@ public class M3Button extends Button {
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3ButtonSkin(this);
+    }
+
+    /// Returns the user-agent stylesheet for m3fx buttons.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("button.css");
     }
 
     /// Returns the CSS metadata for this control class.

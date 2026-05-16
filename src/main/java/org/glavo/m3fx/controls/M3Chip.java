@@ -10,6 +10,7 @@ import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ToggleButton;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -217,6 +218,12 @@ public class M3Chip extends ToggleButton {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Returns the user-agent stylesheet for m3fx chips.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("chip.css");
     }
 
     /// Adds base style classes and applies the default variant.

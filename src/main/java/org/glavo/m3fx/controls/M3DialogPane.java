@@ -7,6 +7,7 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.control.DialogPane;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -131,6 +132,12 @@ public class M3DialogPane extends DialogPane {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Returns the user-agent stylesheet for m3fx dialog panes.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("dialog.css");
     }
 
     /// Applies size-related component tokens to JavaFX layout properties.

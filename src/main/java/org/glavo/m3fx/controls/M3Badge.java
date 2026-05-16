@@ -11,6 +11,7 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -348,6 +349,12 @@ public class M3Badge extends Control {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Returns the user-agent stylesheet for m3fx badges.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("badge.css");
     }
 
     /// CSS metadata for m3fx badge component tokens.

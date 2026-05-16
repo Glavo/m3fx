@@ -1,0 +1,68 @@
+.m3-fab {
+    -m3-container-size: 56px;
+    -m3-container-shape: 16px;
+    -m3-horizontal-padding: 16px;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 8, 0.18, 0, 2);
+}
+
+.m3-small-fab {
+    -m3-container-size: 40px;
+    -m3-container-shape: 12px;
+    -m3-horizontal-padding: 12px;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+}
+
+.m3-regular-fab {
+    -m3-container-size: 56px;
+    -m3-container-shape: 16px;
+    -m3-horizontal-padding: 16px;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+}
+
+.m3-large-fab {
+    -m3-container-size: 96px;
+    -m3-container-shape: 28px;
+    -m3-horizontal-padding: 24px;
+    -fx-background-radius: 28px;
+    -fx-border-radius: 28px;
+    -fx-font-size: 18px;
+}
+
+.m3-surface-fab {
+    -fx-background-color: -m3-color-surface-container-high;
+    -fx-text-fill: -m3-color-primary;
+}
+
+.m3-primary-fab {
+    -fx-background-color: -m3-color-primary-container;
+    -fx-text-fill: -m3-color-on-primary-container;
+}
+
+.m3-secondary-fab {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-tertiary-fab {
+    -fx-background-color: -m3-color-tertiary-container;
+    -fx-text-fill: -m3-color-on-tertiary-container;
+}
+
+.m3-fab:hover {
+    -fx-opacity: 0.92;
+}
+
+.m3-fab:pressed {
+    -fx-opacity: 0.86;
+}
+
+.m3-fab:disabled {
+    -fx-opacity: 0.38;
+}

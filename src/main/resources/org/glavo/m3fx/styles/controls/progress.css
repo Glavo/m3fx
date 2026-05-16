@@ -1,0 +1,25 @@
+.m3-progress-bar {
+    -m3-track-thickness: 4px;
+    -m3-track-shape: 999px;
+    -fx-accent: -m3-color-primary;
+}
+
+.m3-progress-bar .track {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-radius: 999px;
+}
+
+.m3-progress-bar .bar {
+    -fx-background-color: -m3-color-primary;
+    -fx-background-radius: 999px;
+}
+
+.m3-progress-indicator {
+    -m3-indicator-size: 48px;
+    -fx-progress-color: -m3-color-primary;
+}
+
+.m3-progress-bar:disabled,
+.m3-progress-indicator:disabled {
+    -fx-opacity: 0.38;
+}

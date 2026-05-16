@@ -1,0 +1,41 @@
+.m3-text-field,
+.m3-password-field {
+    -m3-container-height: 56px;
+    -m3-container-shape: 4px;
+    -m3-horizontal-padding: 16px;
+    -fx-font-size: 16px;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-prompt-text-fill: -m3-color-on-surface-variant;
+    -fx-highlight-fill: -m3-color-primary;
+    -fx-highlight-text-fill: -m3-color-on-primary;
+}
+
+.m3-filled-field {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-radius: 4px 4px 0 0;
+    -fx-border-color: transparent transparent -m3-color-on-surface-variant transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.m3-filled-field:focused {
+    -fx-border-color: transparent transparent -m3-color-primary transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
+.m3-outlined-field {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-color: -m3-color-outline;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+}
+
+.m3-outlined-field:focused {
+    -fx-border-color: -m3-color-primary;
+    -fx-border-width: 2px;
+}
+
+.m3-text-field:disabled,
+.m3-password-field:disabled {
+    -fx-opacity: 0.38;
+}

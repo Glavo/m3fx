@@ -3,6 +3,7 @@ package org.glavo.m3fx.controls;
 import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.layout.HBox;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
@@ -53,6 +54,12 @@ public class M3SegmentedButtonGroup extends HBox {
             Objects.requireNonNull(button, "button");
         }
         getChildren().addAll(buttons);
+    }
+
+    /// Returns the user-agent stylesheet for m3fx segmented button groups.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("segmented-button.css");
     }
 
     /// Adds base style classes and child list listeners.

@@ -24,7 +24,7 @@
   - `M3ComponentTokens` stores component-level defaults for implemented controls.
 - Add the theme API:
   - `M3Theme` holds the token set, MonetFX `ColorScheme`, selected profile, brightness, and density.
-  - `M3ThemeManager` installs generated CSS tokens into a `Scene` or application user-agent stylesheet.
+  - `M3ThemeManager` installs base root styles and generated CSS tokens into a `Scene`.
   - Color CSS variables follow MonetFX output. Non-color variables use the `-m3-*` prefix.
 - Add versioned profiles:
   - `M3Profile.BASELINE_2021` is the first default profile.
@@ -36,6 +36,7 @@
   - Selection: checkbox, radio button, switch, slider, chips, segmented buttons, and segmented button groups.
   - Feedback, utility, and containment: linear progress, circular progress, divider, badge, list item, card, dialog, and snackbar.
 - Implement controls with JavaFX `Control`, `Skin`, `CssMetaData`, and pseudo-class support.
+- Give each control a control-specific `getUserAgentStylesheet()` so default styles are loaded with the control.
 
 ## Public API And Code Style
 

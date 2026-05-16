@@ -3,6 +3,7 @@ package org.glavo.m3fx.theme;
 import javafx.application.Application;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.io.IOException;
@@ -12,7 +13,6 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,9 +30,6 @@ public final class M3ThemeManager {
     /// The property key that stores the root style before m3fx theme declarations were added.
     private static final String BASE_STYLE_PROPERTY_KEY = M3ThemeManager.class.getName() + ".baseStyle";
 
-    /// The bundled stylesheet resource path.
-    private static final String STYLESHEET_RESOURCE = "/org/glavo/m3fx/m3fx.css";
-
     /// The directory name used for generated theme stylesheets.
     private static final String THEME_STYLESHEET_DIRECTORY = "m3fx-theme-stylesheets";
 
@@ -43,7 +40,7 @@ public final class M3ThemeManager {
     private M3ThemeManager() {
     }
 
-    /// Installs a theme on a scene and adds the bundled m3fx stylesheet.
+    /// Installs a theme on a scene and adds the base m3fx stylesheet.
     public static void install(Scene scene, M3Theme theme) {
         Objects.requireNonNull(scene, "scene");
         Objects.requireNonNull(theme, "theme");
@@ -72,7 +69,7 @@ public final class M3ThemeManager {
         root.getProperties().put(THEME_PROPERTY_KEY, theme);
     }
 
-    /// Adds the bundled m3fx stylesheet to a scene if it is not already present.
+    /// Adds the base m3fx stylesheet to a scene if it is not already present.
     public static void installStylesheet(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -99,18 +96,14 @@ public final class M3ThemeManager {
         }
     }
 
-    /// Sets the bundled m3fx stylesheet as the application user-agent stylesheet.
+    /// Sets the base m3fx stylesheet as the application user-agent stylesheet.
     public static void installUserAgentStylesheet() {
         Application.setUserAgentStylesheet(stylesheetUrl());
     }
 
-    /// Returns the bundled m3fx stylesheet URL.
+    /// Returns the base m3fx stylesheet URL.
     public static String stylesheetUrl() {
-        URL url = M3ThemeManager.class.getResource(STYLESHEET_RESOURCE);
-        if (url == null) {
-            throw new IllegalStateException("Missing stylesheet resource: " + STYLESHEET_RESOURCE);
-        }
-        return url.toExternalForm();
+        return M3Stylesheets.baseStylesheet();
     }
 
     /// Returns a file URL for a generated component token stylesheet.

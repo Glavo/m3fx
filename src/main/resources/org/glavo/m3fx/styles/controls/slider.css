@@ -1,0 +1,21 @@
+.m3-slider {
+    -m3-track-thickness: 4px;
+    -m3-track-shape: 999px;
+    -m3-thumb-size: 20px;
+    -m3-touch-target-size: 48px;
+}
+
+.m3-slider .track {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-radius: 999px;
+    -fx-pref-height: 4px;
+}
+
+.m3-slider .thumb {
+    -fx-background-color: -m3-color-primary;
+    -fx-background-radius: 999px;
+}
+
+.m3-slider:disabled {
+    -fx-opacity: 0.38;
+}

@@ -1,0 +1,41 @@
+.m3-checkbox,
+.m3-radio-button,
+.m3-switch {
+    -m3-touch-target-size: 40px;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-font-size: 14px;
+}
+
+.m3-switch {
+    -m3-track-shape: 999px;
+}
+
+.m3-checkbox:selected .box,
+.m3-radio-button:selected .radio {
+    -fx-background-color: -m3-color-primary;
+    -fx-border-color: -m3-color-primary;
+}
+
+.m3-checkbox .box,
+.m3-radio-button .radio {
+    -fx-background-color: transparent;
+    -fx-border-color: -m3-color-on-surface-variant;
+}
+
+.m3-switch .box {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-radius: 999px;
+    -fx-border-color: -m3-color-outline;
+    -fx-border-radius: 999px;
+}
+
+.m3-switch:selected .box {
+    -fx-background-color: -m3-color-primary;
+    -fx-border-color: -m3-color-primary;
+}
+
+.m3-checkbox:disabled,
+.m3-radio-button:disabled,
+.m3-switch:disabled {
+    -fx-opacity: 0.38;
+}

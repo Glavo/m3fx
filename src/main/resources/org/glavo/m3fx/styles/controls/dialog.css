@@ -1,0 +1,11 @@
+.m3-dialog-pane {
+    -m3-container-shape: 28px;
+    -m3-content-padding: 24px;
+    -fx-background-color: -m3-color-surface-container-high;
+    -fx-background-radius: 28px;
+    -fx-padding: 24px;
+}
+
+.m3-dialog-pane .content {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
