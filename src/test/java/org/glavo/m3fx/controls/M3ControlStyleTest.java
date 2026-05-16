@@ -12,6 +12,7 @@ import javafx.scene.input.MouseEvent;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
+import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -96,6 +97,46 @@ final class M3ControlStyleTest {
         assertEquals(3, fireCount.get());
     }
 
+    /// Verifies that m3fx floating action buttons create the animated floating action button skin.
+    @Test
+    void floatingActionButtonCreatesAnimatedSkin() {
+        M3FloatingActionButton button = new M3FloatingActionButton();
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertInstanceOf(M3FloatingActionButtonSkin.class, button.getSkin());
+    }
+
+    /// Verifies that the floating action button skin handles mouse and keyboard activation.
+    @Test
+    void floatingActionButtonSkinHandlesActivationEvents() {
+        M3FloatingActionButton button = new M3FloatingActionButton();
+        AtomicInteger fireCount = new AtomicInteger();
+        button.setOnAction(event -> fireCount.incrementAndGet());
+
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root, 200.0, 100.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        button.resize(56.0, 56.0);
+
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        assertTrue(button.isArmed());
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
+        assertEquals(1, fireCount.get());
+
+        button.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+        assertTrue(button.isArmed());
+        button.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+        assertEquals(2, fireCount.get());
+
+        button.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+        assertEquals(3, fireCount.get());
+    }
+
     /// Verifies that button component token properties are styleable from CSS.
     @Test
     void buttonTokensAreStyleable() {
@@ -123,6 +164,46 @@ final class M3ControlStyleTest {
         assertEquals(48.0, button.getContainerHeight(), 0.0001);
         assertEquals(48.0, button.getPrefWidth(), 0.0001);
         assertEquals(48.0, button.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that floating action button component token properties are styleable from CSS.
+    @Test
+    void floatingActionButtonTokensAreStyleable() {
+        M3FloatingActionButton button = new M3FloatingActionButton();
+        button.setStyle("-m3-container-size: 64px; -m3-container-shape: 20px; -m3-horizontal-padding: 22px;");
+
+        applyCss(button);
+
+        assertEquals(64.0, button.getContainerSize(), 0.0001);
+        assertEquals(20.0, button.getContainerShape(), 0.0001);
+        assertEquals(22.0, button.getHorizontalPadding(), 0.0001);
+        assertEquals(64.0, button.getPrefWidth(), 0.0001);
+        assertEquals(64.0, button.getPrefHeight(), 0.0001);
+        assertEquals(0.0, button.getPadding().getLeft(), 0.0001);
+
+        button.setText("Create");
+        applyCss(button);
+
+        assertEquals(javafx.scene.layout.Region.USE_COMPUTED_SIZE, button.getPrefWidth(), 0.0001);
+        assertEquals(64.0, button.getPrefHeight(), 0.0001);
+        assertEquals(22.0, button.getPadding().getLeft(), 0.0001);
+        assertEquals(22.0, button.getPadding().getRight(), 0.0001);
+    }
+
+    /// Verifies that floating action button variants and sizes update style classes.
+    @Test
+    void floatingActionButtonVariantAndSizeUpdateStyleClasses() {
+        M3FloatingActionButton button = new M3FloatingActionButton();
+
+        assertTrue(button.getStyleClass().contains(M3FloatingActionButton.STYLE_CLASS));
+        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.getStyleClass()));
+        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.getStyleClass()));
+
+        button.setVariant(M3FloatingActionButtonVariant.TERTIARY);
+        button.setSize(M3FloatingActionButtonSize.LARGE);
+
+        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.TERTIARY.getStyleClass()));
+        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonSize.LARGE.getStyleClass()));
     }
 
     /// Verifies that card component token properties are styleable from CSS.

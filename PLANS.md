@@ -31,7 +31,7 @@
   - `M3Profile.EXPRESSIVE_2025` is reserved for future M3 Expressive token values.
   - Controls must read component tokens and must not hard-code profile-specific values.
 - Implement first core controls:
-  - Buttons: filled, tonal, outlined, text, elevated, and icon button.
+  - Buttons: filled, tonal, outlined, text, elevated, icon button, and floating action button.
   - Inputs: filled and outlined text field, plus password field.
   - Selection: checkbox, radio button, switch, slider, chips, segmented buttons, and segmented button groups.
   - Feedback, utility, and containment: linear progress, circular progress, divider, badge, list item, card, dialog, and snackbar.

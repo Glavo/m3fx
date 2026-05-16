@@ -49,22 +49,25 @@ public record M3StateLayerTokens(
         StringBuilder builder = new StringBuilder();
         appendOpacityRule(
                 builder,
-                ".m3-button:hover, .m3-chip:hover, .m3-icon-button:hover, .m3-segmented-button:hover",
+                ".m3-button:hover, .m3-chip:hover, .m3-icon-button:hover, .m3-fab:hover, .m3-segmented-button:hover",
                 1.0 - hoverOpacity
         );
         appendOpacityRule(
                 builder,
-                ".m3-button:focused, .m3-chip:focused, .m3-icon-button:focused, .m3-segmented-button:focused",
+                ".m3-button:focused, .m3-chip:focused, .m3-icon-button:focused, .m3-fab:focused, "
+                        + ".m3-segmented-button:focused",
                 1.0 - focusOpacity
         );
         appendOpacityRule(
                 builder,
-                ".m3-button:pressed, .m3-chip:pressed, .m3-icon-button:pressed, .m3-segmented-button:pressed",
+                ".m3-button:pressed, .m3-chip:pressed, .m3-icon-button:pressed, .m3-fab:pressed, "
+                        + ".m3-segmented-button:pressed",
                 1.0 - pressedOpacity
         );
         appendOpacityRule(
                 builder,
-                ".m3-button:disabled, .m3-chip:disabled, .m3-icon-button:disabled, .m3-segmented-button:disabled, "
+                ".m3-button:disabled, .m3-chip:disabled, .m3-icon-button:disabled, .m3-fab:disabled, "
+                        + ".m3-segmented-button:disabled, "
                         + ".m3-text-field:disabled, .m3-password-field:disabled, "
                         + ".m3-checkbox:disabled, .m3-radio-button:disabled, .m3-switch:disabled, .m3-slider:disabled, "
                         + ".m3-progress-bar:disabled, .m3-progress-indicator:disabled",

@@ -1,0 +1,32 @@
+package org.glavo.m3fx.controls;
+
+import org.jetbrains.annotations.NotNullByDefault;
+
+/// Describes the visual variant of an m3fx floating action button.
+@NotNullByDefault
+public enum M3FloatingActionButtonVariant {
+    /// A floating action button using the surface container color.
+    SURFACE("m3-surface-fab"),
+
+    /// A floating action button using the primary container color.
+    PRIMARY("m3-primary-fab"),
+
+    /// A floating action button using the secondary container color.
+    SECONDARY("m3-secondary-fab"),
+
+    /// A floating action button using the tertiary container color.
+    TERTIARY("m3-tertiary-fab");
+
+    /// The JavaFX style class used by this variant.
+    private final String styleClass;
+
+    /// Creates a floating action button variant.
+    M3FloatingActionButtonVariant(String styleClass) {
+        this.styleClass = styleClass;
+    }
+
+    /// Returns the JavaFX style class used by this variant.
+    public String getStyleClass() {
+        return styleClass;
+    }
+}

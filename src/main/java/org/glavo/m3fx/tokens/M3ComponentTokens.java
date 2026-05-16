@@ -12,6 +12,7 @@ import java.util.Objects;
 /// @param textButton tokens used by text buttons
 /// @param elevatedButton tokens used by elevated buttons
 /// @param iconButton tokens used by icon buttons
+/// @param floatingActionButton tokens used by floating action buttons
 /// @param segmentedButton tokens used by segmented buttons
 /// @param field tokens used by text input controls
 /// @param selection tokens used by selection controls
@@ -32,6 +33,7 @@ public record M3ComponentTokens(
         ButtonTokens textButton,
         ButtonTokens elevatedButton,
         ButtonTokens iconButton,
+        FabTokens floatingActionButton,
         ButtonTokens segmentedButton,
         FieldTokens field,
         SelectionTokens selection,
@@ -53,6 +55,7 @@ public record M3ComponentTokens(
         Objects.requireNonNull(textButton, "textButton");
         Objects.requireNonNull(elevatedButton, "elevatedButton");
         Objects.requireNonNull(iconButton, "iconButton");
+        Objects.requireNonNull(floatingActionButton, "floatingActionButton");
         Objects.requireNonNull(segmentedButton, "segmentedButton");
         Objects.requireNonNull(field, "field");
         Objects.requireNonNull(selection, "selection");
@@ -75,6 +78,9 @@ public record M3ComponentTokens(
 
         double buttonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double iconButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
+        double fabSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
+        double fabRegularSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double fabLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 104.0 : 96.0);
         double segmentedButtonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
@@ -91,6 +97,17 @@ public record M3ComponentTokens(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 12.0),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
                 new ButtonTokens(iconButtonSize, shapeTokens.full(), 0.0),
+                new FabTokens(
+                        fabSmallSize,
+                        fabRegularSize,
+                        fabLargeSize,
+                        shapeTokens.medium(),
+                        shapeTokens.large(),
+                        shapeTokens.extraLarge(),
+                        12.0,
+                        16.0,
+                        24.0
+                ),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), 12.0),
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
@@ -123,6 +140,7 @@ public record M3ComponentTokens(
         append(builder, "button-text", textButton);
         append(builder, "button-elevated", elevatedButton);
         append(builder, "button-icon", iconButton);
+        append(builder, floatingActionButton);
         append(builder, "segmented-button", segmentedButton);
         append(builder, field);
         append(builder, selection);
@@ -147,6 +165,27 @@ public record M3ComponentTokens(
         appendButtonRule(builder, ".m3-text-button", textButton);
         appendButtonRule(builder, ".m3-elevated-button", elevatedButton);
         appendButtonRule(builder, ".m3-icon-button", iconButton);
+        appendFabRule(
+                builder,
+                ".m3-small-fab",
+                floatingActionButton.smallSize(),
+                floatingActionButton.smallShape(),
+                floatingActionButton.smallHorizontalPadding()
+        );
+        appendFabRule(
+                builder,
+                ".m3-regular-fab",
+                floatingActionButton.regularSize(),
+                floatingActionButton.regularShape(),
+                floatingActionButton.regularHorizontalPadding()
+        );
+        appendFabRule(
+                builder,
+                ".m3-large-fab",
+                floatingActionButton.largeSize(),
+                floatingActionButton.largeShape(),
+                floatingActionButton.largeHorizontalPadding()
+        );
         appendButtonRule(builder, ".m3-segmented-button", segmentedButton);
         appendSegmentedButtonPositionRules(builder, segmentedButton);
         appendFieldRule(builder, ".m3-text-field, .m3-password-field", field);
@@ -177,6 +216,19 @@ public record M3ComponentTokens(
         M3TokenCss.append(builder, "-m3-" + prefix + "-container-height", M3TokenCss.pixels(tokens.height()));
         M3TokenCss.append(builder, "-m3-" + prefix + "-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-" + prefix + "-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+    }
+
+    /// Appends floating action button token declarations.
+    private static void append(StringBuilder builder, FabTokens tokens) {
+        M3TokenCss.append(builder, "-m3-fab-small-container-size", M3TokenCss.pixels(tokens.smallSize()));
+        M3TokenCss.append(builder, "-m3-fab-regular-container-size", M3TokenCss.pixels(tokens.regularSize()));
+        M3TokenCss.append(builder, "-m3-fab-large-container-size", M3TokenCss.pixels(tokens.largeSize()));
+        M3TokenCss.append(builder, "-m3-fab-small-container-shape", M3TokenCss.pixels(tokens.smallShape()));
+        M3TokenCss.append(builder, "-m3-fab-regular-container-shape", M3TokenCss.pixels(tokens.regularShape()));
+        M3TokenCss.append(builder, "-m3-fab-large-container-shape", M3TokenCss.pixels(tokens.largeShape()));
+        M3TokenCss.append(builder, "-m3-fab-small-horizontal-padding", M3TokenCss.pixels(tokens.smallHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-fab-regular-horizontal-padding", M3TokenCss.pixels(tokens.regularHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-fab-large-horizontal-padding", M3TokenCss.pixels(tokens.largeHorizontalPadding()));
     }
 
     /// Appends field token declarations.
@@ -268,6 +320,23 @@ public record M3ComponentTokens(
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(tokens.containerShape()));
+        endRule(builder);
+    }
+
+    /// Appends a floating action button token CSS rule.
+    private static void appendFabRule(
+            StringBuilder builder,
+            String selector,
+            double size,
+            double shape,
+            double horizontalPadding
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-size", M3TokenCss.pixels(size));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(shape));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(horizontalPadding));
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(shape));
+        appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(shape));
         endRule(builder);
     }
 
@@ -497,6 +566,43 @@ public record M3ComponentTokens(
             validateNonNegative(height, "height");
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+        }
+    }
+
+    /// Tokens shared by floating action button sizes.
+    ///
+    /// @param smallSize the small floating action button square size
+    /// @param regularSize the regular floating action button square size
+    /// @param largeSize the large floating action button square size
+    /// @param smallShape the small floating action button corner radius
+    /// @param regularShape the regular floating action button corner radius
+    /// @param largeShape the large floating action button corner radius
+    /// @param smallHorizontalPadding the horizontal padding for small extended floating action buttons
+    /// @param regularHorizontalPadding the horizontal padding for regular extended floating action buttons
+    /// @param largeHorizontalPadding the horizontal padding for large extended floating action buttons
+    @NotNullByDefault
+    public record FabTokens(
+            double smallSize,
+            double regularSize,
+            double largeSize,
+            double smallShape,
+            double regularShape,
+            double largeShape,
+            double smallHorizontalPadding,
+            double regularHorizontalPadding,
+            double largeHorizontalPadding
+    ) {
+        /// Creates floating action button tokens.
+        public FabTokens {
+            validateNonNegative(smallSize, "smallSize");
+            validateNonNegative(regularSize, "regularSize");
+            validateNonNegative(largeSize, "largeSize");
+            validateNonNegative(smallShape, "smallShape");
+            validateNonNegative(regularShape, "regularShape");
+            validateNonNegative(largeShape, "largeShape");
+            validateNonNegative(smallHorizontalPadding, "smallHorizontalPadding");
+            validateNonNegative(regularHorizontalPadding, "regularHorizontalPadding");
+            validateNonNegative(largeHorizontalPadding, "largeHorizontalPadding");
         }
     }
 

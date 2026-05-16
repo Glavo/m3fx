@@ -73,6 +73,11 @@
     -fx-text-fill: -m3-color-primary;
 }
 
+.demo-fab-icon {
+    -fx-font-size: 20px;
+    -fx-font-weight: 700;
+}
+
 .demo-card-content {
     -fx-min-height: 92px;
 }

@@ -32,6 +32,9 @@ import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
+import org.glavo.m3fx.controls.M3FloatingActionButton;
+import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
+import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3PasswordField;
@@ -195,7 +198,11 @@ public final class M3FXDemoApp extends Application {
                 createButton("Outlined", M3ButtonVariant.OUTLINED),
                 createButton("Text", M3ButtonVariant.TEXT),
                 createButton("Elevated", M3ButtonVariant.ELEVATED),
-                createIconButton()
+                createIconButton(),
+                createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
+                createFab("+", M3FloatingActionButtonVariant.SECONDARY, M3FloatingActionButtonSize.SMALL),
+                createFab("*", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.LARGE),
+                createExtendedFab()
         );
         return createSection("Buttons", controls);
     }
@@ -374,6 +381,27 @@ public final class M3FXDemoApp extends Application {
         Label label = new Label("i");
         label.getStyleClass().add("demo-icon-label");
         return new M3IconButton(label);
+    }
+
+    /// Creates a sample floating action button.
+    private M3FloatingActionButton createFab(
+            String iconText,
+            M3FloatingActionButtonVariant variant,
+            M3FloatingActionButtonSize size
+    ) {
+        Label label = new Label(iconText);
+        label.getStyleClass().add("demo-fab-icon");
+        M3FloatingActionButton button = new M3FloatingActionButton(label);
+        button.setVariant(variant);
+        button.setSize(size);
+        return button;
+    }
+
+    /// Creates a sample extended floating action button.
+    private M3FloatingActionButton createExtendedFab() {
+        M3FloatingActionButton button = new M3FloatingActionButton("Create");
+        button.setVariant(M3FloatingActionButtonVariant.SURFACE);
+        return button;
     }
 
     /// Creates a sample card for the containment section.
