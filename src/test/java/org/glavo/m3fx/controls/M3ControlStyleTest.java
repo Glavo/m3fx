@@ -1682,6 +1682,23 @@ final class M3ControlStyleTest {
         assertTrue(headline.getLayoutY() > 0.0);
     }
 
+    /// Verifies that full list item shapes are resolved to the allocated row bounds.
+    @Test
+    void listItemSkinClampsFullContainerShape() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        listItem.setSelected(true);
+        listItem.setStyle("-m3-container-shape: 999px;");
+        Pane root = new Pane(listItem);
+        Scene scene = new Scene(root, 240.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        listItem.resize(220.0, 56.0);
+        listItem.layout();
+
+        assertRegionRadii(listItemContainer(listItem), 28.0, 28.0, 28.0, 28.0);
+    }
+
     /// Verifies that navigation item component token properties are styleable from CSS.
     @Test
     void navigationItemTokensAreStyleable() {

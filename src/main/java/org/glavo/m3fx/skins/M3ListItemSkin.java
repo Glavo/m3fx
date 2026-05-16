@@ -128,8 +128,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Lays out the container and bounded state layer.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
+        double shapeRadius = getSkinnable().getContainerShape();
         container.resizeRelocate(x, y, width, height);
-        stateLayer.layoutLayer(x, y, width, height, getSkinnable().getContainerShape());
+        stateLayer.layoutLayer(x, y, width, height, shapeRadius);
     }
 
     /// Updates text and layout after text content changes.
@@ -187,7 +188,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         container.setPrefHeight(height);
         container.setMaxHeight(height);
         container.setPadding(new Insets(verticalPadding, horizontalPadding, verticalPadding, horizontalPadding));
-        container.setStyle("-fx-background-radius: " + formatPixels(item.getContainerShape()) + ";");
+        updateContainerShape(container.getWidth(), height, item.getContainerShape());
     }
 
     /// Returns the preferred height for the current text structure.
@@ -197,6 +198,21 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
             case TWO_LINE -> item.getTwoLineHeight();
             case THREE_LINE -> item.getThreeLineHeight();
         };
+    }
+
+    /// Updates the selected container shape using a radius that fits the allocated bounds.
+    private void updateContainerShape(double width, double height, double shapeRadius) {
+        double radius = resolvedShapeRadius(width, height, shapeRadius);
+        container.setStyle("-fx-background-radius: " + formatPixels(radius) + ";");
+    }
+
+    /// Resolves a shape token to a radius that can be represented within the current bounds.
+    private static double resolvedShapeRadius(double width, double height, double shapeRadius) {
+        double maximumRadius = Math.max(0.0, height / 2.0);
+        if (width > 0.0) {
+            maximumRadius = Math.min(maximumRadius, width / 2.0);
+        }
+        return Math.min(Math.max(0.0, shapeRadius), maximumRadius);
     }
 
     /// Formats a CSS pixel value.
