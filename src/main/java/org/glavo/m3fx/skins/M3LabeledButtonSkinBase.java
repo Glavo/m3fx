@@ -20,6 +20,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
+import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -308,6 +309,9 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
         if (button instanceof M3Button m3Button) {
             return m3Button.getContainerShape();
+        }
+        if (button instanceof M3IconToggleButton iconToggleButton) {
+            return iconToggleButton.getContainerShape();
         }
         if (button instanceof M3Chip chip) {
             return chip.getContainerShape();

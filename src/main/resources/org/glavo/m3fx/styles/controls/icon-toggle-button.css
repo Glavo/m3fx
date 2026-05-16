@@ -1,0 +1,146 @@
+.m3-icon-toggle-button.m3-icon-toggle-button,
+.m3-icon-toggle-button.m3-icon-toggle-button:hover,
+.m3-icon-toggle-button.m3-icon-toggle-button:focused,
+.m3-icon-toggle-button.m3-icon-toggle-button:armed,
+.m3-icon-toggle-button.m3-icon-toggle-button:pressed,
+.m3-icon-toggle-button.m3-icon-toggle-button:selected {
+    -m3-container-height: 40px;
+    -m3-container-shape: 999px;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-border-insets: 0;
+    -fx-border-radius: 999px;
+    -fx-padding: 0;
+    -fx-content-display: graphic-only;
+    -fx-cursor: hand;
+}
+
+.m3-icon-toggle-button.m3-standard-icon-toggle-button,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:hover,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:focused,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:armed,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:pressed {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:selected,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:selected:hover,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:selected:focused,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:selected:armed,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:selected:pressed {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -m3-color-primary;
+}
+
+.m3-icon-toggle-button.m3-filled-icon-toggle-button,
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:hover,
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:focused,
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:armed,
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:pressed {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-border-color: transparent;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:selected,
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:selected:hover,
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:selected:focused,
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:selected:armed,
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:selected:pressed {
+    -fx-background-color: -m3-color-primary;
+    -fx-border-color: transparent;
+    -fx-text-fill: -m3-color-on-primary;
+}
+
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:hover,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:focused,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:armed,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:pressed {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-border-color: transparent;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected:hover,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected:focused,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected:armed,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected:pressed {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-border-color: transparent;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:hover,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:focused,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:armed,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:pressed {
+    -fx-background-color: transparent;
+    -fx-border-color: -m3-color-outline;
+    -fx-border-width: 1px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected:hover,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected:focused,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected:armed,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected:pressed {
+    -fx-background-color: -m3-color-inverse-surface;
+    -fx-border-color: transparent;
+    -fx-text-fill: -m3-color-inverse-on-surface;
+}
+
+.m3-icon-toggle-button .m3-icon {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-icon-toggle-button:selected .m3-icon {
+    -fx-text-fill: -m3-color-primary;
+}
+
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:selected .m3-icon {
+    -fx-text-fill: -m3-color-on-primary;
+}
+
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected .m3-icon {
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected .m3-icon {
+    -fx-text-fill: -m3-color-inverse-on-surface;
+}
+
+.m3-icon-toggle-button .m3-state-layer,
+.m3-icon-toggle-button .m3-ripple {
+    -fx-background-color: -m3-color-on-surface-variant;
+}
+
+.m3-icon-toggle-button:selected .m3-state-layer,
+.m3-icon-toggle-button:selected .m3-ripple {
+    -fx-background-color: -m3-color-primary;
+}
+
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:selected .m3-state-layer,
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:selected .m3-ripple {
+    -fx-background-color: -m3-color-on-primary;
+}
+
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected .m3-state-layer,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected .m3-ripple {
+    -fx-background-color: -m3-color-on-secondary-container;
+}
+
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected .m3-state-layer,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected .m3-ripple {
+    -fx-background-color: -m3-color-inverse-on-surface;
+}
+
+.m3-icon-toggle-button:disabled {
+    -fx-opacity: 0.38;
+}

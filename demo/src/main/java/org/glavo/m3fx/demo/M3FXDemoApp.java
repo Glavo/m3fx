@@ -49,6 +49,8 @@ import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconSize;
+import org.glavo.m3fx.controls.M3IconToggleButton;
+import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
 import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3Menu;
@@ -354,6 +356,14 @@ public final class M3FXDemoApp extends Application {
                         disabledIcon
                 ),
                 createShowcaseGroup(
+                        "Toggle Icon Buttons",
+                        createIconToggleButton("S", M3IconToggleButtonVariant.STANDARD, true),
+                        createIconToggleButton("F", M3IconToggleButtonVariant.FILLED, true),
+                        createIconToggleButton("T", M3IconToggleButtonVariant.TONAL, true),
+                        createIconToggleButton("O", M3IconToggleButtonVariant.OUTLINED, true),
+                        createIconToggleButton("D", M3IconToggleButtonVariant.TONAL, false)
+                ),
+                createShowcaseGroup(
                         "Floating Action Buttons",
                         createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
                         createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
@@ -407,6 +417,7 @@ public final class M3FXDemoApp extends Application {
                         "Button Usage",
                         createIconButton("i"),
                         createIconButton("+"),
+                        createIconToggleButton("B", M3IconToggleButtonVariant.TONAL, true),
                         createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
                         createFab("*", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.REGULAR)
                 )
@@ -1106,6 +1117,20 @@ public final class M3FXDemoApp extends Application {
         M3Icon icon = new M3Icon(text, M3IconSize.SMALL, M3IconVariant.PRIMARY);
         icon.getStyleClass().add("demo-icon-label");
         return new M3IconButton(icon);
+    }
+
+    /// Creates the sample toggle icon button.
+    private static M3IconToggleButton createIconToggleButton(
+            String text,
+            M3IconToggleButtonVariant variant,
+            boolean selected
+    ) {
+        M3Icon icon = new M3Icon(text, M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT);
+        icon.getStyleClass().add("demo-icon-label");
+        M3IconToggleButton button = new M3IconToggleButton(icon);
+        button.setVariant(variant);
+        button.setSelected(selected);
+        return button;
     }
 
     /// Creates a sample floating action button.

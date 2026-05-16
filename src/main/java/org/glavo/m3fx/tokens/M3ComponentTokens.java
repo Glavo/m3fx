@@ -353,6 +353,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendButtonRule(builder, ".m3-text-button", textButton());
         appendButtonRule(builder, ".m3-elevated-button", elevatedButton());
         appendButtonRule(builder, ".m3-icon-button", iconButton());
+        appendButtonRule(builder, ".m3-icon-toggle-button", iconButton());
         appendFabRule(
                 builder,
                 ".m3-small-fab",

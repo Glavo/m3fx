@@ -40,6 +40,7 @@ import org.glavo.m3fx.skins.M3CheckBoxSkin;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
+import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.skins.M3NavigationItemSkin;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
@@ -840,6 +841,71 @@ final class M3ControlStyleTest {
 
         assertEquals(M3IconSize.SMALL, icon.getSize());
         assertEquals(M3IconVariant.ERROR, icon.getVariant());
+    }
+
+    /// Verifies that toggle icon button variants and selected states update style classes.
+    @Test
+    void iconToggleButtonVariantAndSelectionUpdateState() {
+        M3IconToggleButton button = new M3IconToggleButton("A");
+
+        assertEquals(M3IconToggleButtonVariant.STANDARD, button.getVariant());
+        assertFalse(button.isSelected());
+        assertTrue(button.getStyleClass().contains(M3IconToggleButton.STYLE_CLASS));
+        assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.STANDARD.getStyleClass()));
+
+        button.setVariant(M3IconToggleButtonVariant.TONAL);
+        button.setSelected(true);
+
+        assertEquals(M3IconToggleButtonVariant.TONAL, button.getVariant());
+        assertTrue(button.isSelected());
+        assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.TONAL.getStyleClass()));
+        assertFalse(button.getStyleClass().contains(M3IconToggleButtonVariant.STANDARD.getStyleClass()));
+        assertTrue(button.getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
+    }
+
+    /// Verifies that toggle icon buttons create the animated toggle icon button skin.
+    @Test
+    void iconToggleButtonCreatesAnimatedSkin() {
+        M3IconToggleButton button = new M3IconToggleButton("A");
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertInstanceOf(M3IconToggleButtonSkin.class, button.getSkin());
+    }
+
+    /// Verifies that toggle icon buttons toggle selected state and fire action events.
+    @Test
+    void iconToggleButtonTogglesAndFiresAction() {
+        M3IconToggleButton button = new M3IconToggleButton("A");
+        AtomicInteger actionCount = new AtomicInteger();
+        button.setOnAction(event -> actionCount.incrementAndGet());
+
+        button.fire();
+
+        assertTrue(button.isSelected());
+        assertEquals(1, actionCount.get());
+
+        button.fire();
+
+        assertFalse(button.isSelected());
+        assertEquals(2, actionCount.get());
+    }
+
+    /// Verifies that toggle icon button component token properties are styleable from CSS.
+    @Test
+    void iconToggleButtonTokensAreStyleable() {
+        M3IconToggleButton button = new M3IconToggleButton("A");
+        button.setStyle("-m3-container-height: 48px; -m3-container-shape: 12px;");
+
+        applyCss(button);
+
+        assertEquals(48.0, button.getContainerHeight(), 0.0001);
+        assertEquals(12.0, button.getContainerShape(), 0.0001);
+        assertEquals(48.0, button.getPrefWidth(), 0.0001);
+        assertEquals(48.0, button.getPrefHeight(), 0.0001);
     }
 
     /// Verifies that text typography roles update style classes.
@@ -2606,6 +2672,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
         assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
         assertTrue(new M3Icon("A").getStyleClass().contains(M3Icon.STYLE_CLASS));
+        assertTrue(new M3IconToggleButton("A").getStyleClass().contains(M3IconToggleButton.STYLE_CLASS));
         assertTrue(new M3Text("Text").getStyleClass().contains(M3Text.STYLE_CLASS));
         assertTrue(new M3Surface().getStyleClass().contains(M3Surface.STYLE_CLASS));
         assertTrue(new M3BadgedBox().getStyleClass().contains(M3BadgedBox.STYLE_CLASS));
@@ -2634,6 +2701,7 @@ final class M3ControlStyleTest {
     @Test
     void selectableControlsDoNotExtendToggleButton() {
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
+        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Tab.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3NavigationItem.class));
@@ -2644,6 +2712,7 @@ final class M3ControlStyleTest {
     void controlsExposeUserAgentStylesheets() {
         assertUserAgentStylesheet(new M3Button(), "/styles/controls/button.css");
         assertUserAgentStylesheet(new M3IconButton(), "/styles/controls/button.css");
+        assertUserAgentStylesheet(new M3IconToggleButton(), "/styles/controls/icon-toggle-button.css");
         assertUserAgentStylesheet(new M3FloatingActionButton(), "/styles/controls/floating-action-button.css");
         assertUserAgentStylesheet(new M3TextField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
