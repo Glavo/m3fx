@@ -171,7 +171,6 @@ public class M3DialogPane extends DialogPane {
         button.getStyleClass().add(BUTTON_STYLE_CLASS);
         button.setVariant(M3ButtonVariant.TEXT);
         button.setOnAction(sourceButton.getOnAction());
-        button.disableProperty().bind(sourceButton.disableProperty());
         ButtonBar.setButtonData(button, ButtonBar.getButtonData(sourceNode));
         ButtonBar.setButtonUniformSize(button, ButtonBar.isButtonUniformSize(sourceNode));
         if (sourceButton instanceof Button sourcePlainButton) {

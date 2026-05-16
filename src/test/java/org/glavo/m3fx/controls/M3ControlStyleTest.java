@@ -22,6 +22,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Arc;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
@@ -437,6 +438,11 @@ final class M3ControlStyleTest {
         assertEquals(ButtonBar.ButtonData.OK_DONE, ButtonBar.getButtonData(okButton));
         assertTrue(cancelButton.isCancelButton());
         assertTrue(okButton.isDefaultButton());
+        assertFalse(okButton.disableProperty().isBound());
+
+        okButton.setDisable(true);
+
+        assertTrue(okButton.isDisabled());
     }
 
     /// Verifies that dialog pane subnodes keep Material typography and colors.
@@ -767,6 +773,24 @@ final class M3ControlStyleTest {
         assertEquals(24.0, onThumb.getLayoutX(), 0.0001);
     }
 
+    /// Verifies that switch skins apply the track shape token to the visual track.
+    @Test
+    void switchSkinAppliesTrackShapeToken() {
+        M3Switch switchControl = new M3Switch("Switch");
+        switchControl.setStyle("-m3-track-shape: 12px;");
+        Pane root = new Pane(switchControl);
+        Scene scene = new Scene(root, 160.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        switchControl.resize(120.0, 40.0);
+        switchControl.layout();
+
+        Region track = lookupRegion(switchControl, ".box");
+        assertEquals(12.0, track.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
+        assertEquals(12.0, track.getBorder().getStrokes().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
+    }
+
     /// Verifies that radio indicators use circular Material styling.
     @Test
     void radioButtonIndicatorUsesCircularMaterialShape() {
@@ -890,6 +914,28 @@ final class M3ControlStyleTest {
         assertEquals(200.0, track.getWidth(), 0.0001);
         assertEquals(100.0, bar.getWidth(), 0.0001);
         assertTrue(bar.getBoundsInParent().getMaxX() <= track.getBoundsInParent().getMaxX() + 0.0001);
+    }
+
+    /// Verifies that the progress bar skin clips indeterminate progress inside the track.
+    @Test
+    void progressBarSkinClipsIndeterminateSegment() {
+        M3ProgressBar progressBar = new M3ProgressBar();
+        Pane root = new Pane(progressBar);
+        Scene scene = new Scene(root, 240.0, 40.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        progressBar.resize(200.0, 16.0);
+        progressBar.layout();
+
+        Pane container = assertInstanceOf(Pane.class, progressBar.lookup(".m3-progress-bar-container"));
+        Rectangle clip = assertInstanceOf(Rectangle.class, container.getClip());
+        Region bar = lookupRegion(progressBar, ".bar");
+        assertEquals(200.0, clip.getWidth(), 0.0001);
+        assertEquals(4.0, clip.getHeight(), 0.0001);
+        assertEquals(1998.0, clip.getArcWidth(), 0.0001);
+        assertEquals(1998.0, clip.getArcHeight(), 0.0001);
+        assertTrue(bar.getWidth() >= 24.0);
     }
 
     /// Verifies that progress bar subnodes keep Material colors.
@@ -1169,6 +1215,28 @@ final class M3ControlStyleTest {
         assertTrue(slider.getValue() > 50.0);
         slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
         assertEquals(50.0, slider.getValue(), 0.0001);
+    }
+
+    /// Verifies that disabled slider skins ignore pointer and keyboard input.
+    @Test
+    void sliderSkinIgnoresInputWhileDisabled() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 240.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+        slider.setValueChanging(true);
+
+        slider.setDisable(true);
+        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
+        slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+        assertEquals(50.0, slider.getValue(), 0.0001);
+        assertFalse(slider.isValueChanging());
+        assertEquals(0.0, lookupRegion(slider, ".m3-ripple").getOpacity(), 0.0001);
     }
 
     /// Verifies that slider skins expose bounded thumb ripple feedback.

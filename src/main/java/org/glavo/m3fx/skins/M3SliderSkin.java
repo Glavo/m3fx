@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
@@ -45,6 +46,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Handles keyboard navigation while the slider is focused.
     private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
 
+    /// Clears transient interaction state when the slider becomes disabled.
+    private final InvalidationListener disabledInvalidation = observable -> resetDisabledInteractionState();
+
     /// Creates a slider skin.
     public M3SliderSkin(M3Slider control) {
         super(control);
@@ -61,6 +65,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.trackThicknessProperty().addListener(observable -> getSkinnable().requestLayout());
         control.thumbSizeProperty().addListener(observable -> getSkinnable().requestLayout());
         control.touchTargetSizeProperty().addListener(observable -> getSkinnable().requestLayout());
+        control.disabledProperty().addListener(disabledInvalidation);
 
         control.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.addEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
@@ -76,6 +81,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         control.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        control.disabledProperty().removeListener(disabledInvalidation);
         stateLayer.reset();
         super.dispose();
     }
@@ -215,11 +221,11 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
 
     /// Starts value adjustment from a primary mouse press.
     private void handleMousePressed(MouseEvent event) {
-        if (event.getButton() != MouseButton.PRIMARY) {
+        M3Slider slider = getSkinnable();
+        if (slider.isDisabled() || event.getButton() != MouseButton.PRIMARY) {
             return;
         }
 
-        M3Slider slider = getSkinnable();
         slider.requestFocus();
         slider.setValueChanging(true);
         updateValueFromMouse(event);
@@ -229,7 +235,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
 
     /// Continues value adjustment while the primary mouse button is held.
     private void handleMouseDragged(MouseEvent event) {
-        if (!event.isPrimaryButtonDown()) {
+        if (getSkinnable().isDisabled() || !event.isPrimaryButtonDown()) {
             return;
         }
 
@@ -239,18 +245,23 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
 
     /// Finishes value adjustment after a primary mouse release.
     private void handleMouseReleased(MouseEvent event) {
-        if (event.getButton() != MouseButton.PRIMARY) {
+        M3Slider slider = getSkinnable();
+        if (slider.isDisabled() || event.getButton() != MouseButton.PRIMARY) {
             return;
         }
 
         updateValueFromMouse(event);
-        getSkinnable().setValueChanging(false);
+        slider.setValueChanging(false);
         event.consume();
     }
 
     /// Adjusts the slider value for keyboard navigation.
     private void handleKeyPressed(KeyEvent event) {
         M3Slider slider = getSkinnable();
+        if (slider.isDisabled()) {
+            return;
+        }
+
         KeyCode code = event.getCode();
         switch (code) {
             case HOME -> {
@@ -331,6 +342,14 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     private double positionToValue(double position) {
         M3Slider slider = getSkinnable();
         return slider.getMin() + (slider.getMax() - slider.getMin()) * clamp(position);
+    }
+
+    /// Resets interaction state when disabled during pointer or keyboard work.
+    private void resetDisabledInteractionState() {
+        if (getSkinnable().isDisabled()) {
+            getSkinnable().setValueChanging(false);
+            stateLayer.reset();
+        }
     }
 
     /// Clamps a normalized value position to the supported range.

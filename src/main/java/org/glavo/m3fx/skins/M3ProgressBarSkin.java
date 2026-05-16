@@ -13,7 +13,9 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SkinBase;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -26,6 +28,12 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// The minimum width used by an indeterminate segment.
     private static final double MIN_INDETERMINATE_SEGMENT_WIDTH = 24.0;
+
+    /// The clipped visual container.
+    private final Pane container = new Pane();
+
+    /// The clip that keeps the bar inside the track bounds.
+    private final Rectangle clip = new Rectangle();
 
     /// The track region.
     private final Region track = new Region();
@@ -48,11 +56,15 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Creates a progress bar skin.
     public M3ProgressBarSkin(M3ProgressBar control) {
         super(control);
+        container.getStyleClass().add("m3-progress-bar-container");
+        container.setManaged(false);
+        container.setClip(clip);
         track.getStyleClass().add("track");
         bar.getStyleClass().add("bar");
         track.setManaged(false);
         bar.setManaged(false);
-        getChildren().addAll(track, bar);
+        container.getChildren().addAll(track, bar);
+        getChildren().add(container);
 
         indeterminatePosition.addListener(observable -> control.requestLayout());
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
@@ -95,8 +107,13 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
         track.setStyle(style);
         bar.setStyle(style);
-        track.resizeRelocate(x, trackY, width, thickness);
-        layoutBar(x, trackY, width, thickness);
+        container.resizeRelocate(x, trackY, width, thickness);
+        clip.setWidth(width);
+        clip.setHeight(thickness);
+        clip.setArcWidth(progressBar.getTrackShape() * 2.0);
+        clip.setArcHeight(progressBar.getTrackShape() * 2.0);
+        track.resizeRelocate(0.0, 0.0, width, thickness);
+        layoutBar(0.0, 0.0, width, thickness);
     }
 
     /// Lays out the determinate or indeterminate bar region.

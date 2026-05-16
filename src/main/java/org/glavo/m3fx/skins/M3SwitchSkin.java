@@ -61,6 +61,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
         updateMetrics();
         control.touchTargetSizeProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
+        control.trackShapeProperty().addListener((observable, oldValue, newValue) -> updateTrackStyle());
         control.selectedProperty().addListener((observable, oldValue, newValue) -> animateThumbPosition(newValue));
     }
 
@@ -84,6 +85,13 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         double touchTargetHeight = Math.max(getSkinnable().getTouchTargetSize(), TRACK_HEIGHT);
         setIndicatorSlotSize(TRACK_WIDTH, touchTargetHeight);
         setFixedSize(box, TRACK_WIDTH, TRACK_HEIGHT);
+        updateTrackStyle();
+    }
+
+    /// Applies the switch track shape token to the visual track.
+    private void updateTrackStyle() {
+        String shape = formatPixels(getSkinnable().getTrackShape());
+        box.setStyle("-fx-background-radius: " + shape + "; -fx-border-radius: " + shape + ";");
     }
 
     /// Animates the thumb to the selected or unselected position.
@@ -104,5 +112,13 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         double thumbX = thumbCenterX - thumbWidth / 2.0;
         double thumbY = (TRACK_HEIGHT - thumbHeight) / 2.0;
         thumb.resizeRelocate(thumbX, thumbY, thumbWidth, thumbHeight);
+    }
+
+    /// Formats a CSS pixel value.
+    private static String formatPixels(double value) {
+        if (Math.rint(value) == value) {
+            return Long.toString((long) value) + "px";
+        }
+        return Double.toString(value) + "px";
     }
 }
