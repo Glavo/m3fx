@@ -3,8 +3,11 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
@@ -14,6 +17,7 @@ import javafx.stage.Popup;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.Objects;
 
@@ -54,6 +58,66 @@ public class M3MenuButton extends M3Button {
     /// Returns the mutable item list shown by this button's menu.
     public final ObservableList<Node> getItems() {
         return menu.getItems();
+    }
+
+    /// Returns the menu item selection mode used by this button's menu.
+    public final M3MenuSelectionMode getSelectionMode() {
+        return menu.getSelectionMode();
+    }
+
+    /// Sets the menu item selection mode used by this button's menu.
+    public final void setSelectionMode(M3MenuSelectionMode selectionMode) {
+        menu.setSelectionMode(selectionMode);
+    }
+
+    /// Returns the menu item selection mode property.
+    public final ObjectProperty<M3MenuSelectionMode> selectionModeProperty() {
+        return menu.selectionModeProperty();
+    }
+
+    /// Returns whether this button's menu allows all selectable items to be unselected.
+    public final boolean isAllowEmptySelection() {
+        return menu.isAllowEmptySelection();
+    }
+
+    /// Sets whether this button's menu allows all selectable items to be unselected.
+    public final void setAllowEmptySelection(boolean allowEmptySelection) {
+        menu.setAllowEmptySelection(allowEmptySelection);
+    }
+
+    /// Returns the empty-selection policy property for this button's menu.
+    public final BooleanProperty allowEmptySelectionProperty() {
+        return menu.allowEmptySelectionProperty();
+    }
+
+    /// Returns the selected menu items in child order.
+    public final @UnmodifiableView ObservableList<M3MenuItem> getSelectedItems() {
+        return menu.getSelectedItems();
+    }
+
+    /// Returns the first selected menu item in child order.
+    public final @Nullable M3MenuItem getSelectedItem() {
+        return menu.getSelectedItem();
+    }
+
+    /// Returns the first selected menu item property.
+    public final ReadOnlyObjectProperty<@Nullable M3MenuItem> selectedItemProperty() {
+        return menu.selectedItemProperty();
+    }
+
+    /// Selects a menu item that belongs to this button's menu.
+    public final void select(M3MenuItem item) {
+        menu.select(item);
+    }
+
+    /// Selects the first menu item in this button's menu when one exists.
+    public final void selectFirst() {
+        menu.selectFirst();
+    }
+
+    /// Clears this button's menu selection when empty selection is allowed.
+    public final void clearSelection() {
+        menu.clearSelection();
     }
 
     /// Returns whether the menu popup is currently showing.

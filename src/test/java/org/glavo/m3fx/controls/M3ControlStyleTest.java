@@ -1071,6 +1071,130 @@ final class M3ControlStyleTest {
         assertEquals(1, actions.get());
     }
 
+    /// Verifies that action menus do not auto-select items by default.
+    @Test
+    void menuDefaultSelectionModeDoesNotSelectOnAction() {
+        M3MenuItem open = new M3MenuItem("Open");
+        M3Menu menu = new M3Menu(open);
+
+        open.fire();
+
+        assertEquals(M3MenuSelectionMode.NONE, menu.getSelectionMode());
+        assertFalse(open.isSelected());
+        assertNull(menu.getSelectedItem());
+        assertTrue(menu.getSelectedItems().isEmpty());
+    }
+
+    /// Verifies that menus track manual item selections in child order.
+    @Test
+    void menuTracksManualSelections() {
+        M3MenuItem first = new M3MenuItem("First");
+        M3MenuItem second = new M3MenuItem("Second");
+        M3MenuItem third = new M3MenuItem("Third");
+        M3Menu menu = new M3Menu(first, second, third);
+
+        third.setSelected(true);
+        first.setSelected(true);
+
+        assertEquals(java.util.List.of(first, third), menu.getSelectedItems());
+        assertEquals(first, menu.getSelectedItem());
+
+        first.setSelected(false);
+
+        assertEquals(java.util.List.of(third), menu.getSelectedItems());
+        assertEquals(third, menu.getSelectedItem());
+    }
+
+    /// Verifies that menus can enforce single selected item behavior.
+    @Test
+    void menuCanUseSingleSelection() {
+        M3MenuItem first = new M3MenuItem("First");
+        M3MenuItem second = new M3MenuItem("Second");
+        M3Menu menu = new M3Menu(first, second);
+
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        first.setSelected(true);
+        second.setSelected(true);
+
+        assertFalse(first.isSelected());
+        assertTrue(second.isSelected());
+        assertEquals(second, menu.getSelectedItem());
+        assertEquals(java.util.List.of(second), menu.getSelectedItems());
+
+        first.fire();
+
+        assertTrue(first.isSelected());
+        assertFalse(second.isSelected());
+        assertEquals(first, menu.getSelectedItem());
+    }
+
+    /// Verifies that menus can use multiple selected item behavior.
+    @Test
+    void menuCanUseMultipleSelection() {
+        M3MenuItem first = new M3MenuItem("First");
+        M3MenuItem second = new M3MenuItem("Second");
+        M3Menu menu = new M3Menu(first, second);
+
+        menu.setSelectionMode(M3MenuSelectionMode.MULTIPLE);
+        first.fire();
+        second.fire();
+
+        assertTrue(first.isSelected());
+        assertTrue(second.isSelected());
+        assertEquals(java.util.List.of(first, second), menu.getSelectedItems());
+
+        first.fire();
+
+        assertFalse(first.isSelected());
+        assertEquals(java.util.List.of(second), menu.getSelectedItems());
+    }
+
+    /// Verifies that menus can require a selected item.
+    @Test
+    void menuCanRequireSelection() {
+        M3MenuItem first = new M3MenuItem("First");
+        M3MenuItem second = new M3MenuItem("Second");
+        M3Menu menu = new M3Menu(first, second);
+
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.setAllowEmptySelection(false);
+
+        assertEquals(first, menu.getSelectedItem());
+        assertTrue(first.isSelected());
+
+        menu.clearSelection();
+
+        assertEquals(first, menu.getSelectedItem());
+        assertTrue(first.isSelected());
+
+        second.setSelected(true);
+        second.setSelected(false);
+
+        assertEquals(second, menu.getSelectedItem());
+        assertTrue(second.isSelected());
+    }
+
+    /// Verifies that menus update selection when items are removed.
+    @Test
+    void menuUpdatesSelectionWhenChildrenChange() {
+        M3MenuItem first = new M3MenuItem("First");
+        M3MenuItem second = new M3MenuItem("Second");
+        M3Menu menu = new M3Menu(first, second);
+
+        second.setSelected(true);
+        menu.getItems().remove(second);
+
+        assertTrue(menu.getSelectedItems().isEmpty());
+        assertNull(menu.getSelectedItem());
+        assertFalse(second.isSelected());
+
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.setAllowEmptySelection(false);
+
+        assertEquals(first, menu.getSelectedItem());
+        assertTrue(first.isSelected());
+    }
+
     /// Verifies that menu buttons expose their menu and still fire action events.
     @Test
     void menuButtonOwnsMenuItemsAndFiresActions() {
@@ -1085,6 +1209,29 @@ final class M3ControlStyleTest {
         assertEquals(item, menuButton.getItems().get(0));
         assertEquals(1, actions.get());
         assertFalse(menuButton.isShowing());
+    }
+
+    /// Verifies that menu buttons expose menu selection APIs.
+    @Test
+    void menuButtonDelegatesMenuSelectionApis() {
+        M3MenuButton menuButton = new M3MenuButton("More");
+        M3MenuItem first = new M3MenuItem("First");
+        M3MenuItem second = new M3MenuItem("Second");
+        menuButton.getItems().addAll(first, second);
+
+        menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menuButton.setAllowEmptySelection(false);
+        menuButton.select(second);
+
+        assertEquals(M3MenuSelectionMode.SINGLE, menuButton.getSelectionMode());
+        assertFalse(menuButton.isAllowEmptySelection());
+        assertEquals(second, menuButton.getSelectedItem());
+        assertEquals(java.util.List.of(second), menuButton.getSelectedItems());
+
+        menuButton.clearSelection();
+
+        assertEquals(second, menuButton.getSelectedItem());
+        assertTrue(second.isSelected());
     }
 
     /// Verifies that search bars delegate text and action APIs to their embedded editor.

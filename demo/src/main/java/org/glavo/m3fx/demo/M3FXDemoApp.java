@@ -59,6 +59,7 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
+import org.glavo.m3fx.controls.M3MenuSelectionMode;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationItem;
@@ -590,6 +591,7 @@ public final class M3FXDemoApp extends Application {
 
         M3MenuButton menuButton = new M3MenuButton("Open menu");
         menuButton.setVariant(M3ButtonVariant.OUTLINED);
+        menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
         menuButton.getItems().addAll(
                 createMenuItem("Duplicate", "D", "Ctrl+D"),
                 createMenuItem("Rename", "R", ""),
@@ -597,12 +599,23 @@ public final class M3FXDemoApp extends Application {
         );
 
         M3MenuItem selected = createMenuItem("Selected item", "S", "");
-        selected.setSelected(true);
         M3Menu selectedMenu = new M3Menu(selected, createMenuItem("Regular item", "R", ""));
+        selectedMenu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        selectedMenu.setAllowEmptySelection(false);
+        selectedMenu.select(selected);
+
+        M3Menu multiSelectMenu = new M3Menu(
+                createMenuItem("Icons", "I", ""),
+                createMenuItem("Labels", "L", ""),
+                createMenuItem("Badges", "B", "")
+        );
+        multiSelectMenu.setSelectionMode(M3MenuSelectionMode.MULTIPLE);
+        multiSelectMenu.select((M3MenuItem) multiSelectMenu.getItems().get(0));
+        multiSelectMenu.select((M3MenuItem) multiSelectMenu.getItems().get(2));
 
         return createGallery(
                 createShowcaseGroup("Menu Button", menuButton),
-                createShowcaseGroup("Inline Menus", inlineMenu, selectedMenu)
+                createShowcaseGroup("Inline Menus", inlineMenu, selectedMenu, multiSelectMenu)
         );
     }
 
