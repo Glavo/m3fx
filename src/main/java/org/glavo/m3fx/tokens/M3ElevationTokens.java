@@ -60,13 +60,13 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
     default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
         appendShadowRule(builder, ".m3-elevated-button", level3(), level1());
-        appendShadowRule(builder, ".m3-elevated-button:hover, .m3-elevated-button:focused", level4(), level2());
+        appendShadowRule(builder, ".m3-elevated-button:hover, .m3-elevated-button:m3-focus-visible", level4(), level2());
         appendShadowRule(builder, ".m3-elevated-button:armed, .m3-elevated-button:pressed", level2(), level1());
         appendShadowRule(builder, ".m3-fab", level4(), level2());
-        appendShadowRule(builder, ".m3-fab:hover, .m3-fab:focused", level5(), level3());
+        appendShadowRule(builder, ".m3-fab:hover, .m3-fab:m3-focus-visible", level5(), level3());
         appendShadowRule(builder, ".m3-fab:armed, .m3-fab:pressed", level4(), level2());
         appendShadowRule(builder, ".m3-elevated-card .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
-        appendShadowRule(builder, ".m3-elevated-card:hover .m3-card-container, .m3-elevated-card:focused .m3-card-container", level5(), level3());
+        appendShadowRule(builder, ".m3-elevated-card:hover .m3-card-container, .m3-elevated-card:m3-focus-visible .m3-card-container", level5(), level3());
         appendShadowRule(builder, ".m3-elevated-card:pressed .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
         return builder.toString().stripTrailing();
     }

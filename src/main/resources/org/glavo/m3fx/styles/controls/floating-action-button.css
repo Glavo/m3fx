@@ -13,7 +13,7 @@
 }
 
 .m3-fab:hover,
-.m3-fab:focused {
+.m3-fab:m3-focus-visible {
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 12, 0.18, 0, 4);
 }
 

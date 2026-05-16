@@ -39,14 +39,19 @@ final class M3CssEffectTransition {
     /// The node that receives the animated effect.
     private final Node target;
 
+    /// Tracks keyboard-visible focus state for the owner.
+    private final M3FocusVisibleTracker focusVisibleTracker;
+
     /// Creates an effect transition.
     M3CssEffectTransition(Node owner, Node target) {
         this.owner = owner;
         this.target = target;
+        this.focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateEffectFromCss);
     }
 
     /// Installs interaction listeners.
     void install() {
+        focusVisibleTracker.install();
         owner.hoverProperty().addListener(interactionStateListener);
         owner.focusedProperty().addListener(interactionStateListener);
         owner.pressedProperty().addListener(interactionStateListener);
@@ -59,6 +64,7 @@ final class M3CssEffectTransition {
         owner.focusedProperty().removeListener(interactionStateListener);
         owner.pressedProperty().removeListener(interactionStateListener);
         owner.disabledProperty().removeListener(interactionStateListener);
+        focusVisibleTracker.uninstall();
         animation.stop();
     }
 

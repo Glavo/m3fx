@@ -72,6 +72,9 @@ final class M3StateLayer extends Pane {
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
 
+    /// Tracks keyboard-visible focus state for the owner.
+    private @Nullable M3FocusVisibleTracker focusVisibleTracker;
+
     /// The radius currently applied to the overlay background.
     private double overlayTopLeftRadius = Double.NaN;
 
@@ -95,6 +98,7 @@ final class M3StateLayer extends Pane {
         ripple.setManaged(false);
         overlay.setMouseTransparent(true);
         ripple.setMouseTransparent(true);
+        overlay.setOpacity(0.0);
         ripple.setOpacity(0.0);
         clip.setFill(Color.BLACK);
         getChildren().addAll(overlay, ripple);
@@ -108,6 +112,8 @@ final class M3StateLayer extends Pane {
         }
         uninstallStateTransitions();
         stateOwner = owner;
+        focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateOverlayOpacityFromCss);
+        focusVisibleTracker.install();
         owner.hoverProperty().addListener(interactionStateListener);
         owner.focusedProperty().addListener(interactionStateListener);
         owner.pressedProperty().addListener(interactionStateListener);
@@ -125,6 +131,11 @@ final class M3StateLayer extends Pane {
         owner.focusedProperty().removeListener(interactionStateListener);
         owner.pressedProperty().removeListener(interactionStateListener);
         owner.disabledProperty().removeListener(interactionStateListener);
+        M3FocusVisibleTracker tracker = focusVisibleTracker;
+        if (tracker != null) {
+            tracker.uninstall();
+            focusVisibleTracker = null;
+        }
         stateOwner = null;
         overlayOpacityAnimation.stop();
     }

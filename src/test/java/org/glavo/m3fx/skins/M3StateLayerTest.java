@@ -4,8 +4,8 @@
 package org.glavo.m3fx.skins;
 
 import javafx.application.Platform;
-import javafx.css.PseudoClass;
 import javafx.animation.PauseTransition;
+import javafx.css.PseudoClass;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -61,6 +61,31 @@ final class M3StateLayerTest {
 
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
             assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
+        });
+    }
+
+    /// Verifies that plain focused state does not show a persistent state layer.
+    @Test
+    void stateLayerUsesFocusVisibleInsteadOfPlainFocus() {
+        runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add("m3-button");
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+
+            Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
+            owner.applyCss();
+            assertEquals(0.0, overlay.getOpacity(), 0.0001);
+
+            owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
+            owner.applyCss();
+            assertEquals(0.1, overlay.getOpacity(), 0.0001);
         });
     }
 
