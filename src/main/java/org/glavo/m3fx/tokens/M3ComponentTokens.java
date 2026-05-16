@@ -44,6 +44,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by text area controls.
     TextAreaTokens textArea();
 
+    /// Returns tokens used by menus.
+    MenuTokens menu();
+
     /// Returns tokens used by selection controls.
     SelectionTokens selection();
 
@@ -102,6 +105,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             TabTokens tab,
             FieldTokens field,
             TextAreaTokens textArea,
+            MenuTokens menu,
             SelectionTokens selection,
             SliderTokens slider,
             ChipTokens chip,
@@ -130,6 +134,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 tab,
                 field,
                 textArea,
+                menu,
                 selection,
                 slider,
                 chip,
@@ -164,6 +169,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double tabMinWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 104.0 : 90.0);
         double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double textAreaHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 128.0 : 112.0);
+        double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
@@ -206,6 +212,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new TabTokens(tabHeight, tabMinWidth, 16.0, 3.0, 3.0),
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
                 new TextAreaTokens(textAreaHeight, shapeTokens.extraSmall(), 16.0, 16.0),
+                new MenuTokens(shapeTokens.extraSmall(), 8.0, menuItemHeight, shapeTokens.extraSmall(), 12.0, 12.0),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
                 new ChipTokens(chipHeight, shapeTokens.small(), 16.0),
@@ -276,6 +283,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, tab());
         append(builder, field());
         append(builder, textArea());
+        append(builder, menu());
         append(builder, selection());
         append(builder, slider());
         append(builder, chip());
@@ -334,6 +342,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendOutlinedFieldRule(builder, ".m3-outlined-field", field());
         appendFilledTextAreaRule(builder, ".m3-text-area.m3-filled-field", textArea());
         appendOutlinedTextAreaRule(builder, ".m3-text-area.m3-outlined-field", textArea());
+        appendMenuRule(builder, ".m3-menu.m3-menu", menu());
+        appendMenuItemRule(builder, ".m3-menu .m3-menu-item.m3-menu-item", menu());
         appendSelectionRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch", selection());
         appendSwitchRule(builder, ".m3-switch", selection());
         appendSwitchBoxRule(builder, ".m3-switch .box", selection());
@@ -412,6 +422,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-text-area-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-text-area-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-text-area-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
+    }
+
+    /// Appends menu token declarations.
+    private static void append(StringBuilder builder, MenuTokens tokens) {
+        M3TokenCss.append(builder, "-m3-menu-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-menu-container-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        M3TokenCss.append(builder, "-m3-menu-item-height", M3TokenCss.pixels(tokens.itemHeight()));
+        M3TokenCss.append(builder, "-m3-menu-item-container-shape", M3TokenCss.pixels(tokens.itemContainerShape()));
+        M3TokenCss.append(builder, "-m3-menu-item-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-menu-item-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
     }
 
     /// Appends selection token declarations.
@@ -695,6 +715,27 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, selector);
         appendDeclaration(builder, "-fx-background-radius", radius);
         appendDeclaration(builder, "-fx-border-radius", radius);
+        endRule(builder);
+    }
+
+    /// Appends a menu token CSS rule.
+    private static void appendMenuRule(StringBuilder builder, String selector, MenuTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a menu item token CSS rule.
+    private static void appendMenuItemRule(StringBuilder builder, String selector, MenuTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.itemHeight()));
+        appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.itemHeight()));
+        appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.itemHeight()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.itemContainerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
+        appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(0.0));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
         endRule(builder);
     }
 
@@ -1108,6 +1149,34 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(verticalPadding, "verticalPadding");
+        }
+    }
+
+    /// Component tokens for menus.
+    ///
+    /// @param containerShape the menu container corner radius
+    /// @param containerPadding the padding around menu items
+    /// @param itemHeight the one-line menu item height
+    /// @param itemContainerShape the menu item state container corner radius
+    /// @param itemHorizontalPadding the horizontal item content padding
+    /// @param itemContentSpacing the spacing between item content regions
+    @NotNullByDefault
+    public record MenuTokens(
+            double containerShape,
+            double containerPadding,
+            double itemHeight,
+            double itemContainerShape,
+            double itemHorizontalPadding,
+            double itemContentSpacing
+    ) {
+        /// Validates menu tokens.
+        public MenuTokens {
+            validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(containerPadding, "containerPadding");
+            validateNonNegative(itemHeight, "itemHeight");
+            validateNonNegative(itemContainerShape, "itemContainerShape");
+            validateNonNegative(itemHorizontalPadding, "itemHorizontalPadding");
+            validateNonNegative(itemContentSpacing, "itemContentSpacing");
         }
     }
 

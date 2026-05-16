@@ -736,6 +736,53 @@ final class M3ControlStyleTest {
         assertEquals(Duration.seconds(5.0), tooltip.getShowDuration());
     }
 
+    /// Verifies that menu tokens apply to menu surfaces and items.
+    @Test
+    void menuAppliesItemMetrics() {
+        M3MenuItem open = new M3MenuItem("Open");
+        M3Menu menu = new M3Menu(open);
+        Pane root = new Pane(menu);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertEquals(8.0, menu.getPadding().getTop(), 0.0001);
+        assertEquals(48.0, open.getOneLineHeight(), 0.0001);
+        assertEquals(4.0, open.getContainerShape(), 0.0001);
+        assertEquals(12.0, open.getHorizontalPadding(), 0.0001);
+        assertEquals(12.0, open.getContentSpacing(), 0.0001);
+    }
+
+    /// Verifies that menu item action events bubble through the menu.
+    @Test
+    void menuItemActionsBubbleThroughMenu() {
+        M3MenuItem open = new M3MenuItem("Open");
+        M3Menu menu = new M3Menu(open);
+        AtomicInteger actions = new AtomicInteger();
+        menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> actions.incrementAndGet());
+
+        open.fire();
+
+        assertEquals(1, actions.get());
+    }
+
+    /// Verifies that menu buttons expose their menu and still fire action events.
+    @Test
+    void menuButtonOwnsMenuItemsAndFiresActions() {
+        M3MenuButton menuButton = new M3MenuButton("More");
+        M3MenuItem item = new M3MenuItem("Open");
+        AtomicInteger actions = new AtomicInteger();
+        menuButton.getItems().add(item);
+        menuButton.setOnAction(event -> actions.incrementAndGet());
+
+        menuButton.fire();
+
+        assertEquals(item, menuButton.getItems().get(0));
+        assertEquals(1, actions.get());
+        assertFalse(menuButton.isShowing());
+    }
+
     /// Verifies that focused text input states keep Material field colors.
     @Test
     void textInputStateStylesPreserveVariantColors() {
@@ -2235,6 +2282,9 @@ final class M3ControlStyleTest {
         assertTrue(textField.getStyleClass().contains(M3TextInputVariant.OUTLINED.getStyleClass()));
         assertTrue(new M3TextArea().getStyleClass().contains(M3TextArea.STYLE_CLASS));
         assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
+        assertTrue(new M3Menu().getStyleClass().contains(M3Menu.STYLE_CLASS));
+        assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
+        assertTrue(new M3MenuButton("More").getStyleClass().contains(M3MenuButton.STYLE_CLASS));
         assertTrue(new M3CheckBox().getStyleClass().contains(M3CheckBox.STYLE_CLASS));
         assertTrue(new M3RadioButton().getStyleClass().contains(M3RadioButton.STYLE_CLASS));
         assertTrue(new M3Switch().getStyleClass().contains(M3Switch.STYLE_CLASS));
@@ -2269,6 +2319,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3TextField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
+        assertTrue(new M3Menu().getStylesheets().stream().anyMatch(stylesheet -> stylesheet.endsWith("/styles/controls/menu.css")));
         assertUserAgentStylesheet(new M3CheckBox(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3RadioButton(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3Switch(), "/styles/controls/selection.css");

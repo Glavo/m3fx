@@ -141,6 +141,11 @@
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
+.demo-menu-shortcut {
+    -fx-font-size: 12px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
 .demo-drawer-section {
     -fx-padding: 12px 16px 4px 16px;
     -fx-font-size: 12px;

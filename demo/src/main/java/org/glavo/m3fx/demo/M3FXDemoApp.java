@@ -44,6 +44,9 @@ import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3Menu;
+import org.glavo.m3fx.controls.M3MenuButton;
+import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationItem;
@@ -203,6 +206,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Switches", "On, off, and disabled switch states", this::createSwitchesPage),
                 new DemoPage("Sliders", "Different values and disabled slider states", this::createSlidersPage),
                 new DemoPage("Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
+                new DemoPage("Menus", "Menu surfaces, actions, and menu buttons", this::createMenusPage),
                 new DemoPage("Segmented Buttons", "Single-select segmented control states", this::createSegmentedButtonsPage),
                 new DemoPage("Tabs", "Primary tabs with animated active indicators", this::createTabsPage),
                 new DemoPage("App Bars", "Top app bars with navigation and actions", this::createAppBarsPage),
@@ -430,6 +434,32 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup("Variants", assist, suggestion, input, filter),
                 createShowcaseGroup("States", selectedFilter, disabled)
+        );
+    }
+
+    /// Creates the menu component page.
+    private Node createMenusPage() {
+        M3Menu inlineMenu = new M3Menu(
+                createMenuItem("New", "N", "Ctrl+N"),
+                createMenuItem("Open", "O", "Ctrl+O"),
+                createMenuItem("Save", "S", "Ctrl+S")
+        );
+
+        M3MenuButton menuButton = new M3MenuButton("Open menu");
+        menuButton.setVariant(M3ButtonVariant.OUTLINED);
+        menuButton.getItems().addAll(
+                createMenuItem("Duplicate", "D", "Ctrl+D"),
+                createMenuItem("Rename", "R", ""),
+                createMenuItem("Delete", "X", "")
+        );
+
+        M3MenuItem selected = createMenuItem("Selected item", "S", "");
+        selected.setSelected(true);
+        M3Menu selectedMenu = new M3Menu(selected, createMenuItem("Regular item", "R", ""));
+
+        return createGallery(
+                createShowcaseGroup("Menu Button", menuButton),
+                createShowcaseGroup("Inline Menus", inlineMenu, selectedMenu)
         );
     }
 
@@ -716,6 +746,18 @@ public final class M3FXDemoApp extends Application {
         textArea.setDisable(disabled);
         textArea.setPrefWidth(360.0);
         return textArea;
+    }
+
+    /// Creates a sample menu item.
+    private static M3MenuItem createMenuItem(String text, String iconText, String shortcutText) {
+        M3MenuItem item = new M3MenuItem(text);
+        item.setLeading(createNavigationIcon(iconText));
+        if (!shortcutText.isBlank()) {
+            Label shortcut = new Label(shortcutText);
+            shortcut.getStyleClass().add("demo-menu-shortcut");
+            item.setTrailing(shortcut);
+        }
+        return item;
     }
 
     /// Creates a slider sample.

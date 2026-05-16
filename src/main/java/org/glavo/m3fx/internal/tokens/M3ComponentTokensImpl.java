@@ -21,6 +21,7 @@ import java.util.Objects;
 /// @param tab tokens used by tabs
 /// @param field tokens used by text input controls
 /// @param textArea tokens used by text area controls
+/// @param menu tokens used by menus
 /// @param selection tokens used by selection controls
 /// @param slider tokens used by sliders
 /// @param chip tokens used by chips
@@ -49,6 +50,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.TabTokens tab,
         M3ComponentTokens.FieldTokens field,
         M3ComponentTokens.TextAreaTokens textArea,
+        M3ComponentTokens.MenuTokens menu,
         M3ComponentTokens.SelectionTokens selection,
         M3ComponentTokens.SliderTokens slider,
         M3ComponentTokens.ChipTokens chip,
@@ -78,6 +80,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(tab, "tab");
         Objects.requireNonNull(field, "field");
         Objects.requireNonNull(textArea, "textArea");
+        Objects.requireNonNull(menu, "menu");
         Objects.requireNonNull(selection, "selection");
         Objects.requireNonNull(slider, "slider");
         Objects.requireNonNull(chip, "chip");
