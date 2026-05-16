@@ -56,7 +56,7 @@
     -fx-background-color: -m3-color-surface-container-low;
 }
 
-.demo-sidebar-drawer {
+.m3-navigation-drawer.demo-sidebar-drawer {
     -fx-min-width: 320px;
     -fx-pref-width: 320px;
     -fx-max-width: 320px;

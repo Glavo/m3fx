@@ -116,11 +116,38 @@ public class M3NavigationDrawer extends VBox {
         return M3Stylesheets.controlStylesheet("navigation-drawer.css");
     }
 
+    /// Lays out drawer content within the drawer padding.
+    @Override
+    protected void layoutChildren() {
+        updateListItemWidths();
+        super.layoutChildren();
+    }
+
     /// Adds base style classes and installs content listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setSpacing(4.0);
         getChildren().addListener(childrenListener);
+    }
+
+    /// Keeps drawer list item containers inside the drawer content area.
+    private void updateListItemWidths() {
+        double width = getWidth();
+        if (width <= 0.0) {
+            return;
+        }
+
+        double itemWidth = Math.max(0.0, width - snappedLeftInset() - snappedRightInset());
+        for (Node child : getChildren()) {
+            if (child instanceof M3ListItem item) {
+                if (Double.compare(item.getMinWidth(), 0.0) != 0) {
+                    item.setMinWidth(0.0);
+                }
+                if (Double.compare(item.getMaxWidth(), itemWidth) != 0) {
+                    item.setMaxWidth(itemWidth);
+                }
+            }
+        }
     }
 
     /// Installs action and selected-state listeners on a drawer item.

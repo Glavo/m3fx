@@ -49,6 +49,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// The trailing node slot.
     private final StackPane trailingSlot = new StackPane();
 
+    /// The background radius currently applied to the state container.
+    private double containerRadius = Double.NaN;
+
     /// Handles mouse activation.
     private final EventHandler<MouseEvent> mouseClickedHandler = this::handleMouseClicked;
 
@@ -130,6 +133,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     protected void layoutChildren(double x, double y, double width, double height) {
         double shapeRadius = getSkinnable().getContainerShape();
         container.resizeRelocate(x, y, width, height);
+        updateContainerShape(width, height, shapeRadius);
         stateLayer.layoutLayer(x, y, width, height, shapeRadius);
     }
 
@@ -188,7 +192,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         container.setPrefHeight(height);
         container.setMaxHeight(height);
         container.setPadding(new Insets(verticalPadding, horizontalPadding, verticalPadding, horizontalPadding));
-        updateContainerShape(container.getWidth(), height, item.getContainerShape());
+        getSkinnable().requestLayout();
     }
 
     /// Returns the preferred height for the current text structure.
@@ -203,7 +207,12 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Updates the selected container shape using a radius that fits the allocated bounds.
     private void updateContainerShape(double width, double height, double shapeRadius) {
         double radius = resolvedShapeRadius(width, height, shapeRadius);
+        if (Double.compare(containerRadius, radius) == 0) {
+            return;
+        }
+        containerRadius = radius;
         container.setStyle("-fx-background-radius: " + formatPixels(radius) + ";");
+        container.applyCss();
     }
 
     /// Resolves a shape token to a radius that can be represented within the current bounds.

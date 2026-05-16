@@ -16,6 +16,7 @@ import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.tokens.M3Density;
@@ -255,6 +256,34 @@ final class M3ThemeTest {
         assertEquals(0, scene.getStylesheets().size());
     }
 
+    /// Verifies that installed theme stylesheets keep application styles later in the cascade.
+    @Test
+    void installsThemeStylesheetsBeforeApplicationStylesheets() throws Exception {
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
+        navigationDrawer.getStyleClass().add("test-sidebar-drawer");
+        Pane root = new Pane(navigationDrawer);
+        Scene scene = new Scene(root);
+        M3Theme theme = M3Theme.defaultTheme();
+        String applicationStylesheet = temporaryStylesheet("""
+                .m3-navigation-drawer.test-sidebar-drawer {
+                    -fx-min-width: 320px;
+                    -fx-pref-width: 320px;
+                    -fx-max-width: 320px;
+                }
+                """);
+
+        scene.getStylesheets().add(applicationStylesheet);
+        M3ThemeManager.install(scene, theme);
+        root.applyCss();
+
+        assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
+        assertEquals(M3ThemeManager.themeStylesheetUrl(theme), scene.getStylesheets().get(1));
+        assertEquals(applicationStylesheet, scene.getStylesheets().get(2));
+        assertEquals(320.0, navigationDrawer.getMinWidth(), 0.0001);
+        assertEquals(320.0, navigationDrawer.getPrefWidth(), 0.0001);
+        assertEquals(320.0, navigationDrawer.getMaxWidth(), 0.0001);
+    }
+
     /// Verifies that theme manager installation can be reverted.
     @Test
     void uninstallsThemeFromScene() {
@@ -393,5 +422,13 @@ final class M3ThemeTest {
         assertEquals(32.0, dialogPane.getContainerShape(), 0.0001);
         assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
         assertEquals(24.0, dialogPane.getPadding().getTop(), 0.0001);
+    }
+
+    /// Writes an application stylesheet for stylesheet cascade tests.
+    private static String temporaryStylesheet(String content) throws Exception {
+        Path path = Files.createTempFile("m3fx-test-", ".css");
+        Files.writeString(path, content);
+        path.toFile().deleteOnExit();
+        return path.toUri().toString();
     }
 }

@@ -78,9 +78,7 @@ public final class M3ThemeManager {
 
         String stylesheet = stylesheetUrl();
         List<String> stylesheets = scene.getStylesheets();
-        if (!stylesheets.contains(stylesheet)) {
-            stylesheets.add(stylesheet);
-        }
+        moveOrAdd(stylesheets, stylesheet, 0);
     }
 
     /// Adds the generated component token stylesheet to a scene.
@@ -94,9 +92,7 @@ public final class M3ThemeManager {
         if (previousStylesheet != null && !previousStylesheet.equals(stylesheet)) {
             stylesheets.remove(previousStylesheet);
         }
-        if (!stylesheets.contains(stylesheet)) {
-            stylesheets.add(stylesheet);
-        }
+        moveOrAdd(stylesheets, stylesheet, themeStylesheetIndex(stylesheets));
     }
 
     /// Removes m3fx theme state and stylesheets from a scene.
@@ -185,6 +181,28 @@ public final class M3ThemeManager {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Missing SHA-256 message digest", e);
         }
+    }
+
+    /// Moves an existing stylesheet or adds a new stylesheet at the requested index.
+    private static void moveOrAdd(List<String> stylesheets, String stylesheet, int index) {
+        int targetIndex = Math.min(Math.max(0, index), stylesheets.size());
+        int currentIndex = stylesheets.indexOf(stylesheet);
+        if (currentIndex == targetIndex) {
+            return;
+        }
+        if (currentIndex >= 0) {
+            stylesheets.remove(currentIndex);
+            if (currentIndex < targetIndex) {
+                targetIndex--;
+            }
+        }
+        stylesheets.add(Math.min(targetIndex, stylesheets.size()), stylesheet);
+    }
+
+    /// Returns the insertion index for the generated theme stylesheet.
+    private static int themeStylesheetIndex(List<String> stylesheets) {
+        int baseStylesheetIndex = stylesheets.indexOf(stylesheetUrl());
+        return baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : 0;
     }
 
     /// Merges existing root style declarations with generated theme declarations.

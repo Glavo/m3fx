@@ -1913,6 +1913,32 @@ final class M3ControlStyleTest {
         assertEquals(12.0, home.getContentSpacing(), 0.0001);
     }
 
+    /// Verifies that navigation drawer list items stay within the drawer padding.
+    @Test
+    void navigationDrawerConstrainsItemWidthToContentArea() {
+        M3ListItem home = new M3ListItem("Home");
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(home);
+        Pane root = new Pane(navigationDrawer);
+        Scene scene = new Scene(root, 360.0, 120.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        navigationDrawer.resize(320.0, 120.0);
+        navigationDrawer.layout();
+        home.layout();
+
+        assertEquals(12.0, home.getLayoutX(), 0.0001);
+        assertEquals(296.0, home.getWidth(), 0.0001);
+        assertEquals(296.0, listItemContainer(home).getWidth(), 0.0001);
+
+        Color selectedPixel = snapshotPixel(navigationDrawer, 30, 40);
+        Color rightPaddingPixel = snapshotPixel(navigationDrawer, 318, 40);
+        assertTrue(colorDistance(selectedPixel, rightPaddingPixel) > 0.01);
+
+        Color roundedCornerPixel = snapshotPixel(navigationDrawer, 306, 14);
+        assertTrue(colorDistance(selectedPixel, roundedCornerPixel) > 0.01);
+    }
+
     /// Verifies that navigation item skins expose the selected indicator and ripple feedback.
     @Test
     void navigationItemSkinLaysOutIndicatorAndRipple() {
