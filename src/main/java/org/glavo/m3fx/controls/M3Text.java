@@ -35,6 +35,9 @@ public class M3Text extends Label {
     /// The default typography font size.
     private static final double DEFAULT_TYPOGRAPHY_FONT_SIZE = 16.0;
 
+    /// The default typography line height.
+    private static final double DEFAULT_TYPOGRAPHY_LINE_HEIGHT = 24.0;
+
     /// The default typography font weight.
     private static final double DEFAULT_TYPOGRAPHY_FONT_WEIGHT = 400.0;
 
@@ -57,6 +60,9 @@ public class M3Text extends Label {
 
     /// The styleable typography font size token.
     private StyleableDoubleProperty typographyFontSize;
+
+    /// The styleable typography line height token.
+    private StyleableDoubleProperty typographyLineHeight;
 
     /// The styleable typography font weight token.
     private StyleableDoubleProperty typographyFontWeight;
@@ -183,6 +189,49 @@ public class M3Text extends Label {
         return typographyFontSize;
     }
 
+    /// Returns the typography line height token.
+    public final double getTypographyLineHeight() {
+        return typographyLineHeight == null ? DEFAULT_TYPOGRAPHY_LINE_HEIGHT : typographyLineHeight.get();
+    }
+
+    /// Sets the typography line height token.
+    public final void setTypographyLineHeight(double typographyLineHeight) {
+        typographyLineHeightProperty().set(M3Css.nonNegative(typographyLineHeight, "typographyLineHeight"));
+    }
+
+    /// Returns the typography line height token property.
+    public final StyleableDoubleProperty typographyLineHeightProperty() {
+        if (typographyLineHeight == null) {
+            typographyLineHeight = new StyleableDoubleProperty(DEFAULT_TYPOGRAPHY_LINE_HEIGHT) {
+                /// Applies updated line height tokens.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "typographyLineHeight");
+                    updateFont();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Text.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "typographyLineHeight";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3Text, Number> getCssMetaData() {
+                    return StyleableProperties.TYPOGRAPHY_LINE_HEIGHT;
+                }
+            };
+        }
+        return typographyLineHeight;
+    }
+
     /// Returns the typography font weight token.
     public final double getTypographyFontWeight() {
         return typographyFontWeight == null ? DEFAULT_TYPOGRAPHY_FONT_WEIGHT : typographyFontWeight.get();
@@ -266,11 +315,13 @@ public class M3Text extends Label {
 
     /// Applies resolved typography font tokens to the inherited font property.
     private void updateFont() {
+        double fontSize = getTypographyFontSize();
         setFont(Font.font(
                 getTypographyFontFamily(),
                 FontWeight.findByWeight((int) Math.round(getTypographyFontWeight())),
-                getTypographyFontSize()
+                fontSize
         ));
+        setLineSpacing(Math.max(0.0, getTypographyLineHeight() - fontSize));
     }
 
     /// Validates a font weight token.
@@ -344,6 +395,26 @@ public class M3Text extends Label {
                     }
                 };
 
+        /// CSS metadata for the typography line height token.
+        private static final CssMetaData<M3Text, Number> TYPOGRAPHY_LINE_HEIGHT =
+                new CssMetaData<>(
+                        "-m3-typography-line-height",
+                        SizeConverter.getInstance(),
+                        DEFAULT_TYPOGRAPHY_LINE_HEIGHT
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Text control) {
+                        return M3Css.isSettable(control.typographyLineHeightProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Text control) {
+                        return control.typographyLineHeightProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -351,6 +422,7 @@ public class M3Text extends Label {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Label.getClassCssMetaData());
             styleables.add(TYPOGRAPHY_FONT_FAMILY);
             styleables.add(TYPOGRAPHY_FONT_SIZE);
+            styleables.add(TYPOGRAPHY_LINE_HEIGHT);
             styleables.add(TYPOGRAPHY_FONT_WEIGHT);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

@@ -32,6 +32,20 @@ public class M3Avatar extends StackPane {
     /// The optional graphic node property.
     private final ObjectProperty<@Nullable Node> graphic = new SimpleObjectProperty<>(this, "graphic");
 
+    /// The avatar color variant property.
+    private final ObjectProperty<M3AvatarVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", M3AvatarVariant.PRIMARY) {
+                /// Updates avatar variant style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3AvatarVariant.PRIMARY);
+                        return;
+                    }
+                    updateVariantStyle();
+                }
+            };
+
     /// The label used when this avatar has no graphic node.
     private final Label textLabel = new Label();
 
@@ -82,6 +96,21 @@ public class M3Avatar extends StackPane {
         return graphic;
     }
 
+    /// Returns the avatar color variant.
+    public final M3AvatarVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the avatar color variant.
+    public final void setVariant(M3AvatarVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the avatar color variant property.
+    public final ObjectProperty<M3AvatarVariant> variantProperty() {
+        return variant;
+    }
+
     /// Returns the user-agent stylesheet for M3FX avatars.
     @Override
     public String getUserAgentStylesheet() {
@@ -95,7 +124,20 @@ public class M3Avatar extends StackPane {
         textLabel.getStyleClass().add(LABEL_STYLE_CLASS);
         textLabel.textProperty().bind(text);
         graphic.addListener((observable, oldValue, newValue) -> updateContent(newValue));
+        updateVariantStyle();
         updateContent(getGraphic());
+    }
+
+    /// Applies the current variant style class.
+    private void updateVariantStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getVariant().getStyleClass(),
+                M3AvatarVariant.PRIMARY.getStyleClass(),
+                M3AvatarVariant.SECONDARY.getStyleClass(),
+                M3AvatarVariant.TERTIARY.getStyleClass(),
+                M3AvatarVariant.SURFACE.getStyleClass()
+        );
     }
 
     /// Updates the avatar content shown in the center slot.

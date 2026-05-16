@@ -6,6 +6,10 @@
     -m3-horizontal-padding: 4px;
 }
 
+.m3-badged-box {
+    -fx-alignment: center;
+}
+
 .m3-badge-label {
     -fx-alignment: center;
     -fx-background-color: -m3-color-error;

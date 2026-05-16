@@ -29,7 +29,9 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3Avatar;
+import org.glavo.m3fx.controls.M3AvatarVariant;
 import org.glavo.m3fx.controls.M3Badge;
+import org.glavo.m3fx.controls.M3BadgedBox;
 import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
@@ -657,11 +659,8 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the badge component page.
     private Node createBadgesPage() {
-        StackPane buttonWithBadge = new StackPane();
         M3Button button = createButton("Inbox", M3ButtonVariant.TONAL);
-        M3Badge badge = new M3Badge("9");
-        StackPane.setAlignment(badge, Pos.TOP_RIGHT);
-        buttonWithBadge.getChildren().addAll(button, badge);
+        M3BadgedBox buttonWithBadge = new M3BadgedBox(button, new M3Badge("9"));
 
         return createGallery(
                 createShowcaseGroup("Badges", new M3Badge(), new M3Badge("7"), new M3Badge("1234")),
@@ -673,14 +672,18 @@ public final class M3FXDemoApp extends Application {
     private Node createAvatarsPage() {
         M3Avatar initials = new M3Avatar("AB");
         M3Avatar single = new M3Avatar("M");
+        single.setVariant(M3AvatarVariant.SECONDARY);
         M3Avatar graphic = new M3Avatar(createNavigationIcon("G"));
+        graphic.setVariant(M3AvatarVariant.TERTIARY);
+        M3Avatar surface = new M3Avatar("S");
+        surface.setVariant(M3AvatarVariant.SURFACE);
 
         M3ListItem account = new M3ListItem("Account");
         account.setSupportingText("Avatar as leading content");
         account.setLeading(new M3Avatar("A"));
 
         return createGallery(
-                createShowcaseGroup("Avatars", initials, single, graphic),
+                createShowcaseGroup("Avatars", initials, single, graphic, surface),
                 createShowcaseGroup("List Usage", account)
         );
     }

@@ -24,6 +24,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
@@ -767,6 +768,21 @@ final class M3ControlStyleTest {
         assertEquals(40.0, avatar.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that avatar variants update style classes.
+    @Test
+    void avatarVariantUpdatesStyleClasses() {
+        M3Avatar avatar = new M3Avatar("A");
+
+        assertEquals(M3AvatarVariant.PRIMARY, avatar.getVariant());
+        assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.PRIMARY.getStyleClass()));
+
+        avatar.setVariant(M3AvatarVariant.TERTIARY);
+
+        assertEquals(M3AvatarVariant.TERTIARY, avatar.getVariant());
+        assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.TERTIARY.getStyleClass()));
+        assertFalse(avatar.getStyleClass().contains(M3AvatarVariant.PRIMARY.getStyleClass()));
+    }
+
     /// Verifies that text typography roles update style classes.
     @Test
     void textRoleUpdatesStyleClasses() {
@@ -790,6 +806,8 @@ final class M3ControlStyleTest {
         applyCss(text);
 
         assertEquals(57.0, text.getFont().getSize(), 0.0001);
+        assertEquals(64.0, text.getTypographyLineHeight(), 0.0001);
+        assertEquals(7.0, text.getLineSpacing(), 0.0001);
     }
 
     /// Verifies that menu tokens apply to menu surfaces and items.
@@ -1820,6 +1838,25 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3BadgeSkin.class, badge.getSkin());
     }
 
+    /// Verifies that badged boxes overlay badges on content.
+    @Test
+    void badgedBoxOwnsContentAndBadge() {
+        Label content = new Label("Inbox");
+        M3Badge badge = new M3Badge("3");
+        M3BadgedBox badgedBox = new M3BadgedBox(content, badge);
+
+        assertEquals(content, badgedBox.getContent());
+        assertEquals(badge, badgedBox.getBadge());
+        assertEquals(2, badgedBox.getChildren().size());
+        assertEquals(Pos.TOP_RIGHT, StackPane.getAlignment(badge));
+
+        badgedBox.setBadge(null);
+
+        assertNull(badgedBox.getBadge());
+        assertEquals(1, badgedBox.getChildren().size());
+        assertEquals(content, badgedBox.getChildren().get(0));
+    }
+
     /// Verifies that list item component token properties are styleable from CSS.
     @Test
     void listItemTokensAreStyleable() {
@@ -2474,6 +2511,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
         assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
         assertTrue(new M3Text("Text").getStyleClass().contains(M3Text.STYLE_CLASS));
+        assertTrue(new M3BadgedBox().getStyleClass().contains(M3BadgedBox.STYLE_CLASS));
         assertTrue(new M3Menu().getStyleClass().contains(M3Menu.STYLE_CLASS));
         assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
         assertTrue(new M3MenuButton("More").getStyleClass().contains(M3MenuButton.STYLE_CLASS));
@@ -2515,6 +2553,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3Avatar(), "/styles/controls/avatar.css");
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
+        assertUserAgentStylesheet(new M3BadgedBox(), "/styles/controls/badge.css");
         assertUserAgentStylesheet(new M3Menu(), "/styles/controls/menu.css");
         assertUserAgentStylesheet(new M3SearchBar(), "/styles/controls/search.css");
         assertUserAgentStylesheet(new M3SearchView(), "/styles/controls/search.css");

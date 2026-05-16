@@ -107,6 +107,7 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
         builder.append(selector).append(" {\n");
         appendDeclaration(builder, "-m3-typography-font-family", "\"" + style.fontFamily() + "\"");
         appendDeclaration(builder, "-m3-typography-font-size", M3TokenCss.pixels(style.size()));
+        appendDeclaration(builder, "-m3-typography-line-height", M3TokenCss.pixels(style.lineHeight()));
         appendDeclaration(builder, "-m3-typography-font-weight", Integer.toString(style.weight()));
         builder.append("}\n\n");
     }

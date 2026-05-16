@@ -377,6 +377,7 @@ final class M3ThemeTest {
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
         assertEquals(44.0, avatar.getPrefWidth(), 0.0001);
         assertEquals(64.0, displayText.getTypographyFontSize(), 0.0001);
+        assertEquals(72.0, displayText.getTypographyLineHeight(), 0.0001);
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
         assertEquals(104.0, fab.getContainerSize(), 0.0001);
         assertEquals(48.0, segmentedButton.getContainerHeight(), 0.0001);
@@ -396,6 +397,7 @@ final class M3ThemeTest {
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
         assertEquals(40.0, avatar.getPrefWidth(), 0.0001);
         assertEquals(57.0, displayText.getTypographyFontSize(), 0.0001);
+        assertEquals(64.0, displayText.getTypographyLineHeight(), 0.0001);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
         assertEquals(96.0, fab.getContainerSize(), 0.0001);
         assertEquals(40.0, segmentedButton.getContainerHeight(), 0.0001);

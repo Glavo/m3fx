@@ -5,35 +5,41 @@
 .m3-display-large-text {
     -m3-typography-font-family: "System";
     -m3-typography-font-size: 57px;
+    -m3-typography-line-height: 64px;
     -m3-typography-font-weight: 400;
 }
 
 .m3-headline-medium-text {
     -m3-typography-font-family: "System";
     -m3-typography-font-size: 28px;
+    -m3-typography-line-height: 36px;
     -m3-typography-font-weight: 400;
 }
 
 .m3-title-large-text {
     -m3-typography-font-family: "System";
     -m3-typography-font-size: 22px;
+    -m3-typography-line-height: 28px;
     -m3-typography-font-weight: 400;
 }
 
 .m3-label-large-text {
     -m3-typography-font-family: "System";
     -m3-typography-font-size: 14px;
+    -m3-typography-line-height: 20px;
     -m3-typography-font-weight: 500;
 }
 
 .m3-body-large-text {
     -m3-typography-font-family: "System";
     -m3-typography-font-size: 16px;
+    -m3-typography-line-height: 24px;
     -m3-typography-font-weight: 400;
 }
 
 .m3-body-medium-text {
     -m3-typography-font-family: "System";
     -m3-typography-font-size: 14px;
+    -m3-typography-line-height: 20px;
     -m3-typography-font-weight: 400;
 }
