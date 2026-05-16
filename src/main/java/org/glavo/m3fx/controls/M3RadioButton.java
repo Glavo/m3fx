@@ -9,7 +9,9 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -91,6 +93,12 @@ public class M3RadioButton extends RadioButton {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Creates the default Material Design 3 radio button skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3RadioButtonSkin(this);
     }
 
     /// Returns the user-agent stylesheet for m3fx selection controls.

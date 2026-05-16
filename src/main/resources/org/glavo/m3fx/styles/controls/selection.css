@@ -10,14 +10,54 @@
     -m3-track-shape: 999px;
 }
 
-.m3-checkbox:selected .box {
+.m3-selection-container {
+    -fx-alignment: center-left;
+    -fx-spacing: 4px;
+}
+
+.m3-selection-indicator {
+    -fx-alignment: center;
+}
+
+.m3-checkbox .box,
+.m3-checkbox:hover .box,
+.m3-checkbox:focused .box,
+.m3-checkbox:armed .box,
+.m3-checkbox:pressed .box {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 2px;
+    -fx-border-color: -m3-color-on-surface-variant;
+    -fx-border-insets: 0;
+    -fx-border-radius: 2px;
+    -fx-border-width: 2px;
+}
+
+.m3-checkbox:selected .box,
+.m3-checkbox:selected:hover .box,
+.m3-checkbox:selected:focused .box,
+.m3-checkbox:selected:armed .box,
+.m3-checkbox:selected:pressed .box {
     -fx-background-color: -m3-color-primary;
     -fx-border-color: -m3-color-primary;
 }
 
-.m3-checkbox .box {
+.m3-checkbox .mark,
+.m3-checkbox:hover .mark,
+.m3-checkbox:focused .mark,
+.m3-checkbox:armed .mark,
+.m3-checkbox:pressed .mark {
     -fx-background-color: transparent;
-    -fx-border-color: -m3-color-on-surface-variant;
+    -fx-background-insets: 0;
+    -fx-shape: "M 4 7 L 7 10 L 14 2 L 16 4 L 7 14 L 2 9 Z";
+}
+
+.m3-checkbox:selected .mark,
+.m3-checkbox:selected:hover .mark,
+.m3-checkbox:selected:focused .mark,
+.m3-checkbox:selected:armed .mark,
+.m3-checkbox:selected:pressed .mark {
+    -fx-background-color: -m3-color-on-primary;
 }
 
 .m3-radio-button .radio,
@@ -32,7 +72,7 @@
     -fx-border-insets: 0;
     -fx-border-radius: 999px;
     -fx-border-width: 2px;
-    -fx-padding: 4px;
+    -fx-padding: 0px;
 }
 
 .m3-radio-button:selected .radio,
@@ -52,7 +92,7 @@
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-background-radius: 999px;
-    -fx-padding: 5px;
+    -fx-padding: 0px;
 }
 
 .m3-radio-button:selected .radio .dot,
@@ -63,16 +103,59 @@
     -fx-background-color: -m3-color-primary;
 }
 
-.m3-switch .box {
+.m3-switch .box,
+.m3-switch:hover .box,
+.m3-switch:focused .box,
+.m3-switch:armed .box,
+.m3-switch:pressed .box {
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-background-radius: 999px;
     -fx-border-color: -m3-color-outline;
+    -fx-border-insets: 0;
     -fx-border-radius: 999px;
+    -fx-border-width: 2px;
+    -fx-padding: 4px;
+    -fx-alignment: center-left;
 }
 
-.m3-switch:selected .box {
+.m3-switch:selected .box,
+.m3-switch:selected:hover .box,
+.m3-switch:selected:focused .box,
+.m3-switch:selected:armed .box,
+.m3-switch:selected:pressed .box {
     -fx-background-color: -m3-color-primary;
     -fx-border-color: -m3-color-primary;
+    -fx-alignment: center-right;
+}
+
+.m3-switch .thumb,
+.m3-switch:hover .thumb,
+.m3-switch:focused .thumb,
+.m3-switch:armed .thumb,
+.m3-switch:pressed .thumb {
+    -fx-background-color: -m3-color-outline;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-min-width: 16px;
+    -fx-pref-width: 16px;
+    -fx-max-width: 16px;
+    -fx-min-height: 16px;
+    -fx-pref-height: 16px;
+    -fx-max-height: 16px;
+}
+
+.m3-switch:selected .thumb,
+.m3-switch:selected:hover .thumb,
+.m3-switch:selected:focused .thumb,
+.m3-switch:selected:armed .thumb,
+.m3-switch:selected:pressed .thumb {
+    -fx-background-color: -m3-color-on-primary;
+    -fx-min-width: 24px;
+    -fx-pref-width: 24px;
+    -fx-max-width: 24px;
+    -fx-min-height: 24px;
+    -fx-pref-height: 24px;
+    -fx-max-height: 24px;
 }
 
 .m3-checkbox:disabled,

@@ -20,10 +20,13 @@ import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
+import org.glavo.m3fx.skins.M3CheckBoxSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
+import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
+import org.glavo.m3fx.skins.M3SwitchSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -445,6 +448,54 @@ final class M3ControlStyleTest {
         assertEquals(48.0, switchControl.getTouchTargetSize(), 0.0001);
         assertEquals(18.0, switchControl.getTrackShape(), 0.0001);
         assertEquals(48.0, switchControl.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that selection controls create Material Design 3 skins.
+    @Test
+    void selectionControlsCreateMaterialSkins() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        M3Switch switchControl = new M3Switch("Switch");
+        Pane root = new Pane(checkBox, radioButton, switchControl);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertInstanceOf(M3CheckBoxSkin.class, checkBox.getSkin());
+        assertInstanceOf(M3RadioButtonSkin.class, radioButton.getSkin());
+        assertInstanceOf(M3SwitchSkin.class, switchControl.getSkin());
+    }
+
+    /// Verifies that selection control skins handle pointer and keyboard activation.
+    @Test
+    void selectionControlSkinsHandleActivationEvents() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        M3Switch switchControl = new M3Switch("Switch");
+        Pane root = new Pane(checkBox, radioButton, switchControl);
+        Scene scene = new Scene(root, 320.0, 160.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        checkBox.resize(120.0, 40.0);
+        radioButton.resize(120.0, 40.0);
+        switchControl.resize(120.0, 40.0);
+
+        checkBox.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        assertTrue(checkBox.isArmed());
+        checkBox.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
+        assertTrue(checkBox.isSelected());
+
+        radioButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        assertTrue(radioButton.isArmed());
+        radioButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
+        assertTrue(radioButton.isSelected());
+
+        switchControl.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+        assertTrue(switchControl.isArmed());
+        switchControl.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+        assertTrue(switchControl.isSelected());
     }
 
     /// Verifies that radio indicators use circular Material styling.
