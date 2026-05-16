@@ -18,9 +18,11 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3CheckBoxSkin;
+import org.glavo.m3fx.skins.M3ChipSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
@@ -353,6 +355,29 @@ final class M3ControlStyleTest {
         assertEquals(20.0, passwordField.getPadding().getRight(), 0.0001);
     }
 
+    /// Verifies that focused text input states keep Material field colors.
+    @Test
+    void textInputStateStylesPreserveVariantColors() {
+        M3TextField filledField = new M3TextField();
+        M3PasswordField outlinedField = new M3PasswordField();
+        outlinedField.setVariant(M3TextInputVariant.OUTLINED);
+        Pane root = new Pane(filledField, outlinedField);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + buttonStateTestColors());
+        filledField.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
+        outlinedField.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
+        root.applyCss();
+
+        assertRegionFill(filledField, Color.rgb(37, 38, 39));
+        assertBorderBottomColor(filledField, Color.rgb(1, 2, 3));
+        assertEquals(2.0, filledField.getBorder().getStrokes().get(0).getWidths().getBottom(), 0.0001);
+        assertRegionFill(outlinedField, Color.TRANSPARENT);
+        assertBorderColor(outlinedField, Color.rgb(1, 2, 3));
+        assertEquals(2.0, outlinedField.getBorder().getStrokes().get(0).getWidths().getTop(), 0.0001);
+    }
+
     /// Verifies that chip component token properties are styleable from CSS.
     @Test
     void chipTokensAreStyleable() {
@@ -367,6 +392,38 @@ final class M3ControlStyleTest {
         assertEquals(36.0, chip.getPrefHeight(), 0.0001);
         assertEquals(14.0, chip.getPadding().getLeft(), 0.0001);
         assertEquals(14.0, chip.getPadding().getRight(), 0.0001);
+    }
+
+    /// Verifies that m3fx chips create the Material Design 3 skin.
+    @Test
+    void chipCreatesMaterialSkin() {
+        M3Chip chip = new M3Chip("Filter");
+
+        applyCss(chip);
+
+        assertInstanceOf(M3ChipSkin.class, chip.getSkin());
+    }
+
+    /// Verifies that chip interaction states keep Material colors.
+    @Test
+    void chipStateStylesPreserveVariantColors() {
+        M3Chip assistChip = new M3Chip("Assist");
+        M3Chip filterChip = new M3Chip("Filter");
+        filterChip.setVariant(M3ChipVariant.FILTER);
+        filterChip.setSelected(true);
+        Pane root = new Pane(assistChip, filterChip);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + buttonStateTestColors());
+        applyInteractivePseudoClasses(assistChip);
+        applyInteractivePseudoClasses(filterChip);
+        root.applyCss();
+
+        assertLabeledColors(assistChip, Color.TRANSPARENT, Color.rgb(34, 35, 36));
+        assertBorderColor(assistChip, Color.rgb(13, 14, 15));
+        assertLabeledColors(filterChip, Color.rgb(7, 8, 9), Color.rgb(10, 11, 12));
+        assertBorderColor(filterChip, Color.rgb(7, 8, 9));
     }
 
     /// Verifies that segmented button component token properties are styleable from CSS.
@@ -582,6 +639,28 @@ final class M3ControlStyleTest {
         assertEquals(56.0, slider.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that focused slider states keep Material track and thumb colors.
+    @Test
+    void sliderStateStylesPreserveMaterialColors() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 240.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + buttonStateTestColors());
+        applyInteractivePseudoClasses(slider);
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+
+        Region track = lookupRegion(slider, ".track");
+        Region thumb = lookupRegion(slider, ".thumb");
+        assertRegionFill(track, Color.rgb(37, 38, 39));
+        assertNoBorder(track);
+        assertRegionFill(thumb, Color.rgb(1, 2, 3));
+        assertNoBorder(thumb);
+    }
+
     /// Verifies that progress component token properties are styleable from CSS.
     @Test
     void progressTokensAreStyleable() {
@@ -600,6 +679,26 @@ final class M3ControlStyleTest {
         assertEquals(72.0, progressIndicator.getIndicatorSize(), 0.0001);
         assertEquals(72.0, progressIndicator.getPrefWidth(), 0.0001);
         assertEquals(72.0, progressIndicator.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that progress bar subnodes keep Material colors.
+    @Test
+    void progressBarStateStylesPreserveMaterialColors() {
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        Pane root = new Pane(progressBar);
+        Scene scene = new Scene(root, 240.0, 40.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + buttonStateTestColors());
+        progressBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
+        root.applyCss();
+
+        Region track = lookupRegion(progressBar, ".track");
+        Region bar = lookupRegion(progressBar, ".bar");
+        assertRegionFill(track, Color.rgb(7, 8, 9));
+        assertNoBorder(track);
+        assertRegionFill(bar, Color.rgb(1, 2, 3));
+        assertNoBorder(bar);
     }
 
     /// Verifies that divider component token properties are styleable from CSS.
@@ -898,7 +997,9 @@ final class M3ControlStyleTest {
                 + "-m3-color-on-primary-container: rgb(25,26,27); "
                 + "-m3-color-tertiary-container: rgb(28,29,30); "
                 + "-m3-color-on-tertiary-container: rgb(31,32,33); "
-                + "-m3-color-on-surface: rgb(34,35,36);";
+                + "-m3-color-on-surface: rgb(34,35,36); "
+                + "-m3-color-surface-container-highest: rgb(37,38,39); "
+                + "-m3-color-on-surface-variant: rgb(40,41,42);";
     }
 
     /// Applies the pseudo-class combination that previously allowed Modena button styles to win.
@@ -914,6 +1015,13 @@ final class M3ControlStyleTest {
         assertEquals(1, control.getBackground().getFills().size());
         assertEquals(expectedBackground, control.getBackground().getFills().get(0).getFill());
         assertEquals(expectedText, control.getTextFill());
+    }
+
+    /// Returns a region looked up below a node.
+    private static Region lookupRegion(Node node, String selector) {
+        Node child = node.lookup(selector);
+        assertInstanceOf(Region.class, child);
+        return (Region) child;
     }
 
     /// Returns the radio indicator region.
@@ -936,10 +1044,40 @@ final class M3ControlStyleTest {
         assertEquals(expectedFill, region.getBackground().getFills().get(0).getFill());
     }
 
+    /// Verifies that a region has no visible border strokes.
+    private static void assertNoBorder(Region region) {
+        if (region.getBorder() == null) {
+            return;
+        }
+
+        for (javafx.scene.layout.BorderStroke stroke : region.getBorder().getStrokes()) {
+            boolean zeroWidth = stroke.getWidths().getTop() == 0.0
+                    && stroke.getWidths().getRight() == 0.0
+                    && stroke.getWidths().getBottom() == 0.0
+                    && stroke.getWidths().getLeft() == 0.0;
+            boolean transparent = isTransparent(stroke.getTopStroke())
+                    && isTransparent(stroke.getRightStroke())
+                    && isTransparent(stroke.getBottomStroke())
+                    && isTransparent(stroke.getLeftStroke());
+            assertTrue(zeroWidth || transparent);
+        }
+    }
+
+    /// Returns whether a paint is fully transparent.
+    private static boolean isTransparent(Paint paint) {
+        return paint instanceof Color color && color.getOpacity() == 0.0;
+    }
+
     /// Verifies the first border stroke color for a region.
     private static void assertBorderColor(Region region, Color expectedColor) {
         assertEquals(1, region.getBorder().getStrokes().size());
         assertEquals(expectedColor, region.getBorder().getStrokes().get(0).getTopStroke());
+    }
+
+    /// Verifies the first bottom border stroke color for a region.
+    private static void assertBorderBottomColor(Region region, Color expectedColor) {
+        assertEquals(1, region.getBorder().getStrokes().size());
+        assertEquals(expectedColor, region.getBorder().getStrokes().get(0).getBottomStroke());
     }
 
     /// Verifies a list item's line count property and pseudo-class state.

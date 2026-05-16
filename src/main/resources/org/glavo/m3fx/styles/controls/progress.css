@@ -4,19 +4,35 @@
     -fx-accent: -m3-color-primary;
 }
 
-.m3-progress-bar .track {
+.m3-progress-bar.m3-progress-bar .track,
+.m3-progress-bar.m3-progress-bar:focused .track,
+.m3-progress-bar.m3-progress-bar:indeterminate .track {
     -fx-background-color: -m3-color-secondary-container;
+    -fx-background-insets: 0;
     -fx-background-radius: 999px;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+    -fx-border-width: 0px;
 }
 
-.m3-progress-bar .bar {
+.m3-progress-bar.m3-progress-bar .bar,
+.m3-progress-bar.m3-progress-bar:focused .bar,
+.m3-progress-bar.m3-progress-bar:indeterminate .bar {
     -fx-background-color: -m3-color-primary;
+    -fx-background-insets: 0;
     -fx-background-radius: 999px;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+    -fx-border-width: 0px;
+    -fx-padding: 0px;
 }
 
-.m3-progress-indicator {
+.m3-progress-indicator.m3-progress-indicator,
+.m3-progress-indicator.m3-progress-indicator:focused,
+.m3-progress-indicator.m3-progress-indicator:indeterminate {
     -m3-indicator-size: 48px;
     -fx-progress-color: -m3-color-primary;
+    -fx-accent: -m3-color-primary;
 }
 
 .m3-progress-bar:disabled,

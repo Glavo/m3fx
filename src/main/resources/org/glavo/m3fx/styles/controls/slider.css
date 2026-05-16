@@ -5,15 +5,31 @@
     -m3-touch-target-size: 48px;
 }
 
-.m3-slider .track {
+.m3-slider.m3-slider .track,
+.m3-slider.m3-slider:hover .track,
+.m3-slider.m3-slider:focused .track,
+.m3-slider.m3-slider:pressed .track {
     -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-insets: 0;
     -fx-background-radius: 999px;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+    -fx-border-width: 0px;
     -fx-pref-height: 4px;
 }
 
-.m3-slider .thumb {
+.m3-slider.m3-slider .thumb,
+.m3-slider.m3-slider:hover .thumb,
+.m3-slider.m3-slider:focused .thumb,
+.m3-slider.m3-slider:pressed .thumb {
     -fx-background-color: -m3-color-primary;
+    -fx-background-insets: 0;
     -fx-background-radius: 999px;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+    -fx-border-width: 0px;
+    -fx-effect: null;
+    -fx-padding: 0px;
 }
 
 .m3-slider:disabled {

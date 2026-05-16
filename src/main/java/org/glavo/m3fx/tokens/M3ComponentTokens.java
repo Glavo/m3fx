@@ -477,10 +477,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends a slider thumb visual CSS rule.
     private static void appendSliderThumbRule(StringBuilder builder, String selector, SliderTokens tokens) {
-        String thumbInset = M3TokenCss.pixels(tokens.thumbSize() / 2.0);
         beginRule(builder, selector);
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.trackShape()));
-        appendDeclaration(builder, "-fx-padding", thumbInset);
         endRule(builder);
     }
 

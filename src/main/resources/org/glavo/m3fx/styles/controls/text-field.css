@@ -1,8 +1,14 @@
-.m3-text-field,
-.m3-password-field {
+.m3-text-field.m3-text-field,
+.m3-text-field.m3-text-field:focused,
+.m3-password-field.m3-password-field,
+.m3-password-field.m3-password-field:focused {
     -m3-container-height: 56px;
     -m3-container-shape: 4px;
     -m3-horizontal-padding: 16px;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
     -fx-font-size: 16px;
     -fx-text-fill: -m3-color-on-surface;
     -fx-prompt-text-fill: -m3-color-on-surface-variant;
@@ -10,28 +16,49 @@
     -fx-highlight-text-fill: -m3-color-on-primary;
 }
 
-.m3-filled-field {
+.m3-text-field.m3-filled-field,
+.m3-text-field.m3-filled-field:hover,
+.m3-password-field.m3-filled-field,
+.m3-password-field.m3-filled-field:hover {
     -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-insets: 0;
     -fx-background-radius: 4px 4px 0 0;
     -fx-border-color: transparent transparent -m3-color-on-surface-variant transparent;
+    -fx-border-insets: 0;
     -fx-border-width: 0 0 1px 0;
 }
 
-.m3-filled-field:focused {
+.m3-text-field.m3-filled-field:focused,
+.m3-password-field.m3-filled-field:focused {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px 4px 0 0;
     -fx-border-color: transparent transparent -m3-color-primary transparent;
+    -fx-border-insets: 0;
     -fx-border-width: 0 0 2px 0;
 }
 
-.m3-outlined-field {
+.m3-text-field.m3-outlined-field,
+.m3-text-field.m3-outlined-field:hover,
+.m3-password-field.m3-outlined-field,
+.m3-password-field.m3-outlined-field:hover {
     -fx-background-color: transparent;
+    -fx-background-insets: 0;
     -fx-background-radius: 4px;
     -fx-border-color: -m3-color-outline;
+    -fx-border-insets: 0;
     -fx-border-radius: 4px;
     -fx-border-width: 1px;
 }
 
-.m3-outlined-field:focused {
+.m3-text-field.m3-outlined-field:focused,
+.m3-password-field.m3-outlined-field:focused {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
     -fx-border-color: -m3-color-primary;
+    -fx-border-insets: 0;
+    -fx-border-radius: 4px;
     -fx-border-width: 2px;
 }
 

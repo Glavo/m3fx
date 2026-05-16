@@ -12,8 +12,10 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.control.ButtonBase;
+import javafx.scene.control.Skin;
 import javafx.scene.control.ToggleButton;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3ChipSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -221,6 +223,12 @@ public class M3Chip extends ToggleButton {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Creates the default Material Design 3 chip skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3ChipSkin(this);
     }
 
     /// Returns the user-agent stylesheet for m3fx chips.
