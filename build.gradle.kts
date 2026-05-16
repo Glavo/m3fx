@@ -37,9 +37,8 @@ tasks.test {
     useJUnitPlatform()
 }
 
-tasks.register<JavaExec>("runDemo") {
+tasks.register("runDemo") {
     group = "application"
     description = "Runs the m3fx JavaFX demo application."
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "org.glavo.m3fx.demo.M3FXDemoLauncher"
+    dependsOn(":demo:run")
 }
