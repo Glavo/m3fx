@@ -796,6 +796,12 @@ final class M3ControlStyleTest {
         assertEquals(M3TextRole.TITLE_LARGE, text.getRole());
         assertTrue(text.getStyleClass().contains(M3TextRole.TITLE_LARGE.getStyleClass()));
         assertFalse(text.getStyleClass().contains(M3TextRole.BODY_LARGE.getStyleClass()));
+
+        text.setRole(M3TextRole.LABEL_SMALL);
+
+        assertEquals(M3TextRole.LABEL_SMALL, text.getRole());
+        assertTrue(text.getStyleClass().contains(M3TextRole.LABEL_SMALL.getStyleClass()));
+        assertFalse(text.getStyleClass().contains(M3TextRole.TITLE_LARGE.getStyleClass()));
     }
 
     /// Verifies that text typography roles read font size tokens from the active theme.
@@ -808,6 +814,26 @@ final class M3ControlStyleTest {
         assertEquals(57.0, text.getFont().getSize(), 0.0001);
         assertEquals(64.0, text.getTypographyLineHeight(), 0.0001);
         assertEquals(7.0, text.getLineSpacing(), 0.0001);
+    }
+
+    /// Verifies that surfaces expose variant, elevation, and metric tokens.
+    @Test
+    void surfaceVariantElevationAndMetricsAreStyleable() {
+        M3Surface surface = new M3Surface(new Label("Surface"));
+        surface.setVariant(M3SurfaceVariant.PRIMARY_CONTAINER);
+        surface.setElevation(M3SurfaceElevation.LEVEL3);
+        surface.setStyle("-m3-container-shape: 20px; -m3-content-padding: 18px;");
+
+        applyCss(surface);
+
+        assertEquals(M3SurfaceVariant.PRIMARY_CONTAINER, surface.getVariant());
+        assertEquals(M3SurfaceElevation.LEVEL3, surface.getElevation());
+        assertTrue(surface.getStyleClass().contains(M3SurfaceVariant.PRIMARY_CONTAINER.getStyleClass()));
+        assertTrue(surface.getStyleClass().contains(M3SurfaceElevation.LEVEL3.getStyleClass()));
+        assertEquals(20.0, surface.getContainerShape(), 0.0001);
+        assertEquals(18.0, surface.getContentPadding(), 0.0001);
+        assertEquals(18.0, surface.getPadding().getTop(), 0.0001);
+        assertEquals(1, surface.getChildren().size());
     }
 
     /// Verifies that menu tokens apply to menu surfaces and items.
@@ -2511,6 +2537,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
         assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
         assertTrue(new M3Text("Text").getStyleClass().contains(M3Text.STYLE_CLASS));
+        assertTrue(new M3Surface().getStyleClass().contains(M3Surface.STYLE_CLASS));
         assertTrue(new M3BadgedBox().getStyleClass().contains(M3BadgedBox.STYLE_CLASS));
         assertTrue(new M3Menu().getStyleClass().contains(M3Menu.STYLE_CLASS));
         assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
@@ -2553,6 +2580,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3Avatar(), "/styles/controls/avatar.css");
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
+        assertUserAgentStylesheet(new M3Surface(), "/styles/controls/surface.css");
         assertUserAgentStylesheet(new M3BadgedBox(), "/styles/controls/badge.css");
         assertUserAgentStylesheet(new M3Menu(), "/styles/controls/menu.css");
         assertUserAgentStylesheet(new M3SearchBar(), "/styles/controls/search.css");

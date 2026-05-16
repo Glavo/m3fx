@@ -76,6 +76,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-label-large-font-size"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-display-medium-font-size"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-body-small-line-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height"));
@@ -92,6 +94,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-display-medium-text"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-body-small-text"));
         assertTrue(theme.toControlStyleRules().contains(".m3-regular-fab"));
         assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button-first"));
@@ -114,6 +118,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
         assertTrue(theme.toControlStyleRules().contains(".m3-fab:hover"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-surface-elevation-level5"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
         assertNotNull(theme.tokens().componentTokens().segmentedButton());

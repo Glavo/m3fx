@@ -305,11 +305,20 @@ public class M3Text extends Label {
                 this,
                 getRole().getStyleClass(),
                 M3TextRole.DISPLAY_LARGE.getStyleClass(),
+                M3TextRole.DISPLAY_MEDIUM.getStyleClass(),
+                M3TextRole.DISPLAY_SMALL.getStyleClass(),
+                M3TextRole.HEADLINE_LARGE.getStyleClass(),
                 M3TextRole.HEADLINE_MEDIUM.getStyleClass(),
+                M3TextRole.HEADLINE_SMALL.getStyleClass(),
                 M3TextRole.TITLE_LARGE.getStyleClass(),
+                M3TextRole.TITLE_MEDIUM.getStyleClass(),
+                M3TextRole.TITLE_SMALL.getStyleClass(),
                 M3TextRole.LABEL_LARGE.getStyleClass(),
+                M3TextRole.LABEL_MEDIUM.getStyleClass(),
+                M3TextRole.LABEL_SMALL.getStyleClass(),
                 M3TextRole.BODY_LARGE.getStyleClass(),
-                M3TextRole.BODY_MEDIUM.getStyleClass()
+                M3TextRole.BODY_MEDIUM.getStyleClass(),
+                M3TextRole.BODY_SMALL.getStyleClass()
         );
     }
 

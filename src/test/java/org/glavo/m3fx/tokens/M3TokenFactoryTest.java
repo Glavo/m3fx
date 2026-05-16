@@ -19,19 +19,37 @@ final class M3TokenFactoryTest {
     @Test
     void createsExplicitSystemTokens() {
         M3TextStyle displayLarge = M3TextStyle.create("Demo", 60.0, 68.0, 600);
+        M3TextStyle displayMedium = M3TextStyle.create("Demo", 48.0, 56.0, 600);
+        M3TextStyle displaySmall = M3TextStyle.create("Demo", 38.0, 46.0, 600);
+        M3TextStyle headlineLarge = M3TextStyle.create("Demo", 34.0, 42.0, 500);
         M3TextStyle headlineMedium = M3TextStyle.create("Demo", 30.0, 38.0, 500);
+        M3TextStyle headlineSmall = M3TextStyle.create("Demo", 26.0, 34.0, 500);
         M3TextStyle titleLarge = M3TextStyle.create("Demo", 24.0, 32.0, 500);
+        M3TextStyle titleMedium = M3TextStyle.create("Demo", 18.0, 26.0, 500);
+        M3TextStyle titleSmall = M3TextStyle.create("Demo", 16.0, 24.0, 500);
         M3TextStyle labelLarge = M3TextStyle.create("Demo", 15.0, 22.0, 600);
+        M3TextStyle labelMedium = M3TextStyle.create("Demo", 13.0, 18.0, 600);
+        M3TextStyle labelSmall = M3TextStyle.create("Demo", 11.0, 16.0, 600);
         M3TextStyle bodyLarge = M3TextStyle.create("Demo", 17.0, 26.0, 400);
         M3TextStyle bodyMedium = M3TextStyle.create("Demo", 15.0, 23.0, 400);
+        M3TextStyle bodySmall = M3TextStyle.create("Demo", 13.0, 18.0, 400);
 
         M3TypographyTokens typography = M3TypographyTokens.create(
                 displayLarge,
+                displayMedium,
+                displaySmall,
+                headlineLarge,
                 headlineMedium,
+                headlineSmall,
                 titleLarge,
+                titleMedium,
+                titleSmall,
                 labelLarge,
+                labelMedium,
+                labelSmall,
                 bodyLarge,
-                bodyMedium
+                bodyMedium,
+                bodySmall
         );
         M3ShapeTokens shape = M3ShapeTokens.create(2.0, 6.0, 10.0, 18.0, 30.0, 999.0);
         M3ElevationTokens elevation = M3ElevationTokens.create(0.0, 2.0, 4.0, 8.0, 12.0, 16.0);
@@ -39,12 +57,16 @@ final class M3TokenFactoryTest {
         M3StateLayerTokens stateLayer = M3StateLayerTokens.create(0.05, 0.11, 0.13, 0.17, 0.14, 0.42);
 
         assertSame(displayLarge, typography.displayLarge());
+        assertSame(displayMedium, typography.displayMedium());
+        assertSame(bodySmall, typography.bodySmall());
         assertEquals(30.0, shape.extraLarge(), 0.0001);
         assertEquals(16.0, elevation.level5(), 0.0001);
         assertEquals(210, motion.mediumDuration());
         assertEquals(0.42, stateLayer.disabledContentOpacity(), 0.0001);
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-font-family: \"Demo\""));
+        assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-title-small-font-size: 16px"));
         assertTrue(typography.toControlStyleRules().contains(".m3-display-large-text"));
+        assertTrue(typography.toControlStyleRules().contains(".m3-label-small-text"));
         assertTrue(typography.toControlStyleRules().contains("-m3-typography-font-size: 60px"));
         assertTrue(typography.toControlStyleRules().contains("-m3-typography-line-height: 68px"));
         assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-disabled-content-opacity: 0.42"));
@@ -54,6 +76,7 @@ final class M3TokenFactoryTest {
         assertTrue(stateLayer.toControlStyleRules().contains("-fx-opacity: 0.13"));
         assertTrue(elevation.toControlStyleRules().contains(".m3-elevated-button:hover"));
         assertTrue(elevation.toControlStyleRules().contains(".m3-fab:hover"));
+        assertTrue(elevation.toControlStyleRules().contains(".m3-surface-elevation-level3"));
     }
 
     /// Verifies that component and token set factories preserve explicit token groups.

@@ -68,6 +68,9 @@ import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SnackbarHost;
+import org.glavo.m3fx.controls.M3Surface;
+import org.glavo.m3fx.controls.M3SurfaceElevation;
+import org.glavo.m3fx.controls.M3SurfaceVariant;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3TabBar;
@@ -232,6 +235,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Badges", "Dot, count, overflow, and attached badges", this::createBadgesPage),
                 new DemoPage("Avatars", "Initials and graphic avatar slots", this::createAvatarsPage),
                 new DemoPage("Dividers", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
+                new DemoPage("Surfaces", "Color containers, shape, padding, and elevation", this::createSurfacesPage),
                 new DemoPage("Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
                 new DemoPage("Sheets", "Side and bottom containment surfaces", this::createSheetsPage),
                 new DemoPage("Scrims", "Modal overlays and dismiss actions", this::createScrimsPage),
@@ -708,6 +712,21 @@ public final class M3FXDemoApp extends Application {
         );
     }
 
+    /// Creates the surface component page.
+    private Node createSurfacesPage() {
+        M3Surface surface = createSurface("Surface", M3SurfaceVariant.SURFACE, M3SurfaceElevation.LEVEL0);
+        M3Surface container = createSurface("Container", M3SurfaceVariant.CONTAINER, M3SurfaceElevation.LEVEL1);
+        M3Surface high = createSurface("High", M3SurfaceVariant.CONTAINER_HIGH, M3SurfaceElevation.LEVEL3);
+        M3Surface primary = createSurface("Primary", M3SurfaceVariant.PRIMARY_CONTAINER, M3SurfaceElevation.LEVEL2);
+        M3Surface secondary = createSurface("Secondary", M3SurfaceVariant.SECONDARY_CONTAINER, M3SurfaceElevation.LEVEL2);
+        M3Surface tertiary = createSurface("Tertiary", M3SurfaceVariant.TERTIARY_CONTAINER, M3SurfaceElevation.LEVEL2);
+
+        return createGallery(
+                createShowcaseGroup("Surface Tones", surface, container, high),
+                createShowcaseGroup("Container Colors", primary, secondary, tertiary)
+        );
+    }
+
     /// Creates the card component page.
     private Node createCardsPage() {
         M3Card filled = createSampleCard("Filled card", M3CardVariant.FILLED);
@@ -907,6 +926,20 @@ public final class M3FXDemoApp extends Application {
         topAppBar.getActions().addAll(createIconButton("S"), createIconButton("A"));
         topAppBar.setPrefWidth(560.0);
         return topAppBar;
+    }
+
+    /// Creates a sample surface.
+    private static M3Surface createSurface(
+            String title,
+            M3SurfaceVariant variant,
+            M3SurfaceElevation elevation
+    ) {
+        M3Text label = new M3Text(title, M3TextRole.TITLE_MEDIUM);
+        M3Surface surface = new M3Surface(label);
+        surface.setVariant(variant);
+        surface.setElevation(elevation);
+        surface.setPrefSize(180.0, 96.0);
+        return surface;
     }
 
     /// Creates a bottom app bar sample.

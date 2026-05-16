@@ -1,0 +1,76 @@
+.m3-surface {
+    -m3-container-shape: 12px;
+    -m3-content-padding: 16px;
+    -fx-background-radius: 12px;
+    -fx-background-insets: 0;
+    -fx-padding: 16px;
+}
+
+.m3-surface-variant-surface {
+    -fx-background-color: -m3-color-surface;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-surface-variant-container-lowest {
+    -fx-background-color: -m3-color-surface-container-lowest;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-surface-variant-container-low {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-surface-variant-container {
+    -fx-background-color: -m3-color-surface-container;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-surface-variant-container-high {
+    -fx-background-color: -m3-color-surface-container-high;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-surface-variant-container-highest {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-surface-variant-primary-container {
+    -fx-background-color: -m3-color-primary-container;
+    -fx-text-fill: -m3-color-on-primary-container;
+}
+
+.m3-surface-variant-secondary-container {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-surface-variant-tertiary-container {
+    -fx-background-color: -m3-color-tertiary-container;
+    -fx-text-fill: -m3-color-on-tertiary-container;
+}
+
+.m3-surface-elevation-level0 {
+    -fx-effect: null;
+}
+
+.m3-surface-elevation-level1 {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 1, 0.18, 0, 1);
+}
+
+.m3-surface-elevation-level2 {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2);
+}
+
+.m3-surface-elevation-level3 {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 3);
+}
+
+.m3-surface-elevation-level4 {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 4);
+}
+
+.m3-surface-elevation-level5 {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 12, 0.18, 0, 6);
+}
