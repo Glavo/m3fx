@@ -532,14 +532,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a progress bar track visual CSS rule.
     private static void appendProgressBarTrackRule(StringBuilder builder, String selector, ProgressTokens tokens) {
         beginRule(builder, selector);
-        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.shape()));
-        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.thickness()));
+        appendDeclaration(builder, "-fx-arc-width", M3TokenCss.pixels(progressTrackRadius(tokens) * 2.0));
+        appendDeclaration(builder, "-fx-arc-height", M3TokenCss.pixels(progressTrackRadius(tokens) * 2.0));
         endRule(builder);
+    }
+
+    /// Returns a cleanly renderable progress track radius for the current thickness.
+    private static double progressTrackRadius(ProgressTokens tokens) {
+        return Math.min(tokens.shape(), tokens.thickness() / 2.0);
     }
 
     /// Appends a progress indicator token CSS rule.
     private static void appendProgressIndicatorRule(StringBuilder builder, String selector, ProgressTokens tokens) {
         beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.thickness()));
         appendDeclaration(builder, "-m3-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
         endRule(builder);
     }

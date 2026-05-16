@@ -1137,7 +1137,7 @@ final class M3ControlStyleTest {
         progressBar.setStyle("-m3-track-thickness: 6px; -m3-track-shape: 18px;");
 
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
-        progressIndicator.setStyle("-m3-indicator-size: 72px;");
+        progressIndicator.setStyle("-m3-track-thickness: 6px; -m3-indicator-size: 72px;");
 
         applyCss(progressBar);
         applyCss(progressIndicator);
@@ -1145,6 +1145,7 @@ final class M3ControlStyleTest {
         assertEquals(6.0, progressBar.getTrackThickness(), 0.0001);
         assertEquals(18.0, progressBar.getTrackShape(), 0.0001);
         assertEquals(6.0, progressBar.getPrefHeight(), 0.0001);
+        assertEquals(6.0, progressIndicator.getTrackThickness(), 0.0001);
         assertEquals(72.0, progressIndicator.getIndicatorSize(), 0.0001);
         assertEquals(72.0, progressIndicator.getPrefWidth(), 0.0001);
         assertEquals(72.0, progressIndicator.getPrefHeight(), 0.0001);
@@ -1175,10 +1176,14 @@ final class M3ControlStyleTest {
         progressBar.resize(200.0, 16.0);
         progressBar.layout();
 
-        Region track = lookupRegion(progressBar, ".track");
-        Region bar = lookupRegion(progressBar, ".bar");
+        Rectangle track = (Rectangle) lookupShape(progressBar, ".track");
+        Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
         assertEquals(200.0, track.getWidth(), 0.0001);
         assertEquals(100.0, bar.getWidth(), 0.0001);
+        assertEquals(4.0, track.getArcWidth(), 0.0001);
+        assertEquals(4.0, track.getArcHeight(), 0.0001);
+        assertEquals(4.0, bar.getArcWidth(), 0.0001);
+        assertEquals(4.0, bar.getArcHeight(), 0.0001);
         assertTrue(bar.getBoundsInParent().getMaxX() <= track.getBoundsInParent().getMaxX() + 0.0001);
     }
 
@@ -1196,12 +1201,84 @@ final class M3ControlStyleTest {
 
         Pane container = assertInstanceOf(Pane.class, progressBar.lookup(".m3-progress-bar-container"));
         Rectangle clip = assertInstanceOf(Rectangle.class, container.getClip());
-        Region bar = lookupRegion(progressBar, ".bar");
+        Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
         assertEquals(200.0, clip.getWidth(), 0.0001);
         assertEquals(4.0, clip.getHeight(), 0.0001);
-        assertEquals(1998.0, clip.getArcWidth(), 0.0001);
-        assertEquals(1998.0, clip.getArcHeight(), 0.0001);
+        assertEquals(4.0, clip.getArcWidth(), 0.0001);
+        assertEquals(4.0, clip.getArcHeight(), 0.0001);
         assertTrue(bar.getWidth() >= 24.0);
+    }
+
+    /// Verifies that determinate progress bar value changes are animated.
+    @Test
+    void progressBarSkinAnimatesDeterminateProgressChanges() throws InterruptedException {
+        AtomicReference<M3ProgressBar> progressBarReference = new AtomicReference<>();
+        AtomicReference<Rectangle> barReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(320.0),
+                () -> {
+                    M3ProgressBar progressBar = new M3ProgressBar(0.1);
+                    Pane root = new Pane(progressBar);
+                    Scene scene = new Scene(root, 240.0, 40.0);
+
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    root.applyCss();
+                    progressBar.resize(200.0, 16.0);
+                    progressBar.layout();
+
+                    Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
+                    assertEquals(20.0, bar.getWidth(), 0.0001);
+
+                    progressBarReference.set(progressBar);
+                    barReference.set(bar);
+                    progressBar.setProgress(0.9);
+                    progressBar.layout();
+
+                    assertTrue(bar.getWidth() < 180.0);
+                },
+                () -> {
+                    M3ProgressBar progressBar = progressBarReference.get();
+                    Rectangle bar = barReference.get();
+                    progressBar.layout();
+
+                    assertEquals(180.0, bar.getWidth(), 0.0001);
+                }
+        );
+    }
+
+    /// Verifies that indeterminate progress bar segments move over time.
+    @Test
+    void progressBarSkinAnimatesIndeterminateProgress() throws InterruptedException {
+        AtomicReference<M3ProgressBar> progressBarReference = new AtomicReference<>();
+        AtomicReference<Rectangle> barReference = new AtomicReference<>();
+        AtomicReference<Double> initialX = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(180.0),
+                () -> {
+                    M3ProgressBar progressBar = new M3ProgressBar();
+                    Pane root = new Pane(progressBar);
+                    Scene scene = new Scene(root, 240.0, 40.0);
+
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    root.applyCss();
+                    progressBar.resize(200.0, 16.0);
+                    progressBar.layout();
+
+                    Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
+                    progressBarReference.set(progressBar);
+                    barReference.set(bar);
+                    initialX.set(bar.getX());
+                },
+                () -> {
+                    M3ProgressBar progressBar = progressBarReference.get();
+                    Rectangle bar = barReference.get();
+                    progressBar.layout();
+
+                    assertTrue(Math.abs(bar.getX() - initialX.get()) > 0.1);
+                }
+        );
     }
 
     /// Verifies that progress bar subnodes keep Material colors.
@@ -1216,12 +1293,12 @@ final class M3ControlStyleTest {
         progressBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
         root.applyCss();
 
-        Region track = lookupRegion(progressBar, ".track");
-        Region bar = lookupRegion(progressBar, ".bar");
-        assertRegionFill(track, Color.rgb(7, 8, 9));
-        assertNoBorder(track);
-        assertRegionFill(bar, Color.rgb(1, 2, 3));
-        assertNoBorder(bar);
+        Shape track = lookupShape(progressBar, ".track");
+        Shape bar = lookupShape(progressBar, ".bar");
+        assertEquals(Color.rgb(7, 8, 9), track.getFill());
+        assertTrue(isTransparent(track.getStroke()));
+        assertEquals(Color.rgb(1, 2, 3), bar.getFill());
+        assertTrue(isTransparent(bar.getStroke()));
     }
 
     /// Verifies that progress indicator subnodes keep Material colors and determinate geometry.
@@ -1242,7 +1319,120 @@ final class M3ControlStyleTest {
         Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
         assertEquals(Color.rgb(7, 8, 9), track.getStroke());
         assertEquals(Color.rgb(1, 2, 3), indicator.getStroke());
+        assertEquals(4.0, track.getStrokeWidth(), 0.0001);
+        assertEquals(4.0, indicator.getStrokeWidth(), 0.0001);
         assertEquals(-90.0, indicator.getLength(), 0.0001);
+    }
+
+    /// Verifies that circular progress indicators can render at an explicitly allocated size.
+    @Test
+    void progressIndicatorSkinUsesAllocatedSize() {
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        Pane root = new Pane(progressIndicator);
+        Scene scene = new Scene(root, 80.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        progressIndicator.resize(64.0, 64.0);
+        progressIndicator.layout();
+
+        javafx.scene.shape.Circle track = (javafx.scene.shape.Circle) lookupShape(progressIndicator, ".track");
+        Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
+        assertEquals(30.0, track.getRadius(), 0.0001);
+        assertEquals(30.0, indicator.getRadiusX(), 0.0001);
+        assertEquals(30.0, indicator.getRadiusY(), 0.0001);
+    }
+
+    /// Verifies that indeterminate circular progress hides the determinate track.
+    @Test
+    void progressIndicatorSkinHidesTrackWhenIndeterminate() {
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
+        Pane root = new Pane(progressIndicator);
+        Scene scene = new Scene(root, 80.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        progressIndicator.resize(48.0, 48.0);
+        progressIndicator.layout();
+
+        Shape track = lookupShape(progressIndicator, ".track");
+        Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
+        assertFalse(track.isVisible());
+        assertTrue(indicator.getLength() < 0.0);
+    }
+
+    /// Verifies that determinate circular progress value changes are animated.
+    @Test
+    void progressIndicatorSkinAnimatesDeterminateProgressChanges() throws InterruptedException {
+        AtomicReference<M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
+        AtomicReference<Arc> indicatorReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(320.0),
+                () -> {
+                    M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.1);
+                    Pane root = new Pane(progressIndicator);
+                    Scene scene = new Scene(root, 80.0, 80.0);
+
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    root.applyCss();
+                    progressIndicator.resize(48.0, 48.0);
+                    progressIndicator.layout();
+
+                    Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
+                    assertEquals(-36.0, indicator.getLength(), 0.0001);
+
+                    progressIndicatorReference.set(progressIndicator);
+                    indicatorReference.set(indicator);
+                    progressIndicator.setProgress(0.9);
+                    progressIndicator.layout();
+
+                    assertTrue(indicator.getLength() > -324.0);
+                },
+                () -> {
+                    M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
+                    Arc indicator = indicatorReference.get();
+                    progressIndicator.layout();
+
+                    assertEquals(-324.0, indicator.getLength(), 0.0001);
+                }
+        );
+    }
+
+    /// Verifies that indeterminate circular progress rotates without oversized sweeps.
+    @Test
+    void progressIndicatorSkinAnimatesIndeterminateProgress() throws InterruptedException {
+        AtomicReference<M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
+        AtomicReference<Arc> indicatorReference = new AtomicReference<>();
+        AtomicReference<Double> initialStartAngle = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(180.0),
+                () -> {
+                    M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
+                    Pane root = new Pane(progressIndicator);
+                    Scene scene = new Scene(root, 80.0, 80.0);
+
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    root.applyCss();
+                    progressIndicator.resize(48.0, 48.0);
+                    progressIndicator.layout();
+
+                    Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
+                    progressIndicatorReference.set(progressIndicator);
+                    indicatorReference.set(indicator);
+                    initialStartAngle.set(indicator.getStartAngle());
+                },
+                () -> {
+                    M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
+                    Arc indicator = indicatorReference.get();
+                    progressIndicator.layout();
+
+                    assertTrue(Math.abs(indicator.getStartAngle() - initialStartAngle.get()) > 0.1);
+                    assertTrue(indicator.getLength() <= -42.0);
+                    assertTrue(indicator.getLength() >= -96.0);
+                }
+        );
     }
 
     /// Verifies that divider component token properties are styleable from CSS.
@@ -1899,6 +2089,48 @@ final class M3ControlStyleTest {
             Thread.currentThread().interrupt();
             throw new AssertionError(e);
         }
+        Throwable exception = failure.get();
+        if (exception instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        if (exception instanceof Error error) {
+            throw error;
+        }
+        if (exception != null) {
+            throw new AssertionError(exception);
+        }
+    }
+
+    /// Runs setup on the FX thread and verifies the result after a JavaFX delay.
+    private static void runOnFxThreadAfterDelay(
+            Duration delay,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Platform.runLater(() -> {
+            try {
+                setup.run();
+                PauseTransition pause = new PauseTransition(delay);
+                pause.setOnFinished(event -> {
+                    try {
+                        verification.run();
+                    } catch (Throwable e) {
+                        failure.set(e);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+                pause.play();
+            } catch (Throwable e) {
+                failure.set(e);
+                latch.countDown();
+            }
+        });
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
         Throwable exception = failure.get();
         if (exception instanceof RuntimeException runtimeException) {
             throw runtimeException;

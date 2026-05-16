@@ -3,6 +3,11 @@
 
 package org.glavo.m3fx.demo;
 
+import javafx.animation.Animation;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -22,6 +27,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
@@ -81,6 +87,9 @@ public final class M3FXDemoApp extends Application {
 
     /// The current theme brightness.
     private Brightness brightness = Brightness.LIGHT;
+
+    /// Animations owned by the demo scene.
+    private final List<Animation> animations = new java.util.ArrayList<>();
 
     /// The active JavaFX scene.
     private @Nullable Scene scene;
@@ -342,9 +351,41 @@ public final class M3FXDemoApp extends Application {
         M3ProgressIndicator indeterminateIndicator = new M3ProgressIndicator();
         indeterminateIndicator.setPrefSize(64.0, 64.0);
 
+        playProgressShowcaseAnimation(progressBar, progressIndicator);
+
         FlowPane controls = createFlow();
         controls.getChildren().addAll(progressBar, progressIndicator, indeterminateIndicator);
         return createSection("Progress", controls);
+    }
+
+    /// Plays the determinate progress showcase animation.
+    private void playProgressShowcaseAnimation(M3ProgressBar progressBar, M3ProgressIndicator progressIndicator) {
+        Timeline animation = new Timeline(
+                new KeyFrame(
+                        Duration.ZERO,
+                        new KeyValue(progressBar.progressProperty(), 0.08, Interpolator.EASE_BOTH),
+                        new KeyValue(progressIndicator.progressProperty(), 0.08, Interpolator.EASE_BOTH)
+                ),
+                new KeyFrame(
+                        Duration.seconds(1.8),
+                        new KeyValue(progressBar.progressProperty(), 0.86, Interpolator.EASE_BOTH),
+                        new KeyValue(progressIndicator.progressProperty(), 0.86, Interpolator.EASE_BOTH)
+                ),
+                new KeyFrame(
+                        Duration.seconds(3.2),
+                        new KeyValue(progressBar.progressProperty(), 0.24, Interpolator.EASE_BOTH),
+                        new KeyValue(progressIndicator.progressProperty(), 0.24, Interpolator.EASE_BOTH)
+                ),
+                new KeyFrame(
+                        Duration.seconds(4.6),
+                        new KeyValue(progressBar.progressProperty(), 0.68, Interpolator.EASE_BOTH),
+                        new KeyValue(progressIndicator.progressProperty(), 0.68, Interpolator.EASE_BOTH)
+                )
+        );
+        animation.setAutoReverse(true);
+        animation.setCycleCount(Animation.INDEFINITE);
+        animation.play();
+        animations.add(animation);
     }
 
     /// Creates the card, dialog, and snackbar showcase section.

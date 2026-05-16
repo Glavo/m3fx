@@ -14,7 +14,6 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.Region;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3ProgressBar;
@@ -23,6 +22,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3ProgressBar].
 @NotNullByDefault
 public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
+    /// The duration used when determinate progress values change.
+    private static final Duration DETERMINATE_DURATION = Duration.millis(240.0);
+
     /// The duration of one indeterminate track sweep.
     private static final Duration INDETERMINATE_DURATION = Duration.millis(1400.0);
 
@@ -35,11 +37,17 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The clip that keeps the bar inside the track bounds.
     private final Rectangle clip = new Rectangle();
 
-    /// The track region.
-    private final Region track = new Region();
+    /// The track rectangle.
+    private final Rectangle track = new Rectangle();
 
-    /// The progress bar region.
-    private final Region bar = new Region();
+    /// The progress bar rectangle.
+    private final Rectangle bar = new Rectangle();
+
+    /// The progress value currently displayed by determinate progress.
+    private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
+
+    /// The determinate progress transition timeline.
+    private final Timeline determinateAnimation = new Timeline();
 
     /// The animated position of the indeterminate segment.
     private final DoubleProperty indeterminatePosition = new SimpleDoubleProperty(this, "indeterminatePosition");
@@ -47,15 +55,15 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The indeterminate animation timeline.
     private final Timeline indeterminateAnimation = new Timeline();
 
-    /// Requests layout after indeterminate animation ticks.
-    private final InvalidationListener indeterminatePositionInvalidation =
+    /// Requests layout after animation ticks.
+    private final InvalidationListener animationInvalidation =
             observable -> getSkinnable().requestLayout();
 
-    /// Requests layout after progress or token changes.
-    private final InvalidationListener layoutInvalidation = observable -> {
-        updateIndeterminateAnimation();
-        getSkinnable().requestLayout();
-    };
+    /// Updates animations when the public progress value changes.
+    private final InvalidationListener progressInvalidation = observable -> updateProgressAnimation(true);
+
+    /// Requests layout after size-related token changes.
+    private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
 
     /// Creates a progress bar skin.
     public M3ProgressBarSkin(M3ProgressBar control) {
@@ -70,7 +78,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         container.getChildren().addAll(track, bar);
         getChildren().add(container);
 
-        indeterminatePosition.addListener(indeterminatePositionInvalidation);
+        displayedProgress.set(initialDisplayedProgress(control.getProgress()));
+        displayedProgress.addListener(animationInvalidation);
+        indeterminatePosition.addListener(animationInvalidation);
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
         indeterminateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
@@ -83,19 +93,21 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
                 )
         );
 
-        control.progressProperty().addListener(layoutInvalidation);
+        control.progressProperty().addListener(progressInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.trackShapeProperty().addListener(layoutInvalidation);
-        updateIndeterminateAnimation();
+        updateProgressAnimation(false);
     }
 
     /// Stops animations and removes listeners before the skin is disposed.
     @Override
     public void dispose() {
         M3ProgressBar progressBar = getSkinnable();
+        determinateAnimation.stop();
         indeterminateAnimation.stop();
-        indeterminatePosition.removeListener(indeterminatePositionInvalidation);
-        progressBar.progressProperty().removeListener(layoutInvalidation);
+        displayedProgress.removeListener(animationInvalidation);
+        indeterminatePosition.removeListener(animationInvalidation);
+        progressBar.progressProperty().removeListener(progressInvalidation);
         progressBar.trackThicknessProperty().removeListener(layoutInvalidation);
         progressBar.trackShapeProperty().removeListener(layoutInvalidation);
         super.dispose();
@@ -107,44 +119,68 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         M3ProgressBar progressBar = getSkinnable();
         double thickness = Math.min(progressBar.getTrackThickness(), height);
         double trackY = y + (height - thickness) / 2.0;
-        String shape = formatPixels(progressBar.getTrackShape());
-        String style = "-fx-background-radius: " + shape + "; -fx-pref-height: " + formatPixels(thickness) + ";";
+        double radius = resolvedTrackRadius(progressBar, thickness);
 
-        track.setStyle(style);
-        bar.setStyle(style);
         container.resizeRelocate(x, trackY, width, thickness);
         clip.setWidth(width);
         clip.setHeight(thickness);
-        clip.setArcWidth(progressBar.getTrackShape() * 2.0);
-        clip.setArcHeight(progressBar.getTrackShape() * 2.0);
-        track.resizeRelocate(0.0, 0.0, width, thickness);
-        layoutBar(0.0, 0.0, width, thickness);
+        clip.setArcWidth(radius * 2.0);
+        clip.setArcHeight(radius * 2.0);
+        layoutRectangle(track, 0.0, 0.0, width, thickness, radius);
+        layoutBar(0.0, 0.0, width, thickness, radius);
     }
 
     /// Lays out the determinate or indeterminate bar region.
-    private void layoutBar(double x, double y, double width, double height) {
+    private void layoutBar(double x, double y, double width, double height, double radius) {
         double progress = getSkinnable().getProgress();
         if (progress == ProgressIndicator.INDETERMINATE_PROGRESS) {
             double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
             double segmentX = x - segmentWidth + (width + segmentWidth) * indeterminatePosition.get();
-            bar.resizeRelocate(segmentX, y, segmentWidth, height);
+            bar.setVisible(true);
+            layoutRectangle(bar, segmentX, y, segmentWidth, height, radius);
             return;
         }
 
-        double progressWidth = width * clamp(progress);
-        bar.resizeRelocate(x, y, progressWidth, height);
+        double progressWidth = width * displayedProgress.get();
+        bar.setVisible(progressWidth > 0.0);
+        layoutRectangle(bar, x, y, progressWidth, height, Math.min(radius, progressWidth / 2.0));
     }
 
-    /// Starts or stops the indeterminate animation for the current progress value.
-    private void updateIndeterminateAnimation() {
-        if (getSkinnable().getProgress() == ProgressIndicator.INDETERMINATE_PROGRESS) {
+    /// Updates determinate or indeterminate animation state for the current progress value.
+    private void updateProgressAnimation(boolean animateDeterminateProgress) {
+        double progress = getSkinnable().getProgress();
+        if (progress == ProgressIndicator.INDETERMINATE_PROGRESS) {
+            determinateAnimation.stop();
             if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
                 indeterminateAnimation.play();
             }
         } else {
             indeterminateAnimation.stop();
             indeterminatePosition.set(0.0);
+            animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
         }
+    }
+
+    /// Animates the displayed determinate progress value.
+    private void animateDisplayedProgress(double targetProgress, boolean animate) {
+        determinateAnimation.stop();
+        if (!animate) {
+            displayedProgress.set(targetProgress);
+            return;
+        }
+
+        determinateAnimation.getKeyFrames().setAll(
+                new KeyFrame(
+                        DETERMINATE_DURATION,
+                        new KeyValue(displayedProgress, targetProgress, Interpolator.EASE_BOTH)
+                )
+        );
+        determinateAnimation.playFromStart();
+    }
+
+    /// Returns the initial displayed progress value for a public progress value.
+    private static double initialDisplayedProgress(double progress) {
+        return progress == ProgressIndicator.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
     }
 
     /// Clamps a progress value to the visible range.
@@ -152,11 +188,25 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         return Math.max(0.0, Math.min(1.0, value));
     }
 
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
-        }
-        return Double.toString(value) + "px";
+    /// Returns a track radius that can be rendered cleanly for the current thickness.
+    private static double resolvedTrackRadius(M3ProgressBar progressBar, double thickness) {
+        return Math.min(progressBar.getTrackShape(), thickness / 2.0);
+    }
+
+    /// Lays out a progress rectangle with a clean resolved corner radius.
+    private static void layoutRectangle(
+            Rectangle rectangle,
+            double x,
+            double y,
+            double width,
+            double height,
+            double radius
+    ) {
+        rectangle.setX(x);
+        rectangle.setY(y);
+        rectangle.setWidth(width);
+        rectangle.setHeight(height);
+        rectangle.setArcWidth(radius * 2.0);
+        rectangle.setArcHeight(radius * 2.0);
     }
 }
