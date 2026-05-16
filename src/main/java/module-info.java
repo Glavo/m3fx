@@ -1,4 +1,4 @@
-/// Defines the m3fx Material Design 3 JavaFX component library module.
+/// Defines the M3FX Material Design 3 JavaFX component library module.
 module org.glavo.m3fx {
     requires transitive javafx.controls;
     requires transitive javafx.graphics;

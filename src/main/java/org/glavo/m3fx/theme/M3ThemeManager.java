@@ -165,7 +165,7 @@ public final class M3ThemeManager {
                 file.toFile().deleteOnExit();
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to write generated m3fx theme stylesheet", e);
+            throw new IllegalStateException("Failed to write generated M3FX theme stylesheet", e);
         }
 
         return file.toUri().toString();

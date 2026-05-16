@@ -6,7 +6,7 @@ package org.glavo.m3fx.demo;
 import javafx.application.Application;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Launches the m3fx demo without extending [Application].
+/// Launches the M3FX demo without extending [Application].
 @NotNullByDefault
 public final class M3FXDemoLauncher {
     /// Prevents launcher instantiation.

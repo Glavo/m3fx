@@ -39,6 +39,6 @@ tasks.test {
 
 tasks.register("runDemo") {
     group = "application"
-    description = "Runs the m3fx JavaFX demo application."
+    description = "Runs the M3FX JavaFX demo application."
     dependsOn(":demo:run")
 }

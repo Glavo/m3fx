@@ -1,8 +1,8 @@
-# m3fx Implementation Plan
+# M3FX Implementation Plan
 
 ## Summary
 
-- Build m3fx as a modular Material Design 3 component library for Java 17 and JavaFX 14.
+- Build M3FX as a modular Material Design 3 component library for Java 17 and JavaFX 14.
 - Use `org.glavo:MonetFX:0.4.0` as the source of Material color system generation.
 - Make token design a first-class layer so controls are driven by theme tokens instead of hard-coded Material values.
 - Implement the first usable release around core controls: theme system, buttons, text fields, selection controls, progress controls, utility controls, list items, cards, dialogs, and snackbar.
@@ -40,7 +40,7 @@
 
 ## Public API And Code Style
 
-- Public APIs expose system tokens and component tokens. MonetFX internal packages must not leak into m3fx APIs.
+- Public APIs expose system tokens and component tokens. MonetFX internal packages must not leak into M3FX APIs.
 - Every public class, field, and method must use `///` Markdown Javadocs.
 - Every Java class must be annotated with `@NotNullByDefault`.
 - Nullable values must be explicit with `@Nullable`.
@@ -53,7 +53,7 @@
 - Run `./gradlew -g .gradle-user-home compileJava`.
 - Run `./gradlew -g .gradle-user-home test` with a ten-minute timeout for test tasks.
 - Cover these scenarios:
-  - MonetFX `ColorScheme` maps into m3fx color tokens and CSS variables.
+  - MonetFX `ColorScheme` maps into M3FX color tokens and CSS variables.
   - Baseline and expressive profiles generate complete token sets.
   - Core controls can be instantiated and keep stable default style classes.
   - Controls read component tokens, so switching token sets does not require replacing control instances.

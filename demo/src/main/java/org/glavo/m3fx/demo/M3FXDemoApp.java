@@ -67,7 +67,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 
-/// A demo application that showcases the first m3fx controls.
+/// A demo application that showcases the first M3FX controls.
 @NotNullByDefault
 public final class M3FXDemoApp extends Application {
     /// Seed colors shown in the demo header.
@@ -117,7 +117,7 @@ public final class M3FXDemoApp extends Application {
         this.scene = scene;
         applyTheme();
 
-        stage.setTitle("m3fx Demo");
+        stage.setTitle("M3FX Demo");
         stage.setMinWidth(900.0);
         stage.setMinHeight(640.0);
         stage.setScene(scene);
@@ -129,7 +129,7 @@ public final class M3FXDemoApp extends Application {
         VBox titleBox = new VBox(2.0);
         titleBox.getStyleClass().add("demo-title-box");
 
-        Label title = new Label("m3fx");
+        Label title = new Label("M3FX");
         title.getStyleClass().add("demo-title");
         Label subtitle = new Label("Material Design 3 controls for JavaFX");
         subtitle.getStyleClass().add("demo-subtitle");
@@ -449,7 +449,7 @@ public final class M3FXDemoApp extends Application {
 
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("demo-card-title");
-        Label bodyLabel = new Label("Surface, shape, and state tokens are applied through m3fx CSS.");
+        Label bodyLabel = new Label("Surface, shape, and state tokens are applied through M3FX CSS.");
         bodyLabel.getStyleClass().add("demo-card-body");
         bodyLabel.setWrapText(true);
 
@@ -490,7 +490,7 @@ public final class M3FXDemoApp extends Application {
 
         M3DialogPane pane = new M3DialogPane();
         pane.setHeaderText("Dialog title");
-        pane.setContentText("This dialog uses the m3fx dialog pane style and active theme tokens.");
+        pane.setContentText("This dialog uses the M3FX dialog pane style and active theme tokens.");
         pane.getButtonTypes().add(ButtonType.OK);
         pane.getStylesheets().add(M3ThemeManager.stylesheetUrl());
         pane.setStyle(createTheme().toRootStyleDeclarations());
