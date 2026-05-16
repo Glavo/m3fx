@@ -700,6 +700,42 @@ final class M3ControlStyleTest {
         assertEquals(20.0, passwordField.getPadding().getRight(), 0.0001);
     }
 
+    /// Verifies that text area component token properties are styleable from CSS.
+    @Test
+    void textAreaTokensAreStyleable() {
+        M3TextArea textArea = new M3TextArea();
+        textArea.setStyle(
+                "-m3-container-height: 140px; "
+                        + "-m3-container-shape: 12px; "
+                        + "-m3-horizontal-padding: 22px; "
+                        + "-m3-vertical-padding: 18px;"
+        );
+
+        applyCss(textArea);
+
+        assertEquals(140.0, textArea.getContainerHeight(), 0.0001);
+        assertEquals(12.0, textArea.getContainerShape(), 0.0001);
+        assertEquals(22.0, textArea.getHorizontalPadding(), 0.0001);
+        assertEquals(18.0, textArea.getVerticalPadding(), 0.0001);
+        assertEquals(140.0, textArea.getPrefHeight(), 0.0001);
+        assertEquals(22.0, textArea.getPadding().getLeft(), 0.0001);
+        assertEquals(22.0, textArea.getPadding().getRight(), 0.0001);
+        assertEquals(18.0, textArea.getPadding().getTop(), 0.0001);
+        assertEquals(18.0, textArea.getPadding().getBottom(), 0.0001);
+    }
+
+    /// Verifies that m3fx tooltips expose style and timing defaults.
+    @Test
+    void tooltipUsesMaterialDefaults() {
+        M3Tooltip tooltip = new M3Tooltip("Details");
+
+        assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
+        assertTrue(tooltip.isWrapText());
+        assertEquals(Duration.millis(500.0), tooltip.getShowDelay());
+        assertEquals(Duration.millis(0.0), tooltip.getHideDelay());
+        assertEquals(Duration.seconds(5.0), tooltip.getShowDuration());
+    }
+
     /// Verifies that focused text input states keep Material field colors.
     @Test
     void textInputStateStylesPreserveVariantColors() {
@@ -2197,6 +2233,8 @@ final class M3ControlStyleTest {
 
         assertTrue(textField.getStyleClass().contains(M3TextField.STYLE_CLASS));
         assertTrue(textField.getStyleClass().contains(M3TextInputVariant.OUTLINED.getStyleClass()));
+        assertTrue(new M3TextArea().getStyleClass().contains(M3TextArea.STYLE_CLASS));
+        assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
         assertTrue(new M3CheckBox().getStyleClass().contains(M3CheckBox.STYLE_CLASS));
         assertTrue(new M3RadioButton().getStyleClass().contains(M3RadioButton.STYLE_CLASS));
         assertTrue(new M3Switch().getStyleClass().contains(M3Switch.STYLE_CLASS));
@@ -2230,6 +2268,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3FloatingActionButton(), "/styles/controls/floating-action-button.css");
         assertUserAgentStylesheet(new M3TextField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
+        assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3CheckBox(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3RadioButton(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3Switch(), "/styles/controls/selection.css");

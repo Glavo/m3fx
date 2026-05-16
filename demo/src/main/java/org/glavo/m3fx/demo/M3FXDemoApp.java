@@ -59,8 +59,10 @@ import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3TabBar;
+import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputVariant;
+import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -214,7 +216,8 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Dividers", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
                 new DemoPage("Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
                 new DemoPage("Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
-                new DemoPage("Snackbars", "Snackbar host with action and stacked messages", this::createSnackbarsPage)
+                new DemoPage("Snackbars", "Snackbar host with action and stacked messages", this::createSnackbarsPage),
+                new DemoPage("Tooltips", "Plain and longer contextual help", this::createTooltipsPage)
         );
     }
 
@@ -343,10 +346,23 @@ public final class M3FXDemoApp extends Application {
         password.setPromptText("Password");
         password.setVariant(M3TextInputVariant.OUTLINED);
         password.setPrefWidth(280.0);
+        M3TextArea filledArea = createTextArea(
+                "Filled text area",
+                "Write longer notes across multiple lines.",
+                M3TextInputVariant.FILLED,
+                false
+        );
+        M3TextArea outlinedArea = createTextArea(
+                "Outlined text area",
+                "Material text areas share field colors but keep multi-line height tokens.",
+                M3TextInputVariant.OUTLINED,
+                false
+        );
 
         return createGallery(
                 createShowcaseGroup("Filled", filled, filledText, filledDisabled),
-                createShowcaseGroup("Outlined", outlined, outlinedText, password)
+                createShowcaseGroup("Outlined", outlined, outlinedText, password),
+                createShowcaseGroup("Text Areas", filledArea, outlinedArea)
         );
     }
 
@@ -623,6 +639,22 @@ public final class M3FXDemoApp extends Application {
         return createGallery(createShowcaseGroup("Snackbar Host", messageButton, actionButton));
     }
 
+    /// Creates the tooltip component page.
+    private Node createTooltipsPage() {
+        M3Button plain = createButton("Hover me", M3ButtonVariant.FILLED);
+        plain.setTooltip(new M3Tooltip("Tooltip"));
+
+        M3Button longText = createButton("Long tooltip", M3ButtonVariant.OUTLINED);
+        M3Tooltip tooltip = new M3Tooltip("Use tooltips for brief contextual labels when a control needs clarification.");
+        tooltip.setPrefWidth(260.0);
+        longText.setTooltip(tooltip);
+
+        M3IconButton iconButton = createIconButton("i");
+        iconButton.setTooltip(new M3Tooltip("Icon button"));
+
+        return createGallery(createShowcaseGroup("States", plain, longText, iconButton));
+    }
+
     /// Creates a page gallery.
     private static VBox createGallery(Node... groups) {
         VBox gallery = new VBox(18.0);
@@ -669,6 +701,21 @@ public final class M3FXDemoApp extends Application {
         textField.setDisable(disabled);
         textField.setPrefWidth(280.0);
         return textField;
+    }
+
+    /// Creates a text area for the page gallery.
+    private static M3TextArea createTextArea(
+            String prompt,
+            String text,
+            M3TextInputVariant variant,
+            boolean disabled
+    ) {
+        M3TextArea textArea = new M3TextArea(text);
+        textArea.setPromptText(prompt);
+        textArea.setVariant(variant);
+        textArea.setDisable(disabled);
+        textArea.setPrefWidth(360.0);
+        return textArea;
     }
 
     /// Creates a slider sample.

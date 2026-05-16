@@ -41,6 +41,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by text input controls.
     FieldTokens field();
 
+    /// Returns tokens used by text area controls.
+    TextAreaTokens textArea();
+
     /// Returns tokens used by selection controls.
     SelectionTokens selection();
 
@@ -98,6 +101,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             ButtonTokens segmentedButton,
             TabTokens tab,
             FieldTokens field,
+            TextAreaTokens textArea,
             SelectionTokens selection,
             SliderTokens slider,
             ChipTokens chip,
@@ -125,6 +129,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 segmentedButton,
                 tab,
                 field,
+                textArea,
                 selection,
                 slider,
                 chip,
@@ -158,6 +163,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double tabHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
         double tabMinWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 104.0 : 90.0);
         double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double textAreaHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 128.0 : 112.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
@@ -199,6 +205,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), 12.0),
                 new TabTokens(tabHeight, tabMinWidth, 16.0, 3.0, 3.0),
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
+                new TextAreaTokens(textAreaHeight, shapeTokens.extraSmall(), 16.0, 16.0),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
                 new ChipTokens(chipHeight, shapeTokens.small(), 16.0),
@@ -268,6 +275,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, "segmented-button", segmentedButton());
         append(builder, tab());
         append(builder, field());
+        append(builder, textArea());
         append(builder, selection());
         append(builder, slider());
         append(builder, chip());
@@ -321,8 +329,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendTabRule(builder, ".m3-tab", tab());
         appendTabIndicatorRule(builder, ".m3-tab-active-indicator", tab());
         appendFieldRule(builder, ".m3-text-field, .m3-password-field", field());
+        appendTextAreaRule(builder, ".m3-text-area", textArea());
         appendFilledFieldRule(builder, ".m3-filled-field", field());
         appendOutlinedFieldRule(builder, ".m3-outlined-field", field());
+        appendFilledTextAreaRule(builder, ".m3-text-area.m3-filled-field", textArea());
+        appendOutlinedTextAreaRule(builder, ".m3-text-area.m3-outlined-field", textArea());
         appendSelectionRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch", selection());
         appendSwitchRule(builder, ".m3-switch", selection());
         appendSwitchBoxRule(builder, ".m3-switch .box", selection());
@@ -393,6 +404,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-field-container-height", M3TokenCss.pixels(tokens.height()));
         M3TokenCss.append(builder, "-m3-field-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-field-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+    }
+
+    /// Appends text area token declarations.
+    private static void append(StringBuilder builder, TextAreaTokens tokens) {
+        M3TokenCss.append(builder, "-m3-text-area-container-height", M3TokenCss.pixels(tokens.height()));
+        M3TokenCss.append(builder, "-m3-text-area-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-text-area-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-text-area-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
     }
 
     /// Appends selection token declarations.
@@ -635,6 +654,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends a text area token CSS rule.
+    private static void appendTextAreaRule(StringBuilder builder, String selector, TextAreaTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.height()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
+        endRule(builder);
+    }
+
     /// Appends a filled field shape CSS rule.
     private static void appendFilledFieldRule(StringBuilder builder, String selector, FieldTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.containerShape());
@@ -645,6 +674,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends an outlined field shape CSS rule.
     private static void appendOutlinedFieldRule(StringBuilder builder, String selector, FieldTokens tokens) {
+        String radius = M3TokenCss.pixels(tokens.containerShape());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", radius);
+        appendDeclaration(builder, "-fx-border-radius", radius);
+        endRule(builder);
+    }
+
+    /// Appends a filled text area shape CSS rule.
+    private static void appendFilledTextAreaRule(StringBuilder builder, String selector, TextAreaTokens tokens) {
+        String radius = M3TokenCss.pixels(tokens.containerShape());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", radius + " " + radius + " 0 0");
+        endRule(builder);
+    }
+
+    /// Appends an outlined text area shape CSS rule.
+    private static void appendOutlinedTextAreaRule(StringBuilder builder, String selector, TextAreaTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.containerShape());
         beginRule(builder, selector);
         appendDeclaration(builder, "-fx-background-radius", radius);
@@ -1040,6 +1086,28 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(height, "height");
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+        }
+    }
+
+    /// Component tokens for text area controls.
+    ///
+    /// @param height the preferred text area container height
+    /// @param containerShape the text area container corner radius
+    /// @param horizontalPadding the horizontal content padding
+    /// @param verticalPadding the vertical content padding
+    @NotNullByDefault
+    public record TextAreaTokens(
+            double height,
+            double containerShape,
+            double horizontalPadding,
+            double verticalPadding
+    ) {
+        /// Validates text area tokens.
+        public TextAreaTokens {
+            validateNonNegative(height, "height");
+            validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(verticalPadding, "verticalPadding");
         }
     }
 

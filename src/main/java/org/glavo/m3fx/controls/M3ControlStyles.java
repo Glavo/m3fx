@@ -3,7 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.scene.Node;
+import javafx.css.Styleable;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.List;
@@ -16,7 +16,7 @@ final class M3ControlStyles {
     }
 
     /// Adds a style class if it is not already present.
-    static void add(Node node, String styleClass) {
+    static void add(Styleable node, String styleClass) {
         List<String> styleClasses = node.getStyleClass();
         if (!styleClasses.contains(styleClass)) {
             styleClasses.add(styleClass);
@@ -24,7 +24,7 @@ final class M3ControlStyles {
     }
 
     /// Replaces one variant style class with another.
-    static void replaceVariant(Node node, String selectedStyleClass, String... variantStyleClasses) {
+    static void replaceVariant(Styleable node, String selectedStyleClass, String... variantStyleClasses) {
         List<String> styleClasses = node.getStyleClass();
         for (String styleClass : variantStyleClasses) {
             styleClasses.remove(styleClass);

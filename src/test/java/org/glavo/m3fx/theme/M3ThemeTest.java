@@ -18,6 +18,7 @@ import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -314,11 +315,12 @@ final class M3ThemeTest {
     void installsGeneratedComponentStylesheet() {
         M3Button button = new M3Button("Button");
         M3TextField textField = new M3TextField();
+        M3TextArea textArea = new M3TextArea();
         M3Chip chip = new M3Chip("Chip");
         M3FloatingActionButton fab = new M3FloatingActionButton();
         fab.setSize(M3FloatingActionButtonSize.LARGE);
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Week");
-        Pane root = new Pane(button, textField, chip, fab, segmentedButton);
+        Pane root = new Pane(button, textField, textArea, chip, fab, segmentedButton);
         Scene scene = new Scene(root);
 
         M3Theme expressiveTheme = M3Theme.fromSeed(
@@ -332,6 +334,7 @@ final class M3ThemeTest {
 
         assertEquals(48.0, button.getContainerHeight(), 0.0001);
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
         assertEquals(104.0, fab.getContainerSize(), 0.0001);
         assertEquals(48.0, segmentedButton.getContainerHeight(), 0.0001);
@@ -342,6 +345,7 @@ final class M3ThemeTest {
 
         assertEquals(40.0, button.getContainerHeight(), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
         assertEquals(96.0, fab.getContainerSize(), 0.0001);
         assertEquals(40.0, segmentedButton.getContainerHeight(), 0.0001);

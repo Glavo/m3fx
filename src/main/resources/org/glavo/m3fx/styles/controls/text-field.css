@@ -1,7 +1,9 @@
 .m3-text-field.m3-text-field,
 .m3-text-field.m3-text-field:focused,
 .m3-password-field.m3-password-field,
-.m3-password-field.m3-password-field:focused {
+.m3-password-field.m3-password-field:focused,
+.m3-text-area.m3-text-area,
+.m3-text-area.m3-text-area:focused {
     -m3-container-height: 56px;
     -m3-container-shape: 4px;
     -m3-horizontal-padding: 16px;
@@ -16,10 +18,25 @@
     -fx-highlight-text-fill: -m3-color-on-primary;
 }
 
+.m3-text-area.m3-text-area,
+.m3-text-area.m3-text-area:focused {
+    -m3-container-height: 112px;
+    -m3-vertical-padding: 16px;
+}
+
+.m3-text-area .scroll-pane,
+.m3-text-area .scroll-pane > .viewport,
+.m3-text-area .scroll-pane > .viewport > .content {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
 .m3-text-field.m3-filled-field,
 .m3-text-field.m3-filled-field:hover,
 .m3-password-field.m3-filled-field,
-.m3-password-field.m3-filled-field:hover {
+.m3-password-field.m3-filled-field:hover,
+.m3-text-area.m3-filled-field,
+.m3-text-area.m3-filled-field:hover {
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-background-insets: 0;
     -fx-background-radius: 4px 4px 0 0;
@@ -29,7 +46,8 @@
 }
 
 .m3-text-field.m3-filled-field:focused,
-.m3-password-field.m3-filled-field:focused {
+.m3-password-field.m3-filled-field:focused,
+.m3-text-area.m3-filled-field:focused {
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-background-insets: 0;
     -fx-background-radius: 4px 4px 0 0;
@@ -41,7 +59,9 @@
 .m3-text-field.m3-outlined-field,
 .m3-text-field.m3-outlined-field:hover,
 .m3-password-field.m3-outlined-field,
-.m3-password-field.m3-outlined-field:hover {
+.m3-password-field.m3-outlined-field:hover,
+.m3-text-area.m3-outlined-field,
+.m3-text-area.m3-outlined-field:hover {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-background-radius: 4px;
@@ -52,7 +72,8 @@
 }
 
 .m3-text-field.m3-outlined-field:focused,
-.m3-password-field.m3-outlined-field:focused {
+.m3-password-field.m3-outlined-field:focused,
+.m3-text-area.m3-outlined-field:focused {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-background-radius: 4px;
@@ -63,6 +84,7 @@
 }
 
 .m3-text-field:disabled,
-.m3-password-field:disabled {
+.m3-password-field:disabled,
+.m3-text-area:disabled {
     -fx-opacity: 0.38;
 }

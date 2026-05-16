@@ -18,6 +18,15 @@
     -fx-background-radius: 999px;
 }
 
+.m3-tooltip {
+    -fx-background-color: -m3-color-inverse-surface;
+    -fx-background-radius: 4px;
+    -fx-background-insets: 0;
+    -fx-padding: 6px 8px;
+    -fx-font-size: 12px;
+    -fx-text-fill: -m3-color-inverse-on-surface;
+}
+
 .m3-button:hover .m3-state-layer,
 .m3-chip:hover .m3-state-layer,
 .m3-icon-button:hover .m3-state-layer,
