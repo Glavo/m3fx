@@ -30,6 +30,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// The draggable slider thumb.
     private final Region thumb = new Region();
 
+    /// The thumb-bounded state layer used for hover, focus, pressed, and ripple feedback.
+    private final M3StateLayer stateLayer = new M3StateLayer();
+
     /// Handles mouse presses on the slider control.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
@@ -49,7 +52,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         thumb.getStyleClass().add("thumb");
         track.setMouseTransparent(true);
         thumb.setMouseTransparent(true);
-        getChildren().addAll(track, thumb);
+        getChildren().addAll(track, stateLayer, thumb);
 
         control.valueProperty().addListener(observable -> getSkinnable().requestLayout());
         control.minProperty().addListener(observable -> getSkinnable().requestLayout());
@@ -73,6 +76,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         control.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        stateLayer.reset();
         super.dispose();
     }
 
@@ -172,6 +176,13 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double thumbY = y + (height - thumbSize) / 2.0;
 
         track.resizeRelocate(trackX, trackY, trackLength, trackThickness);
+        stateLayer.layoutLayer(
+                thumbX + thumbSize / 2.0 - getSkinnable().getTouchTargetSize() / 2.0,
+                y + (height - getSkinnable().getTouchTargetSize()) / 2.0,
+                getSkinnable().getTouchTargetSize(),
+                getSkinnable().getTouchTargetSize(),
+                getSkinnable().getTouchTargetSize() / 2.0
+        );
         thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbSize);
     }
 
@@ -192,6 +203,13 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double thumbY = trackY + trackLength * (1.0 - position) - thumbSize / 2.0;
 
         track.resizeRelocate(trackX, trackY, trackThickness, trackLength);
+        stateLayer.layoutLayer(
+                x + (width - getSkinnable().getTouchTargetSize()) / 2.0,
+                thumbY + thumbSize / 2.0 - getSkinnable().getTouchTargetSize() / 2.0,
+                getSkinnable().getTouchTargetSize(),
+                getSkinnable().getTouchTargetSize(),
+                getSkinnable().getTouchTargetSize() / 2.0
+        );
         thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbSize);
     }
 
@@ -205,6 +223,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         slider.requestFocus();
         slider.setValueChanging(true);
         updateValueFromMouse(event);
+        stateLayer.playCenteredRipple();
         event.consume();
     }
 
@@ -236,26 +255,32 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         switch (code) {
             case HOME -> {
                 slider.adjustValue(slider.getMin());
+                stateLayer.playCenteredRipple();
                 event.consume();
             }
             case END -> {
                 slider.adjustValue(slider.getMax());
+                stateLayer.playCenteredRipple();
                 event.consume();
             }
             case LEFT, DOWN -> {
                 slider.decrement();
+                stateLayer.playCenteredRipple();
                 event.consume();
             }
             case RIGHT, UP -> {
                 slider.increment();
+                stateLayer.playCenteredRipple();
                 event.consume();
             }
             case PAGE_DOWN -> {
                 slider.adjustValue(slider.getValue() - slider.getBlockIncrement());
+                stateLayer.playCenteredRipple();
                 event.consume();
             }
             case PAGE_UP -> {
                 slider.adjustValue(slider.getValue() + slider.getBlockIncrement());
+                stateLayer.playCenteredRipple();
                 event.consume();
             }
             default -> {

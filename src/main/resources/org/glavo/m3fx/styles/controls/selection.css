@@ -19,6 +19,15 @@
     -fx-alignment: center;
 }
 
+.m3-checkbox .m3-state-layer,
+.m3-checkbox .m3-ripple,
+.m3-radio-button .m3-state-layer,
+.m3-radio-button .m3-ripple,
+.m3-switch .m3-state-layer,
+.m3-switch .m3-ripple {
+    -fx-background-color: -m3-color-primary;
+}
+
 .m3-checkbox .box,
 .m3-checkbox:hover .box,
 .m3-checkbox:focused .box,

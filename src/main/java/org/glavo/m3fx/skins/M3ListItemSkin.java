@@ -27,6 +27,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// The root container that receives background styling.
     private final HBox container = new HBox();
 
+    /// The bounded state layer for list item feedback.
+    private final M3StateLayer stateLayer = new M3StateLayer();
+
     /// The text column.
     private final VBox textBox = new VBox();
 
@@ -65,7 +68,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         textBox.getChildren().addAll(overlineLabel, headlineLabel, supportingLabel);
         HBox.setHgrow(textBox, Priority.ALWAYS);
         container.getChildren().addAll(leadingSlot, textBox, trailingSlot);
-        getChildren().add(container);
+        getChildren().addAll(container, stateLayer);
 
         updateText();
         updateSlots();
@@ -90,9 +93,17 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     @Override
     public void dispose() {
         M3ListItem item = getSkinnable();
+        stateLayer.reset();
         item.removeEventHandler(MouseEvent.MOUSE_CLICKED, mouseClickedHandler);
         item.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         super.dispose();
+    }
+
+    /// Lays out the container and bounded state layer.
+    @Override
+    protected void layoutChildren(double x, double y, double width, double height) {
+        container.resizeRelocate(x, y, width, height);
+        stateLayer.layoutLayer(x, y, width, height, getSkinnable().getContainerShape());
     }
 
     /// Updates text and layout after text content changes.
@@ -179,6 +190,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Fires the list item on primary mouse clicks.
     private void handleMouseClicked(MouseEvent event) {
         if (event.getButton() == MouseButton.PRIMARY && !getSkinnable().isDisabled()) {
+            stateLayer.playRipple(event.getX(), event.getY());
             getSkinnable().fire();
             event.consume();
         }
@@ -188,6 +200,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
         if ((code == KeyCode.ENTER || code == KeyCode.SPACE) && !getSkinnable().isDisabled()) {
+            stateLayer.playCenteredRipple();
             getSkinnable().fire();
             event.consume();
         }

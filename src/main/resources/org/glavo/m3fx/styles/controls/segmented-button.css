@@ -31,6 +31,16 @@
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
+.m3-segmented-button .m3-state-layer,
+.m3-segmented-button .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
+}
+
+.m3-segmented-button:selected .m3-state-layer,
+.m3-segmented-button:selected .m3-ripple {
+    -fx-background-color: -m3-color-on-secondary-container;
+}
+
 .m3-segmented-button-group {
     -fx-spacing: -1px;
     -fx-alignment: center-left;
@@ -54,14 +64,6 @@
 .m3-segmented-button-last {
     -fx-background-radius: 0 999px 999px 0;
     -fx-border-radius: 0 999px 999px 0;
-}
-
-.m3-segmented-button:hover {
-    -fx-opacity: 0.92;
-}
-
-.m3-segmented-button:pressed {
-    -fx-opacity: 0.86;
 }
 
 .m3-segmented-button:disabled {

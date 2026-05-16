@@ -32,6 +32,11 @@
     -fx-padding: 0px;
 }
 
+.m3-slider .m3-state-layer,
+.m3-slider .m3-ripple {
+    -fx-background-color: -m3-color-primary;
+}
+
 .m3-slider:disabled {
     -fx-opacity: 0.38;
 }

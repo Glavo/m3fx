@@ -38,6 +38,15 @@
     -fx-text-fill: -m3-color-on-surface;
 }
 
+.m3-chip.m3-assist-chip .m3-state-layer,
+.m3-chip.m3-assist-chip .m3-ripple,
+.m3-chip.m3-suggestion-chip .m3-state-layer,
+.m3-chip.m3-suggestion-chip .m3-ripple,
+.m3-chip.m3-input-chip .m3-state-layer,
+.m3-chip.m3-input-chip .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
+}
+
 .m3-chip.m3-filter-chip,
 .m3-chip.m3-filter-chip:hover,
 .m3-chip.m3-filter-chip:focused,
@@ -49,6 +58,11 @@
     -fx-border-insets: 0;
     -fx-border-width: 1px;
     -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-chip.m3-filter-chip .m3-state-layer,
+.m3-chip.m3-filter-chip .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
 }
 
 .m3-chip.m3-filter-chip:selected,
@@ -63,12 +77,9 @@
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
-.m3-chip:hover {
-    -fx-opacity: 0.92;
-}
-
-.m3-chip:pressed {
-    -fx-opacity: 0.86;
+.m3-chip.m3-filter-chip:selected .m3-state-layer,
+.m3-chip.m3-filter-chip:selected .m3-ripple {
+    -fx-background-color: -m3-color-on-secondary-container;
 }
 
 .m3-chip:disabled {

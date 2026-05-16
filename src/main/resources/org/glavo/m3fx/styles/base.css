@@ -3,3 +3,18 @@
     -fx-background-color: -m3-color-surface;
     -fx-text-fill: -m3-color-on-surface;
 }
+
+.m3-state-layer-container {
+    -fx-background-color: transparent;
+}
+
+.m3-state-layer {
+    -fx-background-insets: 0;
+    -fx-opacity: 0;
+}
+
+.m3-ripple {
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-opacity: 0;
+}

@@ -113,6 +113,24 @@ final class M3ControlStyleTest {
         assertEquals(3, fireCount.get());
     }
 
+    /// Verifies that button skins expose a bounded state layer and ripple.
+    @Test
+    void buttonSkinPlaysBoundedRippleOnPress() {
+        M3Button button = new M3Button("Button");
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root, 200.0, 100.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        button.resize(100.0, 40.0);
+        button.layout();
+
+        assertInstanceOf(Region.class, button.lookup(".m3-state-layer"));
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+
+        assertTrue(lookupRegion(button, ".m3-ripple").getOpacity() > 0.0);
+    }
+
     /// Verifies that interactive button states keep Material variant colors.
     @Test
     void buttonStateStylesPreserveVariantColors() {
@@ -588,6 +606,24 @@ final class M3ControlStyleTest {
         assertTrue(switchControl.isSelected());
     }
 
+    /// Verifies that selection control skins expose bounded indicator ripple feedback.
+    @Test
+    void selectionControlSkinsPlayBoundedRippleOnPress() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        Pane root = new Pane(checkBox);
+        Scene scene = new Scene(root, 160.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        checkBox.resize(120.0, 40.0);
+        checkBox.layout();
+
+        assertInstanceOf(Region.class, checkBox.lookup(".m3-state-layer"));
+        checkBox.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+
+        assertTrue(lookupRegion(checkBox, ".m3-ripple").getOpacity() > 0.0);
+    }
+
     /// Verifies that radio indicators use circular Material styling.
     @Test
     void radioButtonIndicatorUsesCircularMaterialShape() {
@@ -830,6 +866,24 @@ final class M3ControlStyleTest {
         assertEquals(3, fireCount.get());
     }
 
+    /// Verifies that list item skins expose bounded ripple feedback.
+    @Test
+    void listItemSkinPlaysBoundedRippleOnActivation() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        Pane root = new Pane(listItem);
+        Scene scene = new Scene(root, 240.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        listItem.resize(220.0, 56.0);
+        listItem.layout();
+
+        assertInstanceOf(Region.class, listItem.lookup(".m3-state-layer"));
+        listItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 10.0, 10.0, false));
+
+        assertTrue(lookupRegion(listItem, ".m3-ripple").getOpacity() > 0.0);
+    }
+
     /// Verifies that generated state layer rules apply beyond button-like controls.
     @Test
     void generatedStateLayerRulesApplyToInteractiveControls() {
@@ -847,9 +901,12 @@ final class M3ControlStyleTest {
         card.setDisable(true);
         root.applyCss();
 
-        assertEquals(0.92, checkBox.getOpacity(), 0.0001);
-        assertEquals(0.9, slider.getOpacity(), 0.0001);
-        assertEquals(0.9, listItem.getOpacity(), 0.0001);
+        assertEquals(1.0, checkBox.getOpacity(), 0.0001);
+        assertEquals(0.08, lookupRegion(checkBox, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(1.0, slider.getOpacity(), 0.0001);
+        assertEquals(0.1, lookupRegion(slider, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(1.0, listItem.getOpacity(), 0.0001);
+        assertEquals(0.1, lookupRegion(listItem, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(0.38, card.getOpacity(), 0.0001);
     }
 
@@ -912,6 +969,24 @@ final class M3ControlStyleTest {
         assertTrue(slider.getValue() > 50.0);
         slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
         assertEquals(50.0, slider.getValue(), 0.0001);
+    }
+
+    /// Verifies that slider skins expose bounded thumb ripple feedback.
+    @Test
+    void sliderSkinPlaysBoundedRippleOnPress() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 240.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+
+        assertInstanceOf(Region.class, slider.lookup(".m3-state-layer"));
+        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 110.0, 24.0, true));
+
+        assertTrue(lookupRegion(slider, ".m3-ripple").getOpacity() > 0.0);
     }
 
     /// Verifies style classes for container controls.

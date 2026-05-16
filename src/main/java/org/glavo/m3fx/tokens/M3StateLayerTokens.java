@@ -64,33 +64,38 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// Converts state layer tokens into JavaFX CSS rules for m3fx controls.
     default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
-        appendOpacityRule(builder, hoverStateSelectors(), 1.0 - hoverOpacity());
-        appendOpacityRule(builder, focusStateSelectors(), 1.0 - focusOpacity());
-        appendOpacityRule(builder, pressedStateSelectors(), 1.0 - pressedOpacity());
+        appendStateLayerOpacityRule(builder, hoverStateSelectors(), hoverOpacity());
+        appendStateLayerOpacityRule(builder, focusStateSelectors(), focusOpacity());
+        appendStateLayerOpacityRule(builder, pressedStateSelectors(), pressedOpacity());
         appendOpacityRule(builder, disabledStateSelectors(), disabledContentOpacity());
         return builder.toString().stripTrailing();
     }
 
     /// Returns selectors for controls that expose hover state layer feedback.
     private static String hoverStateSelectors() {
-        return ".m3-button:hover, .m3-chip:hover, .m3-icon-button:hover, .m3-fab:hover, "
-                + ".m3-segmented-button:hover, .m3-checkbox:hover, .m3-radio-button:hover, .m3-switch:hover, "
-                + ".m3-slider:hover, .m3-list-item:hover, .m3-card:hover";
+        return ".m3-button:hover .m3-state-layer, .m3-chip:hover .m3-state-layer, "
+                + ".m3-icon-button:hover .m3-state-layer, .m3-fab:hover .m3-state-layer, "
+                + ".m3-segmented-button:hover .m3-state-layer, .m3-checkbox:hover .m3-state-layer, "
+                + ".m3-radio-button:hover .m3-state-layer, .m3-switch:hover .m3-state-layer, "
+                + ".m3-slider:hover .m3-state-layer, .m3-list-item:hover .m3-state-layer";
     }
 
     /// Returns selectors for controls that expose focus state layer feedback.
     private static String focusStateSelectors() {
-        return ".m3-button:focused, .m3-chip:focused, .m3-icon-button:focused, .m3-fab:focused, "
-                + ".m3-segmented-button:focused, .m3-text-field:focused, .m3-password-field:focused, "
-                + ".m3-checkbox:focused, .m3-radio-button:focused, .m3-switch:focused, .m3-slider:focused, "
-                + ".m3-list-item:focused, .m3-card:focused";
+        return ".m3-button:focused .m3-state-layer, .m3-chip:focused .m3-state-layer, "
+                + ".m3-icon-button:focused .m3-state-layer, .m3-fab:focused .m3-state-layer, "
+                + ".m3-segmented-button:focused .m3-state-layer, .m3-checkbox:focused .m3-state-layer, "
+                + ".m3-radio-button:focused .m3-state-layer, .m3-switch:focused .m3-state-layer, "
+                + ".m3-slider:focused .m3-state-layer, .m3-list-item:focused .m3-state-layer";
     }
 
     /// Returns selectors for controls that expose pressed state layer feedback.
     private static String pressedStateSelectors() {
-        return ".m3-button:pressed, .m3-chip:pressed, .m3-icon-button:pressed, "
-                + ".m3-fab:pressed, .m3-segmented-button:pressed, .m3-checkbox:pressed, .m3-radio-button:pressed, "
-                + ".m3-switch:pressed, .m3-slider:pressed, .m3-list-item:pressed, .m3-card:pressed";
+        return ".m3-button:pressed .m3-state-layer, .m3-chip:pressed .m3-state-layer, "
+                + ".m3-icon-button:pressed .m3-state-layer, .m3-fab:pressed .m3-state-layer, "
+                + ".m3-segmented-button:pressed .m3-state-layer, .m3-checkbox:pressed .m3-state-layer, "
+                + ".m3-radio-button:pressed .m3-state-layer, .m3-switch:pressed .m3-state-layer, "
+                + ".m3-slider:pressed .m3-state-layer, .m3-list-item:pressed .m3-state-layer";
     }
 
     /// Returns selectors for controls that expose disabled content opacity.
@@ -109,5 +114,10 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 .append(" {\n    -fx-opacity: ")
                 .append(M3TokenCss.format(opacity))
                 .append(";\n}\n\n");
+    }
+
+    /// Appends a state layer opacity CSS rule.
+    private static void appendStateLayerOpacityRule(StringBuilder builder, String selector, double opacity) {
+        appendOpacityRule(builder, selector, opacity);
     }
 }

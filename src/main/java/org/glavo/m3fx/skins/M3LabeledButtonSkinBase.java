@@ -15,6 +15,10 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
+import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3Chip;
+import org.glavo.m3fx.controls.M3FloatingActionButton;
+import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A base animated skin for m3fx labeled button controls.
@@ -31,6 +35,9 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
     /// The press animation timeline.
     private final Timeline animation = new Timeline();
+
+    /// The bounded state layer used for hover, focus, pressed, and ripple feedback.
+    private final M3StateLayer stateLayer = new M3StateLayer();
 
     /// Handles primary mouse presses.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
@@ -59,6 +66,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// Creates an animated labeled button skin.
     M3LabeledButtonSkinBase(C control) {
         super(control);
+        getChildren().add(0, stateLayer);
         control.setScaleX(1.0);
         control.setScaleY(1.0);
         installInteractionHandlers(control);
@@ -66,6 +74,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.disabledProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 animation.stop();
+                stateLayer.reset();
                 control.disarm();
                 control.setScaleX(1.0);
                 control.setScaleY(1.0);
@@ -77,8 +86,16 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     @Override
     public void dispose() {
         animation.stop();
+        stateLayer.reset();
         uninstallInteractionHandlers(getSkinnable());
         super.dispose();
+    }
+
+    /// Lays out labeled content and the bounded state layer.
+    @Override
+    protected void layoutChildren(double x, double y, double width, double height) {
+        super.layoutChildren(x, y, width, height);
+        stateLayer.layoutLayer(x, y, width, height, stateLayerShapeRadius());
     }
 
     /// Installs mouse and keyboard behavior handlers.
@@ -112,6 +129,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (button.isFocusTraversable()) {
             button.requestFocus();
         }
+        stateLayer.playRipple(event.getX(), event.getY());
         button.arm();
         event.consume();
     }
@@ -160,10 +178,12 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (event.getCode() == KeyCode.SPACE) {
             if (!spaceKeyPressed) {
                 spaceKeyPressed = true;
+                stateLayer.playCenteredRipple();
                 button.arm();
             }
             event.consume();
         } else if (event.getCode() == KeyCode.ENTER) {
+            stateLayer.playCenteredRipple();
             button.fire();
             event.consume();
         }
@@ -201,5 +221,23 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                 new KeyValue(button.scaleYProperty(), scale, Interpolator.EASE_BOTH)
         ));
         animation.playFromStart();
+    }
+
+    /// Returns the shape radius used to clip state layer feedback.
+    private double stateLayerShapeRadius() {
+        C button = getSkinnable();
+        if (button instanceof M3FloatingActionButton floatingActionButton) {
+            return floatingActionButton.getContainerShape();
+        }
+        if (button instanceof M3Button m3Button) {
+            return m3Button.getContainerShape();
+        }
+        if (button instanceof M3Chip chip) {
+            return chip.getContainerShape();
+        }
+        if (button instanceof M3SegmentedButton segmentedButton) {
+            return segmentedButton.getContainerShape();
+        }
+        return Math.min(button.getWidth(), button.getHeight()) / 2.0;
     }
 }

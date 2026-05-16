@@ -45,7 +45,8 @@ final class M3TokenFactoryTest {
         assertEquals(0.42, stateLayer.disabledContentOpacity(), 0.0001);
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-font-family: \"Demo\""));
         assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-disabled-content-opacity: 0.42"));
-        assertTrue(stateLayer.toControlStyleRules().contains("-fx-opacity: 0.87"));
+        assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:pressed .m3-state-layer"));
+        assertTrue(stateLayer.toControlStyleRules().contains("-fx-opacity: 0.13"));
     }
 
     /// Verifies that component and token set factories preserve explicit token groups.
@@ -80,7 +81,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 51px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-medium: 220ms"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
-        assertTrue(tokenSet.toControlStyleRules().contains("-fx-opacity: 0.85"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-fx-opacity: 0.15"));
     }
 
     /// Creates component tokens with distinctive values for factory tests.

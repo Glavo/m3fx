@@ -16,6 +16,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.geometry.Point2D;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A base skin for Material Design 3 selection controls.
@@ -26,6 +27,9 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
 
     /// The indicator touch target slot.
     private final StackPane indicatorSlot = new StackPane();
+
+    /// The bounded state layer for indicator feedback.
+    private final M3StateLayer stateLayer = new M3StateLayer();
 
     /// The label that mirrors the skinnable control's labeled content.
     private final Label label = new Label();
@@ -63,6 +67,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         container.setAlignment(Pos.CENTER_LEFT);
         indicatorSlot.setAlignment(Pos.CENTER);
         bindLabel(control);
+        indicatorSlot.getChildren().add(stateLayer);
         container.getChildren().addAll(indicatorSlot, label);
         getChildren().add(container);
         installInteractionHandlers(control);
@@ -72,6 +77,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     @Override
     public void dispose() {
         C control = getSkinnable();
+        stateLayer.reset();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_ENTERED, mouseEnteredHandler);
@@ -155,6 +161,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     /// Applies a fixed size to the indicator touch target slot.
     protected final void setIndicatorSlotSize(double width, double height) {
         setFixedSize(indicatorSlot, width, height);
+        stateLayer.layoutLayer(0.0, 0.0, width, height, Math.max(width, height) / 2.0);
     }
 
     /// Binds label content and presentation properties to the skinnable control.
@@ -195,6 +202,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         if (control.isFocusTraversable()) {
             control.requestFocus();
         }
+        playRipple(event);
         control.arm();
         event.consume();
     }
@@ -243,10 +251,12 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         if (event.getCode() == KeyCode.SPACE) {
             if (!spaceKeyPressed) {
                 spaceKeyPressed = true;
+                stateLayer.playCenteredRipple();
                 control.arm();
             }
             event.consume();
         } else if (event.getCode() == KeyCode.ENTER) {
+            stateLayer.playCenteredRipple();
             control.fire();
             event.consume();
         }
@@ -266,5 +276,11 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
             control.fire();
         }
         event.consume();
+    }
+
+    /// Plays an indicator-bounded ripple from a mouse event.
+    private void playRipple(MouseEvent event) {
+        Point2D point = indicatorSlot.sceneToLocal(event.getSceneX(), event.getSceneY());
+        stateLayer.playRipple(point.getX(), point.getY());
     }
 }

@@ -48,6 +48,11 @@
     -fx-text-fill: -m3-color-primary;
 }
 
+.m3-fab.m3-surface-fab .m3-state-layer,
+.m3-fab.m3-surface-fab .m3-ripple {
+    -fx-background-color: -m3-color-primary;
+}
+
 .m3-fab.m3-primary-fab,
 .m3-fab.m3-primary-fab:hover,
 .m3-fab.m3-primary-fab:focused,
@@ -57,6 +62,11 @@
     -fx-background-insets: 0;
     -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-primary-container;
+}
+
+.m3-fab.m3-primary-fab .m3-state-layer,
+.m3-fab.m3-primary-fab .m3-ripple {
+    -fx-background-color: -m3-color-on-primary-container;
 }
 
 .m3-fab.m3-secondary-fab,
@@ -70,6 +80,11 @@
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
+.m3-fab.m3-secondary-fab .m3-state-layer,
+.m3-fab.m3-secondary-fab .m3-ripple {
+    -fx-background-color: -m3-color-on-secondary-container;
+}
+
 .m3-fab.m3-tertiary-fab,
 .m3-fab.m3-tertiary-fab:hover,
 .m3-fab.m3-tertiary-fab:focused,
@@ -81,12 +96,9 @@
     -fx-text-fill: -m3-color-on-tertiary-container;
 }
 
-.m3-fab:hover {
-    -fx-opacity: 0.92;
-}
-
-.m3-fab:pressed {
-    -fx-opacity: 0.86;
+.m3-fab.m3-tertiary-fab .m3-state-layer,
+.m3-fab.m3-tertiary-fab .m3-ripple {
+    -fx-background-color: -m3-color-on-tertiary-container;
 }
 
 .m3-fab:disabled {

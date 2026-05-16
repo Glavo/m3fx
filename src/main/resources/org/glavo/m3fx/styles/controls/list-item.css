@@ -14,6 +14,11 @@
     -fx-background-color: transparent;
 }
 
+.m3-list-item .m3-state-layer,
+.m3-list-item .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
+}
+
 .m3-list-item:one-line .m3-list-item-text {
     -fx-spacing: 0px;
 }
