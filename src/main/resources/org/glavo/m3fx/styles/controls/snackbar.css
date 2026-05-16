@@ -1,3 +1,7 @@
+.m3-snackbar-host {
+    -fx-padding: 0 24px 24px 24px;
+}
+
 .m3-snackbar {
     -m3-container-shape: 4px;
     -m3-content-padding: 16px;

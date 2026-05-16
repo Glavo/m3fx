@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
@@ -27,6 +28,7 @@ import javafx.scene.shape.Arc;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
+import javafx.util.Duration;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3CardSkin;
@@ -516,6 +518,86 @@ final class M3ControlStyleTest {
         M3Button actionButton = assertInstanceOf(M3Button.class, snackbar.lookup(".m3-snackbar-action"));
         assertEquals(Color.rgb(56, 57, 58), actionButton.getTextFill());
         assertRegionFill(lookupRegion(actionButton, ".m3-state-layer"), Color.rgb(56, 57, 58));
+    }
+
+    /// Verifies that snackbar hosts show action snackbars and route action events.
+    @Test
+    void snackbarHostShowsActionSnackbars() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.INDEFINITE);
+            AtomicInteger actionCount = new AtomicInteger();
+            Pane root = new Pane(host);
+            Scene scene = new Scene(root, 320.0, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            host.show("Saved", "Undo", event -> actionCount.incrementAndGet());
+            root.applyCss();
+
+            M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
+            assertTrue(host.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
+            assertTrue(host.isShowing());
+            assertTrue(host.getChildren().contains(snackbar));
+            assertTrue(snackbar.isVisible());
+            assertTrue(snackbar.isManaged());
+
+            M3Button actionButton = assertInstanceOf(M3Button.class, snackbar.lookup(".m3-snackbar-action"));
+            actionButton.fire();
+
+            assertEquals(1, actionCount.get());
+            assertFalse(host.isShowing());
+        });
+    }
+
+    /// Verifies that snackbar hosts remove dismissed snackbars after the exit animation.
+    @Test
+    void snackbarHostRemovesDismissedSnackbars() throws InterruptedException {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Platform.runLater(() -> {
+            try {
+                M3SnackbarHost host = new M3SnackbarHost();
+                host.setDisplayDuration(Duration.INDEFINITE);
+                Pane root = new Pane(host);
+                Scene scene = new Scene(root, 320.0, 120.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                host.show("Saved");
+                root.applyCss();
+
+                M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
+                host.dismiss();
+
+                PauseTransition pause = new PauseTransition(Duration.millis(180.0));
+                pause.setOnFinished(event -> {
+                    try {
+                        assertFalse(host.getChildren().contains(snackbar));
+                        assertFalse(snackbar.isVisible());
+                    } catch (Throwable e) {
+                        failure.set(e);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+                pause.play();
+            } catch (Throwable e) {
+                failure.set(e);
+                latch.countDown();
+            }
+        });
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Throwable exception = failure.get();
+        if (exception instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        if (exception instanceof Error error) {
+            throw error;
+        }
+        if (exception != null) {
+            throw new AssertionError(exception);
+        }
     }
 
     /// Verifies that dialog pane component token properties are styleable from CSS.
@@ -1506,10 +1588,12 @@ final class M3ControlStyleTest {
         card.setVariant(M3CardVariant.OUTLINED);
 
         M3Snackbar snackbar = new M3Snackbar("Message");
+        M3SnackbarHost snackbarHost = new M3SnackbarHost();
 
         assertTrue(card.getStyleClass().contains(M3Card.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.getStyleClass()));
         assertTrue(snackbar.getStyleClass().contains(M3Snackbar.STYLE_CLASS));
+        assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
     }
 
     /// Verifies style classes for input and selection controls.

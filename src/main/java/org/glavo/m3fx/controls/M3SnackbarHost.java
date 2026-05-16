@@ -1,0 +1,239 @@
+// Copyright (c) 2026 Glavo
+// SPDX-License-Identifier: Apache-2.0
+
+package org.glavo.m3fx.controls;
+
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.PauseTransition;
+import javafx.animation.Timeline;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Pos;
+import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
+import org.glavo.m3fx.internal.M3Stylesheets;
+import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
+
+/// Hosts transient Material Design 3 snackbar messages.
+@NotNullByDefault
+public class M3SnackbarHost extends StackPane {
+    /// The base style class for m3fx snackbar hosts.
+    public static final String STYLE_CLASS = "m3-snackbar-host";
+
+    /// The default snackbar display duration.
+    private static final Duration DEFAULT_DISPLAY_DURATION = Duration.seconds(4.0);
+
+    /// The duration used when a snackbar appears.
+    private static final Duration SHOW_DURATION = Duration.millis(160.0);
+
+    /// The duration used when a snackbar disappears.
+    private static final Duration HIDE_DURATION = Duration.millis(120.0);
+
+    /// The initial vertical offset used by snackbar entrance and exit motion.
+    private static final double TRANSITION_OFFSET_Y = 16.0;
+
+    /// The currently hosted snackbar.
+    private @Nullable M3Snackbar snackbar;
+
+    /// The display duration before automatic dismissal.
+    private final ObjectProperty<Duration> displayDuration =
+            new SimpleObjectProperty<>(this, "displayDuration", DEFAULT_DISPLAY_DURATION) {
+                /// Restores the default duration when the property is set to null.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_DISPLAY_DURATION);
+                    }
+                }
+            };
+
+    /// Whether the current snackbar is in its visible display phase.
+    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
+
+    /// The automatic dismissal timer.
+    private final PauseTransition displayTimer = new PauseTransition();
+
+    /// The active show animation.
+    private final Timeline showAnimation = new Timeline();
+
+    /// The active hide animation.
+    private final Timeline hideAnimation = new Timeline();
+
+    /// Creates an empty snackbar host.
+    public M3SnackbarHost() {
+        getStyleClass().add(STYLE_CLASS);
+        getStylesheets().add(M3Stylesheets.controlStylesheet("snackbar.css"));
+        setAlignment(Pos.BOTTOM_CENTER);
+        setPickOnBounds(false);
+    }
+
+    /// Returns the currently hosted snackbar.
+    public final @Nullable M3Snackbar getSnackbar() {
+        return snackbar;
+    }
+
+    /// Returns whether the current snackbar is in its visible display phase.
+    public final boolean isShowing() {
+        return showing.get();
+    }
+
+    /// Returns the read-only showing state property.
+    public final ReadOnlyBooleanProperty showingProperty() {
+        return showing.getReadOnlyProperty();
+    }
+
+    /// Returns the display duration before automatic dismissal.
+    ///
+    /// A zero, unknown, or indefinite duration disables automatic dismissal.
+    public final Duration getDisplayDuration() {
+        return displayDuration.get();
+    }
+
+    /// Sets the display duration before automatic dismissal.
+    ///
+    /// A zero, unknown, or indefinite duration disables automatic dismissal.
+    public final void setDisplayDuration(Duration displayDuration) {
+        this.displayDuration.set(Objects.requireNonNull(displayDuration, "displayDuration"));
+    }
+
+    /// Returns the display duration property.
+    ///
+    /// A zero, unknown, or indefinite duration disables automatic dismissal.
+    public final ObjectProperty<Duration> displayDurationProperty() {
+        return displayDuration;
+    }
+
+    /// Shows a snackbar with message text.
+    public final void show(String text) {
+        M3Snackbar snackbar = new M3Snackbar(text);
+        show(snackbar);
+    }
+
+    /// Shows a snackbar with message text, action text, and an optional action handler.
+    public final void show(
+            String text,
+            String actionText,
+            @Nullable EventHandler<ActionEvent> actionHandler
+    ) {
+        M3Snackbar snackbar = new M3Snackbar(text);
+        snackbar.setActionText(actionText);
+        snackbar.setOnAction(event -> {
+            dismiss();
+            if (actionHandler != null) {
+                actionHandler.handle(event);
+            }
+        });
+        show(snackbar);
+    }
+
+    /// Shows the supplied snackbar.
+    public final void show(M3Snackbar snackbar) {
+        Objects.requireNonNull(snackbar, "snackbar");
+
+        displayTimer.stop();
+        showAnimation.stop();
+        hideAnimation.stop();
+
+        M3Snackbar previousSnackbar = this.snackbar;
+        if (previousSnackbar != snackbar) {
+            if (previousSnackbar != null) {
+                getChildren().remove(previousSnackbar);
+            }
+            this.snackbar = snackbar;
+            if (!getChildren().contains(snackbar)) {
+                getChildren().add(snackbar);
+            }
+            StackPane.setAlignment(snackbar, Pos.BOTTOM_CENTER);
+        }
+
+        snackbar.setManaged(true);
+        snackbar.setVisible(true);
+        showing.set(true);
+        playShowAnimation(snackbar);
+    }
+
+    /// Dismisses the currently hosted snackbar.
+    public final void dismiss() {
+        M3Snackbar currentSnackbar = snackbar;
+        if (currentSnackbar == null || !showing.get()) {
+            return;
+        }
+
+        displayTimer.stop();
+        showAnimation.stop();
+        showing.set(false);
+        playHideAnimation(currentSnackbar);
+    }
+
+    /// Plays the snackbar entrance animation.
+    private void playShowAnimation(M3Snackbar target) {
+        target.setOpacity(0.0);
+        target.setTranslateY(TRANSITION_OFFSET_Y);
+        showAnimation.getKeyFrames().setAll(
+                new KeyFrame(
+                        SHOW_DURATION,
+                        new KeyValue(target.opacityProperty(), 1.0, Interpolator.EASE_OUT),
+                        new KeyValue(target.translateYProperty(), 0.0, Interpolator.EASE_OUT)
+                )
+        );
+        showAnimation.setOnFinished(event -> scheduleAutoDismiss(target));
+        showAnimation.playFromStart();
+    }
+
+    /// Plays the snackbar exit animation.
+    private void playHideAnimation(M3Snackbar target) {
+        hideAnimation.stop();
+        hideAnimation.getKeyFrames().setAll(
+                new KeyFrame(
+                        HIDE_DURATION,
+                        new KeyValue(target.opacityProperty(), 0.0, Interpolator.EASE_IN),
+                        new KeyValue(target.translateYProperty(), TRANSITION_OFFSET_Y, Interpolator.EASE_IN)
+                )
+        );
+        hideAnimation.setOnFinished(event -> removeSnackbar(target));
+        hideAnimation.playFromStart();
+    }
+
+    /// Schedules automatic dismissal for the target snackbar.
+    private void scheduleAutoDismiss(M3Snackbar target) {
+        if (snackbar != target || !showing.get()) {
+            return;
+        }
+
+        Duration duration = getDisplayDuration();
+        if (duration.isUnknown() || duration.isIndefinite() || duration.lessThanOrEqualTo(Duration.ZERO)) {
+            return;
+        }
+
+        displayTimer.setDuration(duration);
+        displayTimer.setOnFinished(event -> {
+            if (snackbar == target) {
+                dismiss();
+            }
+        });
+        displayTimer.playFromStart();
+    }
+
+    /// Removes the snackbar after its exit transition finishes.
+    private void removeSnackbar(M3Snackbar target) {
+        if (snackbar != target) {
+            return;
+        }
+
+        getChildren().remove(target);
+        target.setVisible(false);
+        target.setManaged(false);
+        target.setOpacity(1.0);
+        target.setTranslateY(0.0);
+        snackbar = null;
+    }
+}

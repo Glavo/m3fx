@@ -3,9 +3,7 @@
 
 package org.glavo.m3fx.demo;
 
-import javafx.animation.PauseTransition;
 import javafx.application.Application;
-import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -24,7 +22,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
@@ -47,7 +44,7 @@ import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3Slider;
-import org.glavo.m3fx.controls.M3Snackbar;
+import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputVariant;
@@ -88,8 +85,8 @@ public final class M3FXDemoApp extends Application {
     /// The active JavaFX scene.
     private @Nullable Scene scene;
 
-    /// The persistent snackbar instance used by demo actions.
-    private @Nullable M3Snackbar snackbar;
+    /// The snackbar host used by demo actions.
+    private @Nullable M3SnackbarHost snackbarHost;
 
     /// Starts the demo application.
     @Override
@@ -97,14 +94,11 @@ public final class M3FXDemoApp extends Application {
         BorderPane root = new BorderPane();
         root.getStyleClass().add("demo-root");
 
-        M3Snackbar snackbar = new M3Snackbar();
-        snackbar.setVisible(false);
-        snackbar.setManaged(false);
-        this.snackbar = snackbar;
+        M3SnackbarHost snackbarHost = new M3SnackbarHost();
+        this.snackbarHost = snackbarHost;
 
-        StackPane centerStack = new StackPane(createContent(), snackbar);
-        StackPane.setAlignment(snackbar, Pos.BOTTOM_CENTER);
-        StackPane.setMargin(snackbar, new Insets(0.0, 0.0, 24.0, 0.0));
+        StackPane centerStack = new StackPane(createContent(), snackbarHost);
+        StackPane.setAlignment(snackbarHost, Pos.BOTTOM_CENTER);
 
         root.setTop(createHeader());
         root.setCenter(centerStack);
@@ -470,23 +464,12 @@ public final class M3FXDemoApp extends Application {
 
     /// Shows the demo snackbar.
     private void showSnackbar() {
-        M3Snackbar snackbar = this.snackbar;
-        if (snackbar == null) {
+        M3SnackbarHost snackbarHost = this.snackbarHost;
+        if (snackbarHost == null) {
             return;
         }
 
-        snackbar.setText("Theme-aware snackbar");
-        snackbar.setActionText("Action");
-        snackbar.setOnAction(event -> snackbar.setText("Action pressed"));
-        snackbar.setVisible(true);
-        snackbar.setManaged(true);
-
-        PauseTransition transition = new PauseTransition(Duration.seconds(3.0));
-        transition.setOnFinished(event -> {
-            snackbar.setVisible(false);
-            snackbar.setManaged(false);
-        });
-        transition.playFromStart();
+        snackbarHost.show("Theme-aware snackbar", "Action", event -> snackbarHost.show("Action pressed"));
     }
 
     /// Applies the current theme to the scene.
