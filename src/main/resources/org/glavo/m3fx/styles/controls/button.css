@@ -77,6 +77,21 @@
     -fx-background-color: -m3-color-primary;
 }
 
+.m3-button.m3-snackbar-action,
+.m3-button.m3-snackbar-action:hover,
+.m3-button.m3-snackbar-action:focused,
+.m3-button.m3-snackbar-action:armed,
+.m3-button.m3-snackbar-action:pressed {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -m3-color-inverse-primary;
+}
+
+.m3-button.m3-snackbar-action .m3-state-layer,
+.m3-button.m3-snackbar-action .m3-ripple {
+    -fx-background-color: -m3-color-inverse-primary;
+}
+
 .m3-button.m3-elevated-button,
 .m3-button.m3-elevated-button:hover,
 .m3-button.m3-elevated-button:focused,

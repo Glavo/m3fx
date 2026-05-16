@@ -134,7 +134,6 @@
 .m3-switch:selected:pressed .box {
     -fx-background-color: -m3-color-primary;
     -fx-border-color: -m3-color-primary;
-    -fx-alignment: center-right;
 }
 
 .m3-switch .thumb,

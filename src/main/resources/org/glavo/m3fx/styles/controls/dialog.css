@@ -6,6 +6,28 @@
     -fx-padding: 24px;
 }
 
+.m3-dialog-pane .header-panel {
+    -fx-padding: 0 0 16px 0;
+}
+
+.m3-dialog-pane .header-panel .label {
+    -fx-font-size: 24px;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
 .m3-dialog-pane .content {
+    -fx-font-size: 14px;
     -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-dialog-pane .graphic-container {
+    -fx-padding: 0 0 0 24px;
+}
+
+.m3-dialog-pane .m3-dialog-button-bar {
+    -fx-padding: 24px 0 0 0;
+}
+
+.m3-dialog-pane .m3-dialog-button {
+    -m3-horizontal-padding: 12px;
 }

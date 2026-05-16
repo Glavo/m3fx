@@ -9,6 +9,11 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonBase;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -22,6 +27,12 @@ import java.util.List;
 public class M3DialogPane extends DialogPane {
     /// The base style class for m3fx dialog panes.
     public static final String STYLE_CLASS = "m3-dialog-pane";
+
+    /// The style class applied to the dialog action button bar.
+    public static final String BUTTON_BAR_STYLE_CLASS = "m3-dialog-button-bar";
+
+    /// The style class applied to dialog action buttons.
+    public static final String BUTTON_STYLE_CLASS = "m3-dialog-button";
 
     /// The default dialog container shape radius.
     private static final double DEFAULT_CONTAINER_SHAPE = 28.0;
@@ -135,6 +146,43 @@ public class M3DialogPane extends DialogPane {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Creates the dialog action button bar.
+    @Override
+    protected Node createButtonBar() {
+        Node buttonBar = super.createButtonBar();
+        buttonBar.getStyleClass().add(BUTTON_BAR_STYLE_CLASS);
+        if (buttonBar instanceof ButtonBar materialButtonBar) {
+            materialButtonBar.setButtonMinWidth(0.0);
+        }
+        return buttonBar;
+    }
+
+    /// Creates a Material action button for a dialog button type.
+    @Override
+    protected Node createButton(ButtonType buttonType) {
+        Node sourceNode = super.createButton(buttonType);
+        if (!(sourceNode instanceof ButtonBase sourceButton)) {
+            return sourceNode;
+        }
+
+        M3Button button = new M3Button(buttonType.getText());
+        button.getStyleClass().add(BUTTON_STYLE_CLASS);
+        button.setVariant(M3ButtonVariant.TEXT);
+        button.setOnAction(sourceButton.getOnAction());
+        button.disableProperty().bind(sourceButton.disableProperty());
+        ButtonBar.setButtonData(button, ButtonBar.getButtonData(sourceNode));
+        ButtonBar.setButtonUniformSize(button, ButtonBar.isButtonUniformSize(sourceNode));
+        if (sourceButton instanceof Button sourcePlainButton) {
+            button.setDefaultButton(sourcePlainButton.isDefaultButton());
+            button.setCancelButton(sourcePlainButton.isCancelButton());
+        } else {
+            ButtonBar.ButtonData buttonData = buttonType.getButtonData();
+            button.setDefaultButton(buttonData != null && buttonData.isDefaultButton());
+            button.setCancelButton(buttonData != null && buttonData.isCancelButton());
+        }
+        return button;
     }
 
     /// Returns the user-agent stylesheet for m3fx dialog panes.

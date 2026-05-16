@@ -9,6 +9,8 @@ import javafx.event.EventType;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Labeled;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -34,6 +36,7 @@ import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
+import org.glavo.m3fx.skins.M3SnackbarSkin;
 import org.glavo.m3fx.skins.M3SwitchSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -358,6 +361,46 @@ final class M3ControlStyleTest {
         assertEquals(24.0, snackbar.getContentPadding(), 0.0001);
     }
 
+    /// Verifies that m3fx snackbars create the Material Design 3 skin and action button.
+    @Test
+    void snackbarCreatesMaterialSkinAndActionButton() {
+        M3Snackbar snackbar = new M3Snackbar("Saved");
+        snackbar.setActionText("Undo");
+        AtomicInteger actionCount = new AtomicInteger();
+        snackbar.setOnAction(event -> actionCount.incrementAndGet());
+
+        applyCss(snackbar);
+
+        assertInstanceOf(M3SnackbarSkin.class, snackbar.getSkin());
+        M3Button actionButton = assertInstanceOf(M3Button.class, snackbar.lookup(".m3-snackbar-action"));
+        assertEquals(M3ButtonVariant.TEXT, actionButton.getVariant());
+        assertTrue(actionButton.isVisible());
+        assertTrue(actionButton.isManaged());
+
+        actionButton.fire();
+
+        assertEquals(1, actionCount.get());
+    }
+
+    /// Verifies that snackbar colors override generic text button colors.
+    @Test
+    void snackbarActionUsesInverseColors() {
+        M3Snackbar snackbar = new M3Snackbar("Saved");
+        snackbar.setActionText("Undo");
+        Pane root = new Pane(snackbar);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + snackbarStateTestColors());
+        root.applyCss();
+
+        assertRegionFill(lookupRegion(snackbar, ".m3-snackbar-container"), Color.rgb(50, 51, 52));
+        assertEquals(Color.rgb(53, 54, 55), ((Labeled) snackbar.lookup(".m3-snackbar-text")).getTextFill());
+        M3Button actionButton = assertInstanceOf(M3Button.class, snackbar.lookup(".m3-snackbar-action"));
+        assertEquals(Color.rgb(56, 57, 58), actionButton.getTextFill());
+        assertRegionFill(lookupRegion(actionButton, ".m3-state-layer"), Color.rgb(56, 57, 58));
+    }
+
     /// Verifies that dialog pane component token properties are styleable from CSS.
     @Test
     void dialogPaneTokensAreStyleable() {
@@ -372,6 +415,47 @@ final class M3ControlStyleTest {
         assertEquals(28.0, dialogPane.getPadding().getRight(), 0.0001);
         assertEquals(28.0, dialogPane.getPadding().getBottom(), 0.0001);
         assertEquals(28.0, dialogPane.getPadding().getLeft(), 0.0001);
+    }
+
+    /// Verifies that dialog pane action buttons use m3fx button controls.
+    @Test
+    void dialogPaneCreatesMaterialActionButtons() {
+        M3DialogPane dialogPane = new M3DialogPane();
+        dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+
+        applyCss(dialogPane);
+
+        Node cancelNode = dialogPane.lookupButton(ButtonType.CANCEL);
+        Node okNode = dialogPane.lookupButton(ButtonType.OK);
+        M3Button cancelButton = assertInstanceOf(M3Button.class, cancelNode);
+        M3Button okButton = assertInstanceOf(M3Button.class, okNode);
+        assertEquals(M3ButtonVariant.TEXT, cancelButton.getVariant());
+        assertEquals(M3ButtonVariant.TEXT, okButton.getVariant());
+        assertTrue(cancelButton.getStyleClass().contains(M3DialogPane.BUTTON_STYLE_CLASS));
+        assertTrue(okButton.getStyleClass().contains(M3DialogPane.BUTTON_STYLE_CLASS));
+        assertEquals(ButtonBar.ButtonData.CANCEL_CLOSE, ButtonBar.getButtonData(cancelButton));
+        assertEquals(ButtonBar.ButtonData.OK_DONE, ButtonBar.getButtonData(okButton));
+        assertTrue(cancelButton.isCancelButton());
+        assertTrue(okButton.isDefaultButton());
+    }
+
+    /// Verifies that dialog pane subnodes keep Material typography and colors.
+    @Test
+    void dialogPaneSubnodesUseMaterialStyles() {
+        M3DialogPane dialogPane = new M3DialogPane();
+        dialogPane.setHeaderText("Dialog title");
+        dialogPane.setContentText("Dialog body");
+        dialogPane.getButtonTypes().setAll(ButtonType.OK);
+        Pane root = new Pane(dialogPane);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + buttonStateTestColors());
+        root.applyCss();
+
+        assertRegionFill(dialogPane, Color.rgb(19, 20, 21));
+        assertInstanceOf(ButtonBar.class, dialogPane.lookup("." + M3DialogPane.BUTTON_BAR_STYLE_CLASS));
+        assertEquals(Color.rgb(40, 41, 42), ((Labeled) dialogPane.lookup(".content")).getTextFill());
     }
 
     /// Verifies that text field component token properties are styleable from CSS.
@@ -655,6 +739,30 @@ final class M3ControlStyleTest {
         checkBox.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
 
         assertTrue(lookupRegion(checkBox, ".m3-ripple").getOpacity() > 0.0);
+    }
+
+    /// Verifies that switch skins position the thumb from the selected state.
+    @Test
+    void switchSkinPositionsThumbFromSelectedState() {
+        M3Switch offSwitch = new M3Switch("Off");
+        M3Switch onSwitch = new M3Switch("On");
+        onSwitch.setSelected(true);
+        Pane root = new Pane(offSwitch, onSwitch);
+        Scene scene = new Scene(root, 260.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        offSwitch.resize(120.0, 40.0);
+        onSwitch.resize(120.0, 40.0);
+        offSwitch.layout();
+        onSwitch.layout();
+
+        Region offThumb = lookupRegion(offSwitch, ".thumb");
+        Region onThumb = lookupRegion(onSwitch, ".thumb");
+        assertFalse(offThumb.isManaged());
+        assertFalse(onThumb.isManaged());
+        assertTrue(onThumb.getLayoutX() > offThumb.getLayoutX());
+        assertTrue(onThumb.getWidth() > offThumb.getWidth());
     }
 
     /// Verifies that radio indicators use circular Material styling.
@@ -1165,6 +1273,14 @@ final class M3ControlStyleTest {
                 + "-m3-color-on-surface: rgb(34,35,36); "
                 + "-m3-color-surface-container-highest: rgb(37,38,39); "
                 + "-m3-color-on-surface-variant: rgb(40,41,42);";
+    }
+
+    /// Returns deterministic color tokens used by snackbar style tests.
+    private static String snackbarStateTestColors() {
+        return buttonStateTestColors()
+                + " -m3-color-inverse-surface: rgb(50,51,52); "
+                + "-m3-color-inverse-on-surface: rgb(53,54,55); "
+                + "-m3-color-inverse-primary: rgb(56,57,58);";
     }
 
     /// Applies the pseudo-class combination that previously allowed Modena button styles to win.
