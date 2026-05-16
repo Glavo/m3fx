@@ -9,12 +9,14 @@ import javafx.event.EventType;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Labeled;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
@@ -104,6 +106,38 @@ final class M3ControlStyleTest {
         assertEquals(3, fireCount.get());
     }
 
+    /// Verifies that interactive button states keep Material variant colors.
+    @Test
+    void buttonStateStylesPreserveVariantColors() {
+        M3Button button = new M3Button("Button");
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + buttonStateTestColors());
+        applyInteractivePseudoClasses(button);
+
+        button.setVariant(M3ButtonVariant.FILLED);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(1, 2, 3), Color.rgb(4, 5, 6));
+
+        button.setVariant(M3ButtonVariant.TONAL);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(7, 8, 9), Color.rgb(10, 11, 12));
+
+        button.setVariant(M3ButtonVariant.OUTLINED);
+        root.applyCss();
+        assertLabeledColors(button, Color.TRANSPARENT, Color.rgb(1, 2, 3));
+
+        button.setVariant(M3ButtonVariant.TEXT);
+        root.applyCss();
+        assertLabeledColors(button, Color.TRANSPARENT, Color.rgb(1, 2, 3));
+
+        button.setVariant(M3ButtonVariant.ELEVATED);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(16, 17, 18), Color.rgb(1, 2, 3));
+    }
+
     /// Verifies that m3fx floating action buttons create the animated floating action button skin.
     @Test
     void floatingActionButtonCreatesAnimatedSkin() {
@@ -142,6 +176,34 @@ final class M3ControlStyleTest {
 
         button.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
         assertEquals(3, fireCount.get());
+    }
+
+    /// Verifies that interactive floating action button states keep Material variant colors.
+    @Test
+    void floatingActionButtonStateStylesPreserveVariantColors() {
+        M3FloatingActionButton button = new M3FloatingActionButton("Create");
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + buttonStateTestColors());
+        applyInteractivePseudoClasses(button);
+
+        button.setVariant(M3FloatingActionButtonVariant.SURFACE);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(19, 20, 21), Color.rgb(1, 2, 3));
+
+        button.setVariant(M3FloatingActionButtonVariant.PRIMARY);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(22, 23, 24), Color.rgb(25, 26, 27));
+
+        button.setVariant(M3FloatingActionButtonVariant.SECONDARY);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(7, 8, 9), Color.rgb(10, 11, 12));
+
+        button.setVariant(M3FloatingActionButtonVariant.TERTIARY);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(28, 29, 30), Color.rgb(31, 32, 33));
     }
 
     /// Verifies that button component token properties are styleable from CSS.
@@ -705,6 +767,36 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
+    }
+
+    /// Returns deterministic color tokens used by button state style tests.
+    private static String buttonStateTestColors() {
+        return "-m3-color-primary: rgb(1,2,3); "
+                + "-m3-color-on-primary: rgb(4,5,6); "
+                + "-m3-color-secondary-container: rgb(7,8,9); "
+                + "-m3-color-on-secondary-container: rgb(10,11,12); "
+                + "-m3-color-outline: rgb(13,14,15); "
+                + "-m3-color-surface-container-low: rgb(16,17,18); "
+                + "-m3-color-surface-container-high: rgb(19,20,21); "
+                + "-m3-color-primary-container: rgb(22,23,24); "
+                + "-m3-color-on-primary-container: rgb(25,26,27); "
+                + "-m3-color-tertiary-container: rgb(28,29,30); "
+                + "-m3-color-on-tertiary-container: rgb(31,32,33);";
+    }
+
+    /// Applies the pseudo-class combination that previously allowed Modena button styles to win.
+    private static void applyInteractivePseudoClasses(Node node) {
+        node.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        node.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
+        node.pseudoClassStateChanged(PseudoClass.getPseudoClass("armed"), true);
+        node.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+    }
+
+    /// Verifies the first background fill and text fill for a labeled control.
+    private static void assertLabeledColors(Labeled control, Color expectedBackground, Color expectedText) {
+        assertEquals(1, control.getBackground().getFills().size());
+        assertEquals(expectedBackground, control.getBackground().getFills().get(0).getFill());
+        assertEquals(expectedText, control.getTextFill());
     }
 
     /// Verifies a list item's line count property and pseudo-class state.

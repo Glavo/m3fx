@@ -4,6 +4,8 @@
     -m3-horizontal-padding: 16px;
     -fx-background-radius: 16px;
     -fx-border-radius: 16px;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
     -fx-font-size: 14px;
     -fx-font-weight: 500;
     -fx-cursor: hand;
@@ -35,23 +37,47 @@
     -fx-font-size: 18px;
 }
 
-.m3-surface-fab {
+.m3-fab.m3-surface-fab,
+.m3-fab.m3-surface-fab:hover,
+.m3-fab.m3-surface-fab:focused,
+.m3-fab.m3-surface-fab:armed,
+.m3-fab.m3-surface-fab:pressed {
     -fx-background-color: -m3-color-surface-container-high;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
     -fx-text-fill: -m3-color-primary;
 }
 
-.m3-primary-fab {
+.m3-fab.m3-primary-fab,
+.m3-fab.m3-primary-fab:hover,
+.m3-fab.m3-primary-fab:focused,
+.m3-fab.m3-primary-fab:armed,
+.m3-fab.m3-primary-fab:pressed {
     -fx-background-color: -m3-color-primary-container;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-primary-container;
 }
 
-.m3-secondary-fab {
+.m3-fab.m3-secondary-fab,
+.m3-fab.m3-secondary-fab:hover,
+.m3-fab.m3-secondary-fab:focused,
+.m3-fab.m3-secondary-fab:armed,
+.m3-fab.m3-secondary-fab:pressed {
     -fx-background-color: -m3-color-secondary-container;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
-.m3-tertiary-fab {
+.m3-fab.m3-tertiary-fab,
+.m3-fab.m3-tertiary-fab:hover,
+.m3-fab.m3-tertiary-fab:focused,
+.m3-fab.m3-tertiary-fab:armed,
+.m3-fab.m3-tertiary-fab:pressed {
     -fx-background-color: -m3-color-tertiary-container;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-tertiary-container;
 }
 

@@ -4,36 +4,67 @@
     -m3-horizontal-padding: 24px;
     -fx-background-radius: 999px;
     -fx-border-radius: 999px;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
     -fx-font-size: 14px;
     -fx-font-weight: 500;
     -fx-cursor: hand;
 }
 
-.m3-filled-button {
+.m3-button.m3-filled-button,
+.m3-button.m3-filled-button:hover,
+.m3-button.m3-filled-button:focused,
+.m3-button.m3-filled-button:armed,
+.m3-button.m3-filled-button:pressed {
     -fx-background-color: -m3-color-primary;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-primary;
 }
 
-.m3-tonal-button {
+.m3-button.m3-tonal-button,
+.m3-button.m3-tonal-button:hover,
+.m3-button.m3-tonal-button:focused,
+.m3-button.m3-tonal-button:armed,
+.m3-button.m3-tonal-button:pressed {
     -fx-background-color: -m3-color-secondary-container;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
-.m3-outlined-button {
+.m3-button.m3-outlined-button,
+.m3-button.m3-outlined-button:hover,
+.m3-button.m3-outlined-button:focused,
+.m3-button.m3-outlined-button:armed,
+.m3-button.m3-outlined-button:pressed {
     -fx-background-color: transparent;
+    -fx-background-insets: 0;
     -fx-border-color: -m3-color-outline;
     -fx-border-width: 1px;
     -fx-text-fill: -m3-color-primary;
 }
 
-.m3-text-button {
+.m3-button.m3-text-button,
+.m3-button.m3-text-button:hover,
+.m3-button.m3-text-button:focused,
+.m3-button.m3-text-button:armed,
+.m3-button.m3-text-button:pressed {
     -m3-horizontal-padding: 12px;
     -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
     -fx-text-fill: -m3-color-primary;
 }
 
-.m3-elevated-button {
+.m3-button.m3-elevated-button,
+.m3-button.m3-elevated-button:hover,
+.m3-button.m3-elevated-button:focused,
+.m3-button.m3-elevated-button:armed,
+.m3-button.m3-elevated-button:pressed {
     -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 1);
     -fx-text-fill: -m3-color-primary;
 }
