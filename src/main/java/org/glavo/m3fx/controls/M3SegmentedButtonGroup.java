@@ -4,10 +4,13 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
@@ -15,6 +18,7 @@ import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,6 +45,27 @@ public class M3SegmentedButtonGroup extends HBox {
     /// The default spacing that lets adjacent segment borders overlap.
     private static final double DEFAULT_SPACING = -1.0;
 
+    /// The segmented button selection mode.
+    private final ObjectProperty<M3SegmentedButtonSelectionMode> selectionMode =
+            new SimpleObjectProperty<>(this, "selectionMode", M3SegmentedButtonSelectionMode.SINGLE) {
+                /// Enforces selection invariants when the mode changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3SegmentedButtonSelectionMode.SINGLE);
+                        return;
+                    }
+                    enforceSelectionPolicy();
+                }
+            };
+
+    /// The selected segmented buttons in child order.
+    private final ObservableList<M3SegmentedButton> selectedButtons = FXCollections.observableArrayList();
+
+    /// The read-only selected segmented button view.
+    private final @UnmodifiableView ObservableList<M3SegmentedButton> selectedButtonsView =
+            FXCollections.unmodifiableObservableList(selectedButtons);
+
     /// The currently selected segmented button.
     private final ReadOnlyObjectWrapper<@Nullable M3SegmentedButton> selectedButton =
             new ReadOnlyObjectWrapper<>(this, "selectedButton");
@@ -65,9 +90,6 @@ public class M3SegmentedButtonGroup extends HBox {
             for (Node child : change.getRemoved()) {
                 if (child instanceof M3SegmentedButton button) {
                     uninstallButton(button);
-                    if (selectedButton.get() == button) {
-                        selectedButton.set(null);
-                    }
                     button.setSelected(false);
                     clearSegmentStyle(button);
                 }
@@ -75,16 +97,11 @@ public class M3SegmentedButtonGroup extends HBox {
             for (Node child : change.getAddedSubList()) {
                 if (child instanceof M3SegmentedButton button) {
                     installButton(button);
-                    if (button.isSelected()) {
-                        selectButton(button);
-                    }
                 }
             }
         }
         updateSegmentStyles();
-        if (!isAllowEmptySelection()) {
-            selectFirstButtonIfNeeded();
-        }
+        enforceSelectionPolicy();
     };
 
     /// Whether the group is currently synchronizing selected states.
@@ -108,6 +125,26 @@ public class M3SegmentedButtonGroup extends HBox {
     /// Returns the mutable child list used as segmented button group content.
     public final ObservableList<Node> getItems() {
         return getChildren();
+    }
+
+    /// Returns the segmented button selection mode.
+    public final M3SegmentedButtonSelectionMode getSelectionMode() {
+        return selectionMode.get();
+    }
+
+    /// Sets the segmented button selection mode.
+    public final void setSelectionMode(M3SegmentedButtonSelectionMode selectionMode) {
+        this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
+    }
+
+    /// Returns the segmented button selection mode property.
+    public final ObjectProperty<M3SegmentedButtonSelectionMode> selectionModeProperty() {
+        return selectionMode;
+    }
+
+    /// Returns the selected segmented buttons in child order.
+    public final @UnmodifiableView ObservableList<M3SegmentedButton> getSelectedButtons() {
+        return selectedButtonsView;
     }
 
     /// Returns the selected segmented button.
@@ -141,14 +178,18 @@ public class M3SegmentedButtonGroup extends HBox {
         if (!getChildren().contains(button)) {
             throw new IllegalArgumentException("button must belong to this segmented button group");
         }
-        selectButton(button);
+        if (getSelectionMode() == M3SegmentedButtonSelectionMode.MULTIPLE) {
+            setButtonSelected(button, true);
+        } else {
+            selectOnly(button);
+        }
     }
 
     /// Selects the first segmented button when one exists.
     public final void selectFirst() {
         M3SegmentedButton firstButton = firstButton();
         if (firstButton != null) {
-            selectButton(firstButton);
+            select(firstButton);
         }
     }
 
@@ -158,7 +199,7 @@ public class M3SegmentedButtonGroup extends HBox {
             selectFirstButtonIfNeeded();
             return;
         }
-        selectButton(null);
+        selectOnly(null);
     }
 
     /// Returns the user-agent stylesheet for m3fx segmented button groups.
@@ -198,30 +239,57 @@ public class M3SegmentedButtonGroup extends HBox {
         }
 
         if (selected) {
-            selectButton(button);
-        } else if (selectedButton.get() == button) {
-            if (isAllowEmptySelection()) {
-                selectedButton.set(null);
+            if (getSelectionMode() == M3SegmentedButtonSelectionMode.SINGLE) {
+                selectOnly(button);
             } else {
-                selectButton(button);
+                refreshSelectedButtons();
             }
+            return;
+        }
+
+        refreshSelectedButtons();
+        if (!isAllowEmptySelection() && selectedButtons.isEmpty()) {
+            select(button);
+        }
+    }
+
+    /// Enforces single-selection and non-empty selection invariants.
+    private void enforceSelectionPolicy() {
+        refreshSelectedButtons();
+        if (getSelectionMode() == M3SegmentedButtonSelectionMode.SINGLE && selectedButtons.size() > 1) {
+            selectOnly(selectedButtons.get(0));
+            return;
+        }
+        if (!isAllowEmptySelection()) {
+            selectFirstButtonIfNeeded();
         }
     }
 
     /// Selects the first button when the selection is empty and empty selection is disabled.
     private void selectFirstButtonIfNeeded() {
-        if (selectedButton.get() != null) {
+        if (!selectedButtons.isEmpty()) {
             return;
         }
 
         M3SegmentedButton firstButton = firstButton();
         if (firstButton != null) {
-            selectButton(firstButton);
+            select(firstButton);
         }
     }
 
-    /// Selects a segmented button and clears selection from the remaining segments.
-    private void selectButton(@Nullable M3SegmentedButton button) {
+    /// Sets one button's selected state and refreshes selected button state.
+    private void setButtonSelected(M3SegmentedButton button, boolean selected) {
+        updatingSelection = true;
+        try {
+            button.setSelected(selected);
+        } finally {
+            updatingSelection = false;
+        }
+        refreshSelectedButtons();
+    }
+
+    /// Selects one segmented button and clears selection from the remaining segments.
+    private void selectOnly(@Nullable M3SegmentedButton button) {
         updatingSelection = true;
         try {
             for (Node child : getChildren()) {
@@ -229,10 +297,21 @@ public class M3SegmentedButtonGroup extends HBox {
                     segmentedButton.setSelected(segmentedButton == button);
                 }
             }
-            selectedButton.set(button);
         } finally {
             updatingSelection = false;
         }
+        refreshSelectedButtons();
+    }
+
+    /// Refreshes selected button state from current child states.
+    private void refreshSelectedButtons() {
+        selectedButtons.clear();
+        for (Node child : getChildren()) {
+            if (child instanceof M3SegmentedButton button && button.isSelected()) {
+                selectedButtons.add(button);
+            }
+        }
+        selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
     }
 
     /// Returns the first segmented button child.

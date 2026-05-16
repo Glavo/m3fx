@@ -1747,15 +1747,74 @@ final class M3ControlStyleTest {
         first.setSelected(true);
         second.setSelected(true);
 
+        assertEquals(M3SegmentedButtonSelectionMode.SINGLE, group.getSelectionMode());
         assertEquals(second, group.getSelectedButton());
+        assertEquals(java.util.List.of(second), group.getSelectedButtons());
         assertFalse(first.isSelected());
         assertTrue(second.isSelected());
 
         group.select(first);
 
         assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
         assertTrue(first.isSelected());
         assertFalse(second.isSelected());
+
+        first.fire();
+
+        assertNull(group.getSelectedButton());
+        assertTrue(group.getSelectedButtons().isEmpty());
+        assertFalse(first.isSelected());
+    }
+
+    /// Verifies that segmented button groups can use multiple selected segment behavior.
+    @Test
+    void segmentedButtonGroupCanUseMultipleSelection() {
+        M3SegmentedButton first = new M3SegmentedButton("First");
+        M3SegmentedButton second = new M3SegmentedButton("Second");
+        M3SegmentedButton third = new M3SegmentedButton("Third");
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(first, second, third);
+
+        group.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);
+        first.fire();
+        third.fire();
+
+        assertTrue(first.isSelected());
+        assertFalse(second.isSelected());
+        assertTrue(third.isSelected());
+        assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first, third), group.getSelectedButtons());
+        assertThrows(UnsupportedOperationException.class, () -> group.getSelectedButtons().add(second));
+
+        first.fire();
+
+        assertFalse(first.isSelected());
+        assertTrue(third.isSelected());
+        assertEquals(third, group.getSelectedButton());
+        assertEquals(java.util.List.of(third), group.getSelectedButtons());
+    }
+
+    /// Verifies that segmented button groups collapse multiple selection when switched to single selection.
+    @Test
+    void segmentedButtonGroupCollapsesMultipleSelectionWhenModeChanges() {
+        M3SegmentedButton first = new M3SegmentedButton("First");
+        M3SegmentedButton second = new M3SegmentedButton("Second");
+        M3SegmentedButton third = new M3SegmentedButton("Third");
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(first, second, third);
+
+        group.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);
+        third.setSelected(true);
+        first.setSelected(true);
+
+        assertEquals(java.util.List.of(first, third), group.getSelectedButtons());
+
+        group.setSelectionMode(M3SegmentedButtonSelectionMode.SINGLE);
+
+        assertTrue(first.isSelected());
+        assertFalse(second.isSelected());
+        assertFalse(third.isSelected());
+        assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
     }
 
     /// Verifies that segmented button groups can require a selected segment.
@@ -1766,22 +1825,32 @@ final class M3ControlStyleTest {
         M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(first, second);
 
         assertNull(group.getSelectedButton());
+        assertTrue(group.getSelectedButtons().isEmpty());
 
         first.setSelected(true);
         group.clearSelection();
 
         assertNull(group.getSelectedButton());
+        assertTrue(group.getSelectedButtons().isEmpty());
         assertFalse(first.isSelected());
 
         group.setAllowEmptySelection(false);
 
         assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
+        assertTrue(first.isSelected());
+
+        first.fire();
+
+        assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
         assertTrue(first.isSelected());
 
         second.setSelected(true);
         second.setSelected(false);
 
         assertEquals(second, group.getSelectedButton());
+        assertEquals(java.util.List.of(second), group.getSelectedButtons());
         assertTrue(second.isSelected());
     }
 
@@ -1796,11 +1865,13 @@ final class M3ControlStyleTest {
         group.getItems().remove(second);
 
         assertNull(group.getSelectedButton());
+        assertTrue(group.getSelectedButtons().isEmpty());
         assertFalse(second.isSelected());
 
         group.setAllowEmptySelection(false);
 
         assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
         assertTrue(first.isSelected());
     }
 

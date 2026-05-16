@@ -73,6 +73,7 @@ import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
+import org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
@@ -233,7 +234,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Sliders", "Different values and disabled slider states", this::createSlidersPage),
                 new DemoPage("Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
                 new DemoPage("Menus", "Menu surfaces, actions, and menu buttons", this::createMenusPage),
-                new DemoPage("Segmented Buttons", "Single-select segmented control states", this::createSegmentedButtonsPage),
+                new DemoPage("Segmented Buttons", "Single- and multi-select segmented control states", this::createSegmentedButtonsPage),
                 new DemoPage("Tabs", "Primary tabs with animated active indicators", this::createTabsPage),
                 new DemoPage("App Bars", "Top app bars with navigation and actions", this::createAppBarsPage),
                 new DemoPage("Bottom App Bars", "Bottom app bars with actions and floating actions", this::createBottomAppBarsPage),
@@ -624,10 +625,16 @@ public final class M3FXDemoApp extends Application {
         M3SegmentedButtonGroup dateRange = createSegmentedGroup("Day", "Week", "Month");
         M3SegmentedButtonGroup priority = createSegmentedGroup("Low", "Medium", "High");
         ((M3SegmentedButton) priority.getChildren().get(2)).setDisable(true);
+        M3SegmentedButtonGroup channels = createSegmentedGroup("Email", "Chat", "Push");
+        channels.clearSelection();
+        channels.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);
+        ((M3SegmentedButton) channels.getChildren().get(0)).setSelected(true);
+        ((M3SegmentedButton) channels.getChildren().get(2)).setSelected(true);
 
         return createGallery(
                 createShowcaseGroup("Date Range", dateRange),
-                createShowcaseGroup("Availability", priority)
+                createShowcaseGroup("Availability", priority),
+                createShowcaseGroup("Multi Select", channels)
         );
     }
 

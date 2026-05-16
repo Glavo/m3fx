@@ -232,11 +232,11 @@ public class M3SegmentedButton extends ButtonBase {
         return getClassCssMetaData();
     }
 
-    /// Selects and fires this segmented button.
+    /// Toggles and fires this segmented button.
     @Override
     public void fire() {
         if (!isDisabled()) {
-            setSelected(true);
+            setSelected(!isSelected());
             fireEvent(new ActionEvent(this, this));
         }
     }
