@@ -1,0 +1,19 @@
+.m3-avatar {
+    -fx-min-width: 40px;
+    -fx-pref-width: 40px;
+    -fx-max-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
+    -fx-background-color: -m3-color-primary-container;
+    -fx-background-radius: 999px;
+    -fx-background-insets: 0;
+    -fx-alignment: center;
+}
+
+.m3-avatar-label {
+    -fx-alignment: center;
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -m3-color-on-primary-container;
+}

@@ -108,7 +108,9 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
 
     /// Converts component tokens into JavaFX CSS rules for m3fx controls.
     default String toControlStyleRules() {
-        return componentTokens().toControlStyleRules()
+        return typographyTokens().toControlStyleRules()
+                + "\n\n"
+                + componentTokens().toControlStyleRules()
                 + "\n\n"
                 + stateLayerTokens().toControlStyleRules()
                 + "\n\n"

@@ -83,6 +83,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by badges.
     BadgeTokens badge();
 
+    /// Returns tokens used by avatars.
+    AvatarTokens avatar();
+
     /// Returns tokens used by top app bars.
     TopAppBarTokens topAppBar();
 
@@ -127,6 +130,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             SnackbarTokens snackbar,
             DividerTokens divider,
             BadgeTokens badge,
+            AvatarTokens avatar,
             TopAppBarTokens topAppBar,
             BottomAppBarTokens bottomAppBar,
             NavigationBarTokens navigationBar,
@@ -159,6 +163,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 snackbar,
                 divider,
                 badge,
+                avatar,
                 topAppBar,
                 bottomAppBar,
                 navigationBar,
@@ -192,6 +197,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
+        double avatarSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
         double topAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
         double bottomAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
         double navigationBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
@@ -253,6 +259,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new SnackbarTokens(shapeTokens.extraSmall(), 16.0),
                 new DividerTokens(1.0, 0.0, 0.0),
                 new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeHeight, badgeLargeHeight / 2.0, 4.0),
+                new AvatarTokens(avatarSize, shapeTokens.full()),
                 new TopAppBarTokens(topAppBarHeight, 16.0, 16.0, 8.0),
                 new BottomAppBarTokens(bottomAppBarHeight, 16.0, 16.0, 8.0),
                 new NavigationBarTokens(
@@ -327,6 +334,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, snackbar());
         append(builder, divider());
         append(builder, badge());
+        append(builder, avatar());
         append(builder, topAppBar());
         append(builder, bottomAppBar());
         append(builder, navigationBar());
@@ -407,6 +415,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendSnackbarRule(builder, ".m3-snackbar", snackbar());
         appendDividerRule(builder, ".m3-divider", divider());
         appendBadgeRule(builder, ".m3-badge", badge());
+        appendAvatarRule(builder, ".m3-avatar.m3-avatar", avatar());
         appendTopAppBarRule(builder, ".m3-top-app-bar", topAppBar());
         appendTopAppBarActionsRule(builder, ".m3-top-app-bar-actions", topAppBar());
         appendBottomAppBarRule(builder, ".m3-bottom-app-bar", bottomAppBar());
@@ -570,6 +579,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-badge-large-min-width", M3TokenCss.pixels(tokens.largeMinWidth()));
         M3TokenCss.append(builder, "-m3-badge-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-badge-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+    }
+
+    /// Appends avatar token declarations.
+    private static void append(StringBuilder builder, AvatarTokens tokens) {
+        M3TokenCss.append(builder, "-m3-avatar-container-size", M3TokenCss.pixels(tokens.containerSize()));
+        M3TokenCss.append(builder, "-m3-avatar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
     }
 
     /// Appends top app bar token declarations.
@@ -1033,6 +1048,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-large-min-width", M3TokenCss.pixels(tokens.largeMinWidth()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        endRule(builder);
+    }
+
+    /// Appends an avatar token CSS rule.
+    private static void appendAvatarRule(StringBuilder builder, String selector, AvatarTokens tokens) {
+        String size = M3TokenCss.pixels(tokens.containerSize());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-width", size);
+        appendDeclaration(builder, "-fx-pref-width", size);
+        appendDeclaration(builder, "-fx-max-width", size);
+        appendDeclaration(builder, "-fx-min-height", size);
+        appendDeclaration(builder, "-fx-pref-height", size);
+        appendDeclaration(builder, "-fx-max-height", size);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         endRule(builder);
     }
 
@@ -1586,6 +1615,22 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(largeMinWidth, "largeMinWidth");
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+        }
+    }
+
+    /// Tokens used by avatars.
+    ///
+    /// @param containerSize the avatar container size
+    /// @param containerShape the avatar container radius
+    @NotNullByDefault
+    public record AvatarTokens(
+            double containerSize,
+            double containerShape
+    ) {
+        /// Creates avatar tokens.
+        public AvatarTokens {
+            validateNonNegative(containerSize, "containerSize");
+            validateNonNegative(containerShape, "containerShape");
         }
     }
 

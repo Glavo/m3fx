@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
@@ -25,8 +26,10 @@ import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SideSheet;
+import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
+import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.m3fx.tokens.M3TokenSet;
@@ -330,6 +333,8 @@ final class M3ThemeTest {
         M3SideSheet sideSheet = new M3SideSheet();
         M3BottomSheet bottomSheet = new M3BottomSheet();
         M3Scrim scrim = new M3Scrim();
+        M3Avatar avatar = new M3Avatar("A");
+        M3Text displayText = new M3Text("Display", M3TextRole.DISPLAY_LARGE);
         M3Chip chip = new M3Chip("Chip");
         M3FloatingActionButton fab = new M3FloatingActionButton();
         fab.setSize(M3FloatingActionButtonSize.LARGE);
@@ -344,6 +349,8 @@ final class M3ThemeTest {
                 sideSheet,
                 bottomSheet,
                 scrim,
+                avatar,
+                displayText,
                 chip,
                 fab,
                 segmentedButton
@@ -368,6 +375,8 @@ final class M3ThemeTest {
         assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
+        assertEquals(44.0, avatar.getPrefWidth(), 0.0001);
+        assertEquals(64.0, displayText.getTypographyFontSize(), 0.0001);
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
         assertEquals(104.0, fab.getContainerSize(), 0.0001);
         assertEquals(48.0, segmentedButton.getContainerHeight(), 0.0001);
@@ -385,6 +394,8 @@ final class M3ThemeTest {
         assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(320.0, bottomSheet.getPrefHeight(), 0.0001);
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
+        assertEquals(40.0, avatar.getPrefWidth(), 0.0001);
+        assertEquals(57.0, displayText.getTypographyFontSize(), 0.0001);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
         assertEquals(96.0, fab.getContainerSize(), 0.0001);
         assertEquals(40.0, segmentedButton.getContainerHeight(), 0.0001);

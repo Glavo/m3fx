@@ -1,0 +1,109 @@
+// Copyright (c) 2026 Glavo
+// SPDX-License-Identifier: Apache-2.0
+
+package org.glavo.m3fx.controls;
+
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
+import org.glavo.m3fx.internal.M3Stylesheets;
+import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
+
+/// A Material Design 3 avatar for initials, icons, or small images.
+@NotNullByDefault
+public class M3Avatar extends StackPane {
+    /// The base style class for M3FX avatars.
+    public static final String STYLE_CLASS = "m3-avatar";
+
+    /// The default text label style class.
+    public static final String LABEL_STYLE_CLASS = "m3-avatar-label";
+
+    /// The avatar text property.
+    private final StringProperty text = new SimpleStringProperty(this, "text", "");
+
+    /// The optional graphic node property.
+    private final ObjectProperty<@Nullable Node> graphic = new SimpleObjectProperty<>(this, "graphic");
+
+    /// The label used when this avatar has no graphic node.
+    private final Label textLabel = new Label();
+
+    /// Creates an empty avatar.
+    public M3Avatar() {
+        this("");
+    }
+
+    /// Creates an avatar with text.
+    public M3Avatar(String text) {
+        initialize();
+        setText(text);
+    }
+
+    /// Creates an avatar with a graphic node.
+    public M3Avatar(@Nullable Node graphic) {
+        initialize();
+        setGraphic(graphic);
+    }
+
+    /// Returns the avatar text.
+    public final String getText() {
+        return text.get();
+    }
+
+    /// Sets the avatar text.
+    public final void setText(String text) {
+        this.text.set(Objects.requireNonNull(text, "text"));
+    }
+
+    /// Returns the avatar text property.
+    public final StringProperty textProperty() {
+        return text;
+    }
+
+    /// Returns the optional graphic node.
+    public final @Nullable Node getGraphic() {
+        return graphic.get();
+    }
+
+    /// Sets the optional graphic node.
+    public final void setGraphic(@Nullable Node graphic) {
+        this.graphic.set(graphic);
+    }
+
+    /// Returns the optional graphic node property.
+    public final ObjectProperty<@Nullable Node> graphicProperty() {
+        return graphic;
+    }
+
+    /// Returns the user-agent stylesheet for M3FX avatars.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("avatar.css");
+    }
+
+    /// Initializes style classes, child nodes, and property listeners.
+    private void initialize() {
+        M3ControlStyles.add(this, STYLE_CLASS);
+        setAlignment(Pos.CENTER);
+        textLabel.getStyleClass().add(LABEL_STYLE_CLASS);
+        textLabel.textProperty().bind(text);
+        graphic.addListener((observable, oldValue, newValue) -> updateContent(newValue));
+        updateContent(getGraphic());
+    }
+
+    /// Updates the avatar content shown in the center slot.
+    private void updateContent(@Nullable Node node) {
+        if (node == null) {
+            getChildren().setAll(textLabel);
+        } else {
+            getChildren().setAll(node);
+        }
+    }
+}

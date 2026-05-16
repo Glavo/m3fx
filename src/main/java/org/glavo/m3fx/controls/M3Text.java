@@ -1,0 +1,358 @@
+// Copyright (c) 2026 Glavo
+// SPDX-License-Identifier: Apache-2.0
+
+package org.glavo.m3fx.controls;
+
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableObjectProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
+import javafx.css.converter.StringConverter;
+import javafx.scene.control.Label;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import org.glavo.m3fx.internal.M3Stylesheets;
+import org.jetbrains.annotations.NotNullByDefault;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
+/// A Material Design 3 text label driven by typography tokens.
+@NotNullByDefault
+public class M3Text extends Label {
+    /// The base style class for M3FX text labels.
+    public static final String STYLE_CLASS = "m3-text";
+
+    /// The default typography font family.
+    private static final String DEFAULT_TYPOGRAPHY_FONT_FAMILY = "System";
+
+    /// The default typography font size.
+    private static final double DEFAULT_TYPOGRAPHY_FONT_SIZE = 16.0;
+
+    /// The default typography font weight.
+    private static final double DEFAULT_TYPOGRAPHY_FONT_WEIGHT = 400.0;
+
+    /// The typography role property.
+    private final ObjectProperty<M3TextRole> role =
+            new SimpleObjectProperty<>(this, "role", M3TextRole.BODY_LARGE) {
+                /// Updates typography role style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3TextRole.BODY_LARGE);
+                        return;
+                    }
+                    updateRoleStyle();
+                }
+            };
+
+    /// The styleable typography font family token.
+    private StyleableObjectProperty<String> typographyFontFamily;
+
+    /// The styleable typography font size token.
+    private StyleableDoubleProperty typographyFontSize;
+
+    /// The styleable typography font weight token.
+    private StyleableDoubleProperty typographyFontWeight;
+
+    /// Creates an empty body-large text label.
+    public M3Text() {
+        this("");
+    }
+
+    /// Creates a body-large text label.
+    public M3Text(String text) {
+        super(text);
+        initialize();
+    }
+
+    /// Creates a text label with a typography role.
+    public M3Text(String text, M3TextRole role) {
+        super(text);
+        initialize();
+        setRole(role);
+    }
+
+    /// Returns the typography role.
+    public final M3TextRole getRole() {
+        return role.get();
+    }
+
+    /// Sets the typography role.
+    public final void setRole(M3TextRole role) {
+        this.role.set(Objects.requireNonNull(role, "role"));
+    }
+
+    /// Returns the typography role property.
+    public final ObjectProperty<M3TextRole> roleProperty() {
+        return role;
+    }
+
+    /// Returns the typography font family token.
+    public final String getTypographyFontFamily() {
+        return typographyFontFamily == null ? DEFAULT_TYPOGRAPHY_FONT_FAMILY : typographyFontFamily.get();
+    }
+
+    /// Sets the typography font family token.
+    public final void setTypographyFontFamily(String typographyFontFamily) {
+        typographyFontFamilyProperty().set(Objects.requireNonNull(typographyFontFamily, "typographyFontFamily"));
+    }
+
+    /// Returns the typography font family token property.
+    public final StyleableObjectProperty<String> typographyFontFamilyProperty() {
+        if (typographyFontFamily == null) {
+            typographyFontFamily = new StyleableObjectProperty<>(DEFAULT_TYPOGRAPHY_FONT_FAMILY) {
+                /// Applies updated font family tokens.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_TYPOGRAPHY_FONT_FAMILY);
+                        return;
+                    }
+                    updateFont();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Text.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "typographyFontFamily";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3Text, String> getCssMetaData() {
+                    return StyleableProperties.TYPOGRAPHY_FONT_FAMILY;
+                }
+            };
+        }
+        return typographyFontFamily;
+    }
+
+    /// Returns the typography font size token.
+    public final double getTypographyFontSize() {
+        return typographyFontSize == null ? DEFAULT_TYPOGRAPHY_FONT_SIZE : typographyFontSize.get();
+    }
+
+    /// Sets the typography font size token.
+    public final void setTypographyFontSize(double typographyFontSize) {
+        typographyFontSizeProperty().set(M3Css.nonNegative(typographyFontSize, "typographyFontSize"));
+    }
+
+    /// Returns the typography font size token property.
+    public final StyleableDoubleProperty typographyFontSizeProperty() {
+        if (typographyFontSize == null) {
+            typographyFontSize = new StyleableDoubleProperty(DEFAULT_TYPOGRAPHY_FONT_SIZE) {
+                /// Applies updated font size tokens.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "typographyFontSize");
+                    updateFont();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Text.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "typographyFontSize";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3Text, Number> getCssMetaData() {
+                    return StyleableProperties.TYPOGRAPHY_FONT_SIZE;
+                }
+            };
+        }
+        return typographyFontSize;
+    }
+
+    /// Returns the typography font weight token.
+    public final double getTypographyFontWeight() {
+        return typographyFontWeight == null ? DEFAULT_TYPOGRAPHY_FONT_WEIGHT : typographyFontWeight.get();
+    }
+
+    /// Sets the typography font weight token.
+    public final void setTypographyFontWeight(double typographyFontWeight) {
+        typographyFontWeightProperty().set(validateFontWeight(typographyFontWeight));
+    }
+
+    /// Returns the typography font weight token property.
+    public final StyleableDoubleProperty typographyFontWeightProperty() {
+        if (typographyFontWeight == null) {
+            typographyFontWeight = new StyleableDoubleProperty(DEFAULT_TYPOGRAPHY_FONT_WEIGHT) {
+                /// Applies updated font weight tokens.
+                @Override
+                protected void invalidated() {
+                    validateFontWeight(get());
+                    updateFont();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Text.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "typographyFontWeight";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3Text, Number> getCssMetaData() {
+                    return StyleableProperties.TYPOGRAPHY_FONT_WEIGHT;
+                }
+            };
+        }
+        return typographyFontWeight;
+    }
+
+    /// Returns the user-agent stylesheet for M3FX text labels.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("text.css");
+    }
+
+    /// Returns the CSS metadata for this control class.
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
+    /// Initializes style classes.
+    private void initialize() {
+        M3ControlStyles.add(this, STYLE_CLASS);
+        updateRoleStyle();
+        updateFont();
+    }
+
+    /// Applies the style class for the selected typography role.
+    private void updateRoleStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getRole().getStyleClass(),
+                M3TextRole.DISPLAY_LARGE.getStyleClass(),
+                M3TextRole.HEADLINE_MEDIUM.getStyleClass(),
+                M3TextRole.TITLE_LARGE.getStyleClass(),
+                M3TextRole.LABEL_LARGE.getStyleClass(),
+                M3TextRole.BODY_LARGE.getStyleClass(),
+                M3TextRole.BODY_MEDIUM.getStyleClass()
+        );
+    }
+
+    /// Applies resolved typography font tokens to the inherited font property.
+    private void updateFont() {
+        setFont(Font.font(
+                getTypographyFontFamily(),
+                FontWeight.findByWeight((int) Math.round(getTypographyFontWeight())),
+                getTypographyFontSize()
+        ));
+    }
+
+    /// Validates a font weight token.
+    private static double validateFontWeight(double value) {
+        if (value < 1.0 || value > 1000.0) {
+            throw new IllegalArgumentException("typographyFontWeight must be between 1 and 1000");
+        }
+        return value;
+    }
+
+    /// CSS metadata for M3FX text typography tokens.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the typography font family token.
+        private static final CssMetaData<M3Text, String> TYPOGRAPHY_FONT_FAMILY =
+                new CssMetaData<>(
+                        "-m3-typography-font-family",
+                        StringConverter.getInstance(),
+                        DEFAULT_TYPOGRAPHY_FONT_FAMILY
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Text control) {
+                        return !control.typographyFontFamilyProperty().isBound();
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<String> getStyleableProperty(M3Text control) {
+                        return control.typographyFontFamilyProperty();
+                    }
+                };
+
+        /// CSS metadata for the typography font size token.
+        private static final CssMetaData<M3Text, Number> TYPOGRAPHY_FONT_SIZE =
+                new CssMetaData<>(
+                        "-m3-typography-font-size",
+                        SizeConverter.getInstance(),
+                        DEFAULT_TYPOGRAPHY_FONT_SIZE
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Text control) {
+                        return M3Css.isSettable(control.typographyFontSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Text control) {
+                        return control.typographyFontSizeProperty();
+                    }
+                };
+
+        /// CSS metadata for the typography font weight token.
+        private static final CssMetaData<M3Text, Number> TYPOGRAPHY_FONT_WEIGHT =
+                new CssMetaData<>(
+                        "-m3-typography-font-weight",
+                        SizeConverter.getInstance(),
+                        DEFAULT_TYPOGRAPHY_FONT_WEIGHT
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Text control) {
+                        return M3Css.isSettable(control.typographyFontWeightProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Text control) {
+                        return control.typographyFontWeightProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Label.getClassCssMetaData());
+            styleables.add(TYPOGRAPHY_FONT_FAMILY);
+            styleables.add(TYPOGRAPHY_FONT_SIZE);
+            styleables.add(TYPOGRAPHY_FONT_WEIGHT);
+            STYLEABLES = Collections.unmodifiableList(styleables);
+        }
+    }
+}

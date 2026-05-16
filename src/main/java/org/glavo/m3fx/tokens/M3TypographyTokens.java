@@ -82,11 +82,37 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
         return builder.toString().trim();
     }
 
+    /// Converts typography tokens into JavaFX CSS rules for M3FX text controls.
+    default String toControlStyleRules() {
+        StringBuilder builder = new StringBuilder();
+        appendRule(builder, ".m3-display-large-text", displayLarge());
+        appendRule(builder, ".m3-headline-medium-text", headlineMedium());
+        appendRule(builder, ".m3-title-large-text", titleLarge());
+        appendRule(builder, ".m3-label-large-text", labelLarge());
+        appendRule(builder, ".m3-body-large-text", bodyLarge());
+        appendRule(builder, ".m3-body-medium-text", bodyMedium());
+        return builder.toString().stripTrailing();
+    }
+
     /// Appends declarations for a typography token.
     private static void append(StringBuilder builder, String name, M3TextStyle style) {
         M3TokenCss.append(builder, "-m3-typescale-" + name + "-font-family", "\"" + style.fontFamily() + "\"");
         M3TokenCss.append(builder, "-m3-typescale-" + name + "-font-size", M3TokenCss.pixels(style.size()));
         M3TokenCss.append(builder, "-m3-typescale-" + name + "-line-height", M3TokenCss.pixels(style.lineHeight()));
         M3TokenCss.append(builder, "-m3-typescale-" + name + "-font-weight", Integer.toString(style.weight()));
+    }
+
+    /// Appends a control CSS rule for a typography token.
+    private static void appendRule(StringBuilder builder, String selector, M3TextStyle style) {
+        builder.append(selector).append(" {\n");
+        appendDeclaration(builder, "-m3-typography-font-family", "\"" + style.fontFamily() + "\"");
+        appendDeclaration(builder, "-m3-typography-font-size", M3TokenCss.pixels(style.size()));
+        appendDeclaration(builder, "-m3-typography-font-weight", Integer.toString(style.weight()));
+        builder.append("}\n\n");
+    }
+
+    /// Appends one declaration inside a control CSS rule.
+    private static void appendDeclaration(StringBuilder builder, String name, String value) {
+        builder.append("    ").append(name).append(": ").append(value).append(";\n");
     }
 }

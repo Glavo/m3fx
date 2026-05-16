@@ -736,6 +736,62 @@ final class M3ControlStyleTest {
         assertEquals(Duration.seconds(5.0), tooltip.getShowDuration());
     }
 
+    /// Verifies that avatars swap between text and graphic content.
+    @Test
+    void avatarOwnsTextAndGraphicContent() {
+        M3Avatar avatar = new M3Avatar("AB");
+        Label graphic = new Label("G");
+
+        assertEquals("AB", avatar.getText());
+        assertEquals(1, avatar.getChildren().size());
+
+        avatar.setGraphic(graphic);
+
+        assertEquals(graphic, avatar.getGraphic());
+        assertEquals(graphic, avatar.getChildren().get(0));
+
+        avatar.setGraphic(null);
+
+        assertNull(avatar.getGraphic());
+        assertEquals(1, avatar.getChildren().size());
+    }
+
+    /// Verifies that avatar component token metrics apply through the active theme.
+    @Test
+    void avatarAppliesTokenMetrics() {
+        M3Avatar avatar = new M3Avatar("A");
+
+        applyCss(avatar);
+
+        assertEquals(40.0, avatar.getPrefWidth(), 0.0001);
+        assertEquals(40.0, avatar.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that text typography roles update style classes.
+    @Test
+    void textRoleUpdatesStyleClasses() {
+        M3Text text = new M3Text("Title");
+
+        assertEquals(M3TextRole.BODY_LARGE, text.getRole());
+        assertTrue(text.getStyleClass().contains(M3TextRole.BODY_LARGE.getStyleClass()));
+
+        text.setRole(M3TextRole.TITLE_LARGE);
+
+        assertEquals(M3TextRole.TITLE_LARGE, text.getRole());
+        assertTrue(text.getStyleClass().contains(M3TextRole.TITLE_LARGE.getStyleClass()));
+        assertFalse(text.getStyleClass().contains(M3TextRole.BODY_LARGE.getStyleClass()));
+    }
+
+    /// Verifies that text typography roles read font size tokens from the active theme.
+    @Test
+    void textRoleUsesTypographyTokens() {
+        M3Text text = new M3Text("Display", M3TextRole.DISPLAY_LARGE);
+
+        applyCss(text);
+
+        assertEquals(57.0, text.getFont().getSize(), 0.0001);
+    }
+
     /// Verifies that menu tokens apply to menu surfaces and items.
     @Test
     void menuAppliesItemMetrics() {
@@ -2416,6 +2472,8 @@ final class M3ControlStyleTest {
         assertTrue(textField.getStyleClass().contains(M3TextInputVariant.OUTLINED.getStyleClass()));
         assertTrue(new M3TextArea().getStyleClass().contains(M3TextArea.STYLE_CLASS));
         assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
+        assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
+        assertTrue(new M3Text("Text").getStyleClass().contains(M3Text.STYLE_CLASS));
         assertTrue(new M3Menu().getStyleClass().contains(M3Menu.STYLE_CLASS));
         assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
         assertTrue(new M3MenuButton("More").getStyleClass().contains(M3MenuButton.STYLE_CLASS));
@@ -2455,6 +2513,8 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3TextField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
+        assertUserAgentStylesheet(new M3Avatar(), "/styles/controls/avatar.css");
+        assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
         assertUserAgentStylesheet(new M3Menu(), "/styles/controls/menu.css");
         assertUserAgentStylesheet(new M3SearchBar(), "/styles/controls/search.css");
         assertUserAgentStylesheet(new M3SearchView(), "/styles/controls/search.css");

@@ -34,6 +34,7 @@ import java.util.Objects;
 /// @param snackbar tokens used by snackbar controls
 /// @param divider tokens used by dividers
 /// @param badge tokens used by badges
+/// @param avatar tokens used by avatars
 /// @param topAppBar tokens used by top app bars
 /// @param bottomAppBar tokens used by bottom app bars
 /// @param navigationBar tokens used by navigation bars
@@ -66,6 +67,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.SnackbarTokens snackbar,
         M3ComponentTokens.DividerTokens divider,
         M3ComponentTokens.BadgeTokens badge,
+        M3ComponentTokens.AvatarTokens avatar,
         M3ComponentTokens.TopAppBarTokens topAppBar,
         M3ComponentTokens.BottomAppBarTokens bottomAppBar,
         M3ComponentTokens.NavigationBarTokens navigationBar,
@@ -99,6 +101,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(snackbar, "snackbar");
         Objects.requireNonNull(divider, "divider");
         Objects.requireNonNull(badge, "badge");
+        Objects.requireNonNull(avatar, "avatar");
         Objects.requireNonNull(topAppBar, "topAppBar");
         Objects.requireNonNull(bottomAppBar, "bottomAppBar");
         Objects.requireNonNull(navigationBar, "navigationBar");

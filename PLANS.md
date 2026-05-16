@@ -31,12 +31,13 @@
   - `M3Profile.EXPRESSIVE_2025` is reserved for future M3 Expressive token values.
   - Controls must read component tokens and must not hard-code profile-specific values.
 - Implement first core controls:
+  - Typography: token-driven text labels for display, headline, title, label, and body roles.
   - Buttons: filled, tonal, outlined, text, elevated, icon button, and floating action button.
   - Inputs: filled and outlined text field, plus password field.
   - Selection: checkbox, radio button, switch, slider, chips, segmented buttons, and segmented button groups.
-  - Navigation, feedback, utility, and containment: tabs, top app bar, bottom app bar, navigation bar, navigation rail, navigation drawer, navigation item, linear progress, circular progress, divider, badge, scrim, list item, card, side sheet, bottom sheet, dialog, snackbar, and snackbar host.
+  - Navigation, feedback, utility, and containment: tabs, top app bar, bottom app bar, navigation bar, navigation rail, navigation drawer, navigation item, linear progress, circular progress, divider, badge, avatar, scrim, list item, card, side sheet, bottom sheet, dialog, snackbar, and snackbar host.
 - Implement controls with JavaFX `Control`, `Skin`, `CssMetaData`, and pseudo-class support.
-- Give each control a control-specific `getUserAgentStylesheet()` so default styles are loaded with the control.
+- Give JavaFX node/control-backed components a control-specific `getUserAgentStylesheet()`. Popup-only utilities that cannot expose this JavaFX hook keep their CSS split into a dedicated file imported by the base stylesheet.
 
 ## Public API And Code Style
 

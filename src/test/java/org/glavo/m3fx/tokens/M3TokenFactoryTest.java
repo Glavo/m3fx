@@ -44,6 +44,8 @@ final class M3TokenFactoryTest {
         assertEquals(210, motion.mediumDuration());
         assertEquals(0.42, stateLayer.disabledContentOpacity(), 0.0001);
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-font-family: \"Demo\""));
+        assertTrue(typography.toControlStyleRules().contains(".m3-display-large-text"));
+        assertTrue(typography.toControlStyleRules().contains("-m3-typography-font-size: 60px"));
         assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-disabled-content-opacity: 0.42"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:focus-visible .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-tab:focus-visible .m3-state-layer"));
@@ -97,8 +99,10 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 44px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-sheet-side-container-width: 46px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-scrim-container-opacity: 0.31"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-avatar-container-size: 35px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-medium: 220ms"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-body-large-text"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-tab-active-indicator"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-top-app-bar-actions"));
@@ -107,6 +111,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view .m3-list-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-sheet .m3-bottom-sheet-drag-handle"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-scrim.m3-scrim"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-avatar.m3-avatar"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-app-bar-actions"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-rail .m3-navigation-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-drawer .m3-list-item"));
@@ -142,6 +147,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.SnackbarTokens(9.0, 18.0),
                 new M3ComponentTokens.DividerTokens(2.0, 8.0, 12.0),
                 new M3ComponentTokens.BadgeTokens(7.0, 19.0, 21.0, 10.0, 5.0),
+                new M3ComponentTokens.AvatarTokens(35.0, 17.0),
                 new M3ComponentTokens.TopAppBarTokens(59.0, 11.0, 13.0, 6.0),
                 new M3ComponentTokens.BottomAppBarTokens(62.0, 12.0, 14.0, 7.0),
                 new M3ComponentTokens.NavigationBarTokens(67.0, 68.0, 69.0, 30.0, 15.0, 4.0, 9.0),

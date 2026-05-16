@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// A Material Design 3 tooltip.
 @NotNullByDefault
 public class M3Tooltip extends Tooltip {
-    /// The base style class for m3fx tooltips.
+    /// The base style class for M3FX tooltips.
     public static final String STYLE_CLASS = "m3-tooltip";
 
     /// Creates an empty tooltip.

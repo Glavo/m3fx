@@ -28,6 +28,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomSheet;
@@ -68,9 +69,11 @@ import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3TabBar;
+import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputVariant;
+import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.theme.M3Theme;
@@ -206,6 +209,7 @@ public final class M3FXDemoApp extends Application {
     private List<DemoPage> createPages() {
         return List.of(
                 new DemoPage("Buttons", "Variants, icon buttons, and floating actions", this::createButtonsPage),
+                new DemoPage("Typography", "Token-driven Material type roles", this::createTypographyPage),
                 new DemoPage("Text Fields", "Filled, outlined, populated, and disabled fields", this::createTextFieldsPage),
                 new DemoPage("Search", "Search bars, actions, and result surfaces", this::createSearchPage),
                 new DemoPage("Checkboxes", "Checked, unchecked, and disabled states", this::createCheckboxesPage),
@@ -224,6 +228,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Progress", "Linear and circular progress indicators", this::createProgressPage),
                 new DemoPage("Lists", "One-line, two-line, three-line, and selected rows", this::createListPage),
                 new DemoPage("Badges", "Dot, count, overflow, and attached badges", this::createBadgesPage),
+                new DemoPage("Avatars", "Initials and graphic avatar slots", this::createAvatarsPage),
                 new DemoPage("Dividers", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
                 new DemoPage("Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
                 new DemoPage("Sheets", "Side and bottom containment surfaces", this::createSheetsPage),
@@ -344,6 +349,24 @@ public final class M3FXDemoApp extends Application {
                         createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
                         createFab("*", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.LARGE),
                         createExtendedFab()
+                )
+        );
+    }
+
+    /// Creates the typography component page.
+    private Node createTypographyPage() {
+        return createGallery(
+                createShowcaseGroup(
+                        "Scale",
+                        new M3Text("Display Large", M3TextRole.DISPLAY_LARGE),
+                        new M3Text("Headline Medium", M3TextRole.HEADLINE_MEDIUM),
+                        new M3Text("Title Large", M3TextRole.TITLE_LARGE)
+                ),
+                createShowcaseGroup(
+                        "Body And Labels",
+                        new M3Text("Label Large", M3TextRole.LABEL_LARGE),
+                        new M3Text("Body Large text follows the active theme typography tokens.", M3TextRole.BODY_LARGE),
+                        new M3Text("Body Medium text", M3TextRole.BODY_MEDIUM)
                 )
         );
     }
@@ -643,6 +666,22 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup("Badges", new M3Badge(), new M3Badge("7"), new M3Badge("1234")),
                 createShowcaseGroup("Attached", buttonWithBadge)
+        );
+    }
+
+    /// Creates the avatar component page.
+    private Node createAvatarsPage() {
+        M3Avatar initials = new M3Avatar("AB");
+        M3Avatar single = new M3Avatar("M");
+        M3Avatar graphic = new M3Avatar(createNavigationIcon("G"));
+
+        M3ListItem account = new M3ListItem("Account");
+        account.setSupportingText("Avatar as leading content");
+        account.setLeading(new M3Avatar("A"));
+
+        return createGallery(
+                createShowcaseGroup("Avatars", initials, single, graphic),
+                createShowcaseGroup("List Usage", account)
         );
     }
 
