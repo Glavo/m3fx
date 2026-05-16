@@ -5,6 +5,8 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -39,6 +41,15 @@ public class M3ListItem extends Control {
 
     /// The selected pseudo-class used by list items.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
+
+    /// The pseudo-class used by one-line list items.
+    private static final PseudoClass ONE_LINE_PSEUDO_CLASS = PseudoClass.getPseudoClass("one-line");
+
+    /// The pseudo-class used by two-line list items.
+    private static final PseudoClass TWO_LINE_PSEUDO_CLASS = PseudoClass.getPseudoClass("two-line");
+
+    /// The pseudo-class used by three-line list items.
+    private static final PseudoClass THREE_LINE_PSEUDO_CLASS = PseudoClass.getPseudoClass("three-line");
 
     /// The default one-line item height.
     private static final double DEFAULT_ONE_LINE_HEIGHT = 56.0;
@@ -95,6 +106,10 @@ public class M3ListItem extends Control {
         }
     };
 
+    /// The derived line count property.
+    private final ReadOnlyObjectWrapper<M3ListItemLineCount> lineCount =
+            new ReadOnlyObjectWrapper<>(this, "lineCount", M3ListItemLineCount.ONE_LINE);
+
     /// The styleable one-line height token.
     private StyleableDoubleProperty oneLineHeight;
 
@@ -123,9 +138,11 @@ public class M3ListItem extends Control {
 
     /// Creates a one-line list item with headline text.
     public M3ListItem(String headlineText) {
+        installLineCountListeners();
         M3ControlStyles.add(this, STYLE_CLASS);
         setFocusTraversable(true);
         setHeadlineText(headlineText);
+        updateLineCount();
     }
 
     /// Returns the overline text.
@@ -231,6 +248,16 @@ public class M3ListItem extends Control {
     /// Returns the selected state property.
     public final BooleanProperty selectedProperty() {
         return selected;
+    }
+
+    /// Returns the derived list item line count.
+    public final M3ListItemLineCount getLineCount() {
+        return lineCount.get();
+    }
+
+    /// Returns the derived line count property.
+    public final ReadOnlyObjectProperty<M3ListItemLineCount> lineCountProperty() {
+        return lineCount.getReadOnlyProperty();
     }
 
     /// Fires this list item's action event.
@@ -415,6 +442,39 @@ public class M3ListItem extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("list-item.css");
+    }
+
+    /// Installs listeners that keep the derived line count in sync with text content.
+    private void installLineCountListeners() {
+        overlineText.addListener((observable, oldValue, newValue) -> updateLineCount());
+        supportingText.addListener((observable, oldValue, newValue) -> updateLineCount());
+    }
+
+    /// Updates the derived line count and related pseudo-class state.
+    private void updateLineCount() {
+        M3ListItemLineCount currentLineCount = computeLineCount();
+        lineCount.set(currentLineCount);
+        pseudoClassStateChanged(ONE_LINE_PSEUDO_CLASS, currentLineCount == M3ListItemLineCount.ONE_LINE);
+        pseudoClassStateChanged(TWO_LINE_PSEUDO_CLASS, currentLineCount == M3ListItemLineCount.TWO_LINE);
+        pseudoClassStateChanged(THREE_LINE_PSEUDO_CLASS, currentLineCount == M3ListItemLineCount.THREE_LINE);
+    }
+
+    /// Computes the line count implied by the current text content.
+    private M3ListItemLineCount computeLineCount() {
+        boolean hasOverline = hasText(getOverlineText());
+        boolean hasSupporting = hasText(getSupportingText());
+        if (hasOverline && hasSupporting) {
+            return M3ListItemLineCount.THREE_LINE;
+        }
+        if (hasOverline || hasSupporting) {
+            return M3ListItemLineCount.TWO_LINE;
+        }
+        return M3ListItemLineCount.ONE_LINE;
+    }
+
+    /// Returns whether text contributes visible list item content.
+    private static boolean hasText(String text) {
+        return !text.isBlank();
     }
 
     /// Creates a non-negative styleable double property.

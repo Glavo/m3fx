@@ -76,6 +76,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         control.supportingTextProperty().addListener((observable, oldValue, newValue) -> updateTextAndMetrics());
         control.leadingProperty().addListener((observable, oldValue, newValue) -> updateSlots());
         control.trailingProperty().addListener((observable, oldValue, newValue) -> updateSlots());
+        control.lineCountProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
         control.oneLineHeightProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
         control.twoLineHeightProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
         control.threeLineHeightProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
@@ -154,15 +155,19 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Returns the preferred height for the current text structure.
     private static double preferredHeight(M3ListItem item) {
-        boolean hasOverline = !item.getOverlineText().isBlank();
-        boolean hasSupporting = !item.getSupportingText().isBlank();
-        if (hasOverline && hasSupporting) {
-            return item.getThreeLineHeight();
+        return switch (item.getLineCount()) {
+            case ONE_LINE -> item.getOneLineHeight();
+            case TWO_LINE -> item.getTwoLineHeight();
+            case THREE_LINE -> item.getThreeLineHeight();
+        };
+    }
+
+    /// Formats a CSS pixel value.
+    private static String formatPixels(double value) {
+        if (Math.rint(value) == value) {
+            return Long.toString((long) value) + "px";
         }
-        if (hasOverline || hasSupporting) {
-            return item.getTwoLineHeight();
-        }
-        return item.getOneLineHeight();
+        return Double.toString(value) + "px";
     }
 
     /// Installs behavior handlers for pointer and keyboard activation.
@@ -188,11 +193,4 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         }
     }
 
-    /// Formats a CSS pixel value.
-    private static String formatPixels(double value) {
-        if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
-        }
-        return Double.toString(value) + "px";
-    }
 }

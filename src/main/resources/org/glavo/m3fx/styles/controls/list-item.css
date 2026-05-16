@@ -14,6 +14,15 @@
     -fx-background-color: transparent;
 }
 
+.m3-list-item:one-line .m3-list-item-text {
+    -fx-spacing: 0px;
+}
+
+.m3-list-item:two-line .m3-list-item-text,
+.m3-list-item:three-line .m3-list-item-text {
+    -fx-spacing: 2px;
+}
+
 .m3-list-item:hover .m3-list-item-container {
     -fx-background-color: -m3-color-surface-container-highest;
 }

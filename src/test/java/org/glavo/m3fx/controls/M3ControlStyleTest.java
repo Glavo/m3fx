@@ -486,6 +486,51 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3ListItemSkin.class, listItem.getSkin());
     }
 
+    /// Verifies that list item line count state follows text content.
+    @Test
+    void listItemLineCountTracksTextContent() {
+        M3ListItem listItem = new M3ListItem("Headline");
+
+        assertListItemLineCount(listItem, M3ListItemLineCount.ONE_LINE);
+
+        listItem.setSupportingText("Supporting");
+        assertListItemLineCount(listItem, M3ListItemLineCount.TWO_LINE);
+
+        listItem.setOverlineText("Overline");
+        assertListItemLineCount(listItem, M3ListItemLineCount.THREE_LINE);
+
+        listItem.setSupportingText("");
+        assertListItemLineCount(listItem, M3ListItemLineCount.TWO_LINE);
+
+        listItem.setOverlineText("");
+        assertListItemLineCount(listItem, M3ListItemLineCount.ONE_LINE);
+    }
+
+    /// Verifies that list item skins read the control line count when selecting height tokens.
+    @Test
+    void listItemLineCountDrivesSkinHeight() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        listItem.setStyle(
+                "-m3-one-line-height: 60px; "
+                        + "-m3-two-line-height: 76px; "
+                        + "-m3-three-line-height: 92px;"
+        );
+        Pane root = new Pane(listItem);
+        Scene scene = new Scene(root);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+
+        root.applyCss();
+        assertEquals(60.0, listItemContainer(listItem).getPrefHeight(), 0.0001);
+
+        listItem.setSupportingText("Supporting");
+        root.applyCss();
+        assertEquals(76.0, listItemContainer(listItem).getPrefHeight(), 0.0001);
+
+        listItem.setOverlineText("Overline");
+        root.applyCss();
+        assertEquals(92.0, listItemContainer(listItem).getPrefHeight(), 0.0001);
+    }
+
     /// Verifies that list items expose selected state and action behavior.
     @Test
     void listItemSupportsSelectionAndAction() {
@@ -596,6 +641,26 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
+    }
+
+    /// Verifies a list item's line count property and pseudo-class state.
+    private static void assertListItemLineCount(M3ListItem listItem, M3ListItemLineCount lineCount) {
+        assertEquals(lineCount, listItem.getLineCount());
+        assertEquals(lineCount, listItem.lineCountProperty().get());
+        assertEquals(lineCount.getLineCount(), listItem.getLineCount().getLineCount());
+        assertEquals(lineCount == M3ListItemLineCount.ONE_LINE,
+                listItem.getPseudoClassStates().contains(PseudoClass.getPseudoClass("one-line")));
+        assertEquals(lineCount == M3ListItemLineCount.TWO_LINE,
+                listItem.getPseudoClassStates().contains(PseudoClass.getPseudoClass("two-line")));
+        assertEquals(lineCount == M3ListItemLineCount.THREE_LINE,
+                listItem.getPseudoClassStates().contains(PseudoClass.getPseudoClass("three-line")));
+    }
+
+    /// Returns the list item skin container region.
+    private static javafx.scene.layout.Region listItemContainer(M3ListItem listItem) {
+        javafx.scene.Node container = listItem.lookup(".m3-list-item-container");
+        assertInstanceOf(javafx.scene.layout.Region.class, container);
+        return (javafx.scene.layout.Region) container;
     }
 
     /// Verifies that a node user-agent stylesheet has the expected bundled suffix.
