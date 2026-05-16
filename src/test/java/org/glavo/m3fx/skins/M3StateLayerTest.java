@@ -5,9 +5,11 @@ package org.glavo.m3fx.skins;
 
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.animation.PauseTransition;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.util.Duration;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -60,6 +62,77 @@ final class M3StateLayerTest {
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
             assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
         });
+    }
+
+    /// Verifies that ripples remain visible until explicitly released.
+    @Test
+    void rippleHoldsUntilReleaseThenFades() throws InterruptedException {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Platform.runLater(() -> {
+            try {
+                Pane root = new Pane();
+                M3StateLayer stateLayer = new M3StateLayer();
+                root.getChildren().add(stateLayer);
+                Scene scene = new Scene(root, 100.0, 40.0);
+
+                root.applyCss();
+                stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+                stateLayer.playRipple(20.0, 20.0);
+
+                PauseTransition expansionPause = new PauseTransition(Duration.millis(430.0));
+                expansionPause.setOnFinished(event -> verifyRippleRelease(stateLayer, failure, latch));
+                expansionPause.play();
+            } catch (Throwable e) {
+                failure.set(e);
+                latch.countDown();
+            }
+        });
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Throwable exception = failure.get();
+        if (exception instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        if (exception instanceof Error error) {
+            throw error;
+        }
+        if (exception != null) {
+            throw new AssertionError(exception);
+        }
+    }
+
+    /// Verifies release behavior after the expansion phase has had time to complete.
+    private static void verifyRippleRelease(
+            M3StateLayer stateLayer,
+            AtomicReference<Throwable> failure,
+            CountDownLatch latch
+    ) {
+        try {
+            Region ripple = lookupRegion(stateLayer, ".m3-ripple");
+            assertTrue(ripple.getOpacity() > 0.1);
+
+            stateLayer.releaseRipple();
+
+            assertTrue(ripple.getOpacity() > 0.1);
+            assertTrue(stateLayer.isRippleAnimationRunning());
+
+            PauseTransition releasePause = new PauseTransition(Duration.millis(280.0));
+            releasePause.setOnFinished(event -> {
+                try {
+                    assertEquals(0.0, ripple.getOpacity(), 0.0001);
+                } catch (Throwable e) {
+                    failure.set(e);
+                } finally {
+                    latch.countDown();
+                }
+            });
+            releasePause.play();
+        } catch (Throwable e) {
+            failure.set(e);
+            latch.countDown();
+        }
     }
 
     /// Returns a region looked up below a node.

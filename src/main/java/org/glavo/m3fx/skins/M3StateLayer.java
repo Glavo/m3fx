@@ -39,7 +39,10 @@ final class M3StateLayer extends Pane {
     private static final double RIPPLE_START_OPACITY = 0.18;
 
     /// The duration used by the ripple expansion.
-    private static final Duration RIPPLE_DURATION = Duration.millis(360.0);
+    private static final Duration RIPPLE_EXPANSION_DURATION = Duration.millis(360.0);
+
+    /// The duration used after an interaction releases the ripple.
+    private static final Duration RIPPLE_RELEASE_DURATION = Duration.millis(220.0);
 
     /// The duration used when a state layer appears.
     private static final Duration STATE_LAYER_ENTER_DURATION = Duration.millis(120.0);
@@ -56,7 +59,7 @@ final class M3StateLayer extends Pane {
     /// The clip that bounds overlay and ripple visuals to the component shape.
     private final Path clip = new Path();
 
-    /// The ripple animation timeline.
+    /// The ripple expansion and release animation timeline.
     private final Timeline rippleAnimation = new Timeline();
 
     /// The overlay opacity animation timeline.
@@ -174,10 +177,10 @@ final class M3StateLayer extends Pane {
                         new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, Interpolator.EASE_OUT)
                 ),
                 new KeyFrame(
-                        RIPPLE_DURATION,
+                        RIPPLE_EXPANSION_DURATION,
                         new KeyValue(ripple.scaleXProperty(), 1.0, Interpolator.EASE_OUT),
                         new KeyValue(ripple.scaleYProperty(), 1.0, Interpolator.EASE_OUT),
-                        new KeyValue(ripple.opacityProperty(), 0.0, Interpolator.EASE_OUT)
+                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, Interpolator.EASE_OUT)
                 )
         );
         rippleAnimation.playFromStart();
@@ -186,6 +189,36 @@ final class M3StateLayer extends Pane {
     /// Plays a bounded ripple from the layer center.
     void playCenteredRipple() {
         playRipple(getWidth() / 2.0, getHeight() / 2.0);
+    }
+
+    /// Releases the active ripple and fades it out.
+    void releaseRipple() {
+        double startOpacity = ripple.getOpacity();
+        if (startOpacity <= 0.0) {
+            return;
+        }
+
+        double startScaleX = ripple.getScaleX();
+        double startScaleY = ripple.getScaleY();
+        rippleAnimation.stop();
+        ripple.setOpacity(startOpacity);
+        ripple.setScaleX(startScaleX);
+        ripple.setScaleY(startScaleY);
+        rippleAnimation.getKeyFrames().setAll(
+                new KeyFrame(
+                        Duration.ZERO,
+                        new KeyValue(ripple.scaleXProperty(), startScaleX, Interpolator.EASE_OUT),
+                        new KeyValue(ripple.scaleYProperty(), startScaleY, Interpolator.EASE_OUT),
+                        new KeyValue(ripple.opacityProperty(), startOpacity, Interpolator.EASE_OUT)
+                ),
+                new KeyFrame(
+                        RIPPLE_RELEASE_DURATION,
+                        new KeyValue(ripple.scaleXProperty(), 1.0, Interpolator.EASE_OUT),
+                        new KeyValue(ripple.scaleYProperty(), 1.0, Interpolator.EASE_OUT),
+                        new KeyValue(ripple.opacityProperty(), 0.0, Interpolator.EASE_OUT)
+                )
+        );
+        rippleAnimation.playFromStart();
     }
 
     /// Stops ripple animation and clears transient ripple state.
@@ -201,6 +234,11 @@ final class M3StateLayer extends Pane {
     /// Returns whether the overlay opacity is currently animating.
     boolean isOverlayOpacityAnimationRunning() {
         return overlayOpacityAnimation.getStatus() == Animation.Status.RUNNING;
+    }
+
+    /// Returns whether the ripple is currently animating.
+    boolean isRippleAnimationRunning() {
+        return rippleAnimation.getStatus() == Animation.Status.RUNNING;
     }
 
     /// Animates from the current overlay opacity to the owner CSS-resolved opacity.

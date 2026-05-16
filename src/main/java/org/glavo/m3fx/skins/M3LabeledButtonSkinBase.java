@@ -163,6 +163,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
         boolean shouldFire = button.isArmed() && button.contains(event.getX(), event.getY());
         mousePressed = false;
+        stateLayer.releaseRipple();
         button.disarm();
         if (shouldFire) {
             button.fire();
@@ -206,6 +207,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         } else if (event.getCode() == KeyCode.ENTER) {
             layoutStateLayer();
             stateLayer.playCenteredRipple();
+            stateLayer.releaseRipple();
             button.fire();
             event.consume();
         }
@@ -220,6 +222,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
         boolean shouldFire = button.isArmed() && !button.isDisabled();
         spaceKeyPressed = false;
+        stateLayer.releaseRipple();
         button.disarm();
         if (shouldFire) {
             button.fire();

@@ -263,6 +263,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         }
 
         updateValueFromMouse(event);
+        stateLayer.releaseRipple();
         slider.setValueChanging(false);
         event.consume();
     }
@@ -278,37 +279,43 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         switch (code) {
             case HOME -> {
                 slider.adjustValue(slider.getMin());
-                stateLayer.playCenteredRipple();
+                playReleasedCenteredRipple();
                 event.consume();
             }
             case END -> {
                 slider.adjustValue(slider.getMax());
-                stateLayer.playCenteredRipple();
+                playReleasedCenteredRipple();
                 event.consume();
             }
             case LEFT, DOWN -> {
                 slider.decrement();
-                stateLayer.playCenteredRipple();
+                playReleasedCenteredRipple();
                 event.consume();
             }
             case RIGHT, UP -> {
                 slider.increment();
-                stateLayer.playCenteredRipple();
+                playReleasedCenteredRipple();
                 event.consume();
             }
             case PAGE_DOWN -> {
                 slider.adjustValue(slider.getValue() - slider.getBlockIncrement());
-                stateLayer.playCenteredRipple();
+                playReleasedCenteredRipple();
                 event.consume();
             }
             case PAGE_UP -> {
                 slider.adjustValue(slider.getValue() + slider.getBlockIncrement());
-                stateLayer.playCenteredRipple();
+                playReleasedCenteredRipple();
                 event.consume();
             }
             default -> {
             }
         }
+    }
+
+    /// Plays a centered ripple for an instantaneous keyboard adjustment.
+    private void playReleasedCenteredRipple() {
+        stateLayer.playCenteredRipple();
+        stateLayer.releaseRipple();
     }
 
     /// Updates the value from a mouse event in the control coordinate space.

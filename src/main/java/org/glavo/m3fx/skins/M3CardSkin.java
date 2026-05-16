@@ -30,6 +30,9 @@ public class M3CardSkin extends SkinBase<M3Card> {
     /// Handles primary mouse presses on the card surface.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
+    /// Handles primary mouse releases on the card surface.
+    private final EventHandler<MouseEvent> mouseReleasedHandler = this::handleMouseReleased;
+
     /// Handles keyboard activation feedback.
     private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
 
@@ -66,6 +69,7 @@ public class M3CardSkin extends SkinBase<M3Card> {
         card.contentPaddingProperty().removeListener(tokenInvalidation);
         card.outlineWidthProperty().removeListener(tokenInvalidation);
         card.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        card.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         card.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         super.dispose();
     }
@@ -108,6 +112,7 @@ public class M3CardSkin extends SkinBase<M3Card> {
     /// Installs feedback handlers for pointer and keyboard interactions.
     private void installInteractionHandlers(M3Card card) {
         card.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        card.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         card.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
     }
 
@@ -119,11 +124,19 @@ public class M3CardSkin extends SkinBase<M3Card> {
         stateLayer.playRipple(event.getX(), event.getY());
     }
 
+    /// Fades card feedback after primary pointer release.
+    private void handleMouseReleased(MouseEvent event) {
+        if (event.getButton() == MouseButton.PRIMARY) {
+            stateLayer.releaseRipple();
+        }
+    }
+
     /// Plays card feedback for enter and space keyboard presses.
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
         if ((code == KeyCode.ENTER || code == KeyCode.SPACE) && !getSkinnable().isDisabled()) {
             stateLayer.playCenteredRipple();
+            stateLayer.releaseRipple();
         }
     }
 

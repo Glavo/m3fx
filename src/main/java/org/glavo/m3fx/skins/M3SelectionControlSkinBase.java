@@ -254,6 +254,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
 
         boolean shouldFire = control.isArmed() && control.contains(event.getX(), event.getY());
         mousePressed = false;
+        stateLayer.releaseRipple();
         control.disarm();
         if (shouldFire) {
             control.fire();
@@ -295,6 +296,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
             event.consume();
         } else if (event.getCode() == KeyCode.ENTER) {
             stateLayer.playCenteredRipple();
+            stateLayer.releaseRipple();
             control.fire();
             event.consume();
         }
@@ -309,6 +311,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
 
         boolean shouldFire = control.isArmed() && !control.isDisabled();
         spaceKeyPressed = false;
+        stateLayer.releaseRipple();
         control.disarm();
         if (shouldFire) {
             control.fire();

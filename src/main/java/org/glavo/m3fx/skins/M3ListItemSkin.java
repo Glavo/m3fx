@@ -216,6 +216,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     private void handleMouseClicked(MouseEvent event) {
         if (event.getButton() == MouseButton.PRIMARY && !getSkinnable().isDisabled()) {
             stateLayer.playRipple(event.getX(), event.getY());
+            stateLayer.releaseRipple();
             getSkinnable().fire();
             event.consume();
         }
@@ -226,6 +227,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         KeyCode code = event.getCode();
         if ((code == KeyCode.ENTER || code == KeyCode.SPACE) && !getSkinnable().isDisabled()) {
             stateLayer.playCenteredRipple();
+            stateLayer.releaseRipple();
             getSkinnable().fire();
             event.consume();
         }
