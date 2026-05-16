@@ -5,7 +5,7 @@
 - Build m3fx as a modular Material Design 3 component library for Java 17 and JavaFX 14.
 - Use `org.glavo:MonetFX:0.4.0` as the source of Material color system generation.
 - Make token design a first-class layer so controls are driven by theme tokens instead of hard-coded Material values.
-- Implement the first usable release around core controls: theme system, buttons, text fields, selection controls, progress controls, cards, dialogs, and snackbar.
+- Implement the first usable release around core controls: theme system, buttons, text fields, selection controls, progress controls, utility controls, list items, cards, dialogs, and snackbar.
 - Reserve a versioned profile model for future M3 Expressive support.
 
 ## Key Changes
@@ -21,7 +21,7 @@
   - `M3TokenSet` aggregates color, typography, shape, elevation, motion, state layer, and component tokens.
   - `M3ColorTokens` wraps MonetFX `ColorScheme` and maps MonetFX `ColorRole` values to CSS variables.
   - `M3TypographyTokens`, `M3ShapeTokens`, `M3ElevationTokens`, and `M3MotionTokens` provide baseline Material Design 3 defaults.
-  - `M3ComponentTokens` stores component-level defaults for the first core controls.
+  - `M3ComponentTokens` stores component-level defaults for implemented controls.
 - Add the theme API:
   - `M3Theme` holds the token set, MonetFX `ColorScheme`, selected profile, brightness, and density.
   - `M3ThemeManager` installs generated CSS tokens into a `Scene` or application user-agent stylesheet.
@@ -33,8 +33,8 @@
 - Implement first core controls:
   - Buttons: filled, tonal, outlined, text, elevated, and icon button.
   - Inputs: filled and outlined text field, plus password field.
-  - Selection: checkbox, radio button, switch, slider, and chips.
-  - Feedback and containment: linear progress, circular progress, card, dialog, and snackbar.
+  - Selection: checkbox, radio button, switch, slider, chips, segmented buttons, and segmented button groups.
+  - Feedback, utility, and containment: linear progress, circular progress, divider, badge, list item, card, dialog, and snackbar.
 - Implement controls with JavaFX `Control`, `Skin`, `CssMetaData`, and pseudo-class support.
 
 ## Public API And Code Style

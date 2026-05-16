@@ -49,20 +49,69 @@
     -m3-horizontal-padding: 0px;
 }
 
+.m3-segmented-button {
+    -m3-container-height: 40px;
+    -m3-container-shape: 999px;
+    -m3-horizontal-padding: 12px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 999px;
+    -fx-border-color: -m3-color-outline;
+    -fx-border-radius: 999px;
+    -fx-border-width: 1px;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+}
+
+.m3-segmented-button:selected {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-border-color: -m3-color-secondary-container;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-segmented-button-group {
+    -fx-spacing: -1px;
+    -fx-alignment: center-left;
+}
+
+.m3-segmented-button-single {
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+}
+
+.m3-segmented-button-first {
+    -fx-background-radius: 999px 0 0 999px;
+    -fx-border-radius: 999px 0 0 999px;
+}
+
+.m3-segmented-button-middle {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+
+.m3-segmented-button-last {
+    -fx-background-radius: 0 999px 999px 0;
+    -fx-border-radius: 0 999px 999px 0;
+}
+
 .m3-button:hover,
 .m3-chip:hover,
-.m3-icon-button:hover {
+.m3-icon-button:hover,
+.m3-segmented-button:hover {
     -fx-opacity: 0.92;
 }
 
 .m3-button:pressed,
 .m3-chip:pressed,
-.m3-icon-button:pressed {
+.m3-icon-button:pressed,
+.m3-segmented-button:pressed {
     -fx-opacity: 0.86;
 }
 
 .m3-button:disabled,
 .m3-chip:disabled,
+.m3-segmented-button:disabled,
 .m3-text-field:disabled,
 .m3-password-field:disabled {
     -fx-opacity: 0.38;

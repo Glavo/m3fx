@@ -11,6 +11,7 @@ import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -53,6 +54,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-label-large-font-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-indicator-size"));
@@ -61,12 +63,15 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button-first"));
         assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
         assertTrue(theme.toControlStyleRules().contains(".m3-badge"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.92"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
+        assertNotNull(theme.tokens().componentTokens().segmentedButton());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
         assertNotNull(theme.tokens().componentTokens().divider());
@@ -89,6 +94,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 16px"));
@@ -98,6 +104,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
+        assertNotNull(theme.tokens().componentTokens().segmentedButton());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
         assertNotNull(theme.tokens().componentTokens().divider());
@@ -128,7 +135,8 @@ final class M3ThemeTest {
         M3Button button = new M3Button("Button");
         M3TextField textField = new M3TextField();
         M3Chip chip = new M3Chip("Chip");
-        Pane root = new Pane(button, textField, chip);
+        M3SegmentedButton segmentedButton = new M3SegmentedButton("Week");
+        Pane root = new Pane(button, textField, chip, segmentedButton);
         Scene scene = new Scene(root);
 
         M3Theme expressiveTheme = M3Theme.fromSeed(
@@ -143,6 +151,7 @@ final class M3ThemeTest {
         assertEquals(48.0, button.getContainerHeight(), 0.0001);
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
+        assertEquals(48.0, segmentedButton.getContainerHeight(), 0.0001);
 
         M3Theme baselineTheme = M3Theme.defaultTheme();
         M3ThemeManager.install(scene, baselineTheme);
@@ -151,6 +160,7 @@ final class M3ThemeTest {
         assertEquals(40.0, button.getContainerHeight(), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
+        assertEquals(40.0, segmentedButton.getContainerHeight(), 0.0001);
         assertEquals(2, scene.getStylesheets().size());
     }
 

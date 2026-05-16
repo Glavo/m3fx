@@ -38,6 +38,8 @@ import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3Switch;
@@ -246,6 +248,17 @@ public final class M3FXDemoApp extends Application {
         M3Chip suggestionChip = new M3Chip("Suggestion");
         suggestionChip.setVariant(M3ChipVariant.SUGGESTION);
 
+        ToggleGroup segmentedGroup = new ToggleGroup();
+        M3SegmentedButton daySegment = new M3SegmentedButton("Day");
+        M3SegmentedButton weekSegment = new M3SegmentedButton("Week");
+        M3SegmentedButton monthSegment = new M3SegmentedButton("Month");
+        daySegment.setToggleGroup(segmentedGroup);
+        weekSegment.setToggleGroup(segmentedGroup);
+        monthSegment.setToggleGroup(segmentedGroup);
+        weekSegment.setSelected(true);
+        M3SegmentedButtonGroup segmentedButtons =
+                new M3SegmentedButtonGroup(daySegment, weekSegment, monthSegment);
+
         FlowPane controls = createFlow();
         controls.getChildren().addAll(
                 checkbox,
@@ -253,6 +266,7 @@ public final class M3FXDemoApp extends Application {
                 radioTwo,
                 switchControl,
                 slider,
+                segmentedButtons,
                 assistChip,
                 filterChip,
                 inputChip,

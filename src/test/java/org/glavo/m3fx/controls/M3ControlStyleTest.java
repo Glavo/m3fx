@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -213,6 +214,63 @@ final class M3ControlStyleTest {
         assertEquals(14.0, chip.getPadding().getRight(), 0.0001);
     }
 
+    /// Verifies that segmented button component token properties are styleable from CSS.
+    @Test
+    void segmentedButtonTokensAreStyleable() {
+        M3SegmentedButton button = new M3SegmentedButton("Week");
+        button.setStyle("-m3-container-height: 44px; -m3-container-shape: 12px; -m3-horizontal-padding: 18px;");
+
+        applyCss(button);
+
+        assertEquals(44.0, button.getContainerHeight(), 0.0001);
+        assertEquals(12.0, button.getContainerShape(), 0.0001);
+        assertEquals(18.0, button.getHorizontalPadding(), 0.0001);
+        assertEquals(44.0, button.getPrefHeight(), 0.0001);
+        assertEquals(18.0, button.getPadding().getLeft(), 0.0001);
+        assertEquals(18.0, button.getPadding().getRight(), 0.0001);
+    }
+
+    /// Verifies that segmented buttons can participate in a single-selection toggle group.
+    @Test
+    void segmentedButtonSupportsToggleGroupSelection() {
+        javafx.scene.control.ToggleGroup group = new javafx.scene.control.ToggleGroup();
+        M3SegmentedButton first = new M3SegmentedButton("First");
+        M3SegmentedButton second = new M3SegmentedButton("Second");
+        first.setToggleGroup(group);
+        second.setToggleGroup(group);
+
+        first.setSelected(true);
+        second.setSelected(true);
+
+        assertTrue(second.isSelected());
+        assertEquals(second, group.getSelectedToggle());
+    }
+
+    /// Verifies that segmented button groups assign segment position style classes.
+    @Test
+    void segmentedButtonGroupAssignsPositionStyleClasses() {
+        M3SegmentedButton first = new M3SegmentedButton("Day");
+        M3SegmentedButton second = new M3SegmentedButton("Week");
+        M3SegmentedButton third = new M3SegmentedButton("Month");
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(first, second, third);
+
+        assertTrue(group.getStyleClass().contains(M3SegmentedButtonGroup.STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
+        assertTrue(second.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
+
+        group.getChildren().remove(second);
+
+        assertFalse(second.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
+
+        group.getChildren().remove(first);
+
+        assertFalse(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS));
+    }
+
     /// Verifies that selection component token properties are styleable from CSS.
     @Test
     void selectionTokensAreStyleable() {
@@ -392,6 +450,8 @@ final class M3ControlStyleTest {
         assertTrue(new M3Slider().getStyleClass().contains(M3Slider.STYLE_CLASS));
         assertTrue(chip.getStyleClass().contains(M3Chip.STYLE_CLASS));
         assertTrue(chip.getStyleClass().contains(M3ChipVariant.FILTER.getStyleClass()));
+        assertTrue(new M3SegmentedButton("Day").getStyleClass().contains(M3SegmentedButton.STYLE_CLASS));
+        assertTrue(new M3SegmentedButtonGroup().getStyleClass().contains(M3SegmentedButtonGroup.STYLE_CLASS));
         assertTrue(new M3Divider().getStyleClass().contains(M3Divider.STYLE_CLASS));
         assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
         assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));

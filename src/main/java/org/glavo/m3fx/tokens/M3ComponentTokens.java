@@ -12,6 +12,7 @@ import java.util.Objects;
 /// @param textButton tokens used by text buttons
 /// @param elevatedButton tokens used by elevated buttons
 /// @param iconButton tokens used by icon buttons
+/// @param segmentedButton tokens used by segmented buttons
 /// @param field tokens used by text input controls
 /// @param selection tokens used by selection controls
 /// @param slider tokens used by sliders
@@ -31,6 +32,7 @@ public record M3ComponentTokens(
         ButtonTokens textButton,
         ButtonTokens elevatedButton,
         ButtonTokens iconButton,
+        ButtonTokens segmentedButton,
         FieldTokens field,
         SelectionTokens selection,
         SliderTokens slider,
@@ -51,6 +53,7 @@ public record M3ComponentTokens(
         Objects.requireNonNull(textButton, "textButton");
         Objects.requireNonNull(elevatedButton, "elevatedButton");
         Objects.requireNonNull(iconButton, "iconButton");
+        Objects.requireNonNull(segmentedButton, "segmentedButton");
         Objects.requireNonNull(field, "field");
         Objects.requireNonNull(selection, "selection");
         Objects.requireNonNull(slider, "slider");
@@ -72,6 +75,7 @@ public record M3ComponentTokens(
 
         double buttonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double iconButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
+        double segmentedButtonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
@@ -87,6 +91,7 @@ public record M3ComponentTokens(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 12.0),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
                 new ButtonTokens(iconButtonSize, shapeTokens.full(), 0.0),
+                new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), 12.0),
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
@@ -118,6 +123,7 @@ public record M3ComponentTokens(
         append(builder, "button-text", textButton);
         append(builder, "button-elevated", elevatedButton);
         append(builder, "button-icon", iconButton);
+        append(builder, "segmented-button", segmentedButton);
         append(builder, field);
         append(builder, selection);
         append(builder, slider);
@@ -141,6 +147,8 @@ public record M3ComponentTokens(
         appendButtonRule(builder, ".m3-text-button", textButton);
         appendButtonRule(builder, ".m3-elevated-button", elevatedButton);
         appendButtonRule(builder, ".m3-icon-button", iconButton);
+        appendButtonRule(builder, ".m3-segmented-button", segmentedButton);
+        appendSegmentedButtonPositionRules(builder, segmentedButton);
         appendFieldRule(builder, ".m3-text-field, .m3-password-field", field);
         appendFilledFieldRule(builder, ".m3-filled-field", field);
         appendOutlinedFieldRule(builder, ".m3-outlined-field", field);
@@ -260,6 +268,31 @@ public record M3ComponentTokens(
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(tokens.containerShape()));
+        endRule(builder);
+    }
+
+    /// Appends segmented button position shape CSS rules.
+    private static void appendSegmentedButtonPositionRules(StringBuilder builder, ButtonTokens tokens) {
+        String radius = M3TokenCss.pixels(tokens.containerShape());
+        appendSegmentedButtonPositionRule(builder, ".m3-segmented-button-single", radius, radius, radius, radius);
+        appendSegmentedButtonPositionRule(builder, ".m3-segmented-button-first", radius, "0", "0", radius);
+        appendSegmentedButtonPositionRule(builder, ".m3-segmented-button-middle", "0", "0", "0", "0");
+        appendSegmentedButtonPositionRule(builder, ".m3-segmented-button-last", "0", radius, radius, "0");
+    }
+
+    /// Appends a segmented button position shape CSS rule.
+    private static void appendSegmentedButtonPositionRule(
+            StringBuilder builder,
+            String selector,
+            String topLeft,
+            String topRight,
+            String bottomRight,
+            String bottomLeft
+    ) {
+        String radii = topLeft + " " + topRight + " " + bottomRight + " " + bottomLeft;
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", radii);
+        appendDeclaration(builder, "-fx-border-radius", radii);
         endRule(builder);
     }
 
