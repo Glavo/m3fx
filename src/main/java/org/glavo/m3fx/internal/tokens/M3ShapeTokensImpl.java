@@ -6,7 +6,7 @@ package org.glavo.m3fx.internal.tokens;
 import org.glavo.m3fx.tokens.M3ShapeTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Default immutable implementation of {@link M3ShapeTokens}.
+/// Default immutable implementation of [M3ShapeTokens].
 ///
 /// @param extraSmall the extra-small corner radius
 /// @param small the small corner radius

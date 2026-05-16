@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Default immutable implementation of {@link M3Theme}.
+/// Default immutable implementation of [M3Theme].
 ///
 /// @param profile the Material Design 3 token profile
 /// @param colorScheme the MonetFX color scheme

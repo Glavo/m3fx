@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Default immutable implementation of {@link M3ComponentTokens}.
+/// Default immutable implementation of [M3ComponentTokens].
 ///
 /// @param filledButton tokens used by filled buttons
 /// @param tonalButton tokens used by filled tonal buttons

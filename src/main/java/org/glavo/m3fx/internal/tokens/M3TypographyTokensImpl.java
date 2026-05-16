@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Default immutable implementation of {@link M3TypographyTokens}.
+/// Default immutable implementation of [M3TypographyTokens].
 ///
 /// @param displayLarge the display large text style
 /// @param headlineMedium the headline medium text style

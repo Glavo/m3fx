@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Default immutable implementation of {@link M3TokenSet}.
+/// Default immutable implementation of [M3TokenSet].
 ///
 /// @param profile the profile that produced this token set
 /// @param colorTokens the color tokens

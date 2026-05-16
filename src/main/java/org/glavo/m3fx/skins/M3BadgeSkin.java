@@ -9,7 +9,7 @@ import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.controls.M3Badge;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// The default skin for {@link M3Badge}.
+/// The default skin for [M3Badge].
 @NotNullByDefault
 public class M3BadgeSkin extends SkinBase<M3Badge> {
     /// The visible badge label.

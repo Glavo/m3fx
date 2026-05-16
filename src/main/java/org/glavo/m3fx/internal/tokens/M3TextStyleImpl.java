@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Default immutable implementation of {@link M3TextStyle}.
+/// Default immutable implementation of [M3TextStyle].
 ///
 /// @param fontFamily the font family name
 /// @param size the font size in pixels

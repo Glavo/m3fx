@@ -21,7 +21,7 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// The default skin for {@link M3ListItem}.
+/// The default skin for [M3ListItem].
 @NotNullByDefault
 public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// The root container that receives background styling.

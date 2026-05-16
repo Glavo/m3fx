@@ -11,7 +11,7 @@ import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3Divider;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// The default skin for {@link M3Divider}.
+/// The default skin for [M3Divider].
 @NotNullByDefault
 public class M3DividerSkin extends SkinBase<M3Divider> {
     /// The container that applies divider insets.

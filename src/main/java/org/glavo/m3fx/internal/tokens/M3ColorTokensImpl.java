@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Default immutable implementation of {@link M3ColorTokens}.
+/// Default immutable implementation of [M3ColorTokens].
 ///
 /// @param colorScheme the MonetFX color scheme used by this token set
 @NotNullByDefault

@@ -6,7 +6,7 @@ package org.glavo.m3fx.internal.tokens;
 import org.glavo.m3fx.tokens.M3Density;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Default immutable implementation of {@link M3Density}.
+/// Default immutable implementation of [M3Density].
 ///
 /// @param scale the density scale where zero is the baseline Material density
 @NotNullByDefault

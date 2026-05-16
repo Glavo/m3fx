@@ -6,7 +6,7 @@ package org.glavo.m3fx.internal.tokens;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Default immutable implementation of {@link M3StateLayerTokens}.
+/// Default immutable implementation of [M3StateLayerTokens].
 ///
 /// @param hoverOpacity the hover state layer opacity
 /// @param focusOpacity the focus state layer opacity

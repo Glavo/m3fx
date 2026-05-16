@@ -6,7 +6,7 @@ package org.glavo.m3fx.internal.tokens;
 import org.glavo.m3fx.tokens.M3ElevationTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Default immutable implementation of {@link M3ElevationTokens}.
+/// Default immutable implementation of [M3ElevationTokens].
 ///
 /// @param level0 elevation level zero
 /// @param level1 elevation level one

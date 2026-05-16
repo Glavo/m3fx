@@ -14,7 +14,7 @@ import org.glavo.m3fx.controls.M3Snackbar;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// The default skin for {@link M3Snackbar}.
+/// The default skin for [M3Snackbar].
 @NotNullByDefault
 public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     /// The snackbar layout container.

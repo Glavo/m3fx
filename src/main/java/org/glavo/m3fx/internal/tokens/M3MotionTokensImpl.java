@@ -6,7 +6,7 @@ package org.glavo.m3fx.internal.tokens;
 import org.glavo.m3fx.tokens.M3MotionTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Default immutable implementation of {@link M3MotionTokens}.
+/// Default immutable implementation of [M3MotionTokens].
 ///
 /// @param shortDuration the short duration token
 /// @param mediumDuration the medium duration token

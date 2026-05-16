@@ -11,7 +11,7 @@ import org.glavo.m3fx.controls.M3Card;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// The default skin for {@link M3Card}.
+/// The default skin for [M3Card].
 @NotNullByDefault
 public class M3CardSkin extends SkinBase<M3Card> {
     /// The container that hosts the card content.
