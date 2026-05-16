@@ -27,14 +27,26 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     /// Returns the full corner radius used for pills.
     double full();
 
+    /// Creates shape tokens.
+    static M3ShapeTokens create(
+            double extraSmall,
+            double small,
+            double medium,
+            double large,
+            double extraLarge,
+            double full
+    ) {
+        return new M3ShapeTokensImpl(extraSmall, small, medium, large, extraLarge, full);
+    }
+
     /// Returns baseline Material Design 3 shape tokens.
     static M3ShapeTokens baseline() {
-        return new M3ShapeTokensImpl(4.0, 8.0, 12.0, 16.0, 28.0, 999.0);
+        return create(4.0, 8.0, 12.0, 16.0, 28.0, 999.0);
     }
 
     /// Returns provisional expressive shape tokens.
     static M3ShapeTokens expressive() {
-        return new M3ShapeTokensImpl(6.0, 10.0, 16.0, 24.0, 32.0, 999.0);
+        return create(6.0, 10.0, 16.0, 24.0, 32.0, 999.0);
     }
 
     /// Converts shape tokens into inline JavaFX CSS declarations.

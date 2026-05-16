@@ -68,6 +68,51 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by list items.
     ListItemTokens listItem();
 
+    /// Creates component tokens from explicit component token values.
+    static M3ComponentTokens create(
+            ButtonTokens filledButton,
+            ButtonTokens tonalButton,
+            ButtonTokens outlinedButton,
+            ButtonTokens textButton,
+            ButtonTokens elevatedButton,
+            ButtonTokens iconButton,
+            FabTokens floatingActionButton,
+            ButtonTokens segmentedButton,
+            FieldTokens field,
+            SelectionTokens selection,
+            SliderTokens slider,
+            ChipTokens chip,
+            ProgressTokens progress,
+            CardTokens card,
+            DialogTokens dialog,
+            SnackbarTokens snackbar,
+            DividerTokens divider,
+            BadgeTokens badge,
+            ListItemTokens listItem
+    ) {
+        return new M3ComponentTokensImpl(
+                filledButton,
+                tonalButton,
+                outlinedButton,
+                textButton,
+                elevatedButton,
+                iconButton,
+                floatingActionButton,
+                segmentedButton,
+                field,
+                selection,
+                slider,
+                chip,
+                progress,
+                card,
+                dialog,
+                snackbar,
+                divider,
+                badge,
+                listItem
+        );
+    }
+
     /// Creates component tokens for a profile.
     static M3ComponentTokens create(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
         Objects.requireNonNull(profile, "profile");
@@ -88,7 +133,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
         double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
 
-        return new M3ComponentTokensImpl(
+        return create(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),

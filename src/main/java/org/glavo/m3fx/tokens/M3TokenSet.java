@@ -36,6 +36,29 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
     /// Returns the component tokens.
     M3ComponentTokens componentTokens();
 
+    /// Creates a token set from explicit token groups.
+    static M3TokenSet create(
+            M3Profile profile,
+            M3ColorTokens colorTokens,
+            M3TypographyTokens typographyTokens,
+            M3ShapeTokens shapeTokens,
+            M3ElevationTokens elevationTokens,
+            M3MotionTokens motionTokens,
+            M3StateLayerTokens stateLayerTokens,
+            M3ComponentTokens componentTokens
+    ) {
+        return new M3TokenSetImpl(
+                profile,
+                colorTokens,
+                typographyTokens,
+                shapeTokens,
+                elevationTokens,
+                motionTokens,
+                stateLayerTokens,
+                componentTokens
+        );
+    }
+
     /// Creates a complete default token set for a profile and color scheme.
     static M3TokenSet create(M3Profile profile, ColorScheme colorScheme, M3Density density) {
         Objects.requireNonNull(profile, "profile");
@@ -54,7 +77,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
         M3StateLayerTokens stateLayerTokens = M3StateLayerTokens.baseline();
         M3ComponentTokens componentTokens = M3ComponentTokens.create(profile, shapeTokens, density);
 
-        return new M3TokenSetImpl(
+        return create(
                 profile,
                 colorTokens,
                 typographyTokens,

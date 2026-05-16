@@ -18,9 +18,14 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     /// Returns the long duration token.
     int longDuration();
 
+    /// Creates motion duration tokens.
+    static M3MotionTokens create(int shortDuration, int mediumDuration, int longDuration) {
+        return new M3MotionTokensImpl(shortDuration, mediumDuration, longDuration);
+    }
+
     /// Returns baseline motion tokens.
     static M3MotionTokens baseline() {
-        return new M3MotionTokensImpl(100, 250, 500);
+        return create(100, 250, 500);
     }
 
     /// Converts motion tokens into inline JavaFX CSS declarations.

@@ -27,9 +27,28 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// Returns the disabled content opacity.
     double disabledContentOpacity();
 
+    /// Creates state layer opacity tokens.
+    static M3StateLayerTokens create(
+            double hoverOpacity,
+            double focusOpacity,
+            double pressedOpacity,
+            double draggedOpacity,
+            double disabledContainerOpacity,
+            double disabledContentOpacity
+    ) {
+        return new M3StateLayerTokensImpl(
+                hoverOpacity,
+                focusOpacity,
+                pressedOpacity,
+                draggedOpacity,
+                disabledContainerOpacity,
+                disabledContentOpacity
+        );
+    }
+
     /// Returns baseline Material Design 3 state layer tokens.
     static M3StateLayerTokens baseline() {
-        return new M3StateLayerTokensImpl(0.08, 0.10, 0.10, 0.16, 0.12, 0.38);
+        return create(0.08, 0.10, 0.10, 0.16, 0.12, 0.38);
     }
 
     /// Converts the state tokens into root-level JavaFX CSS declarations.

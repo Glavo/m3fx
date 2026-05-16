@@ -20,7 +20,9 @@ import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.m3fx.tokens.M3TokenSet;
 import org.glavo.monetfx.Brightness;
+import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -126,6 +128,42 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().divider());
         assertNotNull(theme.tokens().componentTokens().badge());
         assertNotNull(theme.tokens().componentTokens().listItem());
+    }
+
+    /// Verifies that convenience theme factories use the expected defaults.
+    @Test
+    void createsThemesFromConvenienceFactories() {
+        Color seedColor = Color.web("#386a20");
+        ColorScheme colorScheme = ColorScheme.fromSeed(seedColor);
+
+        M3Theme darkBaselineTheme = M3Theme.fromSeed(seedColor, Brightness.DARK);
+        M3Theme expressiveTheme = M3Theme.fromSeed(seedColor, M3Profile.EXPRESSIVE_2025, Brightness.LIGHT);
+        M3Theme colorSchemeTheme = M3Theme.fromColorScheme(colorScheme);
+        M3Theme expressiveColorSchemeTheme = M3Theme.fromColorScheme(M3Profile.EXPRESSIVE_2025, colorScheme);
+
+        assertEquals(M3Profile.BASELINE_2021, darkBaselineTheme.profile());
+        assertEquals(0.0, darkBaselineTheme.density().scale(), 0.0001);
+        assertEquals(M3Profile.EXPRESSIVE_2025, expressiveTheme.profile());
+        assertEquals(0.0, expressiveTheme.density().scale(), 0.0001);
+        assertEquals(M3Profile.BASELINE_2021, colorSchemeTheme.profile());
+        assertSame(colorScheme, colorSchemeTheme.colorScheme());
+        assertEquals(M3Profile.EXPRESSIVE_2025, expressiveColorSchemeTheme.profile());
+        assertSame(colorScheme, expressiveColorSchemeTheme.colorScheme());
+    }
+
+    /// Verifies that a theme can reuse an explicit token set.
+    @Test
+    void createsThemeFromExplicitTokenSet() {
+        ColorScheme colorScheme = ColorScheme.fromSeed(Color.web("#6750a4"));
+        M3Density density = M3Density.of(2.0);
+        M3TokenSet tokenSet = M3TokenSet.create(M3Profile.BASELINE_2021, colorScheme, density);
+
+        M3Theme theme = M3Theme.fromTokenSet(M3Profile.BASELINE_2021, colorScheme, density, tokenSet);
+
+        assertSame(tokenSet, theme.tokens());
+        assertSame(colorScheme, theme.colorScheme());
+        assertSame(density, theme.density());
+        assertEquals(48.0, theme.tokens().componentTokens().filledButton().height(), 0.0001);
     }
 
     /// Verifies that installing a theme on a scene is idempotent.

@@ -27,9 +27,21 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
     /// Returns elevation level five.
     double level5();
 
+    /// Creates elevation tokens.
+    static M3ElevationTokens create(
+            double level0,
+            double level1,
+            double level2,
+            double level3,
+            double level4,
+            double level5
+    ) {
+        return new M3ElevationTokensImpl(level0, level1, level2, level3, level4, level5);
+    }
+
     /// Returns baseline elevation tokens.
     static M3ElevationTokens baseline() {
-        return new M3ElevationTokensImpl(0.0, 1.0, 3.0, 6.0, 8.0, 12.0);
+        return create(0.0, 1.0, 3.0, 6.0, 8.0, 12.0);
     }
 
     /// Converts elevation tokens into inline JavaFX CSS declarations.

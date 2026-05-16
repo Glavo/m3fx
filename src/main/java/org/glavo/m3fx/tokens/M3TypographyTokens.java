@@ -27,9 +27,28 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     /// Returns the body medium text style.
     M3TextStyle bodyMedium();
 
+    /// Creates typography tokens.
+    static M3TypographyTokens create(
+            M3TextStyle displayLarge,
+            M3TextStyle headlineMedium,
+            M3TextStyle titleLarge,
+            M3TextStyle labelLarge,
+            M3TextStyle bodyLarge,
+            M3TextStyle bodyMedium
+    ) {
+        return new M3TypographyTokensImpl(
+                displayLarge,
+                headlineMedium,
+                titleLarge,
+                labelLarge,
+                bodyLarge,
+                bodyMedium
+        );
+    }
+
     /// Returns the baseline Material Design 3 typography tokens.
     static M3TypographyTokens baseline() {
-        return new M3TypographyTokensImpl(
+        return create(
                 M3TextStyle.create("System", 57.0, 64.0, 400),
                 M3TextStyle.create("System", 28.0, 36.0, 400),
                 M3TextStyle.create("System", 22.0, 28.0, 400),
@@ -41,7 +60,7 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
 
     /// Returns provisional expressive typography tokens.
     static M3TypographyTokens expressive() {
-        return new M3TypographyTokensImpl(
+        return create(
                 M3TextStyle.create("System", 64.0, 72.0, 500),
                 M3TextStyle.create("System", 32.0, 40.0, 500),
                 M3TextStyle.create("System", 24.0, 32.0, 500),
