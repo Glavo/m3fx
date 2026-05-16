@@ -763,6 +763,8 @@ final class M3ControlStyleTest {
         assertFalse(onThumb.isManaged());
         assertTrue(onThumb.getLayoutX() > offThumb.getLayoutX());
         assertTrue(onThumb.getWidth() > offThumb.getWidth());
+        assertEquals(8.0, offThumb.getLayoutX(), 0.0001);
+        assertEquals(24.0, onThumb.getLayoutX(), 0.0001);
     }
 
     /// Verifies that radio indicators use circular Material styling.

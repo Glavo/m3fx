@@ -27,8 +27,11 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// The switch track height.
     private static final double TRACK_HEIGHT = 32.0;
 
-    /// The horizontal padding between the track and thumb.
-    private static final double TRACK_PADDING = 4.0;
+    /// The off-state thumb center within the track.
+    private static final double OFF_THUMB_CENTER_X = 16.0;
+
+    /// The on-state thumb center within the track.
+    private static final double ON_THUMB_CENTER_X = 36.0;
 
     /// The visual switch track.
     private final StackPane box = new StackPane();
@@ -97,8 +100,8 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     private void layoutThumb() {
         double thumbWidth = thumb.prefWidth(-1.0);
         double thumbHeight = thumb.prefHeight(-1.0);
-        double travel = Math.max(0.0, TRACK_WIDTH - TRACK_PADDING * 2.0 - thumbWidth);
-        double thumbX = TRACK_PADDING + travel * thumbPosition.get();
+        double thumbCenterX = OFF_THUMB_CENTER_X + (ON_THUMB_CENTER_X - OFF_THUMB_CENTER_X) * thumbPosition.get();
+        double thumbX = thumbCenterX - thumbWidth / 2.0;
         double thumbY = (TRACK_HEIGHT - thumbHeight) / 2.0;
         thumb.resizeRelocate(thumbX, thumbY, thumbWidth, thumbHeight);
     }
