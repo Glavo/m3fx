@@ -42,6 +42,9 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// The bounded state layer used for hover, focus, pressed, and ripple feedback.
     private final M3StateLayer stateLayer = new M3StateLayer();
 
+    /// Animates CSS-resolved elevation changes.
+    private final M3CssEffectTransition effectTransition;
+
     /// Handles primary mouse presses.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
@@ -83,8 +86,10 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// Creates an animated labeled button skin.
     M3LabeledButtonSkinBase(C control) {
         super(control);
+        effectTransition = new M3CssEffectTransition(control, control);
         getChildren().add(0, stateLayer);
         stateLayer.installStateTransitions(control);
+        effectTransition.install();
         control.setScaleX(1.0);
         control.setScaleY(1.0);
         installInteractionHandlers(control);
@@ -106,6 +111,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         getSkinnable().disabledProperty().removeListener(disabledListener);
         resetInteractionState();
         stateLayer.uninstallStateTransitions();
+        effectTransition.uninstall();
         uninstallInteractionHandlers(getSkinnable());
         super.dispose();
     }

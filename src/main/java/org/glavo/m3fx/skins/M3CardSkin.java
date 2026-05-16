@@ -27,6 +27,9 @@ public class M3CardSkin extends SkinBase<M3Card> {
     /// The bounded state layer for card feedback.
     private final M3StateLayer stateLayer = new M3StateLayer();
 
+    /// Animates CSS-resolved elevation changes on the card container.
+    private final M3CssEffectTransition effectTransition;
+
     /// Handles primary mouse presses on the card surface.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
@@ -46,11 +49,13 @@ public class M3CardSkin extends SkinBase<M3Card> {
     /// Creates a card skin.
     public M3CardSkin(M3Card control) {
         super(control);
+        effectTransition = new M3CssEffectTransition(control, container);
         container.getStyleClass().add("m3-card-container");
         getChildren().add(container);
         updateContent(control.getContent());
         updateTokenStyles();
         stateLayer.installStateTransitions(control);
+        effectTransition.install();
         installInteractionHandlers(control);
         control.contentProperty().addListener(contentListener);
         control.containerShapeProperty().addListener(tokenInvalidation);
@@ -63,6 +68,7 @@ public class M3CardSkin extends SkinBase<M3Card> {
     public void dispose() {
         M3Card card = getSkinnable();
         stateLayer.uninstallStateTransitions();
+        effectTransition.uninstall();
         stateLayer.reset();
         card.contentProperty().removeListener(contentListener);
         card.containerShapeProperty().removeListener(tokenInvalidation);

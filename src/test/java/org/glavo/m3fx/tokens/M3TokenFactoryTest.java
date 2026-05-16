@@ -47,6 +47,8 @@ final class M3TokenFactoryTest {
         assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-disabled-content-opacity: 0.42"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:pressed .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains("-fx-opacity: 0.13"));
+        assertTrue(elevation.toControlStyleRules().contains(".m3-elevated-button:hover"));
+        assertTrue(elevation.toControlStyleRules().contains(".m3-fab:hover"));
     }
 
     /// Verifies that component and token set factories preserve explicit token groups.
@@ -82,6 +84,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-medium: 220ms"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-opacity: 0.15"));
     }
 

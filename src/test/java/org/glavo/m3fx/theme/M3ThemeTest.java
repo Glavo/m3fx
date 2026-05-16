@@ -90,6 +90,8 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.1"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.38"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-fab:hover"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
         assertNotNull(theme.tokens().componentTokens().segmentedButton());

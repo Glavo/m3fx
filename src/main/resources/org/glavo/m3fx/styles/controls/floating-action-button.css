@@ -12,6 +12,16 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 8, 0.18, 0, 2);
 }
 
+.m3-fab:hover,
+.m3-fab:focused {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 12, 0.18, 0, 4);
+}
+
+.m3-fab:armed,
+.m3-fab:pressed {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 8, 0.18, 0, 2);
+}
+
 .m3-small-fab {
     -m3-container-size: 40px;
     -m3-container-shape: 12px;

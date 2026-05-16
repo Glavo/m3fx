@@ -109,6 +109,16 @@
     -fx-background-color: -m3-color-primary;
 }
 
+.m3-button.m3-elevated-button:hover,
+.m3-button.m3-elevated-button:focused {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);
+}
+
+.m3-button.m3-elevated-button:armed,
+.m3-button.m3-elevated-button:pressed {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 4, 0.18, 0, 1);
+}
+
 .m3-icon-button {
     -m3-container-height: 40px;
     -m3-horizontal-padding: 0px;
