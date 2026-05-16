@@ -55,6 +55,8 @@ import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.controls.M3SearchBar;
+import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3Slider;
@@ -201,6 +203,7 @@ public final class M3FXDemoApp extends Application {
         return List.of(
                 new DemoPage("Buttons", "Variants, icon buttons, and floating actions", this::createButtonsPage),
                 new DemoPage("Text Fields", "Filled, outlined, populated, and disabled fields", this::createTextFieldsPage),
+                new DemoPage("Search", "Search bars, actions, and result surfaces", this::createSearchPage),
                 new DemoPage("Checkboxes", "Checked, unchecked, and disabled states", this::createCheckboxesPage),
                 new DemoPage("Radio Buttons", "Grouped single selection states", this::createRadioButtonsPage),
                 new DemoPage("Switches", "On, off, and disabled switch states", this::createSwitchesPage),
@@ -367,6 +370,30 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup("Filled", filled, filledText, filledDisabled),
                 createShowcaseGroup("Outlined", outlined, outlinedText, password),
                 createShowcaseGroup("Text Areas", filledArea, outlinedArea)
+        );
+    }
+
+    /// Creates the search component page.
+    private Node createSearchPage() {
+        M3SearchBar searchBar = new M3SearchBar("Search M3FX");
+        searchBar.setPrefWidth(420.0);
+        searchBar.getTrailingActions().add(createIconButton("C"));
+
+        M3SearchBar populated = new M3SearchBar("Search M3FX");
+        populated.setText("Buttons");
+        populated.setPrefWidth(420.0);
+
+        M3SearchView searchView = new M3SearchView("Search components");
+        searchView.setPrefWidth(520.0);
+        searchView.getResults().addAll(
+                createSearchResult("Buttons", "Filled, tonal, outlined, text, and elevated variants"),
+                createSearchResult("Menus", "Menu surfaces, selected rows, and menu buttons"),
+                createSearchResult("Navigation", "Bars, rails, drawers, and destination items")
+        );
+
+        return createGallery(
+                createShowcaseGroup("Search Bars", searchBar, populated),
+                createShowcaseGroup("Search View", searchView)
         );
     }
 
@@ -746,6 +773,14 @@ public final class M3FXDemoApp extends Application {
         textArea.setDisable(disabled);
         textArea.setPrefWidth(360.0);
         return textArea;
+    }
+
+    /// Creates a sample search result row.
+    private static M3ListItem createSearchResult(String title, String supportingText) {
+        M3ListItem item = new M3ListItem(title);
+        item.setSupportingText(supportingText);
+        item.setLeading(createNavigationIcon(title.substring(0, 1)));
+        return item;
     }
 
     /// Creates a sample menu item.

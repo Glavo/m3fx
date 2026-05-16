@@ -783,6 +783,56 @@ final class M3ControlStyleTest {
         assertFalse(menuButton.isShowing());
     }
 
+    /// Verifies that search bars delegate text and action APIs to their embedded editor.
+    @Test
+    void searchBarDelegatesTextAndActions() {
+        M3SearchBar searchBar = new M3SearchBar("Search");
+        AtomicInteger actions = new AtomicInteger();
+        searchBar.setOnAction(event -> actions.incrementAndGet());
+
+        searchBar.setText("M3FX");
+        searchBar.fire();
+
+        assertEquals("M3FX", searchBar.getText());
+        assertEquals("M3FX", searchBar.getEditor().getText());
+        assertEquals("Search", searchBar.getPromptText());
+        assertEquals(1, actions.get());
+    }
+
+    /// Verifies that search component token metrics apply through the active theme.
+    @Test
+    void searchComponentsApplyTokenMetrics() {
+        M3SearchBar searchBar = new M3SearchBar("Search");
+        M3SearchView searchView = new M3SearchView("Search");
+        M3ListItem result = new M3ListItem("Result");
+        searchView.getResults().add(result);
+        Pane root = new Pane(searchBar, searchView);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, searchBar.getPadding().getRight(), 0.0001);
+        assertEquals(12.0, searchBar.getSpacing(), 0.0001);
+        assertEquals(56.0, result.getOneLineHeight(), 0.0001);
+    }
+
+    /// Verifies that search views own a search bar and mutable result list.
+    @Test
+    void searchViewOwnsSearchBarAndResults() {
+        M3SearchView searchView = new M3SearchView("Find");
+        M3ListItem result = new M3ListItem("Result");
+
+        searchView.setText("button");
+        searchView.getResults().add(result);
+
+        assertEquals("button", searchView.getSearchBar().getText());
+        assertEquals("Find", searchView.getPromptText());
+        assertEquals(result, searchView.getResults().get(0));
+    }
+
     /// Verifies that focused text input states keep Material field colors.
     @Test
     void textInputStateStylesPreserveVariantColors() {
@@ -2285,6 +2335,8 @@ final class M3ControlStyleTest {
         assertTrue(new M3Menu().getStyleClass().contains(M3Menu.STYLE_CLASS));
         assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
         assertTrue(new M3MenuButton("More").getStyleClass().contains(M3MenuButton.STYLE_CLASS));
+        assertTrue(new M3SearchBar().getStyleClass().contains(M3SearchBar.STYLE_CLASS));
+        assertTrue(new M3SearchView().getStyleClass().contains(M3SearchView.STYLE_CLASS));
         assertTrue(new M3CheckBox().getStyleClass().contains(M3CheckBox.STYLE_CLASS));
         assertTrue(new M3RadioButton().getStyleClass().contains(M3RadioButton.STYLE_CLASS));
         assertTrue(new M3Switch().getStyleClass().contains(M3Switch.STYLE_CLASS));
@@ -2319,7 +2371,9 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3TextField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
-        assertTrue(new M3Menu().getStylesheets().stream().anyMatch(stylesheet -> stylesheet.endsWith("/styles/controls/menu.css")));
+        assertUserAgentStylesheet(new M3Menu(), "/styles/controls/menu.css");
+        assertUserAgentStylesheet(new M3SearchBar(), "/styles/controls/search.css");
+        assertUserAgentStylesheet(new M3SearchView(), "/styles/controls/search.css");
         assertUserAgentStylesheet(new M3CheckBox(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3RadioButton(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3Switch(), "/styles/controls/selection.css");

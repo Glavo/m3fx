@@ -47,6 +47,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by menus.
     MenuTokens menu();
 
+    /// Returns tokens used by search components.
+    SearchTokens search();
+
     /// Returns tokens used by selection controls.
     SelectionTokens selection();
 
@@ -106,6 +109,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             FieldTokens field,
             TextAreaTokens textArea,
             MenuTokens menu,
+            SearchTokens search,
             SelectionTokens selection,
             SliderTokens slider,
             ChipTokens chip,
@@ -135,6 +139,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 field,
                 textArea,
                 menu,
+                search,
                 selection,
                 slider,
                 chip,
@@ -170,6 +175,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double textAreaHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 128.0 : 112.0);
         double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
+        double searchBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double searchViewResultHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
@@ -213,6 +220,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
                 new TextAreaTokens(textAreaHeight, shapeTokens.extraSmall(), 16.0, 16.0),
                 new MenuTokens(shapeTokens.extraSmall(), 8.0, menuItemHeight, shapeTokens.extraSmall(), 12.0, 12.0),
+                new SearchTokens(searchBarHeight, shapeTokens.full(), 16.0, 12.0, 28.0, 8.0, searchViewResultHeight),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
                 new ChipTokens(chipHeight, shapeTokens.small(), 16.0),
@@ -284,6 +292,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, field());
         append(builder, textArea());
         append(builder, menu());
+        append(builder, search());
         append(builder, selection());
         append(builder, slider());
         append(builder, chip());
@@ -344,6 +353,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendOutlinedTextAreaRule(builder, ".m3-text-area.m3-outlined-field", textArea());
         appendMenuRule(builder, ".m3-menu.m3-menu", menu());
         appendMenuItemRule(builder, ".m3-menu .m3-menu-item.m3-menu-item", menu());
+        appendSearchBarRule(builder, ".m3-search-bar.m3-search-bar", search());
+        appendSearchViewRule(builder, ".m3-search-view.m3-search-view", search());
+        appendSearchViewResultRule(builder, ".m3-search-view .m3-list-item.m3-list-item", search());
         appendSelectionRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch", selection());
         appendSwitchRule(builder, ".m3-switch", selection());
         appendSwitchBoxRule(builder, ".m3-switch .box", selection());
@@ -432,6 +444,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-menu-item-container-shape", M3TokenCss.pixels(tokens.itemContainerShape()));
         M3TokenCss.append(builder, "-m3-menu-item-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-menu-item-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
+    }
+
+    /// Appends search token declarations.
+    private static void append(StringBuilder builder, SearchTokens tokens) {
+        M3TokenCss.append(builder, "-m3-search-bar-container-height", M3TokenCss.pixels(tokens.barHeight()));
+        M3TokenCss.append(builder, "-m3-search-bar-container-shape", M3TokenCss.pixels(tokens.barContainerShape()));
+        M3TokenCss.append(builder, "-m3-search-bar-horizontal-padding", M3TokenCss.pixels(tokens.barHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-search-bar-content-spacing", M3TokenCss.pixels(tokens.barContentSpacing()));
+        M3TokenCss.append(builder, "-m3-search-view-container-shape", M3TokenCss.pixels(tokens.viewContainerShape()));
+        M3TokenCss.append(builder, "-m3-search-view-result-padding", M3TokenCss.pixels(tokens.viewResultPadding()));
+        M3TokenCss.append(builder, "-m3-search-view-result-height", M3TokenCss.pixels(tokens.resultHeight()));
     }
 
     /// Appends selection token declarations.
@@ -736,6 +759,37 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
         appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(0.0));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a search bar token CSS rule.
+    private static void appendSearchBarRule(StringBuilder builder, String selector, SearchTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.barHeight()));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.barHeight()));
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.barContainerShape()));
+        appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.barHorizontalPadding()));
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.barContentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a search view token CSS rule.
+    private static void appendSearchViewRule(StringBuilder builder, String selector, SearchTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.viewContainerShape()));
+        appendDeclaration(builder, "-fx-padding", "0 0 " + M3TokenCss.pixels(tokens.viewResultPadding()) + " 0");
+        endRule(builder);
+    }
+
+    /// Appends search result item token CSS rules.
+    private static void appendSearchViewResultRule(StringBuilder builder, String selector, SearchTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.resultHeight()));
+        appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.resultHeight() + 16.0));
+        appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.resultHeight() + 32.0));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.barContainerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.barHorizontalPadding()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.barContentSpacing()));
         endRule(builder);
     }
 
@@ -1177,6 +1231,37 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(itemContainerShape, "itemContainerShape");
             validateNonNegative(itemHorizontalPadding, "itemHorizontalPadding");
             validateNonNegative(itemContentSpacing, "itemContentSpacing");
+        }
+    }
+
+    /// Component tokens for search components.
+    ///
+    /// @param barHeight the search bar container height
+    /// @param barContainerShape the search bar container corner radius
+    /// @param barHorizontalPadding the search bar horizontal content padding
+    /// @param barContentSpacing the spacing between search bar content regions
+    /// @param viewContainerShape the expanded search view corner radius
+    /// @param viewResultPadding the padding below search results
+    /// @param resultHeight the one-line search result item height
+    @NotNullByDefault
+    public record SearchTokens(
+            double barHeight,
+            double barContainerShape,
+            double barHorizontalPadding,
+            double barContentSpacing,
+            double viewContainerShape,
+            double viewResultPadding,
+            double resultHeight
+    ) {
+        /// Validates search tokens.
+        public SearchTokens {
+            validateNonNegative(barHeight, "barHeight");
+            validateNonNegative(barContainerShape, "barContainerShape");
+            validateNonNegative(barHorizontalPadding, "barHorizontalPadding");
+            validateNonNegative(barContentSpacing, "barContentSpacing");
+            validateNonNegative(viewContainerShape, "viewContainerShape");
+            validateNonNegative(viewResultPadding, "viewResultPadding");
+            validateNonNegative(resultHeight, "resultHeight");
         }
     }
 

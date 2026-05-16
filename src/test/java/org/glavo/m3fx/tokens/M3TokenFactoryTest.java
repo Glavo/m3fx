@@ -94,6 +94,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 78px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-text-area-container-height: 67px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-item-height: 43px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 44px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-medium: 220ms"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));
@@ -101,6 +102,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-top-app-bar-actions"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-text-area"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-menu .m3-menu-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view .m3-list-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-app-bar-actions"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-rail .m3-navigation-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-drawer .m3-list-item"));
@@ -124,6 +126,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.FieldTokens(66.0, 8.0, 18.0),
                 new M3ComponentTokens.TextAreaTokens(67.0, 9.0, 19.0, 20.0),
                 new M3ComponentTokens.MenuTokens(7.0, 8.0, 43.0, 6.0, 13.0, 14.0),
+                new M3ComponentTokens.SearchTokens(44.0, 22.0, 15.0, 11.0, 21.0, 9.0, 45.0),
                 new M3ComponentTokens.SelectionTokens(42.0, 20.0),
                 new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 50.0),
                 new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0),
