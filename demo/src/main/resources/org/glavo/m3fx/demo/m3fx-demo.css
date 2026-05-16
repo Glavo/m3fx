@@ -42,6 +42,26 @@
     -fx-background-color: -m3-color-surface;
 }
 
+.demo-sidebar-scroll-pane {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background: -m3-color-surface-container-low;
+    -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+    -fx-min-width: 320px;
+    -fx-pref-width: 320px;
+    -fx-max-width: 320px;
+}
+
+.demo-sidebar-scroll-pane > .viewport {
+    -fx-background-color: -m3-color-surface-container-low;
+}
+
+.demo-sidebar-drawer {
+    -fx-min-width: 320px;
+    -fx-pref-width: 320px;
+    -fx-max-width: 320px;
+}
+
 .demo-scroll-pane {
     -fx-background-color: transparent;
     -fx-background: transparent;
@@ -103,12 +123,21 @@
 }
 
 .demo-navigation-icon {
-    -fx-font-size: 16px;
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-pref-width: 24px;
+    -fx-pref-height: 24px;
+    -fx-alignment: center;
+    -fx-font-size: 13px;
     -fx-font-weight: 700;
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .m3-navigation-item:selected .demo-navigation-icon {
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-navigation-drawer .m3-list-item:selected .demo-navigation-icon {
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 

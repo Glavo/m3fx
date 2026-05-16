@@ -230,6 +230,7 @@ public final class M3FXDemoApp extends Application {
     /// Creates the component sidebar.
     private Node createSidebar(List<DemoPage> pages) {
         M3NavigationDrawer sidebar = new M3NavigationDrawer();
+        sidebar.getStyleClass().add("demo-sidebar-drawer");
 
         Label heading = new Label("Components");
         heading.getStyleClass().add("demo-drawer-section");
@@ -238,11 +239,18 @@ public final class M3FXDemoApp extends Application {
         sidebarItems.clear();
         for (DemoPage page : pages) {
             M3ListItem item = new M3ListItem(page.title());
+            item.setLeading(createNavigationIcon(sidebarIconText(page.title())));
             item.setOnAction(event -> showPage(page));
             sidebarItems.add(item);
             sidebar.getItems().add(item);
         }
-        return sidebar;
+
+        ScrollPane scrollPane = new ScrollPane(sidebar);
+        scrollPane.getStyleClass().add("demo-sidebar-scroll-pane");
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        return scrollPane;
     }
 
     /// Creates the scrollable page host.
@@ -806,6 +814,21 @@ public final class M3FXDemoApp extends Application {
         Label icon = new Label(iconText);
         icon.getStyleClass().add("demo-navigation-icon");
         return icon;
+    }
+
+    /// Creates compact icon text from a page title.
+    private static String sidebarIconText(String title) {
+        Objects.requireNonNull(title, "title");
+        StringBuilder builder = new StringBuilder(2);
+        for (String part : title.split(" ")) {
+            if (!part.isBlank()) {
+                builder.append(part.charAt(0));
+                if (builder.length() == 2) {
+                    break;
+                }
+            }
+        }
+        return builder.length() == 0 ? "?" : builder.toString();
     }
 
     /// Creates the sample icon button.
