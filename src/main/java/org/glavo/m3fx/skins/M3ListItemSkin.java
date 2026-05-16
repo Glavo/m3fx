@@ -75,6 +75,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         leadingSlot.getStyleClass().add("m3-list-item-leading");
         trailingSlot.getStyleClass().add("m3-list-item-trailing");
 
+        textBox.setAlignment(Pos.CENTER_LEFT);
         textBox.getChildren().addAll(overlineLabel, headlineLabel, supportingLabel);
         HBox.setHgrow(textBox, Priority.ALWAYS);
         container.getChildren().addAll(leadingSlot, textBox, trailingSlot);

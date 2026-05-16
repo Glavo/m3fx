@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
@@ -23,6 +24,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Arc;
@@ -1655,6 +1657,29 @@ final class M3ControlStyleTest {
         listItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 10.0, 10.0, false));
 
         assertTrue(lookupRegion(listItem, ".m3-ripple").getOpacity() > 0.0);
+    }
+
+    /// Verifies that one-line list item text is centered within its allocated row height.
+    @Test
+    void listItemSkinCentersOneLineText() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        listItem.setLeading(new Label("H"));
+        Pane root = new Pane(listItem);
+        Scene scene = new Scene(root, 240.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        listItem.resize(220.0, 56.0);
+        listItem.layout();
+
+        Node textBoxNode = listItem.lookup(".m3-list-item-text");
+        assertInstanceOf(VBox.class, textBoxNode);
+        VBox textBox = (VBox) textBoxNode;
+        Node headline = listItem.lookup(".m3-list-item-headline");
+        assertInstanceOf(Label.class, headline);
+
+        assertEquals(Pos.CENTER_LEFT, textBox.getAlignment());
+        assertTrue(headline.getLayoutY() > 0.0);
     }
 
     /// Verifies that navigation item component token properties are styleable from CSS.
