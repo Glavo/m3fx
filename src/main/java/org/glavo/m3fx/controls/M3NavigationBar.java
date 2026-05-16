@@ -3,9 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
@@ -14,6 +17,7 @@ import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +33,24 @@ public class M3NavigationBar extends HBox {
     private final ReadOnlyObjectWrapper<@Nullable M3NavigationItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
+    /// The selected navigation items in child order.
+    private final ObservableList<M3NavigationItem> selectedItems = FXCollections.observableArrayList();
+
+    /// The read-only selected navigation item view.
+    private final @UnmodifiableView ObservableList<M3NavigationItem> selectedItemsView =
+            FXCollections.unmodifiableObservableList(selectedItems);
+
+    /// Whether the bar allows all navigation items to be unselected.
+    private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
+        /// Restores a selected item when empty selection is disabled.
+        @Override
+        protected void invalidated() {
+            if (!get()) {
+                selectFirstItemIfNeeded();
+            }
+        }
+    };
+
     /// The selected-state listeners installed on navigation items.
     private final Map<M3NavigationItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
@@ -38,22 +60,16 @@ public class M3NavigationBar extends HBox {
             for (Node child : change.getRemoved()) {
                 if (child instanceof M3NavigationItem item) {
                     uninstallItem(item);
-                    if (selectedItem.get() == item) {
-                        selectedItem.set(null);
-                    }
                     item.setSelected(false);
                 }
             }
             for (Node child : change.getAddedSubList()) {
                 if (child instanceof M3NavigationItem item) {
                     installItem(item);
-                    if (item.isSelected()) {
-                        selectItem(item);
-                    }
                 }
             }
         }
-        selectFirstItemIfNeeded();
+        enforceSelectionPolicy();
     };
 
     /// Whether the navigation bar is currently synchronizing selected states.
@@ -79,6 +95,11 @@ public class M3NavigationBar extends HBox {
         return getChildren();
     }
 
+    /// Returns the selected navigation items in child order.
+    public final @UnmodifiableView ObservableList<M3NavigationItem> getSelectedItems() {
+        return selectedItemsView;
+    }
+
     /// Returns the selected navigation item.
     public final @Nullable M3NavigationItem getSelectedItem() {
         return selectedItem.get();
@@ -87,6 +108,21 @@ public class M3NavigationBar extends HBox {
     /// Returns the selected navigation item property.
     public final ReadOnlyObjectProperty<@Nullable M3NavigationItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
+    }
+
+    /// Returns whether this bar allows all navigation items to be unselected.
+    public final boolean isAllowEmptySelection() {
+        return allowEmptySelection.get();
+    }
+
+    /// Sets whether this bar allows all navigation items to be unselected.
+    public final void setAllowEmptySelection(boolean allowEmptySelection) {
+        this.allowEmptySelection.set(allowEmptySelection);
+    }
+
+    /// Returns the empty-selection policy property.
+    public final BooleanProperty allowEmptySelectionProperty() {
+        return allowEmptySelection;
     }
 
     /// Selects a navigation item that belongs to this bar.
@@ -104,6 +140,15 @@ public class M3NavigationBar extends HBox {
         if (firstItem != null) {
             selectItem(firstItem);
         }
+    }
+
+    /// Clears the current selection when empty selection is allowed.
+    public final void clearSelection() {
+        if (!isAllowEmptySelection()) {
+            selectFirstItemIfNeeded();
+            return;
+        }
+        selectItem(null);
     }
 
     /// Returns the user-agent stylesheet for M3FX navigation controls.
@@ -145,7 +190,21 @@ public class M3NavigationBar extends HBox {
         if (selected) {
             selectItem(item);
         } else if (selectedItem.get() == item) {
-            selectedItem.set(null);
+            refreshSelectedItems();
+            if (!isAllowEmptySelection()) {
+                selectFirstItemIfNeeded();
+            }
+        }
+    }
+
+    /// Enforces single-selection and non-empty selection invariants.
+    private void enforceSelectionPolicy() {
+        refreshSelectedItems();
+        if (selectedItems.size() > 1) {
+            selectItem(selectedItems.get(0));
+            return;
+        }
+        if (!isAllowEmptySelection()) {
             selectFirstItemIfNeeded();
         }
     }
@@ -153,7 +212,7 @@ public class M3NavigationBar extends HBox {
     /// Selects the first navigation item when selection is empty.
     private void selectFirstItemIfNeeded() {
         M3NavigationItem firstItem = firstNavigationItem();
-        if (selectedItem.get() != null || firstItem == null) {
+        if (!selectedItems.isEmpty() || firstItem == null) {
             return;
         }
 
@@ -169,10 +228,21 @@ public class M3NavigationBar extends HBox {
                     navigationItem.setSelected(navigationItem == item);
                 }
             }
-            selectedItem.set(item);
         } finally {
             updatingSelection = false;
         }
+        refreshSelectedItems();
+    }
+
+    /// Refreshes selected item state from current child states.
+    private void refreshSelectedItems() {
+        selectedItems.clear();
+        for (Node child : getChildren()) {
+            if (child instanceof M3NavigationItem item && item.isSelected()) {
+                selectedItems.add(item);
+            }
+        }
+        selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
     }
 
     /// Returns the first navigation item child.

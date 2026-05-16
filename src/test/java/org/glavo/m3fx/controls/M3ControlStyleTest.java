@@ -1996,17 +1996,40 @@ final class M3ControlStyleTest {
 
         assertTrue(overview.isSelected());
         assertEquals(overview, tabBar.getSelectedTab());
+        assertEquals(java.util.List.of(overview), tabBar.getSelectedTabs());
 
         details.fire();
 
         assertFalse(overview.isSelected());
         assertTrue(details.isSelected());
         assertEquals(details, tabBar.getSelectedTab());
+        assertEquals(java.util.List.of(details), tabBar.getSelectedTabs());
 
         details.fire();
 
         assertTrue(details.isSelected());
         assertEquals(details, tabBar.getSelectedTab());
+        assertEquals(java.util.List.of(details), tabBar.getSelectedTabs());
+        assertThrows(UnsupportedOperationException.class, () -> tabBar.getSelectedTabs().add(overview));
+
+        tabBar.clearSelection();
+
+        assertEquals(details, tabBar.getSelectedTab());
+        assertEquals(java.util.List.of(details), tabBar.getSelectedTabs());
+
+        tabBar.setAllowEmptySelection(true);
+        tabBar.clearSelection();
+
+        assertNull(tabBar.getSelectedTab());
+        assertTrue(tabBar.getSelectedTabs().isEmpty());
+        assertFalse(overview.isSelected());
+        assertFalse(details.isSelected());
+
+        tabBar.setAllowEmptySelection(false);
+
+        assertEquals(overview, tabBar.getSelectedTab());
+        assertEquals(java.util.List.of(overview), tabBar.getSelectedTabs());
+        assertTrue(overview.isSelected());
     }
 
     /// Verifies that tab skins expose the active indicator and ripple feedback.
@@ -2849,17 +2872,34 @@ final class M3ControlStyleTest {
 
         assertTrue(home.isSelected());
         assertEquals(home, navigationBar.getSelectedItem());
+        assertEquals(java.util.List.of(home), navigationBar.getSelectedItems());
 
         search.fire();
 
         assertFalse(home.isSelected());
         assertTrue(search.isSelected());
         assertEquals(search, navigationBar.getSelectedItem());
+        assertEquals(java.util.List.of(search), navigationBar.getSelectedItems());
 
         search.fire();
 
         assertTrue(search.isSelected());
         assertEquals(search, navigationBar.getSelectedItem());
+        assertEquals(java.util.List.of(search), navigationBar.getSelectedItems());
+        assertThrows(UnsupportedOperationException.class, () -> navigationBar.getSelectedItems().add(home));
+
+        navigationBar.setAllowEmptySelection(true);
+        navigationBar.clearSelection();
+
+        assertNull(navigationBar.getSelectedItem());
+        assertTrue(navigationBar.getSelectedItems().isEmpty());
+        assertFalse(home.isSelected());
+        assertFalse(search.isSelected());
+
+        navigationBar.setAllowEmptySelection(false);
+
+        assertEquals(home, navigationBar.getSelectedItem());
+        assertEquals(java.util.List.of(home), navigationBar.getSelectedItems());
     }
 
     /// Verifies that navigation rails group items and keep a selected item.
@@ -2871,23 +2911,34 @@ final class M3ControlStyleTest {
 
         assertTrue(home.isSelected());
         assertEquals(home, navigationRail.getSelectedItem());
+        assertEquals(java.util.List.of(home), navigationRail.getSelectedItems());
 
         search.fire();
 
         assertFalse(home.isSelected());
         assertTrue(search.isSelected());
         assertEquals(search, navigationRail.getSelectedItem());
+        assertEquals(java.util.List.of(search), navigationRail.getSelectedItems());
 
         search.fire();
 
         assertTrue(search.isSelected());
         assertEquals(search, navigationRail.getSelectedItem());
+        assertEquals(java.util.List.of(search), navigationRail.getSelectedItems());
 
         navigationRail.getItems().remove(search);
 
         assertFalse(search.isSelected());
         assertTrue(home.isSelected());
         assertEquals(home, navigationRail.getSelectedItem());
+        assertEquals(java.util.List.of(home), navigationRail.getSelectedItems());
+
+        navigationRail.setAllowEmptySelection(true);
+        navigationRail.clearSelection();
+
+        assertNull(navigationRail.getSelectedItem());
+        assertTrue(navigationRail.getSelectedItems().isEmpty());
+        assertFalse(home.isSelected());
     }
 
     /// Verifies that navigation rail token rules override bar item metrics.
@@ -2988,24 +3039,35 @@ final class M3ControlStyleTest {
 
         assertTrue(home.isSelected());
         assertEquals(home, navigationDrawer.getSelectedItem());
+        assertEquals(java.util.List.of(home), navigationDrawer.getSelectedItems());
 
         search.fire();
 
         assertFalse(home.isSelected());
         assertTrue(search.isSelected());
         assertEquals(search, navigationDrawer.getSelectedItem());
+        assertEquals(java.util.List.of(search), navigationDrawer.getSelectedItems());
 
         home.setSelected(true);
 
         assertTrue(home.isSelected());
         assertFalse(search.isSelected());
         assertEquals(home, navigationDrawer.getSelectedItem());
+        assertEquals(java.util.List.of(home), navigationDrawer.getSelectedItems());
 
         navigationDrawer.getItems().remove(home);
 
         assertFalse(home.isSelected());
         assertTrue(search.isSelected());
         assertEquals(search, navigationDrawer.getSelectedItem());
+        assertEquals(java.util.List.of(search), navigationDrawer.getSelectedItems());
+
+        navigationDrawer.setAllowEmptySelection(true);
+        navigationDrawer.clearSelection();
+
+        assertNull(navigationDrawer.getSelectedItem());
+        assertTrue(navigationDrawer.getSelectedItems().isEmpty());
+        assertFalse(search.isSelected());
     }
 
     /// Verifies that navigation drawer token rules override list item metrics.

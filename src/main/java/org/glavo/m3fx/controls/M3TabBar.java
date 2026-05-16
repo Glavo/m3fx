@@ -3,9 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
@@ -14,6 +17,7 @@ import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +33,24 @@ public class M3TabBar extends HBox {
     private final ReadOnlyObjectWrapper<@Nullable M3Tab> selectedTab =
             new ReadOnlyObjectWrapper<>(this, "selectedTab");
 
+    /// The selected tabs in child order.
+    private final ObservableList<M3Tab> selectedTabs = FXCollections.observableArrayList();
+
+    /// The read-only selected tab view.
+    private final @UnmodifiableView ObservableList<M3Tab> selectedTabsView =
+            FXCollections.unmodifiableObservableList(selectedTabs);
+
+    /// Whether the tab bar allows all tabs to be unselected.
+    private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
+        /// Restores a selected tab when empty selection is disabled.
+        @Override
+        protected void invalidated() {
+            if (!get()) {
+                selectFirstTabIfNeeded();
+            }
+        }
+    };
+
     /// The selected-state listeners installed on tabs.
     private final Map<M3Tab, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
@@ -38,22 +60,16 @@ public class M3TabBar extends HBox {
             for (Node child : change.getRemoved()) {
                 if (child instanceof M3Tab tab) {
                     uninstallTab(tab);
-                    if (selectedTab.get() == tab) {
-                        selectedTab.set(null);
-                    }
                     tab.setSelected(false);
                 }
             }
             for (Node child : change.getAddedSubList()) {
                 if (child instanceof M3Tab tab) {
                     installTab(tab);
-                    if (tab.isSelected()) {
-                        selectTab(tab);
-                    }
                 }
             }
         }
-        selectFirstTabIfNeeded();
+        enforceSelectionPolicy();
     };
 
     /// Whether the tab bar is currently synchronizing selected states.
@@ -79,6 +95,11 @@ public class M3TabBar extends HBox {
         return getChildren();
     }
 
+    /// Returns the selected tabs in child order.
+    public final @UnmodifiableView ObservableList<M3Tab> getSelectedTabs() {
+        return selectedTabsView;
+    }
+
     /// Returns the selected tab.
     public final @Nullable M3Tab getSelectedTab() {
         return selectedTab.get();
@@ -87,6 +108,21 @@ public class M3TabBar extends HBox {
     /// Returns the selected tab property.
     public final ReadOnlyObjectProperty<@Nullable M3Tab> selectedTabProperty() {
         return selectedTab.getReadOnlyProperty();
+    }
+
+    /// Returns whether this tab bar allows all tabs to be unselected.
+    public final boolean isAllowEmptySelection() {
+        return allowEmptySelection.get();
+    }
+
+    /// Sets whether this tab bar allows all tabs to be unselected.
+    public final void setAllowEmptySelection(boolean allowEmptySelection) {
+        this.allowEmptySelection.set(allowEmptySelection);
+    }
+
+    /// Returns the empty-selection policy property.
+    public final BooleanProperty allowEmptySelectionProperty() {
+        return allowEmptySelection;
     }
 
     /// Selects a tab that belongs to this tab bar.
@@ -104,6 +140,15 @@ public class M3TabBar extends HBox {
         if (firstTab != null) {
             selectTab(firstTab);
         }
+    }
+
+    /// Clears the current selection when empty selection is allowed.
+    public final void clearSelection() {
+        if (!isAllowEmptySelection()) {
+            selectFirstTabIfNeeded();
+            return;
+        }
+        selectTab(null);
     }
 
     /// Returns the user-agent stylesheet for M3FX tabs.
@@ -144,7 +189,21 @@ public class M3TabBar extends HBox {
         if (selected) {
             selectTab(tab);
         } else if (selectedTab.get() == tab) {
-            selectedTab.set(null);
+            refreshSelectedTabs();
+            if (!isAllowEmptySelection()) {
+                selectFirstTabIfNeeded();
+            }
+        }
+    }
+
+    /// Enforces single-selection and non-empty selection invariants.
+    private void enforceSelectionPolicy() {
+        refreshSelectedTabs();
+        if (selectedTabs.size() > 1) {
+            selectTab(selectedTabs.get(0));
+            return;
+        }
+        if (!isAllowEmptySelection()) {
             selectFirstTabIfNeeded();
         }
     }
@@ -152,7 +211,7 @@ public class M3TabBar extends HBox {
     /// Selects the first tab when selection is empty.
     private void selectFirstTabIfNeeded() {
         M3Tab firstTab = firstTab();
-        if (selectedTab.get() != null || firstTab == null) {
+        if (!selectedTabs.isEmpty() || firstTab == null) {
             return;
         }
 
@@ -168,10 +227,21 @@ public class M3TabBar extends HBox {
                     item.setSelected(item == tab);
                 }
             }
-            selectedTab.set(tab);
         } finally {
             updatingSelection = false;
         }
+        refreshSelectedTabs();
+    }
+
+    /// Refreshes selected tab state from current child states.
+    private void refreshSelectedTabs() {
+        selectedTabs.clear();
+        for (Node child : getChildren()) {
+            if (child instanceof M3Tab tab && tab.isSelected()) {
+                selectedTabs.add(tab);
+            }
+        }
+        selectedTab.set(selectedTabs.isEmpty() ? null : selectedTabs.get(0));
     }
 
     /// Returns the first tab child.

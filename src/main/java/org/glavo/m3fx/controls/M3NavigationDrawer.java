@@ -3,9 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -15,6 +18,7 @@ import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +34,24 @@ public class M3NavigationDrawer extends VBox {
     private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
+    /// The selected drawer list items in child order.
+    private final ObservableList<M3ListItem> selectedItems = FXCollections.observableArrayList();
+
+    /// The read-only selected drawer list item view.
+    private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
+            FXCollections.unmodifiableObservableList(selectedItems);
+
+    /// Whether the drawer allows all list items to be unselected.
+    private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
+        /// Restores a selected item when empty selection is disabled.
+        @Override
+        protected void invalidated() {
+            if (!get()) {
+                selectFirstItemIfNeeded();
+            }
+        }
+    };
+
     /// The selected-state listeners installed on drawer list items.
     private final Map<M3ListItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
@@ -42,22 +64,16 @@ public class M3NavigationDrawer extends VBox {
             for (Node child : change.getRemoved()) {
                 if (child instanceof M3ListItem item) {
                     uninstallItem(item);
-                    if (selectedItem.get() == item) {
-                        selectedItem.set(null);
-                    }
                     item.setSelected(false);
                 }
             }
             for (Node child : change.getAddedSubList()) {
                 if (child instanceof M3ListItem item) {
                     installItem(item);
-                    if (item.isSelected()) {
-                        selectItem(item);
-                    }
                 }
             }
         }
-        selectFirstItemIfNeeded();
+        enforceSelectionPolicy();
     };
 
     /// Whether the drawer is currently synchronizing selected states.
@@ -83,6 +99,11 @@ public class M3NavigationDrawer extends VBox {
         return getChildren();
     }
 
+    /// Returns the selected drawer list items in child order.
+    public final @UnmodifiableView ObservableList<M3ListItem> getSelectedItems() {
+        return selectedItemsView;
+    }
+
     /// Returns the selected drawer list item.
     public final @Nullable M3ListItem getSelectedItem() {
         return selectedItem.get();
@@ -91,6 +112,21 @@ public class M3NavigationDrawer extends VBox {
     /// Returns the selected drawer list item property.
     public final ReadOnlyObjectProperty<@Nullable M3ListItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
+    }
+
+    /// Returns whether this drawer allows all list items to be unselected.
+    public final boolean isAllowEmptySelection() {
+        return allowEmptySelection.get();
+    }
+
+    /// Sets whether this drawer allows all list items to be unselected.
+    public final void setAllowEmptySelection(boolean allowEmptySelection) {
+        this.allowEmptySelection.set(allowEmptySelection);
+    }
+
+    /// Returns the empty-selection policy property.
+    public final BooleanProperty allowEmptySelectionProperty() {
+        return allowEmptySelection;
     }
 
     /// Selects a drawer list item that belongs to this drawer.
@@ -108,6 +144,15 @@ public class M3NavigationDrawer extends VBox {
         if (firstItem != null) {
             selectItem(firstItem);
         }
+    }
+
+    /// Clears the current selection when empty selection is allowed.
+    public final void clearSelection() {
+        if (!isAllowEmptySelection()) {
+            selectFirstItemIfNeeded();
+            return;
+        }
+        selectItem(null);
     }
 
     /// Returns the user-agent stylesheet for M3FX navigation drawers.
@@ -184,8 +229,10 @@ public class M3NavigationDrawer extends VBox {
         if (selected) {
             selectItem(item);
         } else if (selectedItem.get() == item) {
-            selectedItem.set(null);
-            selectFirstItemIfNeeded();
+            refreshSelectedItems();
+            if (!isAllowEmptySelection()) {
+                selectFirstItemIfNeeded();
+            }
         }
     }
 
@@ -198,15 +245,38 @@ public class M3NavigationDrawer extends VBox {
                     listItem.setSelected(listItem == item);
                 }
             }
-            selectedItem.set(item);
         } finally {
             updatingSelection = false;
         }
+        refreshSelectedItems();
+    }
+
+    /// Enforces single-selection and non-empty selection invariants.
+    private void enforceSelectionPolicy() {
+        refreshSelectedItems();
+        if (selectedItems.size() > 1) {
+            selectItem(selectedItems.get(0));
+            return;
+        }
+        if (!isAllowEmptySelection()) {
+            selectFirstItemIfNeeded();
+        }
+    }
+
+    /// Refreshes selected item state from current child states.
+    private void refreshSelectedItems() {
+        selectedItems.clear();
+        for (Node child : getChildren()) {
+            if (child instanceof M3ListItem item && item.isSelected()) {
+                selectedItems.add(item);
+            }
+        }
+        selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
     }
 
     /// Selects the first drawer list item when selection is empty.
     private void selectFirstItemIfNeeded() {
-        if (selectedItem.get() != null) {
+        if (!selectedItems.isEmpty()) {
             return;
         }
 
