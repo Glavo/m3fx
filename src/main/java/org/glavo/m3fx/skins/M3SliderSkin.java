@@ -46,6 +46,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Handles keyboard navigation while the slider is focused.
     private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
 
+    /// Requests layout after value, range, orientation, or token changes.
+    private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
+
     /// Clears transient interaction state when the slider becomes disabled.
     private final InvalidationListener disabledInvalidation = observable -> resetDisabledInteractionState();
 
@@ -58,13 +61,13 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         thumb.setMouseTransparent(true);
         getChildren().addAll(track, stateLayer, thumb);
 
-        control.valueProperty().addListener(observable -> getSkinnable().requestLayout());
-        control.minProperty().addListener(observable -> getSkinnable().requestLayout());
-        control.maxProperty().addListener(observable -> getSkinnable().requestLayout());
-        control.orientationProperty().addListener(observable -> getSkinnable().requestLayout());
-        control.trackThicknessProperty().addListener(observable -> getSkinnable().requestLayout());
-        control.thumbSizeProperty().addListener(observable -> getSkinnable().requestLayout());
-        control.touchTargetSizeProperty().addListener(observable -> getSkinnable().requestLayout());
+        control.valueProperty().addListener(layoutInvalidation);
+        control.minProperty().addListener(layoutInvalidation);
+        control.maxProperty().addListener(layoutInvalidation);
+        control.orientationProperty().addListener(layoutInvalidation);
+        control.trackThicknessProperty().addListener(layoutInvalidation);
+        control.thumbSizeProperty().addListener(layoutInvalidation);
+        control.touchTargetSizeProperty().addListener(layoutInvalidation);
         control.disabledProperty().addListener(disabledInvalidation);
 
         control.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
@@ -77,6 +80,13 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     @Override
     public void dispose() {
         M3Slider control = getSkinnable();
+        control.valueProperty().removeListener(layoutInvalidation);
+        control.minProperty().removeListener(layoutInvalidation);
+        control.maxProperty().removeListener(layoutInvalidation);
+        control.orientationProperty().removeListener(layoutInvalidation);
+        control.trackThicknessProperty().removeListener(layoutInvalidation);
+        control.thumbSizeProperty().removeListener(layoutInvalidation);
+        control.touchTargetSizeProperty().removeListener(layoutInvalidation);
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);

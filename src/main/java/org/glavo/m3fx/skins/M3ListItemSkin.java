@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -54,6 +55,15 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Handles keyboard activation.
     private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
 
+    /// Updates text nodes and metrics after text changes.
+    private final InvalidationListener textInvalidation = observable -> updateTextAndMetrics();
+
+    /// Updates optional node slots after slot content changes.
+    private final InvalidationListener slotInvalidation = observable -> updateSlots();
+
+    /// Applies metric token changes to the list item layout.
+    private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
+
     /// Creates a list item skin.
     public M3ListItemSkin(M3ListItem control) {
         super(control);
@@ -74,19 +84,19 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         updateSlots();
         updateMetrics();
         installBehaviorHandlers(control);
-        control.overlineTextProperty().addListener((observable, oldValue, newValue) -> updateTextAndMetrics());
-        control.headlineTextProperty().addListener((observable, oldValue, newValue) -> updateTextAndMetrics());
-        control.supportingTextProperty().addListener((observable, oldValue, newValue) -> updateTextAndMetrics());
-        control.leadingProperty().addListener((observable, oldValue, newValue) -> updateSlots());
-        control.trailingProperty().addListener((observable, oldValue, newValue) -> updateSlots());
-        control.lineCountProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.oneLineHeightProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.twoLineHeightProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.threeLineHeightProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.containerShapeProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.horizontalPaddingProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.verticalPaddingProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.contentSpacingProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
+        control.overlineTextProperty().addListener(textInvalidation);
+        control.headlineTextProperty().addListener(textInvalidation);
+        control.supportingTextProperty().addListener(textInvalidation);
+        control.leadingProperty().addListener(slotInvalidation);
+        control.trailingProperty().addListener(slotInvalidation);
+        control.lineCountProperty().addListener(metricsInvalidation);
+        control.oneLineHeightProperty().addListener(metricsInvalidation);
+        control.twoLineHeightProperty().addListener(metricsInvalidation);
+        control.threeLineHeightProperty().addListener(metricsInvalidation);
+        control.containerShapeProperty().addListener(metricsInvalidation);
+        control.horizontalPaddingProperty().addListener(metricsInvalidation);
+        control.verticalPaddingProperty().addListener(metricsInvalidation);
+        control.contentSpacingProperty().addListener(metricsInvalidation);
     }
 
     /// Removes behavior handlers before the skin is disposed.
@@ -94,6 +104,19 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     public void dispose() {
         M3ListItem item = getSkinnable();
         stateLayer.reset();
+        item.overlineTextProperty().removeListener(textInvalidation);
+        item.headlineTextProperty().removeListener(textInvalidation);
+        item.supportingTextProperty().removeListener(textInvalidation);
+        item.leadingProperty().removeListener(slotInvalidation);
+        item.trailingProperty().removeListener(slotInvalidation);
+        item.lineCountProperty().removeListener(metricsInvalidation);
+        item.oneLineHeightProperty().removeListener(metricsInvalidation);
+        item.twoLineHeightProperty().removeListener(metricsInvalidation);
+        item.threeLineHeightProperty().removeListener(metricsInvalidation);
+        item.containerShapeProperty().removeListener(metricsInvalidation);
+        item.horizontalPaddingProperty().removeListener(metricsInvalidation);
+        item.verticalPaddingProperty().removeListener(metricsInvalidation);
+        item.contentSpacingProperty().removeListener(metricsInvalidation);
         item.removeEventHandler(MouseEvent.MOUSE_CLICKED, mouseClickedHandler);
         item.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         super.dispose();

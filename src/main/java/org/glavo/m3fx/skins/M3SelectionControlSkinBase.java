@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
@@ -16,7 +18,6 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.geometry.Point2D;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A base skin for Material Design 3 selection controls.
@@ -52,6 +53,13 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     /// Handles keyboard activation releases.
     private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
 
+    /// Clears transient interaction state when the control becomes disabled.
+    private final ChangeListener<Boolean> disabledListener = (observable, oldValue, newValue) -> {
+        if (newValue) {
+            resetInteractionState();
+        }
+    };
+
     /// Whether the current interaction was started by a primary mouse press.
     private boolean mousePressed;
 
@@ -71,13 +79,16 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         container.getChildren().addAll(indicatorSlot, label);
         getChildren().add(container);
         installInteractionHandlers(control);
+        control.disabledProperty().addListener(disabledListener);
     }
 
     /// Removes behavior handlers before the skin is disposed.
     @Override
     public void dispose() {
         C control = getSkinnable();
-        stateLayer.reset();
+        resetInteractionState();
+        control.disabledProperty().removeListener(disabledListener);
+        unbindLabel();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_ENTERED, mouseEnteredHandler);
@@ -85,6 +96,14 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         control.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         control.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
         super.dispose();
+    }
+
+    /// Clears armed state and transient feedback.
+    private void resetInteractionState() {
+        mousePressed = false;
+        spaceKeyPressed = false;
+        stateLayer.reset();
+        getSkinnable().disarm();
     }
 
     /// Computes the minimum width from the internal container.
@@ -179,6 +198,23 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         label.wrapTextProperty().bind(control.wrapTextProperty());
         label.underlineProperty().bind(control.underlineProperty());
         label.mnemonicParsingProperty().bind(control.mnemonicParsingProperty());
+    }
+
+    /// Unbinds mirrored label properties from the skinnable control.
+    private void unbindLabel() {
+        label.textProperty().unbind();
+        label.graphicProperty().unbind();
+        label.textFillProperty().unbind();
+        label.fontProperty().unbind();
+        label.contentDisplayProperty().unbind();
+        label.graphicTextGapProperty().unbind();
+        label.alignmentProperty().unbind();
+        label.textAlignmentProperty().unbind();
+        label.textOverrunProperty().unbind();
+        label.ellipsisStringProperty().unbind();
+        label.wrapTextProperty().unbind();
+        label.underlineProperty().unbind();
+        label.mnemonicParsingProperty().unbind();
     }
 
     /// Installs mouse and keyboard behavior handlers.

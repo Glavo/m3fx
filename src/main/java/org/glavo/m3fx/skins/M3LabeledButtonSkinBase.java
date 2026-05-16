@@ -7,6 +7,7 @@ import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.skin.LabeledSkinBase;
@@ -63,6 +64,17 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// Whether the space key currently owns the armed state.
     private boolean spaceKeyPressed;
 
+    /// Animates the pressed scale when the armed state changes.
+    private final ChangeListener<Boolean> armedListener =
+            (observable, oldValue, newValue) -> animatePressedState(newValue);
+
+    /// Resets transient feedback when the control becomes disabled.
+    private final ChangeListener<Boolean> disabledListener = (observable, oldValue, newValue) -> {
+        if (newValue) {
+            resetInteractionState();
+        }
+    };
+
     /// Creates an animated labeled button skin.
     M3LabeledButtonSkinBase(C control) {
         super(control);
@@ -70,23 +82,16 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.setScaleX(1.0);
         control.setScaleY(1.0);
         installInteractionHandlers(control);
-        control.armedProperty().addListener((observable, oldValue, newValue) -> animatePressedState(newValue));
-        control.disabledProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                animation.stop();
-                stateLayer.reset();
-                control.disarm();
-                control.setScaleX(1.0);
-                control.setScaleY(1.0);
-            }
-        });
+        control.armedProperty().addListener(armedListener);
+        control.disabledProperty().addListener(disabledListener);
     }
 
     /// Stops the animation before the skin is disposed.
     @Override
     public void dispose() {
-        animation.stop();
-        stateLayer.reset();
+        getSkinnable().armedProperty().removeListener(armedListener);
+        getSkinnable().disabledProperty().removeListener(disabledListener);
+        resetInteractionState();
         uninstallInteractionHandlers(getSkinnable());
         super.dispose();
     }
@@ -221,6 +226,18 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                 new KeyValue(button.scaleYProperty(), scale, Interpolator.EASE_BOTH)
         ));
         animation.playFromStart();
+    }
+
+    /// Clears armed state, scale animation, and transient feedback.
+    private void resetInteractionState() {
+        C control = getSkinnable();
+        mousePressed = false;
+        spaceKeyPressed = false;
+        animation.stop();
+        stateLayer.reset();
+        control.disarm();
+        control.setScaleX(1.0);
+        control.setScaleY(1.0);
     }
 
     /// Returns the shape radius used to clip state layer feedback.

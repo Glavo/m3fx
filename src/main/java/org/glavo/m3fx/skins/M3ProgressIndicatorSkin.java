@@ -46,6 +46,10 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The indeterminate animation timeline.
     private final Timeline indeterminateAnimation = new Timeline();
 
+    /// Requests layout after indeterminate animation ticks.
+    private final InvalidationListener indeterminateRotationInvalidation =
+            observable -> getSkinnable().requestLayout();
+
     /// Requests layout after progress or token changes.
     private final InvalidationListener layoutInvalidation = observable -> {
         updateIndeterminateAnimation();
@@ -66,7 +70,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         indicator.setType(ArcType.OPEN);
         getChildren().addAll(track, indicator);
 
-        indeterminateRotation.addListener(observable -> control.requestLayout());
+        indeterminateRotation.addListener(indeterminateRotationInvalidation);
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
         indeterminateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
@@ -89,6 +93,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     public void dispose() {
         M3ProgressIndicator progressIndicator = getSkinnable();
         indeterminateAnimation.stop();
+        indeterminateRotation.removeListener(indeterminateRotationInvalidation);
         progressIndicator.progressProperty().removeListener(layoutInvalidation);
         progressIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
         super.dispose();

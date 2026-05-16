@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -31,6 +33,13 @@ public class M3CardSkin extends SkinBase<M3Card> {
     /// Handles keyboard activation feedback.
     private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
 
+    /// Updates hosted card content after content changes.
+    private final ChangeListener<Node> contentListener =
+            (observable, oldValue, newValue) -> updateContent(newValue);
+
+    /// Applies token changes to the card surface.
+    private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
+
     /// Creates a card skin.
     public M3CardSkin(M3Card control) {
         super(control);
@@ -39,10 +48,10 @@ public class M3CardSkin extends SkinBase<M3Card> {
         updateContent(control.getContent());
         updateTokenStyles();
         installInteractionHandlers(control);
-        control.contentProperty().addListener((observable, oldValue, newValue) -> updateContent(newValue));
-        control.containerShapeProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
-        control.contentPaddingProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
-        control.outlineWidthProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
+        control.contentProperty().addListener(contentListener);
+        control.containerShapeProperty().addListener(tokenInvalidation);
+        control.contentPaddingProperty().addListener(tokenInvalidation);
+        control.outlineWidthProperty().addListener(tokenInvalidation);
     }
 
     /// Removes interaction handlers before the skin is disposed.
@@ -50,6 +59,10 @@ public class M3CardSkin extends SkinBase<M3Card> {
     public void dispose() {
         M3Card card = getSkinnable();
         stateLayer.reset();
+        card.contentProperty().removeListener(contentListener);
+        card.containerShapeProperty().removeListener(tokenInvalidation);
+        card.contentPaddingProperty().removeListener(tokenInvalidation);
+        card.outlineWidthProperty().removeListener(tokenInvalidation);
         card.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         card.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         super.dispose();

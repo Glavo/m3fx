@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.SkinBase;
@@ -20,6 +21,9 @@ public class M3DividerSkin extends SkinBase<M3Divider> {
     /// The visible divider line.
     private final Region line = new Region();
 
+    /// Applies token changes to the divider geometry.
+    private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
+
     /// Creates a divider skin.
     public M3DividerSkin(M3Divider control) {
         super(control);
@@ -29,10 +33,21 @@ public class M3DividerSkin extends SkinBase<M3Divider> {
         getChildren().add(container);
 
         updateMetrics();
-        control.orientationProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.thicknessProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.insetStartProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.insetEndProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
+        control.orientationProperty().addListener(metricsInvalidation);
+        control.thicknessProperty().addListener(metricsInvalidation);
+        control.insetStartProperty().addListener(metricsInvalidation);
+        control.insetEndProperty().addListener(metricsInvalidation);
+    }
+
+    /// Removes listeners before the skin is disposed.
+    @Override
+    public void dispose() {
+        M3Divider divider = getSkinnable();
+        divider.orientationProperty().removeListener(metricsInvalidation);
+        divider.thicknessProperty().removeListener(metricsInvalidation);
+        divider.insetStartProperty().removeListener(metricsInvalidation);
+        divider.insetEndProperty().removeListener(metricsInvalidation);
+        super.dispose();
     }
 
     /// Applies divider tokens to the skin layout.

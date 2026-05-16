@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -15,6 +16,12 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
     /// The visible badge label.
     private final Label label = new Label();
 
+    /// Updates text and metrics after display text inputs change.
+    private final InvalidationListener textInvalidation = observable -> updateTextAndMetrics();
+
+    /// Applies size token changes to badge geometry.
+    private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
+
     /// Creates a badge skin.
     public M3BadgeSkin(M3Badge control) {
         super(control);
@@ -23,13 +30,27 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
 
         updateText();
         updateMetrics();
-        control.textProperty().addListener((observable, oldValue, newValue) -> updateTextAndMetrics());
-        control.maxCharacterCountProperty().addListener((observable, oldValue, newValue) -> updateTextAndMetrics());
-        control.smallSizeProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.largeHeightProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.largeMinWidthProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.containerShapeProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.horizontalPaddingProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
+        control.textProperty().addListener(textInvalidation);
+        control.maxCharacterCountProperty().addListener(textInvalidation);
+        control.smallSizeProperty().addListener(metricsInvalidation);
+        control.largeHeightProperty().addListener(metricsInvalidation);
+        control.largeMinWidthProperty().addListener(metricsInvalidation);
+        control.containerShapeProperty().addListener(metricsInvalidation);
+        control.horizontalPaddingProperty().addListener(metricsInvalidation);
+    }
+
+    /// Removes listeners before the skin is disposed.
+    @Override
+    public void dispose() {
+        M3Badge badge = getSkinnable();
+        badge.textProperty().removeListener(textInvalidation);
+        badge.maxCharacterCountProperty().removeListener(textInvalidation);
+        badge.smallSizeProperty().removeListener(metricsInvalidation);
+        badge.largeHeightProperty().removeListener(metricsInvalidation);
+        badge.largeMinWidthProperty().removeListener(metricsInvalidation);
+        badge.containerShapeProperty().removeListener(metricsInvalidation);
+        badge.horizontalPaddingProperty().removeListener(metricsInvalidation);
+        super.dispose();
     }
 
     /// Updates text and layout together after display text changes.

@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3CheckBox;
@@ -26,6 +27,9 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     /// The visual selected check mark.
     private final Region mark = new Region();
 
+    /// Applies touch target token changes to checkbox geometry.
+    private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
+
     /// Creates a checkbox skin.
     public M3CheckBoxSkin(M3CheckBox control) {
         super(control);
@@ -35,7 +39,14 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         indicatorSlot().getChildren().add(box);
 
         updateMetrics();
-        control.touchTargetSizeProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
+        control.touchTargetSizeProperty().addListener(metricsInvalidation);
+    }
+
+    /// Removes listeners before the skin is disposed.
+    @Override
+    public void dispose() {
+        getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
+        super.dispose();
     }
 
     /// Applies size-related control tokens to the skin nodes.

@@ -10,6 +10,7 @@ import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3Switch;
@@ -48,6 +49,16 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// Requests layout after thumb position changes.
     private final InvalidationListener thumbPositionListener = observable -> getSkinnable().requestLayout();
 
+    /// Applies size token changes to the switch layout.
+    private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
+
+    /// Applies track shape token changes to the switch track.
+    private final InvalidationListener trackShapeInvalidation = observable -> updateTrackStyle();
+
+    /// Animates the thumb after selection changes.
+    private final ChangeListener<Boolean> selectedListener =
+            (observable, oldValue, newValue) -> animateThumbPosition(newValue);
+
     /// Creates a switch skin.
     public M3SwitchSkin(M3Switch control) {
         super(control);
@@ -60,9 +71,9 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         thumbPosition.addListener(thumbPositionListener);
 
         updateMetrics();
-        control.touchTargetSizeProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
-        control.trackShapeProperty().addListener((observable, oldValue, newValue) -> updateTrackStyle());
-        control.selectedProperty().addListener((observable, oldValue, newValue) -> animateThumbPosition(newValue));
+        control.touchTargetSizeProperty().addListener(metricsInvalidation);
+        control.trackShapeProperty().addListener(trackShapeInvalidation);
+        control.selectedProperty().addListener(selectedListener);
     }
 
     /// Stops animations before the skin is disposed.
@@ -70,6 +81,9 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     public void dispose() {
         selectionAnimation.stop();
         thumbPosition.removeListener(thumbPositionListener);
+        getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
+        getSkinnable().trackShapeProperty().removeListener(trackShapeInvalidation);
+        getSkinnable().selectedProperty().removeListener(selectedListener);
         super.dispose();
     }
 

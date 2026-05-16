@@ -12,6 +12,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Labeled;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -138,6 +139,53 @@ final class M3ControlStyleTest {
         button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
 
         assertTrue(lookupRegion(button, ".m3-ripple").getOpacity() > 0.0);
+    }
+
+    /// Verifies that button skins clear transient interaction state when disabled.
+    @Test
+    void buttonSkinClearsPressedStateWhenDisabled() {
+        M3Button button = new M3Button("Button");
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root, 200.0, 100.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        button.resize(100.0, 40.0);
+        button.layout();
+
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        assertTrue(button.isArmed());
+        assertTrue(lookupRegion(button, ".m3-ripple").getOpacity() > 0.0);
+
+        button.setDisable(true);
+
+        assertFalse(button.isArmed());
+        assertEquals(0.0, lookupRegion(button, ".m3-ripple").getOpacity(), 0.0001);
+        assertEquals(1.0, button.getScaleX(), 0.0001);
+        assertEquals(1.0, button.getScaleY(), 0.0001);
+    }
+
+    /// Verifies that disposed button skins no longer handle interaction events.
+    @Test
+    void buttonSkinRemovesInteractionHandlersWhenDisposed() {
+        M3Button button = new M3Button("Button");
+        AtomicInteger fireCount = new AtomicInteger();
+        button.setOnAction(event -> fireCount.incrementAndGet());
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root, 200.0, 100.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        button.resize(100.0, 40.0);
+
+        Skin<?> skin = button.getSkin();
+        skin.dispose();
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
+        button.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+
+        assertFalse(button.isArmed());
+        assertEquals(0, fireCount.get());
     }
 
     /// Verifies that interactive button states keep Material variant colors.
@@ -381,6 +429,23 @@ final class M3ControlStyleTest {
         actionButton.fire();
 
         assertEquals(1, actionCount.get());
+    }
+
+    /// Verifies that snackbar skins unbind internal nodes when disposed.
+    @Test
+    void snackbarSkinUnbindsInternalNodesWhenDisposed() {
+        M3Snackbar snackbar = new M3Snackbar("Saved");
+        snackbar.setActionText("Undo");
+
+        applyCss(snackbar);
+
+        M3SnackbarSkin skin = assertInstanceOf(M3SnackbarSkin.class, snackbar.getSkin());
+        M3Button actionButton = assertInstanceOf(M3Button.class, snackbar.lookup(".m3-snackbar-action"));
+        assertTrue(actionButton.textProperty().isBound());
+
+        skin.dispose();
+
+        assertFalse(actionButton.textProperty().isBound());
     }
 
     /// Verifies that snackbar colors override generic text button colors.
@@ -745,6 +810,43 @@ final class M3ControlStyleTest {
         checkBox.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
 
         assertTrue(lookupRegion(checkBox, ".m3-ripple").getOpacity() > 0.0);
+    }
+
+    /// Verifies that selection skins clear transient interaction state when disabled.
+    @Test
+    void selectionControlSkinClearsPressedStateWhenDisabled() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        Pane root = new Pane(checkBox);
+        Scene scene = new Scene(root, 160.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        checkBox.resize(120.0, 40.0);
+        checkBox.layout();
+
+        checkBox.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        assertTrue(checkBox.isArmed());
+        assertTrue(lookupRegion(checkBox, ".m3-ripple").getOpacity() > 0.0);
+
+        checkBox.setDisable(true);
+
+        assertFalse(checkBox.isArmed());
+        assertEquals(0.0, lookupRegion(checkBox, ".m3-ripple").getOpacity(), 0.0001);
+    }
+
+    /// Verifies that disposed selection skins unbind mirrored label properties.
+    @Test
+    void selectionControlSkinUnbindsLabelWhenDisposed() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+
+        applyCss(checkBox);
+
+        Labeled label = assertInstanceOf(Labeled.class, checkBox.lookup(".m3-selection-label"));
+        assertTrue(label.textProperty().isBound());
+
+        checkBox.getSkin().dispose();
+
+        assertFalse(label.textProperty().isBound());
     }
 
     /// Verifies that switch skins position the thumb from the selected state.
@@ -1237,6 +1339,21 @@ final class M3ControlStyleTest {
         assertEquals(50.0, slider.getValue(), 0.0001);
         assertFalse(slider.isValueChanging());
         assertEquals(0.0, lookupRegion(slider, ".m3-ripple").getOpacity(), 0.0001);
+    }
+
+    /// Verifies that disposed slider skins no longer receive disabled-state changes.
+    @Test
+    void sliderSkinRemovesDisabledListenerWhenDisposed() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+
+        applyCss(slider);
+
+        Skin<?> skin = slider.getSkin();
+        slider.setValueChanging(true);
+        skin.dispose();
+        slider.setDisable(true);
+
+        assertTrue(slider.isValueChanging());
     }
 
     /// Verifies that slider skins expose bounded thumb ripple feedback.

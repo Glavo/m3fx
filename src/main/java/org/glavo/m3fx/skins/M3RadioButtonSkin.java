@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3RadioButton;
@@ -23,6 +24,9 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     /// The selected radio dot.
     private final Region dot = new Region();
 
+    /// Applies touch target token changes to radio geometry.
+    private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
+
     /// Creates a radio button skin.
     public M3RadioButtonSkin(M3RadioButton control) {
         super(control);
@@ -32,7 +36,14 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         indicatorSlot().getChildren().add(radio);
 
         updateMetrics();
-        control.touchTargetSizeProperty().addListener((observable, oldValue, newValue) -> updateMetrics());
+        control.touchTargetSizeProperty().addListener(metricsInvalidation);
+    }
+
+    /// Removes listeners before the skin is disposed.
+    @Override
+    public void dispose() {
+        getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
+        super.dispose();
     }
 
     /// Applies size-related control tokens to the skin nodes.

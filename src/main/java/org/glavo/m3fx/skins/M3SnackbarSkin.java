@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -26,6 +27,13 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     /// The snackbar action button.
     private final org.glavo.m3fx.controls.M3Button actionButton = new org.glavo.m3fx.controls.M3Button();
 
+    /// Updates action visibility after action text changes.
+    private final InvalidationListener actionTextInvalidation =
+            observable -> updateActionVisibility(getSkinnable().getActionText());
+
+    /// Applies token changes to snackbar geometry.
+    private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
+
     /// Creates a snackbar skin.
     public M3SnackbarSkin(M3Snackbar control) {
         super(control);
@@ -38,14 +46,27 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         textLabel.textProperty().bind(control.textProperty());
         actionButton.textProperty().bind(control.actionTextProperty());
         actionButton.setOnAction(this::fireAction);
-        control.actionTextProperty().addListener((observable, oldValue, newValue) -> updateActionVisibility(newValue));
-        control.containerShapeProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
-        control.contentPaddingProperty().addListener((observable, oldValue, newValue) -> updateTokenStyles());
+        control.actionTextProperty().addListener(actionTextInvalidation);
+        control.containerShapeProperty().addListener(tokenInvalidation);
+        control.contentPaddingProperty().addListener(tokenInvalidation);
 
         container.getChildren().addAll(textLabel, actionButton);
         getChildren().add(container);
         updateActionVisibility(control.getActionText());
         updateTokenStyles();
+    }
+
+    /// Unbinds skin nodes and removes listeners before disposal.
+    @Override
+    public void dispose() {
+        M3Snackbar snackbar = getSkinnable();
+        textLabel.textProperty().unbind();
+        actionButton.textProperty().unbind();
+        actionButton.setOnAction(null);
+        snackbar.actionTextProperty().removeListener(actionTextInvalidation);
+        snackbar.containerShapeProperty().removeListener(tokenInvalidation);
+        snackbar.contentPaddingProperty().removeListener(tokenInvalidation);
+        super.dispose();
     }
 
     /// Fires the snackbar action handler if one is present.

@@ -47,6 +47,10 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The indeterminate animation timeline.
     private final Timeline indeterminateAnimation = new Timeline();
 
+    /// Requests layout after indeterminate animation ticks.
+    private final InvalidationListener indeterminatePositionInvalidation =
+            observable -> getSkinnable().requestLayout();
+
     /// Requests layout after progress or token changes.
     private final InvalidationListener layoutInvalidation = observable -> {
         updateIndeterminateAnimation();
@@ -66,7 +70,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         container.getChildren().addAll(track, bar);
         getChildren().add(container);
 
-        indeterminatePosition.addListener(observable -> control.requestLayout());
+        indeterminatePosition.addListener(indeterminatePositionInvalidation);
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
         indeterminateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
@@ -90,6 +94,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     public void dispose() {
         M3ProgressBar progressBar = getSkinnable();
         indeterminateAnimation.stop();
+        indeterminatePosition.removeListener(indeterminatePositionInvalidation);
         progressBar.progressProperty().removeListener(layoutInvalidation);
         progressBar.trackThicknessProperty().removeListener(layoutInvalidation);
         progressBar.trackShapeProperty().removeListener(layoutInvalidation);
