@@ -66,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests style classes and skins for m3fx controls.
@@ -606,6 +607,142 @@ final class M3ControlStyleTest {
         if (exception != null) {
             throw new AssertionError(exception);
         }
+    }
+
+    /// Verifies that snackbar hosts display queued snackbars after the current snackbar is dismissed.
+    @Test
+    void snackbarHostQueuesSnackbars() throws InterruptedException {
+        AtomicReference<M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<M3Snackbar> secondReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(180.0),
+                () -> {
+                    M3SnackbarHost host = new M3SnackbarHost();
+                    host.setDisplayDuration(Duration.INDEFINITE);
+                    Pane root = new Pane(host);
+                    Scene scene = new Scene(root, 320.0, 120.0);
+
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    M3Snackbar first = new M3Snackbar("First");
+                    M3Snackbar second = new M3Snackbar("Second");
+                    host.enqueue(first);
+                    host.enqueue(second);
+                    root.applyCss();
+
+                    assertEquals(first, host.getSnackbar());
+                    assertEquals(java.util.List.of(second), host.getQueue());
+                    assertTrue(host.getChildren().contains(first));
+
+                    hostReference.set(host);
+                    firstReference.set(first);
+                    secondReference.set(second);
+                    host.dismiss();
+                },
+                () -> {
+                    M3SnackbarHost host = hostReference.get();
+                    M3Snackbar first = firstReference.get();
+                    M3Snackbar second = secondReference.get();
+
+                    assertEquals(second, host.getSnackbar());
+                    assertTrue(host.isShowing());
+                    assertTrue(host.getQueue().isEmpty());
+                    assertFalse(host.getChildren().contains(first));
+                    assertTrue(host.getChildren().contains(second));
+                    assertFalse(first.isVisible());
+                }
+        );
+    }
+
+    /// Verifies that snackbar hosts clear pending snackbars without dismissing the current snackbar.
+    @Test
+    void snackbarHostClearsQueuedSnackbars() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar first = new M3Snackbar("First");
+            M3Snackbar second = new M3Snackbar("Second");
+            M3Snackbar third = new M3Snackbar("Third");
+
+            host.enqueue(first);
+            host.enqueue(second);
+            host.enqueue(third);
+
+            assertEquals(first, host.getSnackbar());
+            assertEquals(java.util.List.of(second, third), host.getQueue());
+            assertThrows(UnsupportedOperationException.class, () -> host.getQueue().add(new M3Snackbar("Fourth")));
+
+            host.clearQueue();
+
+            assertEquals(first, host.getSnackbar());
+            assertTrue(host.isShowing());
+            assertTrue(host.getQueue().isEmpty());
+        });
+    }
+
+    /// Verifies that snackbar hosts reset a snackbar when it is replaced immediately.
+    @Test
+    void snackbarHostResetsReplacedSnackbar() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar first = new M3Snackbar("First");
+            M3Snackbar second = new M3Snackbar("Second");
+
+            host.show(first);
+            first.setOpacity(0.25);
+            first.setTranslateY(8.0);
+            host.show(second);
+
+            assertEquals(second, host.getSnackbar());
+            assertFalse(host.getChildren().contains(first));
+            assertTrue(host.getChildren().contains(second));
+            assertFalse(first.isVisible());
+            assertFalse(first.isManaged());
+            assertEquals(1.0, first.getOpacity(), 0.0001);
+            assertEquals(0.0, first.getTranslateY(), 0.0001);
+        });
+    }
+
+    /// Verifies that snackbar hosts can dismiss the current snackbar and clear the queue in one call.
+    @Test
+    void snackbarHostDismissAllClearsCurrentAndQueuedSnackbars() throws InterruptedException {
+        AtomicReference<M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<M3Snackbar> secondReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(180.0),
+                () -> {
+                    M3SnackbarHost host = new M3SnackbarHost();
+                    host.setDisplayDuration(Duration.INDEFINITE);
+                    M3Snackbar first = new M3Snackbar("First");
+                    M3Snackbar second = new M3Snackbar("Second");
+
+                    host.enqueue(first);
+                    host.enqueue(second);
+                    assertEquals(first, host.getSnackbar());
+                    assertEquals(java.util.List.of(second), host.getQueue());
+
+                    hostReference.set(host);
+                    firstReference.set(first);
+                    secondReference.set(second);
+                    host.dismissAll();
+                },
+                () -> {
+                    M3SnackbarHost host = hostReference.get();
+                    M3Snackbar first = firstReference.get();
+                    M3Snackbar second = secondReference.get();
+
+                    assertNull(host.getSnackbar());
+                    assertFalse(host.isShowing());
+                    assertTrue(host.getQueue().isEmpty());
+                    assertFalse(host.getChildren().contains(first));
+                    assertFalse(host.getChildren().contains(second));
+                    assertFalse(first.isVisible());
+                }
+        );
     }
 
     /// Verifies that dialog pane component token properties are styleable from CSS.

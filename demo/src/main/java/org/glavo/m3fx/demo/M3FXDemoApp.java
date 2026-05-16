@@ -250,7 +250,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Sheets", "Side and bottom containment surfaces", this::createSheetsPage),
                 new DemoPage("Scrims", "Modal overlays and dismiss actions", this::createScrimsPage),
                 new DemoPage("Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
-                new DemoPage("Snackbars", "Snackbar host with action and stacked messages", this::createSnackbarsPage),
+                new DemoPage("Snackbars", "Snackbar host with action and queued messages", this::createSnackbarsPage),
                 new DemoPage("Tooltips", "Plain and longer contextual help", this::createTooltipsPage)
         );
     }
@@ -886,8 +886,10 @@ public final class M3FXDemoApp extends Application {
         messageButton.setOnAction(event -> showSnackbar());
         M3Button actionButton = createButton("Show action", M3ButtonVariant.TONAL);
         actionButton.setOnAction(event -> showActionSnackbar());
+        M3Button queueButton = createButton("Queue messages", M3ButtonVariant.OUTLINED);
+        queueButton.setOnAction(event -> showQueuedSnackbars());
 
-        return createGallery(createShowcaseGroup("Snackbar Host", messageButton, actionButton));
+        return createGallery(createShowcaseGroup("Snackbar Host", messageButton, actionButton, queueButton));
     }
 
     /// Creates the tooltip component page.
@@ -1385,6 +1387,17 @@ public final class M3FXDemoApp extends Application {
             return;
         }
         snackbarHost.show("Theme-aware snackbar", "Action", event -> snackbarHost.show("Action pressed"));
+    }
+
+    /// Shows multiple demo snackbars through the host queue.
+    private void showQueuedSnackbars() {
+        M3SnackbarHost snackbarHost = this.snackbarHost;
+        if (snackbarHost == null) {
+            return;
+        }
+        snackbarHost.enqueue("First queued message");
+        snackbarHost.enqueue("Second queued message", "Undo", event -> snackbarHost.enqueue("Undo pressed"));
+        snackbarHost.enqueue("Third queued message");
     }
 
     /// Applies the current theme to the scene.

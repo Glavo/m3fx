@@ -12,6 +12,8 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
@@ -20,6 +22,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.Objects;
 
@@ -43,6 +46,13 @@ public class M3SnackbarHost extends StackPane {
 
     /// The currently hosted snackbar.
     private @Nullable M3Snackbar snackbar;
+
+    /// Pending snackbars waiting to be shown.
+    private final ObservableList<M3Snackbar> queue = FXCollections.observableArrayList();
+
+    /// Read-only view of pending snackbars.
+    private final @UnmodifiableView ObservableList<M3Snackbar> queueView =
+            FXCollections.unmodifiableObservableList(queue);
 
     /// The display duration before automatic dismissal.
     private final ObjectProperty<Duration> displayDuration =
@@ -90,6 +100,11 @@ public class M3SnackbarHost extends StackPane {
         return showing.getReadOnlyProperty();
     }
 
+    /// Returns the pending snackbars waiting to be shown.
+    public final @UnmodifiableView ObservableList<M3Snackbar> getQueue() {
+        return queueView;
+    }
+
     /// Returns the display duration before automatic dismissal.
     ///
     /// A zero, unknown, or indefinite duration disables automatic dismissal.
@@ -134,6 +149,43 @@ public class M3SnackbarHost extends StackPane {
         show(snackbar);
     }
 
+    /// Adds a snackbar with message text to the end of the display queue.
+    public final void enqueue(String text) {
+        enqueue(new M3Snackbar(text));
+    }
+
+    /// Adds a snackbar with message text, action text, and an optional action handler to the display queue.
+    public final void enqueue(
+            String text,
+            String actionText,
+            @Nullable EventHandler<ActionEvent> actionHandler
+    ) {
+        M3Snackbar snackbar = new M3Snackbar(text);
+        snackbar.setActionText(actionText);
+        snackbar.setOnAction(event -> {
+            dismiss();
+            if (actionHandler != null) {
+                actionHandler.handle(event);
+            }
+        });
+        enqueue(snackbar);
+    }
+
+    /// Adds the supplied snackbar to the end of the display queue.
+    public final void enqueue(M3Snackbar snackbar) {
+        Objects.requireNonNull(snackbar, "snackbar");
+        if (this.snackbar == null && !showing.get()) {
+            show(snackbar);
+        } else {
+            queue.add(snackbar);
+        }
+    }
+
+    /// Clears pending snackbars without dismissing the currently shown snackbar.
+    public final void clearQueue() {
+        queue.clear();
+    }
+
     /// Shows the supplied snackbar.
     public final void show(M3Snackbar snackbar) {
         Objects.requireNonNull(snackbar, "snackbar");
@@ -146,6 +198,7 @@ public class M3SnackbarHost extends StackPane {
         if (previousSnackbar != snackbar) {
             if (previousSnackbar != null) {
                 getChildren().remove(previousSnackbar);
+                resetSnackbar(previousSnackbar);
             }
             this.snackbar = snackbar;
             if (!getChildren().contains(snackbar)) {
@@ -171,6 +224,12 @@ public class M3SnackbarHost extends StackPane {
         showAnimation.stop();
         showing.set(false);
         playHideAnimation(currentSnackbar);
+    }
+
+    /// Clears pending snackbars and dismisses the currently hosted snackbar when one is visible.
+    public final void dismissAll() {
+        clearQueue();
+        dismiss();
     }
 
     /// Returns the user-agent stylesheet for m3fx snackbar hosts.
@@ -235,10 +294,26 @@ public class M3SnackbarHost extends StackPane {
         }
 
         getChildren().remove(target);
+        resetSnackbar(target);
+        snackbar = null;
+        showNextQueuedSnackbar();
+    }
+
+    /// Resets a snackbar after it leaves the host.
+    private static void resetSnackbar(M3Snackbar target) {
         target.setVisible(false);
         target.setManaged(false);
         target.setOpacity(1.0);
         target.setTranslateY(0.0);
-        snackbar = null;
+    }
+
+    /// Shows the next queued snackbar when the host is idle.
+    private void showNextQueuedSnackbar() {
+        if (snackbar != null || queue.isEmpty()) {
+            return;
+        }
+
+        M3Snackbar nextSnackbar = queue.remove(0);
+        show(nextSnackbar);
     }
 }
