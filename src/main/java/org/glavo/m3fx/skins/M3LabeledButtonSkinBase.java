@@ -21,6 +21,7 @@ import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A base animated skin for m3fx labeled button controls.
@@ -265,7 +266,27 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (height <= 0.0) {
             height = control.getLayoutBounds().getHeight();
         }
+        if (control instanceof M3SegmentedButton segmentedButton) {
+            layoutSegmentedButtonStateLayer(segmentedButton, width, height);
+            return;
+        }
         stateLayer.layoutLayer(0.0, 0.0, width, height, stateLayerShapeRadius());
+    }
+
+    /// Lays out segmented button feedback with position-specific corner radii.
+    private void layoutSegmentedButtonStateLayer(M3SegmentedButton button, double width, double height) {
+        double radius = button.getContainerShape();
+        if (button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
+        } else if (button.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, 0.0, width, height, radius, 0.0, 0.0, radius);
+        } else if (button.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0);
+        } else if (button.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0, radius, radius, 0.0);
+        } else {
+            stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
+        }
     }
 
     /// Returns the shape radius used to clip state layer feedback.
@@ -279,9 +300,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
         if (button instanceof M3Chip chip) {
             return chip.getContainerShape();
-        }
-        if (button instanceof M3SegmentedButton segmentedButton) {
-            return segmentedButton.getContainerShape();
         }
         return Math.min(button.getWidth(), button.getHeight()) / 2.0;
     }

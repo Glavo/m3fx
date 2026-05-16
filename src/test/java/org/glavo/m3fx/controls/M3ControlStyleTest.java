@@ -24,6 +24,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Arc;
+import javafx.scene.shape.Path;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import org.glavo.m3fx.skins.M3BadgeSkin;
@@ -141,6 +142,31 @@ final class M3ControlStyleTest {
         button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
 
         assertTrue(lookupRegion(button, ".m3-ripple").getOpacity() > 0.0);
+    }
+
+    /// Verifies that button feedback layers use the same resolved shape as the button surface.
+    @Test
+    void buttonStateLayerUsesResolvedContainerShape() {
+        runOnFxThread(() -> {
+            M3Button button = new M3Button("Button");
+            Pane root = new Pane(button);
+            Scene scene = new Scene(root, 200.0, 100.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            button.resize(100.0, 40.0);
+            button.layout();
+            root.applyCss();
+
+            assertStateLayerShape(button, 20.0);
+
+            button.setContainerShape(14.0);
+            button.resize(120.0, 40.0);
+            button.layout();
+            root.applyCss();
+
+            assertStateLayerShape(button, 14.0);
+        });
     }
 
     /// Verifies that CSS reapplication after pressed pseudo-class changes does not hide ripples.
@@ -744,6 +770,37 @@ final class M3ControlStyleTest {
 
         assertFalse(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
         assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS));
+    }
+
+    /// Verifies that segmented button surfaces and state layers follow segment position shapes.
+    @Test
+    void segmentedButtonGroupUsesPositionSpecificShapes() {
+        runOnFxThread(() -> {
+            M3SegmentedButton day = new M3SegmentedButton("Day");
+            M3SegmentedButton week = new M3SegmentedButton("Week");
+            M3SegmentedButton month = new M3SegmentedButton("Month");
+            M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(day, week, month);
+            Pane root = new Pane(group);
+            Scene scene = new Scene(root, 320.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            month.setSelected(true);
+            week.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            root.applyCss();
+            root.layout();
+            group.layout();
+            day.layout();
+            week.layout();
+            month.layout();
+            root.applyCss();
+
+            assertRegionRoundedCorners(day, true, false, false, true);
+            assertRegionRoundedCorners(week, false, false, false, false);
+            assertRegionRoundedCorners(month, false, true, true, false);
+            assertStateLayerRadii(day, 20.0, 0.0, 0.0, 20.0);
+            assertStateLayerRadii(week, 0.0, 0.0, 0.0, 0.0);
+            assertStateLayerRadii(month, 0.0, 20.0, 20.0, 0.0);
+        });
     }
 
     /// Verifies that selection component token properties are styleable from CSS.
@@ -1558,6 +1615,55 @@ final class M3ControlStyleTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Region.class, child);
         return (Region) child;
+    }
+
+    /// Verifies the resolved shape radius used by a control's state layer.
+    private static void assertStateLayerShape(Node node, double expectedRadius) {
+        Region container = lookupRegion(node, ".m3-state-layer-container");
+        assertInstanceOf(Path.class, container.getClip());
+        assertStateLayerRadii(node, expectedRadius, expectedRadius, expectedRadius, expectedRadius);
+    }
+
+    /// Verifies the resolved corner radii used by a control's state layer.
+    private static void assertStateLayerRadii(
+            Node node,
+            double topLeft,
+            double topRight,
+            double bottomRight,
+            double bottomLeft
+    ) {
+        Region overlay = lookupRegion(node, ".m3-state-layer");
+        assertRegionRadii(overlay, topLeft, topRight, bottomRight, bottomLeft);
+    }
+
+    /// Verifies which corners are rounded on a region's background.
+    private static void assertRegionRoundedCorners(
+            Region region,
+            boolean topLeft,
+            boolean topRight,
+            boolean bottomRight,
+            boolean bottomLeft
+    ) {
+        javafx.scene.layout.CornerRadii radii = region.getBackground().getFills().get(0).getRadii();
+        assertEquals(topLeft, radii.getTopLeftHorizontalRadius() > 0.0);
+        assertEquals(topRight, radii.getTopRightHorizontalRadius() > 0.0);
+        assertEquals(bottomRight, radii.getBottomRightHorizontalRadius() > 0.0);
+        assertEquals(bottomLeft, radii.getBottomLeftHorizontalRadius() > 0.0);
+    }
+
+    /// Verifies a region's concrete background corner radii.
+    private static void assertRegionRadii(
+            Region region,
+            double topLeft,
+            double topRight,
+            double bottomRight,
+            double bottomLeft
+    ) {
+        javafx.scene.layout.CornerRadii radii = region.getBackground().getFills().get(0).getRadii();
+        assertEquals(topLeft, radii.getTopLeftHorizontalRadius(), 0.0001);
+        assertEquals(topRight, radii.getTopRightHorizontalRadius(), 0.0001);
+        assertEquals(bottomRight, radii.getBottomRightHorizontalRadius(), 0.0001);
+        assertEquals(bottomLeft, radii.getBottomLeftHorizontalRadius(), 0.0001);
     }
 
     /// Returns a shape looked up below a node.

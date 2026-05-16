@@ -9,7 +9,13 @@ import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.ArcTo;
+import javafx.scene.shape.ClosePath;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Path;
+import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -38,10 +44,22 @@ final class M3StateLayer extends Pane {
     private final Region ripple = new Region();
 
     /// The clip that bounds overlay and ripple visuals to the component shape.
-    private final Rectangle clip = new Rectangle();
+    private final Path clip = new Path();
 
     /// The ripple animation timeline.
     private final Timeline rippleAnimation = new Timeline();
+
+    /// The radius currently applied to the overlay background.
+    private double overlayTopLeftRadius = Double.NaN;
+
+    /// The top-right radius currently applied to the overlay background.
+    private double overlayTopRightRadius = Double.NaN;
+
+    /// The bottom-right radius currently applied to the overlay background.
+    private double overlayBottomRightRadius = Double.NaN;
+
+    /// The bottom-left radius currently applied to the overlay background.
+    private double overlayBottomLeftRadius = Double.NaN;
 
     /// Creates a state layer.
     M3StateLayer() {
@@ -55,18 +73,35 @@ final class M3StateLayer extends Pane {
         overlay.setMouseTransparent(true);
         ripple.setMouseTransparent(true);
         ripple.setOpacity(0.0);
+        clip.setFill(Color.BLACK);
         getChildren().addAll(overlay, ripple);
         setClip(clip);
     }
 
     /// Lays out the state layer within the skinnable component.
     void layoutLayer(double x, double y, double width, double height, double shapeRadius) {
+        layoutLayer(x, y, width, height, shapeRadius, shapeRadius, shapeRadius, shapeRadius);
+    }
+
+    /// Lays out the state layer with independent corner radii.
+    void layoutLayer(
+            double x,
+            double y,
+            double width,
+            double height,
+            double topLeftRadius,
+            double topRightRadius,
+            double bottomRightRadius,
+            double bottomLeftRadius
+    ) {
+        double topLeft = resolvedShapeRadius(width, height, topLeftRadius);
+        double topRight = resolvedShapeRadius(width, height, topRightRadius);
+        double bottomRight = resolvedShapeRadius(width, height, bottomRightRadius);
+        double bottomLeft = resolvedShapeRadius(width, height, bottomLeftRadius);
         resizeRelocate(x, y, width, height);
         overlay.resizeRelocate(0.0, 0.0, width, height);
-        clip.setWidth(width);
-        clip.setHeight(height);
-        clip.setArcWidth(shapeRadius * 2.0);
-        clip.setArcHeight(shapeRadius * 2.0);
+        updateOverlayShape(topLeft, topRight, bottomRight, bottomLeft);
+        updateClip(width, height, topLeft, topRight, bottomRight, bottomLeft);
     }
 
     /// Plays a bounded ripple from a point in this state layer's coordinate space.
@@ -121,5 +156,67 @@ final class M3StateLayer extends Pane {
         double bottom = height - y;
         double radius = Math.hypot(Math.max(left, right), Math.max(top, bottom));
         return radius * 2.0;
+    }
+
+    /// Resolves a token radius to a radius that can be represented within the current bounds.
+    private static double resolvedShapeRadius(double width, double height, double shapeRadius) {
+        double maximumRadius = Math.max(0.0, Math.min(width, height) / 2.0);
+        return Math.min(Math.max(0.0, shapeRadius), maximumRadius);
+    }
+
+    /// Updates the overlay background radius when the resolved shape changes.
+    private void updateOverlayShape(double topLeft, double topRight, double bottomRight, double bottomLeft) {
+        if (Double.compare(overlayTopLeftRadius, topLeft) == 0
+                && Double.compare(overlayTopRightRadius, topRight) == 0
+                && Double.compare(overlayBottomRightRadius, bottomRight) == 0
+                && Double.compare(overlayBottomLeftRadius, bottomLeft) == 0) {
+            return;
+        }
+
+        overlayTopLeftRadius = topLeft;
+        overlayTopRightRadius = topRight;
+        overlayBottomRightRadius = bottomRight;
+        overlayBottomLeftRadius = bottomLeft;
+        overlay.setStyle("-fx-background-radius: "
+                + formatPixels(topLeft) + " "
+                + formatPixels(topRight) + " "
+                + formatPixels(bottomRight) + " "
+                + formatPixels(bottomLeft) + ";");
+    }
+
+    /// Updates the clip path to match the resolved rounded rectangle shape.
+    private void updateClip(double width, double height, double topLeft, double topRight, double bottomRight, double bottomLeft) {
+        clip.getElements().setAll(
+                new MoveTo(topLeft, 0.0),
+                new LineTo(width - topRight, 0.0),
+                arcTo(topRight, width, topRight),
+                new LineTo(width, height - bottomRight),
+                arcTo(bottomRight, width - bottomRight, height),
+                new LineTo(bottomLeft, height),
+                arcTo(bottomLeft, 0.0, height - bottomLeft),
+                new LineTo(0.0, topLeft),
+                arcTo(topLeft, topLeft, 0.0),
+                new ClosePath()
+        );
+    }
+
+    /// Creates a corner arc or a zero-length line for square corners.
+    private static PathElement arcTo(double radius, double x, double y) {
+        if (radius <= 0.0) {
+            return new LineTo(x, y);
+        }
+
+        ArcTo arc = new ArcTo();
+        arc.setRadiusX(radius);
+        arc.setRadiusY(radius);
+        arc.setX(x);
+        arc.setY(y);
+        arc.setSweepFlag(true);
+        return arc;
+    }
+
+    /// Formats a CSS pixel value.
+    private static String formatPixels(double value) {
+        return Double.toString(value) + "px";
     }
 }

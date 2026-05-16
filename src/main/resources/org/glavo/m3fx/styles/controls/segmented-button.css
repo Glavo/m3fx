@@ -46,22 +46,22 @@
     -fx-alignment: center-left;
 }
 
-.m3-segmented-button-single {
+.m3-segmented-button.m3-segmented-button-single {
     -fx-background-radius: 999px;
     -fx-border-radius: 999px;
 }
 
-.m3-segmented-button-first {
+.m3-segmented-button.m3-segmented-button-first {
     -fx-background-radius: 999px 0 0 999px;
     -fx-border-radius: 999px 0 0 999px;
 }
 
-.m3-segmented-button-middle {
+.m3-segmented-button.m3-segmented-button-middle {
     -fx-background-radius: 0;
     -fx-border-radius: 0;
 }
 
-.m3-segmented-button-last {
+.m3-segmented-button.m3-segmented-button-last {
     -fx-background-radius: 0 999px 999px 0;
     -fx-border-radius: 0 999px 999px 0;
 }

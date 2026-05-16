@@ -386,10 +386,38 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends segmented button position shape CSS rules.
     private static void appendSegmentedButtonPositionRules(StringBuilder builder, ButtonTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.containerShape());
-        appendSegmentedButtonPositionRule(builder, ".m3-segmented-button-single", radius, radius, radius, radius);
-        appendSegmentedButtonPositionRule(builder, ".m3-segmented-button-first", radius, "0", "0", radius);
-        appendSegmentedButtonPositionRule(builder, ".m3-segmented-button-middle", "0", "0", "0", "0");
-        appendSegmentedButtonPositionRule(builder, ".m3-segmented-button-last", "0", radius, radius, "0");
+        appendSegmentedButtonPositionRule(
+                builder,
+                ".m3-segmented-button.m3-segmented-button-single",
+                radius,
+                radius,
+                radius,
+                radius
+        );
+        appendSegmentedButtonPositionRule(
+                builder,
+                ".m3-segmented-button.m3-segmented-button-first",
+                radius,
+                "0",
+                "0",
+                radius
+        );
+        appendSegmentedButtonPositionRule(
+                builder,
+                ".m3-segmented-button.m3-segmented-button-middle",
+                "0",
+                "0",
+                "0",
+                "0"
+        );
+        appendSegmentedButtonPositionRule(
+                builder,
+                ".m3-segmented-button.m3-segmented-button-last",
+                "0",
+                radius,
+                radius,
+                "0"
+        );
     }
 
     /// Appends a segmented button position shape CSS rule.
