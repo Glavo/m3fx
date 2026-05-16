@@ -141,6 +141,24 @@ final class M3ControlStyleTest {
         assertTrue(lookupRegion(button, ".m3-ripple").getOpacity() > 0.0);
     }
 
+    /// Verifies that CSS reapplication after pressed pseudo-class changes does not hide ripples.
+    @Test
+    void buttonRippleSurvivesCssReapplicationAfterPress() {
+        M3Button button = new M3Button("Button");
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root, 200.0, 100.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        button.resize(100.0, 40.0);
+        button.layout();
+
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        root.applyCss();
+
+        assertTrue(lookupRegion(button, ".m3-ripple").getOpacity() > 0.0);
+    }
+
     /// Verifies that button skins clear transient interaction state when disabled.
     @Test
     void buttonSkinClearsPressedStateWhenDisabled() {
@@ -1256,6 +1274,21 @@ final class M3ControlStyleTest {
         assertEquals(1.0, card.getOpacity(), 0.0001);
         assertEquals(0.08, lookupRegion(card, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(0.38, disabledCard.getOpacity(), 0.0001);
+    }
+
+    /// Verifies that the base stylesheet provides visible default state layer feedback.
+    @Test
+    void baseStylesheetProvidesDefaultStateLayerOpacity() {
+        M3Button button = new M3Button("Button");
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3ThemeManager.uninstallThemeStylesheet(scene);
+        button.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        root.applyCss();
+
+        assertEquals(0.08, lookupRegion(button, ".m3-state-layer").getOpacity(), 0.0001);
     }
 
     /// Verifies that m3fx sliders create the Material Design 3 slider skin.
