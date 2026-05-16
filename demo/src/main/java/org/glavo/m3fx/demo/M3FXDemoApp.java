@@ -229,20 +229,18 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the component sidebar.
     private Node createSidebar(List<DemoPage> pages) {
-        VBox sidebar = new VBox(6.0);
-        sidebar.getStyleClass().add("demo-sidebar");
+        M3NavigationDrawer sidebar = new M3NavigationDrawer();
 
         Label heading = new Label("Components");
-        heading.getStyleClass().add("demo-sidebar-title");
-        sidebar.getChildren().add(heading);
+        heading.getStyleClass().add("demo-drawer-section");
+        sidebar.getItems().add(heading);
 
         sidebarItems.clear();
         for (DemoPage page : pages) {
             M3ListItem item = new M3ListItem(page.title());
-            item.getStyleClass().add("demo-sidebar-item");
             item.setOnAction(event -> showPage(page));
             sidebarItems.add(item);
-            sidebar.getChildren().add(item);
+            sidebar.getItems().add(item);
         }
         return sidebar;
     }
