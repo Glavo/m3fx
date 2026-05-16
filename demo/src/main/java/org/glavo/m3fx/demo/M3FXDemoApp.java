@@ -50,6 +50,7 @@ import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconToggleButton;
+import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
 import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
 import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3ListItem;
@@ -357,10 +358,19 @@ public final class M3FXDemoApp extends Application {
                 ),
                 createShowcaseGroup(
                         "Toggle Icon Buttons",
-                        createIconToggleButton("S", M3IconToggleButtonVariant.STANDARD, true),
-                        createIconToggleButton("F", M3IconToggleButtonVariant.FILLED, true),
-                        createIconToggleButton("T", M3IconToggleButtonVariant.TONAL, true),
-                        createIconToggleButton("O", M3IconToggleButtonVariant.OUTLINED, true),
+                        createIconToggleGroup(
+                                M3IconToggleButtonVariant.STANDARD,
+                                "S",
+                                "F",
+                                "T",
+                                "O"
+                        ),
+                        createIconToggleGroup(
+                                M3IconToggleButtonVariant.TONAL,
+                                "1",
+                                "2",
+                                "3"
+                        ),
                         createIconToggleButton("D", M3IconToggleButtonVariant.TONAL, false)
                 ),
                 createShowcaseGroup(
@@ -999,10 +1009,15 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a navigation bar sample.
     private M3NavigationBar createNavigationBar(String first, String second, String third) {
+        M3NavigationItem firstItem = createNavigationItem(first, first.substring(0, 1));
+        M3NavigationItem secondItem = createNavigationItem(second, second.substring(0, 1));
+        M3NavigationItem thirdItem = createNavigationItem(third, third.substring(0, 1));
+        secondItem.setBadge(new M3Badge("3"));
+
         M3NavigationBar navigationBar = new M3NavigationBar(
-                createNavigationItem(first, first.substring(0, 1)),
-                createNavigationItem(second, second.substring(0, 1)),
-                createNavigationItem(third, third.substring(0, 1))
+                firstItem,
+                secondItem,
+                thirdItem
         );
         navigationBar.selectFirst();
         return navigationBar;
@@ -1010,11 +1025,17 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a navigation bar sample.
     private M3NavigationBar createNavigationBar(String first, String second, String third, String fourth) {
+        M3NavigationItem firstItem = createNavigationItem(first, first.substring(0, 1));
+        M3NavigationItem secondItem = createNavigationItem(second, second.substring(0, 1));
+        M3NavigationItem thirdItem = createNavigationItem(third, third.substring(0, 1));
+        M3NavigationItem fourthItem = createNavigationItem(fourth, fourth.substring(0, 1));
+        secondItem.setBadge(new M3Badge("3"));
+
         M3NavigationBar navigationBar = new M3NavigationBar(
-                createNavigationItem(first, first.substring(0, 1)),
-                createNavigationItem(second, second.substring(0, 1)),
-                createNavigationItem(third, third.substring(0, 1)),
-                createNavigationItem(fourth, fourth.substring(0, 1))
+                firstItem,
+                secondItem,
+                thirdItem,
+                fourthItem
         );
         navigationBar.selectFirst();
         return navigationBar;
@@ -1022,10 +1043,15 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a navigation rail sample.
     private M3NavigationRail createNavigationRail(String first, String second, String third) {
+        M3NavigationItem firstItem = createNavigationItem(first, first.substring(0, 1));
+        M3NavigationItem secondItem = createNavigationItem(second, second.substring(0, 1));
+        M3NavigationItem thirdItem = createNavigationItem(third, third.substring(0, 1));
+        secondItem.setBadge(new M3Badge());
+
         M3NavigationRail navigationRail = new M3NavigationRail(
-                createNavigationItem(first, first.substring(0, 1)),
-                createNavigationItem(second, second.substring(0, 1)),
-                createNavigationItem(third, third.substring(0, 1))
+                firstItem,
+                secondItem,
+                thirdItem
         );
         navigationRail.selectFirst();
         return navigationRail;
@@ -1033,11 +1059,17 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a navigation rail sample.
     private M3NavigationRail createNavigationRail(String first, String second, String third, String fourth) {
+        M3NavigationItem firstItem = createNavigationItem(first, first.substring(0, 1));
+        M3NavigationItem secondItem = createNavigationItem(second, second.substring(0, 1));
+        M3NavigationItem thirdItem = createNavigationItem(third, third.substring(0, 1));
+        M3NavigationItem fourthItem = createNavigationItem(fourth, fourth.substring(0, 1));
+        secondItem.setBadge(new M3Badge());
+
         M3NavigationRail navigationRail = new M3NavigationRail(
-                createNavigationItem(first, first.substring(0, 1)),
-                createNavigationItem(second, second.substring(0, 1)),
-                createNavigationItem(third, third.substring(0, 1)),
-                createNavigationItem(fourth, fourth.substring(0, 1))
+                firstItem,
+                secondItem,
+                thirdItem,
+                fourthItem
         );
         navigationRail.selectFirst();
         return navigationRail;
@@ -1131,6 +1163,27 @@ public final class M3FXDemoApp extends Application {
         button.setVariant(variant);
         button.setSelected(selected);
         return button;
+    }
+
+    /// Creates a sample single-selection toggle icon button group.
+    private static M3IconToggleButtonGroup createIconToggleGroup(
+            M3IconToggleButtonVariant variant,
+            String first,
+            String second,
+            String third,
+            String... rest
+    ) {
+        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(
+                createIconToggleButton(first, variant, false),
+                createIconToggleButton(second, variant, false),
+                createIconToggleButton(third, variant, false)
+        );
+        for (String text : rest) {
+            group.getItems().add(createIconToggleButton(text, variant, false));
+        }
+        group.setAllowEmptySelection(false);
+        group.selectFirst();
+        return group;
     }
 
     /// Creates a sample floating action button.

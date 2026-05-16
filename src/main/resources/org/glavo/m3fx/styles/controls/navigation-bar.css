@@ -45,6 +45,15 @@
     -fx-alignment: center;
 }
 
+.m3-navigation-item-badge-container {
+    -fx-alignment: top-right;
+}
+
+.m3-navigation-item-badge {
+    -fx-translate-x: -4px;
+    -fx-translate-y: -2px;
+}
+
 .m3-navigation-item-label {
     -fx-font-size: 12px;
     -fx-font-weight: 600;

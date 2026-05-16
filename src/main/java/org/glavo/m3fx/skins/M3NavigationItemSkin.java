@@ -22,6 +22,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -49,6 +50,9 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
     /// The graphic content slot.
     private final StackPane graphicContainer = new StackPane();
+
+    /// The optional badge slot.
+    private final StackPane badgeContainer = new StackPane();
 
     /// The item text label.
     private final Label label = new Label();
@@ -85,6 +89,10 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     private final ChangeListener<@Nullable Node> graphicListener =
             (observable, oldValue, newValue) -> updateGraphic(newValue);
 
+    /// Updates the displayed badge.
+    private final ChangeListener<@Nullable M3Badge> badgeListener =
+            (observable, oldValue, newValue) -> updateBadge(newValue);
+
     /// Animates the selected indicator when selection changes.
     private final ChangeListener<Boolean> selectedListener =
             (observable, oldValue, newValue) -> animateSelectedIndicator(newValue);
@@ -109,27 +117,32 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         iconContainer.getStyleClass().add("m3-navigation-item-icon-container");
         indicator.getStyleClass().add("m3-navigation-item-indicator");
         graphicContainer.getStyleClass().add("m3-navigation-item-graphic");
+        badgeContainer.getStyleClass().add("m3-navigation-item-badge-container");
         label.getStyleClass().add("m3-navigation-item-label");
 
         content.setManaged(false);
         content.setAlignment(Pos.CENTER);
         iconContainer.setAlignment(Pos.CENTER);
         graphicContainer.setAlignment(Pos.CENTER);
+        badgeContainer.setAlignment(Pos.TOP_RIGHT);
+        badgeContainer.setMouseTransparent(true);
         indicator.setManaged(false);
         indicator.setMouseTransparent(true);
         label.setMouseTransparent(true);
 
-        iconContainer.getChildren().addAll(indicator, graphicContainer);
+        iconContainer.getChildren().addAll(indicator, graphicContainer, badgeContainer);
         content.getChildren().addAll(iconContainer, label);
         getChildren().addAll(stateLayer, content);
 
         stateLayer.installStateTransitions(control);
         updateText(control.getText());
         updateGraphic(control.getGraphic());
+        updateBadge(control.getBadge());
         updateIndicatorImmediate(control.isSelected());
         installInteractionHandlers(control);
         control.textProperty().addListener(textListener);
         control.graphicProperty().addListener(graphicListener);
+        control.badgeProperty().addListener(badgeListener);
         control.widthProperty().addListener(stateLayerLayoutInvalidation);
         control.heightProperty().addListener(stateLayerLayoutInvalidation);
         control.layoutBoundsProperty().addListener(stateLayerLayoutInvalidation);
@@ -146,6 +159,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         stateLayer.uninstallStateTransitions();
         item.textProperty().removeListener(textListener);
         item.graphicProperty().removeListener(graphicListener);
+        item.badgeProperty().removeListener(badgeListener);
         item.widthProperty().removeListener(stateLayerLayoutInvalidation);
         item.heightProperty().removeListener(stateLayerLayoutInvalidation);
         item.layoutBoundsProperty().removeListener(stateLayerLayoutInvalidation);
@@ -303,6 +317,18 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
                 graphic.getStyleClass().add("m3-navigation-item-graphic-node");
             }
             graphicContainer.getChildren().add(graphic);
+        }
+    }
+
+    /// Updates the badge slot from the current item badge.
+    private void updateBadge(@Nullable M3Badge badge) {
+        badgeContainer.getChildren().clear();
+        if (badge != null) {
+            if (!badge.getStyleClass().contains("m3-navigation-item-badge")) {
+                badge.getStyleClass().add("m3-navigation-item-badge");
+            }
+            StackPane.setAlignment(badge, Pos.TOP_RIGHT);
+            badgeContainer.getChildren().add(badge);
         }
     }
 

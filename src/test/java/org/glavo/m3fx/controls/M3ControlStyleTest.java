@@ -908,6 +908,75 @@ final class M3ControlStyleTest {
         assertEquals(48.0, button.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that toggle icon button groups keep selection mutually exclusive.
+    @Test
+    void iconToggleButtonGroupKeepsSelectionExclusive() {
+        M3IconToggleButton first = new M3IconToggleButton("A");
+        M3IconToggleButton second = new M3IconToggleButton("B");
+        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(first, second);
+
+        first.setSelected(true);
+
+        assertEquals(first, group.getSelectedButton());
+        assertTrue(first.isSelected());
+        assertFalse(second.isSelected());
+
+        second.setSelected(true);
+
+        assertEquals(second, group.getSelectedButton());
+        assertFalse(first.isSelected());
+        assertTrue(second.isSelected());
+
+        group.clearSelection();
+
+        assertNull(group.getSelectedButton());
+        assertFalse(first.isSelected());
+        assertFalse(second.isSelected());
+    }
+
+    /// Verifies that toggle icon button groups can require a selected button.
+    @Test
+    void iconToggleButtonGroupCanRequireSelection() {
+        M3IconToggleButton first = new M3IconToggleButton("A");
+        M3IconToggleButton second = new M3IconToggleButton("B");
+        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(first, second);
+
+        group.setAllowEmptySelection(false);
+
+        assertEquals(first, group.getSelectedButton());
+        assertTrue(first.isSelected());
+
+        group.clearSelection();
+
+        assertEquals(first, group.getSelectedButton());
+        assertTrue(first.isSelected());
+
+        second.setSelected(true);
+        second.setSelected(false);
+
+        assertEquals(second, group.getSelectedButton());
+        assertTrue(second.isSelected());
+    }
+
+    /// Verifies that toggle icon button groups clean selection when children are removed.
+    @Test
+    void iconToggleButtonGroupUpdatesSelectionWhenChildrenChange() {
+        M3IconToggleButton first = new M3IconToggleButton("A");
+        M3IconToggleButton second = new M3IconToggleButton("B");
+        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(first, second);
+
+        second.setSelected(true);
+        group.getItems().remove(second);
+
+        assertNull(group.getSelectedButton());
+        assertFalse(second.isSelected());
+
+        group.setAllowEmptySelection(false);
+
+        assertEquals(first, group.getSelectedButton());
+        assertTrue(first.isSelected());
+    }
+
     /// Verifies that text typography roles update style classes.
     @Test
     void textRoleUpdatesStyleClasses() {
@@ -1243,13 +1312,61 @@ final class M3ControlStyleTest {
         first.setSelected(true);
         second.setSelected(true);
 
+        assertEquals(second, group.getSelectedButton());
         assertFalse(first.isSelected());
         assertTrue(second.isSelected());
 
         group.select(first);
 
+        assertEquals(first, group.getSelectedButton());
         assertTrue(first.isSelected());
         assertFalse(second.isSelected());
+    }
+
+    /// Verifies that segmented button groups can require a selected segment.
+    @Test
+    void segmentedButtonGroupCanRequireSelection() {
+        M3SegmentedButton first = new M3SegmentedButton("First");
+        M3SegmentedButton second = new M3SegmentedButton("Second");
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(first, second);
+
+        assertNull(group.getSelectedButton());
+
+        first.setSelected(true);
+        group.clearSelection();
+
+        assertNull(group.getSelectedButton());
+        assertFalse(first.isSelected());
+
+        group.setAllowEmptySelection(false);
+
+        assertEquals(first, group.getSelectedButton());
+        assertTrue(first.isSelected());
+
+        second.setSelected(true);
+        second.setSelected(false);
+
+        assertEquals(second, group.getSelectedButton());
+        assertTrue(second.isSelected());
+    }
+
+    /// Verifies that segmented button groups update selection when children change.
+    @Test
+    void segmentedButtonGroupUpdatesSelectionWhenChildrenChange() {
+        M3SegmentedButton first = new M3SegmentedButton("First");
+        M3SegmentedButton second = new M3SegmentedButton("Second");
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(first, second);
+
+        second.setSelected(true);
+        group.getItems().remove(second);
+
+        assertNull(group.getSelectedButton());
+        assertFalse(second.isSelected());
+
+        group.setAllowEmptySelection(false);
+
+        assertEquals(first, group.getSelectedButton());
+        assertTrue(first.isSelected());
     }
 
     /// Verifies that m3fx segmented buttons create the Material Design 3 skin.
@@ -2193,6 +2310,30 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3NavigationItemSkin.class, item.getSkin());
     }
 
+    /// Verifies that navigation items expose badge content in the graphic slot.
+    @Test
+    void navigationItemShowsBadge() {
+        M3NavigationItem item = new M3NavigationItem("Inbox");
+        M3Badge badge = new M3Badge("3");
+
+        item.setBadge(badge);
+        applyCss(item);
+
+        assertEquals(badge, item.getBadge());
+        assertEquals(badge, item.lookup(".m3-navigation-item-badge"));
+
+        M3Badge replacement = new M3Badge();
+        item.setBadge(replacement);
+
+        assertEquals(replacement, item.getBadge());
+        assertEquals(replacement, item.lookup(".m3-navigation-item-badge"));
+
+        item.setBadge(null);
+
+        assertNull(item.getBadge());
+        assertNull(item.lookup(".m3-navigation-item-badge"));
+    }
+
     /// Verifies that navigation bars group items and keep a selected item.
     @Test
     void navigationBarGroupsItemsAndKeepsSelection() {
@@ -2673,6 +2814,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
         assertTrue(new M3Icon("A").getStyleClass().contains(M3Icon.STYLE_CLASS));
         assertTrue(new M3IconToggleButton("A").getStyleClass().contains(M3IconToggleButton.STYLE_CLASS));
+        assertTrue(new M3IconToggleButtonGroup().getStyleClass().contains(M3IconToggleButtonGroup.STYLE_CLASS));
         assertTrue(new M3Text("Text").getStyleClass().contains(M3Text.STYLE_CLASS));
         assertTrue(new M3Surface().getStyleClass().contains(M3Surface.STYLE_CLASS));
         assertTrue(new M3BadgedBox().getStyleClass().contains(M3BadgedBox.STYLE_CLASS));
@@ -2713,6 +2855,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Button(), "/styles/controls/button.css");
         assertUserAgentStylesheet(new M3IconButton(), "/styles/controls/button.css");
         assertUserAgentStylesheet(new M3IconToggleButton(), "/styles/controls/icon-toggle-button.css");
+        assertUserAgentStylesheet(new M3IconToggleButtonGroup(), "/styles/controls/icon-toggle-button.css");
         assertUserAgentStylesheet(new M3FloatingActionButton(), "/styles/controls/floating-action-button.css");
         assertUserAgentStylesheet(new M3TextField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
@@ -2751,6 +2894,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");
         assertUserAgentStylesheet(new M3DialogPane(), "/styles/controls/dialog.css");
         assertUserAgentStylesheet(new M3Snackbar(), "/styles/controls/snackbar.css");
+        assertUserAgentStylesheet(new M3SnackbarHost(), "/styles/controls/snackbar.css");
     }
 
     /// Applies the m3fx stylesheet to a control in a scene.

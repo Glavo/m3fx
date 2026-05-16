@@ -71,7 +71,6 @@ public class M3SnackbarHost extends StackPane {
     /// Creates an empty snackbar host.
     public M3SnackbarHost() {
         getStyleClass().add(STYLE_CLASS);
-        getStylesheets().add(M3Stylesheets.controlStylesheet("snackbar.css"));
         setAlignment(Pos.BOTTOM_CENTER);
         setPickOnBounds(false);
     }
@@ -172,6 +171,12 @@ public class M3SnackbarHost extends StackPane {
         showAnimation.stop();
         showing.set(false);
         playHideAnimation(currentSnackbar);
+    }
+
+    /// Returns the user-agent stylesheet for m3fx snackbar hosts.
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("snackbar.css");
     }
 
     /// Plays the snackbar entrance animation.

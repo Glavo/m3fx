@@ -4,7 +4,9 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
@@ -79,6 +81,9 @@ public class M3NavigationItem extends ButtonBase {
         }
     };
 
+    /// The badge displayed over the navigation item graphic.
+    private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
+
     /// Creates an empty navigation item.
     public M3NavigationItem() {
         this("", null);
@@ -91,8 +96,14 @@ public class M3NavigationItem extends ButtonBase {
 
     /// Creates a navigation item with text and graphic content.
     public M3NavigationItem(String text, @Nullable Node graphic) {
+        this(text, graphic, null);
+    }
+
+    /// Creates a navigation item with text, graphic content, and a badge.
+    public M3NavigationItem(String text, @Nullable Node graphic, @Nullable M3Badge badge) {
         super(Objects.requireNonNull(text, "text"), graphic);
         initialize();
+        setBadge(badge);
     }
 
     /// Returns whether this navigation item is selected.
@@ -108,6 +119,21 @@ public class M3NavigationItem extends ButtonBase {
     /// Returns the selected state property.
     public final BooleanProperty selectedProperty() {
         return selected;
+    }
+
+    /// Returns the badge displayed over this item's graphic.
+    public final @Nullable M3Badge getBadge() {
+        return badge.get();
+    }
+
+    /// Sets the badge displayed over this item's graphic.
+    public final void setBadge(@Nullable M3Badge badge) {
+        this.badge.set(badge);
+    }
+
+    /// Returns the badge property.
+    public final ObjectProperty<@Nullable M3Badge> badgeProperty() {
+        return badge;
     }
 
     /// Returns the navigation item container height token.
