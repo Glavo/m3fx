@@ -50,6 +50,8 @@ final class M3StateLayer extends Pane {
         ripple.getStyleClass().add(RIPPLE_STYLE_CLASS);
         setMouseTransparent(true);
         setManaged(false);
+        overlay.setManaged(false);
+        ripple.setManaged(false);
         overlay.setMouseTransparent(true);
         ripple.setMouseTransparent(true);
         ripple.setOpacity(0.0);

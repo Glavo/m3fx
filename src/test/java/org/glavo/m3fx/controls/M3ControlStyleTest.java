@@ -13,6 +13,7 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.Skin;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -144,19 +146,24 @@ final class M3ControlStyleTest {
     /// Verifies that CSS reapplication after pressed pseudo-class changes does not hide ripples.
     @Test
     void buttonRippleSurvivesCssReapplicationAfterPress() {
-        M3Button button = new M3Button("Button");
-        Pane root = new Pane(button);
-        Scene scene = new Scene(root, 200.0, 100.0);
+        runOnFxThread(() -> {
+            M3Button button = new M3Button("Button");
+            Pane root = new Pane(button);
+            Scene scene = new Scene(root, 200.0, 100.0);
 
-        M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        root.applyCss();
-        button.resize(100.0, 40.0);
-        button.layout();
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            button.resize(100.0, 40.0);
+            button.layout();
 
-        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
-        root.applyCss();
+            button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+            root.applyCss();
 
-        assertTrue(lookupRegion(button, ".m3-ripple").getOpacity() > 0.0);
+            Region ripple = lookupRegion(button, ".m3-ripple");
+            assertTrue(ripple.getLayoutBounds().getWidth() > 0.0);
+            assertTrue(ripple.getLayoutBounds().getHeight() > 0.0);
+            assertTrue(ripple.getOpacity() > 0.0);
+        });
     }
 
     /// Verifies that button skins clear transient interaction state when disabled.
@@ -1291,6 +1298,34 @@ final class M3ControlStyleTest {
         assertEquals(0.08, lookupRegion(button, ".m3-state-layer").getOpacity(), 0.0001);
     }
 
+    /// Verifies that state layer feedback changes rendered button pixels.
+    @Test
+    void buttonStateLayerChangesRenderedPixels() {
+        runOnFxThread(() -> {
+            M3Button button = new M3Button("Button");
+            Pane root = new Pane(button);
+            Scene scene = new Scene(root, 200.0, 100.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            button.resize(100.0, 40.0);
+            button.layout();
+            Color normal = snapshotPixel(button, 12, 20);
+
+            button.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            root.applyCss();
+            Color hovered = snapshotPixel(button, 12, 20);
+
+            Region stateLayer = lookupRegion(button, ".m3-state-layer");
+            assertTrue(colorDistance(normal, hovered) > 0.01,
+                    () -> "normal=" + normal
+                            + ", hovered=" + hovered
+                            + ", stateLayerOpacity=" + stateLayer.getOpacity()
+                            + ", stateLayerBounds=" + stateLayer.getBoundsInParent()
+                            + ", stateLayerBackground=" + stateLayer.getBackground());
+        });
+    }
+
     /// Verifies that m3fx sliders create the Material Design 3 slider skin.
     @Test
     void sliderCreatesMaterialSkin() {
@@ -1617,6 +1652,90 @@ final class M3ControlStyleTest {
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
+    }
+
+    /// Returns a rendered pixel from a node snapshot.
+    private static Color snapshotPixel(Node node, int x, int y) {
+        if (Platform.isFxApplicationThread()) {
+            return snapshotPixelOnFxThread(node, x, y);
+        }
+
+        AtomicReference<Color> color = new AtomicReference<>();
+        AtomicReference<RuntimeException> failure = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Platform.runLater(() -> {
+            try {
+                color.set(snapshotPixelOnFxThread(node, x, y));
+            } catch (RuntimeException e) {
+                failure.set(e);
+            } finally {
+                latch.countDown();
+            }
+        });
+        try {
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(e);
+        }
+        RuntimeException exception = failure.get();
+        if (exception != null) {
+            throw exception;
+        }
+        return color.get();
+    }
+
+    /// Runs a task on the FX application thread and propagates failures.
+    private static void runOnFxThread(Runnable task) {
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+            return;
+        }
+
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Platform.runLater(() -> {
+            try {
+                task.run();
+            } catch (Throwable e) {
+                failure.set(e);
+            } finally {
+                latch.countDown();
+            }
+        });
+        try {
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(e);
+        }
+        Throwable exception = failure.get();
+        if (exception instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        if (exception instanceof Error error) {
+            throw error;
+        }
+        if (exception != null) {
+            throw new AssertionError(exception);
+        }
+    }
+
+    /// Returns a rendered pixel from a node snapshot on the FX thread.
+    private static Color snapshotPixelOnFxThread(Node node, int x, int y) {
+        WritableImage image = new WritableImage(
+                (int) Math.ceil(node.getLayoutBounds().getWidth()),
+                (int) Math.ceil(node.getLayoutBounds().getHeight())
+        );
+        node.snapshot(null, image);
+        return image.getPixelReader().getColor(x, y);
+    }
+
+    /// Returns a simple RGB distance between two colors.
+    private static double colorDistance(Color first, Color second) {
+        return Math.abs(first.getRed() - second.getRed())
+                + Math.abs(first.getGreen() - second.getGreen())
+                + Math.abs(first.getBlue() - second.getBlue());
     }
 
     /// Creates a primary mouse event for control behavior tests.

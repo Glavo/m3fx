@@ -7,6 +7,7 @@ import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.scene.control.ButtonBase;
@@ -58,6 +59,9 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// Handles keyboard activation releases.
     private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
 
+    /// Keeps the state layer sized when controls are resized outside a layout pass.
+    private final InvalidationListener stateLayerLayoutInvalidation = observable -> layoutStateLayer();
+
     /// Whether the current interaction was started by a primary mouse press.
     private boolean mousePressed;
 
@@ -82,13 +86,20 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.setScaleX(1.0);
         control.setScaleY(1.0);
         installInteractionHandlers(control);
+        control.widthProperty().addListener(stateLayerLayoutInvalidation);
+        control.heightProperty().addListener(stateLayerLayoutInvalidation);
+        control.layoutBoundsProperty().addListener(stateLayerLayoutInvalidation);
         control.armedProperty().addListener(armedListener);
         control.disabledProperty().addListener(disabledListener);
+        layoutStateLayer();
     }
 
     /// Stops the animation before the skin is disposed.
     @Override
     public void dispose() {
+        getSkinnable().widthProperty().removeListener(stateLayerLayoutInvalidation);
+        getSkinnable().heightProperty().removeListener(stateLayerLayoutInvalidation);
+        getSkinnable().layoutBoundsProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().armedProperty().removeListener(armedListener);
         getSkinnable().disabledProperty().removeListener(disabledListener);
         resetInteractionState();
@@ -100,7 +111,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         super.layoutChildren(x, y, width, height);
-        stateLayer.layoutLayer(x, y, width, height, stateLayerShapeRadius());
+        layoutStateLayer();
     }
 
     /// Installs mouse and keyboard behavior handlers.
@@ -134,6 +145,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (button.isFocusTraversable()) {
             button.requestFocus();
         }
+        layoutStateLayer();
         stateLayer.playRipple(event.getX(), event.getY());
         button.arm();
         event.consume();
@@ -183,11 +195,13 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         if (event.getCode() == KeyCode.SPACE) {
             if (!spaceKeyPressed) {
                 spaceKeyPressed = true;
+                layoutStateLayer();
                 stateLayer.playCenteredRipple();
                 button.arm();
             }
             event.consume();
         } else if (event.getCode() == KeyCode.ENTER) {
+            layoutStateLayer();
             stateLayer.playCenteredRipple();
             button.fire();
             event.consume();
@@ -238,6 +252,20 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.disarm();
         control.setScaleX(1.0);
         control.setScaleY(1.0);
+    }
+
+    /// Lays out the state layer to cover the full control surface.
+    private void layoutStateLayer() {
+        C control = getSkinnable();
+        double width = control.getWidth();
+        double height = control.getHeight();
+        if (width <= 0.0) {
+            width = control.getLayoutBounds().getWidth();
+        }
+        if (height <= 0.0) {
+            height = control.getLayoutBounds().getHeight();
+        }
+        stateLayer.layoutLayer(0.0, 0.0, width, height, stateLayerShapeRadius());
     }
 
     /// Returns the shape radius used to clip state layer feedback.
