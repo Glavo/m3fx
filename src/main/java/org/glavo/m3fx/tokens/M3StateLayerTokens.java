@@ -45,33 +45,43 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// Converts state layer tokens into JavaFX CSS rules for m3fx controls.
     default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
-        appendOpacityRule(
-                builder,
-                ".m3-button:hover, .m3-chip:hover, .m3-icon-button:hover, .m3-fab:hover, .m3-segmented-button:hover",
-                1.0 - hoverOpacity()
-        );
-        appendOpacityRule(
-                builder,
-                ".m3-button:focused, .m3-chip:focused, .m3-icon-button:focused, .m3-fab:focused, "
-                        + ".m3-segmented-button:focused",
-                1.0 - focusOpacity()
-        );
-        appendOpacityRule(
-                builder,
-                ".m3-button:pressed, .m3-chip:pressed, .m3-icon-button:pressed, .m3-fab:pressed, "
-                        + ".m3-segmented-button:pressed",
-                1.0 - pressedOpacity()
-        );
-        appendOpacityRule(
-                builder,
-                ".m3-button:disabled, .m3-chip:disabled, .m3-icon-button:disabled, .m3-fab:disabled, "
-                        + ".m3-segmented-button:disabled, "
-                        + ".m3-text-field:disabled, .m3-password-field:disabled, "
-                        + ".m3-checkbox:disabled, .m3-radio-button:disabled, .m3-switch:disabled, .m3-slider:disabled, "
-                        + ".m3-progress-bar:disabled, .m3-progress-indicator:disabled",
-                disabledContentOpacity()
-        );
+        appendOpacityRule(builder, hoverStateSelectors(), 1.0 - hoverOpacity());
+        appendOpacityRule(builder, focusStateSelectors(), 1.0 - focusOpacity());
+        appendOpacityRule(builder, pressedStateSelectors(), 1.0 - pressedOpacity());
+        appendOpacityRule(builder, disabledStateSelectors(), disabledContentOpacity());
         return builder.toString().stripTrailing();
+    }
+
+    /// Returns selectors for controls that expose hover state layer feedback.
+    private static String hoverStateSelectors() {
+        return ".m3-button:hover, .m3-chip:hover, .m3-icon-button:hover, .m3-fab:hover, "
+                + ".m3-segmented-button:hover, .m3-checkbox:hover, .m3-radio-button:hover, .m3-switch:hover, "
+                + ".m3-slider:hover, .m3-list-item:hover, .m3-card:hover";
+    }
+
+    /// Returns selectors for controls that expose focus state layer feedback.
+    private static String focusStateSelectors() {
+        return ".m3-button:focused, .m3-chip:focused, .m3-icon-button:focused, .m3-fab:focused, "
+                + ".m3-segmented-button:focused, .m3-text-field:focused, .m3-password-field:focused, "
+                + ".m3-checkbox:focused, .m3-radio-button:focused, .m3-switch:focused, .m3-slider:focused, "
+                + ".m3-list-item:focused, .m3-card:focused";
+    }
+
+    /// Returns selectors for controls that expose pressed state layer feedback.
+    private static String pressedStateSelectors() {
+        return ".m3-button:pressed, .m3-chip:pressed, .m3-icon-button:pressed, "
+                + ".m3-fab:pressed, .m3-segmented-button:pressed, .m3-checkbox:pressed, .m3-radio-button:pressed, "
+                + ".m3-switch:pressed, .m3-slider:pressed, .m3-list-item:pressed, .m3-card:pressed";
+    }
+
+    /// Returns selectors for controls that expose disabled content opacity.
+    private static String disabledStateSelectors() {
+        return ".m3-button:disabled, .m3-chip:disabled, .m3-icon-button:disabled, "
+                + ".m3-fab:disabled, .m3-segmented-button:disabled, .m3-text-field:disabled, "
+                + ".m3-password-field:disabled, .m3-checkbox:disabled, .m3-radio-button:disabled, .m3-switch:disabled, "
+                + ".m3-slider:disabled, .m3-progress-bar:disabled, .m3-progress-indicator:disabled, "
+                + ".m3-list-item:disabled, .m3-card:disabled, .m3-dialog-pane:disabled, .m3-snackbar:disabled, "
+                + ".m3-divider:disabled, .m3-badge:disabled";
     }
 
     /// Appends an opacity CSS rule.

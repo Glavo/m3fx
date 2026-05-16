@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
@@ -502,6 +503,29 @@ final class M3ControlStyleTest {
         assertEquals(2, fireCount.get());
         listItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
         assertEquals(3, fireCount.get());
+    }
+
+    /// Verifies that generated state layer rules apply beyond button-like controls.
+    @Test
+    void generatedStateLayerRulesApplyToInteractiveControls() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        M3ListItem listItem = new M3ListItem("Headline");
+        M3Card card = new M3Card();
+        Pane root = new Pane(checkBox, slider, listItem, card);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        checkBox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        slider.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+        listItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+        card.setDisable(true);
+        root.applyCss();
+
+        assertEquals(0.92, checkBox.getOpacity(), 0.0001);
+        assertEquals(0.9, slider.getOpacity(), 0.0001);
+        assertEquals(0.9, listItem.getOpacity(), 0.0001);
+        assertEquals(0.38, card.getOpacity(), 0.0001);
     }
 
     /// Verifies style classes for container controls.

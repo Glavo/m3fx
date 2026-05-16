@@ -72,10 +72,16 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-regular-fab"));
         assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button-first"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-checkbox:hover"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-slider:pressed"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-list-item:disabled"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-card:focused"));
         assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
         assertTrue(theme.toControlStyleRules().contains(".m3-badge"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.92"));
+        assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.9"));
+        assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.38"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
