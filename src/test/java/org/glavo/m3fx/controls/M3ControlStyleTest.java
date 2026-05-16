@@ -25,6 +25,7 @@ import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
+import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
 import org.glavo.m3fx.skins.M3SwitchSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -398,6 +399,38 @@ final class M3ControlStyleTest {
 
         assertTrue(second.isSelected());
         assertEquals(second, group.getSelectedToggle());
+    }
+
+    /// Verifies that m3fx segmented buttons create the Material Design 3 skin.
+    @Test
+    void segmentedButtonCreatesMaterialSkin() {
+        M3SegmentedButton button = new M3SegmentedButton("Month");
+
+        applyCss(button);
+
+        assertInstanceOf(M3SegmentedButtonSkin.class, button.getSkin());
+    }
+
+    /// Verifies that selected segmented button states keep Material colors.
+    @Test
+    void segmentedButtonStateStylesPreserveSelectedColors() {
+        M3SegmentedButton day = new M3SegmentedButton("Day");
+        M3SegmentedButton week = new M3SegmentedButton("Week");
+        M3SegmentedButton month = new M3SegmentedButton("Month");
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(day, week, month);
+        Pane root = new Pane(group);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " " + buttonStateTestColors());
+        month.setSelected(true);
+        applyInteractivePseudoClasses(month);
+        root.applyCss();
+
+        assertLabeledColors(day, Color.TRANSPARENT, Color.rgb(34, 35, 36));
+        assertBorderColor(day, Color.rgb(13, 14, 15));
+        assertLabeledColors(month, Color.rgb(7, 8, 9), Color.rgb(10, 11, 12));
+        assertBorderColor(month, Color.rgb(7, 8, 9));
     }
 
     /// Verifies that segmented button groups assign segment position style classes.
@@ -864,7 +897,8 @@ final class M3ControlStyleTest {
                 + "-m3-color-primary-container: rgb(22,23,24); "
                 + "-m3-color-on-primary-container: rgb(25,26,27); "
                 + "-m3-color-tertiary-container: rgb(28,29,30); "
-                + "-m3-color-on-tertiary-container: rgb(31,32,33);";
+                + "-m3-color-on-tertiary-container: rgb(31,32,33); "
+                + "-m3-color-on-surface: rgb(34,35,36);";
     }
 
     /// Applies the pseudo-class combination that previously allowed Modena button styles to win.
