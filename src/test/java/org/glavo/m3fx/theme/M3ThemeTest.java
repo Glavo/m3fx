@@ -27,10 +27,14 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -182,6 +186,68 @@ final class M3ThemeTest {
         assertEquals(2, scene.getStylesheets().size());
         assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
         assertTrue(M3ThemeManager.stylesheetUrl().endsWith("/styles/base.css"));
+    }
+
+    /// Verifies that generated component stylesheets can be addressed directly.
+    @Test
+    void exposesGeneratedThemeStylesheetUrl() throws Exception {
+        M3Theme theme = M3Theme.defaultTheme();
+
+        String stylesheet = M3ThemeManager.themeStylesheetUrl(theme);
+        String repeatedStylesheet = M3ThemeManager.themeStylesheetUrl(theme);
+        String stylesheetContent = Files.readString(Path.of(URI.create(stylesheet)));
+
+        assertEquals(stylesheet, repeatedStylesheet);
+        assertTrue(stylesheet.startsWith("file:"));
+        assertTrue(stylesheet.endsWith(".css"));
+        assertTrue(stylesheetContent.contains(".m3-filled-button"));
+        assertTrue(stylesheetContent.contains(".m3-elevated-card .m3-card-container"));
+    }
+
+    /// Verifies that generated component stylesheets can be installed independently.
+    @Test
+    void installsGeneratedThemeStylesheetIndependently() {
+        Pane root = new Pane();
+        Scene scene = new Scene(root);
+        M3Theme theme = M3Theme.defaultTheme();
+
+        M3ThemeManager.installThemeStylesheet(scene, theme);
+        M3ThemeManager.installThemeStylesheet(scene, theme);
+
+        assertEquals(1, scene.getStylesheets().size());
+        assertEquals(M3ThemeManager.themeStylesheetUrl(theme), scene.getStylesheets().get(0));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertFalse(root.getProperties().containsKey(M3ThemeManager.THEME_PROPERTY_KEY));
+
+        M3ThemeManager.uninstallThemeStylesheet(scene);
+        M3ThemeManager.uninstallThemeStylesheet(scene);
+
+        assertEquals(0, scene.getStylesheets().size());
+    }
+
+    /// Verifies that theme manager installation can be reverted.
+    @Test
+    void uninstallsThemeFromScene() {
+        Pane root = new Pane();
+        root.getStyleClass().add("app-root");
+        root.setStyle("-fx-padding: 4px;");
+        Scene scene = new Scene(root);
+        M3Theme theme = M3Theme.defaultTheme();
+
+        M3ThemeManager.install(scene, theme);
+        assertEquals(2, scene.getStylesheets().size());
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertTrue(root.getStyle().contains("-m3-color-primary"));
+
+        M3ThemeManager.uninstall(scene);
+        M3ThemeManager.uninstall(scene);
+
+        assertTrue(root.getStyleClass().contains("app-root"));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertFalse(root.getProperties().containsKey(M3ThemeManager.THEME_PROPERTY_KEY));
+        assertEquals("-fx-padding: 4px;", root.getStyle());
+        assertFalse(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
+        assertEquals(0, scene.getStylesheets().size());
     }
 
     /// Verifies that generated component stylesheets apply theme tokens to controls.

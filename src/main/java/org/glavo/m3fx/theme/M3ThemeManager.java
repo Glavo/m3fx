@@ -99,6 +99,46 @@ public final class M3ThemeManager {
         }
     }
 
+    /// Removes m3fx theme state and stylesheets from a scene.
+    public static void uninstall(Scene scene) {
+        Objects.requireNonNull(scene, "scene");
+
+        uninstall(scene.getRoot());
+        uninstallThemeStylesheet(scene);
+        uninstallStylesheet(scene);
+    }
+
+    /// Removes m3fx theme tokens from a root node.
+    public static void uninstall(Parent root) {
+        Objects.requireNonNull(root, "root");
+
+        root.getStyleClass().remove(ROOT_STYLE_CLASS);
+        Object baseStyleValue = root.getProperties().remove(BASE_STYLE_PROPERTY_KEY);
+        if (baseStyleValue instanceof String baseStyle) {
+            root.setStyle(baseStyle);
+        } else if (root.getProperties().containsKey(THEME_PROPERTY_KEY)) {
+            root.setStyle("");
+        }
+        root.getProperties().remove(THEME_PROPERTY_KEY);
+    }
+
+    /// Removes the base m3fx stylesheet from a scene.
+    public static void uninstallStylesheet(Scene scene) {
+        Objects.requireNonNull(scene, "scene");
+
+        scene.getStylesheets().remove(stylesheetUrl());
+    }
+
+    /// Removes the generated component token stylesheet tracked for a scene.
+    public static void uninstallThemeStylesheet(Scene scene) {
+        Objects.requireNonNull(scene, "scene");
+
+        String stylesheet = THEME_STYLESHEETS.remove(scene);
+        if (stylesheet != null) {
+            scene.getStylesheets().remove(stylesheet);
+        }
+    }
+
     /// Sets the base m3fx stylesheet as the application user-agent stylesheet.
     public static void installUserAgentStylesheet() {
         Application.setUserAgentStylesheet(stylesheetUrl());
@@ -110,7 +150,9 @@ public final class M3ThemeManager {
     }
 
     /// Returns a file URL for a generated component token stylesheet.
-    private static String themeStylesheetUrl(M3Theme theme) {
+    public static String themeStylesheetUrl(M3Theme theme) {
+        Objects.requireNonNull(theme, "theme");
+
         String stylesheet = theme.toControlStyleRules();
         String digest = sha256(stylesheet);
         Path directory = Path.of(System.getProperty("java.io.tmpdir"), THEME_STYLESHEET_DIRECTORY);
