@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Glavo
+// SPDX-License-Identifier: Apache-2.0
+
 package org.glavo.m3fx.tokens;
 
 import org.glavo.m3fx.internal.tokens.M3TokenSetImpl;
