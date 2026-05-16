@@ -1,0 +1,50 @@
+.m3-tab-bar {
+    -fx-background-color: -m3-color-surface;
+    -fx-alignment: center-left;
+    -fx-spacing: 0px;
+}
+
+.m3-tab.m3-tab,
+.m3-tab.m3-tab:hover,
+.m3-tab.m3-tab:focused,
+.m3-tab.m3-tab:armed,
+.m3-tab.m3-tab:pressed,
+.m3-tab.m3-tab:selected {
+    -m3-container-height: 48px;
+    -m3-tab-min-width: 90px;
+    -m3-horizontal-padding: 16px;
+    -m3-active-indicator-height: 3px;
+    -m3-active-indicator-shape: 3px;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+}
+
+.m3-tab:selected {
+    -fx-text-fill: -m3-color-primary;
+}
+
+.m3-tab-active-indicator {
+    -fx-background-color: -m3-color-primary;
+    -fx-background-insets: 0;
+    -fx-background-radius: 3px 3px 0px 0px;
+}
+
+.m3-tab .m3-state-layer,
+.m3-tab .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
+}
+
+.m3-tab:selected .m3-state-layer,
+.m3-tab:selected .m3-ripple {
+    -fx-background-color: -m3-color-primary;
+}
+
+.m3-tab:disabled {
+    -fx-opacity: 0.38;
+}

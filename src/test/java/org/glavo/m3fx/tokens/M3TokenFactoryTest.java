@@ -46,6 +46,7 @@ final class M3TokenFactoryTest {
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-font-family: \"Demo\""));
         assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-disabled-content-opacity: 0.42"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:focus-visible .m3-state-layer"));
+        assertTrue(stateLayer.toControlStyleRules().contains(".m3-tab:focus-visible .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:pressed .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains("-fx-opacity: 0.13"));
         assertTrue(elevation.toControlStyleRules().contains(".m3-elevated-button:hover"));
@@ -81,16 +82,22 @@ final class M3TokenFactoryTest {
         assertSame(componentTokens, tokenSet.componentTokens());
         assertEquals(51.0, tokenSet.componentTokens().filledButton().height(), 0.0001);
         assertEquals(70.0, tokenSet.componentTokens().floatingActionButton().regularSize(), 0.0001);
+        assertEquals(61.0, tokenSet.componentTokens().tab().containerHeight(), 0.0001);
         assertEquals(59.0, tokenSet.componentTokens().topAppBar().containerHeight(), 0.0001);
+        assertEquals(62.0, tokenSet.componentTokens().bottomAppBar().containerHeight(), 0.0001);
         assertEquals(72.0, tokenSet.componentTokens().navigationRail().containerWidth(), 0.0001);
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 51px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-tab-container-height: 61px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 59px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 62px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 72px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 78px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-medium: 220ms"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-tab-active-indicator"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-top-app-bar-actions"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-app-bar-actions"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-rail .m3-navigation-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-drawer .m3-list-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
@@ -109,6 +116,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ButtonTokens(56.0, 28.0, 0.0),
                 new M3ComponentTokens.FabTokens(50.0, 70.0, 110.0, 14.0, 22.0, 30.0, 13.0, 17.0, 25.0),
                 new M3ComponentTokens.ButtonTokens(57.0, 26.0, 14.0),
+                new M3ComponentTokens.TabTokens(61.0, 91.0, 15.0, 4.0, 4.0),
                 new M3ComponentTokens.FieldTokens(66.0, 8.0, 18.0),
                 new M3ComponentTokens.SelectionTokens(42.0, 20.0),
                 new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 50.0),
@@ -120,6 +128,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.DividerTokens(2.0, 8.0, 12.0),
                 new M3ComponentTokens.BadgeTokens(7.0, 19.0, 21.0, 10.0, 5.0),
                 new M3ComponentTokens.TopAppBarTokens(59.0, 11.0, 13.0, 6.0),
+                new M3ComponentTokens.BottomAppBarTokens(62.0, 12.0, 14.0, 7.0),
                 new M3ComponentTokens.NavigationBarTokens(67.0, 68.0, 69.0, 30.0, 15.0, 4.0, 9.0),
                 new M3ComponentTokens.NavigationRailTokens(72.0, 73.0, 74.0, 75.0, 31.0, 16.0, 5.0, 17.0, 10.0, 11.0),
                 new M3ComponentTokens.NavigationDrawerTokens(78.0, 79.0, 80.0, 81.0, 18.0, 12.0, 14.0, 2.0, 16.0, 5.0),

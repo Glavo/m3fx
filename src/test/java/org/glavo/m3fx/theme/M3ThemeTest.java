@@ -67,6 +67,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-indicator-size"));
@@ -74,6 +75,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-divider-thickness"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height"));
@@ -81,6 +83,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-regular-fab"));
         assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button-first"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-tab-active-indicator"));
         assertTrue(theme.toControlStyleRules().contains(".m3-checkbox:hover"));
         assertTrue(theme.toControlStyleRules().contains(".m3-slider:pressed"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item:disabled"));
@@ -89,6 +92,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
         assertTrue(theme.toControlStyleRules().contains(".m3-badge"));
         assertTrue(theme.toControlStyleRules().contains(".m3-top-app-bar"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-bottom-app-bar"));
         assertTrue(theme.toControlStyleRules().contains(".m3-navigation-rail"));
         assertTrue(theme.toControlStyleRules().contains(".m3-navigation-drawer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));
@@ -101,11 +105,13 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
         assertNotNull(theme.tokens().componentTokens().segmentedButton());
+        assertNotNull(theme.tokens().componentTokens().tab());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
         assertNotNull(theme.tokens().componentTokens().divider());
         assertNotNull(theme.tokens().componentTokens().badge());
         assertNotNull(theme.tokens().componentTokens().topAppBar());
+        assertNotNull(theme.tokens().componentTokens().bottomAppBar());
         assertNotNull(theme.tokens().componentTokens().navigationBar());
         assertNotNull(theme.tokens().componentTokens().navigationRail());
         assertNotNull(theme.tokens().componentTokens().navigationDrawer());
@@ -129,12 +135,14 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size: 64px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-container-height: 56px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-shape: 32px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 8px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 72px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 88px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 112px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 384px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height: 64px"));
@@ -143,11 +151,13 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
         assertNotNull(theme.tokens().componentTokens().segmentedButton());
+        assertNotNull(theme.tokens().componentTokens().tab());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
         assertNotNull(theme.tokens().componentTokens().divider());
         assertNotNull(theme.tokens().componentTokens().badge());
         assertNotNull(theme.tokens().componentTokens().topAppBar());
+        assertNotNull(theme.tokens().componentTokens().bottomAppBar());
         assertNotNull(theme.tokens().componentTokens().navigationBar());
         assertNotNull(theme.tokens().componentTokens().navigationRail());
         assertNotNull(theme.tokens().componentTokens().navigationDrawer());

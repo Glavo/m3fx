@@ -46,6 +46,7 @@ import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
 import org.glavo.m3fx.skins.M3SnackbarSkin;
 import org.glavo.m3fx.skins.M3SwitchSkin;
+import org.glavo.m3fx.skins.M3TabSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -888,6 +889,77 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that tab component token properties are styleable from CSS.
+    @Test
+    void tabTokensAreStyleable() {
+        M3Tab tab = new M3Tab("Overview");
+        tab.setStyle(
+                "-m3-container-height: 52px; "
+                        + "-m3-tab-min-width: 120px; "
+                        + "-m3-horizontal-padding: 20px; "
+                        + "-m3-active-indicator-height: 4px; "
+                        + "-m3-active-indicator-shape: 2px;"
+        );
+
+        applyCss(tab);
+
+        assertEquals(52.0, tab.getContainerHeight(), 0.0001);
+        assertEquals(120.0, tab.getTabMinWidth(), 0.0001);
+        assertEquals(20.0, tab.getHorizontalPadding(), 0.0001);
+        assertEquals(4.0, tab.getActiveIndicatorHeight(), 0.0001);
+        assertEquals(2.0, tab.getActiveIndicatorShape(), 0.0001);
+        assertEquals(120.0, tab.getMinWidth(), 0.0001);
+        assertEquals(52.0, tab.getPrefHeight(), 0.0001);
+        assertInstanceOf(M3TabSkin.class, tab.getSkin());
+    }
+
+    /// Verifies that tab bars group tabs and keep a selected tab.
+    @Test
+    void tabBarGroupsTabsAndKeepsSelection() {
+        M3Tab overview = new M3Tab("Overview");
+        M3Tab details = new M3Tab("Details");
+        M3TabBar tabBar = new M3TabBar(overview, details);
+
+        assertTrue(overview.isSelected());
+        assertEquals(overview, tabBar.getSelectedTab());
+
+        details.fire();
+
+        assertFalse(overview.isSelected());
+        assertTrue(details.isSelected());
+        assertEquals(details, tabBar.getSelectedTab());
+
+        details.fire();
+
+        assertTrue(details.isSelected());
+        assertEquals(details, tabBar.getSelectedTab());
+    }
+
+    /// Verifies that tab skins expose the active indicator and ripple feedback.
+    @Test
+    void tabSkinLaysOutIndicatorAndRipple() {
+        M3Tab tab = new M3Tab("Overview");
+        tab.setSelected(true);
+        Pane root = new Pane(tab);
+        Scene scene = new Scene(root, 160.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        tab.resize(120.0, 48.0);
+        tab.layout();
+
+        Region indicator = lookupRegion(tab, ".m3-tab-active-indicator");
+        assertEquals(120.0, indicator.getWidth(), 0.0001);
+        assertEquals(3.0, indicator.getHeight(), 0.0001);
+        assertEquals(1.0, indicator.getOpacity(), 0.0001);
+
+        tab.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 40.0, 24.0, true));
+        assertTrue(tab.isArmed());
+        tab.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 40.0, 24.0, false));
+
+        assertTrue(lookupRegion(tab, ".m3-ripple").getOpacity() > 0.0);
+    }
+
     /// Verifies that selection component token properties are styleable from CSS.
     @Test
     void selectionTokensAreStyleable() {
@@ -1715,6 +1787,41 @@ final class M3ControlStyleTest {
         assertEquals(16.0, topAppBar.getSpacing(), 0.0001);
     }
 
+    /// Verifies that bottom app bars expose action and floating action slots.
+    @Test
+    void bottomAppBarExposesSlots() {
+        Label search = new Label("Search");
+        Label more = new Label("More");
+        Label create = new Label("Create");
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar(search);
+
+        bottomAppBar.getActions().add(more);
+        bottomAppBar.setFloatingAction(create);
+
+        assertTrue(bottomAppBar.getActions().contains(search));
+        assertTrue(bottomAppBar.getActions().contains(more));
+        assertEquals(create, bottomAppBar.getFloatingAction());
+
+        bottomAppBar.setFloatingAction(null);
+
+        assertNull(bottomAppBar.getFloatingAction());
+    }
+
+    /// Verifies that bottom app bar token rules apply container metrics.
+    @Test
+    void bottomAppBarAppliesMetrics() {
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        Pane root = new Pane(bottomAppBar);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, bottomAppBar.getSpacing(), 0.0001);
+    }
+
     /// Verifies that navigation drawers group list items and keep one selected item.
     @Test
     void navigationDrawerGroupsItemsAndKeepsSelection() {
@@ -1791,16 +1898,18 @@ final class M3ControlStyleTest {
     void generatedStateLayerRulesApplyToInteractiveControls() {
         M3CheckBox checkBox = new M3CheckBox("Check");
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        M3Tab tab = new M3Tab("Overview");
         M3NavigationItem navigationItem = new M3NavigationItem("Home");
         M3ListItem listItem = new M3ListItem("Headline");
         M3Card card = new M3Card();
         M3Card disabledCard = new M3Card();
-        Pane root = new Pane(checkBox, slider, navigationItem, listItem, card, disabledCard);
+        Pane root = new Pane(checkBox, slider, tab, navigationItem, listItem, card, disabledCard);
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         checkBox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         slider.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+        tab.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         navigationItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         listItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         card.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
@@ -1811,6 +1920,8 @@ final class M3ControlStyleTest {
         assertEquals(0.08, lookupRegion(checkBox, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, slider.getOpacity(), 0.0001);
         assertEquals(0.1, lookupRegion(slider, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(1.0, tab.getOpacity(), 0.0001);
+        assertEquals(0.1, lookupRegion(tab, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, navigationItem.getOpacity(), 0.0001);
         assertEquals(0.1, lookupRegion(navigationItem, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, listItem.getOpacity(), 0.0001);
@@ -1988,6 +2099,7 @@ final class M3ControlStyleTest {
         M3Snackbar snackbar = new M3Snackbar("Message");
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
         M3TopAppBar topAppBar = new M3TopAppBar();
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
         M3NavigationBar navigationBar = new M3NavigationBar();
         M3NavigationRail navigationRail = new M3NavigationRail();
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
@@ -1997,6 +2109,7 @@ final class M3ControlStyleTest {
         assertTrue(snackbar.getStyleClass().contains(M3Snackbar.STYLE_CLASS));
         assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBar.STYLE_CLASS));
+        assertTrue(bottomAppBar.getStyleClass().contains(M3BottomAppBar.STYLE_CLASS));
         assertTrue(navigationBar.getStyleClass().contains(M3NavigationBar.STYLE_CLASS));
         assertTrue(navigationRail.getStyleClass().contains(M3NavigationRail.STYLE_CLASS));
         assertTrue(navigationDrawer.getStyleClass().contains(M3NavigationDrawer.STYLE_CLASS));
@@ -2021,6 +2134,8 @@ final class M3ControlStyleTest {
         assertTrue(chip.getStyleClass().contains(M3ChipVariant.FILTER.getStyleClass()));
         assertTrue(new M3SegmentedButton("Day").getStyleClass().contains(M3SegmentedButton.STYLE_CLASS));
         assertTrue(new M3SegmentedButtonGroup().getStyleClass().contains(M3SegmentedButtonGroup.STYLE_CLASS));
+        assertTrue(new M3Tab("Overview").getStyleClass().contains(M3Tab.STYLE_CLASS));
+        assertTrue(new M3TabBar().getStyleClass().contains(M3TabBar.STYLE_CLASS));
         assertTrue(new M3Divider().getStyleClass().contains(M3Divider.STYLE_CLASS));
         assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
         assertTrue(new M3NavigationItem("Home").getStyleClass().contains(M3NavigationItem.STYLE_CLASS));
@@ -2042,11 +2157,14 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Chip(), "/styles/controls/chip.css");
         assertUserAgentStylesheet(new M3SegmentedButton(), "/styles/controls/segmented-button.css");
         assertUserAgentStylesheet(new M3SegmentedButtonGroup(), "/styles/controls/segmented-button.css");
+        assertUserAgentStylesheet(new M3Tab(), "/styles/controls/tab.css");
+        assertUserAgentStylesheet(new M3TabBar(), "/styles/controls/tab.css");
         assertUserAgentStylesheet(new M3ProgressBar(), "/styles/controls/progress.css");
         assertUserAgentStylesheet(new M3ProgressIndicator(), "/styles/controls/progress.css");
         assertUserAgentStylesheet(new M3Divider(), "/styles/controls/divider.css");
         assertUserAgentStylesheet(new M3Badge(), "/styles/controls/badge.css");
         assertUserAgentStylesheet(new M3TopAppBar(), "/styles/controls/top-app-bar.css");
+        assertUserAgentStylesheet(new M3BottomAppBar(), "/styles/controls/bottom-app-bar.css");
         assertUserAgentStylesheet(new M3NavigationBar(), "/styles/controls/navigation-bar.css");
         assertUserAgentStylesheet(new M3NavigationRail(), "/styles/controls/navigation-rail.css");
         assertUserAgentStylesheet(new M3NavigationDrawer(), "/styles/controls/navigation-drawer.css");

@@ -35,6 +35,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by segmented buttons.
     ButtonTokens segmentedButton();
 
+    /// Returns tokens used by tabs.
+    TabTokens tab();
+
     /// Returns tokens used by text input controls.
     FieldTokens field();
 
@@ -68,6 +71,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by top app bars.
     TopAppBarTokens topAppBar();
 
+    /// Returns tokens used by bottom app bars.
+    BottomAppBarTokens bottomAppBar();
+
     /// Returns tokens used by navigation bars.
     NavigationBarTokens navigationBar();
 
@@ -90,6 +96,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             ButtonTokens iconButton,
             FabTokens floatingActionButton,
             ButtonTokens segmentedButton,
+            TabTokens tab,
             FieldTokens field,
             SelectionTokens selection,
             SliderTokens slider,
@@ -101,6 +108,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             DividerTokens divider,
             BadgeTokens badge,
             TopAppBarTokens topAppBar,
+            BottomAppBarTokens bottomAppBar,
             NavigationBarTokens navigationBar,
             NavigationRailTokens navigationRail,
             NavigationDrawerTokens navigationDrawer,
@@ -115,6 +123,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 iconButton,
                 floatingActionButton,
                 segmentedButton,
+                tab,
                 field,
                 selection,
                 slider,
@@ -126,6 +135,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 divider,
                 badge,
                 topAppBar,
+                bottomAppBar,
                 navigationBar,
                 navigationRail,
                 navigationDrawer,
@@ -145,11 +155,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double fabRegularSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double fabLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 104.0 : 96.0);
         double segmentedButtonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
+        double tabHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
+        double tabMinWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 104.0 : 90.0);
         double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
         double topAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
+        double bottomAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
         double navigationBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
         double navigationItemWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
         double navigationIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
@@ -184,6 +197,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         24.0
                 ),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), 12.0),
+                new TabTokens(tabHeight, tabMinWidth, 16.0, 3.0, 3.0),
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
@@ -195,6 +209,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new DividerTokens(1.0, 0.0, 0.0),
                 new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeHeight, badgeLargeHeight / 2.0, 4.0),
                 new TopAppBarTokens(topAppBarHeight, 16.0, 16.0, 8.0),
+                new BottomAppBarTokens(bottomAppBarHeight, 16.0, 16.0, 8.0),
                 new NavigationBarTokens(
                         navigationBarHeight,
                         navigationItemWidth,
@@ -251,6 +266,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, "button-icon", iconButton());
         append(builder, floatingActionButton());
         append(builder, "segmented-button", segmentedButton());
+        append(builder, tab());
         append(builder, field());
         append(builder, selection());
         append(builder, slider());
@@ -262,6 +278,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, divider());
         append(builder, badge());
         append(builder, topAppBar());
+        append(builder, bottomAppBar());
         append(builder, navigationBar());
         append(builder, navigationRail());
         append(builder, navigationDrawer());
@@ -301,6 +318,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
         appendButtonRule(builder, ".m3-segmented-button", segmentedButton());
         appendSegmentedButtonPositionRules(builder, segmentedButton());
+        appendTabRule(builder, ".m3-tab", tab());
+        appendTabIndicatorRule(builder, ".m3-tab-active-indicator", tab());
         appendFieldRule(builder, ".m3-text-field, .m3-password-field", field());
         appendFilledFieldRule(builder, ".m3-filled-field", field());
         appendOutlinedFieldRule(builder, ".m3-outlined-field", field());
@@ -322,6 +341,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendBadgeRule(builder, ".m3-badge", badge());
         appendTopAppBarRule(builder, ".m3-top-app-bar", topAppBar());
         appendTopAppBarActionsRule(builder, ".m3-top-app-bar-actions", topAppBar());
+        appendBottomAppBarRule(builder, ".m3-bottom-app-bar", bottomAppBar());
+        appendBottomAppBarActionsRule(builder, ".m3-bottom-app-bar-actions", bottomAppBar());
         appendNavigationBarRule(builder, ".m3-navigation-bar", navigationBar());
         appendNavigationItemRule(builder, ".m3-navigation-item", navigationBar());
         appendNavigationIndicatorRule(builder, ".m3-navigation-item-indicator", navigationBar());
@@ -356,6 +377,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-fab-small-horizontal-padding", M3TokenCss.pixels(tokens.smallHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-fab-regular-horizontal-padding", M3TokenCss.pixels(tokens.regularHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-fab-large-horizontal-padding", M3TokenCss.pixels(tokens.largeHorizontalPadding()));
+    }
+
+    /// Appends tab token declarations.
+    private static void append(StringBuilder builder, TabTokens tokens) {
+        M3TokenCss.append(builder, "-m3-tab-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, "-m3-tab-min-width", M3TokenCss.pixels(tokens.tabMinWidth()));
+        M3TokenCss.append(builder, "-m3-tab-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-tab-active-indicator-height", M3TokenCss.pixels(tokens.activeIndicatorHeight()));
+        M3TokenCss.append(builder, "-m3-tab-active-indicator-shape", M3TokenCss.pixels(tokens.activeIndicatorShape()));
     }
 
     /// Appends field token declarations.
@@ -436,6 +466,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-top-app-bar-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
     }
 
+    /// Appends bottom app bar token declarations.
+    private static void append(StringBuilder builder, BottomAppBarTokens tokens) {
+        M3TokenCss.append(builder, "-m3-bottom-app-bar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, "-m3-bottom-app-bar-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-bottom-app-bar-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        M3TokenCss.append(builder, "-m3-bottom-app-bar-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+    }
+
     /// Appends navigation bar token declarations.
     private static void append(StringBuilder builder, NavigationBarTokens tokens) {
         M3TokenCss.append(builder, "-m3-navigation-bar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
@@ -511,6 +549,27 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(horizontalPadding));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(shape));
         appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(shape));
+        endRule(builder);
+    }
+
+    /// Appends a tab token CSS rule.
+    private static void appendTabRule(StringBuilder builder, String selector, TabTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-tab-min-width", M3TokenCss.pixels(tokens.tabMinWidth()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-m3-active-indicator-height", M3TokenCss.pixels(tokens.activeIndicatorHeight()));
+        appendDeclaration(builder, "-m3-active-indicator-shape", M3TokenCss.pixels(tokens.activeIndicatorShape()));
+        endRule(builder);
+    }
+
+    /// Appends a tab active indicator token CSS rule.
+    private static void appendTabIndicatorRule(StringBuilder builder, String selector, TabTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.activeIndicatorShape())
+                + " "
+                + M3TokenCss.pixels(tokens.activeIndicatorShape())
+                + " 0 0");
         endRule(builder);
     }
 
@@ -745,6 +804,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends a bottom app bar token CSS rule.
+    private static void appendBottomAppBarRule(StringBuilder builder, String selector, BottomAppBarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a bottom app bar actions token CSS rule.
+    private static void appendBottomAppBarActionsRule(StringBuilder builder, String selector, BottomAppBarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+        endRule(builder);
+    }
+
     /// Appends a navigation bar token CSS rule.
     private static void appendNavigationBarRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
         beginRule(builder, selector);
@@ -920,6 +996,31 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(smallHorizontalPadding, "smallHorizontalPadding");
             validateNonNegative(regularHorizontalPadding, "regularHorizontalPadding");
             validateNonNegative(largeHorizontalPadding, "largeHorizontalPadding");
+        }
+    }
+
+    /// Tokens used by tabs.
+    ///
+    /// @param containerHeight the tab container height
+    /// @param tabMinWidth the tab minimum width
+    /// @param horizontalPadding the horizontal content padding
+    /// @param activeIndicatorHeight the active indicator height
+    /// @param activeIndicatorShape the active indicator radius
+    @NotNullByDefault
+    public record TabTokens(
+            double containerHeight,
+            double tabMinWidth,
+            double horizontalPadding,
+            double activeIndicatorHeight,
+            double activeIndicatorShape
+    ) {
+        /// Creates tab tokens.
+        public TabTokens {
+            validateNonNegative(containerHeight, "containerHeight");
+            validateNonNegative(tabMinWidth, "tabMinWidth");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(activeIndicatorHeight, "activeIndicatorHeight");
+            validateNonNegative(activeIndicatorShape, "activeIndicatorShape");
         }
     }
 
@@ -1128,6 +1229,28 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates top app bar tokens.
         public TopAppBarTokens {
+            validateNonNegative(containerHeight, "containerHeight");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(contentSpacing, "contentSpacing");
+            validateNonNegative(actionSpacing, "actionSpacing");
+        }
+    }
+
+    /// Tokens used by bottom app bars.
+    ///
+    /// @param containerHeight the bottom app bar container height
+    /// @param horizontalPadding the horizontal content padding
+    /// @param contentSpacing the spacing between action and floating action regions
+    /// @param actionSpacing the spacing between action nodes
+    @NotNullByDefault
+    public record BottomAppBarTokens(
+            double containerHeight,
+            double horizontalPadding,
+            double contentSpacing,
+            double actionSpacing
+    ) {
+        /// Creates bottom app bar tokens.
+        public BottomAppBarTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(contentSpacing, "contentSpacing");

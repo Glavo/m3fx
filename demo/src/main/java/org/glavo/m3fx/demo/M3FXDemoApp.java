@@ -29,6 +29,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3Badge;
+import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
@@ -56,6 +57,8 @@ import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3Switch;
+import org.glavo.m3fx.controls.M3Tab;
+import org.glavo.m3fx.controls.M3TabBar;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TopAppBar;
@@ -199,7 +202,9 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Sliders", "Different values and disabled slider states", this::createSlidersPage),
                 new DemoPage("Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
                 new DemoPage("Segmented Buttons", "Single-select segmented control states", this::createSegmentedButtonsPage),
+                new DemoPage("Tabs", "Primary tabs with animated active indicators", this::createTabsPage),
                 new DemoPage("App Bars", "Top app bars with navigation and actions", this::createAppBarsPage),
+                new DemoPage("Bottom App Bars", "Bottom app bars with actions and floating actions", this::createBottomAppBarsPage),
                 new DemoPage("Navigation", "Bottom navigation items and selected indicators", this::createNavigationPage),
                 new DemoPage("Navigation Rail", "Vertical destinations for wide layouts", this::createNavigationRailPage),
                 new DemoPage("Navigation Drawer", "Drawer destinations with selected rows", this::createNavigationDrawerPage),
@@ -418,6 +423,18 @@ public final class M3FXDemoApp extends Application {
         );
     }
 
+    /// Creates the tab component page.
+    private Node createTabsPage() {
+        M3TabBar primary = createTabBar("Overview", "Activity", "Files");
+        M3TabBar disabled = createTabBar("Today", "Week", "Month");
+        ((M3Tab) disabled.getTabs().get(2)).setDisable(true);
+
+        return createGallery(
+                createShowcaseGroup("Primary", primary),
+                createShowcaseGroup("Disabled", disabled)
+        );
+    }
+
     /// Creates the app bar component page.
     private Node createAppBarsPage() {
         M3TopAppBar primary = createTopAppBar("Inbox");
@@ -426,6 +443,18 @@ public final class M3FXDemoApp extends Application {
 
         return createGallery(
                 createShowcaseGroup("Small", primary),
+                createShowcaseGroup("Compact", compact)
+        );
+    }
+
+    /// Creates the bottom app bar component page.
+    private Node createBottomAppBarsPage() {
+        M3BottomAppBar primary = createBottomAppBar();
+        M3BottomAppBar compact = createBottomAppBar();
+        compact.setStyle("-fx-pref-height: 72px;");
+
+        return createGallery(
+                createShowcaseGroup("With FAB", primary),
                 createShowcaseGroup("Compact", compact)
         );
     }
@@ -657,6 +686,13 @@ public final class M3FXDemoApp extends Application {
         return new M3SegmentedButtonGroup(firstButton, secondButton, thirdButton);
     }
 
+    /// Creates a tab bar sample.
+    private static M3TabBar createTabBar(String first, String second, String third) {
+        M3TabBar tabBar = new M3TabBar(new M3Tab(first), new M3Tab(second), new M3Tab(third));
+        tabBar.selectFirst();
+        return tabBar;
+    }
+
     /// Creates a top app bar sample.
     private static M3TopAppBar createTopAppBar(String title) {
         M3TopAppBar topAppBar = new M3TopAppBar(title);
@@ -664,6 +700,14 @@ public final class M3FXDemoApp extends Application {
         topAppBar.getActions().addAll(createIconButton("S"), createIconButton("A"));
         topAppBar.setPrefWidth(560.0);
         return topAppBar;
+    }
+
+    /// Creates a bottom app bar sample.
+    private static M3BottomAppBar createBottomAppBar() {
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar(createIconButton("M"), createIconButton("S"));
+        bottomAppBar.setFloatingAction(createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR));
+        bottomAppBar.setPrefWidth(560.0);
+        return bottomAppBar;
     }
 
     /// Creates a navigation bar sample.

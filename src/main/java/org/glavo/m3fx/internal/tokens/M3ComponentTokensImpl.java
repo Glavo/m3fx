@@ -18,6 +18,7 @@ import java.util.Objects;
 /// @param iconButton tokens used by icon buttons
 /// @param floatingActionButton tokens used by floating action buttons
 /// @param segmentedButton tokens used by segmented buttons
+/// @param tab tokens used by tabs
 /// @param field tokens used by text input controls
 /// @param selection tokens used by selection controls
 /// @param slider tokens used by sliders
@@ -29,6 +30,7 @@ import java.util.Objects;
 /// @param divider tokens used by dividers
 /// @param badge tokens used by badges
 /// @param topAppBar tokens used by top app bars
+/// @param bottomAppBar tokens used by bottom app bars
 /// @param navigationBar tokens used by navigation bars
 /// @param navigationRail tokens used by navigation rails
 /// @param navigationDrawer tokens used by navigation drawers
@@ -43,6 +45,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.ButtonTokens iconButton,
         M3ComponentTokens.FabTokens floatingActionButton,
         M3ComponentTokens.ButtonTokens segmentedButton,
+        M3ComponentTokens.TabTokens tab,
         M3ComponentTokens.FieldTokens field,
         M3ComponentTokens.SelectionTokens selection,
         M3ComponentTokens.SliderTokens slider,
@@ -54,6 +57,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.DividerTokens divider,
         M3ComponentTokens.BadgeTokens badge,
         M3ComponentTokens.TopAppBarTokens topAppBar,
+        M3ComponentTokens.BottomAppBarTokens bottomAppBar,
         M3ComponentTokens.NavigationBarTokens navigationBar,
         M3ComponentTokens.NavigationRailTokens navigationRail,
         M3ComponentTokens.NavigationDrawerTokens navigationDrawer,
@@ -69,6 +73,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(iconButton, "iconButton");
         Objects.requireNonNull(floatingActionButton, "floatingActionButton");
         Objects.requireNonNull(segmentedButton, "segmentedButton");
+        Objects.requireNonNull(tab, "tab");
         Objects.requireNonNull(field, "field");
         Objects.requireNonNull(selection, "selection");
         Objects.requireNonNull(slider, "slider");
@@ -80,6 +85,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(divider, "divider");
         Objects.requireNonNull(badge, "badge");
         Objects.requireNonNull(topAppBar, "topAppBar");
+        Objects.requireNonNull(bottomAppBar, "bottomAppBar");
         Objects.requireNonNull(navigationBar, "navigationBar");
         Objects.requireNonNull(navigationRail, "navigationRail");
         Objects.requireNonNull(navigationDrawer, "navigationDrawer");
