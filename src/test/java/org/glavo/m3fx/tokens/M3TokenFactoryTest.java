@@ -84,6 +84,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 51px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-medium: 220ms"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-opacity: 0.15"));
@@ -110,6 +111,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.SnackbarTokens(9.0, 18.0),
                 new M3ComponentTokens.DividerTokens(2.0, 8.0, 12.0),
                 new M3ComponentTokens.BadgeTokens(7.0, 19.0, 21.0, 10.0, 5.0),
+                new M3ComponentTokens.NavigationBarTokens(67.0, 68.0, 69.0, 30.0, 15.0, 4.0, 9.0),
                 new M3ComponentTokens.ListItemTokens(58.0, 74.0, 90.0, 6.0, 18.0, 9.0, 15.0)
         );
     }

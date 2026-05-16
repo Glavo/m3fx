@@ -65,6 +65,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by badges.
     BadgeTokens badge();
 
+    /// Returns tokens used by navigation bars.
+    NavigationBarTokens navigationBar();
+
     /// Returns tokens used by list items.
     ListItemTokens listItem();
 
@@ -88,6 +91,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             SnackbarTokens snackbar,
             DividerTokens divider,
             BadgeTokens badge,
+            NavigationBarTokens navigationBar,
             ListItemTokens listItem
     ) {
         return new M3ComponentTokensImpl(
@@ -109,6 +113,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 snackbar,
                 divider,
                 badge,
+                navigationBar,
                 listItem
         );
     }
@@ -129,6 +134,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
+        double navigationBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
+        double navigationItemWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
+        double navigationIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
+        double navigationIndicatorHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double listItemOneLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
         double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
@@ -162,6 +171,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new SnackbarTokens(shapeTokens.extraSmall(), 16.0),
                 new DividerTokens(1.0, 0.0, 0.0),
                 new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeHeight, badgeLargeHeight / 2.0, 4.0),
+                new NavigationBarTokens(
+                        navigationBarHeight,
+                        navigationItemWidth,
+                        navigationIndicatorWidth,
+                        navigationIndicatorHeight,
+                        shapeTokens.full(),
+                        4.0,
+                        8.0
+                ),
                 new ListItemTokens(
                         listItemOneLineHeight,
                         listItemTwoLineHeight,
@@ -195,6 +213,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, snackbar());
         append(builder, divider());
         append(builder, badge());
+        append(builder, navigationBar());
         append(builder, listItem());
         return builder.toString().trim();
     }
@@ -250,6 +269,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendSnackbarRule(builder, ".m3-snackbar", snackbar());
         appendDividerRule(builder, ".m3-divider", divider());
         appendBadgeRule(builder, ".m3-badge", badge());
+        appendNavigationBarRule(builder, ".m3-navigation-bar", navigationBar());
+        appendNavigationItemRule(builder, ".m3-navigation-item", navigationBar());
+        appendNavigationIndicatorRule(builder, ".m3-navigation-item-indicator", navigationBar());
         appendListItemRule(builder, ".m3-list-item", listItem());
         return builder.toString().stripTrailing();
     }
@@ -342,6 +364,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-badge-large-min-width", M3TokenCss.pixels(tokens.largeMinWidth()));
         M3TokenCss.append(builder, "-m3-badge-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-badge-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+    }
+
+    /// Appends navigation bar token declarations.
+    private static void append(StringBuilder builder, NavigationBarTokens tokens) {
+        M3TokenCss.append(builder, "-m3-navigation-bar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, "-m3-navigation-bar-item-width", M3TokenCss.pixels(tokens.itemWidth()));
+        M3TokenCss.append(builder, "-m3-navigation-bar-indicator-width", M3TokenCss.pixels(tokens.indicatorWidth()));
+        M3TokenCss.append(builder, "-m3-navigation-bar-indicator-height", M3TokenCss.pixels(tokens.indicatorHeight()));
+        M3TokenCss.append(builder, "-m3-navigation-bar-indicator-shape", M3TokenCss.pixels(tokens.indicatorShape()));
+        M3TokenCss.append(builder, "-m3-navigation-bar-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        M3TokenCss.append(builder, "-m3-navigation-bar-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
     }
 
     /// Appends list item token declarations.
@@ -594,6 +627,34 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-large-min-width", M3TokenCss.pixels(tokens.largeMinWidth()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a navigation bar token CSS rule.
+    private static void appendNavigationBarRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a navigation item token CSS rule.
+    private static void appendNavigationItemRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-item-width", M3TokenCss.pixels(tokens.itemWidth()));
+        appendDeclaration(builder, "-m3-indicator-width", M3TokenCss.pixels(tokens.indicatorWidth()));
+        appendDeclaration(builder, "-m3-indicator-height", M3TokenCss.pixels(tokens.indicatorHeight()));
+        appendDeclaration(builder, "-m3-indicator-shape", M3TokenCss.pixels(tokens.indicatorShape()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a navigation selected indicator token CSS rule.
+    private static void appendNavigationIndicatorRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.indicatorShape()));
         endRule(builder);
     }
 
@@ -867,6 +928,37 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(largeHeight, "largeHeight");
             validateNonNegative(largeMinWidth, "largeMinWidth");
             validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+        }
+    }
+
+    /// Tokens used by navigation bars.
+    ///
+    /// @param containerHeight the navigation bar container height
+    /// @param itemWidth the preferred navigation item width
+    /// @param indicatorWidth the selected indicator width
+    /// @param indicatorHeight the selected indicator height
+    /// @param indicatorShape the selected indicator radius
+    /// @param contentSpacing the spacing between item icon and label
+    /// @param horizontalPadding the horizontal padding around items
+    @NotNullByDefault
+    public record NavigationBarTokens(
+            double containerHeight,
+            double itemWidth,
+            double indicatorWidth,
+            double indicatorHeight,
+            double indicatorShape,
+            double contentSpacing,
+            double horizontalPadding
+    ) {
+        /// Creates navigation bar tokens.
+        public NavigationBarTokens {
+            validateNonNegative(containerHeight, "containerHeight");
+            validateNonNegative(itemWidth, "itemWidth");
+            validateNonNegative(indicatorWidth, "indicatorWidth");
+            validateNonNegative(indicatorHeight, "indicatorHeight");
+            validateNonNegative(indicatorShape, "indicatorShape");
+            validateNonNegative(contentSpacing, "contentSpacing");
             validateNonNegative(horizontalPadding, "horizontalPadding");
         }
     }

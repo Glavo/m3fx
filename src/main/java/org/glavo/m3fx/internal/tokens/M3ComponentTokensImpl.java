@@ -28,6 +28,7 @@ import java.util.Objects;
 /// @param snackbar tokens used by snackbar controls
 /// @param divider tokens used by dividers
 /// @param badge tokens used by badges
+/// @param navigationBar tokens used by navigation bars
 /// @param listItem tokens used by list items
 @NotNullByDefault
 public record M3ComponentTokensImpl(
@@ -49,6 +50,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.SnackbarTokens snackbar,
         M3ComponentTokens.DividerTokens divider,
         M3ComponentTokens.BadgeTokens badge,
+        M3ComponentTokens.NavigationBarTokens navigationBar,
         M3ComponentTokens.ListItemTokens listItem
 ) implements M3ComponentTokens {
     /// Creates component token implementation.
@@ -71,6 +73,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(snackbar, "snackbar");
         Objects.requireNonNull(divider, "divider");
         Objects.requireNonNull(badge, "badge");
+        Objects.requireNonNull(navigationBar, "navigationBar");
         Objects.requireNonNull(listItem, "listItem");
     }
 }

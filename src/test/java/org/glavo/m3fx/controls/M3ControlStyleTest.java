@@ -37,6 +37,7 @@ import org.glavo.m3fx.skins.M3ChipSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
+import org.glavo.m3fx.skins.M3NavigationItemSkin;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
@@ -1582,20 +1583,95 @@ final class M3ControlStyleTest {
         assertTrue(lookupRegion(listItem, ".m3-ripple").getOpacity() > 0.0);
     }
 
+    /// Verifies that navigation item component token properties are styleable from CSS.
+    @Test
+    void navigationItemTokensAreStyleable() {
+        M3NavigationItem item = new M3NavigationItem("Home");
+        item.setStyle(
+                "-m3-container-height: 84px; "
+                        + "-m3-item-width: 92px; "
+                        + "-m3-indicator-width: 70px; "
+                        + "-m3-indicator-height: 34px; "
+                        + "-m3-indicator-shape: 17px; "
+                        + "-m3-content-spacing: 6px;"
+        );
+
+        applyCss(item);
+
+        assertEquals(84.0, item.getContainerHeight(), 0.0001);
+        assertEquals(92.0, item.getItemWidth(), 0.0001);
+        assertEquals(70.0, item.getIndicatorWidth(), 0.0001);
+        assertEquals(34.0, item.getIndicatorHeight(), 0.0001);
+        assertEquals(17.0, item.getIndicatorShape(), 0.0001);
+        assertEquals(6.0, item.getContentSpacing(), 0.0001);
+        assertEquals(92.0, item.getPrefWidth(), 0.0001);
+        assertEquals(84.0, item.getPrefHeight(), 0.0001);
+        assertInstanceOf(M3NavigationItemSkin.class, item.getSkin());
+    }
+
+    /// Verifies that navigation bars group items and keep a selected item.
+    @Test
+    void navigationBarGroupsItemsAndKeepsSelection() {
+        M3NavigationItem home = new M3NavigationItem("Home");
+        M3NavigationItem search = new M3NavigationItem("Search");
+        M3NavigationBar navigationBar = new M3NavigationBar(home, search);
+
+        assertTrue(home.isSelected());
+        assertEquals(home, navigationBar.getSelectedItem());
+
+        search.fire();
+
+        assertFalse(home.isSelected());
+        assertTrue(search.isSelected());
+        assertEquals(search, navigationBar.getSelectedItem());
+
+        search.fire();
+
+        assertTrue(search.isSelected());
+        assertEquals(search, navigationBar.getSelectedItem());
+    }
+
+    /// Verifies that navigation item skins expose the selected indicator and ripple feedback.
+    @Test
+    void navigationItemSkinLaysOutIndicatorAndRipple() {
+        M3NavigationItem item = new M3NavigationItem("Home");
+        item.setSelected(true);
+        Pane root = new Pane(item);
+        Scene scene = new Scene(root, 120.0, 100.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        item.resize(80.0, 80.0);
+        item.layout();
+
+        Region indicator = lookupRegion(item, ".m3-navigation-item-indicator");
+        assertEquals(64.0, indicator.getWidth(), 0.0001);
+        assertEquals(32.0, indicator.getHeight(), 0.0001);
+        assertEquals(1.0, indicator.getOpacity(), 0.0001);
+
+        item.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 40.0, 40.0, true));
+        assertTrue(item.isArmed());
+        item.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 40.0, 40.0, false));
+
+        assertTrue(lookupRegion(item, ".m3-ripple").getOpacity() > 0.0);
+    }
+
     /// Verifies that generated state layer rules apply beyond button-like controls.
     @Test
     void generatedStateLayerRulesApplyToInteractiveControls() {
         M3CheckBox checkBox = new M3CheckBox("Check");
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        M3NavigationItem navigationItem = new M3NavigationItem("Home");
         M3ListItem listItem = new M3ListItem("Headline");
         M3Card card = new M3Card();
         M3Card disabledCard = new M3Card();
-        Pane root = new Pane(checkBox, slider, listItem, card, disabledCard);
+        Pane root = new Pane(checkBox, slider, navigationItem, listItem, card, disabledCard);
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         checkBox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         slider.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+        navigationItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         listItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         card.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         disabledCard.setDisable(true);
@@ -1605,6 +1681,8 @@ final class M3ControlStyleTest {
         assertEquals(0.08, lookupRegion(checkBox, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, slider.getOpacity(), 0.0001);
         assertEquals(0.1, lookupRegion(slider, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(1.0, navigationItem.getOpacity(), 0.0001);
+        assertEquals(0.1, lookupRegion(navigationItem, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, listItem.getOpacity(), 0.0001);
         assertEquals(0.1, lookupRegion(listItem, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, card.getOpacity(), 0.0001);
@@ -1779,11 +1857,13 @@ final class M3ControlStyleTest {
 
         M3Snackbar snackbar = new M3Snackbar("Message");
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
+        M3NavigationBar navigationBar = new M3NavigationBar();
 
         assertTrue(card.getStyleClass().contains(M3Card.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.getStyleClass()));
         assertTrue(snackbar.getStyleClass().contains(M3Snackbar.STYLE_CLASS));
         assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
+        assertTrue(navigationBar.getStyleClass().contains(M3NavigationBar.STYLE_CLASS));
     }
 
     /// Verifies style classes for input and selection controls.
@@ -1807,6 +1887,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3SegmentedButtonGroup().getStyleClass().contains(M3SegmentedButtonGroup.STYLE_CLASS));
         assertTrue(new M3Divider().getStyleClass().contains(M3Divider.STYLE_CLASS));
         assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
+        assertTrue(new M3NavigationItem("Home").getStyleClass().contains(M3NavigationItem.STYLE_CLASS));
         assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));
     }
 
@@ -1829,6 +1910,8 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3ProgressIndicator(), "/styles/controls/progress.css");
         assertUserAgentStylesheet(new M3Divider(), "/styles/controls/divider.css");
         assertUserAgentStylesheet(new M3Badge(), "/styles/controls/badge.css");
+        assertUserAgentStylesheet(new M3NavigationBar(), "/styles/controls/navigation-bar.css");
+        assertUserAgentStylesheet(new M3NavigationItem(), "/styles/controls/navigation-bar.css");
         assertUserAgentStylesheet(new M3ListItem(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");
         assertUserAgentStylesheet(new M3DialogPane(), "/styles/controls/dialog.css");

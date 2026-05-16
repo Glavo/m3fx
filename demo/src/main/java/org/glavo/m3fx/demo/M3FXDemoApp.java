@@ -43,6 +43,8 @@ import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3NavigationBar;
+import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
@@ -182,6 +184,7 @@ public final class M3FXDemoApp extends Application {
                 createButtonSection(),
                 createInputSection(),
                 createSelectionSection(),
+                createNavigationSection(),
                 createUtilitySection(),
                 createListSection(),
                 createProgressSection(),
@@ -286,6 +289,28 @@ public final class M3FXDemoApp extends Application {
                 suggestionChip
         );
         return createSection("Selection", controls);
+    }
+
+    /// Creates the navigation showcase section.
+    private Node createNavigationSection() {
+        M3NavigationItem home = createNavigationItem("Home", "H");
+        M3NavigationItem search = createNavigationItem("Search", "S");
+        M3NavigationItem profile = createNavigationItem("Profile", "P");
+        M3NavigationItem settings = createNavigationItem("Settings", "G");
+
+        M3NavigationBar navigationBar = new M3NavigationBar(home, search, profile, settings);
+        navigationBar.select(home);
+
+        FlowPane controls = createFlow();
+        controls.getChildren().add(navigationBar);
+        return createSection("Navigation", controls);
+    }
+
+    /// Creates a sample navigation item.
+    private M3NavigationItem createNavigationItem(String text, String iconText) {
+        Label icon = new Label(iconText);
+        icon.getStyleClass().add("demo-navigation-icon");
+        return new M3NavigationItem(text, icon);
     }
 
     /// Creates the badge and divider showcase section.

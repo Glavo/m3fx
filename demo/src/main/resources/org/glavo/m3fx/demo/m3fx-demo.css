@@ -78,6 +78,16 @@
     -fx-font-weight: 700;
 }
 
+.demo-navigation-icon {
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-navigation-item:selected .demo-navigation-icon {
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
 .demo-card-content {
     -fx-min-height: 92px;
 }
