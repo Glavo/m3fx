@@ -16,7 +16,7 @@ final class M3ColorTokensTest {
     @Test
     void convertsColorRolesToCssDeclarations() {
         ColorScheme colorScheme = ColorScheme.fromSeed(Color.web("#6750a4"));
-        M3ColorTokens tokens = new M3ColorTokens(colorScheme);
+        M3ColorTokens tokens = M3ColorTokens.create(colorScheme);
 
         assertEquals(colorScheme.getColor(ColorRole.PRIMARY), tokens.get(ColorRole.PRIMARY));
         assertTrue(tokens.toStyleDeclarations().contains("-monet-primary"));

@@ -5,73 +5,67 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Holds component-level Material Design 3 tokens used by m3fx controls.
-///
-/// @param filledButton tokens used by filled buttons
-/// @param tonalButton tokens used by filled tonal buttons
-/// @param outlinedButton tokens used by outlined buttons
-/// @param textButton tokens used by text buttons
-/// @param elevatedButton tokens used by elevated buttons
-/// @param iconButton tokens used by icon buttons
-/// @param floatingActionButton tokens used by floating action buttons
-/// @param segmentedButton tokens used by segmented buttons
-/// @param field tokens used by text input controls
-/// @param selection tokens used by selection controls
-/// @param slider tokens used by sliders
-/// @param chip tokens used by chips
-/// @param progress tokens used by progress controls
-/// @param card tokens used by cards
-/// @param dialog tokens used by dialogs
-/// @param snackbar tokens used by snackbar controls
-/// @param divider tokens used by dividers
-/// @param badge tokens used by badges
-/// @param listItem tokens used by list items
 @NotNullByDefault
-public record M3ComponentTokens(
-        ButtonTokens filledButton,
-        ButtonTokens tonalButton,
-        ButtonTokens outlinedButton,
-        ButtonTokens textButton,
-        ButtonTokens elevatedButton,
-        ButtonTokens iconButton,
-        FabTokens floatingActionButton,
-        ButtonTokens segmentedButton,
-        FieldTokens field,
-        SelectionTokens selection,
-        SliderTokens slider,
-        ChipTokens chip,
-        ProgressTokens progress,
-        CardTokens card,
-        DialogTokens dialog,
-        SnackbarTokens snackbar,
-        DividerTokens divider,
-        BadgeTokens badge,
-        ListItemTokens listItem
-) {
-    /// Creates component tokens.
-    public M3ComponentTokens {
-        Objects.requireNonNull(filledButton, "filledButton");
-        Objects.requireNonNull(tonalButton, "tonalButton");
-        Objects.requireNonNull(outlinedButton, "outlinedButton");
-        Objects.requireNonNull(textButton, "textButton");
-        Objects.requireNonNull(elevatedButton, "elevatedButton");
-        Objects.requireNonNull(iconButton, "iconButton");
-        Objects.requireNonNull(floatingActionButton, "floatingActionButton");
-        Objects.requireNonNull(segmentedButton, "segmentedButton");
-        Objects.requireNonNull(field, "field");
-        Objects.requireNonNull(selection, "selection");
-        Objects.requireNonNull(slider, "slider");
-        Objects.requireNonNull(chip, "chip");
-        Objects.requireNonNull(progress, "progress");
-        Objects.requireNonNull(card, "card");
-        Objects.requireNonNull(dialog, "dialog");
-        Objects.requireNonNull(snackbar, "snackbar");
-        Objects.requireNonNull(divider, "divider");
-        Objects.requireNonNull(badge, "badge");
-        Objects.requireNonNull(listItem, "listItem");
-    }
+public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
+    /// Returns tokens used by filled buttons.
+    ButtonTokens filledButton();
+
+    /// Returns tokens used by filled tonal buttons.
+    ButtonTokens tonalButton();
+
+    /// Returns tokens used by outlined buttons.
+    ButtonTokens outlinedButton();
+
+    /// Returns tokens used by text buttons.
+    ButtonTokens textButton();
+
+    /// Returns tokens used by elevated buttons.
+    ButtonTokens elevatedButton();
+
+    /// Returns tokens used by icon buttons.
+    ButtonTokens iconButton();
+
+    /// Returns tokens used by floating action buttons.
+    FabTokens floatingActionButton();
+
+    /// Returns tokens used by segmented buttons.
+    ButtonTokens segmentedButton();
+
+    /// Returns tokens used by text input controls.
+    FieldTokens field();
+
+    /// Returns tokens used by selection controls.
+    SelectionTokens selection();
+
+    /// Returns tokens used by sliders.
+    SliderTokens slider();
+
+    /// Returns tokens used by chips.
+    ChipTokens chip();
+
+    /// Returns tokens used by progress controls.
+    ProgressTokens progress();
+
+    /// Returns tokens used by cards.
+    CardTokens card();
+
+    /// Returns tokens used by dialogs.
+    DialogTokens dialog();
+
+    /// Returns tokens used by snackbar controls.
+    SnackbarTokens snackbar();
+
+    /// Returns tokens used by dividers.
+    DividerTokens divider();
+
+    /// Returns tokens used by badges.
+    BadgeTokens badge();
+
+    /// Returns tokens used by list items.
+    ListItemTokens listItem();
 
     /// Creates component tokens for a profile.
-    public static M3ComponentTokens create(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
+    static M3ComponentTokens create(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
         Objects.requireNonNull(profile, "profile");
         Objects.requireNonNull(shapeTokens, "shapeTokens");
         Objects.requireNonNull(density, "density");
@@ -90,7 +84,7 @@ public record M3ComponentTokens(
         double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
         double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
 
-        return new M3ComponentTokens(
+        return new M3ComponentTokensImpl(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
@@ -132,82 +126,82 @@ public record M3ComponentTokens(
     }
 
     /// Converts component tokens into inline JavaFX CSS declarations.
-    public String toStyleDeclarations() {
+    default String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
-        append(builder, "button-filled", filledButton);
-        append(builder, "button-tonal", tonalButton);
-        append(builder, "button-outlined", outlinedButton);
-        append(builder, "button-text", textButton);
-        append(builder, "button-elevated", elevatedButton);
-        append(builder, "button-icon", iconButton);
-        append(builder, floatingActionButton);
-        append(builder, "segmented-button", segmentedButton);
-        append(builder, field);
-        append(builder, selection);
-        append(builder, slider);
-        append(builder, chip);
-        append(builder, progress);
-        append(builder, card);
-        append(builder, dialog);
-        append(builder, snackbar);
-        append(builder, divider);
-        append(builder, badge);
-        append(builder, listItem);
+        append(builder, "button-filled", filledButton());
+        append(builder, "button-tonal", tonalButton());
+        append(builder, "button-outlined", outlinedButton());
+        append(builder, "button-text", textButton());
+        append(builder, "button-elevated", elevatedButton());
+        append(builder, "button-icon", iconButton());
+        append(builder, floatingActionButton());
+        append(builder, "segmented-button", segmentedButton());
+        append(builder, field());
+        append(builder, selection());
+        append(builder, slider());
+        append(builder, chip());
+        append(builder, progress());
+        append(builder, card());
+        append(builder, dialog());
+        append(builder, snackbar());
+        append(builder, divider());
+        append(builder, badge());
+        append(builder, listItem());
         return builder.toString().trim();
     }
 
     /// Converts component tokens into JavaFX CSS rules for m3fx controls.
-    public String toControlStyleRules() {
+    default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
-        appendButtonRule(builder, ".m3-filled-button", filledButton);
-        appendButtonRule(builder, ".m3-tonal-button", tonalButton);
-        appendButtonRule(builder, ".m3-outlined-button", outlinedButton);
-        appendButtonRule(builder, ".m3-text-button", textButton);
-        appendButtonRule(builder, ".m3-elevated-button", elevatedButton);
-        appendButtonRule(builder, ".m3-icon-button", iconButton);
+        appendButtonRule(builder, ".m3-filled-button", filledButton());
+        appendButtonRule(builder, ".m3-tonal-button", tonalButton());
+        appendButtonRule(builder, ".m3-outlined-button", outlinedButton());
+        appendButtonRule(builder, ".m3-text-button", textButton());
+        appendButtonRule(builder, ".m3-elevated-button", elevatedButton());
+        appendButtonRule(builder, ".m3-icon-button", iconButton());
         appendFabRule(
                 builder,
                 ".m3-small-fab",
-                floatingActionButton.smallSize(),
-                floatingActionButton.smallShape(),
-                floatingActionButton.smallHorizontalPadding()
+                floatingActionButton().smallSize(),
+                floatingActionButton().smallShape(),
+                floatingActionButton().smallHorizontalPadding()
         );
         appendFabRule(
                 builder,
                 ".m3-regular-fab",
-                floatingActionButton.regularSize(),
-                floatingActionButton.regularShape(),
-                floatingActionButton.regularHorizontalPadding()
+                floatingActionButton().regularSize(),
+                floatingActionButton().regularShape(),
+                floatingActionButton().regularHorizontalPadding()
         );
         appendFabRule(
                 builder,
                 ".m3-large-fab",
-                floatingActionButton.largeSize(),
-                floatingActionButton.largeShape(),
-                floatingActionButton.largeHorizontalPadding()
+                floatingActionButton().largeSize(),
+                floatingActionButton().largeShape(),
+                floatingActionButton().largeHorizontalPadding()
         );
-        appendButtonRule(builder, ".m3-segmented-button", segmentedButton);
-        appendSegmentedButtonPositionRules(builder, segmentedButton);
-        appendFieldRule(builder, ".m3-text-field, .m3-password-field", field);
-        appendFilledFieldRule(builder, ".m3-filled-field", field);
-        appendOutlinedFieldRule(builder, ".m3-outlined-field", field);
-        appendSelectionRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch", selection);
-        appendSwitchRule(builder, ".m3-switch", selection);
-        appendSwitchBoxRule(builder, ".m3-switch .box", selection);
-        appendSliderRule(builder, ".m3-slider", slider);
-        appendSliderTrackRule(builder, ".m3-slider .track", slider);
-        appendSliderThumbRule(builder, ".m3-slider .thumb", slider);
-        appendChipRule(builder, ".m3-chip", chip);
-        appendProgressBarRule(builder, ".m3-progress-bar", progress);
-        appendProgressBarTrackRule(builder, ".m3-progress-bar .track", progress);
-        appendProgressBarTrackRule(builder, ".m3-progress-bar .bar", progress);
-        appendProgressIndicatorRule(builder, ".m3-progress-indicator", progress);
-        appendCardRule(builder, ".m3-card", card);
-        appendDialogRule(builder, ".m3-dialog-pane", dialog);
-        appendSnackbarRule(builder, ".m3-snackbar", snackbar);
-        appendDividerRule(builder, ".m3-divider", divider);
-        appendBadgeRule(builder, ".m3-badge", badge);
-        appendListItemRule(builder, ".m3-list-item", listItem);
+        appendButtonRule(builder, ".m3-segmented-button", segmentedButton());
+        appendSegmentedButtonPositionRules(builder, segmentedButton());
+        appendFieldRule(builder, ".m3-text-field, .m3-password-field", field());
+        appendFilledFieldRule(builder, ".m3-filled-field", field());
+        appendOutlinedFieldRule(builder, ".m3-outlined-field", field());
+        appendSelectionRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch", selection());
+        appendSwitchRule(builder, ".m3-switch", selection());
+        appendSwitchBoxRule(builder, ".m3-switch .box", selection());
+        appendSliderRule(builder, ".m3-slider", slider());
+        appendSliderTrackRule(builder, ".m3-slider .track", slider());
+        appendSliderThumbRule(builder, ".m3-slider .thumb", slider());
+        appendChipRule(builder, ".m3-chip", chip());
+        appendProgressBarRule(builder, ".m3-progress-bar", progress());
+        appendProgressBarTrackRule(builder, ".m3-progress-bar .track", progress());
+        appendProgressBarTrackRule(builder, ".m3-progress-bar .bar", progress());
+        appendProgressIndicatorRule(builder, ".m3-progress-indicator", progress());
+        appendCardRule(builder, ".m3-card", card());
+        appendDialogRule(builder, ".m3-dialog-pane", dialog());
+        appendSnackbarRule(builder, ".m3-snackbar", snackbar());
+        appendDividerRule(builder, ".m3-divider", divider());
+        appendBadgeRule(builder, ".m3-badge", badge());
+        appendListItemRule(builder, ".m3-list-item", listItem());
         return builder.toString().stripTrailing();
     }
 
@@ -832,5 +826,72 @@ public record M3ComponentTokens(
         if (value < 0.0) {
             throw new IllegalArgumentException(name + " must not be negative");
         }
+    }
+}
+
+/// Default immutable implementation of {@link M3ComponentTokens}.
+///
+/// @param filledButton tokens used by filled buttons
+/// @param tonalButton tokens used by filled tonal buttons
+/// @param outlinedButton tokens used by outlined buttons
+/// @param textButton tokens used by text buttons
+/// @param elevatedButton tokens used by elevated buttons
+/// @param iconButton tokens used by icon buttons
+/// @param floatingActionButton tokens used by floating action buttons
+/// @param segmentedButton tokens used by segmented buttons
+/// @param field tokens used by text input controls
+/// @param selection tokens used by selection controls
+/// @param slider tokens used by sliders
+/// @param chip tokens used by chips
+/// @param progress tokens used by progress controls
+/// @param card tokens used by cards
+/// @param dialog tokens used by dialogs
+/// @param snackbar tokens used by snackbar controls
+/// @param divider tokens used by dividers
+/// @param badge tokens used by badges
+/// @param listItem tokens used by list items
+@NotNullByDefault
+record M3ComponentTokensImpl(
+        M3ComponentTokens.ButtonTokens filledButton,
+        M3ComponentTokens.ButtonTokens tonalButton,
+        M3ComponentTokens.ButtonTokens outlinedButton,
+        M3ComponentTokens.ButtonTokens textButton,
+        M3ComponentTokens.ButtonTokens elevatedButton,
+        M3ComponentTokens.ButtonTokens iconButton,
+        M3ComponentTokens.FabTokens floatingActionButton,
+        M3ComponentTokens.ButtonTokens segmentedButton,
+        M3ComponentTokens.FieldTokens field,
+        M3ComponentTokens.SelectionTokens selection,
+        M3ComponentTokens.SliderTokens slider,
+        M3ComponentTokens.ChipTokens chip,
+        M3ComponentTokens.ProgressTokens progress,
+        M3ComponentTokens.CardTokens card,
+        M3ComponentTokens.DialogTokens dialog,
+        M3ComponentTokens.SnackbarTokens snackbar,
+        M3ComponentTokens.DividerTokens divider,
+        M3ComponentTokens.BadgeTokens badge,
+        M3ComponentTokens.ListItemTokens listItem
+) implements M3ComponentTokens {
+    /// Creates component token implementation.
+    M3ComponentTokensImpl {
+        Objects.requireNonNull(filledButton, "filledButton");
+        Objects.requireNonNull(tonalButton, "tonalButton");
+        Objects.requireNonNull(outlinedButton, "outlinedButton");
+        Objects.requireNonNull(textButton, "textButton");
+        Objects.requireNonNull(elevatedButton, "elevatedButton");
+        Objects.requireNonNull(iconButton, "iconButton");
+        Objects.requireNonNull(floatingActionButton, "floatingActionButton");
+        Objects.requireNonNull(segmentedButton, "segmentedButton");
+        Objects.requireNonNull(field, "field");
+        Objects.requireNonNull(selection, "selection");
+        Objects.requireNonNull(slider, "slider");
+        Objects.requireNonNull(chip, "chip");
+        Objects.requireNonNull(progress, "progress");
+        Objects.requireNonNull(card, "card");
+        Objects.requireNonNull(dialog, "dialog");
+        Objects.requireNonNull(snackbar, "snackbar");
+        Objects.requireNonNull(divider, "divider");
+        Objects.requireNonNull(badge, "badge");
+        Objects.requireNonNull(listItem, "listItem");
     }
 }

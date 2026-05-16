@@ -6,45 +6,39 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Aggregates all Material Design 3 tokens used by a theme.
-///
-/// @param profile the profile that produced this token set
-/// @param colorTokens the color tokens
-/// @param typographyTokens the typography tokens
-/// @param shapeTokens the shape tokens
-/// @param elevationTokens the elevation tokens
-/// @param motionTokens the motion tokens
-/// @param stateLayerTokens the state layer tokens
-/// @param componentTokens the component tokens
 @NotNullByDefault
-public record M3TokenSet(
-        M3Profile profile,
-        M3ColorTokens colorTokens,
-        M3TypographyTokens typographyTokens,
-        M3ShapeTokens shapeTokens,
-        M3ElevationTokens elevationTokens,
-        M3MotionTokens motionTokens,
-        M3StateLayerTokens stateLayerTokens,
-        M3ComponentTokens componentTokens
-) {
-    /// Creates a token set.
-    public M3TokenSet {
-        Objects.requireNonNull(profile, "profile");
-        Objects.requireNonNull(colorTokens, "colorTokens");
-        Objects.requireNonNull(typographyTokens, "typographyTokens");
-        Objects.requireNonNull(shapeTokens, "shapeTokens");
-        Objects.requireNonNull(elevationTokens, "elevationTokens");
-        Objects.requireNonNull(motionTokens, "motionTokens");
-        Objects.requireNonNull(stateLayerTokens, "stateLayerTokens");
-        Objects.requireNonNull(componentTokens, "componentTokens");
-    }
+public sealed interface M3TokenSet permits M3TokenSetImpl {
+    /// Returns the profile that produced this token set.
+    M3Profile profile();
+
+    /// Returns the color tokens.
+    M3ColorTokens colorTokens();
+
+    /// Returns the typography tokens.
+    M3TypographyTokens typographyTokens();
+
+    /// Returns the shape tokens.
+    M3ShapeTokens shapeTokens();
+
+    /// Returns the elevation tokens.
+    M3ElevationTokens elevationTokens();
+
+    /// Returns the motion tokens.
+    M3MotionTokens motionTokens();
+
+    /// Returns the state layer tokens.
+    M3StateLayerTokens stateLayerTokens();
+
+    /// Returns the component tokens.
+    M3ComponentTokens componentTokens();
 
     /// Creates a complete default token set for a profile and color scheme.
-    public static M3TokenSet create(M3Profile profile, ColorScheme colorScheme, M3Density density) {
+    static M3TokenSet create(M3Profile profile, ColorScheme colorScheme, M3Density density) {
         Objects.requireNonNull(profile, "profile");
         Objects.requireNonNull(colorScheme, "colorScheme");
         Objects.requireNonNull(density, "density");
 
-        M3ColorTokens colorTokens = new M3ColorTokens(colorScheme);
+        M3ColorTokens colorTokens = M3ColorTokens.create(colorScheme);
         M3TypographyTokens typographyTokens = profile == M3Profile.EXPRESSIVE_2025
                 ? M3TypographyTokens.expressive()
                 : M3TypographyTokens.baseline();
@@ -56,7 +50,7 @@ public record M3TokenSet(
         M3StateLayerTokens stateLayerTokens = M3StateLayerTokens.baseline();
         M3ComponentTokens componentTokens = M3ComponentTokens.create(profile, shapeTokens, density);
 
-        return new M3TokenSet(
+        return new M3TokenSetImpl(
                 profile,
                 colorTokens,
                 typographyTokens,
@@ -69,28 +63,62 @@ public record M3TokenSet(
     }
 
     /// Converts root-level tokens into JavaFX inline CSS declarations.
-    public String toRootStyleDeclarations() {
-        return colorTokens.toStyleDeclarations()
+    default String toRootStyleDeclarations() {
+        return colorTokens().toStyleDeclarations()
                 + " "
-                + typographyTokens.toStyleDeclarations()
+                + typographyTokens().toStyleDeclarations()
                 + " "
-                + shapeTokens.toStyleDeclarations()
+                + shapeTokens().toStyleDeclarations()
                 + " "
-                + elevationTokens.toStyleDeclarations()
+                + elevationTokens().toStyleDeclarations()
                 + " "
-                + motionTokens.toStyleDeclarations()
+                + motionTokens().toStyleDeclarations()
                 + " "
-                + stateLayerTokens.toStyleDeclarations()
+                + stateLayerTokens().toStyleDeclarations()
                 + " "
-                + componentTokens.toStyleDeclarations();
+                + componentTokens().toStyleDeclarations();
     }
 
     /// Converts component tokens into JavaFX CSS rules for m3fx controls.
-    public String toControlStyleRules() {
-        return componentTokens.toControlStyleRules()
+    default String toControlStyleRules() {
+        return componentTokens().toControlStyleRules()
                 + "\n\n"
-                + stateLayerTokens.toControlStyleRules()
+                + stateLayerTokens().toControlStyleRules()
                 + "\n\n"
-                + elevationTokens.toControlStyleRules();
+                + elevationTokens().toControlStyleRules();
+    }
+}
+
+/// Default immutable implementation of {@link M3TokenSet}.
+///
+/// @param profile the profile that produced this token set
+/// @param colorTokens the color tokens
+/// @param typographyTokens the typography tokens
+/// @param shapeTokens the shape tokens
+/// @param elevationTokens the elevation tokens
+/// @param motionTokens the motion tokens
+/// @param stateLayerTokens the state layer tokens
+/// @param componentTokens the component tokens
+@NotNullByDefault
+record M3TokenSetImpl(
+        M3Profile profile,
+        M3ColorTokens colorTokens,
+        M3TypographyTokens typographyTokens,
+        M3ShapeTokens shapeTokens,
+        M3ElevationTokens elevationTokens,
+        M3MotionTokens motionTokens,
+        M3StateLayerTokens stateLayerTokens,
+        M3ComponentTokens componentTokens
+) implements M3TokenSet {
+    /// Creates a token set implementation.
+    M3TokenSetImpl {
+        Objects.requireNonNull(profile, "profile");
+        Objects.requireNonNull(colorTokens, "colorTokens");
+        Objects.requireNonNull(typographyTokens, "typographyTokens");
+        Objects.requireNonNull(shapeTokens, "shapeTokens");
+        Objects.requireNonNull(elevationTokens, "elevationTokens");
+        Objects.requireNonNull(motionTokens, "motionTokens");
+        Objects.requireNonNull(stateLayerTokens, "stateLayerTokens");
+        Objects.requireNonNull(componentTokens, "componentTokens");
     }
 }

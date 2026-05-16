@@ -3,54 +3,48 @@ package org.glavo.m3fx.tokens;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 elevation system tokens.
-///
-/// @param level0 elevation level zero
-/// @param level1 elevation level one
-/// @param level2 elevation level two
-/// @param level3 elevation level three
-/// @param level4 elevation level four
-/// @param level5 elevation level five
 @NotNullByDefault
-public record M3ElevationTokens(
-        double level0,
-        double level1,
-        double level2,
-        double level3,
-        double level4,
-        double level5
-) {
-    /// Creates elevation tokens.
-    public M3ElevationTokens {
-        validate(level0, "level0");
-        validate(level1, "level1");
-        validate(level2, "level2");
-        validate(level3, "level3");
-        validate(level4, "level4");
-        validate(level5, "level5");
-    }
+public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
+    /// Returns elevation level zero.
+    double level0();
+
+    /// Returns elevation level one.
+    double level1();
+
+    /// Returns elevation level two.
+    double level2();
+
+    /// Returns elevation level three.
+    double level3();
+
+    /// Returns elevation level four.
+    double level4();
+
+    /// Returns elevation level five.
+    double level5();
 
     /// Returns baseline elevation tokens.
-    public static M3ElevationTokens baseline() {
-        return new M3ElevationTokens(0.0, 1.0, 3.0, 6.0, 8.0, 12.0);
+    static M3ElevationTokens baseline() {
+        return new M3ElevationTokensImpl(0.0, 1.0, 3.0, 6.0, 8.0, 12.0);
     }
 
     /// Converts elevation tokens into inline JavaFX CSS declarations.
-    public String toStyleDeclarations() {
+    default String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
-        M3TokenCss.append(builder, "-m3-elevation-level0", M3TokenCss.pixels(level0));
-        M3TokenCss.append(builder, "-m3-elevation-level1", M3TokenCss.pixels(level1));
-        M3TokenCss.append(builder, "-m3-elevation-level2", M3TokenCss.pixels(level2));
-        M3TokenCss.append(builder, "-m3-elevation-level3", M3TokenCss.pixels(level3));
-        M3TokenCss.append(builder, "-m3-elevation-level4", M3TokenCss.pixels(level4));
-        M3TokenCss.append(builder, "-m3-elevation-level5", M3TokenCss.pixels(level5));
+        M3TokenCss.append(builder, "-m3-elevation-level0", M3TokenCss.pixels(level0()));
+        M3TokenCss.append(builder, "-m3-elevation-level1", M3TokenCss.pixels(level1()));
+        M3TokenCss.append(builder, "-m3-elevation-level2", M3TokenCss.pixels(level2()));
+        M3TokenCss.append(builder, "-m3-elevation-level3", M3TokenCss.pixels(level3()));
+        M3TokenCss.append(builder, "-m3-elevation-level4", M3TokenCss.pixels(level4()));
+        M3TokenCss.append(builder, "-m3-elevation-level5", M3TokenCss.pixels(level5()));
         return builder.toString().trim();
     }
 
     /// Converts elevation tokens into JavaFX CSS rules for m3fx controls.
-    public String toControlStyleRules() {
+    default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
-        appendShadowRule(builder, ".m3-elevated-button", level3, level1);
-        appendShadowRule(builder, ".m3-elevated-card .m3-card-container", level4, Math.max(level1, level2 - level1));
+        appendShadowRule(builder, ".m3-elevated-button", level3(), level1());
+        appendShadowRule(builder, ".m3-elevated-card .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
         return builder.toString().stripTrailing();
     }
 
@@ -62,6 +56,34 @@ public record M3ElevationTokens(
                 .append(", 0.18, 0, ")
                 .append(M3TokenCss.format(offsetY))
                 .append(");\n}\n\n");
+    }
+}
+
+/// Default immutable implementation of {@link M3ElevationTokens}.
+///
+/// @param level0 elevation level zero
+/// @param level1 elevation level one
+/// @param level2 elevation level two
+/// @param level3 elevation level three
+/// @param level4 elevation level four
+/// @param level5 elevation level five
+@NotNullByDefault
+record M3ElevationTokensImpl(
+        double level0,
+        double level1,
+        double level2,
+        double level3,
+        double level4,
+        double level5
+) implements M3ElevationTokens {
+    /// Creates elevation tokens.
+    M3ElevationTokensImpl {
+        validate(level0, "level0");
+        validate(level1, "level1");
+        validate(level2, "level2");
+        validate(level3, "level3");
+        validate(level4, "level4");
+        validate(level5, "level5");
     }
 
     /// Validates an elevation token.

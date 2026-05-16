@@ -10,40 +10,39 @@ import java.util.List;
 import java.util.Objects;
 
 /// Wraps MonetFX color scheme output as m3fx color tokens.
-///
-/// @param colorScheme the MonetFX color scheme used by this token set
 @NotNullByDefault
-public record M3ColorTokens(
-        ColorScheme colorScheme
-) {
+public sealed interface M3ColorTokens permits M3ColorTokensImpl {
     /// The default CSS prefix used for Monet color roles.
-    public static final String DEFAULT_CSS_PREFIX = "-monet";
+    String DEFAULT_CSS_PREFIX = "-monet";
 
     /// The m3fx CSS prefix used for Material color roles.
-    public static final String M3_CSS_PREFIX = "-m3-color";
+    String M3_CSS_PREFIX = "-m3-color";
 
-    /// Creates color tokens.
-    public M3ColorTokens {
-        Objects.requireNonNull(colorScheme, "colorScheme");
+    /// Returns the MonetFX color scheme used by this token set.
+    ColorScheme colorScheme();
+
+    /// Creates color tokens from a MonetFX color scheme.
+    static M3ColorTokens create(ColorScheme colorScheme) {
+        return new M3ColorTokensImpl(colorScheme);
     }
 
     /// Returns the color for a MonetFX color role.
-    public Color get(ColorRole role) {
-        return colorScheme.getColor(role);
+    default Color get(ColorRole role) {
+        return colorScheme().getColor(role);
     }
 
     /// Returns all MonetFX color roles used by this token set.
-    public @Unmodifiable List<ColorRole> roles() {
+    default @Unmodifiable List<ColorRole> roles() {
         return ColorRole.ALL;
     }
 
     /// Converts the color tokens into a JavaFX stylesheet rule for a style class.
-    public String toStyleSheet(String styleClass) {
-        return colorScheme.toStyleSheet(styleClass, DEFAULT_CSS_PREFIX, roles());
+    default String toStyleSheet(String styleClass) {
+        return colorScheme().toStyleSheet(styleClass, DEFAULT_CSS_PREFIX, roles());
     }
 
     /// Converts the color tokens into inline JavaFX CSS declarations.
-    public String toStyleDeclarations() {
+    default String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
         for (ColorRole role : roles()) {
             String color = toRgb(get(role));
@@ -54,7 +53,7 @@ public record M3ColorTokens(
     }
 
     /// Converts a color into a JavaFX CSS rgb value.
-    public static String toRgb(Color color) {
+    static String toRgb(Color color) {
         int red = toChannel(color.getRed());
         int green = toChannel(color.getGreen());
         int blue = toChannel(color.getBlue());
@@ -64,5 +63,16 @@ public record M3ColorTokens(
     /// Converts a color channel into an integer CSS channel.
     private static int toChannel(double value) {
         return (int) Math.round(value * 255.0);
+    }
+}
+
+/// Default immutable implementation of {@link M3ColorTokens}.
+///
+/// @param colorScheme the MonetFX color scheme used by this token set
+@NotNullByDefault
+record M3ColorTokensImpl(ColorScheme colorScheme) implements M3ColorTokens {
+    /// Creates color tokens.
+    M3ColorTokensImpl {
+        Objects.requireNonNull(colorScheme, "colorScheme");
     }
 }
