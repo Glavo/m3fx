@@ -3,11 +3,14 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -29,6 +32,9 @@ import java.util.Objects;
 public class M3SearchBar extends HBox {
     /// The base style class for M3FX search bars.
     public static final String STYLE_CLASS = "m3-search-bar";
+
+    /// The active pseudo-class used when the search bar owns active search input.
+    private static final PseudoClass ACTIVE_PSEUDO_CLASS = PseudoClass.getPseudoClass("active");
 
     /// The style class applied to the search editor.
     public static final String INPUT_STYLE_CLASS = "m3-search-bar-input";
@@ -66,6 +72,19 @@ public class M3SearchBar extends HBox {
                     setEventHandler(ActionEvent.ACTION, get());
                 }
             };
+
+    /// Whether this search bar is in its active input state.
+    private final BooleanProperty active = new SimpleBooleanProperty(this, "active") {
+        /// Updates active pseudo-class state and input focus.
+        @Override
+        protected void invalidated() {
+            boolean active = get();
+            pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, active);
+            if (active) {
+                editor.requestFocus();
+            }
+        }
+    };
 
     /// The leading slot.
     private final StackPane leadingSlot = new StackPane();
@@ -116,6 +135,21 @@ public class M3SearchBar extends HBox {
     /// Returns the prompt text property.
     public final StringProperty promptTextProperty() {
         return editor.promptTextProperty();
+    }
+
+    /// Returns whether this search bar is in its active input state.
+    public final boolean isActive() {
+        return active.get();
+    }
+
+    /// Sets whether this search bar is in its active input state.
+    public final void setActive(boolean active) {
+        this.active.set(active);
+    }
+
+    /// Returns the active input state property.
+    public final BooleanProperty activeProperty() {
+        return active;
     }
 
     /// Returns the editable search input used by this search bar.
@@ -171,6 +205,21 @@ public class M3SearchBar extends HBox {
         }
     }
 
+    /// Moves the search bar into its active input state.
+    public final void activate() {
+        setActive(true);
+    }
+
+    /// Moves the search bar out of its active input state.
+    public final void deactivate() {
+        setActive(false);
+    }
+
+    /// Clears the current search text.
+    public final void clear() {
+        setText("");
+    }
+
     /// Adds base style classes, default slots, and search behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -186,8 +235,13 @@ public class M3SearchBar extends HBox {
 
         setLeading(defaultLeadingNode());
         trailingBox.getChildren().addListener((ListChangeListener<Node>) change -> updateTrailingVisibility());
+        editor.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                setActive(true);
+            }
+        });
         editor.setOnAction(event -> fire());
-        setOnMouseClicked(event -> editor.requestFocus());
+        setOnMouseClicked(event -> activate());
         getChildren().addAll(leadingSlot, editor, trailingBox);
         updateLeading();
         updateTrailingVisibility();

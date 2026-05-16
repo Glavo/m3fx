@@ -485,9 +485,17 @@ public final class M3FXDemoApp extends Application {
                 createSearchResult("Navigation", "Bars, rails, drawers, and destination items")
         );
 
+        M3SearchView inactiveView = new M3SearchView("Collapsed search");
+        inactiveView.setPrefWidth(520.0);
+        inactiveView.getResults().addAll(
+                createSearchResult("Hidden result", "Result content is hidden while inactive")
+        );
+        inactiveView.deactivate();
+
         return createGallery(
                 createShowcaseGroup("Search Bars", searchBar, populated),
-                createShowcaseGroup("Search View", searchView)
+                createShowcaseGroup("Search View", searchView),
+                createShowcaseGroup("Inactive View", inactiveView)
         );
     }
 

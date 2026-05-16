@@ -1103,6 +1103,25 @@ final class M3ControlStyleTest {
         assertEquals(1, actions.get());
     }
 
+    /// Verifies that search bars expose active state and clear actions.
+    @Test
+    void searchBarTracksActiveStateAndClearsText() {
+        M3SearchBar searchBar = new M3SearchBar("Search");
+
+        searchBar.setText("M3FX");
+        searchBar.activate();
+
+        assertTrue(searchBar.isActive());
+        assertTrue(searchBar.getPseudoClassStates().contains(PseudoClass.getPseudoClass("active")));
+
+        searchBar.clear();
+        searchBar.deactivate();
+
+        assertEquals("", searchBar.getText());
+        assertFalse(searchBar.isActive());
+        assertFalse(searchBar.getPseudoClassStates().contains(PseudoClass.getPseudoClass("active")));
+    }
+
     /// Verifies that search component token metrics apply through the active theme.
     @Test
     void searchComponentsApplyTokenMetrics() {
@@ -1128,13 +1147,42 @@ final class M3ControlStyleTest {
     void searchViewOwnsSearchBarAndResults() {
         M3SearchView searchView = new M3SearchView("Find");
         M3ListItem result = new M3ListItem("Result");
+        AtomicInteger actions = new AtomicInteger();
 
+        searchView.setOnAction(event -> actions.incrementAndGet());
         searchView.setText("button");
         searchView.getResults().add(result);
+        searchView.fire();
 
         assertEquals("button", searchView.getSearchBar().getText());
         assertEquals("Find", searchView.getPromptText());
         assertEquals(result, searchView.getResults().get(0));
+        assertEquals(1, actions.get());
+    }
+
+    /// Verifies that search views use active state to show or hide results.
+    @Test
+    void searchViewActiveStateControlsResultsVisibility() {
+        M3SearchView searchView = new M3SearchView("Find");
+        M3ListItem result = new M3ListItem("Result");
+        searchView.getResults().add(result);
+        applyCss(searchView);
+
+        assertTrue(searchView.isActive());
+        assertTrue(searchView.getSearchBar().isActive());
+
+        searchView.deactivate();
+
+        Node results = searchView.lookup("." + M3SearchView.RESULTS_STYLE_CLASS);
+        assertFalse(searchView.isActive());
+        assertFalse(results.isVisible());
+        assertFalse(results.isManaged());
+
+        searchView.activate();
+
+        assertTrue(searchView.isActive());
+        assertTrue(results.isVisible());
+        assertTrue(results.isManaged());
     }
 
     /// Verifies that sheet controls own content, actions, and variants.
