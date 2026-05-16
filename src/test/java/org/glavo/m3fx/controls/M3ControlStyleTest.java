@@ -12,6 +12,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.Skin;
 import javafx.scene.image.WritableImage;
@@ -1676,6 +1677,90 @@ final class M3ControlStyleTest {
         assertEquals(56.0, home.getIndicatorWidth(), 0.0001);
     }
 
+    /// Verifies that top app bars expose navigation, title, and action slots.
+    @Test
+    void topAppBarExposesSlots() {
+        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        Label navigation = new Label("Menu");
+        Label search = new Label("Search");
+        Label more = new Label("More");
+
+        topAppBar.setNavigation(navigation);
+        topAppBar.getActions().addAll(search, more);
+
+        assertEquals("Inbox", topAppBar.getTitle());
+        assertEquals(navigation, topAppBar.getNavigation());
+        assertTrue(topAppBar.getActions().contains(search));
+        assertTrue(topAppBar.getActions().contains(more));
+
+        topAppBar.setTitle("Archive");
+        topAppBar.setNavigation(null);
+
+        assertEquals("Archive", topAppBar.getTitle());
+        assertNull(topAppBar.getNavigation());
+    }
+
+    /// Verifies that top app bar token rules apply container metrics.
+    @Test
+    void topAppBarAppliesMetrics() {
+        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        Pane root = new Pane(topAppBar);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(16.0, topAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, topAppBar.getSpacing(), 0.0001);
+    }
+
+    /// Verifies that navigation drawers group list items and keep one selected item.
+    @Test
+    void navigationDrawerGroupsItemsAndKeepsSelection() {
+        M3ListItem home = new M3ListItem("Home");
+        M3ListItem search = new M3ListItem("Search");
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(home, new M3Divider(), search);
+
+        assertTrue(home.isSelected());
+        assertEquals(home, navigationDrawer.getSelectedItem());
+
+        search.fire();
+
+        assertFalse(home.isSelected());
+        assertTrue(search.isSelected());
+        assertEquals(search, navigationDrawer.getSelectedItem());
+
+        home.setSelected(true);
+
+        assertTrue(home.isSelected());
+        assertFalse(search.isSelected());
+        assertEquals(home, navigationDrawer.getSelectedItem());
+
+        navigationDrawer.getItems().remove(home);
+
+        assertFalse(home.isSelected());
+        assertTrue(search.isSelected());
+        assertEquals(search, navigationDrawer.getSelectedItem());
+    }
+
+    /// Verifies that navigation drawer token rules override list item metrics.
+    @Test
+    void navigationDrawerAppliesItemMetrics() {
+        M3ListItem home = new M3ListItem("Home");
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(home);
+        Pane root = new Pane(navigationDrawer);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertEquals(360.0, navigationDrawer.getPrefWidth(), 0.0001);
+        assertEquals(56.0, home.getOneLineHeight(), 0.0001);
+        assertEquals(999.0, home.getContainerShape(), 0.0001);
+        assertEquals(12.0, home.getContentSpacing(), 0.0001);
+    }
+
     /// Verifies that navigation item skins expose the selected indicator and ripple feedback.
     @Test
     void navigationItemSkinLaysOutIndicatorAndRipple() {
@@ -1902,15 +1987,19 @@ final class M3ControlStyleTest {
 
         M3Snackbar snackbar = new M3Snackbar("Message");
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
+        M3TopAppBar topAppBar = new M3TopAppBar();
         M3NavigationBar navigationBar = new M3NavigationBar();
         M3NavigationRail navigationRail = new M3NavigationRail();
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
 
         assertTrue(card.getStyleClass().contains(M3Card.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.getStyleClass()));
         assertTrue(snackbar.getStyleClass().contains(M3Snackbar.STYLE_CLASS));
         assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBar.STYLE_CLASS));
         assertTrue(navigationBar.getStyleClass().contains(M3NavigationBar.STYLE_CLASS));
         assertTrue(navigationRail.getStyleClass().contains(M3NavigationRail.STYLE_CLASS));
+        assertTrue(navigationDrawer.getStyleClass().contains(M3NavigationDrawer.STYLE_CLASS));
     }
 
     /// Verifies style classes for input and selection controls.
@@ -1957,8 +2046,10 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3ProgressIndicator(), "/styles/controls/progress.css");
         assertUserAgentStylesheet(new M3Divider(), "/styles/controls/divider.css");
         assertUserAgentStylesheet(new M3Badge(), "/styles/controls/badge.css");
+        assertUserAgentStylesheet(new M3TopAppBar(), "/styles/controls/top-app-bar.css");
         assertUserAgentStylesheet(new M3NavigationBar(), "/styles/controls/navigation-bar.css");
         assertUserAgentStylesheet(new M3NavigationRail(), "/styles/controls/navigation-rail.css");
+        assertUserAgentStylesheet(new M3NavigationDrawer(), "/styles/controls/navigation-drawer.css");
         assertUserAgentStylesheet(new M3NavigationItem(), "/styles/controls/navigation-bar.css");
         assertUserAgentStylesheet(new M3ListItem(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");

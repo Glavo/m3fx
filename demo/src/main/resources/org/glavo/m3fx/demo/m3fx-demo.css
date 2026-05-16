@@ -135,6 +135,13 @@
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
+.demo-drawer-section {
+    -fx-padding: 12px 16px 4px 16px;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
 .demo-card-content {
     -fx-min-height: 92px;
 }

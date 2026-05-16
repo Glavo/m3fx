@@ -44,6 +44,7 @@ import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationBar;
+import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3PasswordField;
@@ -57,6 +58,7 @@ import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputVariant;
+import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Density;
@@ -197,8 +199,10 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Sliders", "Different values and disabled slider states", this::createSlidersPage),
                 new DemoPage("Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
                 new DemoPage("Segmented Buttons", "Single-select segmented control states", this::createSegmentedButtonsPage),
+                new DemoPage("App Bars", "Top app bars with navigation and actions", this::createAppBarsPage),
                 new DemoPage("Navigation", "Bottom navigation items and selected indicators", this::createNavigationPage),
                 new DemoPage("Navigation Rail", "Vertical destinations for wide layouts", this::createNavigationRailPage),
+                new DemoPage("Navigation Drawer", "Drawer destinations with selected rows", this::createNavigationDrawerPage),
                 new DemoPage("Progress", "Linear and circular progress indicators", this::createProgressPage),
                 new DemoPage("Lists", "One-line, two-line, three-line, and selected rows", this::createListPage),
                 new DemoPage("Badges", "Dot, count, overflow, and attached badges", this::createBadgesPage),
@@ -414,6 +418,18 @@ public final class M3FXDemoApp extends Application {
         );
     }
 
+    /// Creates the app bar component page.
+    private Node createAppBarsPage() {
+        M3TopAppBar primary = createTopAppBar("Inbox");
+        M3TopAppBar compact = createTopAppBar("Project");
+        compact.setStyle("-fx-pref-height: 56px;");
+
+        return createGallery(
+                createShowcaseGroup("Small", primary),
+                createShowcaseGroup("Compact", compact)
+        );
+    }
+
     /// Creates the navigation component page.
     private Node createNavigationPage() {
         M3NavigationBar primary = createNavigationBar("Home", "Search", "Profile", "Settings");
@@ -434,6 +450,20 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup("Four Items", primary),
                 createShowcaseGroup("Three Items", compact)
+        );
+    }
+
+    /// Creates the navigation drawer component page.
+    private Node createNavigationDrawerPage() {
+        M3NavigationDrawer primary = createNavigationDrawer("Inbox", "Starred", "Sent", "Archive");
+        M3NavigationDrawer labeled = createNavigationDrawer("Dashboard", "Reports", "Settings");
+        Label section = new Label("Workspace");
+        section.getStyleClass().add("demo-drawer-section");
+        labeled.getItems().add(0, section);
+
+        return createGallery(
+                createShowcaseGroup("Destinations", primary),
+                createShowcaseGroup("Section", labeled)
         );
     }
 
@@ -627,6 +657,15 @@ public final class M3FXDemoApp extends Application {
         return new M3SegmentedButtonGroup(firstButton, secondButton, thirdButton);
     }
 
+    /// Creates a top app bar sample.
+    private static M3TopAppBar createTopAppBar(String title) {
+        M3TopAppBar topAppBar = new M3TopAppBar(title);
+        topAppBar.setNavigation(createIconButton("M"));
+        topAppBar.getActions().addAll(createIconButton("S"), createIconButton("A"));
+        topAppBar.setPrefWidth(560.0);
+        return topAppBar;
+    }
+
     /// Creates a navigation bar sample.
     private M3NavigationBar createNavigationBar(String first, String second, String third) {
         M3NavigationBar navigationBar = new M3NavigationBar(
@@ -673,11 +712,58 @@ public final class M3FXDemoApp extends Application {
         return navigationRail;
     }
 
+    /// Creates a navigation drawer sample.
+    private static M3NavigationDrawer createNavigationDrawer(
+            String first,
+            String second,
+            String third,
+            String fourth
+    ) {
+        M3ListItem firstItem = createDrawerItem(first, first.substring(0, 1));
+        M3ListItem secondItem = createDrawerItem(second, second.substring(0, 1));
+        M3ListItem thirdItem = createDrawerItem(third, third.substring(0, 1));
+        M3ListItem fourthItem = createDrawerItem(fourth, fourth.substring(0, 1));
+        secondItem.setTrailing(new M3Badge("3"));
+
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
+                firstItem,
+                secondItem,
+                new M3Divider(),
+                thirdItem,
+                fourthItem
+        );
+        navigationDrawer.selectFirst();
+        return navigationDrawer;
+    }
+
+    /// Creates a navigation drawer sample.
+    private static M3NavigationDrawer createNavigationDrawer(String first, String second, String third) {
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
+                createDrawerItem(first, first.substring(0, 1)),
+                createDrawerItem(second, second.substring(0, 1)),
+                createDrawerItem(third, third.substring(0, 1))
+        );
+        navigationDrawer.selectFirst();
+        return navigationDrawer;
+    }
+
+    /// Creates a sample drawer item.
+    private static M3ListItem createDrawerItem(String text, String iconText) {
+        M3ListItem item = new M3ListItem(text);
+        item.setLeading(createNavigationIcon(iconText));
+        return item;
+    }
+
     /// Creates a sample navigation item.
     private static M3NavigationItem createNavigationItem(String text, String iconText) {
+        return new M3NavigationItem(text, createNavigationIcon(iconText));
+    }
+
+    /// Creates a sample navigation icon label.
+    private static Label createNavigationIcon(String iconText) {
         Label icon = new Label(iconText);
         icon.getStyleClass().add("demo-navigation-icon");
-        return new M3NavigationItem(text, icon);
+        return icon;
     }
 
     /// Creates the sample icon button.

@@ -28,8 +28,10 @@ import java.util.Objects;
 /// @param snackbar tokens used by snackbar controls
 /// @param divider tokens used by dividers
 /// @param badge tokens used by badges
+/// @param topAppBar tokens used by top app bars
 /// @param navigationBar tokens used by navigation bars
 /// @param navigationRail tokens used by navigation rails
+/// @param navigationDrawer tokens used by navigation drawers
 /// @param listItem tokens used by list items
 @NotNullByDefault
 public record M3ComponentTokensImpl(
@@ -51,8 +53,10 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.SnackbarTokens snackbar,
         M3ComponentTokens.DividerTokens divider,
         M3ComponentTokens.BadgeTokens badge,
+        M3ComponentTokens.TopAppBarTokens topAppBar,
         M3ComponentTokens.NavigationBarTokens navigationBar,
         M3ComponentTokens.NavigationRailTokens navigationRail,
+        M3ComponentTokens.NavigationDrawerTokens navigationDrawer,
         M3ComponentTokens.ListItemTokens listItem
 ) implements M3ComponentTokens {
     /// Creates component token implementation.
@@ -75,8 +79,10 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(snackbar, "snackbar");
         Objects.requireNonNull(divider, "divider");
         Objects.requireNonNull(badge, "badge");
+        Objects.requireNonNull(topAppBar, "topAppBar");
         Objects.requireNonNull(navigationBar, "navigationBar");
         Objects.requireNonNull(navigationRail, "navigationRail");
+        Objects.requireNonNull(navigationDrawer, "navigationDrawer");
         Objects.requireNonNull(listItem, "listItem");
     }
 }

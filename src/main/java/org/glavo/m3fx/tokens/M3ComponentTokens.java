@@ -65,11 +65,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by badges.
     BadgeTokens badge();
 
+    /// Returns tokens used by top app bars.
+    TopAppBarTokens topAppBar();
+
     /// Returns tokens used by navigation bars.
     NavigationBarTokens navigationBar();
 
     /// Returns tokens used by navigation rails.
     NavigationRailTokens navigationRail();
+
+    /// Returns tokens used by navigation drawers.
+    NavigationDrawerTokens navigationDrawer();
 
     /// Returns tokens used by list items.
     ListItemTokens listItem();
@@ -94,8 +100,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             SnackbarTokens snackbar,
             DividerTokens divider,
             BadgeTokens badge,
+            TopAppBarTokens topAppBar,
             NavigationBarTokens navigationBar,
             NavigationRailTokens navigationRail,
+            NavigationDrawerTokens navigationDrawer,
             ListItemTokens listItem
     ) {
         return new M3ComponentTokensImpl(
@@ -117,8 +125,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 snackbar,
                 divider,
                 badge,
+                topAppBar,
                 navigationBar,
                 navigationRail,
+                navigationDrawer,
                 listItem
         );
     }
@@ -139,6 +149,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
+        double topAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
         double navigationBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
         double navigationItemWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
         double navigationIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
@@ -146,6 +157,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double navigationRailWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 112.0 : 96.0);
         double navigationRailItemWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
         double navigationRailIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double navigationDrawerWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 384.0 : 360.0);
+        double navigationDrawerOneLineItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double navigationDrawerTwoLineItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
+        double navigationDrawerThreeLineItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
         double listItemOneLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
         double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
@@ -179,6 +194,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new SnackbarTokens(shapeTokens.extraSmall(), 16.0),
                 new DividerTokens(1.0, 0.0, 0.0),
                 new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeHeight, badgeLargeHeight / 2.0, 4.0),
+                new TopAppBarTokens(topAppBarHeight, 16.0, 16.0, 8.0),
                 new NavigationBarTokens(
                         navigationBarHeight,
                         navigationItemWidth,
@@ -199,6 +215,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         16.0,
                         8.0,
                         8.0
+                ),
+                new NavigationDrawerTokens(
+                        navigationDrawerWidth,
+                        navigationDrawerOneLineItemHeight,
+                        navigationDrawerTwoLineItemHeight,
+                        navigationDrawerThreeLineItemHeight,
+                        profile == M3Profile.EXPRESSIVE_2025 ? shapeTokens.large() : shapeTokens.full(),
+                        12.0,
+                        16.0,
+                        0.0,
+                        12.0,
+                        4.0
                 ),
                 new ListItemTokens(
                         listItemOneLineHeight,
@@ -233,8 +261,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, snackbar());
         append(builder, divider());
         append(builder, badge());
+        append(builder, topAppBar());
         append(builder, navigationBar());
         append(builder, navigationRail());
+        append(builder, navigationDrawer());
         append(builder, listItem());
         return builder.toString().trim();
     }
@@ -290,6 +320,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendSnackbarRule(builder, ".m3-snackbar", snackbar());
         appendDividerRule(builder, ".m3-divider", divider());
         appendBadgeRule(builder, ".m3-badge", badge());
+        appendTopAppBarRule(builder, ".m3-top-app-bar", topAppBar());
+        appendTopAppBarActionsRule(builder, ".m3-top-app-bar-actions", topAppBar());
         appendNavigationBarRule(builder, ".m3-navigation-bar", navigationBar());
         appendNavigationItemRule(builder, ".m3-navigation-item", navigationBar());
         appendNavigationIndicatorRule(builder, ".m3-navigation-item-indicator", navigationBar());
@@ -301,6 +333,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 navigationRail()
         );
         appendListItemRule(builder, ".m3-list-item", listItem());
+        appendNavigationDrawerRule(builder, ".m3-navigation-drawer", navigationDrawer());
+        appendNavigationDrawerItemRule(builder, ".m3-navigation-drawer .m3-list-item", navigationDrawer());
         return builder.toString().stripTrailing();
     }
 
@@ -394,6 +428,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-badge-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
     }
 
+    /// Appends top app bar token declarations.
+    private static void append(StringBuilder builder, TopAppBarTokens tokens) {
+        M3TokenCss.append(builder, "-m3-top-app-bar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+    }
+
     /// Appends navigation bar token declarations.
     private static void append(StringBuilder builder, NavigationBarTokens tokens) {
         M3TokenCss.append(builder, "-m3-navigation-bar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
@@ -417,6 +459,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-navigation-rail-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
         M3TokenCss.append(builder, "-m3-navigation-rail-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-navigation-rail-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+    }
+
+    /// Appends navigation drawer token declarations.
+    private static void append(StringBuilder builder, NavigationDrawerTokens tokens) {
+        M3TokenCss.append(builder, "-m3-navigation-drawer-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        M3TokenCss.append(builder, "-m3-navigation-drawer-one-line-item-height", M3TokenCss.pixels(tokens.oneLineItemHeight()));
+        M3TokenCss.append(builder, "-m3-navigation-drawer-two-line-item-height", M3TokenCss.pixels(tokens.twoLineItemHeight()));
+        M3TokenCss.append(builder, "-m3-navigation-drawer-three-line-item-height", M3TokenCss.pixels(tokens.threeLineItemHeight()));
+        M3TokenCss.append(builder, "-m3-navigation-drawer-item-container-shape", M3TokenCss.pixels(tokens.itemContainerShape()));
+        M3TokenCss.append(builder, "-m3-navigation-drawer-container-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        M3TokenCss.append(builder, "-m3-navigation-drawer-item-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-navigation-drawer-item-vertical-padding", M3TokenCss.pixels(tokens.itemVerticalPadding()));
+        M3TokenCss.append(builder, "-m3-navigation-drawer-item-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
+        M3TokenCss.append(builder, "-m3-navigation-drawer-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
     }
 
     /// Appends list item token declarations.
@@ -672,6 +728,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends a top app bar token CSS rule.
+    private static void appendTopAppBarRule(StringBuilder builder, String selector, TopAppBarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a top app bar actions token CSS rule.
+    private static void appendTopAppBarActionsRule(StringBuilder builder, String selector, TopAppBarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+        endRule(builder);
+    }
+
     /// Appends a navigation bar token CSS rule.
     private static void appendNavigationBarRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
         beginRule(builder, selector);
@@ -732,6 +805,37 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         beginRule(builder, selector);
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.indicatorShape()));
+        endRule(builder);
+    }
+
+    /// Appends a navigation drawer token CSS rule.
+    private static void appendNavigationDrawerRule(
+            StringBuilder builder,
+            String selector,
+            NavigationDrawerTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.containerWidth()));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.containerWidth()));
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a navigation drawer item token CSS rule.
+    private static void appendNavigationDrawerItemRule(
+            StringBuilder builder,
+            String selector,
+            NavigationDrawerTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.oneLineItemHeight()));
+        appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.twoLineItemHeight()));
+        appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.threeLineItemHeight()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.itemContainerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
+        appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(tokens.itemVerticalPadding()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
         endRule(builder);
     }
 
@@ -1009,6 +1113,28 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         }
     }
 
+    /// Tokens used by top app bars.
+    ///
+    /// @param containerHeight the top app bar container height
+    /// @param horizontalPadding the horizontal content padding
+    /// @param contentSpacing the spacing between leading, title, and trailing regions
+    /// @param actionSpacing the spacing between trailing action nodes
+    @NotNullByDefault
+    public record TopAppBarTokens(
+            double containerHeight,
+            double horizontalPadding,
+            double contentSpacing,
+            double actionSpacing
+    ) {
+        /// Creates top app bar tokens.
+        public TopAppBarTokens {
+            validateNonNegative(containerHeight, "containerHeight");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(contentSpacing, "contentSpacing");
+            validateNonNegative(actionSpacing, "actionSpacing");
+        }
+    }
+
     /// Tokens used by navigation bars.
     ///
     /// @param containerHeight the navigation bar container height
@@ -1076,6 +1202,46 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(contentSpacing, "contentSpacing");
             validateNonNegative(verticalPadding, "verticalPadding");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(itemSpacing, "itemSpacing");
+        }
+    }
+
+    /// Tokens used by navigation drawers.
+    ///
+    /// @param containerWidth the navigation drawer container width
+    /// @param oneLineItemHeight the preferred one-line drawer item height
+    /// @param twoLineItemHeight the preferred two-line drawer item height
+    /// @param threeLineItemHeight the preferred three-line drawer item height
+    /// @param itemContainerShape the drawer item container radius
+    /// @param containerPadding the padding around drawer items
+    /// @param itemHorizontalPadding the horizontal item content padding
+    /// @param itemVerticalPadding the vertical item content padding
+    /// @param itemContentSpacing the spacing between item content regions
+    /// @param itemSpacing the spacing between drawer items
+    @NotNullByDefault
+    public record NavigationDrawerTokens(
+            double containerWidth,
+            double oneLineItemHeight,
+            double twoLineItemHeight,
+            double threeLineItemHeight,
+            double itemContainerShape,
+            double containerPadding,
+            double itemHorizontalPadding,
+            double itemVerticalPadding,
+            double itemContentSpacing,
+            double itemSpacing
+    ) {
+        /// Creates navigation drawer tokens.
+        public NavigationDrawerTokens {
+            validateNonNegative(containerWidth, "containerWidth");
+            validateNonNegative(oneLineItemHeight, "oneLineItemHeight");
+            validateNonNegative(twoLineItemHeight, "twoLineItemHeight");
+            validateNonNegative(threeLineItemHeight, "threeLineItemHeight");
+            validateNonNegative(itemContainerShape, "itemContainerShape");
+            validateNonNegative(containerPadding, "containerPadding");
+            validateNonNegative(itemHorizontalPadding, "itemHorizontalPadding");
+            validateNonNegative(itemVerticalPadding, "itemVerticalPadding");
+            validateNonNegative(itemContentSpacing, "itemContentSpacing");
             validateNonNegative(itemSpacing, "itemSpacing");
         }
     }
