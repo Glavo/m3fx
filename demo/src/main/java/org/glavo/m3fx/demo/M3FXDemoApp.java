@@ -56,6 +56,7 @@ import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SegmentedButton;
@@ -226,6 +227,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Dividers", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
                 new DemoPage("Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
                 new DemoPage("Sheets", "Side and bottom containment surfaces", this::createSheetsPage),
+                new DemoPage("Scrims", "Modal overlays and dismiss actions", this::createScrimsPage),
                 new DemoPage("Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
                 new DemoPage("Snackbars", "Snackbar host with action and stacked messages", this::createSnackbarsPage),
                 new DemoPage("Tooltips", "Plain and longer contextual help", this::createTooltipsPage)
@@ -696,6 +698,16 @@ public final class M3FXDemoApp extends Application {
         );
     }
 
+    /// Creates the scrim component page.
+    private Node createScrimsPage() {
+        StackPane plainScrim = createScrimPreview(false);
+        StackPane actionScrim = createScrimPreview(true);
+
+        return createGallery(
+                createShowcaseGroup("States", plainScrim, actionScrim)
+        );
+    }
+
     /// Creates the dialog component page.
     private Node createDialogsPage() {
         M3Button dialogButton = createButton("Open dialog", M3ButtonVariant.FILLED);
@@ -1039,6 +1051,25 @@ public final class M3FXDemoApp extends Application {
         VBox content = new VBox(first, second, third);
         content.getStyleClass().add("demo-sheet-content");
         return content;
+    }
+
+    /// Creates a sample scrim preview.
+    private StackPane createScrimPreview(boolean actionEnabled) {
+        Label content = new Label(actionEnabled ? "Click scrim" : "Modal content");
+        content.getStyleClass().add("demo-scrim-content");
+
+        M3Scrim scrim = new M3Scrim();
+        scrim.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        if (actionEnabled) {
+            scrim.setOnAction(event -> showSnackbar());
+        }
+
+        StackPane preview = new StackPane(content, scrim);
+        preview.getStyleClass().add("demo-scrim-preview");
+        preview.setMinSize(360.0, 180.0);
+        preview.setPrefSize(360.0, 180.0);
+        preview.setMaxSize(360.0, 180.0);
+        return preview;
     }
 
     /// Plays the determinate progress showcase animation.

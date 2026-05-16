@@ -21,6 +21,7 @@ import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SideSheet;
@@ -328,6 +329,7 @@ final class M3ThemeTest {
         searchView.getResults().add(new M3ListItem("Result"));
         M3SideSheet sideSheet = new M3SideSheet();
         M3BottomSheet bottomSheet = new M3BottomSheet();
+        M3Scrim scrim = new M3Scrim();
         M3Chip chip = new M3Chip("Chip");
         M3FloatingActionButton fab = new M3FloatingActionButton();
         fab.setSize(M3FloatingActionButtonSize.LARGE);
@@ -341,6 +343,7 @@ final class M3ThemeTest {
                 searchView,
                 sideSheet,
                 bottomSheet,
+                scrim,
                 chip,
                 fab,
                 segmentedButton
@@ -364,6 +367,7 @@ final class M3ThemeTest {
         assertEquals(64.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(0.32, scrim.getOpacity(), 0.0001);
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
         assertEquals(104.0, fab.getContainerSize(), 0.0001);
         assertEquals(48.0, segmentedButton.getContainerHeight(), 0.0001);
@@ -380,6 +384,7 @@ final class M3ThemeTest {
         assertEquals(56.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(320.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(0.32, scrim.getOpacity(), 0.0001);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
         assertEquals(96.0, fab.getContainerSize(), 0.0001);
         assertEquals(40.0, segmentedButton.getContainerHeight(), 0.0001);

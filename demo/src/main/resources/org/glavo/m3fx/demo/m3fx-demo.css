@@ -174,3 +174,14 @@
     -fx-padding: 8px 0 8px 0;
     -fx-max-width: 560px;
 }
+
+.demo-scrim-preview {
+    -fx-background-color: -m3-color-primary-container;
+    -fx-background-radius: 12px;
+}
+
+.demo-scrim-content {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -m3-color-on-primary-container;
+}

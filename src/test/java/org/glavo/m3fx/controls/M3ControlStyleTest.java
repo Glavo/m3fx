@@ -886,6 +886,31 @@ final class M3ControlStyleTest {
         );
     }
 
+    /// Verifies that scrims fire action events for programmatic and mouse activation.
+    @Test
+    void scrimFiresActionEvents() {
+        M3Scrim scrim = new M3Scrim();
+        AtomicInteger actions = new AtomicInteger();
+        scrim.setOnAction(event -> actions.incrementAndGet());
+
+        scrim.fire();
+        scrim.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 10.0, 10.0, false));
+        scrim.setDisable(true);
+        scrim.fire();
+
+        assertEquals(2, actions.get());
+    }
+
+    /// Verifies that scrim opacity applies through the active theme.
+    @Test
+    void scrimAppliesTokenOpacity() {
+        M3Scrim scrim = new M3Scrim();
+
+        applyCss(scrim);
+
+        assertEquals(0.32, scrim.getOpacity(), 0.0001);
+    }
+
     /// Verifies that focused text input states keep Material field colors.
     @Test
     void textInputStateStylesPreserveVariantColors() {
@@ -2359,6 +2384,7 @@ final class M3ControlStyleTest {
         M3BottomAppBar bottomAppBar = new M3BottomAppBar();
         M3SideSheet sideSheet = new M3SideSheet();
         M3BottomSheet bottomSheet = new M3BottomSheet();
+        M3Scrim scrim = new M3Scrim();
         M3NavigationBar navigationBar = new M3NavigationBar();
         M3NavigationRail navigationRail = new M3NavigationRail();
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
@@ -2371,6 +2397,7 @@ final class M3ControlStyleTest {
         assertTrue(bottomAppBar.getStyleClass().contains(M3BottomAppBar.STYLE_CLASS));
         assertTrue(sideSheet.getStyleClass().contains(M3SideSheet.STYLE_CLASS));
         assertTrue(bottomSheet.getStyleClass().contains(M3BottomSheet.STYLE_CLASS));
+        assertTrue(scrim.getStyleClass().contains(M3Scrim.STYLE_CLASS));
         assertTrue(navigationBar.getStyleClass().contains(M3NavigationBar.STYLE_CLASS));
         assertTrue(navigationRail.getStyleClass().contains(M3NavigationRail.STYLE_CLASS));
         assertTrue(navigationDrawer.getStyleClass().contains(M3NavigationDrawer.STYLE_CLASS));
@@ -2433,6 +2460,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3SearchView(), "/styles/controls/search.css");
         assertUserAgentStylesheet(new M3SideSheet(), "/styles/controls/sheet.css");
         assertUserAgentStylesheet(new M3BottomSheet(), "/styles/controls/sheet.css");
+        assertUserAgentStylesheet(new M3Scrim(), "/styles/controls/scrim.css");
         assertUserAgentStylesheet(new M3CheckBox(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3RadioButton(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3Switch(), "/styles/controls/selection.css");

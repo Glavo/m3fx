@@ -24,6 +24,7 @@ import java.util.Objects;
 /// @param menu tokens used by menus
 /// @param search tokens used by search components
 /// @param sheet tokens used by sheet containers
+/// @param scrim tokens used by scrims
 /// @param selection tokens used by selection controls
 /// @param slider tokens used by sliders
 /// @param chip tokens used by chips
@@ -55,6 +56,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.MenuTokens menu,
         M3ComponentTokens.SearchTokens search,
         M3ComponentTokens.SheetTokens sheet,
+        M3ComponentTokens.ScrimTokens scrim,
         M3ComponentTokens.SelectionTokens selection,
         M3ComponentTokens.SliderTokens slider,
         M3ComponentTokens.ChipTokens chip,
@@ -87,6 +89,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(menu, "menu");
         Objects.requireNonNull(search, "search");
         Objects.requireNonNull(sheet, "sheet");
+        Objects.requireNonNull(scrim, "scrim");
         Objects.requireNonNull(selection, "selection");
         Objects.requireNonNull(slider, "slider");
         Objects.requireNonNull(chip, "chip");

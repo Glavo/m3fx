@@ -53,6 +53,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by sheet containers.
     SheetTokens sheet();
 
+    /// Returns tokens used by scrims.
+    ScrimTokens scrim();
+
     /// Returns tokens used by selection controls.
     SelectionTokens selection();
 
@@ -114,6 +117,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             MenuTokens menu,
             SearchTokens search,
             SheetTokens sheet,
+            ScrimTokens scrim,
             SelectionTokens selection,
             SliderTokens slider,
             ChipTokens chip,
@@ -145,6 +149,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 menu,
                 search,
                 sheet,
+                scrim,
                 selection,
                 slider,
                 chip,
@@ -238,6 +243,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         32.0,
                         4.0
                 ),
+                new ScrimTokens(0.32),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
                 new ChipTokens(chipHeight, shapeTokens.small(), 16.0),
@@ -311,6 +317,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, menu());
         append(builder, search());
         append(builder, sheet());
+        append(builder, scrim());
         append(builder, selection());
         append(builder, slider());
         append(builder, chip());
@@ -383,6 +390,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 sheet()
         );
         appendBottomSheetDragHandleRule(builder, ".m3-bottom-sheet .m3-bottom-sheet-drag-handle", sheet());
+        appendScrimRule(builder, ".m3-scrim.m3-scrim", scrim());
         appendSelectionRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch", selection());
         appendSwitchRule(builder, ".m3-switch", selection());
         appendSwitchBoxRule(builder, ".m3-switch .box", selection());
@@ -494,6 +502,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-sheet-header-padding", M3TokenCss.pixels(tokens.headerPadding()));
         M3TokenCss.append(builder, "-m3-sheet-drag-handle-width", M3TokenCss.pixels(tokens.dragHandleWidth()));
         M3TokenCss.append(builder, "-m3-sheet-drag-handle-height", M3TokenCss.pixels(tokens.dragHandleHeight()));
+    }
+
+    /// Appends scrim token declarations.
+    private static void append(StringBuilder builder, ScrimTokens tokens) {
+        M3TokenCss.append(builder, "-m3-scrim-container-opacity", Double.toString(tokens.containerOpacity()));
     }
 
     /// Appends selection token declarations.
@@ -878,6 +891,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-fx-pref-height", handleHeight);
         appendDeclaration(builder, "-fx-max-height", handleHeight);
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.dragHandleHeight() / 2.0));
+        endRule(builder);
+    }
+
+    /// Appends a scrim token CSS rule.
+    private static void appendScrimRule(StringBuilder builder, String selector, ScrimTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-opacity", Double.toString(tokens.containerOpacity()));
         endRule(builder);
     }
 
@@ -1387,6 +1407,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         }
     }
 
+    /// Component tokens for scrims.
+    ///
+    /// @param containerOpacity the scrim container opacity
+    @NotNullByDefault
+    public record ScrimTokens(double containerOpacity) {
+        /// Validates scrim tokens.
+        public ScrimTokens {
+            validateOpacity(containerOpacity, "containerOpacity");
+        }
+    }
+
     /// Tokens shared by selection controls.
     ///
     /// @param touchTargetSize the preferred touch target size
@@ -1748,6 +1779,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void validateNonNegative(double value, String name) {
         if (value < 0.0) {
             throw new IllegalArgumentException(name + " must not be negative");
+        }
+    }
+
+    /// Validates that a token is a JavaFX opacity value.
+    private static void validateOpacity(double value, String name) {
+        if (value < 0.0 || value > 1.0) {
+            throw new IllegalArgumentException(name + " must be between 0 and 1");
         }
     }
 }
