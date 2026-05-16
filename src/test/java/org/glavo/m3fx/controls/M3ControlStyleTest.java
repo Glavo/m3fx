@@ -1264,6 +1264,16 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3ChipSkin.class, chip.getSkin());
     }
 
+    /// Verifies that chips can be created with graphic content.
+    @Test
+    void chipSupportsGraphicContent() {
+        M3Icon icon = new M3Icon("A");
+        M3Chip chip = new M3Chip("Assist", icon);
+
+        assertEquals("Assist", chip.getText());
+        assertEquals(icon, chip.getGraphic());
+    }
+
     /// Verifies that chip interaction states keep Material colors.
     @Test
     void chipStateStylesPreserveVariantColors() {
@@ -1284,6 +1294,99 @@ final class M3ControlStyleTest {
         assertBorderColor(assistChip, Color.rgb(13, 14, 15));
         assertLabeledColors(filterChip, Color.rgb(7, 8, 9), Color.rgb(10, 11, 12));
         assertBorderColor(filterChip, Color.rgb(7, 8, 9));
+    }
+
+    /// Verifies that chip groups track multiple selected chips in child order.
+    @Test
+    void chipGroupTracksMultipleSelections() {
+        M3Chip first = new M3Chip("First");
+        M3Chip second = new M3Chip("Second");
+        M3Chip third = new M3Chip("Third");
+        M3ChipGroup group = new M3ChipGroup(first, second, third);
+
+        third.setSelected(true);
+        first.setSelected(true);
+
+        assertEquals(java.util.List.of(first, third), group.getSelectedChips());
+        assertEquals(first, group.getSelectedChip());
+
+        first.setSelected(false);
+
+        assertEquals(java.util.List.of(third), group.getSelectedChips());
+        assertEquals(third, group.getSelectedChip());
+
+        group.clearSelection();
+
+        assertTrue(group.getSelectedChips().isEmpty());
+        assertNull(group.getSelectedChip());
+    }
+
+    /// Verifies that chip groups can enforce single selection.
+    @Test
+    void chipGroupCanUseSingleSelection() {
+        M3Chip first = new M3Chip("First");
+        M3Chip second = new M3Chip("Second");
+        M3ChipGroup group = new M3ChipGroup(first, second);
+
+        group.setSelectionMode(M3ChipSelectionMode.SINGLE);
+        first.setSelected(true);
+        second.setSelected(true);
+
+        assertFalse(first.isSelected());
+        assertTrue(second.isSelected());
+        assertEquals(second, group.getSelectedChip());
+        assertEquals(java.util.List.of(second), group.getSelectedChips());
+
+        group.select(first);
+
+        assertTrue(first.isSelected());
+        assertFalse(second.isSelected());
+        assertEquals(first, group.getSelectedChip());
+    }
+
+    /// Verifies that chip groups can require a selected chip.
+    @Test
+    void chipGroupCanRequireSelection() {
+        M3Chip first = new M3Chip("First");
+        M3Chip second = new M3Chip("Second");
+        M3ChipGroup group = new M3ChipGroup(first, second);
+
+        group.setSelectionMode(M3ChipSelectionMode.SINGLE);
+        group.setAllowEmptySelection(false);
+
+        assertEquals(first, group.getSelectedChip());
+        assertTrue(first.isSelected());
+
+        group.clearSelection();
+
+        assertEquals(first, group.getSelectedChip());
+        assertTrue(first.isSelected());
+
+        second.setSelected(true);
+        second.setSelected(false);
+
+        assertEquals(second, group.getSelectedChip());
+        assertTrue(second.isSelected());
+    }
+
+    /// Verifies that chip groups update selection when chips are removed.
+    @Test
+    void chipGroupUpdatesSelectionWhenChildrenChange() {
+        M3Chip first = new M3Chip("First");
+        M3Chip second = new M3Chip("Second");
+        M3ChipGroup group = new M3ChipGroup(first, second);
+
+        second.setSelected(true);
+        group.getItems().remove(second);
+
+        assertTrue(group.getSelectedChips().isEmpty());
+        assertNull(group.getSelectedChip());
+        assertFalse(second.isSelected());
+
+        group.setAllowEmptySelection(false);
+
+        assertEquals(first, group.getSelectedChip());
+        assertTrue(first.isSelected());
     }
 
     /// Verifies that segmented button component token properties are styleable from CSS.
@@ -2829,6 +2932,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3Slider().getStyleClass().contains(M3Slider.STYLE_CLASS));
         assertTrue(chip.getStyleClass().contains(M3Chip.STYLE_CLASS));
         assertTrue(chip.getStyleClass().contains(M3ChipVariant.FILTER.getStyleClass()));
+        assertTrue(new M3ChipGroup().getStyleClass().contains(M3ChipGroup.STYLE_CLASS));
         assertTrue(new M3SegmentedButton("Day").getStyleClass().contains(M3SegmentedButton.STYLE_CLASS));
         assertTrue(new M3SegmentedButtonGroup().getStyleClass().contains(M3SegmentedButtonGroup.STYLE_CLASS));
         assertTrue(new M3Tab("Overview").getStyleClass().contains(M3Tab.STYLE_CLASS));
@@ -2876,6 +2980,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Switch(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3Slider(), "/styles/controls/slider.css");
         assertUserAgentStylesheet(new M3Chip(), "/styles/controls/chip.css");
+        assertUserAgentStylesheet(new M3ChipGroup(), "/styles/controls/chip.css");
         assertUserAgentStylesheet(new M3SegmentedButton(), "/styles/controls/segmented-button.css");
         assertUserAgentStylesheet(new M3SegmentedButtonGroup(), "/styles/controls/segmented-button.css");
         assertUserAgentStylesheet(new M3Tab(), "/styles/controls/tab.css");

@@ -15,11 +15,13 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -77,12 +79,17 @@ public class M3Chip extends ButtonBase {
 
     /// Creates an empty assist chip.
     public M3Chip() {
-        this("");
+        this("", null);
     }
 
     /// Creates an assist chip with text.
     public M3Chip(String text) {
-        super(text);
+        this(text, null);
+    }
+
+    /// Creates an assist chip with text and graphic content.
+    public M3Chip(String text, @Nullable Node graphic) {
+        super(Objects.requireNonNull(text, "text"), graphic);
         initialize();
     }
 

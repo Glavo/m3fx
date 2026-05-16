@@ -40,6 +40,8 @@ import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
+import org.glavo.m3fx.controls.M3ChipGroup;
+import org.glavo.m3fx.controls.M3ChipSelectionMode;
 import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
@@ -537,22 +539,36 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the chip component page.
     private Node createChipsPage() {
-        M3Chip assist = new M3Chip("Assist");
-        M3Chip suggestion = new M3Chip("Suggestion");
-        suggestion.setVariant(M3ChipVariant.SUGGESTION);
-        M3Chip input = new M3Chip("Input");
-        input.setVariant(M3ChipVariant.INPUT);
-        M3Chip filter = new M3Chip("Filter");
-        filter.setVariant(M3ChipVariant.FILTER);
-        M3Chip selectedFilter = new M3Chip("Selected");
-        selectedFilter.setVariant(M3ChipVariant.FILTER);
-        selectedFilter.setSelected(true);
-        M3Chip disabled = new M3Chip("Disabled");
-        disabled.setDisable(true);
+        M3Chip assist = createChip("Assist", M3ChipVariant.ASSIST, false, false);
+        assist.setGraphic(createNavigationIcon("A"));
+        M3Chip suggestion = createChip("Suggestion", M3ChipVariant.SUGGESTION, false, false);
+        M3Chip input = createChip("Input", M3ChipVariant.INPUT, false, false);
+        M3Chip filter = createChip("Filter", M3ChipVariant.FILTER, false, false);
+        M3Chip selectedFilter = createChip("Selected", M3ChipVariant.FILTER, true, false);
+        M3Chip disabled = createChip("Disabled", M3ChipVariant.ASSIST, false, true);
+
+        M3ChipGroup multiSelect = new M3ChipGroup(
+                createChip("Work", M3ChipVariant.FILTER, true, false),
+                createChip("Personal", M3ChipVariant.FILTER, false, false),
+                createChip("Travel", M3ChipVariant.FILTER, true, false),
+                createChip("Finance", M3ChipVariant.FILTER, false, false)
+        );
+        multiSelect.setPrefWrapLength(360.0);
+
+        M3ChipGroup singleSelect = new M3ChipGroup(
+                createChip("All", M3ChipVariant.FILTER, false, false),
+                createChip("Open", M3ChipVariant.FILTER, false, false),
+                createChip("Closed", M3ChipVariant.FILTER, false, false)
+        );
+        singleSelect.setSelectionMode(M3ChipSelectionMode.SINGLE);
+        singleSelect.setAllowEmptySelection(false);
+        singleSelect.selectFirst();
 
         return createGallery(
                 createShowcaseGroup("Variants", assist, suggestion, input, filter),
-                createShowcaseGroup("States", selectedFilter, disabled)
+                createShowcaseGroup("States", selectedFilter, disabled),
+                createShowcaseGroup("Multi Select", multiSelect),
+                createShowcaseGroup("Single Select", singleSelect)
         );
     }
 
@@ -950,6 +966,20 @@ public final class M3FXDemoApp extends Application {
             item.setTrailing(shortcut);
         }
         return item;
+    }
+
+    /// Creates a chip sample.
+    private static M3Chip createChip(
+            String text,
+            M3ChipVariant variant,
+            boolean selected,
+            boolean disabled
+    ) {
+        M3Chip chip = new M3Chip(text);
+        chip.setVariant(variant);
+        chip.setSelected(selected);
+        chip.setDisable(disabled);
+        return chip;
     }
 
     /// Creates a slider sample.

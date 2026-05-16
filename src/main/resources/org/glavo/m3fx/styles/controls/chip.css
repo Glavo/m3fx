@@ -1,3 +1,9 @@
+.m3-chip-group {
+    -fx-alignment: center-left;
+    -fx-hgap: 8px;
+    -fx-vgap: 8px;
+}
+
 .m3-chip.m3-chip,
 .m3-chip.m3-chip:hover,
 .m3-chip.m3-chip:focused,
@@ -12,6 +18,8 @@
     -fx-border-radius: 8px;
     -fx-font-size: 14px;
     -fx-font-weight: 500;
+    -fx-content-display: left;
+    -fx-graphic-text-gap: 8px;
     -fx-cursor: hand;
 }
 
