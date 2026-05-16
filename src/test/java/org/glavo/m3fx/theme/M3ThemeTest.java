@@ -81,8 +81,8 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-checkbox:hover"));
         assertTrue(theme.toControlStyleRules().contains(".m3-slider:pressed"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item:disabled"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-slider:m3-focus-visible .m3-state-layer"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-card:m3-focus-visible .m3-state-layer"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-slider:focus-visible .m3-state-layer"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-card:focus-visible .m3-state-layer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
         assertTrue(theme.toControlStyleRules().contains(".m3-badge"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));

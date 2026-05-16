@@ -32,17 +32,17 @@
     -fx-opacity: 0.08;
 }
 
-.m3-button:m3-focus-visible .m3-state-layer,
-.m3-chip:m3-focus-visible .m3-state-layer,
-.m3-icon-button:m3-focus-visible .m3-state-layer,
-.m3-fab:m3-focus-visible .m3-state-layer,
-.m3-segmented-button:m3-focus-visible .m3-state-layer,
-.m3-checkbox:m3-focus-visible .m3-state-layer,
-.m3-radio-button:m3-focus-visible .m3-state-layer,
-.m3-switch:m3-focus-visible .m3-state-layer,
-.m3-slider:m3-focus-visible .m3-state-layer,
-.m3-list-item:m3-focus-visible .m3-state-layer,
-.m3-card:m3-focus-visible .m3-state-layer {
+.m3-button:focus-visible .m3-state-layer,
+.m3-chip:focus-visible .m3-state-layer,
+.m3-icon-button:focus-visible .m3-state-layer,
+.m3-fab:focus-visible .m3-state-layer,
+.m3-segmented-button:focus-visible .m3-state-layer,
+.m3-checkbox:focus-visible .m3-state-layer,
+.m3-radio-button:focus-visible .m3-state-layer,
+.m3-switch:focus-visible .m3-state-layer,
+.m3-slider:focus-visible .m3-state-layer,
+.m3-list-item:focus-visible .m3-state-layer,
+.m3-card:focus-visible .m3-state-layer {
     -fx-opacity: 0.10;
 }
 

@@ -110,7 +110,7 @@
 }
 
 .m3-button.m3-elevated-button:hover,
-.m3-button.m3-elevated-button:m3-focus-visible {
+.m3-button.m3-elevated-button:focus-visible {
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);
 }
 
