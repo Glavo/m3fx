@@ -31,6 +31,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The minimum width used by an indeterminate segment.
     private static final double MIN_INDETERMINATE_SEGMENT_WIDTH = 24.0;
 
+    /// The first visible phase used when indeterminate progress starts.
+    private static final double INDETERMINATE_START_POSITION = 0.18;
+
     /// The clipped visual container.
     private final Pane container = new Pane();
 
@@ -50,7 +53,8 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     private final Timeline determinateAnimation = new Timeline();
 
     /// The animated position of the indeterminate segment.
-    private final DoubleProperty indeterminatePosition = new SimpleDoubleProperty(this, "indeterminatePosition");
+    private final DoubleProperty indeterminatePosition =
+            new SimpleDoubleProperty(this, "indeterminatePosition", INDETERMINATE_START_POSITION);
 
     /// The indeterminate animation timeline.
     private final Timeline indeterminateAnimation = new Timeline();
@@ -85,7 +89,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         indeterminateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(indeterminatePosition, 0.0, M3Motion.LINEAR)
+                        new KeyValue(indeterminatePosition, INDETERMINATE_START_POSITION, M3Motion.LINEAR)
                 ),
                 new KeyFrame(
                         INDETERMINATE_DURATION,
@@ -156,7 +160,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
             }
         } else {
             indeterminateAnimation.stop();
-            indeterminatePosition.set(0.0);
+            indeterminatePosition.set(INDETERMINATE_START_POSITION);
             animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
         }
     }

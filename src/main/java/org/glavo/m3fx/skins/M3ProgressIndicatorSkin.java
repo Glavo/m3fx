@@ -37,6 +37,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The longest visible sweep used by indeterminate progress.
     private static final double INDETERMINATE_MAX_SWEEP = 96.0;
 
+    /// The first visible phase used when indeterminate progress starts.
+    private static final double INDETERMINATE_START_PHASE = 0.25;
+
     /// The track circle.
     private final Circle track = new Circle();
 
@@ -50,7 +53,8 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     private final Timeline determinateAnimation = new Timeline();
 
     /// The animated phase used by indeterminate progress.
-    private final DoubleProperty indeterminatePhase = new SimpleDoubleProperty(this, "indeterminatePhase");
+    private final DoubleProperty indeterminatePhase =
+            new SimpleDoubleProperty(this, "indeterminatePhase", INDETERMINATE_START_PHASE);
 
     /// The indeterminate animation timeline.
     private final Timeline indeterminateAnimation = new Timeline();
@@ -86,7 +90,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         indeterminateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(indeterminatePhase, 0.0, M3Motion.LINEAR)
+                        new KeyValue(indeterminatePhase, INDETERMINATE_START_PHASE, M3Motion.LINEAR)
                 ),
                 new KeyFrame(
                         INDETERMINATE_DURATION,
@@ -161,7 +165,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             }
         } else {
             indeterminateAnimation.stop();
-            indeterminatePhase.set(0.0);
+            indeterminatePhase.set(INDETERMINATE_START_PHASE);
             animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
         }
     }

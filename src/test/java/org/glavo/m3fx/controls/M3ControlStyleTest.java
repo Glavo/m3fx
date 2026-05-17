@@ -97,6 +97,7 @@ final class M3ControlStyleTest {
             latch.countDown();
         }
         assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Platform.setImplicitExit(false);
     }
 
     /// Verifies that button variants update their style classes.
@@ -3207,6 +3208,7 @@ final class M3ControlStyleTest {
         assertEquals(4.0, clip.getArcWidth(), 0.0001);
         assertEquals(4.0, clip.getArcHeight(), 0.0001);
         assertTrue(bar.getWidth() >= 24.0);
+        assertTrue(bar.getBoundsInParent().getMaxX() > 0.0);
     }
 
     /// Verifies that determinate progress bar value changes are animated.
@@ -4743,6 +4745,376 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that every implemented node-backed control family renders in a full visual gallery.
+    @Test
+    void allImplementedControlFamiliesRenderVisualGallery() {
+        runOnFxThread(() -> {
+            M3Text titleText = new M3Text("M3FX", M3TextRole.DISPLAY_SMALL);
+            M3Icon primaryIcon = new M3Icon("A", M3IconSize.LARGE, M3IconVariant.PRIMARY);
+            M3Avatar avatar = M3Avatar.withVariant("AB", M3AvatarVariant.PRIMARY);
+            M3Badge badge = new M3Badge("9+");
+            M3BadgedBox badgedBox = new M3BadgedBox(
+                    new M3Icon("M", M3IconSize.LARGE, M3IconVariant.PRIMARY),
+                    new M3Badge("3")
+            );
+            M3Divider horizontalDivider = new M3Divider();
+            horizontalDivider.setPrefWidth(220.0);
+            M3Divider verticalDivider = new M3Divider(Orientation.VERTICAL);
+            verticalDivider.setPrefHeight(48.0);
+
+            M3Button filledButton = M3Button.withVariant("Filled", M3ButtonVariant.FILLED);
+            M3Button tonalButton = M3Button.withVariant("Tonal", M3ButtonVariant.TONAL);
+            M3Button outlinedButton = M3Button.withVariant("Outlined", M3ButtonVariant.OUTLINED);
+            M3Button textButton = M3Button.withVariant("Text", M3ButtonVariant.TEXT);
+            M3Button elevatedButton = M3Button.withVariant("Elevated", M3ButtonVariant.ELEVATED);
+            M3Button disabledButton = M3Button.withVariant("Disabled", M3ButtonVariant.FILLED);
+            disabledButton.setDisable(true);
+
+            M3IconButton iconButton = new M3IconButton(new M3Icon("i"));
+            M3IconToggleButton standardToggle = M3IconToggleButton.withIcon(
+                    "S",
+                    M3IconToggleButtonVariant.STANDARD,
+                    true
+            );
+            M3IconToggleButton filledToggle = M3IconToggleButton.withIcon(
+                    "F",
+                    M3IconToggleButtonVariant.FILLED,
+                    true
+            );
+            M3IconToggleButton tonalToggle = M3IconToggleButton.withIcon(
+                    "T",
+                    M3IconToggleButtonVariant.TONAL,
+                    true
+            );
+            M3IconToggleButton outlinedToggle = M3IconToggleButton.withIcon(
+                    "O",
+                    M3IconToggleButtonVariant.OUTLINED,
+                    true
+            );
+            M3IconToggleButtonGroup iconToggleGroup = new M3IconToggleButtonGroup(
+                    standardToggle,
+                    filledToggle,
+                    tonalToggle,
+                    outlinedToggle
+            );
+
+            M3FloatingActionButton smallFab = M3FloatingActionButton.withGraphic(
+                    new M3Icon("+"),
+                    M3FloatingActionButtonVariant.PRIMARY,
+                    M3FloatingActionButtonSize.SMALL
+            );
+            M3FloatingActionButton regularFab = M3FloatingActionButton.withGraphic(
+                    new M3Icon("+"),
+                    M3FloatingActionButtonVariant.SECONDARY,
+                    M3FloatingActionButtonSize.REGULAR
+            );
+            M3FloatingActionButton largeFab = M3FloatingActionButton.withVariant(
+                    "*",
+                    null,
+                    M3FloatingActionButtonVariant.TERTIARY,
+                    M3FloatingActionButtonSize.LARGE
+            );
+            M3FloatingActionButton extendedFab = M3FloatingActionButton.withVariant(
+                    "Create",
+                    new M3Icon("+"),
+                    M3FloatingActionButtonVariant.SURFACE,
+                    M3FloatingActionButtonSize.REGULAR
+            );
+
+            M3TextField filledField = new M3TextField("Filled text field");
+            filledField.setPrefWidth(190.0);
+            M3TextField outlinedField = M3TextField.withVariant("Outlined text field", M3TextInputVariant.OUTLINED);
+            outlinedField.setPrefWidth(210.0);
+            M3PasswordField passwordField = M3PasswordField.withVariant("password", M3TextInputVariant.OUTLINED);
+            passwordField.setPrefWidth(170.0);
+            M3TextArea textArea = M3TextArea.withVariant("Multiline\ntext area", M3TextInputVariant.FILLED);
+            textArea.setPrefSize(260.0, 96.0);
+
+            M3CheckBox selectedCheckBox = M3CheckBox.withSelected("Checkbox", true);
+            M3RadioButton selectedRadioButton = M3RadioButton.withSelected("Radio", true);
+            M3Switch selectedSwitch = M3Switch.withSelected("Switch", true);
+            M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
+            slider.setPrefWidth(260.0);
+
+            M3Chip assistChip = M3Chip.withVariant("Assist", M3ChipVariant.ASSIST);
+            M3Chip filterChip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
+            M3Chip inputChip = M3Chip.withVariant("Input", new M3Icon("x"), M3ChipVariant.INPUT);
+            M3Chip suggestionChip = M3Chip.withVariant("Suggestion", M3ChipVariant.SUGGESTION);
+            M3ChipGroup chipGroup = new M3ChipGroup(assistChip, filterChip, inputChip, suggestionChip);
+            M3SegmentedButtonGroup segmentedButtons = new M3SegmentedButtonGroup(
+                    new M3SegmentedButton("Day"),
+                    M3SegmentedButton.withSelected("Week", true),
+                    new M3SegmentedButton("Month")
+            );
+            M3TabBar tabBar = new M3TabBar(
+                    M3Tab.withSelected("Overview", true),
+                    new M3Tab("Details"),
+                    new M3Tab("History")
+            );
+
+            M3ProgressBar progressBar = new M3ProgressBar(0.62);
+            progressBar.setPrefWidth(260.0);
+            M3ProgressBar indeterminateProgressBar = new M3ProgressBar();
+            indeterminateProgressBar.setPrefWidth(180.0);
+            M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.72);
+            M3ProgressIndicator indeterminateProgressIndicator = new M3ProgressIndicator();
+
+            M3Surface surface = new M3Surface(visualLabel("Surface"));
+            surface.setVariant(M3SurfaceVariant.SECONDARY_CONTAINER);
+            surface.setElevation(M3SurfaceElevation.LEVEL2);
+            surface.setPrefSize(170.0, 80.0);
+            M3Card filledCard = new M3Card(visualLabel("Filled card"), M3CardVariant.FILLED);
+            filledCard.setPrefSize(150.0, 80.0);
+            M3Card elevatedCard = new M3Card(visualLabel("Elevated card"), M3CardVariant.ELEVATED);
+            elevatedCard.setPrefSize(150.0, 80.0);
+            M3Card outlinedCard = new M3Card(visualLabel("Outlined card"), M3CardVariant.OUTLINED);
+            outlinedCard.setPrefSize(150.0, 80.0);
+
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            M3SnackbarHost snackbarHost = new M3SnackbarHost();
+            M3Snackbar hostedSnackbar = new M3Snackbar("Hosted snackbar", "Dismiss");
+            snackbarHost.setPrefSize(360.0, 88.0);
+            snackbarHost.show(hostedSnackbar);
+            hostedSnackbar.setOpacity(1.0);
+            hostedSnackbar.setTranslateY(0.0);
+            M3Scrim scrim = new M3Scrim();
+            scrim.setPrefSize(180.0, 72.0);
+            scrim.show();
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setHeaderText("Dialog title");
+            dialogPane.setContentText("Dialog content");
+            dialogPane.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
+            dialogPane.setPrefWidth(320.0);
+
+            M3ListItem selectedListItem = new M3ListItem("Selected list item");
+            selectedListItem.setLeading(new M3Icon("L"));
+            selectedListItem.setTrailing(new M3Badge("2"));
+            selectedListItem.setSupportingText("Supporting text");
+            selectedListItem.setSelected(true);
+            M3List list = new M3List(selectedListItem, new M3ListItem("List item"));
+            list.setPrefWidth(300.0);
+            M3MenuItem selectedMenuItem = new M3MenuItem("Selected menu item", new M3Icon("M"));
+            selectedMenuItem.setSelected(true);
+            M3Menu menu = new M3Menu(selectedMenuItem, new M3MenuItem("Menu item"));
+            menu.setPrefWidth(280.0);
+            M3MenuButton menuButton = new M3MenuButton(
+                    "Menu",
+                    new M3MenuItem("First"),
+                    new M3MenuItem("Second")
+            );
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setPrefWidth(280.0);
+            M3SearchView searchView = new M3SearchView(
+                    "Search view",
+                    new M3ListItem("First result"),
+                    new M3ListItem("Second result")
+            );
+            searchView.setPrefWidth(340.0);
+
+            M3TopAppBar topAppBar = new M3TopAppBar(
+                    "Top app bar",
+                    M3TopAppBarVariant.CENTER_ALIGNED,
+                    new M3IconButton(new M3Icon("<")),
+                    new M3IconButton(new M3Icon("S")),
+                    new M3IconButton(new M3Icon("M"))
+            );
+            topAppBar.setPrefWidth(520.0);
+            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                    M3BottomAppBarFloatingActionAlignment.END,
+                    M3FloatingActionButton.withGraphic(
+                            new M3Icon("+"),
+                            M3FloatingActionButtonVariant.PRIMARY,
+                            M3FloatingActionButtonSize.SMALL
+                    ),
+                    new M3IconButton(new M3Icon("H")),
+                    new M3IconButton(new M3Icon("S"))
+            );
+            bottomAppBar.setPrefWidth(520.0);
+
+            M3NavigationBar navigationBar = new M3NavigationBar(
+                    M3NavigationItem.withSelected("Home", new M3Icon("H"), true),
+                    new M3NavigationItem("Search", new M3Icon("S"), new M3Badge("1")),
+                    new M3NavigationItem("Profile", new M3Icon("P"))
+            );
+            navigationBar.setPrefWidth(420.0);
+            M3NavigationRail navigationRail = new M3NavigationRail(
+                    M3NavigationItem.withSelected("Home", new M3Icon("H"), true),
+                    new M3NavigationItem("Search", new M3Icon("S")),
+                    new M3NavigationItem("Profile", new M3Icon("P"))
+            );
+            M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
+                    drawerItem("Inbox", true),
+                    drawerItem("Sent", false),
+                    drawerItem("Archive", false)
+            );
+            navigationDrawer.setPrefWidth(280.0);
+
+            M3SideSheet sideSheet = new M3SideSheet(
+                    "Side sheet",
+                    visualLabel("Side sheet content"),
+                    M3Button.withVariant("Action", M3ButtonVariant.TEXT)
+            );
+            sideSheet.setVariant(M3SheetVariant.MODAL);
+            sideSheet.setPrefSize(280.0, 180.0);
+            sideSheet.show();
+            M3BottomSheet bottomSheet = new M3BottomSheet(
+                    "Bottom sheet",
+                    visualLabel("Bottom sheet content"),
+                    M3Button.withVariant("Done", M3ButtonVariant.TEXT)
+            );
+            bottomSheet.setPrefSize(360.0, 180.0);
+            bottomSheet.show();
+
+            VBox root = new VBox(
+                    20.0,
+                    visualSection(
+                            "Text, Icons, Badges",
+                            titleText,
+                            primaryIcon,
+                            avatar,
+                            badge,
+                            badgedBox,
+                            horizontalDivider,
+                            verticalDivider
+                    ),
+                    visualSection(
+                            "Buttons",
+                            filledButton,
+                            tonalButton,
+                            outlinedButton,
+                            textButton,
+                            elevatedButton,
+                            disabledButton,
+                            iconButton,
+                            iconToggleGroup,
+                            smallFab,
+                            regularFab,
+                            largeFab,
+                            extendedFab
+                    ),
+                    visualSection("Inputs", filledField, outlinedField, passwordField, textArea),
+                    visualSection("Selection", selectedCheckBox, selectedRadioButton, selectedSwitch, slider),
+                    visualSection("Chips, Segments, Tabs", chipGroup, segmentedButtons, tabBar),
+                    visualSection(
+                            "Progress",
+                            progressBar,
+                            indeterminateProgressBar,
+                            progressIndicator,
+                            indeterminateProgressIndicator
+                    ),
+                    visualSection("Surfaces", surface, filledCard, elevatedCard, outlinedCard),
+                    visualSection("Feedback", snackbar, snackbarHost, scrim, dialogPane),
+                    visualSection("Lists, Menus, Search", list, menu, menuButton, searchBar, searchView),
+                    visualSection("App Bars", topAppBar, bottomAppBar),
+                    visualSection("Navigation", navigationBar, navigationRail, navigationDrawer),
+                    visualSection("Sheets", sideSheet, bottomSheet)
+            );
+            root.setStyle("-fx-background-color: white; -fx-padding: 24px; " + visualTestColors());
+            Scene scene = new Scene(root, 1120.0, 1700.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(1120.0, Math.ceil(root.prefHeight(1120.0)));
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotHasColorVariety(image, 28);
+            assertSnapshotNodeContainsContrast(image, titleText, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, avatar, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, badge, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, filledButton, Color.WHITE, 0.08);
+            assertSnapshotNodeBorderContainsContrast(image, outlinedButton, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, iconToggleGroup, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, filledField, Color.WHITE, 0.04);
+            assertSnapshotNodeBorderContainsContrast(image, outlinedField, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, selectedCheckBox, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, selectedRadioButton, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, selectedSwitch, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, slider, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, chipGroup, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, segmentedButtons, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, tabBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, progressBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, indeterminateProgressBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, progressIndicator, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, indeterminateProgressIndicator, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, surface, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(
+                    image,
+                    lookupRegion(elevatedCard, ".m3-card-container"),
+                    Color.WHITE,
+                    0.04
+            );
+            assertSnapshotNodeContainsContrast(
+                    image,
+                    lookupRegion(snackbar, ".m3-snackbar-container"),
+                    Color.WHITE,
+                    0.08
+            );
+            assertSnapshotNodeContainsContrast(image, snackbarHost, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, scrim, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, list, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, menu, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, menuButton, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, searchBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, searchView, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, topAppBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, bottomAppBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, navigationBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, navigationRail, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, navigationDrawer, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, sideSheet, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, bottomSheet, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-all-controls.png"
+            ));
+        });
+    }
+
+    /// Verifies that tooltip popups render their inverse surface and text.
+    @Test
+    void tooltipSnapshotRendersPopupSurface() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3Tooltip tooltip = new M3Tooltip("Tooltip text");
+            try {
+                M3Button owner = new M3Button("Owner");
+                Pane root = new Pane(owner);
+                root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+                Scene scene = new Scene(root, 240.0, 120.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(240.0, 120.0);
+                root.layout();
+
+                tooltip.setTheme(M3Theme.defaultTheme());
+                tooltip.show(owner, stage.getX() + 40.0, stage.getY() + 96.0);
+
+                var tooltipRoot = tooltip.getScene().getRoot();
+                tooltipRoot.applyCss();
+                tooltipRoot.layout();
+
+                WritableImage image = snapshotImageOnFxThread(tooltipRoot);
+                assertSnapshotHasColorVariety(image, 2);
+                assertSnapshotNodeContainsContrast(image, tooltipRoot, Color.WHITE, 0.2);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-tooltip.png"
+                ));
+            } finally {
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that m3fx sliders create the Material Design 3 slider skin.
     @Test
     void sliderCreatesMaterialSkin() {
@@ -5772,6 +6144,32 @@ final class M3ControlStyleTest {
         if (exception != null) {
             throw new AssertionError(exception);
         }
+    }
+
+    /// Creates a section container used by visual snapshot tests.
+    private static VBox visualSection(String title, Node... nodes) {
+        M3Text heading = new M3Text(title, M3TextRole.TITLE_MEDIUM);
+        FlowPane row = new FlowPane(16.0, 16.0, nodes);
+        row.setPrefWrapLength(1010.0);
+        row.setStyle("-fx-background-color: -m3-color-surface-container-low; "
+                + "-fx-background-radius: 18px; "
+                + "-fx-padding: 16px;");
+        return new VBox(8.0, heading, row);
+    }
+
+    /// Creates a text label that inherits the gallery's Material color tokens.
+    private static Label visualLabel(String text) {
+        Label label = new Label(text);
+        label.setStyle("-fx-text-fill: -m3-color-on-surface;");
+        return label;
+    }
+
+    /// Creates a navigation drawer item for visual snapshot tests.
+    private static M3ListItem drawerItem(String text, boolean selected) {
+        M3ListItem item = new M3ListItem(text);
+        item.setLeading(new M3Icon(text.substring(0, 1)));
+        item.setSelected(selected);
+        return item;
     }
 
     /// Returns a rendered pixel from a node snapshot on the FX thread.

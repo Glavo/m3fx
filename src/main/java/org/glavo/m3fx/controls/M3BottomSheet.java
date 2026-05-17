@@ -288,6 +288,7 @@ public class M3BottomSheet extends BorderPane {
         headlineLabel.getStyleClass().add(TITLE_STYLE_CLASS);
         actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
         contentSlot.getStyleClass().add(CONTENT_STYLE_CLASS);
+        contentSlot.setAlignment(Pos.TOP_LEFT);
 
         dragHandleSlot.getChildren().add(dragHandle);
         header.setAlignment(Pos.CENTER_LEFT);

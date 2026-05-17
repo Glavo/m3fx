@@ -245,6 +245,7 @@ public class M3SideSheet extends BorderPane {
         headlineLabel.getStyleClass().add(TITLE_STYLE_CLASS);
         actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
         contentSlot.getStyleClass().add(CONTENT_STYLE_CLASS);
+        contentSlot.setAlignment(Pos.TOP_LEFT);
 
         header.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(spacer, Priority.ALWAYS);
