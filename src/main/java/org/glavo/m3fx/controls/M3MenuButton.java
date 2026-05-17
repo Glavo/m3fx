@@ -3,6 +3,10 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -14,6 +18,8 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Popup;
+import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +36,18 @@ public class M3MenuButton extends M3Button {
     /// The vertical gap between the button and popup menu.
     private static final double MENU_OFFSET_Y = 4.0;
 
+    /// The duration used when the menu popup enters.
+    private static final Duration MENU_SHOW_DURATION = M3Motion.SHORT3;
+
+    /// The duration used when the menu popup exits.
+    private static final Duration MENU_HIDE_DURATION = M3Motion.SHORT2;
+
+    /// The initial popup menu scale used for enter and exit motion.
+    private static final double MENU_TRANSITION_SCALE = 0.96;
+
+    /// The initial vertical popup menu offset used for enter and exit motion.
+    private static final double MENU_TRANSITION_OFFSET_Y = -6.0;
+
     /// The menu displayed by this button.
     private final M3Menu menu = new M3Menu();
 
@@ -38,6 +56,12 @@ public class M3MenuButton extends M3Button {
 
     /// Whether this menu button popup is currently showing.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
+
+    /// The menu popup enter animation.
+    private final Timeline showAnimation = new Timeline();
+
+    /// The menu popup exit animation.
+    private final Timeline hideAnimation = new Timeline();
 
     /// Creates an empty menu button.
     public M3MenuButton() {
@@ -168,13 +192,31 @@ public class M3MenuButton extends M3Button {
         }
 
         menu.setMinWidth(Math.max(getWidth(), menu.minWidth(-1.0)));
+        prepareMenuForShowAnimation();
         popup.show(this, bounds.getMinX(), bounds.getMaxY() + MENU_OFFSET_Y);
         showing.set(true);
+        playShowAnimation();
     }
 
     /// Hides the menu popup.
     public final void hideMenu() {
-        popup.hide();
+        if (!popup.isShowing()) {
+            return;
+        }
+
+        showAnimation.stop();
+        if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
+            return;
+        }
+        hideAnimation.getKeyFrames().setAll(new KeyFrame(
+                MENU_HIDE_DURATION,
+                event -> popup.hide(),
+                new KeyValue(menu.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE),
+                new KeyValue(menu.scaleXProperty(), MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
+                new KeyValue(menu.scaleYProperty(), MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
+                new KeyValue(menu.translateYProperty(), MENU_TRANSITION_OFFSET_Y, M3Motion.STANDARD_ACCELERATE)
+        ));
+        hideAnimation.playFromStart();
     }
 
     /// Toggles the menu popup when the button fires.
@@ -197,8 +239,43 @@ public class M3MenuButton extends M3Button {
         M3ControlStyles.add(this, STYLE_CLASS);
         popup.setAutoHide(true);
         popup.getContent().add(menu);
-        popup.setOnHidden(event -> showing.set(false));
+        popup.setOnHidden(event -> {
+            showing.set(false);
+            resetMenuAnimationState();
+        });
         menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> hideMenu());
+    }
+
+    /// Applies initial visual state before the popup is shown.
+    private void prepareMenuForShowAnimation() {
+        hideAnimation.stop();
+        menu.setOpacity(0.0);
+        menu.setScaleX(MENU_TRANSITION_SCALE);
+        menu.setScaleY(MENU_TRANSITION_SCALE);
+        menu.setTranslateY(MENU_TRANSITION_OFFSET_Y);
+    }
+
+    /// Plays the popup menu enter animation.
+    private void playShowAnimation() {
+        showAnimation.stop();
+        showAnimation.getKeyFrames().setAll(new KeyFrame(
+                MENU_SHOW_DURATION,
+                new KeyValue(menu.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                new KeyValue(menu.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                new KeyValue(menu.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                new KeyValue(menu.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+        ));
+        showAnimation.playFromStart();
+    }
+
+    /// Resets transient popup menu animation transforms.
+    private void resetMenuAnimationState() {
+        showAnimation.stop();
+        hideAnimation.stop();
+        menu.setOpacity(1.0);
+        menu.setScaleX(1.0);
+        menu.setScaleY(1.0);
+        menu.setTranslateY(0.0);
     }
 
     /// Copies scene styles and theme declarations into the popup-hosted menu.

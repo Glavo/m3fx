@@ -84,6 +84,13 @@ public class M3Badge extends Control {
         setText(text);
     }
 
+    /// Creates a badge that displays a non-negative count.
+    public static M3Badge withCount(int count) {
+        M3Badge badge = new M3Badge();
+        badge.setCount(count);
+        return badge;
+    }
+
     /// Returns the badge text.
     public final String getText() {
         return text.get();
@@ -97,6 +104,14 @@ public class M3Badge extends Control {
     /// Returns the badge text property.
     public final StringProperty textProperty() {
         return text;
+    }
+
+    /// Sets the badge text to a non-negative count.
+    public final void setCount(int count) {
+        if (count < 0) {
+            throw new IllegalArgumentException("count must be non-negative");
+        }
+        setText(Integer.toString(count));
     }
 
     /// Returns the maximum display text length before an overflow suffix is used.

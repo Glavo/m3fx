@@ -1,10 +1,5 @@
 .m3-avatar {
-    -fx-min-width: 40px;
-    -fx-pref-width: 40px;
-    -fx-max-width: 40px;
-    -fx-min-height: 40px;
-    -fx-pref-height: 40px;
-    -fx-max-height: 40px;
+    -m3-container-size: 40px;
     -fx-background-color: -m3-color-primary-container;
     -fx-background-radius: 999px;
     -fx-background-insets: 0;

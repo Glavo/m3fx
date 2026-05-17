@@ -1066,11 +1066,18 @@ final class M3ControlStyleTest {
     @Test
     void avatarAppliesTokenMetrics() {
         M3Avatar avatar = new M3Avatar("A");
+        avatar.setStyle("-m3-container-size: 48px;");
 
         applyCss(avatar);
 
-        assertEquals(40.0, avatar.getPrefWidth(), 0.0001);
-        assertEquals(40.0, avatar.getPrefHeight(), 0.0001);
+        assertEquals(48.0, avatar.getContainerSize(), 0.0001);
+        assertEquals(48.0, avatar.getPrefWidth(), 0.0001);
+        assertEquals(48.0, avatar.getPrefHeight(), 0.0001);
+
+        avatar.setContainerSize(32.0);
+
+        assertEquals(32.0, avatar.getPrefWidth(), 0.0001);
+        assertEquals(32.0, avatar.getPrefHeight(), 0.0001);
     }
 
     /// Verifies that avatar variants update style classes.
@@ -3079,23 +3086,72 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3BadgeSkin.class, badge.getSkin());
     }
 
+    /// Verifies that badges expose non-negative count convenience APIs.
+    @Test
+    void badgeSupportsCountConvenienceApi() {
+        M3Badge badge = M3Badge.withCount(1234);
+        badge.setMaxCharacterCount(3);
+
+        assertEquals("1234", badge.getText());
+        assertEquals("123+", badge.getDisplayText());
+
+        badge.setCount(0);
+
+        assertEquals("0", badge.getText());
+        assertEquals("0", badge.getDisplayText());
+        assertThrows(IllegalArgumentException.class, () -> badge.setCount(-1));
+        assertThrows(IllegalArgumentException.class, () -> M3Badge.withCount(-1));
+    }
+
+    /// Verifies that badge skins animate rendered text changes.
+    @Test
+    void badgeSkinAnimatesDisplayTextChanges() {
+        M3Badge badge = new M3Badge("1");
+        applyCss(badge);
+
+        Region label = lookupRegion(badge, ".m3-badge-label");
+        assertEquals(1.0, label.getOpacity(), 0.0001);
+        assertEquals(1.0, label.getScaleX(), 0.0001);
+
+        badge.setText("2");
+
+        assertEquals("2", badge.getDisplayText());
+        assertEquals(0.0, label.getOpacity(), 0.0001);
+        assertTrue(label.getScaleX() < 1.0);
+    }
+
     /// Verifies that badged boxes overlay badges on content.
     @Test
     void badgedBoxOwnsContentAndBadge() {
         Label content = new Label("Inbox");
         M3Badge badge = new M3Badge("3");
         M3BadgedBox badgedBox = new M3BadgedBox(content, badge);
+        badgedBox.setBadgeAlignment(Pos.TOP_LEFT);
+        badgedBox.setBadgeOffsetX(3.0);
+        badgedBox.setBadgeOffsetY(-2.0);
 
         assertEquals(content, badgedBox.getContent());
         assertEquals(badge, badgedBox.getBadge());
+        assertEquals(Pos.TOP_LEFT, badgedBox.getBadgeAlignment());
+        assertEquals(3.0, badgedBox.getBadgeOffsetX(), 0.0001);
+        assertEquals(-2.0, badgedBox.getBadgeOffsetY(), 0.0001);
         assertEquals(2, badgedBox.getChildren().size());
-        assertEquals(Pos.TOP_RIGHT, StackPane.getAlignment(badge));
+        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(badge));
+        assertEquals(3.0, badge.getTranslateX(), 0.0001);
+        assertEquals(-2.0, badge.getTranslateY(), 0.0001);
 
         badgedBox.setBadge(null);
 
         assertNull(badgedBox.getBadge());
         assertEquals(1, badgedBox.getChildren().size());
         assertEquals(content, badgedBox.getChildren().get(0));
+
+        M3Badge replacement = new M3Badge();
+        badgedBox.setBadge(replacement);
+
+        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(replacement));
+        assertEquals(3.0, replacement.getTranslateX(), 0.0001);
+        assertEquals(-2.0, replacement.getTranslateY(), 0.0001);
     }
 
     /// Verifies that list item component token properties are styleable from CSS.
