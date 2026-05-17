@@ -9,6 +9,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -18,10 +19,12 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /// A Material Design 3 dialog pane.
 @NotNullByDefault
@@ -50,8 +53,11 @@ public class M3DialogPane extends DialogPane {
     /// Creates a dialog pane.
     public M3DialogPane() {
         M3ControlStyles.add(this, STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.PARENT);
+        setAccessibleRole(AccessibleRole.DIALOG);
+        headerTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
+        contentTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
         updateMetrics();
+        updateAccessibleText();
     }
 
     /// Returns the dialog container shape radius token.
@@ -150,6 +156,19 @@ public class M3DialogPane extends DialogPane {
         return getClassCssMetaData();
     }
 
+    /// Returns accessibility attributes for the dialog text.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case TEXT -> {
+                @Nullable String text = getAccessibleText();
+                yield text == null ? "" : text;
+            }
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Creates the dialog action button bar.
     @Override
     protected Node createButtonBar() {
@@ -196,6 +215,26 @@ public class M3DialogPane extends DialogPane {
     private void updateMetrics() {
         double padding = getContentPadding();
         setPadding(new Insets(padding));
+    }
+
+    /// Updates the accessibility label from the dialog header and content text.
+    private void updateAccessibleText() {
+        StringBuilder builder = new StringBuilder();
+        appendAccessibleText(builder, getHeaderText());
+        appendAccessibleText(builder, getContentText());
+        setAccessibleText(builder.length() == 0 ? null : builder.toString());
+        notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+    }
+
+    /// Appends a non-blank text part to an accessibility label.
+    private static void appendAccessibleText(StringBuilder builder, @Nullable String text) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        if (builder.length() > 0) {
+            builder.append(' ');
+        }
+        builder.append(text);
     }
 
     /// CSS metadata for m3fx dialog pane component tokens.

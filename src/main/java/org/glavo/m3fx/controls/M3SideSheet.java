@@ -12,8 +12,11 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -81,6 +84,7 @@ public class M3SideSheet extends BorderPane {
         @Override
         protected void invalidated() {
             updateShownState(get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         }
     };
 
@@ -210,6 +214,29 @@ public class M3SideSheet extends BorderPane {
         return M3Stylesheets.controlStylesheet("sheet.css");
     }
 
+    /// Returns accessibility attributes for the sheet state and content.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case CONTENTS -> getContent();
+            case EXPANDED -> isShown();
+            case TEXT -> getHeadline();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Executes accessibility actions supported by side sheets.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case EXPAND, SHOW_ITEM -> show();
+            case COLLAPSE -> hide();
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Initializes child nodes, style classes, and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -222,13 +249,21 @@ public class M3SideSheet extends BorderPane {
         header.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(spacer, Priority.ALWAYS);
         headlineLabel.textProperty().bind(headline);
-        content.addListener((observable, oldValue, newValue) -> updateContent(newValue));
+        headline.addListener((observable, oldValue, newValue) -> updateAccessibleText());
+        content.addListener((observable, oldValue, newValue) -> {
+            updateContent(newValue);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        });
+        actions.getChildren().addListener((ListChangeListener<Node>) change ->
+                notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN));
         header.getChildren().addAll(headlineLabel, spacer, actions);
         setTop(header);
         setCenter(contentSlot);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         updateVariantStyle();
         updateContent(getContent());
+        updateAccessibleText();
     }
 
     /// Handles keyboard dismissal for modal sheets.
@@ -251,6 +286,13 @@ public class M3SideSheet extends BorderPane {
         if (node != null) {
             contentSlot.getChildren().add(node);
         }
+    }
+
+    /// Updates the accessibility label from the sheet headline.
+    private void updateAccessibleText() {
+        String text = getHeadline();
+        setAccessibleText(text.isBlank() ? null : text);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
     }
 
     /// Updates shown state with motion when the sheet is attached to a scene.

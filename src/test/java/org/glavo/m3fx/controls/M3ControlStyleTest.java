@@ -839,6 +839,32 @@ final class M3ControlStyleTest {
         );
     }
 
+    /// Verifies that snackbar hosts expose the current snackbar and queue to accessibility clients.
+    @Test
+    void snackbarHostExposesAccessibleStateAndActions() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar first = new M3Snackbar("Saved", "Undo");
+            M3Snackbar second = new M3Snackbar("Deleted");
+
+            host.setDisplayDuration(Duration.ZERO);
+            host.show(first);
+            host.enqueue(second);
+
+            assertEquals(true, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+            assertEquals(first, host.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+            assertEquals(2, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertEquals(first, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+            assertEquals(second, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+            assertEquals("Saved Undo", host.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+
+            host.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+            assertFalse(host.isShowing());
+            assertEquals(false, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        });
+    }
+
     /// Verifies that dialog pane component token properties are styleable from CSS.
     @Test
     void dialogPaneTokensAreStyleable() {
@@ -899,6 +925,8 @@ final class M3ControlStyleTest {
         assertRegionFill(dialogPane, Color.rgb(19, 20, 21));
         assertInstanceOf(ButtonBar.class, dialogPane.lookup("." + M3DialogPane.BUTTON_BAR_STYLE_CLASS));
         assertEquals(Color.rgb(40, 41, 42), ((Labeled) dialogPane.lookup(".content")).getTextFill());
+        assertEquals("Dialog title Dialog body", dialogPane.getAccessibleText());
+        assertEquals("Dialog title Dialog body", dialogPane.queryAccessibleAttribute(AccessibleAttribute.TEXT));
     }
 
     /// Verifies that Material dialogs install a Material dialog pane and stylesheet.
@@ -1073,8 +1101,22 @@ final class M3ControlStyleTest {
 
         assertEquals("Installed", tooltip.getText());
         assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
+        assertEquals("Installed", target.getAccessibleHelp());
+
+        tooltip.setText("Updated");
+        assertEquals("Updated", target.getAccessibleHelp());
 
         M3Tooltip.uninstall(target, tooltip);
+        assertNull(target.getAccessibleHelp());
+
+        Label targetWithHelp = new Label("Target");
+        targetWithHelp.setAccessibleHelp("Existing help");
+        M3Tooltip restoredTooltip = M3Tooltip.install(targetWithHelp, "Temporary help");
+
+        assertEquals("Temporary help", targetWithHelp.getAccessibleHelp());
+
+        M3Tooltip.uninstall(targetWithHelp, restoredTooltip);
+        assertEquals("Existing help", targetWithHelp.getAccessibleHelp());
     }
 
     /// Verifies that tooltips can apply and clear inline theme declarations.
@@ -1985,6 +2027,44 @@ final class M3ControlStyleTest {
         assertFalse(bottomSheet.isShown());
         assertTrue(standardSideSheet.isShown());
         assertTrue(standardBottomSheet.isShown());
+    }
+
+    /// Verifies that sheets expose accessible state, content, and visibility actions.
+    @Test
+    void sheetsExposeAccessibleStateAndActions() {
+        Label sideContent = new Label("Side");
+        Label bottomContent = new Label("Bottom");
+        M3SideSheet sideSheet = new M3SideSheet("Details", sideContent);
+        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent);
+
+        assertEquals("Details", sideSheet.getAccessibleText());
+        assertEquals("Details", sideSheet.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals(sideContent, sideSheet.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+        assertEquals(true, sideSheet.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+
+        sideSheet.setHeadline("Updated");
+        Label replacementContent = new Label("Replacement");
+        sideSheet.setContent(replacementContent);
+
+        assertEquals("Updated", sideSheet.getAccessibleText());
+        assertEquals("Updated", sideSheet.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals(replacementContent, sideSheet.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+
+        sideSheet.executeAccessibleAction(AccessibleAction.COLLAPSE);
+        assertFalse(sideSheet.isShown());
+        assertEquals(false, sideSheet.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        sideSheet.executeAccessibleAction(AccessibleAction.EXPAND);
+        assertTrue(sideSheet.isShown());
+
+        assertEquals("Queue", bottomSheet.getAccessibleText());
+        assertEquals("Queue", bottomSheet.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals(bottomContent, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+
+        bottomSheet.executeAccessibleAction(AccessibleAction.COLLAPSE);
+        assertFalse(bottomSheet.isShown());
+        bottomSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+        assertTrue(bottomSheet.isShown());
+        assertEquals(true, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
     }
 
     /// Verifies that sheet controls expose animated shown state changes.
@@ -4847,7 +4927,7 @@ final class M3ControlStyleTest {
         assertEquals("12+", badge.getAccessibleText());
         assertEquals(AccessibleRole.NODE, new M3Divider().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3Surface().getAccessibleRole());
-        assertEquals(AccessibleRole.PARENT, new M3DialogPane().getAccessibleRole());
+        assertEquals(AccessibleRole.DIALOG, new M3DialogPane().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, passiveCard.getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, actionCard.getAccessibleRole());
         assertTrue(actionCard.isFocusTraversable());

@@ -19,7 +19,7 @@ final class M3Accessible {
     }
 
     /// Returns the child requested by an accessibility index parameter.
-    static @Nullable Node itemAt(ObservableList<Node> items, Object... parameters) {
+    static @Nullable Node itemAt(ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
         int index = indexParameter(parameters);
         return index >= 0 && index < items.size() ? items.get(index) : null;
@@ -33,7 +33,7 @@ final class M3Accessible {
     }
 
     /// Returns the first integer accessibility parameter, or `-1` when none was supplied.
-    private static int indexParameter(Object... parameters) {
+    static int indexParameter(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0 || !(parameters[0] instanceof Number number)) {
             return -1;

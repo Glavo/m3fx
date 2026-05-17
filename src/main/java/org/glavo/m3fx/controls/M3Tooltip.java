@@ -28,6 +28,17 @@ public class M3Tooltip extends Tooltip {
     private static final String THEME_INHERITANCE_LISTENER_KEY =
             M3Tooltip.class.getName() + ".themeInheritanceListener";
 
+    /// The node property key used to store accessible help bindings.
+    private static final String ACCESSIBLE_HELP_BINDING_KEY =
+            M3Tooltip.class.getName() + ".accessibleHelpBinding";
+
+    /// The node property key used to store the accessible help value replaced during installation.
+    private static final String ACCESSIBLE_HELP_PREVIOUS_VALUE_KEY =
+            M3Tooltip.class.getName() + ".accessibleHelpPreviousValue";
+
+    /// The sentinel used when a target node had no previous accessible help value.
+    private static final Object ACCESSIBLE_HELP_NULL_VALUE = new Object();
+
     /// The explicit theme applied directly to this tooltip.
     private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
         /// Applies theme declarations to the tooltip style.
@@ -71,6 +82,7 @@ public class M3Tooltip extends Tooltip {
         Objects.requireNonNull(tooltip, "tooltip");
 
         installThemeInheritance(node, tooltip);
+        installAccessibleHelp(node, tooltip);
         tooltip.inheritThemeFrom(node);
         Tooltip.install(node, tooltip);
     }
@@ -81,6 +93,7 @@ public class M3Tooltip extends Tooltip {
         Objects.requireNonNull(tooltip, "tooltip");
 
         uninstallThemeInheritance(node);
+        uninstallAccessibleHelp(node);
         Tooltip.uninstall(
                 node,
                 tooltip
@@ -187,6 +200,60 @@ public class M3Tooltip extends Tooltip {
         Object listener = node.getProperties().remove(THEME_INHERITANCE_LISTENER_KEY);
         if (listener instanceof SceneThemeListener sceneThemeListener) {
             node.sceneProperty().removeListener(sceneThemeListener);
+        }
+    }
+
+    /// Installs an accessible help binding on the tooltip target.
+    private static void installAccessibleHelp(Node node, M3Tooltip tooltip) {
+        uninstallAccessibleHelp(node);
+
+        @Nullable String previousHelp = node.getAccessibleHelp();
+        node.getProperties().put(
+                ACCESSIBLE_HELP_PREVIOUS_VALUE_KEY,
+                previousHelp == null ? ACCESSIBLE_HELP_NULL_VALUE : previousHelp
+        );
+        ChangeListener<@Nullable String> listener = (observable, oldValue, newValue) ->
+                node.setAccessibleHelp(accessibleHelpText(newValue));
+        tooltip.textProperty().addListener(listener);
+        node.getProperties().put(ACCESSIBLE_HELP_BINDING_KEY, new AccessibleHelpBinding(tooltip, listener));
+        node.setAccessibleHelp(accessibleHelpText(tooltip.getText()));
+    }
+
+    /// Removes an accessible help binding and restores the previous node help value.
+    private static void uninstallAccessibleHelp(Node node) {
+        Object binding = node.getProperties().remove(ACCESSIBLE_HELP_BINDING_KEY);
+        if (!(binding instanceof AccessibleHelpBinding accessibleHelpBinding)) {
+            return;
+        }
+
+        accessibleHelpBinding.uninstall();
+        Object previousValue = node.getProperties().remove(ACCESSIBLE_HELP_PREVIOUS_VALUE_KEY);
+        node.setAccessibleHelp(previousValue == ACCESSIBLE_HELP_NULL_VALUE ? null : (String) previousValue);
+    }
+
+    /// Returns text suitable for a node accessible help value.
+    private static @Nullable String accessibleHelpText(@Nullable String text) {
+        return text == null || text.isBlank() ? null : text;
+    }
+
+    /// Stores a tooltip text binding installed on a target node.
+    @NotNullByDefault
+    private static final class AccessibleHelpBinding {
+        /// The tooltip whose text is exposed as accessible help.
+        private final M3Tooltip tooltip;
+
+        /// The listener installed on the tooltip text property.
+        private final ChangeListener<@Nullable String> listener;
+
+        /// Creates an accessible help binding.
+        private AccessibleHelpBinding(M3Tooltip tooltip, ChangeListener<@Nullable String> listener) {
+            this.tooltip = tooltip;
+            this.listener = listener;
+        }
+
+        /// Removes this binding from the tooltip.
+        private void uninstall() {
+            tooltip.textProperty().removeListener(listener);
         }
     }
 

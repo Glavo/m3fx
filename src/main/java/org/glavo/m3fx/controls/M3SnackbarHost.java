@@ -12,11 +12,15 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
@@ -85,6 +89,10 @@ public class M3SnackbarHost extends StackPane {
         setAccessibleRole(AccessibleRole.PARENT);
         setAlignment(Pos.BOTTOM_CENTER);
         setPickOnBounds(false);
+        showing.addListener((observable, oldValue, newValue) ->
+                notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED));
+        queue.addListener((ListChangeListener<M3Snackbar>) change ->
+                notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT));
     }
 
     /// Returns the currently hosted snackbar.
@@ -203,6 +211,9 @@ public class M3SnackbarHost extends StackPane {
                 getChildren().add(snackbar);
             }
             StackPane.setAlignment(snackbar, Pos.BOTTOM_CENTER);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         }
 
         snackbar.setManaged(true);
@@ -234,6 +245,30 @@ public class M3SnackbarHost extends StackPane {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("snackbar.css");
+    }
+
+    /// Returns accessibility attributes for the current snackbar and queue state.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case CONTENTS -> getSnackbar();
+            case EXPANDED -> isShowing();
+            case ITEM_COUNT -> snackbarCount();
+            case ITEM_AT_INDEX -> snackbarAt(parameters);
+            case TEXT -> currentSnackbarText();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Executes accessibility actions supported by the snackbar host.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case COLLAPSE -> dismiss();
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Plays the snackbar entrance animation.
@@ -294,6 +329,9 @@ public class M3SnackbarHost extends StackPane {
         getChildren().remove(target);
         resetSnackbar(target);
         snackbar = null;
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         showNextQueuedSnackbar();
     }
 
@@ -313,5 +351,35 @@ public class M3SnackbarHost extends StackPane {
 
         M3Snackbar nextSnackbar = queue.remove(0);
         show(nextSnackbar);
+    }
+
+    /// Returns the number of currently exposed snackbar nodes.
+    private int snackbarCount() {
+        return (snackbar == null ? 0 : 1) + queue.size();
+    }
+
+    /// Returns the current or queued snackbar at the supplied accessibility index.
+    private @Nullable Node snackbarAt(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+        if (snackbar != null) {
+            if (index == 0) {
+                return snackbar;
+            }
+            index--;
+        }
+        return index < queue.size() ? queue.get(index) : null;
+    }
+
+    /// Returns text for the currently hosted snackbar.
+    private String currentSnackbarText() {
+        M3Snackbar currentSnackbar = snackbar;
+        if (currentSnackbar == null) {
+            return "";
+        }
+        @Nullable String text = currentSnackbar.getAccessibleText();
+        return text == null ? "" : text;
     }
 }
