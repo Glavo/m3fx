@@ -65,10 +65,17 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.imageio.ImageIO;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -4475,6 +4482,151 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that a representative control set renders non-blank visible output.
+    @Test
+    void visualSmokeSnapshotRendersCoreControlsWithContrast() {
+        runOnFxThread(() -> {
+            M3Button filledButton = M3Button.withVariant("Filled", M3ButtonVariant.FILLED);
+            M3Button tonalButton = M3Button.withVariant("Tonal", M3ButtonVariant.TONAL);
+            M3Button outlinedButton = M3Button.withVariant("Outlined", M3ButtonVariant.OUTLINED);
+            M3SegmentedButton day = new M3SegmentedButton("Day");
+            M3SegmentedButton week = M3SegmentedButton.withSelected("Week", true);
+            M3SegmentedButton month = new M3SegmentedButton("Month");
+            M3SegmentedButtonGroup segments = new M3SegmentedButtonGroup(day, week, month);
+            M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
+            slider.setPrefWidth(220.0);
+            M3ProgressBar progressBar = new M3ProgressBar(0.62);
+            progressBar.setPrefWidth(220.0);
+            M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.72);
+            M3CheckBox checkBox = M3CheckBox.withSelected("Check", true);
+            M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
+            M3Switch switchControl = M3Switch.withSelected("Switch", true);
+
+            FlowPane buttons = new FlowPane(14.0, 14.0, filledButton, tonalButton, outlinedButton, segments);
+            FlowPane controls = new FlowPane(18.0, 18.0, slider, progressBar, progressIndicator);
+            FlowPane selections = new FlowPane(18.0, 18.0, checkBox, radioButton, switchControl);
+            VBox root = new VBox(18.0, buttons, controls, selections);
+            root.setStyle("-fx-background-color: white; -fx-padding: 24px; " + visualTestColors());
+            Scene scene = new Scene(root, 620.0, 260.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(620.0, 260.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotHasColorVariety(image, 10);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-smoke.png"
+            ));
+        });
+    }
+
+    /// Verifies that slider snapshots show distinct rendered track and thumb pixels.
+    @Test
+    void sliderSnapshotRendersTrackAndThumbPixels() {
+        runOnFxThread(() -> {
+            M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+            slider.setPrefSize(220.0, 56.0);
+            FlowPane root = new FlowPane(slider);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 260.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(260.0, 80.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            var sliderBounds = slider.getBoundsInParent();
+            int sliderX = (int) Math.round(sliderBounds.getMinX());
+            int sliderY = (int) Math.round(sliderBounds.getMinY());
+            Color track = image.getPixelReader().getColor(sliderX + 24, sliderY + 28);
+            Color thumb = image.getPixelReader().getColor(sliderX + 110, sliderY + 28);
+            Color emptyTouchTarget = image.getPixelReader().getColor(sliderX + 110, sliderY + 4);
+
+            assertTrue(colorDistance(track, thumb) > 0.1, () -> "track=" + track + ", thumb=" + thumb);
+            assertTrue(emptyTouchTarget.getOpacity() < 0.1
+                    || colorDistance(emptyTouchTarget, thumb) > 0.1);
+        });
+    }
+
+    /// Verifies that selected segmented button backgrounds keep rounded end caps in rendered output.
+    @Test
+    void segmentedButtonSnapshotKeepsSelectedEndRounded() {
+        runOnFxThread(() -> {
+            M3SegmentedButton day = new M3SegmentedButton("Day");
+            M3SegmentedButton week = new M3SegmentedButton("Week");
+            M3SegmentedButton month = M3SegmentedButton.withSelected("Month", true);
+            M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(day, week, month);
+            group.setPrefSize(240.0, 40.0);
+            FlowPane root = new FlowPane(group);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 280.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(280.0, 80.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            var monthBounds = month.localToScene(month.getBoundsInLocal());
+            int monthRight = (int) Math.round(monthBounds.getMaxX());
+            int monthTop = (int) Math.round(monthBounds.getMinY());
+            int monthCenterY = (int) Math.round((monthBounds.getMinY() + monthBounds.getMaxY()) / 2.0);
+            Color selectedBody = image.getPixelReader().getColor(monthRight - 14, monthCenterY);
+            Color roundedCorner = image.getPixelReader().getColor(monthRight - 2, monthTop + 2);
+
+            assertTrue(selectedBody.getOpacity() > 0.4, () -> "selectedBody=" + selectedBody);
+            assertTrue(roundedCorner.getOpacity() < 0.4
+                    || colorDistance(selectedBody, roundedCorner) > 0.1,
+                    () -> "selectedBody=" + selectedBody + ", roundedCorner=" + roundedCorner);
+        });
+    }
+
+    /// Verifies that determinate progress snapshots show separated fill, track, and rounded caps.
+    @Test
+    void progressBarSnapshotRendersFillTrackAndRoundedCaps() {
+        runOnFxThread(() -> {
+            M3ProgressBar progressBar = new M3ProgressBar(0.5);
+            progressBar.setPrefSize(200.0, 32.0);
+            progressBar.setStyle("-m3-track-thickness: 8px; -m3-track-shape: 999px;");
+            FlowPane root = new FlowPane(progressBar);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 240.0, 48.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(240.0, 48.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            Shape trackShape = lookupShape(progressBar, ".track");
+            Shape barShape = lookupShape(progressBar, ".bar");
+            var trackBounds = trackShape.localToScene(trackShape.getBoundsInLocal());
+            var barBounds = barShape.localToScene(barShape.getBoundsInLocal());
+            int trackCenterY = (int) Math.round((trackBounds.getMinY() + trackBounds.getMaxY()) / 2.0);
+            int fillX = (int) Math.round((barBounds.getMinX() + barBounds.getMaxX()) / 2.0);
+            int trackX = (int) Math.round(trackBounds.getMaxX() - 12.0);
+            Color fill = image.getPixelReader().getColor(fillX, trackCenterY);
+            Color track = image.getPixelReader().getColor(trackX, trackCenterY);
+            Color roundedCorner = image.getPixelReader().getColor(
+                    (int) Math.round(barBounds.getMinX()),
+                    (int) Math.round(barBounds.getMinY())
+            );
+
+            assertTrue(fill.getOpacity() > 0.8, () -> "fill=" + fill);
+            assertTrue(track.getOpacity() > 0.8, () -> "track=" + track);
+            assertTrue(colorDistance(fill, track) > 0.1, () -> "fill=" + fill + ", track=" + track);
+            assertTrue(roundedCorner.getOpacity() < 0.4
+                    || colorDistance(fill, roundedCorner) > 0.1,
+                    () -> "fill=" + fill + ", roundedCorner=" + roundedCorner);
+        });
+    }
+
     /// Verifies that m3fx sliders create the Material Design 3 slider skin.
     @Test
     void sliderCreatesMaterialSkin() {
@@ -5200,6 +5352,24 @@ final class M3ControlStyleTest {
                 + "-m3-color-on-surface-variant: rgb(40,41,42);";
     }
 
+    /// Returns high-contrast color tokens used by snapshot-based visual tests.
+    private static String visualTestColors() {
+        return "-m3-color-primary: rgb(84, 50, 185); "
+                + "-m3-color-on-primary: white; "
+                + "-m3-color-secondary-container: rgb(222, 214, 250); "
+                + "-m3-color-on-secondary-container: rgb(40, 27, 92); "
+                + "-m3-color-outline: rgb(95, 91, 105); "
+                + "-m3-color-surface-container-low: rgb(247, 242, 250); "
+                + "-m3-color-surface-container-high: rgb(236, 230, 240); "
+                + "-m3-color-surface-container-highest: rgb(228, 221, 234); "
+                + "-m3-color-primary-container: rgb(226, 221, 255); "
+                + "-m3-color-on-primary-container: rgb(36, 14, 110); "
+                + "-m3-color-tertiary-container: rgb(255, 216, 228); "
+                + "-m3-color-on-tertiary-container: rgb(95, 17, 48); "
+                + "-m3-color-on-surface: rgb(30, 28, 32); "
+                + "-m3-color-on-surface-variant: rgb(73, 69, 79);";
+    }
+
     /// Returns deterministic color tokens used by snackbar style tests.
     private static String snackbarStateTestColors() {
         return buttonStateTestColors()
@@ -5484,12 +5654,64 @@ final class M3ControlStyleTest {
 
     /// Returns a rendered pixel from a node snapshot on the FX thread.
     private static Color snapshotPixelOnFxThread(Node node, int x, int y) {
+        return snapshotImageOnFxThread(node).getPixelReader().getColor(x, y);
+    }
+
+    /// Returns a rendered image snapshot from a node on the FX thread.
+    private static WritableImage snapshotImageOnFxThread(Node node) {
         WritableImage image = new WritableImage(
                 (int) Math.ceil(node.getLayoutBounds().getWidth()),
                 (int) Math.ceil(node.getLayoutBounds().getHeight())
         );
         node.snapshot(null, image);
-        return image.getPixelReader().getColor(x, y);
+        return image;
+    }
+
+    /// Verifies that a rendered snapshot contains enough distinct visible colors.
+    private static void assertSnapshotHasColorVariety(WritableImage image, int minimumColorCount) {
+        Set<Integer> colors = new HashSet<>();
+        for (int y = 0; y < image.getHeight(); y += 4) {
+            for (int x = 0; x < image.getWidth(); x += 4) {
+                int argb = image.getPixelReader().getArgb(x, y);
+                if (((argb >>> 24) & 0xff) > 16) {
+                    colors.add(quantizedArgb(argb));
+                }
+            }
+        }
+
+        assertTrue(colors.size() >= minimumColorCount,
+                () -> "snapshotColorCount=" + colors.size() + ", minimum=" + minimumColorCount);
+    }
+
+    /// Writes a rendered snapshot to a build report path for manual visual inspection.
+    private static void writeVisualSnapshot(WritableImage image, java.nio.file.Path path) {
+        try {
+            java.nio.file.Path parent = path.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            ImageIO.write(toBufferedImage(image), "png", path.toFile());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /// Converts a JavaFX image snapshot to a desktop image for report output.
+    private static BufferedImage toBufferedImage(WritableImage image) {
+        int width = (int) image.getWidth();
+        int height = (int) image.getHeight();
+        BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                bufferedImage.setRGB(x, y, image.getPixelReader().getArgb(x, y));
+            }
+        }
+        return bufferedImage;
+    }
+
+    /// Returns a quantized ARGB value that keeps color variety checks stable across renderers.
+    private static int quantizedArgb(int argb) {
+        return argb & 0xf0f0f0f0;
     }
 
     /// Returns a simple RGB distance between two colors.
