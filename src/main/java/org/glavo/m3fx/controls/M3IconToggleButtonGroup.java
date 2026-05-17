@@ -4,10 +4,13 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
@@ -16,16 +19,38 @@ import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/// A Material Design 3 toggle icon button group with mutually exclusive selection.
+/// A Material Design 3 toggle icon button group.
 @NotNullByDefault
 public class M3IconToggleButtonGroup extends HBox {
     /// The base style class for M3FX toggle icon button groups.
     public static final String STYLE_CLASS = "m3-icon-toggle-button-group";
+
+    /// The icon toggle button selection mode.
+    private final ObjectProperty<M3IconToggleButtonSelectionMode> selectionMode =
+            new SimpleObjectProperty<>(this, "selectionMode", M3IconToggleButtonSelectionMode.SINGLE) {
+                /// Enforces selection invariants when the mode changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3IconToggleButtonSelectionMode.SINGLE);
+                        return;
+                    }
+                    enforceSelectionPolicy();
+                }
+            };
+
+    /// The selected icon toggle buttons in child order.
+    private final ObservableList<M3IconToggleButton> selectedButtons = FXCollections.observableArrayList();
+
+    /// The read-only selected icon toggle button view.
+    private final @UnmodifiableView ObservableList<M3IconToggleButton> selectedButtonsView =
+            FXCollections.unmodifiableObservableList(selectedButtons);
 
     /// The currently selected toggle icon button.
     private final ReadOnlyObjectWrapper<@Nullable M3IconToggleButton> selectedButton =
@@ -51,24 +76,16 @@ public class M3IconToggleButtonGroup extends HBox {
             for (Node child : change.getRemoved()) {
                 if (child instanceof M3IconToggleButton button) {
                     uninstallButton(button);
-                    if (selectedButton.get() == button) {
-                        selectedButton.set(null);
-                    }
                     button.setSelected(false);
                 }
             }
             for (Node child : change.getAddedSubList()) {
                 if (child instanceof M3IconToggleButton button) {
                     installButton(button);
-                    if (button.isSelected()) {
-                        selectButton(button);
-                    }
                 }
             }
         }
-        if (!isAllowEmptySelection()) {
-            selectFirstButtonIfNeeded();
-        }
+        enforceSelectionPolicy();
     };
 
     /// Whether the group is currently synchronizing selected states.
@@ -92,6 +109,26 @@ public class M3IconToggleButtonGroup extends HBox {
     /// Returns the mutable child list used as toggle icon button group content.
     public final ObservableList<Node> getItems() {
         return getChildren();
+    }
+
+    /// Returns the icon toggle button selection mode.
+    public final M3IconToggleButtonSelectionMode getSelectionMode() {
+        return selectionMode.get();
+    }
+
+    /// Sets the icon toggle button selection mode.
+    public final void setSelectionMode(M3IconToggleButtonSelectionMode selectionMode) {
+        this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
+    }
+
+    /// Returns the icon toggle button selection mode property.
+    public final ObjectProperty<M3IconToggleButtonSelectionMode> selectionModeProperty() {
+        return selectionMode;
+    }
+
+    /// Returns the selected icon toggle buttons in child order.
+    public final @UnmodifiableView ObservableList<M3IconToggleButton> getSelectedButtons() {
+        return selectedButtonsView;
     }
 
     /// Returns the selected toggle icon button.
@@ -125,14 +162,18 @@ public class M3IconToggleButtonGroup extends HBox {
         if (!getChildren().contains(button)) {
             throw new IllegalArgumentException("button must belong to this toggle icon button group");
         }
-        selectButton(button);
+        if (getSelectionMode() == M3IconToggleButtonSelectionMode.MULTIPLE) {
+            setButtonSelected(button, true);
+        } else {
+            selectOnly(button);
+        }
     }
 
     /// Selects the first toggle icon button when one exists.
     public final void selectFirst() {
         M3IconToggleButton firstButton = firstButton();
         if (firstButton != null) {
-            selectButton(firstButton);
+            select(firstButton);
         }
     }
 
@@ -142,7 +183,7 @@ public class M3IconToggleButtonGroup extends HBox {
             selectFirstButtonIfNeeded();
             return;
         }
-        selectButton(null);
+        selectOnly(null);
     }
 
     /// Returns the user-agent stylesheet for M3FX toggle icon button groups.
@@ -175,37 +216,64 @@ public class M3IconToggleButtonGroup extends HBox {
         }
     }
 
-    /// Keeps selected buttons mutually exclusive.
+    /// Keeps selected buttons consistent with the current group policy.
     private void handleButtonSelectedChanged(M3IconToggleButton button, boolean selected) {
         if (updatingSelection) {
             return;
         }
 
         if (selected) {
-            selectButton(button);
-        } else if (selectedButton.get() == button) {
-            if (isAllowEmptySelection()) {
-                selectedButton.set(null);
+            if (getSelectionMode() == M3IconToggleButtonSelectionMode.SINGLE) {
+                selectOnly(button);
             } else {
-                selectButton(button);
+                refreshSelectedButtons();
             }
+            return;
+        }
+
+        refreshSelectedButtons();
+        if (!isAllowEmptySelection() && selectedButtons.isEmpty()) {
+            select(button);
+        }
+    }
+
+    /// Enforces single-selection and non-empty selection invariants.
+    private void enforceSelectionPolicy() {
+        refreshSelectedButtons();
+        if (getSelectionMode() == M3IconToggleButtonSelectionMode.SINGLE && selectedButtons.size() > 1) {
+            selectOnly(selectedButtons.get(0));
+            return;
+        }
+        if (!isAllowEmptySelection()) {
+            selectFirstButtonIfNeeded();
         }
     }
 
     /// Selects the first button when the selection is empty and empty selection is disabled.
     private void selectFirstButtonIfNeeded() {
-        if (selectedButton.get() != null) {
+        if (!selectedButtons.isEmpty()) {
             return;
         }
 
         M3IconToggleButton firstButton = firstButton();
         if (firstButton != null) {
-            selectButton(firstButton);
+            select(firstButton);
         }
     }
 
+    /// Sets one button's selected state and refreshes selected button state.
+    private void setButtonSelected(M3IconToggleButton button, boolean selected) {
+        updatingSelection = true;
+        try {
+            button.setSelected(selected);
+        } finally {
+            updatingSelection = false;
+        }
+        refreshSelectedButtons();
+    }
+
     /// Selects one button and clears selection from the remaining buttons.
-    private void selectButton(@Nullable M3IconToggleButton button) {
+    private void selectOnly(@Nullable M3IconToggleButton button) {
         updatingSelection = true;
         try {
             for (Node child : getChildren()) {
@@ -213,10 +281,21 @@ public class M3IconToggleButtonGroup extends HBox {
                     toggleButton.setSelected(toggleButton == button);
                 }
             }
-            selectedButton.set(button);
         } finally {
             updatingSelection = false;
         }
+        refreshSelectedButtons();
+    }
+
+    /// Refreshes selected button state from current child states.
+    private void refreshSelectedButtons() {
+        selectedButtons.clear();
+        for (Node child : getChildren()) {
+            if (child instanceof M3IconToggleButton button && button.isSelected()) {
+                selectedButtons.add(button);
+            }
+        }
+        selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
     }
 
     /// Returns the first toggle icon button child.

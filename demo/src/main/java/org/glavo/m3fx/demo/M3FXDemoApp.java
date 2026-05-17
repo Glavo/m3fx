@@ -53,6 +53,7 @@ import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
+import org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode;
 import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
 import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3ListItem;
@@ -374,6 +375,12 @@ public final class M3FXDemoApp extends Application {
                                 "1",
                                 "2",
                                 "3"
+                        ),
+                        createIconToggleMultiGroup(
+                                M3IconToggleButtonVariant.OUTLINED,
+                                "B",
+                                "I",
+                                "U"
                         ),
                         createIconToggleButton("D", M3IconToggleButtonVariant.TONAL, false)
                 ),
@@ -1243,6 +1250,27 @@ public final class M3FXDemoApp extends Application {
         }
         group.setAllowEmptySelection(false);
         group.selectFirst();
+        return group;
+    }
+
+    /// Creates a sample multi-selection toggle icon button group.
+    private static M3IconToggleButtonGroup createIconToggleMultiGroup(
+            M3IconToggleButtonVariant variant,
+            String first,
+            String second,
+            String third
+    ) {
+        M3IconToggleButton firstButton = createIconToggleButton(first, variant, false);
+        M3IconToggleButton secondButton = createIconToggleButton(second, variant, false);
+        M3IconToggleButton thirdButton = createIconToggleButton(third, variant, false);
+        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(
+                firstButton,
+                secondButton,
+                thirdButton
+        );
+        group.setSelectionMode(M3IconToggleButtonSelectionMode.MULTIPLE);
+        firstButton.setSelected(true);
+        thirdButton.setSelected(true);
         return group;
     }
 

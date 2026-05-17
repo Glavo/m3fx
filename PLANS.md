@@ -32,7 +32,7 @@
   - Controls must read component tokens and must not hard-code profile-specific values.
 - Implement first core controls:
   - Typography: token-driven text labels for the complete Material Design 3 type scale, including line-height tokens.
-  - Buttons: filled, tonal, outlined, text, elevated, icon button, toggle icon button, toggle icon button group, and floating action button.
+  - Buttons: filled, tonal, outlined, text, elevated, icon button, toggle icon button, single- or multi-select toggle icon button group, and floating action button.
   - Inputs: filled and outlined text field, plus password field.
   - Selection: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and single- or multi-select segmented button groups.
   - Navigation, feedback, utility, and containment: icons, tabs, top app bar, bottom app bar, navigation bar, navigation rail, navigation drawer, navigation item with badges, menus with selectable items, linear progress, circular progress, divider, badge, badged box, avatar, surface, scrim, list item, card, side sheet, bottom sheet, dialog, snackbar, and snackbar host with queued messages.

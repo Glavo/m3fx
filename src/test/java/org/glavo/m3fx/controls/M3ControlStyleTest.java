@@ -1054,21 +1054,75 @@ final class M3ControlStyleTest {
 
         first.setSelected(true);
 
+        assertEquals(M3IconToggleButtonSelectionMode.SINGLE, group.getSelectionMode());
         assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
         assertTrue(first.isSelected());
         assertFalse(second.isSelected());
 
         second.setSelected(true);
 
         assertEquals(second, group.getSelectedButton());
+        assertEquals(java.util.List.of(second), group.getSelectedButtons());
         assertFalse(first.isSelected());
         assertTrue(second.isSelected());
+        assertThrows(UnsupportedOperationException.class, () -> group.getSelectedButtons().add(first));
 
         group.clearSelection();
 
         assertNull(group.getSelectedButton());
+        assertTrue(group.getSelectedButtons().isEmpty());
         assertFalse(first.isSelected());
         assertFalse(second.isSelected());
+    }
+
+    /// Verifies that toggle icon button groups can use multiple selected button behavior.
+    @Test
+    void iconToggleButtonGroupCanUseMultipleSelection() {
+        M3IconToggleButton first = new M3IconToggleButton("A");
+        M3IconToggleButton second = new M3IconToggleButton("B");
+        M3IconToggleButton third = new M3IconToggleButton("C");
+        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(first, second, third);
+
+        group.setSelectionMode(M3IconToggleButtonSelectionMode.MULTIPLE);
+        first.fire();
+        third.fire();
+
+        assertTrue(first.isSelected());
+        assertFalse(second.isSelected());
+        assertTrue(third.isSelected());
+        assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first, third), group.getSelectedButtons());
+
+        first.fire();
+
+        assertFalse(first.isSelected());
+        assertTrue(third.isSelected());
+        assertEquals(third, group.getSelectedButton());
+        assertEquals(java.util.List.of(third), group.getSelectedButtons());
+    }
+
+    /// Verifies that toggle icon button groups collapse multiple selection when switched to single selection.
+    @Test
+    void iconToggleButtonGroupCollapsesMultipleSelectionWhenModeChanges() {
+        M3IconToggleButton first = new M3IconToggleButton("A");
+        M3IconToggleButton second = new M3IconToggleButton("B");
+        M3IconToggleButton third = new M3IconToggleButton("C");
+        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(first, second, third);
+
+        group.setSelectionMode(M3IconToggleButtonSelectionMode.MULTIPLE);
+        third.setSelected(true);
+        first.setSelected(true);
+
+        assertEquals(java.util.List.of(first, third), group.getSelectedButtons());
+
+        group.setSelectionMode(M3IconToggleButtonSelectionMode.SINGLE);
+
+        assertTrue(first.isSelected());
+        assertFalse(second.isSelected());
+        assertFalse(third.isSelected());
+        assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
     }
 
     /// Verifies that toggle icon button groups can require a selected button.
@@ -1081,17 +1135,26 @@ final class M3ControlStyleTest {
         group.setAllowEmptySelection(false);
 
         assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
         assertTrue(first.isSelected());
 
         group.clearSelection();
 
         assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
+        assertTrue(first.isSelected());
+
+        first.fire();
+
+        assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
         assertTrue(first.isSelected());
 
         second.setSelected(true);
         second.setSelected(false);
 
         assertEquals(second, group.getSelectedButton());
+        assertEquals(java.util.List.of(second), group.getSelectedButtons());
         assertTrue(second.isSelected());
     }
 
@@ -1106,11 +1169,13 @@ final class M3ControlStyleTest {
         group.getItems().remove(second);
 
         assertNull(group.getSelectedButton());
+        assertTrue(group.getSelectedButtons().isEmpty());
         assertFalse(second.isSelected());
 
         group.setAllowEmptySelection(false);
 
         assertEquals(first, group.getSelectedButton());
+        assertEquals(java.util.List.of(first), group.getSelectedButtons());
         assertTrue(first.isSelected());
     }
 
