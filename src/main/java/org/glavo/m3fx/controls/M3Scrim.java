@@ -7,8 +7,10 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -56,21 +58,34 @@ public class M3Scrim extends Region {
         }
     };
 
+    /// The opacity used while this scrim is shown.
+    private final DoubleProperty visibleOpacity =
+            new SimpleDoubleProperty(this, "visibleOpacity", DEFAULT_VISIBLE_OPACITY) {
+                /// Applies the updated visible opacity when the scrim is shown.
+                @Override
+                protected void invalidated() {
+                    set(validateOpacity(get()));
+                    if (isShown()) {
+                        setOpacity(get());
+                    }
+                }
+            };
+
+    /// Whether primary mouse clicks fire this scrim's action event.
+    private final BooleanProperty dismissOnClick = new SimpleBooleanProperty(this, "dismissOnClick", true);
+
     /// The scrim show and hide animation.
     private final Timeline visibilityAnimation = new Timeline();
-
-    /// The opacity restored when the scrim is shown again.
-    private double visibleOpacity = DEFAULT_VISIBLE_OPACITY;
 
     /// Creates a scrim.
     public M3Scrim() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         setAccessibleText("Dismiss");
-        setOpacity(DEFAULT_VISIBLE_OPACITY);
+        setOpacity(getVisibleOpacity());
         setPickOnBounds(true);
         setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY) {
+            if (isDismissOnClick() && event.getButton() == MouseButton.PRIMARY) {
                 fire();
                 event.consume();
             }
@@ -90,6 +105,36 @@ public class M3Scrim extends Region {
     /// Returns the shown property.
     public final BooleanProperty shownProperty() {
         return shown;
+    }
+
+    /// Returns the opacity used while this scrim is shown.
+    public final double getVisibleOpacity() {
+        return visibleOpacity.get();
+    }
+
+    /// Sets the opacity used while this scrim is shown.
+    public final void setVisibleOpacity(double visibleOpacity) {
+        this.visibleOpacity.set(validateOpacity(visibleOpacity));
+    }
+
+    /// Returns the visible opacity property.
+    public final DoubleProperty visibleOpacityProperty() {
+        return visibleOpacity;
+    }
+
+    /// Returns whether primary mouse clicks fire this scrim's action event.
+    public final boolean isDismissOnClick() {
+        return dismissOnClick.get();
+    }
+
+    /// Sets whether primary mouse clicks fire this scrim's action event.
+    public final void setDismissOnClick(boolean dismissOnClick) {
+        this.dismissOnClick.set(dismissOnClick);
+    }
+
+    /// Returns the dismiss-on-click property.
+    public final BooleanProperty dismissOnClickProperty() {
+        return dismissOnClick;
     }
 
     /// Returns the action handler.
@@ -143,12 +188,12 @@ public class M3Scrim extends Region {
 
             visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
                     SHOW_DURATION,
-                    new KeyValue(opacityProperty(), visibleOpacity, M3Motion.STANDARD_DECELERATE)
+                    new KeyValue(opacityProperty(), getVisibleOpacity(), M3Motion.STANDARD_DECELERATE)
             ));
             visibilityAnimation.playFromStart();
         } else {
-            if (getOpacity() > 0.0) {
-                visibleOpacity = getOpacity();
+            if (!visibleOpacity.isBound() && getOpacity() > 0.0) {
+                setVisibleOpacity(getOpacity());
             }
             if (getScene() == null || !isVisible()) {
                 applyShownStateImmediately(false);
@@ -173,6 +218,14 @@ public class M3Scrim extends Region {
         visibilityAnimation.stop();
         setVisible(shown);
         setManaged(shown);
-        setOpacity(shown ? visibleOpacity : 0.0);
+        setOpacity(shown ? getVisibleOpacity() : 0.0);
+    }
+
+    /// Validates a normalized opacity value.
+    private static double validateOpacity(double opacity) {
+        if (opacity < 0.0 || opacity > 1.0) {
+            throw new IllegalArgumentException("visibleOpacity must be between 0.0 and 1.0");
+        }
+        return opacity;
     }
 }

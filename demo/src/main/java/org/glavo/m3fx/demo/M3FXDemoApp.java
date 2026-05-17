@@ -132,6 +132,9 @@ public final class M3FXDemoApp extends Application {
     /// The current theme brightness.
     private Brightness brightness = Brightness.LIGHT;
 
+    /// The current density scale applied to component tokens.
+    private double densityScale;
+
     /// Animations owned by the active demo page.
     private final List<Animation> animations = new ArrayList<>();
 
@@ -219,7 +222,15 @@ public final class M3FXDemoApp extends Application {
             applyTheme();
         });
 
-        HBox header = new HBox(18.0, titleBox, spacer, seedButtons, profileButton, brightnessButton);
+        M3Button densityButton = new M3Button(densityLabel());
+        densityButton.setVariant(M3ButtonVariant.OUTLINED);
+        densityButton.setOnAction(event -> {
+            densityScale = nextDensityScale();
+            densityButton.setText(densityLabel());
+            applyTheme();
+        });
+
+        HBox header = new HBox(18.0, titleBox, spacer, seedButtons, profileButton, densityButton, brightnessButton);
         header.getStyleClass().add("demo-header");
         header.setAlignment(Pos.CENTER_LEFT);
         return header;
@@ -1439,7 +1450,29 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a theme from the current demo controls.
     private M3Theme createTheme() {
-        return M3Theme.fromSeed(seedColor, profile, brightness, M3Density.standard());
+        return M3Theme.fromSeed(seedColor, profile, brightness, M3Density.of(densityScale));
+    }
+
+    /// Returns the next density scale for the header toggle.
+    private double nextDensityScale() {
+        if (densityScale < 0.0) {
+            return 0.0;
+        }
+        if (densityScale == 0.0) {
+            return 1.0;
+        }
+        return -1.0;
+    }
+
+    /// Returns the display label for the current density scale.
+    private String densityLabel() {
+        if (densityScale < 0.0) {
+            return "Compact";
+        }
+        if (densityScale > 0.0) {
+            return "Comfort";
+        }
+        return "Standard";
     }
 
     /// Returns the demo stylesheet URL.

@@ -1099,6 +1099,7 @@ final class M3ControlStyleTest {
     void tooltipInheritsInstalledSceneTheme() {
         Label attachedTarget = new Label("Attached target");
         Label delayedTarget = new Label("Delayed target");
+        Label uninstalledTarget = new Label("Uninstalled target");
         Pane root = new Pane(attachedTarget);
         Scene scene = new Scene(root);
         M3Theme theme = M3Theme.defaultTheme();
@@ -1107,15 +1108,19 @@ final class M3ControlStyleTest {
 
         M3Tooltip attachedTooltip = M3Tooltip.install(attachedTarget, "Installed");
         M3Tooltip delayedTooltip = M3Tooltip.install(delayedTarget, "Delayed");
+        M3Tooltip uninstalledTooltip = M3Tooltip.install(uninstalledTarget, "Uninstalled");
+        M3Tooltip.uninstall(uninstalledTarget, uninstalledTooltip);
 
         assertEquals(theme, attachedTooltip.getTheme());
         assertTrue(attachedTooltip.getStyle().contains("-m3-color-primary"));
         assertNull(delayedTooltip.getTheme());
 
         root.getChildren().add(delayedTarget);
+        root.getChildren().add(uninstalledTarget);
 
         assertEquals(theme, delayedTooltip.getTheme());
         assertTrue(delayedTooltip.getStyle().contains("-m3-color-primary"));
+        assertNull(uninstalledTooltip.getTheme());
     }
 
     /// Verifies that avatars swap between text and graphic content.
@@ -2073,6 +2078,34 @@ final class M3ControlStyleTest {
         scrim.fire();
 
         assertEquals(2, actions.get());
+    }
+
+    /// Verifies configurable scrim opacity and pointer dismissal behavior.
+    @Test
+    void scrimSupportsVisibilityOptions() {
+        M3Scrim scrim = new M3Scrim();
+        AtomicInteger actions = new AtomicInteger();
+        scrim.setOnAction(event -> actions.incrementAndGet());
+
+        scrim.setVisibleOpacity(0.48);
+        assertEquals(0.48, scrim.getVisibleOpacity(), 0.0001);
+        assertEquals(0.48, scrim.getOpacity(), 0.0001);
+
+        scrim.hide();
+        assertEquals(0.0, scrim.getOpacity(), 0.0001);
+        scrim.show();
+        assertEquals(0.48, scrim.getOpacity(), 0.0001);
+
+        scrim.setDismissOnClick(false);
+        scrim.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 10.0, 10.0, false));
+        assertEquals(0, actions.get());
+
+        scrim.setDismissOnClick(true);
+        scrim.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 10.0, 10.0, false));
+        assertEquals(1, actions.get());
+
+        assertThrows(IllegalArgumentException.class, () -> scrim.setVisibleOpacity(-0.1));
+        assertThrows(IllegalArgumentException.class, () -> scrim.setVisibleOpacity(1.1));
     }
 
     /// Verifies that scrims expose animated shown state changes.
