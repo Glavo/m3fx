@@ -4627,6 +4627,122 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that inputs render filled, outlined, password, and multiline visual variants.
+    @Test
+    void inputSnapshotRendersFilledOutlinedPasswordAndTextAreaControls() {
+        runOnFxThread(() -> {
+            M3TextField filledField = new M3TextField("Filled text");
+            filledField.setPrefWidth(180.0);
+            M3TextField outlinedField = M3TextField.withVariant("Outlined text", M3TextInputVariant.OUTLINED);
+            outlinedField.setPrefWidth(190.0);
+            M3PasswordField passwordField = M3PasswordField.withVariant("secret", M3TextInputVariant.OUTLINED);
+            passwordField.setPrefWidth(160.0);
+            M3TextArea textArea = M3TextArea.withVariant("Multiline\ncontent", M3TextInputVariant.FILLED);
+            textArea.setPrefSize(240.0, 96.0);
+
+            FlowPane row = new FlowPane(16.0, 16.0, filledField, outlinedField, passwordField, textArea);
+            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(row, 840.0, 180.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            row.applyCss();
+            row.resize(840.0, 180.0);
+            row.layout();
+
+            WritableImage image = snapshotImageOnFxThread(row);
+            assertSnapshotNodeContainsContrast(image, filledField, Color.WHITE, 0.04);
+            assertSnapshotNodeBorderContainsContrast(image, outlinedField, Color.WHITE, 0.04);
+            assertSnapshotNodeBorderContainsContrast(image, passwordField, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, textArea, Color.WHITE, 0.04);
+            Node textAreaContent = assertInstanceOf(Node.class, textArea.lookup(".content"));
+            var textAreaContentBounds = textAreaContent.localToScene(textAreaContent.getBoundsInLocal());
+            Color textAreaContentBackground = image.getPixelReader().getColor(
+                    (int) Math.round(textAreaContentBounds.getMaxX() - 8.0),
+                    (int) Math.round(textAreaContentBounds.getMaxY() - 8.0)
+            );
+            assertTrue(colorDistance(textAreaContentBackground, Color.WHITE) > 0.02,
+                    () -> "textAreaContentBackground=" + textAreaContentBackground);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-inputs.png"
+            ));
+        });
+    }
+
+    /// Verifies that selection controls render their selected indicators.
+    @Test
+    void selectionSnapshotRendersSelectedIndicators() {
+        runOnFxThread(() -> {
+            M3CheckBox checkBox = M3CheckBox.withSelected("Check", true);
+            M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
+            M3Switch switchControl = M3Switch.withSelected("Switch", true);
+
+            FlowPane row = new FlowPane(20.0, 16.0, checkBox, radioButton, switchControl);
+            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(row, 420.0, 96.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            row.applyCss();
+            row.resize(420.0, 96.0);
+            row.layout();
+
+            WritableImage image = snapshotImageOnFxThread(row);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(checkBox, ".box"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(checkBox, ".mark"), Color.rgb(84, 50, 185), 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(radioButton, ".radio"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(radioButton, ".dot"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(switchControl, ".box"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(switchControl, ".thumb"), Color.rgb(84, 50, 185), 0.1);
+        });
+    }
+
+    /// Verifies that containment, feedback, and navigation controls render visible surfaces.
+    @Test
+    void containmentFeedbackAndNavigationSnapshotRendersVisibleSurfaces() {
+        runOnFxThread(() -> {
+            M3Avatar avatar = M3Avatar.withVariant("AB", M3AvatarVariant.TERTIARY);
+            M3BadgedBox badgedBox = new M3BadgedBox(new M3Avatar("M"), new M3Badge("7"));
+            M3ListItem listItem = new M3ListItem("Inbox");
+            listItem.setSupportingText("Latest updates");
+            listItem.setSelected(true);
+            M3Card card = new M3Card(new Label("Elevated card"));
+            card.setVariant(M3CardVariant.ELEVATED);
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            M3NavigationItem home = M3NavigationItem.withSelected("Home", new M3Icon("H"), true);
+            M3NavigationItem search = new M3NavigationItem("Search", new M3Icon("S"));
+            M3NavigationBar navigationBar = new M3NavigationBar(home, search);
+
+            FlowPane topRow = new FlowPane(18.0, 18.0, avatar, badgedBox, listItem, card);
+            VBox root = new VBox(18.0, topRow, snackbar, navigationBar);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 640.0, 300.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(640.0, 300.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, avatar, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, badgedBox, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, listItemContainer(listItem), Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(card, ".m3-card-container"), Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(snackbar, ".m3-snackbar-container"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(home, ".m3-navigation-item-indicator"),
+                    Color.WHITE,
+                    0.08);
+            assertSnapshotHasColorVariety(image, 14);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-containment-feedback-navigation.png"
+            ));
+        });
+    }
+
     /// Verifies that m3fx sliders create the Material Design 3 slider skin.
     @Test
     void sliderCreatesMaterialSkin() {
@@ -5362,12 +5478,18 @@ final class M3ControlStyleTest {
                 + "-m3-color-surface-container-low: rgb(247, 242, 250); "
                 + "-m3-color-surface-container-high: rgb(236, 230, 240); "
                 + "-m3-color-surface-container-highest: rgb(228, 221, 234); "
+                + "-m3-color-surface-container: rgb(243, 237, 247); "
+                + "-m3-color-surface: white; "
+                + "-m3-color-outline-variant: rgb(202, 196, 208); "
                 + "-m3-color-primary-container: rgb(226, 221, 255); "
                 + "-m3-color-on-primary-container: rgb(36, 14, 110); "
                 + "-m3-color-tertiary-container: rgb(255, 216, 228); "
                 + "-m3-color-on-tertiary-container: rgb(95, 17, 48); "
                 + "-m3-color-on-surface: rgb(30, 28, 32); "
-                + "-m3-color-on-surface-variant: rgb(73, 69, 79);";
+                + "-m3-color-on-surface-variant: rgb(73, 69, 79); "
+                + "-m3-color-inverse-surface: rgb(49, 48, 51); "
+                + "-m3-color-inverse-on-surface: rgb(244, 239, 244); "
+                + "-m3-color-inverse-primary: rgb(207, 189, 255);";
     }
 
     /// Returns deterministic color tokens used by snackbar style tests.
@@ -5681,6 +5803,91 @@ final class M3ControlStyleTest {
 
         assertTrue(colors.size() >= minimumColorCount,
                 () -> "snapshotColorCount=" + colors.size() + ", minimum=" + minimumColorCount);
+    }
+
+    /// Verifies that a node's rendered bounds contain pixels that contrast with a reference color.
+    private static void assertSnapshotNodeContainsContrast(
+            WritableImage image,
+            Node node,
+            Color reference,
+            double minimumDistance
+    ) {
+        var bounds = node.localToScene(node.getBoundsInLocal());
+        assertSnapshotAreaContainsContrast(
+                image,
+                (int) Math.floor(bounds.getMinX()),
+                (int) Math.floor(bounds.getMinY()),
+                (int) Math.ceil(bounds.getMaxX()),
+                (int) Math.ceil(bounds.getMaxY()),
+                reference,
+                minimumDistance,
+                node.toString()
+        );
+    }
+
+    /// Verifies that a node's rendered border band contains pixels that contrast with a reference color.
+    private static void assertSnapshotNodeBorderContainsContrast(
+            WritableImage image,
+            Node node,
+            Color reference,
+            double minimumDistance
+    ) {
+        var bounds = node.localToScene(node.getBoundsInLocal());
+        int minX = (int) Math.floor(bounds.getMinX());
+        int minY = (int) Math.floor(bounds.getMinY());
+        int maxX = (int) Math.ceil(bounds.getMaxX());
+        int maxY = (int) Math.ceil(bounds.getMaxY());
+        String description = node + " border";
+
+        if (snapshotAreaContainsContrast(image, minX, minY, maxX, minY + 3, reference, minimumDistance)
+                || snapshotAreaContainsContrast(image, minX, maxY - 3, maxX, maxY, reference, minimumDistance)
+                || snapshotAreaContainsContrast(image, minX, minY, minX + 3, maxY, reference, minimumDistance)
+                || snapshotAreaContainsContrast(image, maxX - 3, minY, maxX, maxY, reference, minimumDistance)) {
+            return;
+        }
+
+        throw new AssertionError("No contrasting border pixels found for " + description);
+    }
+
+    /// Verifies that a snapshot area contains pixels that contrast with a reference color.
+    private static void assertSnapshotAreaContainsContrast(
+            WritableImage image,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY,
+            Color reference,
+            double minimumDistance,
+            String description
+    ) {
+        assertTrue(snapshotAreaContainsContrast(image, minX, minY, maxX, maxY, reference, minimumDistance),
+                () -> "No contrasting pixels found for " + description);
+    }
+
+    /// Returns whether a snapshot area contains pixels that contrast with a reference color.
+    private static boolean snapshotAreaContainsContrast(
+            WritableImage image,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY,
+            Color reference,
+            double minimumDistance
+    ) {
+        int startX = Math.max(0, minX);
+        int startY = Math.max(0, minY);
+        int endX = Math.min((int) image.getWidth(), maxX);
+        int endY = Math.min((int) image.getHeight(), maxY);
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                if (color.getOpacity() > 0.1 && colorDistance(color, reference) >= minimumDistance) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /// Writes a rendered snapshot to a build report path for manual visual inspection.
