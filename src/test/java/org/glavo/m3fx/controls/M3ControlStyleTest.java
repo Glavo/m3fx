@@ -630,6 +630,28 @@ final class M3ControlStyleTest {
         assertEquals(1, actionCount.get());
     }
 
+    /// Verifies that snackbar internal padding changes when the action slot is visible.
+    @Test
+    void snackbarSkinUsesSymmetricPaddingWithoutAction() {
+        M3Snackbar snackbar = new M3Snackbar("Saved");
+        snackbar.setContentPadding(16.0);
+
+        applyCss(snackbar);
+
+        Region container = lookupRegion(snackbar, ".m3-snackbar-container");
+        assertEquals(16.0, container.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, container.getPadding().getRight(), 0.0001);
+        assertEquals(8.0, container.getPadding().getTop(), 0.0001);
+        assertEquals(8.0, container.getPadding().getBottom(), 0.0001);
+
+        snackbar.setActionText("Undo");
+
+        assertEquals(16.0, container.getPadding().getLeft(), 0.0001);
+        assertEquals(8.0, container.getPadding().getRight(), 0.0001);
+        assertEquals(8.0, container.getPadding().getTop(), 0.0001);
+        assertEquals(8.0, container.getPadding().getBottom(), 0.0001);
+    }
+
     /// Verifies that snackbar skins unbind internal nodes when disposed.
     @Test
     void snackbarSkinUnbindsInternalNodesWhenDisposed() {

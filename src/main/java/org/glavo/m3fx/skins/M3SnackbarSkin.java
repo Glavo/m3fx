@@ -79,13 +79,15 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         boolean visible = actionText != null && !actionText.isBlank();
         actionButton.setVisible(visible);
         actionButton.setManaged(visible);
+        updateTokenStyles();
     }
 
     /// Applies styleable component tokens to the snackbar container.
     private void updateTokenStyles() {
         M3Snackbar snackbar = getSkinnable();
         double padding = snackbar.getContentPadding();
-        container.setPadding(new Insets(padding / 2.0, padding / 2.0, padding / 2.0, padding));
+        double trailingPadding = actionButton.isManaged() ? padding / 2.0 : padding;
+        container.setPadding(new Insets(padding / 2.0, trailingPadding, padding / 2.0, padding));
         String shape = formatPixels(snackbar.getContainerShape());
         container.setStyle("-fx-background-radius: " + shape + ";");
     }
