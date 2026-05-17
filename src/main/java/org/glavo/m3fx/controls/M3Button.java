@@ -4,8 +4,11 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.BooleanPropertyBase;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -13,9 +16,10 @@ import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ButtonSkin;
@@ -29,9 +33,15 @@ import java.util.Objects;
 
 /// A Material Design 3 button.
 @NotNullByDefault
-public class M3Button extends Button {
+public class M3Button extends ButtonBase {
     /// The base style class for all m3fx buttons.
     public static final String STYLE_CLASS = "m3-button";
+
+    /// The pseudo-class used when this button is the default action.
+    private static final PseudoClass DEFAULT_PSEUDO_CLASS = PseudoClass.getPseudoClass("default");
+
+    /// The pseudo-class used when this button is the cancel action.
+    private static final PseudoClass CANCEL_PSEUDO_CLASS = PseudoClass.getPseudoClass("cancel");
 
     /// The default button container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 40.0;
@@ -63,6 +73,12 @@ public class M3Button extends Button {
 
     /// The styleable horizontal padding token.
     private StyleableDoubleProperty horizontalPadding;
+
+    /// Whether this button is the default action in its containing context.
+    private BooleanProperty defaultButton;
+
+    /// Whether this button is the cancel action in its containing context.
+    private BooleanProperty cancelButton;
 
     /// Creates an empty filled button.
     public M3Button() {
@@ -126,6 +142,78 @@ public class M3Button extends Button {
     /// Returns the button variant property.
     public final ObjectProperty<M3ButtonVariant> variantProperty() {
         return variant;
+    }
+
+    /// Sets whether this button is the default action in its containing context.
+    public final void setDefaultButton(boolean defaultButton) {
+        defaultButtonProperty().set(defaultButton);
+    }
+
+    /// Returns whether this button is the default action in its containing context.
+    public final boolean isDefaultButton() {
+        return defaultButton != null && defaultButton.get();
+    }
+
+    /// Returns the default button state property.
+    public final BooleanProperty defaultButtonProperty() {
+        if (defaultButton == null) {
+            defaultButton = new BooleanPropertyBase(false) {
+                /// Updates the default pseudo-class.
+                @Override
+                protected void invalidated() {
+                    pseudoClassStateChanged(DEFAULT_PSEUDO_CLASS, get());
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Button.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "defaultButton";
+                }
+            };
+        }
+        return defaultButton;
+    }
+
+    /// Sets whether this button is the cancel action in its containing context.
+    public final void setCancelButton(boolean cancelButton) {
+        cancelButtonProperty().set(cancelButton);
+    }
+
+    /// Returns whether this button is the cancel action in its containing context.
+    public final boolean isCancelButton() {
+        return cancelButton != null && cancelButton.get();
+    }
+
+    /// Returns the cancel button state property.
+    public final BooleanProperty cancelButtonProperty() {
+        if (cancelButton == null) {
+            cancelButton = new BooleanPropertyBase(false) {
+                /// Updates the cancel pseudo-class.
+                @Override
+                protected void invalidated() {
+                    pseudoClassStateChanged(CANCEL_PSEUDO_CLASS, get());
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Button.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "cancelButton";
+                }
+            };
+        }
+        return cancelButton;
     }
 
     /// Returns the preferred container height token.
@@ -256,6 +344,14 @@ public class M3Button extends Button {
         return horizontalPadding;
     }
 
+    /// Fires this button's action handler.
+    @Override
+    public void fire() {
+        if (!isDisabled()) {
+            fireEvent(new ActionEvent(this, this));
+        }
+    }
+
     /// Creates the default animated Material Design 3 button skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -283,6 +379,9 @@ public class M3Button extends Button {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
+        setAlignment(Pos.CENTER);
+        setFocusTraversable(true);
+        setMnemonicParsing(true);
         updateVariantStyle();
         updateMetrics();
     }
@@ -364,7 +463,7 @@ public class M3Button extends Button {
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Button.getClassCssMetaData());
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
             styleables.add(CONTAINER_HEIGHT);
             styleables.add(CONTAINER_SHAPE);
             styleables.add(HORIZONTAL_PADDING);

@@ -3,13 +3,19 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.BooleanPropertyBase;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
-import javafx.scene.control.CheckBox;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SwitchSkin;
@@ -18,12 +24,16 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /// A Material Design 3 switch.
 @NotNullByDefault
-public class M3Switch extends CheckBox {
+public class M3Switch extends ButtonBase {
     /// The base style class for m3fx switches.
     public static final String STYLE_CLASS = "m3-switch";
+
+    /// The selected pseudo-class used by switches.
+    private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The default switch touch target size.
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 40.0;
@@ -36,6 +46,9 @@ public class M3Switch extends CheckBox {
 
     /// The styleable switch track shape token.
     private StyleableDoubleProperty trackShape;
+
+    /// The selected state property.
+    private BooleanProperty selected;
 
     /// Creates an empty switch.
     public M3Switch() {
@@ -53,6 +66,44 @@ public class M3Switch extends CheckBox {
         M3Switch switchControl = new M3Switch(text);
         switchControl.setSelected(selected);
         return switchControl;
+    }
+
+    /// Sets whether this switch is selected.
+    public final void setSelected(boolean selected) {
+        selectedProperty().set(selected);
+    }
+
+    /// Returns whether this switch is selected.
+    public final boolean isSelected() {
+        return selected != null && selected.get();
+    }
+
+    /// Returns the selected state property.
+    public final BooleanProperty selectedProperty() {
+        if (selected == null) {
+            selected = new BooleanPropertyBase(false) {
+                /// Updates selected visual and accessibility state.
+                @Override
+                protected void invalidated() {
+                    pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Switch.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "selected";
+                }
+            };
+        }
+        return selected;
     }
 
     /// Returns the preferred touch target size token.
@@ -151,6 +202,15 @@ public class M3Switch extends CheckBox {
         return getClassCssMetaData();
     }
 
+    /// Toggles this switch and fires its action handler.
+    @Override
+    public void fire() {
+        if (!isDisabled()) {
+            setSelected(!isSelected());
+            fireEvent(new ActionEvent(this, this));
+        }
+    }
+
     /// Creates the default Material Design 3 switch skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -163,10 +223,26 @@ public class M3Switch extends CheckBox {
         return M3Stylesheets.controlStylesheet("selection.css");
     }
 
+    /// Returns accessibility attributes for switch selection state.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case SELECTED -> isSelected();
+            case TOGGLE_STATE -> isSelected()
+                    ? AccessibleAttribute.ToggleState.CHECKED
+                    : AccessibleAttribute.ToggleState.UNCHECKED;
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.CHECK_BOX);
+        setAlignment(Pos.CENTER_LEFT);
+        setFocusTraversable(true);
+        setMnemonicParsing(true);
         updateMetrics();
     }
 
@@ -216,7 +292,7 @@ public class M3Switch extends CheckBox {
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(CheckBox.getClassCssMetaData());
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
             styleables.add(TOUCH_TARGET_SIZE);
             styleables.add(TRACK_SHAPE);
             STYLEABLES = Collections.unmodifiableList(styleables);

@@ -45,9 +45,13 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     /// Applies touch target token changes to checkbox geometry.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
-    /// Animates the selected mark after selection changes.
+    /// Animates the mark after selection changes.
     private final ChangeListener<Boolean> selectedListener =
-            (observable, oldValue, newValue) -> animateSelectedState(newValue);
+            (observable, oldValue, newValue) -> animateMarkState();
+
+    /// Animates the mark after indeterminate state changes.
+    private final ChangeListener<Boolean> indeterminateListener =
+            (observable, oldValue, newValue) -> animateMarkState();
 
     /// Creates a checkbox skin.
     public M3CheckBoxSkin(M3CheckBox control) {
@@ -57,10 +61,11 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         box.getChildren().add(mark);
         indicatorSlot().getChildren().add(box);
 
-        applySelectedState(control.isSelected());
+        applyMarkState(control.isSelected() || control.isIndeterminate());
         updateMetrics();
         control.touchTargetSizeProperty().addListener(metricsInvalidation);
         control.selectedProperty().addListener(selectedListener);
+        control.indeterminateProperty().addListener(indeterminateListener);
     }
 
     /// Removes listeners before the skin is disposed.
@@ -69,6 +74,7 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         selectionAnimation.stop();
         getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
         getSkinnable().selectedProperty().removeListener(selectedListener);
+        getSkinnable().indeterminateProperty().removeListener(indeterminateListener);
         super.dispose();
     }
 
@@ -81,20 +87,21 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     }
 
     /// Applies the selected mark state without animation.
-    private void applySelectedState(boolean selected) {
-        mark.setOpacity(selected ? 1.0 : 0.0);
-        mark.setScaleX(selected ? 1.0 : HIDDEN_MARK_SCALE);
-        mark.setScaleY(selected ? 1.0 : HIDDEN_MARK_SCALE);
+    private void applyMarkState(boolean visible) {
+        mark.setOpacity(visible ? 1.0 : 0.0);
+        mark.setScaleX(visible ? 1.0 : HIDDEN_MARK_SCALE);
+        mark.setScaleY(visible ? 1.0 : HIDDEN_MARK_SCALE);
     }
 
-    /// Animates the selected mark state.
-    private void animateSelectedState(boolean selected) {
+    /// Animates the selected or indeterminate mark state.
+    private void animateMarkState() {
+        boolean visible = getSkinnable().isSelected() || getSkinnable().isIndeterminate();
         selectionAnimation.stop();
         selectionAnimation.getKeyFrames().setAll(new KeyFrame(
                 SELECTION_DURATION,
-                new KeyValue(mark.opacityProperty(), selected ? 1.0 : 0.0, M3Motion.STANDARD),
-                new KeyValue(mark.scaleXProperty(), selected ? 1.0 : HIDDEN_MARK_SCALE, M3Motion.STANDARD),
-                new KeyValue(mark.scaleYProperty(), selected ? 1.0 : HIDDEN_MARK_SCALE, M3Motion.STANDARD)
+                new KeyValue(mark.opacityProperty(), visible ? 1.0 : 0.0, M3Motion.STANDARD),
+                new KeyValue(mark.scaleXProperty(), visible ? 1.0 : HIDDEN_MARK_SCALE, M3Motion.STANDARD),
+                new KeyValue(mark.scaleYProperty(), visible ? 1.0 : HIDDEN_MARK_SCALE, M3Motion.STANDARD)
         ));
         selectionAnimation.playFromStart();
     }

@@ -3,14 +3,24 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.BooleanPropertyBase;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ObjectPropertyBase;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
-import javafx.scene.control.RadioButton;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleGroup;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -18,18 +28,28 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /// A Material Design 3 radio button.
 @NotNullByDefault
-public class M3RadioButton extends RadioButton {
+public class M3RadioButton extends ButtonBase implements Toggle {
     /// The base style class for m3fx radio buttons.
     public static final String STYLE_CLASS = "m3-radio-button";
+
+    /// The selected pseudo-class used by radio buttons.
+    private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The default radio button touch target size.
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 40.0;
 
     /// The styleable touch target size token.
     private StyleableDoubleProperty touchTargetSize;
+
+    /// The selected state property.
+    private BooleanProperty selected;
+
+    /// The toggle group this radio button belongs to.
+    private ObjectProperty<ToggleGroup> toggleGroup;
 
     /// Creates an empty radio button.
     public M3RadioButton() {
@@ -47,6 +67,120 @@ public class M3RadioButton extends RadioButton {
         M3RadioButton radioButton = new M3RadioButton(text);
         radioButton.setSelected(selected);
         return radioButton;
+    }
+
+    /// Sets whether this radio button is selected.
+    @Override
+    public final void setSelected(boolean selected) {
+        selectedProperty().set(selected);
+    }
+
+    /// Returns whether this radio button is selected.
+    @Override
+    public final boolean isSelected() {
+        return selected != null && selected.get();
+    }
+
+    /// Returns the selected state property.
+    @Override
+    public final BooleanProperty selectedProperty() {
+        if (selected == null) {
+            selected = new BooleanPropertyBase(false) {
+                /// Updates selected visual state and keeps the toggle group synchronized.
+                @Override
+                protected void invalidated() {
+                    boolean selected = get();
+                    pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
+
+                    ToggleGroup group = getToggleGroup();
+                    if (group != null) {
+                        if (selected) {
+                            group.selectToggle(M3RadioButton.this);
+                        } else if (group.getSelectedToggle() == M3RadioButton.this) {
+                            group.selectToggle(null);
+                        }
+                    }
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3RadioButton.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "selected";
+                }
+            };
+        }
+        return selected;
+    }
+
+    /// Sets the toggle group that manages this radio button.
+    @Override
+    public final void setToggleGroup(ToggleGroup toggleGroup) {
+        toggleGroupProperty().set(toggleGroup);
+    }
+
+    /// Returns the toggle group that manages this radio button.
+    @Override
+    public final ToggleGroup getToggleGroup() {
+        return toggleGroup == null ? null : toggleGroup.get();
+    }
+
+    /// Returns the toggle group property.
+    @Override
+    public final ObjectProperty<ToggleGroup> toggleGroupProperty() {
+        if (toggleGroup == null) {
+            toggleGroup = new ObjectPropertyBase<>() {
+                private ToggleGroup oldGroup;
+                private boolean updatingGroup;
+
+                /// Keeps JavaFX ToggleGroup membership synchronized with this property.
+                @Override
+                protected void invalidated() {
+                    if (updatingGroup) {
+                        return;
+                    }
+
+                    ToggleGroup newGroup = get();
+                    if (newGroup == oldGroup) {
+                        return;
+                    }
+
+                    updatingGroup = true;
+                    try {
+                        if (oldGroup != null && oldGroup.getToggles().contains(M3RadioButton.this)) {
+                            oldGroup.getToggles().remove(M3RadioButton.this);
+                        }
+
+                        if (newGroup != null && !newGroup.getToggles().contains(M3RadioButton.this)) {
+                            newGroup.getToggles().add(M3RadioButton.this);
+                        }
+                    } finally {
+                        updatingGroup = false;
+                        oldGroup = newGroup;
+                    }
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3RadioButton.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "toggleGroup";
+                }
+            };
+        }
+        return toggleGroup;
     }
 
     /// Returns the preferred touch target size token.
@@ -103,6 +237,19 @@ public class M3RadioButton extends RadioButton {
         return getClassCssMetaData();
     }
 
+    /// Toggles this radio button and fires its action handler.
+    @Override
+    public void fire() {
+        if (isDisabled()) {
+            return;
+        }
+
+        if (getToggleGroup() == null || !isSelected()) {
+            setSelected(!isSelected());
+            fireEvent(new ActionEvent(this, this));
+        }
+    }
+
     /// Creates the default Material Design 3 radio button skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -115,10 +262,26 @@ public class M3RadioButton extends RadioButton {
         return M3Stylesheets.controlStylesheet("selection.css");
     }
 
+    /// Returns accessibility attributes for radio button selection state.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case SELECTED -> isSelected();
+            case TOGGLE_STATE -> isSelected()
+                    ? AccessibleAttribute.ToggleState.CHECKED
+                    : AccessibleAttribute.ToggleState.UNCHECKED;
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.RADIO_BUTTON);
+        setAlignment(Pos.CENTER_LEFT);
+        setFocusTraversable(true);
+        setMnemonicParsing(true);
         updateMetrics();
     }
 
@@ -152,7 +315,7 @@ public class M3RadioButton extends RadioButton {
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(RadioButton.getClassCssMetaData());
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
             styleables.add(TOUCH_TARGET_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

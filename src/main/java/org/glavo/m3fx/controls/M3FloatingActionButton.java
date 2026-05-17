@@ -10,10 +10,12 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -28,7 +30,7 @@ import java.util.Objects;
 
 /// A Material Design 3 floating action button.
 @NotNullByDefault
-public class M3FloatingActionButton extends Button {
+public class M3FloatingActionButton extends ButtonBase {
     /// The base style class for m3fx floating action buttons.
     public static final String STYLE_CLASS = "m3-fab";
 
@@ -290,6 +292,14 @@ public class M3FloatingActionButton extends Button {
         return horizontalPadding;
     }
 
+    /// Fires this floating action button's action handler.
+    @Override
+    public void fire() {
+        if (!isDisabled()) {
+            fireEvent(new ActionEvent(this, this));
+        }
+    }
+
     /// Creates the default animated Material Design 3 floating action button skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -317,6 +327,9 @@ public class M3FloatingActionButton extends Button {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
+        setAlignment(Pos.CENTER);
+        setFocusTraversable(true);
+        setMnemonicParsing(true);
         updateVariantStyle();
         updateSizeStyle();
         textProperty().addListener(observable -> updateMetrics());
@@ -424,7 +437,7 @@ public class M3FloatingActionButton extends Button {
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Button.getClassCssMetaData());
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
             styleables.add(CONTAINER_SIZE);
             styleables.add(CONTAINER_SHAPE);
             styleables.add(HORIZONTAL_PADDING);

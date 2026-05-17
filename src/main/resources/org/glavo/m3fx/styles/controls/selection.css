@@ -46,7 +46,12 @@
 .m3-checkbox:selected:hover .box,
 .m3-checkbox:selected:focused .box,
 .m3-checkbox:selected:armed .box,
-.m3-checkbox:selected:pressed .box {
+.m3-checkbox:selected:pressed .box,
+.m3-checkbox:indeterminate .box,
+.m3-checkbox:indeterminate:hover .box,
+.m3-checkbox:indeterminate:focused .box,
+.m3-checkbox:indeterminate:armed .box,
+.m3-checkbox:indeterminate:pressed .box {
     -fx-background-color: -m3-color-primary;
     -fx-border-color: -m3-color-primary;
 }
@@ -65,8 +70,21 @@
 .m3-checkbox:selected:hover .mark,
 .m3-checkbox:selected:focused .mark,
 .m3-checkbox:selected:armed .mark,
-.m3-checkbox:selected:pressed .mark {
+.m3-checkbox:selected:pressed .mark,
+.m3-checkbox:indeterminate .mark,
+.m3-checkbox:indeterminate:hover .mark,
+.m3-checkbox:indeterminate:focused .mark,
+.m3-checkbox:indeterminate:armed .mark,
+.m3-checkbox:indeterminate:pressed .mark {
     -fx-background-color: -m3-color-on-primary;
+}
+
+.m3-checkbox:indeterminate .mark,
+.m3-checkbox:indeterminate:hover .mark,
+.m3-checkbox:indeterminate:focused .mark,
+.m3-checkbox:indeterminate:armed .mark,
+.m3-checkbox:indeterminate:pressed .mark {
+    -fx-shape: "M 3 8 L 15 8 L 15 10 L 3 10 Z";
 }
 
 .m3-radio-button .radio,

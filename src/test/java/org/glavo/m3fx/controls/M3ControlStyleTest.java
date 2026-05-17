@@ -3275,6 +3275,56 @@ final class M3ControlStyleTest {
         assertTrue(switchControl.isSelected());
     }
 
+    /// Verifies that radio buttons keep JavaFX ToggleGroup semantics without inheriting RadioButton.
+    @Test
+    void radioButtonSupportsToggleGroupSelection() {
+        javafx.scene.control.ToggleGroup group = new javafx.scene.control.ToggleGroup();
+        M3RadioButton first = M3RadioButton.withSelected("First", true);
+        M3RadioButton second = new M3RadioButton("Second");
+        AtomicInteger secondActions = new AtomicInteger();
+        second.setOnAction(event -> secondActions.incrementAndGet());
+
+        first.setToggleGroup(group);
+        second.setToggleGroup(group);
+
+        assertEquals(first, group.getSelectedToggle());
+
+        second.fire();
+
+        assertFalse(first.isSelected());
+        assertTrue(second.isSelected());
+        assertEquals(second, group.getSelectedToggle());
+        assertEquals(1, secondActions.get());
+
+        second.fire();
+
+        assertTrue(second.isSelected());
+        assertEquals(1, secondActions.get());
+    }
+
+    /// Verifies that checkboxes support the indeterminate state after moving to ButtonBase.
+    @Test
+    void checkBoxSupportsIndeterminateState() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        checkBox.setAllowIndeterminate(true);
+
+        checkBox.fire();
+
+        assertFalse(checkBox.isSelected());
+        assertTrue(checkBox.isIndeterminate());
+        assertTrue(checkBox.getPseudoClassStates().contains(PseudoClass.getPseudoClass("indeterminate")));
+        assertEquals(true, checkBox.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
+        assertEquals(AccessibleAttribute.ToggleState.INDETERMINATE,
+                checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+
+        checkBox.fire();
+
+        assertTrue(checkBox.isSelected());
+        assertFalse(checkBox.isIndeterminate());
+        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
+                checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+    }
+
     /// Verifies that radio indicators use circular Material styling.
     @Test
     void radioButtonIndicatorUsesCircularMaterialShape() {
@@ -5607,9 +5657,14 @@ final class M3ControlStyleTest {
         assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));
     }
 
-    /// Verifies that M3FX selectable controls do not inherit JavaFX ToggleButton.
+    /// Verifies that M3FX controls avoid concrete JavaFX control inheritance.
     @Test
-    void selectableControlsDoNotExtendToggleButton() {
+    void controlsDoNotExtendConcreteJavaFxControls() {
+        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3Button.class));
+        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3FloatingActionButton.class));
+        assertFalse(javafx.scene.control.CheckBox.class.isAssignableFrom(M3CheckBox.class));
+        assertFalse(javafx.scene.control.RadioButton.class.isAssignableFrom(M3RadioButton.class));
+        assertFalse(javafx.scene.control.CheckBox.class.isAssignableFrom(M3Switch.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
