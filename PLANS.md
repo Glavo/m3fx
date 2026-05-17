@@ -55,7 +55,7 @@
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, and navigation drawer.
 - App bars: top app bar variants and bottom app bar with configurable floating action alignment.
 - Menus and search: menu, menu item, menu button, search bar, and search view with customizable result content and action slots.
-- Feedback and progress: banner, snackbar, snackbar host with queued messages, tooltip, linear progress, and circular progress.
+- Feedback and progress: banner, snackbar, snackbar host with queued messages, plain tooltip, rich tooltip, linear progress, and circular progress.
 - Containment and utility: surface, card, dialog, dialog pane, side sheet, bottom sheet, scrim, divider, list, and list item.
 - Composition-heavy controls expose mutable child lists and convenience constructors or factories where they simplify common usage without hiding node ownership.
 
@@ -71,7 +71,7 @@
 
 - Expand Material motion coverage so hover, press, release, selection, shape, indicator, and elevation transitions consistently use tokenized timing and easing.
 - Broaden visual checks beyond static contrast and color variety toward geometry, clipping, alignment, and animation-state assertions.
-- Continue filling component gaps such as richer tooltips, additional list layouts, richer menus, and advanced input affordances.
+- Continue filling component gaps such as additional list layouts, richer menus, and advanced input affordances.
 - Tighten accessibility behavior for composite controls, especially indexed children, selection state, role choice, and keyboard navigation.
 - Add more focused demo pages for complex components whose behavior is hard to inspect in a single static gallery.
 - Document runtime packaging choices for applications that want regular jars, demo shadow jars, or jlink images.

@@ -73,6 +73,7 @@ import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
@@ -996,7 +997,27 @@ public final class M3FXDemoApp extends Application {
         M3IconButton iconButton = createIconButton("i");
         M3Tooltip.install(iconButton, "Icon button");
 
-        return createGallery(createShowcaseGroup("States", plain, longText, iconButton));
+        M3Button rich = createButton("Rich tooltip", M3ButtonVariant.TONAL);
+        M3RichTooltip.install(
+                rich,
+                "Rich tooltip",
+                "Use rich tooltips when brief supporting context needs a title and a wider surface."
+        );
+
+        M3Button actionButton = createButton("Open", M3ButtonVariant.TEXT);
+        actionButton.setOnAction(event -> showSnackbar());
+        M3Button richAction = createButton("Rich action", M3ButtonVariant.OUTLINED);
+        M3RichTooltip.install(
+                richAction,
+                "Generated theme",
+                "The tooltip can inherit the owning scene theme and expose action nodes in the content surface.",
+                actionButton
+        );
+
+        return createGallery(
+                createShowcaseGroup("Plain", plain, longText, iconButton),
+                createShowcaseGroup("Rich", rich, richAction)
+        );
     }
 
     /// Creates a page gallery.

@@ -18,6 +18,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
@@ -1292,6 +1293,55 @@ final class M3ControlStyleTest {
 
         M3Tooltip.uninstall(targetWithHelp, restoredTooltip);
         assertEquals("Existing help", targetWithHelp.getAccessibleHelp());
+    }
+
+    /// Verifies that rich tooltips expose graphic-only Material content.
+    @Test
+    void richTooltipUsesMaterialGraphicContent() {
+        Label action = new Label("Action");
+        M3RichTooltip tooltip = new M3RichTooltip("Title", "Supporting text", action);
+
+        assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
+        assertTrue(tooltip.getStyleClass().contains(M3RichTooltip.STYLE_CLASS));
+        assertEquals(ContentDisplay.GRAPHIC_ONLY, tooltip.getContentDisplay());
+        assertEquals("Title", tooltip.getTitle());
+        assertEquals("Supporting text", tooltip.getSupportingText());
+        assertEquals("Title Supporting text", tooltip.getText());
+        assertEquals(action, tooltip.getActions().get(0));
+        assertInstanceOf(VBox.class, tooltip.getGraphic());
+
+        tooltip.setTitle("");
+        assertEquals("Supporting text", tooltip.getText());
+        tooltip.setSupportingText("");
+        assertEquals("", tooltip.getText());
+
+        Label replacement = new Label("Replacement");
+        tooltip.setActions(replacement);
+        assertEquals(replacement, tooltip.getActions().get(0));
+        tooltip.clearActions();
+        assertTrue(tooltip.getActions().isEmpty());
+
+        assertThrows(NullPointerException.class, () -> tooltip.setTitle(null));
+        assertThrows(NullPointerException.class, () -> tooltip.setSupportingText(null));
+        assertThrows(NullPointerException.class, () -> tooltip.addAction(null));
+    }
+
+    /// Verifies that rich tooltips install on nodes and expose combined accessible help.
+    @Test
+    void richTooltipInstallsOnNodes() {
+        Label target = new Label("Target");
+        M3RichTooltip tooltip = M3RichTooltip.install(target, "Title", "Supporting text");
+
+        assertEquals("Title Supporting text", target.getAccessibleHelp());
+
+        tooltip.setTitle("Updated");
+        assertEquals("Updated Supporting text", target.getAccessibleHelp());
+
+        tooltip.setSupportingText("");
+        assertEquals("Updated", target.getAccessibleHelp());
+
+        M3RichTooltip.uninstall(target, tooltip);
+        assertNull(target.getAccessibleHelp());
     }
 
     /// Verifies that tooltips can apply and clear inline theme declarations.
@@ -5293,6 +5343,51 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that rich tooltip popups render their surface, text, and actions.
+    @Test
+    void richTooltipSnapshotRendersPopupSurface() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3RichTooltip tooltip = new M3RichTooltip(
+                    "Rich tooltip",
+                    "A wider tooltip surface can include a title, supporting text, and actions.",
+                    M3Button.withVariant("Action", M3ButtonVariant.TEXT)
+            );
+            try {
+                M3Button owner = new M3Button("Owner");
+                Pane root = new Pane(owner);
+                root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+                Scene scene = new Scene(root, 420.0, 220.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(420.0, 220.0);
+                root.layout();
+
+                tooltip.setTheme(M3Theme.defaultTheme());
+                tooltip.show(owner, stage.getX() + 40.0, stage.getY() + 96.0);
+
+                var tooltipRoot = tooltip.getScene().getRoot();
+                tooltipRoot.applyCss();
+                tooltipRoot.layout();
+
+                WritableImage image = snapshotImageOnFxThread(tooltipRoot);
+                assertSnapshotHasColorVariety(image, 4);
+                assertSnapshotNodeContainsContrast(image, tooltipRoot, Color.WHITE, 0.08);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-rich-tooltip.png"
+                ));
+            } finally {
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that m3fx sliders create the Material Design 3 slider skin.
     @Test
     void sliderCreatesMaterialSkin() {
@@ -5481,6 +5576,7 @@ final class M3ControlStyleTest {
         assertTrue(textField.getStyleClass().contains(M3TextInputVariant.OUTLINED.getStyleClass()));
         assertTrue(new M3TextArea().getStyleClass().contains(M3TextArea.STYLE_CLASS));
         assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
+        assertTrue(new M3RichTooltip().getStyleClass().contains(M3RichTooltip.STYLE_CLASS));
         assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
         assertTrue(new M3Icon("A").getStyleClass().contains(M3Icon.STYLE_CLASS));
         assertTrue(new M3IconToggleButton("A").getStyleClass().contains(M3IconToggleButton.STYLE_CLASS));
