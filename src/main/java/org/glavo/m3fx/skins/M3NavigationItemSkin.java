@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -22,6 +21,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 @NotNullByDefault
 public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     /// The duration used by selected indicator transitions.
-    private static final Duration INDICATOR_DURATION = Duration.millis(180.0);
+    private static final Duration INDICATOR_DURATION = M3Motion.SHORT4;
 
     /// The selected indicator hidden scale.
     private static final double HIDDEN_INDICATOR_SCALE = 0.72;
@@ -340,8 +340,8 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         indicatorAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         INDICATOR_DURATION,
-                        new KeyValue(indicator.opacityProperty(), targetOpacity, Interpolator.EASE_BOTH),
-                        new KeyValue(indicator.scaleXProperty(), targetScale, Interpolator.EASE_BOTH)
+                        new KeyValue(indicator.opacityProperty(), targetOpacity, M3Motion.STANDARD),
+                        new KeyValue(indicator.scaleXProperty(), targetScale, M3Motion.STANDARD)
                 )
         );
         indicatorAnimation.playFromStart();

@@ -4,7 +4,6 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -14,6 +13,7 @@ import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,10 +21,10 @@ import org.jetbrains.annotations.Nullable;
 @NotNullByDefault
 final class M3CssEffectTransition {
     /// The duration used when an effect becomes stronger.
-    private static final Duration ENTER_DURATION = Duration.millis(120.0);
+    private static final Duration ENTER_DURATION = M3Motion.SHORT2;
 
     /// The duration used when an effect becomes weaker or disappears.
-    private static final Duration EXIT_DURATION = Duration.millis(90.0);
+    private static final Duration EXIT_DURATION = M3Motion.SHORT1;
 
     /// Handles owner interaction state changes.
     private final ChangeListener<Boolean> interactionStateListener =
@@ -103,11 +103,11 @@ final class M3CssEffectTransition {
     private static KeyFrame keyFrame(Duration duration, DropShadow animated, DropShadow state) {
         return new KeyFrame(
                 duration,
-                new KeyValue(animated.radiusProperty(), state.getRadius(), Interpolator.EASE_BOTH),
-                new KeyValue(animated.spreadProperty(), state.getSpread(), Interpolator.EASE_BOTH),
-                new KeyValue(animated.offsetXProperty(), state.getOffsetX(), Interpolator.EASE_BOTH),
-                new KeyValue(animated.offsetYProperty(), state.getOffsetY(), Interpolator.EASE_BOTH),
-                new KeyValue(animated.colorProperty(), state.getColor(), Interpolator.EASE_BOTH)
+                new KeyValue(animated.radiusProperty(), state.getRadius(), M3Motion.STANDARD),
+                new KeyValue(animated.spreadProperty(), state.getSpread(), M3Motion.STANDARD),
+                new KeyValue(animated.offsetXProperty(), state.getOffsetX(), M3Motion.STANDARD),
+                new KeyValue(animated.offsetYProperty(), state.getOffsetY(), M3Motion.STANDARD),
+                new KeyValue(animated.colorProperty(), state.getColor(), M3Motion.STANDARD)
         );
     }
 

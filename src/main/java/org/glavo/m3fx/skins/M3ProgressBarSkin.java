@@ -4,7 +4,6 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -16,6 +15,7 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The duration used when determinate progress values change.
-    private static final Duration DETERMINATE_DURATION = Duration.millis(240.0);
+    private static final Duration DETERMINATE_DURATION = M3Motion.MEDIUM1;
 
     /// The duration of one indeterminate track sweep.
     private static final Duration INDETERMINATE_DURATION = Duration.millis(1400.0);
@@ -85,11 +85,11 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         indeterminateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(indeterminatePosition, 0.0, Interpolator.LINEAR)
+                        new KeyValue(indeterminatePosition, 0.0, M3Motion.LINEAR)
                 ),
                 new KeyFrame(
                         INDETERMINATE_DURATION,
-                        new KeyValue(indeterminatePosition, 1.0, Interpolator.LINEAR)
+                        new KeyValue(indeterminatePosition, 1.0, M3Motion.LINEAR)
                 )
         );
 
@@ -172,7 +172,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         determinateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         DETERMINATE_DURATION,
-                        new KeyValue(displayedProgress, targetProgress, Interpolator.EASE_BOTH)
+                        new KeyValue(displayedProgress, targetProgress, M3Motion.STANDARD)
                 )
         );
         determinateAnimation.playFromStart();

@@ -9,31 +9,179 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// Holds Material Design 3 motion duration tokens in milliseconds.
 @NotNullByDefault
 public sealed interface M3MotionTokens permits M3MotionTokensImpl {
-    /// Returns the short duration token.
-    int shortDuration();
+    /// Returns the short1 duration token.
+    int short1();
 
-    /// Returns the medium duration token.
-    int mediumDuration();
+    /// Returns the short2 duration token.
+    int short2();
 
-    /// Returns the long duration token.
-    int longDuration();
+    /// Returns the short3 duration token.
+    int short3();
 
-    /// Creates motion duration tokens.
-    static M3MotionTokens create(int shortDuration, int mediumDuration, int longDuration) {
-        return new M3MotionTokensImpl(shortDuration, mediumDuration, longDuration);
+    /// Returns the short4 duration token.
+    int short4();
+
+    /// Returns the medium1 duration token.
+    int medium1();
+
+    /// Returns the medium2 duration token.
+    int medium2();
+
+    /// Returns the medium3 duration token.
+    int medium3();
+
+    /// Returns the medium4 duration token.
+    int medium4();
+
+    /// Returns the long1 duration token.
+    int long1();
+
+    /// Returns the long2 duration token.
+    int long2();
+
+    /// Returns the long3 duration token.
+    int long3();
+
+    /// Returns the long4 duration token.
+    int long4();
+
+    /// Returns the extraLong1 duration token.
+    int extraLong1();
+
+    /// Returns the extraLong2 duration token.
+    int extraLong2();
+
+    /// Returns the extraLong3 duration token.
+    int extraLong3();
+
+    /// Returns the extraLong4 duration token.
+    int extraLong4();
+
+    /// Returns the legacy short duration alias.
+    default int shortDuration() {
+        return short2();
     }
 
-    /// Returns baseline motion tokens.
+    /// Returns the legacy medium duration alias.
+    default int mediumDuration() {
+        return medium1();
+    }
+
+    /// Returns the legacy long duration alias.
+    default int longDuration() {
+        return long2();
+    }
+
+    /// Creates motion duration tokens from legacy coarse duration values.
+    static M3MotionTokens create(int shortDuration, int mediumDuration, int longDuration) {
+        return create(
+                shortDuration,
+                shortDuration,
+                shortDuration,
+                shortDuration,
+                mediumDuration,
+                mediumDuration,
+                mediumDuration,
+                mediumDuration,
+                longDuration,
+                longDuration,
+                longDuration,
+                longDuration,
+                longDuration,
+                longDuration,
+                longDuration,
+                longDuration
+        );
+    }
+
+    /// Creates motion duration tokens.
+    static M3MotionTokens create(
+            int short1,
+            int short2,
+            int short3,
+            int short4,
+            int medium1,
+            int medium2,
+            int medium3,
+            int medium4,
+            int long1,
+            int long2,
+            int long3,
+            int long4,
+            int extraLong1,
+            int extraLong2,
+            int extraLong3,
+            int extraLong4
+    ) {
+        return new M3MotionTokensImpl(
+                short1,
+                short2,
+                short3,
+                short4,
+                medium1,
+                medium2,
+                medium3,
+                medium4,
+                long1,
+                long2,
+                long3,
+                long4,
+                extraLong1,
+                extraLong2,
+                extraLong3,
+                extraLong4
+        );
+    }
+
+    /// Returns baseline Material Design 3 motion tokens.
     static M3MotionTokens baseline() {
-        return create(100, 250, 500);
+        return create(
+                50,
+                100,
+                150,
+                200,
+                250,
+                300,
+                350,
+                400,
+                450,
+                500,
+                550,
+                600,
+                700,
+                800,
+                900,
+                1000
+        );
     }
 
     /// Converts motion tokens into inline JavaFX CSS declarations.
     default String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
+        appendLegacyStyleDeclarations(builder);
+        M3TokenCss.append(builder, "-m3-motion-duration-short1", short1() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-short2", short2() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-short3", short3() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-short4", short4() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-medium1", medium1() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-medium2", medium2() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-medium3", medium3() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-medium4", medium4() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-long1", long1() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-long2", long2() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-long3", long3() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-long4", long4() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-extra-long1", extraLong1() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-extra-long2", extraLong2() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-extra-long3", extraLong3() + "ms");
+        M3TokenCss.append(builder, "-m3-motion-duration-extra-long4", extraLong4() + "ms");
+        return builder.toString().trim();
+    }
+
+    /// Appends legacy coarse duration declarations for compatibility.
+    private void appendLegacyStyleDeclarations(StringBuilder builder) {
         M3TokenCss.append(builder, "-m3-motion-duration-short", shortDuration() + "ms");
         M3TokenCss.append(builder, "-m3-motion-duration-medium", mediumDuration() + "ms");
         M3TokenCss.append(builder, "-m3-motion-duration-long", longDuration() + "ms");
-        return builder.toString().trim();
     }
 }

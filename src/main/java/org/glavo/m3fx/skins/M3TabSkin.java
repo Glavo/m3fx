@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -11,6 +10,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Region;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Tab;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -21,7 +21,7 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     public static final String ACTIVE_INDICATOR_STYLE_CLASS = "m3-tab-active-indicator";
 
     /// The duration used by active indicator transitions.
-    private static final Duration INDICATOR_DURATION = Duration.millis(180.0);
+    private static final Duration INDICATOR_DURATION = M3Motion.SHORT4;
 
     /// The selected indicator hidden scale.
     private static final double HIDDEN_INDICATOR_SCALE = 0.72;
@@ -91,8 +91,8 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
         indicatorAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         INDICATOR_DURATION,
-                        new KeyValue(activeIndicator.opacityProperty(), targetOpacity, Interpolator.EASE_BOTH),
-                        new KeyValue(activeIndicator.scaleXProperty(), targetScale, Interpolator.EASE_BOTH)
+                        new KeyValue(activeIndicator.opacityProperty(), targetOpacity, M3Motion.STANDARD),
+                        new KeyValue(activeIndicator.scaleXProperty(), targetScale, M3Motion.STANDARD)
                 )
         );
         indicatorAnimation.playFromStart();

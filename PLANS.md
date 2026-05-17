@@ -20,7 +20,7 @@
 - Add the token system:
   - `M3TokenSet` aggregates color, typography, shape, elevation, motion, state layer, and component tokens.
   - `M3ColorTokens` wraps MonetFX `ColorScheme` and maps MonetFX `ColorRole` values to CSS variables.
-  - `M3TypographyTokens`, `M3ShapeTokens`, `M3ElevationTokens`, and `M3MotionTokens` provide baseline Material Design 3 defaults.
+  - `M3TypographyTokens`, `M3ShapeTokens`, `M3ElevationTokens`, and `M3MotionTokens` provide baseline Material Design 3 defaults, including full duration token levels.
   - `M3ComponentTokens` stores component-level defaults for implemented controls.
 - Add the theme API:
   - `M3Theme` holds the token set, MonetFX `ColorScheme`, selected profile, brightness, and density.
@@ -30,6 +30,7 @@
   - `M3Profile.BASELINE_2021` is the first default profile.
   - `M3Profile.EXPRESSIVE_2025` is reserved for future M3 Expressive token values.
   - Controls must read component tokens and must not hard-code profile-specific values.
+- Add a Material motion API with standard, emphasized, accelerate, and decelerate easing curves plus duration constants for reusable JavaFX animations.
 - Implement first core controls:
   - Typography: token-driven text labels for the complete Material Design 3 type scale, including line-height tokens.
   - Buttons: filled, tonal, outlined, text, elevated, icon button, toggle icon button, single- or multi-select toggle icon button group, and floating action button.

@@ -4,7 +4,6 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -20,6 +19,7 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,16 +39,16 @@ final class M3StateLayer extends Pane {
     private static final double RIPPLE_START_OPACITY = 0.18;
 
     /// The duration used by the ripple expansion.
-    private static final Duration RIPPLE_EXPANSION_DURATION = Duration.millis(360.0);
+    private static final Duration RIPPLE_EXPANSION_DURATION = M3Motion.MEDIUM3;
 
     /// The duration used after an interaction releases the ripple.
-    private static final Duration RIPPLE_RELEASE_DURATION = Duration.millis(220.0);
+    private static final Duration RIPPLE_RELEASE_DURATION = M3Motion.SHORT4;
 
     /// The duration used when a state layer appears.
-    private static final Duration STATE_LAYER_ENTER_DURATION = Duration.millis(120.0);
+    private static final Duration STATE_LAYER_ENTER_DURATION = M3Motion.SHORT2;
 
     /// The duration used when a state layer disappears.
-    private static final Duration STATE_LAYER_EXIT_DURATION = Duration.millis(90.0);
+    private static final Duration STATE_LAYER_EXIT_DURATION = M3Motion.SHORT1;
 
     /// The persistent overlay node controlled by CSS pseudo-class rules.
     private final Region overlay = new Region();
@@ -183,15 +183,15 @@ final class M3StateLayer extends Pane {
         rippleAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(ripple.scaleXProperty(), 0.0, Interpolator.EASE_OUT),
-                        new KeyValue(ripple.scaleYProperty(), 0.0, Interpolator.EASE_OUT),
-                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, Interpolator.EASE_OUT)
+                        new KeyValue(ripple.scaleXProperty(), 0.0, M3Motion.STANDARD_DECELERATE),
+                        new KeyValue(ripple.scaleYProperty(), 0.0, M3Motion.STANDARD_DECELERATE),
+                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, M3Motion.STANDARD_DECELERATE)
                 ),
                 new KeyFrame(
                         RIPPLE_EXPANSION_DURATION,
-                        new KeyValue(ripple.scaleXProperty(), 1.0, Interpolator.EASE_OUT),
-                        new KeyValue(ripple.scaleYProperty(), 1.0, Interpolator.EASE_OUT),
-                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, Interpolator.EASE_OUT)
+                        new KeyValue(ripple.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                        new KeyValue(ripple.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, M3Motion.STANDARD_DECELERATE)
                 )
         );
         rippleAnimation.playFromStart();
@@ -218,15 +218,15 @@ final class M3StateLayer extends Pane {
         rippleAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(ripple.scaleXProperty(), startScaleX, Interpolator.EASE_OUT),
-                        new KeyValue(ripple.scaleYProperty(), startScaleY, Interpolator.EASE_OUT),
-                        new KeyValue(ripple.opacityProperty(), startOpacity, Interpolator.EASE_OUT)
+                        new KeyValue(ripple.scaleXProperty(), startScaleX, M3Motion.STANDARD_DECELERATE),
+                        new KeyValue(ripple.scaleYProperty(), startScaleY, M3Motion.STANDARD_DECELERATE),
+                        new KeyValue(ripple.opacityProperty(), startOpacity, M3Motion.STANDARD_ACCELERATE)
                 ),
                 new KeyFrame(
                         RIPPLE_RELEASE_DURATION,
-                        new KeyValue(ripple.scaleXProperty(), 1.0, Interpolator.EASE_OUT),
-                        new KeyValue(ripple.scaleYProperty(), 1.0, Interpolator.EASE_OUT),
-                        new KeyValue(ripple.opacityProperty(), 0.0, Interpolator.EASE_OUT)
+                        new KeyValue(ripple.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                        new KeyValue(ripple.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                        new KeyValue(ripple.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE)
                 )
         );
         rippleAnimation.playFromStart();
@@ -274,11 +274,11 @@ final class M3StateLayer extends Pane {
         overlayOpacityAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(overlay.opacityProperty(), startOpacity, Interpolator.EASE_BOTH)
+                        new KeyValue(overlay.opacityProperty(), startOpacity, M3Motion.STANDARD)
                 ),
                 new KeyFrame(
                         duration,
-                        new KeyValue(overlay.opacityProperty(), targetOpacity, Interpolator.EASE_BOTH)
+                        new KeyValue(overlay.opacityProperty(), targetOpacity, M3Motion.STANDARD)
                 )
         );
         overlayOpacityAnimation.playFromStart();

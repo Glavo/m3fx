@@ -61,7 +61,9 @@ final class M3TokenFactoryTest {
         assertSame(bodySmall, typography.bodySmall());
         assertEquals(30.0, shape.extraLarge(), 0.0001);
         assertEquals(16.0, elevation.level5(), 0.0001);
+        assertEquals(90, motion.short2());
         assertEquals(210, motion.mediumDuration());
+        assertEquals(420, motion.long2());
         assertEquals(0.42, stateLayer.disabledContentOpacity(), 0.0001);
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-font-family: \"Demo\""));
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-title-small-font-size: 16px"));
@@ -125,6 +127,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-scrim-container-opacity: 0.31"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-avatar-container-size: 35px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-medium: 220ms"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-short2: 80ms"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-long2: 460ms"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-body-large-text"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));

@@ -5,6 +5,7 @@ module org.glavo.m3fx {
     requires transitive org.glavo.monetfx;
     requires static org.jetbrains.annotations;
 
+    exports org.glavo.m3fx.animation;
     exports org.glavo.m3fx.controls;
     exports org.glavo.m3fx.skins;
     exports org.glavo.m3fx.theme;

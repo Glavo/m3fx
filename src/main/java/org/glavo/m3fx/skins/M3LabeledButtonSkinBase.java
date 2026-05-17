@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -17,6 +16,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
@@ -32,10 +32,10 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     private static final double PRESSED_SCALE = 0.98;
 
     /// The duration used when entering the pressed state.
-    private static final Duration PRESS_DURATION = Duration.millis(80.0);
+    private static final Duration PRESS_DURATION = M3Motion.SHORT1;
 
     /// The duration used when leaving the pressed state.
-    private static final Duration RELEASE_DURATION = Duration.millis(140.0);
+    private static final Duration RELEASE_DURATION = M3Motion.SHORT3;
 
     /// The press animation timeline.
     private final Timeline animation = new Timeline();
@@ -249,8 +249,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         animation.stop();
         animation.getKeyFrames().setAll(new KeyFrame(
                 duration,
-                new KeyValue(button.scaleXProperty(), scale, Interpolator.EASE_BOTH),
-                new KeyValue(button.scaleYProperty(), scale, Interpolator.EASE_BOTH)
+                new KeyValue(button.scaleXProperty(), scale, M3Motion.STANDARD),
+                new KeyValue(button.scaleYProperty(), scale, M3Motion.STANDARD)
         ));
         animation.playFromStart();
     }
