@@ -914,7 +914,7 @@ public final class M3FXDemoApp extends Application {
     /// Creates the tooltip component page.
     private Node createTooltipsPage() {
         M3Button plain = createButton("Hover me", M3ButtonVariant.FILLED);
-        plain.setTooltip(new M3Tooltip("Tooltip"));
+        M3Tooltip.install(plain, "Tooltip");
 
         M3Button longText = createButton("Long tooltip", M3ButtonVariant.OUTLINED);
         M3Tooltip tooltip = new M3Tooltip("Use tooltips for brief contextual labels when a control needs clarification.");
@@ -922,7 +922,7 @@ public final class M3FXDemoApp extends Application {
         longText.setTooltip(tooltip);
 
         M3IconButton iconButton = createIconButton("i");
-        iconButton.setTooltip(new M3Tooltip("Icon button"));
+        M3Tooltip.install(iconButton, "Icon button");
 
         return createGallery(createShowcaseGroup("States", plain, longText, iconButton));
     }
@@ -1308,7 +1308,7 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a sample card.
-    private static M3Card createSampleCard(String title, M3CardVariant variant) {
+    private M3Card createSampleCard(String title, M3CardVariant variant) {
         VBox content = new VBox(6.0);
         content.getStyleClass().add("demo-card-content");
 
@@ -1323,6 +1323,7 @@ public final class M3FXDemoApp extends Application {
         M3Card card = new M3Card(content);
         card.setVariant(variant);
         card.setPrefWidth(260.0);
+        card.setOnAction(event -> showSnackbar());
         return card;
     }
 

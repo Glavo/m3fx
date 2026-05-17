@@ -138,9 +138,7 @@ public class M3SnackbarHost extends StackPane {
             String actionText,
             @Nullable EventHandler<ActionEvent> actionHandler
     ) {
-        M3Snackbar snackbar = new M3Snackbar(text);
-        snackbar.setActionText(actionText);
-        snackbar.setOnAction(event -> {
+        M3Snackbar snackbar = new M3Snackbar(text, actionText, event -> {
             dismiss();
             if (actionHandler != null) {
                 actionHandler.handle(event);
@@ -160,9 +158,7 @@ public class M3SnackbarHost extends StackPane {
             String actionText,
             @Nullable EventHandler<ActionEvent> actionHandler
     ) {
-        M3Snackbar snackbar = new M3Snackbar(text);
-        snackbar.setActionText(actionText);
-        snackbar.setOnAction(event -> {
+        M3Snackbar snackbar = new M3Snackbar(text, actionText, event -> {
             dismiss();
             if (actionHandler != null) {
                 actionHandler.handle(event);

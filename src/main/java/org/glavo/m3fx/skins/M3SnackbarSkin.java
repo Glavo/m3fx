@@ -5,7 +5,6 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -71,10 +70,8 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
 
     /// Fires the snackbar action handler if one is present.
     private void fireAction(ActionEvent event) {
-        @Nullable EventHandler<ActionEvent> handler = getSkinnable().getOnAction();
-        if (handler != null) {
-            handler.handle(event);
-        }
+        event.consume();
+        getSkinnable().fireAction();
     }
 
     /// Updates the action button visibility from its text.

@@ -6,6 +6,7 @@ package org.glavo.m3fx.controls;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.event.ActionEvent;
 import javafx.event.EventType;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -442,6 +443,27 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3CardSkin.class, card.getSkin());
     }
 
+    /// Verifies that cards expose standard action handlers.
+    @Test
+    void cardFiresActionEvents() {
+        M3Card card = new M3Card();
+        AtomicInteger actionCount = new AtomicInteger();
+        AtomicInteger eventCount = new AtomicInteger();
+        card.setOnAction(event -> actionCount.incrementAndGet());
+        card.addEventHandler(ActionEvent.ACTION, event -> eventCount.incrementAndGet());
+
+        card.fire();
+
+        assertEquals(1, actionCount.get());
+        assertEquals(1, eventCount.get());
+
+        card.setDisable(true);
+        card.fire();
+
+        assertEquals(1, actionCount.get());
+        assertEquals(1, eventCount.get());
+    }
+
     /// Verifies that card skins expose bounded surface ripple feedback.
     @Test
     void cardSkinPlaysBoundedRippleOnSurfacePress() {
@@ -460,6 +482,32 @@ final class M3ControlStyleTest {
         assertTrue(lookupRegion(card, ".m3-ripple").getOpacity() > 0.0);
     }
 
+    /// Verifies that card skins route surface and keyboard activation to the card action.
+    @Test
+    void cardSkinRoutesSurfaceAndKeyboardActions() {
+        M3Card card = new M3Card();
+        AtomicInteger actionCount = new AtomicInteger();
+        card.setOnAction(event -> actionCount.incrementAndGet());
+        Pane root = new Pane(card);
+        Scene scene = new Scene(root, 220.0, 120.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        card.resize(180.0, 80.0);
+        card.layout();
+
+        card.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 20.0, 20.0, false));
+        card.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+
+        assertEquals(2, actionCount.get());
+
+        card.setDisable(true);
+        card.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 20.0, 20.0, false));
+        card.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+
+        assertEquals(2, actionCount.get());
+    }
+
     /// Verifies that snackbar component token properties are styleable from CSS.
     @Test
     void snackbarTokensAreStyleable() {
@@ -470,6 +518,38 @@ final class M3ControlStyleTest {
 
         assertEquals(10.0, snackbar.getContainerShape(), 0.0001);
         assertEquals(24.0, snackbar.getContentPadding(), 0.0001);
+    }
+
+    /// Verifies that snackbars expose action constructors and programmatic action firing.
+    @Test
+    void snackbarActionConstructorsAndFireAction() {
+        AtomicInteger actionCount = new AtomicInteger();
+        AtomicInteger eventCount = new AtomicInteger();
+        M3Snackbar snackbar = new M3Snackbar("Saved", "Undo", event -> actionCount.incrementAndGet());
+        snackbar.addEventHandler(ActionEvent.ACTION, event -> eventCount.incrementAndGet());
+
+        assertEquals("Saved", snackbar.getText());
+        assertEquals("Undo", snackbar.getActionText());
+        assertTrue(snackbar.hasAction());
+
+        snackbar.fireAction();
+
+        assertEquals(1, actionCount.get());
+        assertEquals(1, eventCount.get());
+
+        snackbar.setActionText("");
+        snackbar.fireAction();
+
+        assertFalse(snackbar.hasAction());
+        assertEquals(1, actionCount.get());
+        assertEquals(1, eventCount.get());
+
+        snackbar.setActionText("Undo");
+        snackbar.setDisable(true);
+        snackbar.fireAction();
+
+        assertEquals(1, actionCount.get());
+        assertEquals(1, eventCount.get());
     }
 
     /// Verifies that m3fx snackbars create the Material Design 3 skin and action button.
@@ -873,6 +953,18 @@ final class M3ControlStyleTest {
         assertEquals(Duration.millis(500.0), tooltip.getShowDelay());
         assertEquals(Duration.millis(0.0), tooltip.getHideDelay());
         assertEquals(Duration.seconds(5.0), tooltip.getShowDuration());
+    }
+
+    /// Verifies that tooltips provide Material Design 3 install helpers.
+    @Test
+    void tooltipInstallsOnNodes() {
+        Label target = new Label("Target");
+        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+
+        assertEquals("Installed", tooltip.getText());
+        assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
+
+        M3Tooltip.uninstall(target, tooltip);
     }
 
     /// Verifies that avatars swap between text and graphic content.

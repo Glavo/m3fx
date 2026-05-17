@@ -3,9 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.scene.Node;
 import javafx.scene.control.Tooltip;
 import javafx.util.Duration;
 import org.jetbrains.annotations.NotNullByDefault;
+
+import java.util.Objects;
 
 /// A Material Design 3 tooltip.
 @NotNullByDefault
@@ -22,6 +25,29 @@ public class M3Tooltip extends Tooltip {
     public M3Tooltip(String text) {
         super(text);
         initialize();
+    }
+
+    /// Installs a Material Design 3 tooltip with the supplied text on a node.
+    public static M3Tooltip install(Node node, String text) {
+        M3Tooltip tooltip = new M3Tooltip(text);
+        install(node, tooltip);
+        return tooltip;
+    }
+
+    /// Installs a Material Design 3 tooltip on a node.
+    public static void install(Node node, M3Tooltip tooltip) {
+        Tooltip.install(
+                Objects.requireNonNull(node, "node"),
+                Objects.requireNonNull(tooltip, "tooltip")
+        );
+    }
+
+    /// Uninstalls a Material Design 3 tooltip from a node.
+    public static void uninstall(Node node, M3Tooltip tooltip) {
+        Tooltip.uninstall(
+                Objects.requireNonNull(node, "node"),
+                Objects.requireNonNull(tooltip, "tooltip")
+        );
     }
 
     /// Adds base style classes and Material timing defaults.

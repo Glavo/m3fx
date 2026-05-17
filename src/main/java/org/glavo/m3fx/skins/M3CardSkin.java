@@ -134,6 +134,10 @@ public class M3CardSkin extends SkinBase<M3Card> {
     private void handleMouseReleased(MouseEvent event) {
         if (event.getButton() == MouseButton.PRIMARY) {
             stateLayer.releaseRipple();
+            if (!getSkinnable().isDisabled() && isCardSurfaceEvent(event)) {
+                getSkinnable().fire();
+                event.consume();
+            }
         }
     }
 
@@ -143,6 +147,8 @@ public class M3CardSkin extends SkinBase<M3Card> {
         if ((code == KeyCode.ENTER || code == KeyCode.SPACE) && !getSkinnable().isDisabled()) {
             stateLayer.playCenteredRipple();
             stateLayer.releaseRipple();
+            getSkinnable().fire();
+            event.consume();
         }
     }
 

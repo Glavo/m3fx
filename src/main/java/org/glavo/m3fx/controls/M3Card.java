@@ -10,6 +10,9 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.event.ActionEvent;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -40,6 +43,10 @@ public class M3Card extends Control {
 
     /// The card content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
+
+    /// The action handler property.
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
+            new SimpleObjectProperty<>(this, "onAction");
 
     /// The card variant property.
     private final ObjectProperty<M3CardVariant> variant = new SimpleObjectProperty<>(this, "variant", M3CardVariant.FILLED) {
@@ -88,6 +95,21 @@ public class M3Card extends Control {
     /// Returns the card content property.
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
+    }
+
+    /// Returns the action handler.
+    public final @Nullable EventHandler<ActionEvent> getOnAction() {
+        return onAction.get();
+    }
+
+    /// Sets the action handler.
+    public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
+        this.onAction.set(onAction);
+    }
+
+    /// Returns the action handler property.
+    public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
+        return onAction;
     }
 
     /// Returns the card variant.
@@ -252,6 +274,20 @@ public class M3Card extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("card.css");
+    }
+
+    /// Fires this card's action event.
+    public final void fire() {
+        if (!isDisabled()) {
+            ActionEvent event = new ActionEvent(this, this);
+            @Nullable EventHandler<ActionEvent> handler = getOnAction();
+            if (handler != null) {
+                handler.handle(event);
+            }
+            if (!event.isConsumed()) {
+                Event.fireEvent(this, event);
+            }
+        }
     }
 
     /// Applies the current variant style class.

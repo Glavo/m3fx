@@ -13,6 +13,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -45,7 +46,8 @@ public class M3Snackbar extends Control {
     private final StringProperty actionText = new SimpleStringProperty(this, "actionText", "");
 
     /// The action event handler property.
-    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction = new SimpleObjectProperty<>(this, "onAction");
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
+            new SimpleObjectProperty<>(this, "onAction");
 
     /// The styleable container shape token.
     private StyleableDoubleProperty containerShape;
@@ -62,6 +64,22 @@ public class M3Snackbar extends Control {
     public M3Snackbar(String text) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setText(text);
+    }
+
+    /// Creates a snackbar with message text and action button text.
+    public M3Snackbar(String text, String actionText) {
+        this(text, actionText, null);
+    }
+
+    /// Creates a snackbar with message text, action button text, and an action handler.
+    public M3Snackbar(
+            String text,
+            String actionText,
+            @Nullable EventHandler<ActionEvent> onAction
+    ) {
+        this(text);
+        setActionText(actionText);
+        setOnAction(onAction);
     }
 
     /// Returns the snackbar message text.
@@ -107,6 +125,25 @@ public class M3Snackbar extends Control {
     /// Returns the action event handler property.
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
+    }
+
+    /// Returns whether this snackbar currently exposes an action button.
+    public final boolean hasAction() {
+        return !getActionText().isBlank();
+    }
+
+    /// Fires this snackbar's action event when it has an enabled action.
+    public final void fireAction() {
+        if (!isDisabled() && hasAction()) {
+            ActionEvent event = new ActionEvent(this, this);
+            @Nullable EventHandler<ActionEvent> handler = getOnAction();
+            if (handler != null) {
+                handler.handle(event);
+            }
+            if (!event.isConsumed()) {
+                Event.fireEvent(this, event);
+            }
+        }
     }
 
     /// Returns the snackbar container shape radius token.
