@@ -100,6 +100,37 @@ public class M3FloatingActionButton extends Button {
         initialize();
     }
 
+    /// Creates a floating action button with text, variant, and size.
+    public static M3FloatingActionButton withVariant(
+            String text,
+            M3FloatingActionButtonVariant variant,
+            M3FloatingActionButtonSize size
+    ) {
+        return withVariant(text, null, variant, size);
+    }
+
+    /// Creates a floating action button with graphic content, variant, and size.
+    public static M3FloatingActionButton withGraphic(
+            @Nullable Node graphic,
+            M3FloatingActionButtonVariant variant,
+            M3FloatingActionButtonSize size
+    ) {
+        return withVariant("", graphic, variant, size);
+    }
+
+    /// Creates a floating action button with text, graphic content, variant, and size.
+    public static M3FloatingActionButton withVariant(
+            String text,
+            @Nullable Node graphic,
+            M3FloatingActionButtonVariant variant,
+            M3FloatingActionButtonSize size
+    ) {
+        M3FloatingActionButton button = new M3FloatingActionButton(text, graphic);
+        button.setVariant(variant);
+        button.setSize(size);
+        return button;
+    }
+
     /// Returns the floating action button color variant.
     public final M3FloatingActionButtonVariant getVariant() {
         return variant.get();

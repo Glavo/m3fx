@@ -41,6 +41,13 @@ public class M3CheckBox extends CheckBox {
         initialize();
     }
 
+    /// Creates a checkbox with text and the requested selected state.
+    public static M3CheckBox withSelected(String text, boolean selected) {
+        M3CheckBox checkBox = new M3CheckBox(text);
+        checkBox.setSelected(selected);
+        return checkBox;
+    }
+
     /// Returns the preferred touch target size token.
     public final double getTouchTargetSize() {
         return touchTargetSize == null ? DEFAULT_TOUCH_TARGET_SIZE : touchTargetSize.get();

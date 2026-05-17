@@ -10,6 +10,8 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -76,6 +78,38 @@ public class M3Button extends Button {
     public M3Button(String text, @Nullable Node graphic) {
         super(text, graphic);
         initialize();
+    }
+
+    /// Creates a button with text and the requested variant.
+    public static M3Button withVariant(String text, M3ButtonVariant variant) {
+        return withVariant(text, null, variant, null);
+    }
+
+    /// Creates a button with text, graphic content, and the requested variant.
+    public static M3Button withVariant(String text, @Nullable Node graphic, M3ButtonVariant variant) {
+        return withVariant(text, graphic, variant, null);
+    }
+
+    /// Creates a button with text, the requested variant, and an action handler.
+    public static M3Button withVariant(
+            String text,
+            M3ButtonVariant variant,
+            @Nullable EventHandler<ActionEvent> onAction
+    ) {
+        return withVariant(text, null, variant, onAction);
+    }
+
+    /// Creates a button with text, graphic content, the requested variant, and an action handler.
+    public static M3Button withVariant(
+            String text,
+            @Nullable Node graphic,
+            M3ButtonVariant variant,
+            @Nullable EventHandler<ActionEvent> onAction
+    ) {
+        M3Button button = new M3Button(text, graphic);
+        button.setVariant(variant);
+        button.setOnAction(onAction);
+        return button;
     }
 
     /// Returns the button variant.

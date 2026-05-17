@@ -74,6 +74,13 @@ public class M3TextArea extends TextArea {
         initialize();
     }
 
+    /// Creates a text area with initial text and the requested variant.
+    public static M3TextArea withVariant(String text, M3TextInputVariant variant) {
+        M3TextArea textArea = new M3TextArea(text);
+        textArea.setVariant(variant);
+        return textArea;
+    }
+
     /// Returns the text input variant.
     public final M3TextInputVariant getVariant() {
         return variant.get();

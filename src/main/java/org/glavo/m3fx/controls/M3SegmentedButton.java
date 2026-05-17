@@ -78,6 +78,18 @@ public class M3SegmentedButton extends ButtonBase {
         initialize();
     }
 
+    /// Creates a segmented button with text and the requested selected state.
+    public static M3SegmentedButton withSelected(String text, boolean selected) {
+        return withSelected(text, null, selected);
+    }
+
+    /// Creates a segmented button with text, graphic content, and the requested selected state.
+    public static M3SegmentedButton withSelected(String text, @Nullable Node graphic, boolean selected) {
+        M3SegmentedButton button = new M3SegmentedButton(text, graphic);
+        button.setSelected(selected);
+        return button;
+    }
+
     /// Returns whether this segmented button is selected.
     public final boolean isSelected() {
         return selected.get();

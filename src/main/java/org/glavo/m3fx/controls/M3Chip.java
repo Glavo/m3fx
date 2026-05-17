@@ -93,6 +93,34 @@ public class M3Chip extends ButtonBase {
         initialize();
     }
 
+    /// Creates a chip with text and the requested variant.
+    public static M3Chip withVariant(String text, M3ChipVariant variant) {
+        return withVariant(text, null, variant, false);
+    }
+
+    /// Creates a chip with text, the requested variant, and selected state.
+    public static M3Chip withVariant(String text, M3ChipVariant variant, boolean selected) {
+        return withVariant(text, null, variant, selected);
+    }
+
+    /// Creates a chip with text, graphic content, and the requested variant.
+    public static M3Chip withVariant(String text, @Nullable Node graphic, M3ChipVariant variant) {
+        return withVariant(text, graphic, variant, false);
+    }
+
+    /// Creates a chip with text, graphic content, the requested variant, and selected state.
+    public static M3Chip withVariant(
+            String text,
+            @Nullable Node graphic,
+            M3ChipVariant variant,
+            boolean selected
+    ) {
+        M3Chip chip = new M3Chip(text, graphic);
+        chip.setVariant(variant);
+        chip.setSelected(selected);
+        return chip;
+    }
+
     /// Returns whether this chip is selected.
     public final boolean isSelected() {
         return selected.get();

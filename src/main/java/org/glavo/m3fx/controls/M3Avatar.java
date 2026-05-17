@@ -66,6 +66,20 @@ public class M3Avatar extends StackPane {
         setGraphic(graphic);
     }
 
+    /// Creates an avatar with text and the requested color variant.
+    public static M3Avatar withVariant(String text, M3AvatarVariant variant) {
+        M3Avatar avatar = new M3Avatar(text);
+        avatar.setVariant(variant);
+        return avatar;
+    }
+
+    /// Creates an avatar with a graphic node and the requested color variant.
+    public static M3Avatar withVariant(@Nullable Node graphic, M3AvatarVariant variant) {
+        M3Avatar avatar = new M3Avatar(graphic);
+        avatar.setVariant(variant);
+        return avatar;
+    }
+
     /// Returns the avatar text.
     public final String getText() {
         return text.get();

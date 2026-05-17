@@ -68,6 +68,13 @@ public class M3TextField extends TextField {
         initialize();
     }
 
+    /// Creates a text field with initial text and the requested variant.
+    public static M3TextField withVariant(String text, M3TextInputVariant variant) {
+        M3TextField textField = new M3TextField(text);
+        textField.setVariant(variant);
+        return textField;
+    }
+
     /// Returns the text input variant.
     public final M3TextInputVariant getVariant() {
         return variant.get();

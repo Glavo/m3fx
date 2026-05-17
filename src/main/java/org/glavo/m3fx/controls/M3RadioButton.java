@@ -41,6 +41,13 @@ public class M3RadioButton extends RadioButton {
         initialize();
     }
 
+    /// Creates a radio button with text and the requested selected state.
+    public static M3RadioButton withSelected(String text, boolean selected) {
+        M3RadioButton radioButton = new M3RadioButton(text);
+        radioButton.setSelected(selected);
+        return radioButton;
+    }
+
     /// Returns the preferred touch target size token.
     public final double getTouchTargetSize() {
         return touchTargetSize == null ? DEFAULT_TOUCH_TARGET_SIZE : touchTargetSize.get();

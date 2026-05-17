@@ -89,13 +89,16 @@ final class M3ControlStyleTest {
     /// Verifies that button variants update their style classes.
     @Test
     void buttonVariantUpdatesStyleClass() {
-        M3Button button = new M3Button("Button");
+        AtomicInteger actions = new AtomicInteger();
+        M3Button button = M3Button.withVariant("Button", M3ButtonVariant.FILLED, event -> actions.incrementAndGet());
 
         assertTrue(button.getStyleClass().contains(M3Button.STYLE_CLASS));
         assertTrue(button.getStyleClass().contains(M3ButtonVariant.FILLED.getStyleClass()));
 
         button.setVariant(M3ButtonVariant.OUTLINED);
+        button.fire();
 
+        assertEquals(1, actions.get());
         assertTrue(button.getStyleClass().contains(M3ButtonVariant.OUTLINED.getStyleClass()));
     }
 
@@ -408,7 +411,11 @@ final class M3ControlStyleTest {
     /// Verifies that floating action button variants and sizes update style classes.
     @Test
     void floatingActionButtonVariantAndSizeUpdateStyleClasses() {
-        M3FloatingActionButton button = new M3FloatingActionButton();
+        M3FloatingActionButton button = M3FloatingActionButton.withVariant(
+                "+",
+                M3FloatingActionButtonVariant.PRIMARY,
+                M3FloatingActionButtonSize.REGULAR
+        );
 
         assertTrue(button.getStyleClass().contains(M3FloatingActionButton.STYLE_CLASS));
         assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.getStyleClass()));
@@ -952,11 +959,13 @@ final class M3ControlStyleTest {
     /// Verifies that text field component token properties are styleable from CSS.
     @Test
     void textFieldTokensAreStyleable() {
-        M3TextField textField = new M3TextField();
+        M3TextField textField = M3TextField.withVariant("Content", M3TextInputVariant.OUTLINED);
         textField.setStyle("-m3-container-height: 64px; -m3-container-shape: 12px; -m3-horizontal-padding: 22px;");
 
         applyCss(textField);
 
+        assertEquals("Content", textField.getText());
+        assertEquals(M3TextInputVariant.OUTLINED, textField.getVariant());
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(12.0, textField.getContainerShape(), 0.0001);
         assertEquals(22.0, textField.getHorizontalPadding(), 0.0001);
@@ -968,11 +977,13 @@ final class M3ControlStyleTest {
     /// Verifies that password field component token properties are styleable from CSS.
     @Test
     void passwordFieldTokensAreStyleable() {
-        M3PasswordField passwordField = new M3PasswordField();
+        M3PasswordField passwordField = M3PasswordField.withVariant("secret", M3TextInputVariant.OUTLINED);
         passwordField.setStyle("-m3-container-height: 60px; -m3-container-shape: 10px; -m3-horizontal-padding: 20px;");
 
         applyCss(passwordField);
 
+        assertEquals("secret", passwordField.getText());
+        assertEquals(M3TextInputVariant.OUTLINED, passwordField.getVariant());
         assertEquals(60.0, passwordField.getContainerHeight(), 0.0001);
         assertEquals(10.0, passwordField.getContainerShape(), 0.0001);
         assertEquals(20.0, passwordField.getHorizontalPadding(), 0.0001);
@@ -984,7 +995,7 @@ final class M3ControlStyleTest {
     /// Verifies that text area component token properties are styleable from CSS.
     @Test
     void textAreaTokensAreStyleable() {
-        M3TextArea textArea = new M3TextArea();
+        M3TextArea textArea = M3TextArea.withVariant("Notes", M3TextInputVariant.OUTLINED);
         textArea.setStyle(
                 "-m3-container-height: 140px; "
                         + "-m3-container-shape: 12px; "
@@ -994,6 +1005,8 @@ final class M3ControlStyleTest {
 
         applyCss(textArea);
 
+        assertEquals("Notes", textArea.getText());
+        assertEquals(M3TextInputVariant.OUTLINED, textArea.getVariant());
         assertEquals(140.0, textArea.getContainerHeight(), 0.0001);
         assertEquals(12.0, textArea.getContainerShape(), 0.0001);
         assertEquals(22.0, textArea.getHorizontalPadding(), 0.0001);
@@ -1063,16 +1076,16 @@ final class M3ControlStyleTest {
     /// Verifies that avatar variants update style classes.
     @Test
     void avatarVariantUpdatesStyleClasses() {
-        M3Avatar avatar = new M3Avatar("A");
+        M3Avatar avatar = M3Avatar.withVariant("A", M3AvatarVariant.SECONDARY);
 
-        assertEquals(M3AvatarVariant.PRIMARY, avatar.getVariant());
-        assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.PRIMARY.getStyleClass()));
+        assertEquals(M3AvatarVariant.SECONDARY, avatar.getVariant());
+        assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.SECONDARY.getStyleClass()));
 
         avatar.setVariant(M3AvatarVariant.TERTIARY);
 
         assertEquals(M3AvatarVariant.TERTIARY, avatar.getVariant());
         assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.TERTIARY.getStyleClass()));
-        assertFalse(avatar.getStyleClass().contains(M3AvatarVariant.PRIMARY.getStyleClass()));
+        assertFalse(avatar.getStyleClass().contains(M3AvatarVariant.SECONDARY.getStyleClass()));
     }
 
     /// Verifies that icon size and color variants update style classes.
@@ -1137,21 +1150,25 @@ final class M3ControlStyleTest {
     /// Verifies that toggle icon button variants and selected states update style classes.
     @Test
     void iconToggleButtonVariantAndSelectionUpdateState() {
-        M3IconToggleButton button = new M3IconToggleButton("A");
-
-        assertEquals(M3IconToggleButtonVariant.STANDARD, button.getVariant());
-        assertFalse(button.isSelected());
-        assertTrue(button.getStyleClass().contains(M3IconToggleButton.STYLE_CLASS));
-        assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.STANDARD.getStyleClass()));
-
-        button.setVariant(M3IconToggleButtonVariant.TONAL);
-        button.setSelected(true);
+        M3IconToggleButton button = M3IconToggleButton.withIcon(
+                "A",
+                M3IconToggleButtonVariant.TONAL,
+                true
+        );
 
         assertEquals(M3IconToggleButtonVariant.TONAL, button.getVariant());
         assertTrue(button.isSelected());
+        assertTrue(button.getStyleClass().contains(M3IconToggleButton.STYLE_CLASS));
         assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.TONAL.getStyleClass()));
-        assertFalse(button.getStyleClass().contains(M3IconToggleButtonVariant.STANDARD.getStyleClass()));
-        assertTrue(button.getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
+
+        button.setVariant(M3IconToggleButtonVariant.OUTLINED);
+        button.setSelected(false);
+
+        assertEquals(M3IconToggleButtonVariant.OUTLINED, button.getVariant());
+        assertFalse(button.isSelected());
+        assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.OUTLINED.getStyleClass()));
+        assertFalse(button.getStyleClass().contains(M3IconToggleButtonVariant.TONAL.getStyleClass()));
+        assertFalse(button.getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
     }
 
     /// Verifies that toggle icon buttons create the animated toggle icon button skin.
@@ -1861,10 +1878,12 @@ final class M3ControlStyleTest {
     @Test
     void chipSupportsGraphicContent() {
         M3Icon icon = new M3Icon("A");
-        M3Chip chip = new M3Chip("Assist", icon);
+        M3Chip chip = M3Chip.withVariant("Assist", icon, M3ChipVariant.INPUT, true);
 
         assertEquals("Assist", chip.getText());
         assertEquals(icon, chip.getGraphic());
+        assertEquals(M3ChipVariant.INPUT, chip.getVariant());
+        assertTrue(chip.isSelected());
     }
 
     /// Verifies that chip interaction states keep Material colors.
@@ -1994,11 +2013,12 @@ final class M3ControlStyleTest {
     /// Verifies that segmented button component token properties are styleable from CSS.
     @Test
     void segmentedButtonTokensAreStyleable() {
-        M3SegmentedButton button = new M3SegmentedButton("Week");
+        M3SegmentedButton button = M3SegmentedButton.withSelected("Week", true);
         button.setStyle("-m3-container-height: 44px; -m3-container-shape: 12px; -m3-horizontal-padding: 18px;");
 
         applyCss(button);
 
+        assertTrue(button.isSelected());
         assertEquals(44.0, button.getContainerHeight(), 0.0001);
         assertEquals(12.0, button.getContainerShape(), 0.0001);
         assertEquals(18.0, button.getHorizontalPadding(), 0.0001);
@@ -2239,7 +2259,7 @@ final class M3ControlStyleTest {
     /// Verifies that tab component token properties are styleable from CSS.
     @Test
     void tabTokensAreStyleable() {
-        M3Tab tab = new M3Tab("Overview");
+        M3Tab tab = M3Tab.withSelected("Overview", true);
         tab.setStyle(
                 "-m3-container-height: 52px; "
                         + "-m3-tab-min-width: 120px; "
@@ -2250,6 +2270,7 @@ final class M3ControlStyleTest {
 
         applyCss(tab);
 
+        assertTrue(tab.isSelected());
         assertEquals(52.0, tab.getContainerHeight(), 0.0001);
         assertEquals(120.0, tab.getTabMinWidth(), 0.0001);
         assertEquals(20.0, tab.getHorizontalPadding(), 0.0001);
@@ -2465,8 +2486,7 @@ final class M3ControlStyleTest {
     @Test
     void switchSkinPositionsThumbFromSelectedState() {
         M3Switch offSwitch = new M3Switch("Off");
-        M3Switch onSwitch = new M3Switch("On");
-        onSwitch.setSelected(true);
+        M3Switch onSwitch = M3Switch.withSelected("On", true);
         Pane root = new Pane(offSwitch, onSwitch);
         Scene scene = new Scene(root, 260.0, 80.0);
 
@@ -2503,6 +2523,18 @@ final class M3ControlStyleTest {
         Region track = lookupRegion(switchControl, ".box");
         assertEquals(12.0, track.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
         assertEquals(12.0, track.getBorder().getStrokes().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
+    }
+
+    /// Verifies that selection factories apply initial selected state.
+    @Test
+    void selectionFactoriesApplyInitialSelection() {
+        M3CheckBox checkBox = M3CheckBox.withSelected("Check", true);
+        M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
+        M3Switch switchControl = M3Switch.withSelected("Switch", true);
+
+        assertTrue(checkBox.isSelected());
+        assertTrue(radioButton.isSelected());
+        assertTrue(switchControl.isSelected());
     }
 
     /// Verifies that radio indicators use circular Material styling.
@@ -3215,12 +3247,12 @@ final class M3ControlStyleTest {
     /// Verifies that navigation items expose badge content in the graphic slot.
     @Test
     void navigationItemShowsBadge() {
-        M3NavigationItem item = new M3NavigationItem("Inbox");
         M3Badge badge = new M3Badge("3");
+        M3NavigationItem item = M3NavigationItem.withSelected("Inbox", new M3Icon("I"), badge, true);
 
-        item.setBadge(badge);
         applyCss(item);
 
+        assertTrue(item.isSelected());
         assertEquals(badge, item.getBadge());
         assertEquals(badge, item.lookup(".m3-navigation-item-badge"));
 

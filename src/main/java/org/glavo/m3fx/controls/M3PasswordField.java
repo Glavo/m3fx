@@ -63,6 +63,19 @@ public class M3PasswordField extends PasswordField {
         initialize();
     }
 
+    /// Creates a filled password field with initial text.
+    public M3PasswordField(String text) {
+        setText(Objects.requireNonNull(text, "text"));
+        initialize();
+    }
+
+    /// Creates a password field with initial text and the requested variant.
+    public static M3PasswordField withVariant(String text, M3TextInputVariant variant) {
+        M3PasswordField passwordField = new M3PasswordField(text);
+        passwordField.setVariant(variant);
+        return passwordField;
+    }
+
     /// Returns the text input variant.
     public final M3TextInputVariant getVariant() {
         return variant.get();
