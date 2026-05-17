@@ -695,6 +695,35 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that snackbar hosts do not stretch snackbars to the full overlay size.
+    @Test
+    void snackbarHostKeepsSnackbarAtPreferredSizeInLargeOverlay() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.INDEFINITE);
+            StackPane root = new StackPane(new Region(), host);
+            StackPane.setAlignment(host, Pos.BOTTOM_CENTER);
+            Scene scene = new Scene(root, 800.0, 500.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            host.show("Saved");
+            root.applyCss();
+            root.resize(800.0, 500.0);
+            root.layout();
+
+            M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
+            var bounds = snackbar.getBoundsInParent();
+
+            assertTrue(host.getWidth() >= 790.0);
+            assertTrue(snackbar.getWidth() < host.getWidth() / 2.0);
+            assertTrue(snackbar.getHeight() < host.getHeight() / 3.0);
+            assertEquals((host.getWidth() - snackbar.getWidth()) / 2.0, bounds.getMinX(), 1.0);
+            assertTrue(snackbar.getLayoutY() > host.getHeight() - 120.0);
+            assertTrue(snackbar.getLayoutY() + snackbar.getHeight()
+                    <= host.getHeight() - host.getPadding().getBottom() + 0.0001);
+        });
+    }
+
     /// Verifies that snackbar hosts remove dismissed snackbars after the exit animation.
     @Test
     void snackbarHostRemovesDismissedSnackbars() throws InterruptedException {

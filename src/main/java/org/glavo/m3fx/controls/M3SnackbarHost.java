@@ -247,6 +247,30 @@ public class M3SnackbarHost extends StackPane {
         return M3Stylesheets.controlStylesheet("snackbar.css");
     }
 
+    /// Lays out the current snackbar at its preferred size instead of stretching it to the overlay bounds.
+    @Override
+    protected void layoutChildren() {
+        super.layoutChildren();
+
+        M3Snackbar currentSnackbar = snackbar;
+        if (currentSnackbar == null || !currentSnackbar.isManaged() || !getChildren().contains(currentSnackbar)) {
+            return;
+        }
+
+        double left = snappedLeftInset();
+        double right = snappedRightInset();
+        double top = snappedTopInset();
+        double bottom = snappedBottomInset();
+        double contentWidth = Math.max(0.0, getWidth() - left - right);
+        double contentHeight = Math.max(0.0, getHeight() - top - bottom);
+        double width = Math.min(contentWidth, snapSizeX(currentSnackbar.prefWidth(-1.0)));
+        double height = Math.min(contentHeight, snapSizeY(currentSnackbar.prefHeight(width)));
+        double x = left + (contentWidth - width) / 2.0;
+        double y = top + contentHeight - height;
+
+        currentSnackbar.resizeRelocate(snapPositionX(x), snapPositionY(y), width, height);
+    }
+
     /// Returns accessibility attributes for the current snackbar and queue state.
     @Override
     public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
