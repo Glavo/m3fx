@@ -2,7 +2,8 @@
 
 ## Summary
 
-- Build M3FX as a modular Material Design 3 component library for Java 17 and JavaFX 14.
+- Build M3FX as a modular Material Design 3 component library for Java 17 and JavaFX 21 by default.
+- Keep the public implementation source-compatible with JavaFX 14 APIs.
 - Use `org.glavo:MonetFX:0.4.0` as the source of Material color system generation.
 - Make token design a first-class layer so controls are driven by theme tokens instead of hard-coded Material values.
 - Implement the first usable release around core controls: theme system, buttons, text fields, selection controls, progress controls, utility controls, list items, cards, dialogs, and snackbar.
@@ -10,7 +11,7 @@
 
 ## Key Changes
 
-- Configure Gradle with Java release 17, JavaFX 14, JetBrains annotations, MonetFX, and JUnit.
+- Configure Gradle with Java release 17, JavaFX 21 by default, JavaFX 14 compatibility checks, JetBrains annotations, MonetFX, and JUnit.
 - Add `module-info.java` with module name `org.glavo.m3fx`.
 - Add the public packages:
   - `org.glavo.m3fx.theme`
@@ -54,6 +55,7 @@
 ## Test Plan
 
 - Run `./gradlew -g .gradle-user-home compileJava`.
+- Run `./gradlew -g .gradle-user-home javaFx14Compatibility`.
 - Run `./gradlew -g .gradle-user-home test` with a ten-minute timeout for test tasks.
 - Cover these scenarios:
   - MonetFX `ColorScheme` maps into M3FX color tokens and CSS variables.
@@ -67,7 +69,9 @@
 
 - MonetFX is consumed as `org.glavo:MonetFX:0.4.0`.
 - MonetFX module name is `org.glavo.monetfx`.
-- Java and JavaFX baseline is Java 17 / JavaFX 14.
+- Java baseline is Java 17.
+- Default JavaFX dependency version is JavaFX 21.
+- Source compatibility baseline is JavaFX 14, enforced by the `javaFx14Compatibility` Gradle task.
 - The first release prioritizes baseline Material Design 3 visuals.
 - M3 Expressive support starts with token and profile compatibility, not full visual parity for every component.
 - SASS is not introduced in the first implementation pass.
