@@ -2396,6 +2396,33 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3SwitchSkin.class, switchControl.getSkin());
     }
 
+    /// Verifies that selection skins initialize animated selected indicators from control state.
+    @Test
+    void selectionSkinsInitializeAnimatedSelectedIndicators() {
+        M3CheckBox uncheckedCheckBox = new M3CheckBox("Unchecked");
+        M3CheckBox checkedCheckBox = M3CheckBox.withSelected("Checked", true);
+        M3RadioButton uncheckedRadioButton = new M3RadioButton("Unchecked");
+        M3RadioButton checkedRadioButton = M3RadioButton.withSelected("Checked", true);
+        Pane root = new Pane(uncheckedCheckBox, checkedCheckBox, uncheckedRadioButton, checkedRadioButton);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        Region uncheckedMark = lookupRegion(uncheckedCheckBox, ".mark");
+        Region checkedMark = lookupRegion(checkedCheckBox, ".mark");
+        Region uncheckedDot = lookupRegion(uncheckedRadioButton, ".dot");
+        Region checkedDot = lookupRegion(checkedRadioButton, ".dot");
+        assertEquals(0.0, uncheckedMark.getOpacity(), 0.0001);
+        assertTrue(uncheckedMark.getScaleX() < 1.0);
+        assertEquals(1.0, checkedMark.getOpacity(), 0.0001);
+        assertEquals(1.0, checkedMark.getScaleX(), 0.0001);
+        assertEquals(0.0, uncheckedDot.getOpacity(), 0.0001);
+        assertTrue(uncheckedDot.getScaleX() < 1.0);
+        assertEquals(1.0, checkedDot.getOpacity(), 0.0001);
+        assertEquals(1.0, checkedDot.getScaleX(), 0.0001);
+    }
+
     /// Verifies that selection control skins handle pointer and keyboard activation.
     @Test
     void selectionControlSkinsHandleActivationEvents() {
@@ -3053,14 +3080,20 @@ final class M3ControlStyleTest {
         listItem.setSelected(true);
 
         applyCss(listItem);
+        listItem.resize(220.0, 56.0);
+        listItem.layout();
 
         assertTrue(listItem.isSelected());
         listItem.fire();
         assertEquals(1, fireCount.get());
-        listItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 10.0, 10.0, false));
+        listItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        listItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
         assertEquals(2, fireCount.get());
         listItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
         assertEquals(3, fireCount.get());
+        listItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+        listItem.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+        assertEquals(4, fireCount.get());
     }
 
     /// Verifies that lists expose item selection policies.
@@ -3173,7 +3206,7 @@ final class M3ControlStyleTest {
         listItem.layout();
 
         assertInstanceOf(Region.class, listItem.lookup(".m3-state-layer"));
-        listItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 10.0, 10.0, false));
+        listItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
 
         assertTrue(lookupRegion(listItem, ".m3-ripple").getOpacity() > 0.0);
     }
@@ -3779,6 +3812,28 @@ final class M3ControlStyleTest {
         assertTrue(slider.getValue() > 50.0);
         slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
         assertEquals(50.0, slider.getValue(), 0.0001);
+    }
+
+    /// Verifies that drag interactions snap the displayed slider position without animation lag.
+    @Test
+    void sliderSkinSnapsDisplayedPositionWhileDragging() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 240.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+
+        Region thumb = lookupRegion(slider, ".thumb");
+        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
+        slider.layout();
+        assertTrue(thumb.getLayoutX() > 190.0);
+
+        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_DRAGGED, 10.0, 24.0, true));
+        slider.layout();
+        assertTrue(thumb.getLayoutX() < 1.0);
     }
 
     /// Verifies that disabled slider skins ignore pointer and keyboard input.

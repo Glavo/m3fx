@@ -3,15 +3,27 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3CheckBox].
 @NotNullByDefault
 public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
+    /// The checkbox selected mark transition duration.
+    private static final Duration SELECTION_DURATION = M3Motion.SHORT2;
+
+    /// The hidden selected mark scale.
+    private static final double HIDDEN_MARK_SCALE = 0.72;
+
     /// The visual checkbox container size.
     private static final double BOX_SIZE = 18.0;
 
@@ -27,8 +39,15 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     /// The visual selected check mark.
     private final Region mark = new Region();
 
+    /// The selected mark appearance animation.
+    private final Timeline selectionAnimation = new Timeline();
+
     /// Applies touch target token changes to checkbox geometry.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
+
+    /// Animates the selected mark after selection changes.
+    private final ChangeListener<Boolean> selectedListener =
+            (observable, oldValue, newValue) -> animateSelectedState(newValue);
 
     /// Creates a checkbox skin.
     public M3CheckBoxSkin(M3CheckBox control) {
@@ -38,14 +57,18 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         box.getChildren().add(mark);
         indicatorSlot().getChildren().add(box);
 
+        applySelectedState(control.isSelected());
         updateMetrics();
         control.touchTargetSizeProperty().addListener(metricsInvalidation);
+        control.selectedProperty().addListener(selectedListener);
     }
 
     /// Removes listeners before the skin is disposed.
     @Override
     public void dispose() {
+        selectionAnimation.stop();
         getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
+        getSkinnable().selectedProperty().removeListener(selectedListener);
         super.dispose();
     }
 
@@ -55,5 +78,24 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         setIndicatorSlotSize(touchTargetSize, touchTargetSize);
         setFixedSize(box, BOX_SIZE, BOX_SIZE);
         setFixedSize(mark, MARK_WIDTH, MARK_HEIGHT);
+    }
+
+    /// Applies the selected mark state without animation.
+    private void applySelectedState(boolean selected) {
+        mark.setOpacity(selected ? 1.0 : 0.0);
+        mark.setScaleX(selected ? 1.0 : HIDDEN_MARK_SCALE);
+        mark.setScaleY(selected ? 1.0 : HIDDEN_MARK_SCALE);
+    }
+
+    /// Animates the selected mark state.
+    private void animateSelectedState(boolean selected) {
+        selectionAnimation.stop();
+        selectionAnimation.getKeyFrames().setAll(new KeyFrame(
+                SELECTION_DURATION,
+                new KeyValue(mark.opacityProperty(), selected ? 1.0 : 0.0, M3Motion.STANDARD),
+                new KeyValue(mark.scaleXProperty(), selected ? 1.0 : HIDDEN_MARK_SCALE, M3Motion.STANDARD),
+                new KeyValue(mark.scaleYProperty(), selected ? 1.0 : HIDDEN_MARK_SCALE, M3Motion.STANDARD)
+        ));
+        selectionAnimation.playFromStart();
     }
 }

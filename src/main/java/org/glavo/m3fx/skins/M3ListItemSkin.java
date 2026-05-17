@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -52,11 +53,17 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// The background radius currently applied to the state container.
     private double containerRadius = Double.NaN;
 
-    /// Handles mouse activation.
-    private final EventHandler<MouseEvent> mouseClickedHandler = this::handleMouseClicked;
+    /// Handles primary mouse presses.
+    private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
+
+    /// Handles primary mouse releases.
+    private final EventHandler<MouseEvent> mouseReleasedHandler = this::handleMouseReleased;
 
     /// Handles keyboard activation.
     private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
+
+    /// Handles keyboard activation release.
+    private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
 
     /// Updates text nodes and metrics after text changes.
     private final InvalidationListener textInvalidation = observable -> updateTextAndMetrics();
@@ -66,6 +73,19 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Applies metric token changes to the list item layout.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
+
+    /// Clears transient interaction feedback when the item becomes disabled.
+    private final ChangeListener<Boolean> disabledListener = (observable, oldValue, newValue) -> {
+        if (newValue) {
+            resetInteractionState();
+        }
+    };
+
+    /// Whether a primary mouse press currently owns the active ripple.
+    private boolean mousePressed;
+
+    /// Whether the space key currently owns the active ripple.
+    private boolean spaceKeyPressed;
 
     /// Creates a list item skin.
     public M3ListItemSkin(M3ListItem control) {
@@ -102,14 +122,15 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         control.horizontalPaddingProperty().addListener(metricsInvalidation);
         control.verticalPaddingProperty().addListener(metricsInvalidation);
         control.contentSpacingProperty().addListener(metricsInvalidation);
+        control.disabledProperty().addListener(disabledListener);
     }
 
     /// Removes behavior handlers before the skin is disposed.
     @Override
     public void dispose() {
         M3ListItem item = getSkinnable();
+        resetInteractionState();
         stateLayer.uninstallStateTransitions();
-        stateLayer.reset();
         item.overlineTextProperty().removeListener(textInvalidation);
         item.headlineTextProperty().removeListener(textInvalidation);
         item.supportingTextProperty().removeListener(textInvalidation);
@@ -123,8 +144,11 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         item.horizontalPaddingProperty().removeListener(metricsInvalidation);
         item.verticalPaddingProperty().removeListener(metricsInvalidation);
         item.contentSpacingProperty().removeListener(metricsInvalidation);
-        item.removeEventHandler(MouseEvent.MOUSE_CLICKED, mouseClickedHandler);
+        item.disabledProperty().removeListener(disabledListener);
+        item.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        item.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         item.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        item.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
         super.dispose();
     }
 
@@ -234,29 +258,84 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Installs behavior handlers for pointer and keyboard activation.
     private void installBehaviorHandlers(M3ListItem item) {
-        item.addEventHandler(MouseEvent.MOUSE_CLICKED, mouseClickedHandler);
+        item.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        item.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         item.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        item.addEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
     }
 
-    /// Fires the list item on primary mouse clicks.
-    private void handleMouseClicked(MouseEvent event) {
-        if (event.getButton() == MouseButton.PRIMARY && !getSkinnable().isDisabled()) {
-            stateLayer.playRipple(event.getX(), event.getY());
-            stateLayer.releaseRipple();
-            getSkinnable().fire();
-            event.consume();
+    /// Starts list item feedback on primary mouse press.
+    private void handleMousePressed(MouseEvent event) {
+        M3ListItem item = getSkinnable();
+        if (item.isDisabled() || event.getButton() != MouseButton.PRIMARY) {
+            return;
         }
+
+        mousePressed = true;
+        if (item.isFocusTraversable()) {
+            item.requestFocus();
+        }
+        stateLayer.playRipple(event.getX(), event.getY());
+        event.consume();
     }
 
-    /// Fires the list item on enter or space key presses.
+    /// Releases list item feedback and fires when the primary mouse is released inside the item.
+    private void handleMouseReleased(MouseEvent event) {
+        M3ListItem item = getSkinnable();
+        if (!mousePressed || event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+
+        boolean shouldFire = !item.isDisabled() && item.contains(event.getX(), event.getY());
+        mousePressed = false;
+        stateLayer.releaseRipple();
+        if (shouldFire) {
+            item.fire();
+        }
+        event.consume();
+    }
+
+    /// Fires the list item on enter or starts activation feedback for space.
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
-        if ((code == KeyCode.ENTER || code == KeyCode.SPACE) && !getSkinnable().isDisabled()) {
+        if (getSkinnable().isDisabled()) {
+            return;
+        }
+
+        if (code == KeyCode.SPACE) {
+            if (!spaceKeyPressed) {
+                spaceKeyPressed = true;
+                stateLayer.playCenteredRipple();
+            }
+            event.consume();
+        } else if (code == KeyCode.ENTER) {
             stateLayer.playCenteredRipple();
             stateLayer.releaseRipple();
             getSkinnable().fire();
             event.consume();
         }
+    }
+
+    /// Releases space-key feedback and fires the list item.
+    private void handleKeyReleased(KeyEvent event) {
+        if (event.getCode() != KeyCode.SPACE || !spaceKeyPressed) {
+            return;
+        }
+
+        boolean shouldFire = !getSkinnable().isDisabled();
+        spaceKeyPressed = false;
+        stateLayer.releaseRipple();
+        if (shouldFire) {
+            getSkinnable().fire();
+        }
+        event.consume();
+    }
+
+    /// Clears transient pointer and keyboard feedback.
+    private void resetInteractionState() {
+        mousePressed = false;
+        spaceKeyPressed = false;
+        stateLayer.reset();
     }
 
 }
