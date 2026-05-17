@@ -1,0 +1,35 @@
+name: Build Demo Shadow Jar
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build demo shadow jar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build shadow jar
+        run: ./gradlew shadowDemoJar --no-daemon
+
+      - name: Upload shadow jar
+        uses: actions/upload-artifact@v7
+        with:
+          name: m3fx-demo-shadow-jar
+          path: demo/build/libs/m3fx-demo-*-shadow.jar
+          if-no-files-found: error
+          archive: false
