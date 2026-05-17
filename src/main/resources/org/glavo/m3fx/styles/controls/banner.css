@@ -1,0 +1,25 @@
+.m3-banner {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-border-color: transparent transparent -m3-color-outline-variant transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-min-height: 80px;
+    -fx-padding: 16px 24px 16px 24px;
+    -fx-spacing: 16px;
+    -fx-alignment: center-left;
+}
+
+.m3-banner-icon {
+    -fx-alignment: top-center;
+    -fx-padding: 2px 0 0 0;
+}
+
+.m3-banner-text {
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-font-size: 14px;
+    -fx-line-spacing: 2px;
+}
+
+.m3-banner-actions {
+    -fx-alignment: center-right;
+    -fx-spacing: 8px;
+}

@@ -542,6 +542,41 @@ final class M3ControlStyleTest {
         assertEquals(24.0, snackbar.getContentPadding(), 0.0001);
     }
 
+    /// Verifies that banners expose text, icon, actions, and accessibility state.
+    @Test
+    void bannerExposesTextIconActionsAndAccessibility() {
+        Label icon = new Label("i");
+        Label firstAction = new Label("First");
+        Label secondAction = new Label("Second");
+        M3Banner banner = M3Banner.withIcon("Message", icon, firstAction);
+
+        assertTrue(banner.getStyleClass().contains(M3Banner.STYLE_CLASS));
+        assertEquals("Message", banner.getText());
+        assertEquals(icon, banner.getIcon());
+        assertEquals(firstAction, banner.getActions().get(0));
+        assertEquals("Message", banner.getAccessibleText());
+        assertEquals("Message", banner.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals(2, banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(icon, banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertEquals(firstAction, banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+        banner.setText("Updated");
+        banner.setIcon(null);
+        banner.setActions(secondAction);
+
+        assertEquals("Updated", banner.getAccessibleText());
+        assertEquals(1, banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(secondAction, banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertNull(banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+        banner.clearActions();
+
+        assertEquals(0, banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertThrows(NullPointerException.class, () -> banner.setText(null));
+        assertThrows(NullPointerException.class, () -> banner.addAction(null));
+        assertThrows(NullPointerException.class, () -> M3Banner.withIcon("Message", null));
+    }
+
     /// Verifies that snackbars expose action constructors and programmatic action firing.
     @Test
     void snackbarActionConstructorsAndFireAction() {
@@ -4954,6 +4989,12 @@ final class M3ControlStyleTest {
             M3Card outlinedCard = new M3Card(visualLabel("Outlined card"), M3CardVariant.OUTLINED);
             outlinedCard.setPrefSize(150.0, 80.0);
 
+            M3Banner banner = M3Banner.withIcon(
+                    "Banner message with persistent inline feedback.",
+                    new M3Icon("i", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
+                    M3Button.withVariant("Action", M3ButtonVariant.TEXT)
+            );
+            banner.setPrefWidth(520.0);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             M3SnackbarHost snackbarHost = new M3SnackbarHost();
             M3Snackbar hostedSnackbar = new M3Snackbar("Hosted snackbar", "Dismiss");
@@ -5087,7 +5128,7 @@ final class M3ControlStyleTest {
                             indeterminateProgressIndicator
                     ),
                     visualSection("Surfaces", surface, filledCard, elevatedCard, outlinedCard),
-                    visualSection("Feedback", snackbar, snackbarHost, scrim, dialogPane),
+                    visualSection("Feedback", banner, snackbar, snackbarHost, scrim, dialogPane),
                     visualSection("Lists, Menus, Search", list, menu, menuButton, searchBar, searchView),
                     visualSection("App Bars", topAppBar, bottomAppBar),
                     visualSection("Navigation", navigationBar, navigationRail, navigationDrawer),
@@ -5130,6 +5171,7 @@ final class M3ControlStyleTest {
                     Color.WHITE,
                     0.04
             );
+            assertSnapshotNodeContainsContrast(image, banner, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(
                     image,
                     lookupRegion(snackbar, ".m3-snackbar-container"),
@@ -5344,6 +5386,7 @@ final class M3ControlStyleTest {
         M3Card card = new M3Card();
         card.setVariant(M3CardVariant.OUTLINED);
 
+        M3Banner banner = new M3Banner("Message");
         M3Snackbar snackbar = new M3Snackbar("Message");
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
         M3TopAppBar topAppBar = new M3TopAppBar();
@@ -5357,6 +5400,7 @@ final class M3ControlStyleTest {
 
         assertTrue(card.getStyleClass().contains(M3Card.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.getStyleClass()));
+        assertTrue(banner.getStyleClass().contains(M3Banner.STYLE_CLASS));
         assertTrue(snackbar.getStyleClass().contains(M3Snackbar.STYLE_CLASS));
         assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBar.STYLE_CLASS));
@@ -5819,6 +5863,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.PARENT, passiveCard.getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, actionCard.getAccessibleRole());
         assertTrue(actionCard.isFocusTraversable());
+        assertEquals(AccessibleRole.PARENT, new M3Banner().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, snackbar.getAccessibleRole());
         assertEquals("Saved Undo", snackbar.getAccessibleText());
         assertEquals(AccessibleRole.PARENT, new M3SnackbarHost().getAccessibleRole());
@@ -5895,6 +5940,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3ListItem(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");
         assertUserAgentStylesheet(new M3DialogPane(), "/styles/controls/dialog.css");
+        assertUserAgentStylesheet(new M3Banner(), "/styles/controls/banner.css");
         assertUserAgentStylesheet(new M3Snackbar(), "/styles/controls/snackbar.css");
         assertUserAgentStylesheet(new M3SnackbarHost(), "/styles/controls/snackbar.css");
     }

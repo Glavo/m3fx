@@ -31,6 +31,7 @@ import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3AvatarVariant;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3BadgedBox;
+import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.glavo.m3fx.controls.M3BottomSheet;
@@ -267,6 +268,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Sheets", "Side and bottom containment surfaces", this::createSheetsPage),
                 new DemoPage("Scrims", "Modal overlays and dismiss actions", this::createScrimsPage),
                 new DemoPage("Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
+                new DemoPage("Banners", "Persistent inline feedback with optional actions", this::createBannersPage),
                 new DemoPage("Snackbars", "Snackbar host with action and queued messages", this::createSnackbarsPage),
                 new DemoPage("Tooltips", "Plain and longer contextual help", this::createTooltipsPage)
         );
@@ -923,6 +925,49 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup("Launcher", dialogButton),
                 createShowcaseGroup("Pane", inlinePane)
+        );
+    }
+
+    /// Creates the banner component page.
+    private Node createBannersPage() {
+        M3Button learnButton = createButton("Learn", M3ButtonVariant.TEXT);
+        learnButton.setOnAction(event -> showSnackbar());
+        M3Button dismissButton = createButton("Dismiss", M3ButtonVariant.TEXT);
+        dismissButton.setOnAction(event -> showSnackbar());
+        M3Banner informational = M3Banner.withIcon(
+                "M3FX can install generated token stylesheets for each JavaFX scene while keeping application scene management explicit.",
+                new M3Icon("i", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
+                learnButton,
+                dismissButton
+        );
+        informational.setPrefWidth(760.0);
+
+        M3Button reviewButton = createButton("Review", M3ButtonVariant.TEXT);
+        reviewButton.setOnAction(event -> showActionSnackbar());
+        M3Banner warning = M3Banner.withIcon(
+                "The selected jlink target uses platform-specific BellSoft LibericaJDK Full jmods.",
+                new M3Icon("!", M3IconSize.MEDIUM, M3IconVariant.ERROR),
+                reviewButton
+        );
+        warning.setPrefWidth(760.0);
+
+        M3Button manageButton = createButton("Manage", M3ButtonVariant.TEXT);
+        manageButton.setOnAction(event -> showSnackbar());
+        M3Banner noIcon = new M3Banner(
+                "Banners may omit the leading icon when surrounding context already makes the message clear.",
+                manageButton
+        );
+        noIcon.setPrefWidth(760.0);
+
+        M3Banner passive = new M3Banner(
+                "Passive banners keep persistent contextual information visible without interrupting the current task."
+        );
+        passive.setPrefWidth(760.0);
+
+        return createGallery(
+                createShowcaseGroup("With Actions", informational, warning),
+                createShowcaseGroup("Without Icon", noIcon),
+                createShowcaseGroup("Passive", passive)
         );
     }
 
