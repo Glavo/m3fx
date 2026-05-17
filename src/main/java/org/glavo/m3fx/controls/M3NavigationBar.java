@@ -110,6 +110,12 @@ public class M3NavigationBar extends HBox {
         return selectedItem.getReadOnlyProperty();
     }
 
+    /// Returns the child index of the selected navigation item, or `-1` when no item is selected.
+    public final int getSelectedIndex() {
+        @Nullable M3NavigationItem item = getSelectedItem();
+        return item == null ? -1 : getChildren().indexOf(item);
+    }
+
     /// Returns whether this bar allows all navigation items to be unselected.
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
@@ -132,6 +138,16 @@ public class M3NavigationBar extends HBox {
             throw new IllegalArgumentException("item must belong to this navigation bar");
         }
         selectItem(item);
+    }
+
+    /// Selects the navigation item at the given child index.
+    public final void selectIndex(int index) {
+        Node child = getChildren().get(index);
+        if (child instanceof M3NavigationItem item) {
+            select(item);
+            return;
+        }
+        throw new IllegalArgumentException("child at index is not an M3NavigationItem");
     }
 
     /// Selects the first navigation item when one exists.

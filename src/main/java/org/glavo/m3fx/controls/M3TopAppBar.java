@@ -80,6 +80,24 @@ public class M3TopAppBar extends HBox {
         setTitle(title);
     }
 
+    /// Creates a top app bar with title text, navigation content, and trailing actions.
+    public M3TopAppBar(String title, @Nullable Node navigation, Node... actions) {
+        this(title);
+        setNavigation(navigation);
+        addActions(actions);
+    }
+
+    /// Creates a top app bar with title text, variant, navigation content, and trailing actions.
+    public M3TopAppBar(
+            String title,
+            M3TopAppBarVariant variant,
+            @Nullable Node navigation,
+            Node... actions
+    ) {
+        this(title, navigation, actions);
+        setVariant(variant);
+    }
+
     /// Returns the app bar title.
     public final String getTitle() {
         return title.get();
@@ -152,6 +170,15 @@ public class M3TopAppBar extends HBox {
         updateVariantLayout();
 
         getChildren().addAll(navigationSlot, titleLabel, spacer, actions);
+    }
+
+    /// Adds trailing actions after validating the action array.
+    private void addActions(Node... actions) {
+        Objects.requireNonNull(actions, "actions");
+        for (Node action : actions) {
+            Objects.requireNonNull(action, "action");
+        }
+        getActions().addAll(actions);
     }
 
     /// Updates the leading navigation slot.

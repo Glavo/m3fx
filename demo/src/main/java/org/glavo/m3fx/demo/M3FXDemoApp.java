@@ -619,7 +619,7 @@ public final class M3FXDemoApp extends Application {
         M3Menu selectedMenu = new M3Menu(selected, createMenuItem("Regular item", "R", ""));
         selectedMenu.setSelectionMode(M3MenuSelectionMode.SINGLE);
         selectedMenu.setAllowEmptySelection(false);
-        selectedMenu.select(selected);
+        selectedMenu.selectIndex(0);
 
         M3Menu multiSelectMenu = new M3Menu(
                 createMenuItem("Icons", "I", ""),
@@ -627,8 +627,8 @@ public final class M3FXDemoApp extends Application {
                 createMenuItem("Badges", "B", "")
         );
         multiSelectMenu.setSelectionMode(M3MenuSelectionMode.MULTIPLE);
-        multiSelectMenu.select((M3MenuItem) multiSelectMenu.getItems().get(0));
-        multiSelectMenu.select((M3MenuItem) multiSelectMenu.getItems().get(2));
+        multiSelectMenu.selectIndex(0);
+        multiSelectMenu.selectIndex(2);
 
         return createGallery(
                 createShowcaseGroup("Menu Button", menuButton),
@@ -644,8 +644,8 @@ public final class M3FXDemoApp extends Application {
         M3SegmentedButtonGroup channels = createSegmentedGroup("Email", "Chat", "Push");
         channels.clearSelection();
         channels.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);
-        ((M3SegmentedButton) channels.getChildren().get(0)).setSelected(true);
-        ((M3SegmentedButton) channels.getChildren().get(2)).setSelected(true);
+        channels.selectIndex(0);
+        channels.selectIndex(2);
 
         return createGallery(
                 createShowcaseGroup("Date Range", dateRange),
@@ -779,7 +779,7 @@ public final class M3FXDemoApp extends Application {
                 new M3Divider(),
                 selected
         );
-        list.select(selected);
+        list.selectIndex(6);
 
         return createGallery(createShowcaseGroup("Rows", list));
     }
@@ -1044,22 +1044,26 @@ public final class M3FXDemoApp extends Application {
         M3SegmentedButton firstButton = new M3SegmentedButton(first);
         M3SegmentedButton secondButton = new M3SegmentedButton(second);
         M3SegmentedButton thirdButton = new M3SegmentedButton(third);
-        secondButton.setSelected(true);
-        return new M3SegmentedButtonGroup(firstButton, secondButton, thirdButton);
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(firstButton, secondButton, thirdButton);
+        group.selectIndex(1);
+        return group;
     }
 
     /// Creates a tab bar sample.
     private static M3TabBar createTabBar(String first, String second, String third) {
         M3TabBar tabBar = new M3TabBar(new M3Tab(first), new M3Tab(second), new M3Tab(third));
-        tabBar.selectFirst();
+        tabBar.selectIndex(0);
         return tabBar;
     }
 
     /// Creates a top app bar sample.
     private static M3TopAppBar createTopAppBar(String title) {
-        M3TopAppBar topAppBar = new M3TopAppBar(title);
-        topAppBar.setNavigation(createIconButton("M"));
-        topAppBar.getActions().addAll(createIconButton("S"), createIconButton("A"));
+        M3TopAppBar topAppBar = new M3TopAppBar(
+                title,
+                createIconButton("M"),
+                createIconButton("S"),
+                createIconButton("A")
+        );
         topAppBar.setPrefWidth(560.0);
         return topAppBar;
     }
@@ -1080,8 +1084,12 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a bottom app bar sample.
     private static M3BottomAppBar createBottomAppBar() {
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar(createIconButton("M"), createIconButton("S"));
-        bottomAppBar.setFloatingAction(createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR));
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                M3BottomAppBarFloatingActionAlignment.END,
+                createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
+                createIconButton("M"),
+                createIconButton("S")
+        );
         bottomAppBar.setPrefWidth(560.0);
         return bottomAppBar;
     }
@@ -1098,7 +1106,7 @@ public final class M3FXDemoApp extends Application {
                 secondItem,
                 thirdItem
         );
-        navigationBar.selectFirst();
+        navigationBar.selectIndex(0);
         return navigationBar;
     }
 
@@ -1116,7 +1124,7 @@ public final class M3FXDemoApp extends Application {
                 thirdItem,
                 fourthItem
         );
-        navigationBar.selectFirst();
+        navigationBar.selectIndex(0);
         return navigationBar;
     }
 
@@ -1132,7 +1140,7 @@ public final class M3FXDemoApp extends Application {
                 secondItem,
                 thirdItem
         );
-        navigationRail.selectFirst();
+        navigationRail.selectIndex(0);
         return navigationRail;
     }
 
@@ -1150,7 +1158,7 @@ public final class M3FXDemoApp extends Application {
                 thirdItem,
                 fourthItem
         );
-        navigationRail.selectFirst();
+        navigationRail.selectIndex(0);
         return navigationRail;
     }
 
@@ -1174,7 +1182,7 @@ public final class M3FXDemoApp extends Application {
                 thirdItem,
                 fourthItem
         );
-        navigationDrawer.selectFirst();
+        navigationDrawer.selectIndex(0);
         return navigationDrawer;
     }
 
@@ -1185,7 +1193,7 @@ public final class M3FXDemoApp extends Application {
                 createDrawerItem(second, second.substring(0, 1)),
                 createDrawerItem(third, third.substring(0, 1))
         );
-        navigationDrawer.selectFirst();
+        navigationDrawer.selectIndex(0);
         return navigationDrawer;
     }
 
@@ -1261,7 +1269,7 @@ public final class M3FXDemoApp extends Application {
             group.getItems().add(createIconToggleButton(text, variant, false));
         }
         group.setAllowEmptySelection(false);
-        group.selectFirst();
+        group.selectIndex(0);
         return group;
     }
 
@@ -1281,8 +1289,8 @@ public final class M3FXDemoApp extends Application {
                 thirdButton
         );
         group.setSelectionMode(M3IconToggleButtonSelectionMode.MULTIPLE);
-        firstButton.setSelected(true);
-        thirdButton.setSelected(true);
+        group.selectIndex(0);
+        group.selectIndex(2);
         return group;
     }
 
@@ -1327,10 +1335,8 @@ public final class M3FXDemoApp extends Application {
 
         content.getChildren().addAll(titleLabel, bodyLabel);
 
-        M3Card card = new M3Card(content);
-        card.setVariant(variant);
+        M3Card card = new M3Card(content, variant, event -> showSnackbar());
         card.setPrefWidth(260.0);
-        card.setOnAction(event -> showSnackbar());
         return card;
     }
 

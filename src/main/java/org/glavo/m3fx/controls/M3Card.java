@@ -82,6 +82,22 @@ public class M3Card extends Control {
         updateVariantStyle();
     }
 
+    /// Creates a card with content and a variant.
+    public M3Card(@Nullable Node content, M3CardVariant variant) {
+        this(content);
+        setVariant(variant);
+    }
+
+    /// Creates a card with content, variant, and action handler.
+    public M3Card(
+            @Nullable Node content,
+            M3CardVariant variant,
+            @Nullable EventHandler<ActionEvent> onAction
+    ) {
+        this(content, variant);
+        setOnAction(onAction);
+    }
+
     /// Returns the card content node.
     public final @Nullable Node getContent() {
         return content.get();

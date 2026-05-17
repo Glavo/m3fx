@@ -160,6 +160,12 @@ public class M3Menu extends VBox {
         return selectedItem.getReadOnlyProperty();
     }
 
+    /// Returns the child index of the first selected menu item, or `-1` when no item is selected.
+    public final int getSelectedIndex() {
+        @Nullable M3MenuItem item = getSelectedItem();
+        return item == null ? -1 : getChildren().indexOf(item);
+    }
+
     /// Selects a menu item that belongs to this menu.
     public final void select(M3MenuItem item) {
         Objects.requireNonNull(item, "item");
@@ -172,6 +178,16 @@ public class M3Menu extends VBox {
         } else {
             selectOnly(item);
         }
+    }
+
+    /// Selects the menu item at the given child index.
+    public final void selectIndex(int index) {
+        Node child = getChildren().get(index);
+        if (child instanceof M3MenuItem item) {
+            select(item);
+            return;
+        }
+        throw new IllegalArgumentException("child at index is not an M3MenuItem");
     }
 
     /// Selects the first menu item when one exists.

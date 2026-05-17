@@ -160,6 +160,12 @@ public class M3List extends VBox {
         return selectedItem.getReadOnlyProperty();
     }
 
+    /// Returns the child index of the first selected list item, or `-1` when no item is selected.
+    public final int getSelectedIndex() {
+        @Nullable M3ListItem item = getSelectedItem();
+        return item == null ? -1 : getChildren().indexOf(item);
+    }
+
     /// Selects a list item that belongs to this list.
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
@@ -172,6 +178,16 @@ public class M3List extends VBox {
         } else {
             selectOnly(item);
         }
+    }
+
+    /// Selects the list item at the given child index.
+    public final void selectIndex(int index) {
+        Node child = getChildren().get(index);
+        if (child instanceof M3ListItem item) {
+            select(item);
+            return;
+        }
+        throw new IllegalArgumentException("child at index is not an M3ListItem");
     }
 
     /// Selects the first list item when one exists.

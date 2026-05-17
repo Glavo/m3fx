@@ -162,6 +162,12 @@ public class M3ChipGroup extends FlowPane {
         return selectedChip.getReadOnlyProperty();
     }
 
+    /// Returns the child index of the first selected chip, or `-1` when no chip is selected.
+    public final int getSelectedIndex() {
+        @Nullable M3Chip chip = getSelectedChip();
+        return chip == null ? -1 : getChildren().indexOf(chip);
+    }
+
     /// Selects a chip that belongs to this group.
     public final void select(M3Chip chip) {
         Objects.requireNonNull(chip, "chip");
@@ -180,6 +186,16 @@ public class M3ChipGroup extends FlowPane {
             }
             refreshSelectedChips();
         }
+    }
+
+    /// Selects the chip at the given child index.
+    public final void selectIndex(int index) {
+        Node child = getChildren().get(index);
+        if (child instanceof M3Chip chip) {
+            select(chip);
+            return;
+        }
+        throw new IllegalArgumentException("child at index is not an M3Chip");
     }
 
     /// Selects the first chip when one exists.

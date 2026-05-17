@@ -115,9 +115,19 @@ public class M3MenuButton extends M3Button {
         return menu.selectedItemProperty();
     }
 
+    /// Returns the child index of the first selected menu item, or `-1` when no item is selected.
+    public final int getSelectedIndex() {
+        return menu.getSelectedIndex();
+    }
+
     /// Selects a menu item that belongs to this button's menu.
     public final void select(M3MenuItem item) {
         menu.select(item);
+    }
+
+    /// Selects the menu item at the given child index.
+    public final void selectIndex(int index) {
+        menu.selectIndex(index);
     }
 
     /// Selects the first menu item in this button's menu when one exists.

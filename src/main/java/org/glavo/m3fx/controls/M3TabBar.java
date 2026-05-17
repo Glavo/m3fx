@@ -110,6 +110,12 @@ public class M3TabBar extends HBox {
         return selectedTab.getReadOnlyProperty();
     }
 
+    /// Returns the child index of the selected tab, or `-1` when no tab is selected.
+    public final int getSelectedIndex() {
+        @Nullable M3Tab tab = getSelectedTab();
+        return tab == null ? -1 : getChildren().indexOf(tab);
+    }
+
     /// Returns whether this tab bar allows all tabs to be unselected.
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
@@ -132,6 +138,16 @@ public class M3TabBar extends HBox {
             throw new IllegalArgumentException("tab must belong to this tab bar");
         }
         selectTab(tab);
+    }
+
+    /// Selects the tab at the given child index.
+    public final void selectIndex(int index) {
+        Node child = getChildren().get(index);
+        if (child instanceof M3Tab tab) {
+            select(tab);
+            return;
+        }
+        throw new IllegalArgumentException("child at index is not an M3Tab");
     }
 
     /// Selects the first tab when one exists.

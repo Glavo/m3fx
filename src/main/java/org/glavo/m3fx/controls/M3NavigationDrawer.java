@@ -114,6 +114,12 @@ public class M3NavigationDrawer extends VBox {
         return selectedItem.getReadOnlyProperty();
     }
 
+    /// Returns the child index of the selected drawer list item, or `-1` when no item is selected.
+    public final int getSelectedIndex() {
+        @Nullable M3ListItem item = getSelectedItem();
+        return item == null ? -1 : getChildren().indexOf(item);
+    }
+
     /// Returns whether this drawer allows all list items to be unselected.
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
@@ -136,6 +142,16 @@ public class M3NavigationDrawer extends VBox {
             throw new IllegalArgumentException("item must belong to this navigation drawer");
         }
         selectItem(item);
+    }
+
+    /// Selects the drawer list item at the given child index.
+    public final void selectIndex(int index) {
+        Node child = getChildren().get(index);
+        if (child instanceof M3ListItem item) {
+            select(item);
+            return;
+        }
+        throw new IllegalArgumentException("child at index is not an M3ListItem");
     }
 
     /// Selects the first drawer list item when one exists.

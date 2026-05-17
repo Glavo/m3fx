@@ -141,6 +141,12 @@ public class M3IconToggleButtonGroup extends HBox {
         return selectedButton.getReadOnlyProperty();
     }
 
+    /// Returns the child index of the first selected toggle icon button, or `-1` when none is selected.
+    public final int getSelectedIndex() {
+        @Nullable M3IconToggleButton button = getSelectedButton();
+        return button == null ? -1 : getChildren().indexOf(button);
+    }
+
     /// Returns whether this group allows all buttons to be unselected.
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
@@ -167,6 +173,16 @@ public class M3IconToggleButtonGroup extends HBox {
         } else {
             selectOnly(button);
         }
+    }
+
+    /// Selects the toggle icon button at the given child index.
+    public final void selectIndex(int index) {
+        Node child = getChildren().get(index);
+        if (child instanceof M3IconToggleButton button) {
+            select(button);
+            return;
+        }
+        throw new IllegalArgumentException("child at index is not an M3IconToggleButton");
     }
 
     /// Selects the first toggle icon button when one exists.

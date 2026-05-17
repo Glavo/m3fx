@@ -157,6 +157,12 @@ public class M3SegmentedButtonGroup extends HBox {
         return selectedButton.getReadOnlyProperty();
     }
 
+    /// Returns the child index of the first selected segmented button, or `-1` when none is selected.
+    public final int getSelectedIndex() {
+        @Nullable M3SegmentedButton button = getSelectedButton();
+        return button == null ? -1 : getChildren().indexOf(button);
+    }
+
     /// Returns whether this group allows all segmented buttons to be unselected.
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
@@ -183,6 +189,16 @@ public class M3SegmentedButtonGroup extends HBox {
         } else {
             selectOnly(button);
         }
+    }
+
+    /// Selects the segmented button at the given child index.
+    public final void selectIndex(int index) {
+        Node child = getChildren().get(index);
+        if (child instanceof M3SegmentedButton button) {
+            select(button);
+            return;
+        }
+        throw new IllegalArgumentException("child at index is not an M3SegmentedButton");
     }
 
     /// Selects the first segmented button when one exists.

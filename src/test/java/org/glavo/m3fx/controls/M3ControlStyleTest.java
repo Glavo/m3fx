@@ -447,14 +447,14 @@ final class M3ControlStyleTest {
     /// Verifies that cards expose standard action handlers.
     @Test
     void cardFiresActionEvents() {
-        M3Card card = new M3Card();
         AtomicInteger actionCount = new AtomicInteger();
         AtomicInteger eventCount = new AtomicInteger();
-        card.setOnAction(event -> actionCount.incrementAndGet());
+        M3Card card = new M3Card(new Label("Content"), M3CardVariant.OUTLINED, event -> actionCount.incrementAndGet());
         card.addEventHandler(ActionEvent.ACTION, event -> eventCount.incrementAndGet());
 
         card.fire();
 
+        assertEquals(M3CardVariant.OUTLINED, card.getVariant());
         assertEquals(1, actionCount.get());
         assertEquals(1, eventCount.get());
 
@@ -1211,13 +1211,15 @@ final class M3ControlStyleTest {
         assertEquals(M3IconToggleButtonSelectionMode.SINGLE, group.getSelectionMode());
         assertEquals(first, group.getSelectedButton());
         assertEquals(java.util.List.of(first), group.getSelectedButtons());
+        assertEquals(0, group.getSelectedIndex());
         assertTrue(first.isSelected());
         assertFalse(second.isSelected());
 
-        second.setSelected(true);
+        group.selectIndex(1);
 
         assertEquals(second, group.getSelectedButton());
         assertEquals(java.util.List.of(second), group.getSelectedButtons());
+        assertEquals(1, group.getSelectedIndex());
         assertFalse(first.isSelected());
         assertTrue(second.isSelected());
         assertThrows(UnsupportedOperationException.class, () -> group.getSelectedButtons().add(first));
@@ -1226,6 +1228,7 @@ final class M3ControlStyleTest {
 
         assertNull(group.getSelectedButton());
         assertTrue(group.getSelectedButtons().isEmpty());
+        assertEquals(-1, group.getSelectedIndex());
         assertFalse(first.isSelected());
         assertFalse(second.isSelected());
     }
@@ -1475,11 +1478,13 @@ final class M3ControlStyleTest {
 
         assertEquals(java.util.List.of(first, third), menu.getSelectedItems());
         assertEquals(first, menu.getSelectedItem());
+        assertEquals(0, menu.getSelectedIndex());
 
         first.setSelected(false);
 
         assertEquals(java.util.List.of(third), menu.getSelectedItems());
         assertEquals(third, menu.getSelectedItem());
+        assertEquals(2, menu.getSelectedIndex());
     }
 
     /// Verifies that menus can enforce single selected item behavior.
@@ -1498,11 +1503,12 @@ final class M3ControlStyleTest {
         assertEquals(second, menu.getSelectedItem());
         assertEquals(java.util.List.of(second), menu.getSelectedItems());
 
-        first.fire();
+        menu.selectIndex(0);
 
         assertTrue(first.isSelected());
         assertFalse(second.isSelected());
         assertEquals(first, menu.getSelectedItem());
+        assertEquals(0, menu.getSelectedIndex());
     }
 
     /// Verifies that menus can use multiple selected item behavior.
@@ -1597,12 +1603,13 @@ final class M3ControlStyleTest {
 
         menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
         menuButton.setAllowEmptySelection(false);
-        menuButton.select(second);
+        menuButton.selectIndex(1);
 
         assertEquals(M3MenuSelectionMode.SINGLE, menuButton.getSelectionMode());
         assertFalse(menuButton.isAllowEmptySelection());
         assertEquals(second, menuButton.getSelectedItem());
         assertEquals(java.util.List.of(second), menuButton.getSelectedItems());
+        assertEquals(1, menuButton.getSelectedIndex());
 
         menuButton.clearSelection();
 
@@ -1895,16 +1902,25 @@ final class M3ControlStyleTest {
 
         assertEquals(java.util.List.of(first, third), group.getSelectedChips());
         assertEquals(first, group.getSelectedChip());
+        assertEquals(0, group.getSelectedIndex());
 
         first.setSelected(false);
 
         assertEquals(java.util.List.of(third), group.getSelectedChips());
         assertEquals(third, group.getSelectedChip());
+        assertEquals(2, group.getSelectedIndex());
+
+        group.selectIndex(1);
+
+        assertEquals(java.util.List.of(second, third), group.getSelectedChips());
+        assertEquals(second, group.getSelectedChip());
+        assertEquals(1, group.getSelectedIndex());
 
         group.clearSelection();
 
         assertTrue(group.getSelectedChips().isEmpty());
         assertNull(group.getSelectedChip());
+        assertEquals(-1, group.getSelectedIndex());
     }
 
     /// Verifies that chip groups can enforce single selection.
@@ -2004,13 +2020,15 @@ final class M3ControlStyleTest {
         assertEquals(M3SegmentedButtonSelectionMode.SINGLE, group.getSelectionMode());
         assertEquals(second, group.getSelectedButton());
         assertEquals(java.util.List.of(second), group.getSelectedButtons());
+        assertEquals(1, group.getSelectedIndex());
         assertFalse(first.isSelected());
         assertTrue(second.isSelected());
 
-        group.select(first);
+        group.selectIndex(0);
 
         assertEquals(first, group.getSelectedButton());
         assertEquals(java.util.List.of(first), group.getSelectedButtons());
+        assertEquals(0, group.getSelectedIndex());
         assertTrue(first.isSelected());
         assertFalse(second.isSelected());
 
@@ -2018,6 +2036,7 @@ final class M3ControlStyleTest {
 
         assertNull(group.getSelectedButton());
         assertTrue(group.getSelectedButtons().isEmpty());
+        assertEquals(-1, group.getSelectedIndex());
         assertFalse(first.isSelected());
     }
 
@@ -2251,13 +2270,15 @@ final class M3ControlStyleTest {
         assertTrue(overview.isSelected());
         assertEquals(overview, tabBar.getSelectedTab());
         assertEquals(java.util.List.of(overview), tabBar.getSelectedTabs());
+        assertEquals(0, tabBar.getSelectedIndex());
 
-        details.fire();
+        tabBar.selectIndex(1);
 
         assertFalse(overview.isSelected());
         assertTrue(details.isSelected());
         assertEquals(details, tabBar.getSelectedTab());
         assertEquals(java.util.List.of(details), tabBar.getSelectedTabs());
+        assertEquals(1, tabBar.getSelectedIndex());
 
         details.fire();
 
@@ -2276,6 +2297,7 @@ final class M3ControlStyleTest {
 
         assertNull(tabBar.getSelectedTab());
         assertTrue(tabBar.getSelectedTabs().isEmpty());
+        assertEquals(-1, tabBar.getSelectedIndex());
         assertFalse(overview.isSelected());
         assertFalse(details.isSelected());
 
@@ -3031,7 +3053,9 @@ final class M3ControlStyleTest {
         assertTrue(second.isSelected());
         assertEquals(second, list.getSelectedItem());
         assertEquals(java.util.List.of(second), list.getSelectedItems());
+        assertEquals(2, list.getSelectedIndex());
         assertThrows(UnsupportedOperationException.class, () -> list.getSelectedItems().add(third));
+        assertThrows(IllegalArgumentException.class, () -> list.selectIndex(1));
 
         list.setAllowEmptySelection(false);
         list.clearSelection();
@@ -3049,6 +3073,7 @@ final class M3ControlStyleTest {
         assertFalse(second.isSelected());
         assertEquals(first, list.getSelectedItem());
         assertEquals(java.util.List.of(first), list.getSelectedItems());
+        assertEquals(0, list.getSelectedIndex());
     }
 
     /// Verifies that lists can use multiple selected items.
@@ -3067,15 +3092,18 @@ final class M3ControlStyleTest {
         assertTrue(third.isSelected());
         assertEquals(first, list.getSelectedItem());
         assertEquals(java.util.List.of(first, third), list.getSelectedItems());
+        assertEquals(0, list.getSelectedIndex());
 
         first.fire();
 
         assertFalse(first.isSelected());
         assertEquals(java.util.List.of(third), list.getSelectedItems());
+        assertEquals(2, list.getSelectedIndex());
 
-        second.setSelected(true);
+        list.selectIndex(1);
 
         assertEquals(java.util.List.of(second, third), list.getSelectedItems());
+        assertEquals(1, list.getSelectedIndex());
     }
 
     /// Verifies that lists collapse multiple selected items when switching to single selection.
@@ -3218,13 +3246,15 @@ final class M3ControlStyleTest {
         assertTrue(home.isSelected());
         assertEquals(home, navigationBar.getSelectedItem());
         assertEquals(java.util.List.of(home), navigationBar.getSelectedItems());
+        assertEquals(0, navigationBar.getSelectedIndex());
 
-        search.fire();
+        navigationBar.selectIndex(1);
 
         assertFalse(home.isSelected());
         assertTrue(search.isSelected());
         assertEquals(search, navigationBar.getSelectedItem());
         assertEquals(java.util.List.of(search), navigationBar.getSelectedItems());
+        assertEquals(1, navigationBar.getSelectedIndex());
 
         search.fire();
 
@@ -3238,6 +3268,7 @@ final class M3ControlStyleTest {
 
         assertNull(navigationBar.getSelectedItem());
         assertTrue(navigationBar.getSelectedItems().isEmpty());
+        assertEquals(-1, navigationBar.getSelectedIndex());
         assertFalse(home.isSelected());
         assertFalse(search.isSelected());
 
@@ -3257,13 +3288,15 @@ final class M3ControlStyleTest {
         assertTrue(home.isSelected());
         assertEquals(home, navigationRail.getSelectedItem());
         assertEquals(java.util.List.of(home), navigationRail.getSelectedItems());
+        assertEquals(0, navigationRail.getSelectedIndex());
 
-        search.fire();
+        navigationRail.selectIndex(1);
 
         assertFalse(home.isSelected());
         assertTrue(search.isSelected());
         assertEquals(search, navigationRail.getSelectedItem());
         assertEquals(java.util.List.of(search), navigationRail.getSelectedItems());
+        assertEquals(1, navigationRail.getSelectedIndex());
 
         search.fire();
 
@@ -3283,6 +3316,7 @@ final class M3ControlStyleTest {
 
         assertNull(navigationRail.getSelectedItem());
         assertTrue(navigationRail.getSelectedItems().isEmpty());
+        assertEquals(-1, navigationRail.getSelectedIndex());
         assertFalse(home.isSelected());
     }
 
@@ -3305,16 +3339,19 @@ final class M3ControlStyleTest {
     /// Verifies that top app bars expose navigation, title, and action slots.
     @Test
     void topAppBarExposesSlots() {
-        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
         Label navigation = new Label("Menu");
         Label search = new Label("Search");
         Label more = new Label("More");
-
-        topAppBar.setNavigation(navigation);
-        topAppBar.getActions().addAll(search, more);
+        M3TopAppBar topAppBar = new M3TopAppBar(
+                "Inbox",
+                M3TopAppBarVariant.CENTER_ALIGNED,
+                navigation,
+                search,
+                more
+        );
 
         assertEquals("Inbox", topAppBar.getTitle());
-        assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
+        assertEquals(M3TopAppBarVariant.CENTER_ALIGNED, topAppBar.getVariant());
         assertEquals(navigation, topAppBar.getNavigation());
         assertTrue(topAppBar.getActions().contains(search));
         assertTrue(topAppBar.getActions().contains(more));
@@ -3387,12 +3424,15 @@ final class M3ControlStyleTest {
         Label search = new Label("Search");
         Label more = new Label("More");
         Label create = new Label("Create");
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar(search);
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                M3BottomAppBarFloatingActionAlignment.CENTER,
+                create,
+                search
+        );
 
         bottomAppBar.getActions().add(more);
-        bottomAppBar.setFloatingAction(create);
 
-        assertEquals(M3BottomAppBarFloatingActionAlignment.END, bottomAppBar.getFloatingActionAlignment());
+        assertEquals(M3BottomAppBarFloatingActionAlignment.CENTER, bottomAppBar.getFloatingActionAlignment());
         assertTrue(bottomAppBar.getActions().contains(search));
         assertTrue(bottomAppBar.getActions().contains(more));
         assertEquals(create, bottomAppBar.getFloatingAction());
@@ -3465,13 +3505,16 @@ final class M3ControlStyleTest {
         assertTrue(home.isSelected());
         assertEquals(home, navigationDrawer.getSelectedItem());
         assertEquals(java.util.List.of(home), navigationDrawer.getSelectedItems());
+        assertEquals(0, navigationDrawer.getSelectedIndex());
+        assertThrows(IllegalArgumentException.class, () -> navigationDrawer.selectIndex(1));
 
-        search.fire();
+        navigationDrawer.selectIndex(2);
 
         assertFalse(home.isSelected());
         assertTrue(search.isSelected());
         assertEquals(search, navigationDrawer.getSelectedItem());
         assertEquals(java.util.List.of(search), navigationDrawer.getSelectedItems());
+        assertEquals(2, navigationDrawer.getSelectedIndex());
 
         home.setSelected(true);
 
@@ -3492,6 +3535,7 @@ final class M3ControlStyleTest {
 
         assertNull(navigationDrawer.getSelectedItem());
         assertTrue(navigationDrawer.getSelectedItems().isEmpty());
+        assertEquals(-1, navigationDrawer.getSelectedIndex());
         assertFalse(search.isSelected());
     }
 

@@ -68,11 +68,18 @@ public class M3BottomAppBar extends HBox {
     /// Creates a bottom app bar containing the supplied action nodes.
     public M3BottomAppBar(Node... actions) {
         initialize();
-        Objects.requireNonNull(actions, "actions");
-        for (Node action : actions) {
-            Objects.requireNonNull(action, "action");
-        }
-        getActions().addAll(actions);
+        addActions(actions);
+    }
+
+    /// Creates a bottom app bar with floating action content, alignment, and regular actions.
+    public M3BottomAppBar(
+            M3BottomAppBarFloatingActionAlignment floatingActionAlignment,
+            @Nullable Node floatingAction,
+            Node... actions
+    ) {
+        this(actions);
+        setFloatingActionAlignment(floatingActionAlignment);
+        setFloatingAction(floatingAction);
     }
 
     /// Returns the mutable action node list.
@@ -129,6 +136,15 @@ public class M3BottomAppBar extends HBox {
         updateFloatingAction(getFloatingAction());
         updateFloatingActionAlignmentStyle();
         updateLayoutOrder();
+    }
+
+    /// Adds regular actions after validating the action array.
+    private void addActions(Node... actions) {
+        Objects.requireNonNull(actions, "actions");
+        for (Node action : actions) {
+            Objects.requireNonNull(action, "action");
+        }
+        getActions().addAll(actions);
     }
 
     /// Updates the child order from the floating action alignment.
