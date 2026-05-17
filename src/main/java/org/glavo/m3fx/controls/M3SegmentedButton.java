@@ -13,6 +13,7 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
@@ -25,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /// A Material Design 3 segmented button.
 @NotNullByDefault
@@ -59,6 +61,8 @@ public class M3SegmentedButton extends ButtonBase {
         @Override
         protected void invalidated() {
             pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
         }
     };
 
@@ -243,6 +247,19 @@ public class M3SegmentedButton extends ButtonBase {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Returns accessibility attributes for the segment selection state.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case SELECTED -> isSelected();
+            case TOGGLE_STATE -> isSelected()
+                    ? AccessibleAttribute.ToggleState.CHECKED
+                    : AccessibleAttribute.ToggleState.UNCHECKED;
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
     }
 
     /// Toggles and fires this segmented button.

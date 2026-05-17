@@ -15,6 +15,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleRole;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Region;
@@ -23,6 +24,8 @@ import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /// A Material Design 3 scrim used behind modal content.
 @NotNullByDefault
@@ -173,6 +176,16 @@ public class M3Scrim extends Region {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("scrim.css");
+    }
+
+    /// Executes assistive-technology actions supported by this scrim.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case FIRE -> fire();
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Updates shown state with motion when the scrim is attached to a scene.

@@ -13,6 +13,7 @@ import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
@@ -311,6 +312,16 @@ public class M3Card extends Control {
             if (!event.isConsumed()) {
                 Event.fireEvent(this, event);
             }
+        }
+    }
+
+    /// Executes assistive-technology actions supported by this card.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case FIRE -> fire();
+            default -> super.executeAccessibleAction(action, parameters);
         }
     }
 

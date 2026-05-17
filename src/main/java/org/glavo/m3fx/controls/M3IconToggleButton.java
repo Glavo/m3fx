@@ -14,6 +14,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
@@ -63,6 +64,8 @@ public class M3IconToggleButton extends ButtonBase {
         @Override
         protected void invalidated() {
             pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
         }
     };
 
@@ -271,6 +274,19 @@ public class M3IconToggleButton extends ButtonBase {
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
+    }
+
+    /// Returns accessibility attributes for the toggle selection state.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case SELECTED -> isSelected();
+            case TOGGLE_STATE -> isSelected()
+                    ? AccessibleAttribute.ToggleState.CHECKED
+                    : AccessibleAttribute.ToggleState.UNCHECKED;
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
     }
 
     /// Returns the default graphic value.

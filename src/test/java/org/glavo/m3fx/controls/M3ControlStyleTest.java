@@ -11,6 +11,8 @@ import javafx.event.Event;
 import javafx.event.EventType;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -1128,19 +1130,26 @@ final class M3ControlStyleTest {
     void avatarOwnsTextAndGraphicContent() {
         M3Avatar avatar = new M3Avatar("AB");
         Label graphic = new Label("G");
+        graphic.setAccessibleText("Graphic avatar");
 
         assertEquals("AB", avatar.getText());
+        assertEquals("AB", avatar.getAccessibleText());
         assertEquals(1, avatar.getChildren().size());
+
+        avatar.setText("CD");
+        assertEquals("CD", avatar.getAccessibleText());
 
         avatar.setGraphic(graphic);
 
         assertEquals(graphic, avatar.getGraphic());
         assertEquals(graphic, avatar.getChildren().get(0));
+        assertEquals("Graphic avatar", avatar.getAccessibleText());
 
         avatar.setGraphic(null);
 
         assertNull(avatar.getGraphic());
         assertEquals(1, avatar.getChildren().size());
+        assertEquals("CD", avatar.getAccessibleText());
     }
 
     /// Verifies that avatar component token metrics apply through the active theme.
@@ -2106,6 +2115,30 @@ final class M3ControlStyleTest {
 
         assertThrows(IllegalArgumentException.class, () -> scrim.setVisibleOpacity(-0.1));
         assertThrows(IllegalArgumentException.class, () -> scrim.setVisibleOpacity(1.1));
+    }
+
+    /// Verifies that custom actionable surfaces respond to accessibility fire actions.
+    @Test
+    void actionableSurfacesExecuteAccessibleFire() {
+        AtomicInteger cardActions = new AtomicInteger();
+        M3Card card = new M3Card(new Label("Card"));
+        card.setOnAction(event -> cardActions.incrementAndGet());
+
+        card.executeAccessibleAction(AccessibleAction.FIRE);
+        card.setDisable(true);
+        card.executeAccessibleAction(AccessibleAction.FIRE);
+
+        assertEquals(1, cardActions.get());
+
+        AtomicInteger scrimActions = new AtomicInteger();
+        M3Scrim scrim = new M3Scrim();
+        scrim.setOnAction(event -> scrimActions.incrementAndGet());
+
+        scrim.executeAccessibleAction(AccessibleAction.FIRE);
+        scrim.setDisable(true);
+        scrim.executeAccessibleAction(AccessibleAction.FIRE);
+
+        assertEquals(1, scrimActions.get());
     }
 
     /// Verifies that scrims expose animated shown state changes.
@@ -4577,6 +4610,37 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Tab.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3NavigationItem.class));
+    }
+
+    /// Verifies that custom selectable controls expose accessibility selection state.
+    @Test
+    void selectableControlsExposeAccessibleSelectionState() {
+        M3Chip chip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
+        M3IconToggleButton iconToggleButton = M3IconToggleButton.withIcon(
+                "star",
+                M3IconToggleButtonVariant.TONAL,
+                true
+        );
+        M3SegmentedButton segmentedButton = M3SegmentedButton.withSelected("Day", true);
+        M3Tab tab = M3Tab.withSelected("Overview", true);
+        M3NavigationItem navigationItem = M3NavigationItem.withSelected("Home", true);
+
+        assertEquals(true, chip.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
+        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
+                chip.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        chip.setSelected(false);
+        assertEquals(false, chip.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
+        assertEquals(AccessibleAttribute.ToggleState.UNCHECKED,
+                chip.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+
+        assertEquals(true, iconToggleButton.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
+        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
+                iconToggleButton.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        assertEquals(true, segmentedButton.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
+        assertEquals(AccessibleAttribute.ToggleState.CHECKED,
+                segmentedButton.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+        assertEquals(true, tab.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
+        assertEquals(true, navigationItem.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
     }
 
     /// Verifies that custom controls expose stable accessibility roles.

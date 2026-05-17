@@ -208,9 +208,14 @@ public class M3Avatar extends StackPane {
         setAlignment(Pos.CENTER);
         textLabel.getStyleClass().add(LABEL_STYLE_CLASS);
         textLabel.textProperty().bind(text);
-        graphic.addListener((observable, oldValue, newValue) -> updateContent(newValue));
+        text.addListener((observable, oldValue, newValue) -> updateAccessibleText());
+        graphic.addListener((observable, oldValue, newValue) -> {
+            updateContent(newValue);
+            updateAccessibleText();
+        });
         updateVariantStyle();
         updateContent(getGraphic());
+        updateAccessibleText();
         updateMetrics();
     }
 
@@ -233,6 +238,19 @@ public class M3Avatar extends StackPane {
         } else {
             getChildren().setAll(node);
         }
+    }
+
+    /// Updates the text exposed to assistive technologies.
+    private void updateAccessibleText() {
+        @Nullable Node graphicNode = getGraphic();
+        if (graphicNode != null) {
+            @Nullable String graphicText = graphicNode.getAccessibleText();
+            if (graphicText != null && !graphicText.isBlank()) {
+                setAccessibleText(graphicText);
+                return;
+            }
+        }
+        setAccessibleText(getText());
     }
 
     /// Applies size-related component tokens to layout metrics.
