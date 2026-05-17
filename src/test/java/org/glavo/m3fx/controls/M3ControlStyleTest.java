@@ -1723,7 +1723,7 @@ final class M3ControlStyleTest {
 
     /// Verifies that search views use active state to show or hide results.
     @Test
-    void searchViewActiveStateControlsResultsVisibility() {
+    void searchViewActiveStateControlsResultsVisibility() throws InterruptedException {
         M3SearchView searchView = new M3SearchView("Find");
         M3ListItem result = new M3ListItem("Result");
         searchView.getResults().add(result);
@@ -1736,8 +1736,17 @@ final class M3ControlStyleTest {
 
         Node results = searchView.lookup("." + M3SearchView.RESULTS_STYLE_CLASS);
         assertFalse(searchView.isActive());
-        assertFalse(results.isVisible());
-        assertFalse(results.isManaged());
+        assertTrue(results.isVisible());
+        assertTrue(results.isManaged());
+        assertTrue(results.getOpacity() <= 1.0);
+
+        runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+        }, () -> {
+            assertFalse(results.isVisible());
+            assertFalse(results.isManaged());
+            assertEquals(0.0, results.getOpacity(), 0.0001);
+            assertTrue(results.getTranslateY() < 0.0);
+        });
 
         searchView.activate();
 
@@ -1768,6 +1777,63 @@ final class M3ControlStyleTest {
         assertEquals(bottomContent, bottomSheet.getContent());
         assertEquals(bottomAction, bottomSheet.getActions().get(0));
         assertFalse(bottomSheet.isDragHandleVisible());
+    }
+
+    /// Verifies that sheet controls expose animated shown state changes.
+    @Test
+    void sheetControlsSupportAnimatedShownState() throws InterruptedException {
+        M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side"));
+        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom"));
+        Pane root = new Pane(sideSheet, bottomSheet);
+        Scene scene = new Scene(root, 720.0, 480.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        sideSheet.resize(360.0, 320.0);
+        bottomSheet.resize(360.0, 320.0);
+        sideSheet.layout();
+        bottomSheet.layout();
+
+        assertTrue(sideSheet.isShown());
+        assertTrue(bottomSheet.isShown());
+
+        sideSheet.hide();
+        bottomSheet.hide();
+
+        assertFalse(sideSheet.isShown());
+        assertFalse(bottomSheet.isShown());
+        assertTrue(sideSheet.isVisible());
+        assertTrue(bottomSheet.isVisible());
+
+        runOnFxThreadAfterDelay(Duration.millis(280.0), () -> {
+        }, () -> {
+            assertFalse(sideSheet.isVisible());
+            assertFalse(sideSheet.isManaged());
+            assertTrue(sideSheet.getTranslateX() > 0.0);
+            assertEquals(0.0, sideSheet.getOpacity(), 0.0001);
+            assertFalse(bottomSheet.isVisible());
+            assertFalse(bottomSheet.isManaged());
+            assertTrue(bottomSheet.getTranslateY() > 0.0);
+            assertEquals(0.0, bottomSheet.getOpacity(), 0.0001);
+        });
+
+        sideSheet.show();
+        bottomSheet.show();
+
+        assertTrue(sideSheet.isShown());
+        assertTrue(bottomSheet.isShown());
+        assertTrue(sideSheet.isVisible());
+        assertTrue(bottomSheet.isVisible());
+
+        runOnFxThreadAfterDelay(Duration.millis(380.0), () -> {
+        }, () -> {
+            assertTrue(sideSheet.isManaged());
+            assertEquals(0.0, sideSheet.getTranslateX(), 0.0001);
+            assertEquals(1.0, sideSheet.getOpacity(), 0.0001);
+            assertTrue(bottomSheet.isManaged());
+            assertEquals(0.0, bottomSheet.getTranslateY(), 0.0001);
+            assertEquals(1.0, bottomSheet.getOpacity(), 0.0001);
+        });
     }
 
     /// Verifies that sheet component token metrics apply through the active theme.
@@ -1813,6 +1879,39 @@ final class M3ControlStyleTest {
         scrim.fire();
 
         assertEquals(2, actions.get());
+    }
+
+    /// Verifies that scrims expose animated shown state changes.
+    @Test
+    void scrimSupportsAnimatedShownState() throws InterruptedException {
+        M3Scrim scrim = new M3Scrim();
+
+        applyCss(scrim);
+        assertTrue(scrim.isShown());
+        assertTrue(scrim.isVisible());
+        assertTrue(scrim.isManaged());
+
+        scrim.hide();
+
+        assertFalse(scrim.isShown());
+        assertTrue(scrim.isVisible());
+        assertTrue(scrim.isManaged());
+
+        runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+        }, () -> {
+            assertFalse(scrim.isVisible());
+            assertFalse(scrim.isManaged());
+            assertEquals(0.0, scrim.getOpacity(), 0.0001);
+        });
+
+        scrim.show();
+
+        assertTrue(scrim.isShown());
+        assertTrue(scrim.isVisible());
+        assertTrue(scrim.isManaged());
+
+        runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+        }, () -> assertEquals(0.32, scrim.getOpacity(), 0.0001));
     }
 
     /// Verifies that scrim opacity applies through the active theme.

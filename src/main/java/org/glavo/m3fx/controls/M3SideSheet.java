@@ -3,7 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -16,6 +21,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +47,12 @@ public class M3SideSheet extends BorderPane {
     /// The shared sheet content slot style class.
     public static final String CONTENT_STYLE_CLASS = "m3-sheet-content";
 
+    /// The duration used when a side sheet enters.
+    private static final Duration SHOW_DURATION = M3Motion.MEDIUM2;
+
+    /// The duration used when a side sheet exits.
+    private static final Duration HIDE_DURATION = M3Motion.SHORT4;
+
     /// The sheet headline text property.
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
 
@@ -59,6 +72,18 @@ public class M3SideSheet extends BorderPane {
                     updateVariantStyle();
                 }
             };
+
+    /// Whether this sheet is shown.
+    private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
+        /// Updates the sheet visibility when the property changes.
+        @Override
+        protected void invalidated() {
+            updateShownState(get());
+        }
+    };
+
+    /// The sheet show and hide animation.
+    private final Timeline visibilityAnimation = new Timeline();
 
     /// The header row.
     private final HBox header = new HBox();
@@ -147,9 +172,34 @@ public class M3SideSheet extends BorderPane {
         return variant;
     }
 
+    /// Returns whether this sheet is shown.
+    public final boolean isShown() {
+        return shown.get();
+    }
+
+    /// Sets whether this sheet is shown.
+    public final void setShown(boolean shown) {
+        this.shown.set(shown);
+    }
+
+    /// Returns the shown property.
+    public final BooleanProperty shownProperty() {
+        return shown;
+    }
+
     /// Returns the mutable trailing action node list.
     public final ObservableList<Node> getActions() {
         return actions.getChildren();
+    }
+
+    /// Shows this side sheet using the Material visibility motion.
+    public final void show() {
+        setShown(true);
+    }
+
+    /// Hides this side sheet using the Material visibility motion.
+    public final void hide() {
+        setShown(false);
     }
 
     /// Returns the user-agent stylesheet for M3FX sheets.
@@ -183,6 +233,61 @@ public class M3SideSheet extends BorderPane {
         if (node != null) {
             contentSlot.getChildren().add(node);
         }
+    }
+
+    /// Updates shown state with motion when the sheet is attached to a scene.
+    private void updateShownState(boolean shown) {
+        visibilityAnimation.stop();
+        if (shown) {
+            setVisible(true);
+            setManaged(true);
+            if (getScene() == null) {
+                applyShownStateImmediately(true);
+                return;
+            }
+
+            visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
+                    SHOW_DURATION,
+                    new KeyValue(opacityProperty(), 1.0, M3Motion.EMPHASIZED_DECELERATE),
+                    new KeyValue(translateXProperty(), 0.0, M3Motion.EMPHASIZED_DECELERATE)
+            ));
+            visibilityAnimation.playFromStart();
+        } else {
+            if (getScene() == null || !isVisible()) {
+                applyShownStateImmediately(false);
+                return;
+            }
+
+            visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
+                    HIDE_DURATION,
+                    event -> {
+                        if (!isShown()) {
+                            applyShownStateImmediately(false);
+                        }
+                    },
+                    new KeyValue(opacityProperty(), 0.0, M3Motion.EMPHASIZED_ACCELERATE),
+                    new KeyValue(translateXProperty(), hiddenTranslateX(), M3Motion.EMPHASIZED_ACCELERATE)
+            ));
+            visibilityAnimation.playFromStart();
+        }
+    }
+
+    /// Applies the shown state without animation.
+    private void applyShownStateImmediately(boolean shown) {
+        visibilityAnimation.stop();
+        setVisible(shown);
+        setManaged(shown);
+        setOpacity(shown ? 1.0 : 0.0);
+        setTranslateX(shown ? 0.0 : hiddenTranslateX());
+    }
+
+    /// Returns the off-screen horizontal translation used when the sheet is hidden.
+    private double hiddenTranslateX() {
+        double width = getWidth();
+        if (width <= 0.0) {
+            width = prefWidth(-1.0);
+        }
+        return Math.max(0.0, width);
     }
 
     /// Updates the active variant style class.

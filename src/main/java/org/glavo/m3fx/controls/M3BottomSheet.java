@@ -3,6 +3,9 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -19,6 +22,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -49,6 +54,12 @@ public class M3BottomSheet extends BorderPane {
     /// The drag handle style class.
     public static final String DRAG_HANDLE_STYLE_CLASS = "m3-bottom-sheet-drag-handle";
 
+    /// The duration used when a bottom sheet enters.
+    private static final Duration SHOW_DURATION = M3Motion.MEDIUM2;
+
+    /// The duration used when a bottom sheet exits.
+    private static final Duration HIDE_DURATION = M3Motion.SHORT4;
+
     /// The sheet headline text property.
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
 
@@ -69,6 +80,15 @@ public class M3BottomSheet extends BorderPane {
                 }
             };
 
+    /// Whether this sheet is shown.
+    private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
+        /// Updates the sheet visibility when the property changes.
+        @Override
+        protected void invalidated() {
+            updateShownState(get());
+        }
+    };
+
     /// Whether the drag handle is visible.
     private final BooleanProperty dragHandleVisible =
             new SimpleBooleanProperty(this, "dragHandleVisible", true) {
@@ -78,6 +98,9 @@ public class M3BottomSheet extends BorderPane {
                     updateDragHandleVisibility();
                 }
             };
+
+    /// The sheet show and hide animation.
+    private final Timeline visibilityAnimation = new Timeline();
 
     /// The top area containing the drag handle and header.
     private final VBox topArea = new VBox();
@@ -175,6 +198,21 @@ public class M3BottomSheet extends BorderPane {
         return variant;
     }
 
+    /// Returns whether this sheet is shown.
+    public final boolean isShown() {
+        return shown.get();
+    }
+
+    /// Sets whether this sheet is shown.
+    public final void setShown(boolean shown) {
+        this.shown.set(shown);
+    }
+
+    /// Returns the shown property.
+    public final BooleanProperty shownProperty() {
+        return shown;
+    }
+
     /// Returns whether the drag handle is visible.
     public final boolean isDragHandleVisible() {
         return dragHandleVisible.get();
@@ -193,6 +231,16 @@ public class M3BottomSheet extends BorderPane {
     /// Returns the mutable trailing action node list.
     public final ObservableList<Node> getActions() {
         return actions.getChildren();
+    }
+
+    /// Shows this bottom sheet using the Material visibility motion.
+    public final void show() {
+        setShown(true);
+    }
+
+    /// Hides this bottom sheet using the Material visibility motion.
+    public final void hide() {
+        setShown(false);
     }
 
     /// Returns the user-agent stylesheet for M3FX sheets.
@@ -238,6 +286,61 @@ public class M3BottomSheet extends BorderPane {
         boolean visible = isDragHandleVisible();
         dragHandleSlot.setVisible(visible);
         dragHandleSlot.setManaged(visible);
+    }
+
+    /// Updates shown state with motion when the sheet is attached to a scene.
+    private void updateShownState(boolean shown) {
+        visibilityAnimation.stop();
+        if (shown) {
+            setVisible(true);
+            setManaged(true);
+            if (getScene() == null) {
+                applyShownStateImmediately(true);
+                return;
+            }
+
+            visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
+                    SHOW_DURATION,
+                    new KeyValue(opacityProperty(), 1.0, M3Motion.EMPHASIZED_DECELERATE),
+                    new KeyValue(translateYProperty(), 0.0, M3Motion.EMPHASIZED_DECELERATE)
+            ));
+            visibilityAnimation.playFromStart();
+        } else {
+            if (getScene() == null || !isVisible()) {
+                applyShownStateImmediately(false);
+                return;
+            }
+
+            visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
+                    HIDE_DURATION,
+                    event -> {
+                        if (!isShown()) {
+                            applyShownStateImmediately(false);
+                        }
+                    },
+                    new KeyValue(opacityProperty(), 0.0, M3Motion.EMPHASIZED_ACCELERATE),
+                    new KeyValue(translateYProperty(), hiddenTranslateY(), M3Motion.EMPHASIZED_ACCELERATE)
+            ));
+            visibilityAnimation.playFromStart();
+        }
+    }
+
+    /// Applies the shown state without animation.
+    private void applyShownStateImmediately(boolean shown) {
+        visibilityAnimation.stop();
+        setVisible(shown);
+        setManaged(shown);
+        setOpacity(shown ? 1.0 : 0.0);
+        setTranslateY(shown ? 0.0 : hiddenTranslateY());
+    }
+
+    /// Returns the off-screen vertical translation used when the sheet is hidden.
+    private double hiddenTranslateY() {
+        double height = getHeight();
+        if (height <= 0.0) {
+            height = prefHeight(-1.0);
+        }
+        return Math.max(0.0, height);
     }
 
     /// Updates the active variant style class.

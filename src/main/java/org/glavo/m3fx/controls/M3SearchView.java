@@ -3,6 +3,9 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.StringProperty;
@@ -12,6 +15,8 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -27,11 +32,23 @@ public class M3SearchView extends VBox {
     /// The style class applied to the result container.
     public static final String RESULTS_STYLE_CLASS = "m3-search-view-results";
 
+    /// The duration used when search results enter.
+    private static final Duration RESULTS_ENTER_DURATION = M3Motion.SHORT4;
+
+    /// The duration used when search results exit.
+    private static final Duration RESULTS_EXIT_DURATION = M3Motion.SHORT2;
+
+    /// The vertical offset used while search results are hidden.
+    private static final double HIDDEN_RESULTS_TRANSLATE_Y = -8.0;
+
     /// The embedded search bar.
     private final M3SearchBar searchBar = new M3SearchBar();
 
     /// The search result container.
     private final VBox resultsBox = new VBox();
+
+    /// The search result visibility animation.
+    private final Timeline resultsVisibilityAnimation = new Timeline();
 
     /// Creates an empty search view.
     public M3SearchView() {
@@ -182,13 +199,46 @@ public class M3SearchView extends VBox {
         getChildren().addAll(searchBar, resultsBox);
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> updateResultsVisibility());
         setActive(true);
-        updateResultsVisibility();
+        applyResultsVisibilityImmediately(isActive());
     }
 
-    /// Updates result container visibility from the active state.
+    /// Updates result container visibility from the active state, using motion when attached to a scene.
     private void updateResultsVisibility() {
         boolean active = isActive();
+        if (getScene() == null) {
+            applyResultsVisibilityImmediately(active);
+            return;
+        }
+
+        resultsVisibilityAnimation.stop();
+        if (active) {
+            resultsBox.setVisible(true);
+            resultsBox.setManaged(true);
+            resultsVisibilityAnimation.getKeyFrames().setAll(new KeyFrame(
+                    RESULTS_ENTER_DURATION,
+                    new KeyValue(resultsBox.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                    new KeyValue(resultsBox.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+            ));
+        } else if (resultsBox.isVisible()) {
+            resultsVisibilityAnimation.getKeyFrames().setAll(new KeyFrame(
+                    RESULTS_EXIT_DURATION,
+                    event -> applyResultsVisibilityImmediately(false),
+                    new KeyValue(resultsBox.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE),
+                    new KeyValue(resultsBox.translateYProperty(), HIDDEN_RESULTS_TRANSLATE_Y, M3Motion.STANDARD_ACCELERATE)
+            ));
+        } else {
+            applyResultsVisibilityImmediately(false);
+            return;
+        }
+        resultsVisibilityAnimation.playFromStart();
+    }
+
+    /// Applies result container visibility without animation.
+    private void applyResultsVisibilityImmediately(boolean active) {
+        resultsVisibilityAnimation.stop();
         resultsBox.setVisible(active);
         resultsBox.setManaged(active);
+        resultsBox.setOpacity(active ? 1.0 : 0.0);
+        resultsBox.setTranslateY(active ? 0.0 : HIDDEN_RESULTS_TRANSLATE_Y);
     }
 }
