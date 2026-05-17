@@ -16,6 +16,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -223,8 +224,23 @@ public class M3SideSheet extends BorderPane {
         header.getChildren().addAll(headlineLabel, spacer, actions);
         setTop(header);
         setCenter(contentSlot);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         updateVariantStyle();
         updateContent(getContent());
+    }
+
+    /// Handles keyboard dismissal for modal sheets.
+    private void handleKeyPressed(KeyEvent event) {
+        switch (event.getCode()) {
+            case ESCAPE -> {
+                if (isShown() && getVariant() == M3SheetVariant.MODAL) {
+                    hide();
+                    event.consume();
+                }
+            }
+            default -> {
+            }
+        }
     }
 
     /// Updates the sheet content slot.

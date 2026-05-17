@@ -17,6 +17,7 @@ import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Popup;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
@@ -276,7 +277,79 @@ public class M3MenuButton extends M3Button {
             showing.set(false);
             resetMenuAnimationState();
         });
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        menu.addEventHandler(KeyEvent.KEY_PRESSED, this::handleMenuKeyPressed);
         menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> hideMenu());
+    }
+
+    /// Handles keyboard opening and dismissal for the popup menu.
+    private void handleKeyPressed(KeyEvent event) {
+        switch (event.getCode()) {
+            case DOWN -> {
+                if (showMenuAndFocusFirstItem()) {
+                    event.consume();
+                }
+            }
+            case UP -> {
+                if (showMenuAndFocusLastItem()) {
+                    event.consume();
+                }
+            }
+            case ESCAPE -> {
+                if (popup.isShowing()) {
+                    hideMenu();
+                    requestFocus();
+                    event.consume();
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
+    /// Handles keyboard dismissal while focus is inside the popup menu.
+    private void handleMenuKeyPressed(KeyEvent event) {
+        switch (event.getCode()) {
+            case ESCAPE -> {
+                if (popup.isShowing()) {
+                    hideMenu();
+                    requestFocus();
+                    event.consume();
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
+    /// Shows the popup menu and focuses the first enabled visible menu item.
+    private boolean showMenuAndFocusFirstItem() {
+        boolean showingBefore = popup.isShowing();
+        showMenu();
+        if (!popup.isShowing() && !showingBefore) {
+            return false;
+        }
+
+        @Nullable M3MenuItem firstItem = M3SelectionNavigation.first(menu.getItems(), M3MenuItem.class);
+        if (firstItem != null) {
+            firstItem.requestFocus();
+        }
+        return true;
+    }
+
+    /// Shows the popup menu and focuses the last enabled visible menu item.
+    private boolean showMenuAndFocusLastItem() {
+        boolean showingBefore = popup.isShowing();
+        showMenu();
+        if (!popup.isShowing() && !showingBefore) {
+            return false;
+        }
+
+        @Nullable M3MenuItem lastItem = M3SelectionNavigation.last(menu.getItems(), M3MenuItem.class);
+        if (lastItem != null) {
+            lastItem.requestFocus();
+        }
+        return true;
     }
 
     /// Applies initial visual state before the popup is shown.

@@ -1683,6 +1683,18 @@ final class M3ControlStyleTest {
         assertTrue(menuButton.getItems().isEmpty());
     }
 
+    /// Verifies that menu button keyboard shortcuts are safe before the button is attached to a scene.
+    @Test
+    void menuButtonKeyboardShortcutsAreSafeBeforeSceneAttachment() {
+        M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("First"));
+
+        menuButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+        menuButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+        menuButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+        assertFalse(menuButton.isShowing());
+    }
+
     /// Verifies that search bars delegate text and action APIs to their embedded editor.
     @Test
     void searchBarDelegatesTextAndActions() {
@@ -1725,6 +1737,25 @@ final class M3ControlStyleTest {
         assertEquals("", searchBar.getText());
         assertFalse(searchBar.isActive());
         assertFalse(searchBar.getPseudoClassStates().contains(PseudoClass.getPseudoClass("active")));
+    }
+
+    /// Verifies that search bars leave active input state from the Escape key.
+    @Test
+    void searchBarHandlesEscapeAndClearDeactivate() {
+        M3SearchBar searchBar = new M3SearchBar("Search");
+
+        searchBar.setText("M3FX");
+        searchBar.activate();
+        searchBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+        assertEquals("M3FX", searchBar.getText());
+        assertFalse(searchBar.isActive());
+
+        searchBar.activate();
+        searchBar.clearAndDeactivate();
+
+        assertEquals("", searchBar.getText());
+        assertFalse(searchBar.isActive());
     }
 
     /// Verifies that search component token metrics apply through the active theme.
@@ -1776,12 +1807,13 @@ final class M3ControlStyleTest {
         assertEquals(result, searchView.getResults().get(0));
         assertEquals(1, actions.get());
 
-        searchView.clear();
+        searchView.clearAndDeactivate();
         searchView.clearResults();
         searchView.clearTrailingActions();
 
         assertEquals("", searchView.getText());
         assertEquals("", searchView.getEditor().getText());
+        assertFalse(searchView.isActive());
         assertTrue(searchView.getResults().isEmpty());
         assertTrue(searchView.getTrailingActions().isEmpty());
     }
@@ -1842,6 +1874,27 @@ final class M3ControlStyleTest {
         assertEquals(bottomContent, bottomSheet.getContent());
         assertEquals(bottomAction, bottomSheet.getActions().get(0));
         assertFalse(bottomSheet.isDragHandleVisible());
+    }
+
+    /// Verifies that modal sheets dismiss from the Escape key.
+    @Test
+    void modalSheetsHideFromEscapeKey() {
+        M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side"));
+        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom"));
+        M3SideSheet standardSideSheet = new M3SideSheet("Pinned", new Label("Side"));
+        M3BottomSheet standardBottomSheet = new M3BottomSheet("Pinned", new Label("Bottom"));
+        sideSheet.setVariant(M3SheetVariant.MODAL);
+        bottomSheet.setVariant(M3SheetVariant.MODAL);
+
+        sideSheet.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+        bottomSheet.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+        standardSideSheet.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+        standardBottomSheet.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+        assertFalse(sideSheet.isShown());
+        assertFalse(bottomSheet.isShown());
+        assertTrue(standardSideSheet.isShown());
+        assertTrue(standardBottomSheet.isShown());
     }
 
     /// Verifies that sheet controls expose animated shown state changes.

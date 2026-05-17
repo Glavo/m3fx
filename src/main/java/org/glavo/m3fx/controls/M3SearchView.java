@@ -224,6 +224,11 @@ public class M3SearchView extends VBox {
         searchBar.clear();
     }
 
+    /// Clears the embedded search text and moves this search view out of its active result state.
+    public final void clearAndDeactivate() {
+        searchBar.clearAndDeactivate();
+    }
+
     /// Returns the user-agent stylesheet for M3FX search views.
     @Override
     public String getUserAgentStylesheet() {

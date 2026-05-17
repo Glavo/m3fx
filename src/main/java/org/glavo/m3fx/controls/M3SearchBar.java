@@ -18,6 +18,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
@@ -242,6 +243,12 @@ public class M3SearchBar extends HBox {
         setText("");
     }
 
+    /// Clears the current search text and moves the search bar out of its active input state.
+    public final void clearAndDeactivate() {
+        clear();
+        deactivate();
+    }
+
     /// Adds base style classes, default slots, and search behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -264,9 +271,24 @@ public class M3SearchBar extends HBox {
         });
         editor.setOnAction(event -> fire());
         setOnMouseClicked(event -> activate());
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         getChildren().addAll(leadingSlot, editor, trailingBox);
         updateLeading();
         updateTrailingVisibility();
+    }
+
+    /// Handles keyboard shortcuts owned by the search bar container.
+    private void handleKeyPressed(KeyEvent event) {
+        switch (event.getCode()) {
+            case ESCAPE -> {
+                if (isActive()) {
+                    deactivate();
+                    event.consume();
+                }
+            }
+            default -> {
+            }
+        }
     }
 
     /// Updates the leading slot content.
