@@ -13,6 +13,7 @@ import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Skin;
@@ -281,6 +282,7 @@ public class M3Button extends Button {
     /// Adds base style classes and applies the default variant.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.BUTTON);
         updateVariantStyle();
         updateMetrics();
     }

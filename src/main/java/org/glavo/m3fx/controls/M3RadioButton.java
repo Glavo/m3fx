@@ -8,6 +8,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -117,6 +118,7 @@ public class M3RadioButton extends RadioButton {
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.RADIO_BUTTON);
         updateMetrics();
     }
 

@@ -14,6 +14,7 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -271,6 +272,7 @@ public class M3MenuButton extends M3Button {
     /// Adds base style classes and configures popup behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.MENU_BUTTON);
         popup.setAutoHide(true);
         popup.getContent().add(menu);
         popup.setOnHidden(event -> {

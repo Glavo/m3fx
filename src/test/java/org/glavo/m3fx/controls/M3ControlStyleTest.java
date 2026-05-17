@@ -10,6 +10,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventType;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
@@ -4468,6 +4469,72 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Tab.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3NavigationItem.class));
+    }
+
+    /// Verifies that custom controls expose stable accessibility roles.
+    @Test
+    void controlsExposeAccessibilityRoles() {
+        M3Badge badge = M3Badge.withCount(1234);
+        M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+        M3Card passiveCard = new M3Card(new Label("Card"));
+        M3Card actionCard = new M3Card(new Label("Action"));
+        actionCard.setOnAction(event -> {
+        });
+
+        assertEquals(AccessibleRole.BUTTON, new M3Button().getAccessibleRole());
+        assertEquals(AccessibleRole.BUTTON, new M3IconButton().getAccessibleRole());
+        assertEquals(AccessibleRole.BUTTON, new M3FloatingActionButton().getAccessibleRole());
+        assertEquals(AccessibleRole.CHECK_BOX, new M3CheckBox().getAccessibleRole());
+        assertEquals(AccessibleRole.RADIO_BUTTON, new M3RadioButton().getAccessibleRole());
+        assertEquals(AccessibleRole.CHECK_BOX, new M3Switch().getAccessibleRole());
+        assertEquals(AccessibleRole.SLIDER, new M3Slider().getAccessibleRole());
+        assertEquals(AccessibleRole.PROGRESS_INDICATOR, new M3ProgressBar().getAccessibleRole());
+        assertEquals(AccessibleRole.PROGRESS_INDICATOR, new M3ProgressIndicator().getAccessibleRole());
+        assertEquals(AccessibleRole.TEXT_FIELD, new M3TextField().getAccessibleRole());
+        assertEquals(AccessibleRole.PASSWORD_FIELD, new M3PasswordField().getAccessibleRole());
+        assertEquals(AccessibleRole.TEXT_AREA, new M3TextArea().getAccessibleRole());
+        assertEquals(AccessibleRole.TEXT, new M3Text("Text").getAccessibleRole());
+        assertEquals(AccessibleRole.TEXT, new M3Icon("info").getAccessibleRole());
+        assertEquals(AccessibleRole.IMAGE_VIEW, new M3Avatar("A").getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3BadgedBox().getAccessibleRole());
+        assertEquals(AccessibleRole.TEXT, badge.getAccessibleRole());
+        assertEquals("123+", badge.getAccessibleText());
+        badge.setMaxCharacterCount(2);
+        assertEquals("12+", badge.getAccessibleText());
+        assertEquals(AccessibleRole.NODE, new M3Divider().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3Surface().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3DialogPane().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, passiveCard.getAccessibleRole());
+        assertEquals(AccessibleRole.BUTTON, actionCard.getAccessibleRole());
+        assertTrue(actionCard.isFocusTraversable());
+        assertEquals(AccessibleRole.TEXT, snackbar.getAccessibleRole());
+        assertEquals("Saved Undo", snackbar.getAccessibleText());
+        assertEquals(AccessibleRole.PARENT, new M3SnackbarHost().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3SideSheet().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3BottomSheet().getAccessibleRole());
+        assertEquals(AccessibleRole.BUTTON, new M3Scrim().getAccessibleRole());
+        assertEquals("Dismiss", new M3Scrim().getAccessibleText());
+        assertEquals(AccessibleRole.MENU, new M3Menu().getAccessibleRole());
+        assertEquals(AccessibleRole.MENU_BUTTON, new M3MenuButton().getAccessibleRole());
+        assertEquals(AccessibleRole.MENU_ITEM, new M3MenuItem().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3SearchBar().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3SearchView().getAccessibleRole());
+        assertEquals(AccessibleRole.LIST_VIEW, new M3List().getAccessibleRole());
+        assertEquals(AccessibleRole.LIST_ITEM, new M3ListItem().getAccessibleRole());
+        assertEquals(AccessibleRole.LIST_VIEW, new M3ChipGroup().getAccessibleRole());
+        assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3Chip().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3IconToggleButtonGroup().getAccessibleRole());
+        assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3IconToggleButton().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3SegmentedButtonGroup().getAccessibleRole());
+        assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3SegmentedButton().getAccessibleRole());
+        assertEquals(AccessibleRole.TAB_PANE, new M3TabBar().getAccessibleRole());
+        assertEquals(AccessibleRole.TAB_ITEM, new M3Tab().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3TopAppBar().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3BottomAppBar().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3NavigationBar().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3NavigationRail().getAccessibleRole());
+        assertEquals(AccessibleRole.LIST_VIEW, new M3NavigationDrawer().getAccessibleRole());
+        assertEquals(AccessibleRole.BUTTON, new M3NavigationItem().getAccessibleRole());
     }
 
     /// Verifies that controls expose their default styles through user-agent stylesheets.

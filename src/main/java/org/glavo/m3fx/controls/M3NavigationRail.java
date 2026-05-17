@@ -12,6 +12,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
@@ -222,6 +223,7 @@ public class M3NavigationRail extends VBox {
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TOOL_BAR);
         setAlignment(Pos.TOP_CENTER);
         setSpacing(8.0);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);

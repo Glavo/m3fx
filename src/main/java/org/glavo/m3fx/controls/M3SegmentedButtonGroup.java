@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
+import javafx.scene.AccessibleRole;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -273,6 +274,7 @@ public class M3SegmentedButtonGroup extends HBox {
     /// Adds base style classes and child list listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TOOL_BAR);
         setSpacing(DEFAULT_SPACING);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);

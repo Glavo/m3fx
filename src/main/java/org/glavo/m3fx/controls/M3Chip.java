@@ -15,6 +15,7 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
@@ -314,6 +315,7 @@ public class M3Chip extends ButtonBase {
     /// Adds base style classes and applies the default variant.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
         setFocusTraversable(true);
         updateVariantStyle();
         updateMetrics();

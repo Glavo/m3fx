@@ -8,6 +8,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -165,6 +166,7 @@ public class M3Switch extends CheckBox {
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.CHECK_BOX);
         updateMetrics();
     }
 

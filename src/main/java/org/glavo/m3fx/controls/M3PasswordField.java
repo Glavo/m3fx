@@ -11,6 +11,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -239,6 +240,7 @@ public class M3PasswordField extends PasswordField {
     /// Adds base style classes and applies the default variant.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.PASSWORD_FIELD);
         updateVariantStyle();
         updateMetrics();
     }

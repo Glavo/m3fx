@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -257,6 +258,7 @@ public class M3IconToggleButtonGroup extends HBox {
     /// Adds base style classes and installs child listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TOOL_BAR);
         setAlignment(Pos.CENTER_LEFT);
         setSpacing(8.0);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);

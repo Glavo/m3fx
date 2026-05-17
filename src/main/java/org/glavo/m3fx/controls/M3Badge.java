@@ -12,6 +12,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -81,7 +82,11 @@ public class M3Badge extends Control {
     /// Creates a badge with text.
     public M3Badge(String text) {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TEXT);
+        this.text.addListener((observable, oldValue, newValue) -> updateAccessibleText());
+        maxCharacterCount.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         setText(text);
+        updateAccessibleText();
     }
 
     /// Creates a badge that displays a non-negative count.
@@ -140,6 +145,11 @@ public class M3Badge extends Control {
             return value;
         }
         return value.substring(0, maximum) + "+";
+    }
+
+    /// Updates the text exposed to assistive technologies.
+    private void updateAccessibleText() {
+        setAccessibleText(getDisplayText());
     }
 
     /// Returns the small dot badge size token.

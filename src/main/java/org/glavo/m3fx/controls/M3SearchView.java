@@ -12,6 +12,7 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
@@ -238,6 +239,7 @@ public class M3SearchView extends VBox {
     /// Adds base style classes and child nodes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.PARENT);
         resultsBox.getStyleClass().add(RESULTS_STYLE_CLASS);
         getChildren().addAll(searchBar, resultsBox);
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> updateResultsVisibility());

@@ -13,6 +13,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleRole;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Region;
 import javafx.util.Duration;
@@ -64,6 +65,8 @@ public class M3Scrim extends Region {
     /// Creates a scrim.
     public M3Scrim() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.BUTTON);
+        setAccessibleText("Dismiss");
         setOpacity(DEFAULT_VISIBLE_OPACITY);
         setPickOnBounds(true);
         setOnMouseClicked(event -> {

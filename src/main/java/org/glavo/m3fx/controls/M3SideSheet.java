@@ -14,6 +14,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyEvent;
@@ -212,6 +213,7 @@ public class M3SideSheet extends BorderPane {
     /// Initializes child nodes, style classes, and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.PARENT);
         header.getStyleClass().add(HEADER_STYLE_CLASS);
         headlineLabel.getStyleClass().add(TITLE_STYLE_CLASS);
         actions.getStyleClass().add(ACTIONS_STYLE_CLASS);

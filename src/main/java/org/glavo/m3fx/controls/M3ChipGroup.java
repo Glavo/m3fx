@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
@@ -268,6 +269,7 @@ public class M3ChipGroup extends FlowPane {
     /// Adds base style classes and installs child listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.LIST_VIEW);
         setAlignment(Pos.CENTER_LEFT);
         setHgap(DEFAULT_HORIZONTAL_GAP);
         setVgap(DEFAULT_VERTICAL_GAP);

@@ -12,6 +12,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -220,6 +221,7 @@ public class M3TabBar extends HBox {
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TAB_PANE);
         setAlignment(Pos.CENTER_LEFT);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);

@@ -13,6 +13,7 @@ import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -46,7 +47,13 @@ public class M3Card extends Control {
 
     /// The action handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
-            new SimpleObjectProperty<>(this, "onAction");
+            new SimpleObjectProperty<>(this, "onAction") {
+                /// Updates accessibility semantics when action behavior changes.
+                @Override
+                protected void invalidated() {
+                    updateActionAccessibility();
+                }
+            };
 
     /// The card variant property.
     private final ObjectProperty<M3CardVariant> variant = new SimpleObjectProperty<>(this, "variant", M3CardVariant.FILLED) {
@@ -80,6 +87,7 @@ public class M3Card extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setContent(content);
         updateVariantStyle();
+        updateActionAccessibility();
     }
 
     /// Creates a card with content and a variant.
@@ -315,6 +323,15 @@ public class M3Card extends Control {
                 M3CardVariant.FILLED.getStyleClass(),
                 M3CardVariant.OUTLINED.getStyleClass()
         );
+    }
+
+    /// Updates accessibility role and traversal from the card action state.
+    private void updateActionAccessibility() {
+        boolean actionable = getOnAction() != null;
+        setAccessibleRole(actionable ? AccessibleRole.BUTTON : AccessibleRole.PARENT);
+        if (actionable) {
+            setFocusTraversable(true);
+        }
     }
 
     /// CSS metadata for m3fx card component tokens.

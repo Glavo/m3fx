@@ -8,6 +8,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -160,6 +161,7 @@ public class M3BadgedBox extends StackPane {
     /// Initializes style classes and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.PARENT);
         content.addListener(observable -> updateChildren());
         badge.addListener(observable -> updateChildren());
         updateChildren();

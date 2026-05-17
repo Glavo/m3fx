@@ -8,6 +8,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Skin;
@@ -159,6 +160,7 @@ public class M3ProgressBar extends ProgressBar {
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         updateMetrics();
     }
 

@@ -11,6 +11,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -213,6 +214,7 @@ public class M3Surface extends StackPane {
     /// Initializes style classes and default metrics.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.PARENT);
         updateVariantStyle();
         updateElevationStyle();
         updatePadding();

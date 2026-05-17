@@ -16,6 +16,7 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
@@ -81,6 +82,7 @@ public class M3SnackbarHost extends StackPane {
     /// Creates an empty snackbar host.
     public M3SnackbarHost() {
         getStyleClass().add(STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.PARENT);
         setAlignment(Pos.BOTTOM_CENTER);
         setPickOnBounds(false);
     }

@@ -15,6 +15,7 @@ import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -63,7 +64,11 @@ public class M3Snackbar extends Control {
     /// Creates a snackbar with message text.
     public M3Snackbar(String text) {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TEXT);
+        this.text.addListener((observable, oldValue, newValue) -> updateAccessibleText());
+        actionText.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         setText(text);
+        updateAccessibleText();
     }
 
     /// Creates a snackbar with message text and action button text.
@@ -130,6 +135,13 @@ public class M3Snackbar extends Control {
     /// Returns whether this snackbar currently exposes an action button.
     public final boolean hasAction() {
         return !getActionText().isBlank();
+    }
+
+    /// Updates the text exposed to assistive technologies.
+    private void updateAccessibleText() {
+        String message = getText();
+        String action = getActionText();
+        setAccessibleText(action.isBlank() ? message : message + " " + action);
     }
 
     /// Fires this snackbar's action event when it has an enabled action.

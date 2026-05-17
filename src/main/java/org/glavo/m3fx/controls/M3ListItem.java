@@ -20,6 +20,7 @@ import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -140,6 +141,7 @@ public class M3ListItem extends Control {
     public M3ListItem(String headlineText) {
         installLineCountListeners();
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.LIST_ITEM);
         setFocusTraversable(true);
         setHeadlineText(headlineText);
         updateLineCount();

@@ -9,6 +9,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -49,6 +50,7 @@ public class M3DialogPane extends DialogPane {
     /// Creates a dialog pane.
     public M3DialogPane() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.PARENT);
         updateMetrics();
     }
 

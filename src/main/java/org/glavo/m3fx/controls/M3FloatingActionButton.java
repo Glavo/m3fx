@@ -11,6 +11,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Skin;
@@ -315,6 +316,7 @@ public class M3FloatingActionButton extends Button {
     /// Adds base style classes and applies token-driven metrics.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.BUTTON);
         updateVariantStyle();
         updateSizeStyle();
         textProperty().addListener(observable -> updateMetrics());

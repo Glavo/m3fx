@@ -11,6 +11,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -65,6 +66,7 @@ public class M3Divider extends Control {
     /// Creates a divider with the requested orientation.
     public M3Divider(Orientation orientation) {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.NODE);
         setOrientation(orientation);
     }
 

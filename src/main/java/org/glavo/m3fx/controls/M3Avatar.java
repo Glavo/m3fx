@@ -13,6 +13,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
@@ -203,6 +204,7 @@ public class M3Avatar extends StackPane {
     /// Initializes style classes, child nodes, and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.IMAGE_VIEW);
         setAlignment(Pos.CENTER);
         textLabel.getStyleClass().add(LABEL_STYLE_CLASS);
         textLabel.textProperty().bind(text);

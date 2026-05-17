@@ -9,6 +9,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -179,6 +180,7 @@ public class M3TopAppBar extends HBox {
     /// Initializes child nodes, style classes, and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TOOL_BAR);
         navigationSlot.getStyleClass().add(NAVIGATION_STYLE_CLASS);
         titleLabel.getStyleClass().add(TITLE_STYLE_CLASS);
         actions.getStyleClass().add(ACTIONS_STYLE_CLASS);

@@ -15,6 +15,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
@@ -261,6 +262,7 @@ public class M3List extends VBox {
     /// Adds base style classes and installs child listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.LIST_VIEW);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);
     }

@@ -14,6 +14,7 @@ import javafx.css.converter.FontConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.css.converter.StringConverter;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.Label;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -282,6 +283,7 @@ public class M3Icon extends Label {
     /// Initializes style classes, layout, and font defaults.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TEXT);
         setAlignment(Pos.CENTER);
         updateSizeStyle();
         updateVariantStyle();

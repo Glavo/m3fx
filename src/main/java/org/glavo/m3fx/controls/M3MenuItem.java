@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -52,5 +53,6 @@ public class M3MenuItem extends M3ListItem {
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.MENU_ITEM);
     }
 }

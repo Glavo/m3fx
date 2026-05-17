@@ -13,6 +13,7 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.FontConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.css.converter.StringConverter;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.Label;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -299,6 +300,7 @@ public class M3Text extends Label {
     /// Initializes style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TEXT);
         updateRoleStyle();
         updateFont();
     }

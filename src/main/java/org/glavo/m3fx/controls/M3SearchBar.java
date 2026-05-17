@@ -15,6 +15,7 @@ import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -252,6 +253,7 @@ public class M3SearchBar extends HBox {
     /// Adds base style classes, default slots, and search behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.PARENT);
         setMinHeight(DEFAULT_HEIGHT);
         setPrefHeight(DEFAULT_HEIGHT);
         setPadding(new Insets(0.0, DEFAULT_HORIZONTAL_PADDING, 0.0, DEFAULT_HORIZONTAL_PADDING));

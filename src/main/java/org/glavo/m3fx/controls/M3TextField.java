@@ -11,6 +11,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.TextField;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -238,6 +239,7 @@ public class M3TextField extends TextField {
     /// Adds base style classes and applies the default variant.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TEXT_FIELD);
         updateVariantStyle();
         updateMetrics();
     }
