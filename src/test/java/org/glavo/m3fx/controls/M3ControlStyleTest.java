@@ -2927,6 +2927,97 @@ final class M3ControlStyleTest {
         assertEquals(3, fireCount.get());
     }
 
+    /// Verifies that lists expose item selection policies.
+    @Test
+    void listGroupsItemsAndKeepsSelectionPolicy() {
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem second = new M3ListItem("Second");
+        M3ListItem third = new M3ListItem("Third");
+        M3List list = new M3List(first, new M3Divider(), second, third);
+
+        assertEquals(M3ListSelectionMode.NONE, list.getSelectionMode());
+        first.fire();
+
+        assertTrue(list.getSelectedItems().isEmpty());
+        assertNull(list.getSelectedItem());
+
+        list.setSelectionMode(M3ListSelectionMode.SINGLE);
+        first.fire();
+        second.fire();
+
+        assertFalse(first.isSelected());
+        assertTrue(second.isSelected());
+        assertEquals(second, list.getSelectedItem());
+        assertEquals(java.util.List.of(second), list.getSelectedItems());
+        assertThrows(UnsupportedOperationException.class, () -> list.getSelectedItems().add(third));
+
+        list.setAllowEmptySelection(false);
+        list.clearSelection();
+
+        assertEquals(second, list.getSelectedItem());
+        assertTrue(second.isSelected());
+
+        second.setSelected(false);
+
+        assertEquals(second, list.getSelectedItem());
+        assertTrue(second.isSelected());
+
+        list.getItems().remove(second);
+
+        assertFalse(second.isSelected());
+        assertEquals(first, list.getSelectedItem());
+        assertEquals(java.util.List.of(first), list.getSelectedItems());
+    }
+
+    /// Verifies that lists can use multiple selected items.
+    @Test
+    void listCanUseMultipleSelection() {
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem second = new M3ListItem("Second");
+        M3ListItem third = new M3ListItem("Third");
+        M3List list = new M3List(first, second, third);
+
+        list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        first.fire();
+        third.fire();
+
+        assertTrue(first.isSelected());
+        assertTrue(third.isSelected());
+        assertEquals(first, list.getSelectedItem());
+        assertEquals(java.util.List.of(first, third), list.getSelectedItems());
+
+        first.fire();
+
+        assertFalse(first.isSelected());
+        assertEquals(java.util.List.of(third), list.getSelectedItems());
+
+        second.setSelected(true);
+
+        assertEquals(java.util.List.of(second, third), list.getSelectedItems());
+    }
+
+    /// Verifies that lists collapse multiple selected items when switching to single selection.
+    @Test
+    void listCollapsesMultipleSelectionWhenModeChanges() {
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem second = new M3ListItem("Second");
+        M3ListItem third = new M3ListItem("Third");
+        M3List list = new M3List(first, second, third);
+
+        list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        first.setSelected(true);
+        second.setSelected(true);
+        third.setSelected(true);
+
+        list.setSelectionMode(M3ListSelectionMode.SINGLE);
+
+        assertTrue(first.isSelected());
+        assertFalse(second.isSelected());
+        assertFalse(third.isSelected());
+        assertEquals(first, list.getSelectedItem());
+        assertEquals(java.util.List.of(first), list.getSelectedItems());
+    }
+
     /// Verifies that list item skins expose bounded ripple feedback.
     @Test
     void listItemSkinPlaysBoundedRippleOnActivation() {
@@ -3577,6 +3668,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3Divider().getStyleClass().contains(M3Divider.STYLE_CLASS));
         assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
         assertTrue(new M3NavigationItem("Home").getStyleClass().contains(M3NavigationItem.STYLE_CLASS));
+        assertTrue(new M3List().getStyleClass().contains(M3List.STYLE_CLASS));
         assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));
     }
 
@@ -3632,6 +3724,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3NavigationRail(), "/styles/controls/navigation-rail.css");
         assertUserAgentStylesheet(new M3NavigationDrawer(), "/styles/controls/navigation-drawer.css");
         assertUserAgentStylesheet(new M3NavigationItem(), "/styles/controls/navigation-bar.css");
+        assertUserAgentStylesheet(new M3List(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3ListItem(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");
         assertUserAgentStylesheet(new M3DialogPane(), "/styles/controls/dialog.css");

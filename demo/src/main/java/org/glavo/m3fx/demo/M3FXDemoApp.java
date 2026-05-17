@@ -56,7 +56,9 @@ import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
 import org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode;
 import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
 import org.glavo.m3fx.controls.M3IconVariant;
+import org.glavo.m3fx.controls.M3List;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListSelectionMode;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
@@ -757,10 +759,10 @@ public final class M3FXDemoApp extends Application {
 
         M3ListItem selected = new M3ListItem("Selected item");
         selected.setSupportingText("Current destination");
-        selected.setSelected(true);
 
-        VBox list = new VBox();
+        M3List list = new M3List();
         list.getStyleClass().add("demo-list");
+        list.setSelectionMode(M3ListSelectionMode.SINGLE);
         list.getChildren().addAll(
                 oneLine,
                 new M3Divider(),
@@ -770,6 +772,7 @@ public final class M3FXDemoApp extends Application {
                 new M3Divider(),
                 selected
         );
+        list.select(selected);
 
         return createGallery(createShowcaseGroup("Rows", list));
     }

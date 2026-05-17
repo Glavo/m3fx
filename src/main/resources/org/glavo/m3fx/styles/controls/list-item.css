@@ -1,3 +1,7 @@
+.m3-list {
+    -fx-background-color: transparent;
+}
+
 .m3-list-item {
     -m3-one-line-height: 56px;
     -m3-two-line-height: 72px;
