@@ -56,6 +56,12 @@ tasks.register("jlinkDemoRuntime") {
     dependsOn(":demo:jlinkRuntime")
 }
 
+tasks.register("shadowDemoJar") {
+    group = "distribution"
+    description = "Builds an executable fat JAR for the M3FX demo application."
+    dependsOn(":demo:shadowJar")
+}
+
 tasks.register("jlinkDemoWindowsRuntime") {
     group = "distribution"
     description = "Builds a Windows jlink runtime image for the M3FX demo application."

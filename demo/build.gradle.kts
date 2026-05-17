@@ -1,4 +1,5 @@
 import org.gradle.api.Task
+import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
@@ -41,6 +42,36 @@ tasks.withType<JavaCompile>().configureEach {
 application {
     mainModule = "org.glavo.m3fx.demo"
     mainClass = "org.glavo.m3fx.demo.M3FXDemoLauncher"
+}
+
+tasks.register<Jar>("shadowJar") {
+    group = "distribution"
+    description = "Builds an executable fat JAR for the M3FX demo on the configured JavaFX platform."
+    archiveBaseName = "m3fx-demo"
+    archiveClassifier = "shadow"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    dependsOn(configurations.runtimeClasspath)
+    from(sourceSets.main.get().output)
+    from({
+        configurations.runtimeClasspath.get().map { file ->
+            if (file.isDirectory) {
+                file
+            } else {
+                zipTree(file)
+            }
+        }
+    })
+    exclude(
+        "module-info.class",
+        "META-INF/versions/**/module-info.class",
+        "META-INF/*.DSA",
+        "META-INF/*.RSA",
+        "META-INF/*.SF"
+    )
+    manifest {
+        attributes("Main-Class" to application.mainClass.get())
+    }
 }
 
 val jlinkRuntime = registerJlinkRuntime(
