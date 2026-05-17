@@ -279,6 +279,9 @@ public class M3MenuButton extends M3Button {
         return switch (attribute) {
             case EXPANDED -> isShowing();
             case SUBMENU -> menu;
+            case ITEM_COUNT -> getItems().size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
+            case MULTIPLE_SELECTION -> getSelectionMode() == M3MenuSelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> getSelectedItems();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -291,6 +294,7 @@ public class M3MenuButton extends M3Button {
         switch (action) {
             case SHOW_MENU, EXPAND -> showMenu();
             case COLLAPSE -> hideMenu();
+            case SET_SELECTED_ITEMS -> menu.executeAccessibleAction(action, parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

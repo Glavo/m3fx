@@ -12,6 +12,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -235,6 +236,16 @@ public class M3TabBar extends HBox {
         };
     }
 
+    /// Executes accessibility selection actions for tabs.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -255,6 +266,16 @@ public class M3TabBar extends HBox {
                 false,
                 this::select
         );
+    }
+
+    /// Applies the selected tab supplied by an accessibility client.
+    private void setAccessibleSelectedItems(Object... parameters) {
+        @Nullable M3Tab tab = M3Accessible.firstSelectionTarget(getTabs(), M3Tab.class, parameters);
+        if (tab == null) {
+            clearSelection();
+        } else {
+            select(tab);
+        }
     }
 
     /// Installs a selected-state listener on a tab.

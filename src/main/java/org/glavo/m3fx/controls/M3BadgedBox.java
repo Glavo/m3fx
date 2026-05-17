@@ -8,6 +8,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
@@ -158,6 +159,17 @@ public class M3BadgedBox extends StackPane {
         return M3Stylesheets.controlStylesheet("badge.css");
     }
 
+    /// Returns accessibility attributes for content and badge children.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        return switch (attribute) {
+            case CONTENTS -> getContent();
+            case ITEM_COUNT -> accessibleItemCount();
+            case ITEM_AT_INDEX -> accessibleItemAt(parameters);
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Initializes style classes and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -182,6 +194,37 @@ public class M3BadgedBox extends StackPane {
             updateBadgePlacement();
             getChildren().setAll(contentNode, badgeNode);
         }
+        notifyAccessibleItemsChanged();
+    }
+
+    /// Notifies accessibility clients that content or badge children changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+    }
+
+    /// Returns the number of indexed content and badge nodes exposed to accessibility clients.
+    private int accessibleItemCount() {
+        return (getContent() == null ? 0 : 1) + (getBadge() == null ? 0 : 1);
+    }
+
+    /// Returns the indexed content or badge node requested by an accessibility client.
+    private @Nullable Node accessibleItemAt(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+
+        @Nullable Node contentNode = getContent();
+        if (contentNode != null) {
+            if (index == 0) {
+                return contentNode;
+            }
+            index--;
+        }
+
+        return index == 0 ? getBadge() : null;
     }
 
     /// Applies alignment and offset to the current badge node.

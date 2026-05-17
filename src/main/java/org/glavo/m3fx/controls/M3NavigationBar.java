@@ -12,6 +12,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -237,6 +238,16 @@ public class M3NavigationBar extends HBox {
         };
     }
 
+    /// Executes accessibility selection actions for navigation items.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -258,6 +269,17 @@ public class M3NavigationBar extends HBox {
                 false,
                 this::select
         );
+    }
+
+    /// Applies the selected navigation item supplied by an accessibility client.
+    private void setAccessibleSelectedItems(Object... parameters) {
+        @Nullable M3NavigationItem item =
+                M3Accessible.firstSelectionTarget(getItems(), M3NavigationItem.class, parameters);
+        if (item == null) {
+            clearSelection();
+        } else {
+            select(item);
+        }
     }
 
     /// Installs a selected-state listener on a navigation item.

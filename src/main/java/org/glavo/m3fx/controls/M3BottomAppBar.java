@@ -5,8 +5,10 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.layout.HBox;
@@ -157,9 +159,20 @@ public class M3BottomAppBar extends HBox {
         HBox.setHgrow(leadingSpacer, Priority.ALWAYS);
         HBox.setHgrow(trailingSpacer, Priority.ALWAYS);
         floatingAction.addListener((observable, oldValue, newValue) -> updateFloatingAction(newValue));
+        actions.getChildren().addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         updateFloatingAction(getFloatingAction());
         updateFloatingActionAlignmentStyle();
         updateLayoutOrder();
+    }
+
+    /// Returns accessibility attributes for the action and floating action collection.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        return switch (attribute) {
+            case ITEM_COUNT -> M3Accessible.itemCount(getActions(), getFloatingAction());
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getActions(), getFloatingAction(), parameters);
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
     }
 
     /// Validates a regular action array.
@@ -189,6 +202,13 @@ public class M3BottomAppBar extends HBox {
         }
         floatingActionSlot.setVisible(visible);
         floatingActionSlot.setManaged(visible);
+        notifyAccessibleItemsChanged();
+    }
+
+    /// Notifies accessibility clients that the indexed bottom app bar item collection changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 
     /// Updates the active floating action alignment style class.

@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -272,6 +273,16 @@ public class M3IconToggleButtonGroup extends HBox {
         };
     }
 
+    /// Executes accessibility selection actions for toggle icon buttons.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Adds base style classes and installs child listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -293,6 +304,35 @@ public class M3IconToggleButtonGroup extends HBox {
                 false,
                 this::select
         );
+    }
+
+    /// Applies selected toggle icon buttons supplied by an accessibility client.
+    private void setAccessibleSelectedItems(Object... parameters) {
+        if (getSelectionMode() == M3IconToggleButtonSelectionMode.SINGLE) {
+            @Nullable M3IconToggleButton button =
+                    M3Accessible.firstSelectionTarget(getItems(), M3IconToggleButton.class, parameters);
+            if (button == null) {
+                clearSelection();
+            } else {
+                select(button);
+            }
+            return;
+        }
+
+        updatingSelection = true;
+        try {
+            for (Node child : getChildren()) {
+                if (child instanceof M3IconToggleButton button) {
+                    button.setSelected(M3Accessible.containsSelectionTarget(button, parameters));
+                }
+            }
+        } finally {
+            updatingSelection = false;
+        }
+        refreshSelectedButtons();
+        if (!isAllowEmptySelection()) {
+            selectFirstButtonIfNeeded();
+        }
     }
 
     /// Installs a selected-state listener on a button.

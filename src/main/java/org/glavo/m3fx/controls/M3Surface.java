@@ -5,17 +5,20 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.ListChangeListener;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -200,6 +203,17 @@ public class M3Surface extends StackPane {
         return M3Stylesheets.controlStylesheet("surface.css");
     }
 
+    /// Returns accessibility attributes for the surface content collection.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        return switch (attribute) {
+            case CONTENTS -> accessibleContents();
+            case ITEM_COUNT -> getChildren().size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getChildren(), parameters);
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Returns the CSS metadata for this node class.
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
@@ -215,9 +229,22 @@ public class M3Surface extends StackPane {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        getChildren().addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         updateVariantStyle();
         updateElevationStyle();
         updatePadding();
+    }
+
+    /// Returns the single content node when the surface has one logical child.
+    private @Nullable Node accessibleContents() {
+        return getChildren().size() == 1 ? getChildren().get(0) : null;
+    }
+
+    /// Notifies accessibility clients that the surface content collection changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 
     /// Applies the current color variant style class.

@@ -15,6 +15,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -276,6 +277,16 @@ public class M3Menu extends VBox {
         };
     }
 
+    /// Executes accessibility selection actions for menu items.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -307,6 +318,38 @@ public class M3Menu extends VBox {
                 true,
                 this::select
         );
+    }
+
+    /// Applies selected menu items supplied by an accessibility client.
+    private void setAccessibleSelectedItems(Object... parameters) {
+        if (getSelectionMode() == M3MenuSelectionMode.NONE) {
+            return;
+        }
+
+        if (getSelectionMode() == M3MenuSelectionMode.SINGLE) {
+            @Nullable M3MenuItem item = M3Accessible.firstSelectionTarget(getItems(), M3MenuItem.class, parameters);
+            if (item == null) {
+                clearSelection();
+            } else {
+                select(item);
+            }
+            return;
+        }
+
+        updatingSelection = true;
+        try {
+            for (Node child : getChildren()) {
+                if (child instanceof M3MenuItem item) {
+                    item.setSelected(M3Accessible.containsSelectionTarget(item, parameters));
+                }
+            }
+        } finally {
+            updatingSelection = false;
+        }
+        refreshSelectedItems();
+        if (!isAllowEmptySelection()) {
+            selectFirstItemIfNeeded();
+        }
     }
 
     /// Installs action and selected-state listeners on a menu item.

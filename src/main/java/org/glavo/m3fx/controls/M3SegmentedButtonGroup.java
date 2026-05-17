@@ -13,6 +13,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.AccessibleRole;
@@ -288,6 +289,16 @@ public class M3SegmentedButtonGroup extends HBox {
         };
     }
 
+    /// Executes accessibility selection actions for segmented buttons.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Adds base style classes and child list listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -309,6 +320,35 @@ public class M3SegmentedButtonGroup extends HBox {
                 false,
                 this::select
         );
+    }
+
+    /// Applies selected segmented buttons supplied by an accessibility client.
+    private void setAccessibleSelectedItems(Object... parameters) {
+        if (getSelectionMode() == M3SegmentedButtonSelectionMode.SINGLE) {
+            @Nullable M3SegmentedButton button =
+                    M3Accessible.firstSelectionTarget(getItems(), M3SegmentedButton.class, parameters);
+            if (button == null) {
+                clearSelection();
+            } else {
+                select(button);
+            }
+            return;
+        }
+
+        updatingSelection = true;
+        try {
+            for (Node child : getChildren()) {
+                if (child instanceof M3SegmentedButton button) {
+                    button.setSelected(M3Accessible.containsSelectionTarget(button, parameters));
+                }
+            }
+        } finally {
+            updatingSelection = false;
+        }
+        refreshSelectedButtons();
+        if (!isAllowEmptySelection()) {
+            selectFirstButtonIfNeeded();
+        }
     }
 
     /// Installs a selected-state listener on a segmented button.

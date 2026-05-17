@@ -4854,17 +4854,107 @@ final class M3ControlStyleTest {
                 navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
     }
 
+    /// Verifies that selection containers apply selected items requested by accessibility clients.
+    @Test
+    void selectionContainersApplyAccessibleSelectionActions() {
+        M3ListItem listFirst = new M3ListItem("One");
+        M3ListItem listSecond = new M3ListItem("Two");
+        M3List list = new M3List(listFirst, listSecond);
+        list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+
+        list.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, java.util.List.of(listSecond));
+
+        assertFalse(listFirst.isSelected());
+        assertTrue(listSecond.isSelected());
+        assertEquals(java.util.List.of(listSecond), list.getSelectedItems());
+
+        M3MenuItem menuFirst = new M3MenuItem("Open");
+        M3MenuItem menuSecond = new M3MenuItem("Save");
+        M3Menu menu = new M3Menu(menuFirst, menuSecond);
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+
+        menu.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, menuSecond);
+
+        assertEquals(menuSecond, menu.getSelectedItem());
+        assertFalse(menuFirst.isSelected());
+        assertTrue(menuSecond.isSelected());
+
+        M3Chip chipFirst = new M3Chip("Input");
+        M3Chip chipSecond = new M3Chip("Filter");
+        M3ChipGroup chipGroup = new M3ChipGroup(chipFirst, chipSecond);
+
+        chipGroup.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, chipFirst, chipSecond);
+
+        assertEquals(java.util.List.of(chipFirst, chipSecond), chipGroup.getSelectedChips());
+
+        M3IconToggleButton iconFirst = new M3IconToggleButton("edit");
+        M3IconToggleButton iconSecond = new M3IconToggleButton("done");
+        M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond);
+
+        iconGroup.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, java.util.List.of(iconSecond));
+
+        assertEquals(iconSecond, iconGroup.getSelectedButton());
+
+        M3SegmentedButton segmentFirst = new M3SegmentedButton("Day");
+        M3SegmentedButton segmentSecond = new M3SegmentedButton("Week");
+        M3SegmentedButtonGroup segmentedGroup = new M3SegmentedButtonGroup(segmentFirst, segmentSecond);
+        segmentedGroup.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);
+
+        segmentedGroup.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, segmentFirst, segmentSecond);
+
+        assertEquals(java.util.List.of(segmentFirst, segmentSecond), segmentedGroup.getSelectedButtons());
+
+        M3Tab tabFirst = new M3Tab("Overview");
+        M3Tab tabSecond = new M3Tab("Details");
+        M3TabBar tabBar = new M3TabBar(tabFirst, tabSecond);
+
+        tabBar.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, tabSecond);
+
+        assertEquals(tabSecond, tabBar.getSelectedTab());
+
+        M3NavigationItem navFirst = new M3NavigationItem("Home");
+        M3NavigationItem navSecond = new M3NavigationItem("Search");
+        M3NavigationBar navigationBar = new M3NavigationBar(navFirst, navSecond);
+
+        navigationBar.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, navSecond);
+
+        assertEquals(navSecond, navigationBar.getSelectedItem());
+
+        M3NavigationItem railFirst = new M3NavigationItem("Home");
+        M3NavigationItem railSecond = new M3NavigationItem("Search");
+        M3NavigationRail navigationRail = new M3NavigationRail(railFirst, railSecond);
+
+        navigationRail.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, railSecond);
+
+        assertEquals(railSecond, navigationRail.getSelectedItem());
+
+        M3ListItem drawerFirst = new M3ListItem("Inbox");
+        M3ListItem drawerSecond = new M3ListItem("Archive");
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(drawerFirst, drawerSecond);
+
+        navigationDrawer.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, drawerSecond);
+
+        assertEquals(drawerSecond, navigationDrawer.getSelectedItem());
+    }
+
     /// Verifies that menu buttons expose their popup menu to accessibility clients.
     @Test
     void menuButtonExposesAccessiblePopupState() {
         M3MenuItem first = new M3MenuItem("Open");
-        M3MenuButton menuButton = new M3MenuButton("More", first);
+        M3MenuItem second = new M3MenuItem("Save");
+        M3MenuButton menuButton = new M3MenuButton("More", first, second);
+        menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
 
         assertEquals(false, menuButton.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
         assertEquals(menuButton.getMenu(), menuButton.queryAccessibleAttribute(AccessibleAttribute.SUBMENU));
+        assertEquals(2, menuButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(second, menuButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertEquals(false, menuButton.queryAccessibleAttribute(AccessibleAttribute.MULTIPLE_SELECTION));
         assertEquals(menuButton.getSelectedItems(),
                 menuButton.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
 
+        menuButton.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, second);
+        assertEquals(second, menuButton.getSelectedItem());
         menuButton.executeAccessibleAction(AccessibleAction.SHOW_MENU);
         menuButton.executeAccessibleAction(AccessibleAction.COLLAPSE);
     }
@@ -4887,12 +4977,85 @@ final class M3ControlStyleTest {
         M3ListItem first = new M3ListItem("First");
         M3ListItem second = new M3ListItem("Second");
         M3SearchView searchView = new M3SearchView("Search", first, second);
+        AtomicInteger viewActions = new AtomicInteger();
+        searchView.setOnAction(event -> viewActions.incrementAndGet());
 
         assertEquals(true, searchView.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        searchView.executeAccessibleAction(AccessibleAction.SET_TEXT, "query");
+        assertEquals("query", searchView.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
         assertEquals(2, searchView.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertEquals(second, searchView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
-        searchView.deactivate();
+        searchView.executeAccessibleAction(AccessibleAction.COLLAPSE);
         assertEquals(false, searchView.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        searchView.executeAccessibleAction(AccessibleAction.EXPAND);
+        assertEquals(true, searchView.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        searchView.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+        searchView.executeAccessibleAction(AccessibleAction.FIRE);
+        assertEquals(1, viewActions.get());
+    }
+
+    /// Verifies that structural containers expose indexed accessibility content.
+    @Test
+    void structuralContainersExposeAccessibleCollections() {
+        Label surfaceContent = new Label("Surface");
+        Label surfaceExtra = new Label("Extra");
+        M3Surface surface = new M3Surface(surfaceContent);
+
+        assertEquals(surfaceContent, surface.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+        assertEquals(1, surface.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(surfaceContent, surface.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        surface.getChildren().add(surfaceExtra);
+        assertNull(surface.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+        assertEquals(2, surface.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(surfaceExtra, surface.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertNull(surface.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, -1));
+
+        Label badgeContent = new Label("Inbox");
+        M3Badge badge = new M3Badge("3");
+        M3BadgedBox badgedBox = new M3BadgedBox(badgeContent, badge);
+
+        assertEquals(badgeContent, badgedBox.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+        assertEquals(2, badgedBox.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(badgeContent, badgedBox.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertEquals(badge, badgedBox.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        badgedBox.setContent(null);
+        assertNull(badgedBox.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+        assertEquals(1, badgedBox.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(badge, badgedBox.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+
+        Label navigation = new Label("Menu");
+        Label search = new Label("Search");
+        Label more = new Label("More");
+        M3TopAppBar topAppBar = new M3TopAppBar("Inbox", navigation, search, more);
+
+        assertEquals("Inbox", topAppBar.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals("Inbox", topAppBar.getAccessibleText());
+        assertEquals(3, topAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(navigation, topAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertEquals(search, topAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertEquals(more, topAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
+        topAppBar.setTitle("Archive");
+        topAppBar.setNavigation(null);
+        assertEquals("Archive", topAppBar.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals("Archive", topAppBar.getAccessibleText());
+        assertEquals(2, topAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(search, topAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+
+        Label bottomAction = new Label("Search");
+        Label floatingAction = new Label("Create");
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                M3BottomAppBarFloatingActionAlignment.END,
+                floatingAction,
+                bottomAction
+        );
+
+        assertEquals(2, bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(bottomAction, bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertEquals(floatingAction, bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        bottomAppBar.setFloatingAction(null);
+        assertEquals(1, bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertNull(bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
     }
 
     /// Verifies that custom controls expose stable accessibility roles.

@@ -13,6 +13,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -240,6 +241,16 @@ public class M3NavigationDrawer extends VBox {
         };
     }
 
+    /// Executes accessibility selection actions for drawer list items.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Lays out drawer content within the drawer padding.
     @Override
     protected void layoutChildren() {
@@ -267,6 +278,16 @@ public class M3NavigationDrawer extends VBox {
                 true,
                 this::select
         );
+    }
+
+    /// Applies the selected drawer item supplied by an accessibility client.
+    private void setAccessibleSelectedItems(Object... parameters) {
+        @Nullable M3ListItem item = M3Accessible.firstSelectionTarget(getItems(), M3ListItem.class, parameters);
+        if (item == null) {
+            clearSelection();
+        } else {
+            select(item);
+        }
     }
 
     /// Keeps drawer list item containers inside the drawer content area.

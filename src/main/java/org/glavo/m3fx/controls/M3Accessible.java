@@ -25,6 +25,98 @@ final class M3Accessible {
         return index >= 0 && index < items.size() ? items.get(index) : null;
     }
 
+    /// Returns the number of indexed accessibility items with an optional leading item.
+    static int itemCount(@Nullable Node leading, ObservableList<? extends Node> items) {
+        Objects.requireNonNull(items, "items");
+        return (leading == null ? 0 : 1) + items.size();
+    }
+
+    /// Returns the indexed accessibility item from an optional leading item and trailing item list.
+    static @Nullable Node itemAt(@Nullable Node leading, ObservableList<? extends Node> items, Object... parameters) {
+        Objects.requireNonNull(items, "items");
+        int index = indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+        if (leading != null) {
+            if (index == 0) {
+                return leading;
+            }
+            index--;
+        }
+        return index < items.size() ? items.get(index) : null;
+    }
+
+    /// Returns the number of indexed accessibility items with an optional trailing item.
+    static int itemCount(ObservableList<? extends Node> items, @Nullable Node trailing) {
+        Objects.requireNonNull(items, "items");
+        return items.size() + (trailing == null ? 0 : 1);
+    }
+
+    /// Returns the indexed accessibility item from a leading item list and optional trailing item.
+    static @Nullable Node itemAt(ObservableList<? extends Node> items, @Nullable Node trailing, Object... parameters) {
+        Objects.requireNonNull(items, "items");
+        int index = indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+        if (index < items.size()) {
+            return items.get(index);
+        }
+        return index == items.size() ? trailing : null;
+    }
+
+    /// Returns whether accessibility action parameters contain the requested selection target.
+    static boolean containsSelectionTarget(Node target, Object... parameters) {
+        Objects.requireNonNull(target, "target");
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (containsSelectionTarget(target, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns the first child item referenced by accessibility selection parameters.
+    static <T extends Node> @Nullable T firstSelectionTarget(
+            ObservableList<? extends Node> items,
+            Class<T> itemType,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(itemType, "itemType");
+        for (Node item : items) {
+            if (itemType.isInstance(item) && containsSelectionTarget(item, parameters)) {
+                return itemType.cast(item);
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether one accessibility action parameter references the requested selection target.
+    private static boolean containsSelectionTarget(Node target, @Nullable Object parameter) {
+        if (parameter == target) {
+            return true;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (containsSelectionTarget(target, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (containsSelectionTarget(target, value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /// Returns this node's index in its parent child list, or `-1` when it is detached.
     static int indexInParent(Node node) {
         Objects.requireNonNull(node, "node");

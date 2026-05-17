@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -283,6 +284,16 @@ public class M3ChipGroup extends FlowPane {
         };
     }
 
+    /// Executes accessibility selection actions for chips.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Adds base style classes and installs child listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -305,6 +316,34 @@ public class M3ChipGroup extends FlowPane {
                 true,
                 this::select
         );
+    }
+
+    /// Applies selected chips supplied by an accessibility client.
+    private void setAccessibleSelectedItems(Object... parameters) {
+        if (getSelectionMode() == M3ChipSelectionMode.SINGLE) {
+            @Nullable M3Chip chip = M3Accessible.firstSelectionTarget(getItems(), M3Chip.class, parameters);
+            if (chip == null) {
+                clearSelection();
+            } else {
+                select(chip);
+            }
+            return;
+        }
+
+        updatingSelection = true;
+        try {
+            for (Node child : getChildren()) {
+                if (child instanceof M3Chip chip) {
+                    chip.setSelected(M3Accessible.containsSelectionTarget(chip, parameters));
+                }
+            }
+        } finally {
+            updatingSelection = false;
+        }
+        refreshSelectedChips();
+        if (!isAllowEmptySelection()) {
+            selectFirstChipIfNeeded();
+        }
     }
 
     /// Installs a selected-state listener on a chip.

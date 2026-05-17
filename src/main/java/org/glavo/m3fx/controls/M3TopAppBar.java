@@ -7,8 +7,10 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -188,12 +190,26 @@ public class M3TopAppBar extends HBox {
         setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(spacer, Priority.ALWAYS);
         titleLabel.textProperty().bind(title);
+        title.addListener(observable -> updateAccessibleText());
         navigation.addListener((observable, oldValue, newValue) -> updateNavigation(newValue));
+        actions.getChildren().addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         updateNavigation(getNavigation());
+        updateAccessibleText();
         updateVariantStyle();
         updateVariantLayout();
 
         getChildren().addAll(navigationSlot, titleLabel, spacer, actions);
+    }
+
+    /// Returns accessibility attributes for the title and action collection.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        return switch (attribute) {
+            case TEXT -> getTitle();
+            case ITEM_COUNT -> M3Accessible.itemCount(getNavigation(), getActions());
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getNavigation(), getActions(), parameters);
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
     }
 
     /// Validates a trailing action array.
@@ -213,6 +229,19 @@ public class M3TopAppBar extends HBox {
         }
         navigationSlot.setVisible(visible);
         navigationSlot.setManaged(visible);
+        notifyAccessibleItemsChanged();
+    }
+
+    /// Updates the accessible text exposed by the app bar.
+    private void updateAccessibleText() {
+        setAccessibleText(getTitle());
+        notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+    }
+
+    /// Notifies accessibility clients that the indexed app bar item collection changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 
     /// Updates the active variant style class.

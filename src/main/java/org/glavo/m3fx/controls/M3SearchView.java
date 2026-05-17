@@ -13,6 +13,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -244,10 +245,33 @@ public class M3SearchView extends VBox {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case EXPANDED -> isActive();
+            case TEXT -> getText();
+            case FOCUS_NODE -> getEditor();
             case ITEM_COUNT -> getResults().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getResults(), parameters);
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    /// Executes search text, focus, and active-state accessibility actions.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SET_TEXT -> {
+                if (parameters.length > 0 && parameters[0] instanceof String text) {
+                    setText(text);
+                }
+            }
+            case REQUEST_FOCUS -> {
+                activate();
+                getEditor().requestFocus();
+            }
+            case FIRE -> fire();
+            case EXPAND, SHOW_ITEM -> activate();
+            case COLLAPSE -> deactivate();
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Adds base style classes and child nodes.
