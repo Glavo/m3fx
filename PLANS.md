@@ -12,7 +12,7 @@
 ## Key Changes
 
 - Configure Gradle with Java release 17, JavaFX 21 by default, JetBrains annotations, MonetFX, and JUnit.
-- Add jlink runtime-image support for the demo app, using BellSoft LibericaJDK Full jmods for target-platform JavaFX runtime images.
+- Add jlink runtime-image support for the demo app, using BellSoft LibericaJDK Full jmods for target-platform JavaFX runtime images, with independent Windows, Linux, and macOS x64/AArch64 tasks.
 - Add `module-info.java` with module name `org.glavo.m3fx`.
 - Add the public packages:
   - `org.glavo.m3fx.theme`
@@ -56,7 +56,9 @@
 ## Test Plan
 
 - Run `./gradlew -g .gradle-user-home compileJava`.
-- Run `./gradlew -g .gradle-user-home jlinkDemoRuntime` when validating demo runtime-image packaging.
+- Run `./gradlew -g .gradle-user-home jlinkDemoRuntime` when validating default demo runtime-image packaging.
+- Run platform-specific jlink tasks such as `jlinkDemoWindowsRuntime`, `jlinkDemoLinuxRuntime`, or `jlinkDemoMacosRuntime` when validating target-platform packaging.
+- Run architecture-specific jlink tasks such as `jlinkDemoWindowsX64Runtime`, `jlinkDemoLinuxAarch64Runtime`, or `jlinkDemoMacosAarch64Runtime` when validating fixed target architectures.
 - Run `./gradlew -g .gradle-user-home test` with a ten-minute timeout for test tasks.
 - Cover these scenarios:
   - MonetFX `ColorScheme` maps into M3FX color tokens and CSS variables.

@@ -55,3 +55,69 @@ tasks.register("jlinkDemoRuntime") {
     description = "Builds a jlink runtime image for the M3FX demo application."
     dependsOn(":demo:jlinkRuntime")
 }
+
+tasks.register("jlinkDemoWindowsRuntime") {
+    group = "distribution"
+    description = "Builds a Windows jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkWindowsRuntime")
+}
+
+tasks.register("jlinkDemoWindowsX64Runtime") {
+    group = "distribution"
+    description = "Builds a Windows x64 jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkWindowsX64Runtime")
+}
+
+tasks.register("jlinkDemoWindowsAarch64Runtime") {
+    group = "distribution"
+    description = "Builds a Windows AArch64 jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkWindowsAarch64Runtime")
+}
+
+tasks.register("jlinkDemoLinuxRuntime") {
+    group = "distribution"
+    description = "Builds a Linux jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkLinuxRuntime")
+}
+
+tasks.register("jlinkDemoLinuxX64Runtime") {
+    group = "distribution"
+    description = "Builds a Linux x64 jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkLinuxX64Runtime")
+}
+
+tasks.register("jlinkDemoLinuxAarch64Runtime") {
+    group = "distribution"
+    description = "Builds a Linux AArch64 jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkLinuxAarch64Runtime")
+}
+
+tasks.register("jlinkDemoMacosRuntime") {
+    group = "distribution"
+    description = "Builds a macOS jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkMacosRuntime")
+}
+
+tasks.register("jlinkDemoMacosX64Runtime") {
+    group = "distribution"
+    description = "Builds a macOS x64 jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkMacosX64Runtime")
+}
+
+tasks.register("jlinkDemoMacosAarch64Runtime") {
+    group = "distribution"
+    description = "Builds a macOS AArch64 jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkMacosAarch64Runtime")
+}
+
+tasks.register("jlinkDemoAllPlatformRuntimes") {
+    group = "distribution"
+    description = "Builds Windows, Linux, and macOS jlink runtime images for the configured architecture."
+    dependsOn(":demo:jlinkAllPlatformRuntimes")
+}
+
+tasks.register("jlinkDemoAllPlatformArchitectureRuntimes") {
+    group = "distribution"
+    description = "Builds Windows, Linux, and macOS x64 and AArch64 jlink runtime images for the M3FX demo application."
+    dependsOn(":demo:jlinkAllPlatformArchitectureRuntimes")
+}
