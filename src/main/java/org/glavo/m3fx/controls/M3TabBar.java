@@ -83,16 +83,34 @@ public class M3TabBar extends HBox {
     /// Creates a tab bar containing the supplied tabs.
     public M3TabBar(M3Tab... tabs) {
         initialize();
-        Objects.requireNonNull(tabs, "tabs");
-        for (M3Tab tab : tabs) {
-            Objects.requireNonNull(tab, "tab");
-        }
-        getTabs().addAll(tabs);
+        addTabs(tabs);
     }
 
     /// Returns the mutable child list used as tabs.
     public final ObservableList<Node> getTabs() {
         return getChildren();
+    }
+
+    /// Adds one tab.
+    public final void addTab(M3Tab tab) {
+        getTabs().add(Objects.requireNonNull(tab, "tab"));
+    }
+
+    /// Adds tabs.
+    public final void addTabs(M3Tab... tabs) {
+        validateTabs(tabs);
+        getTabs().addAll(tabs);
+    }
+
+    /// Replaces all tabs.
+    public final void setTabs(M3Tab... tabs) {
+        validateTabs(tabs);
+        getTabs().setAll(tabs);
+    }
+
+    /// Removes all tabs.
+    public final void clearTabs() {
+        getTabs().clear();
     }
 
     /// Returns the selected tabs in child order.
@@ -155,6 +173,31 @@ public class M3TabBar extends HBox {
         M3Tab firstTab = firstTab();
         if (firstTab != null) {
             selectTab(firstTab);
+        }
+    }
+
+    /// Selects the last tab when one exists.
+    public final void selectLast() {
+        @Nullable M3Tab lastTab = M3SelectionNavigation.last(getChildren(), M3Tab.class);
+        if (lastTab != null) {
+            selectTab(lastTab);
+        }
+    }
+
+    /// Selects the next tab after the current selected tab, wrapping at the end.
+    public final void selectNext() {
+        @Nullable M3Tab nextTab = M3SelectionNavigation.next(getChildren(), getSelectedTab(), M3Tab.class);
+        if (nextTab != null) {
+            selectTab(nextTab);
+        }
+    }
+
+    /// Selects the previous tab before the current selected tab, wrapping at the start.
+    public final void selectPrevious() {
+        @Nullable M3Tab previousTab =
+                M3SelectionNavigation.previous(getChildren(), getSelectedTab(), M3Tab.class);
+        if (previousTab != null) {
+            selectTab(previousTab);
         }
     }
 
@@ -268,5 +311,13 @@ public class M3TabBar extends HBox {
             }
         }
         return null;
+    }
+
+    /// Validates a tab array.
+    private static void validateTabs(M3Tab... tabs) {
+        Objects.requireNonNull(tabs, "tabs");
+        for (M3Tab tab : tabs) {
+            Objects.requireNonNull(tab, "tab");
+        }
     }
 }

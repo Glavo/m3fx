@@ -148,6 +148,28 @@ public class M3TopAppBar extends HBox {
         return actions.getChildren();
     }
 
+    /// Adds one trailing action node.
+    public final void addAction(Node action) {
+        getActions().add(Objects.requireNonNull(action, "action"));
+    }
+
+    /// Adds trailing actions after validating the action array.
+    public final void addActions(Node... actions) {
+        validateActions(actions);
+        getActions().addAll(actions);
+    }
+
+    /// Replaces all trailing actions.
+    public final void setActions(Node... actions) {
+        validateActions(actions);
+        getActions().setAll(actions);
+    }
+
+    /// Removes all trailing actions.
+    public final void clearActions() {
+        getActions().clear();
+    }
+
     /// Returns the user-agent stylesheet for M3FX top app bars.
     @Override
     public String getUserAgentStylesheet() {
@@ -172,13 +194,12 @@ public class M3TopAppBar extends HBox {
         getChildren().addAll(navigationSlot, titleLabel, spacer, actions);
     }
 
-    /// Adds trailing actions after validating the action array.
-    private void addActions(Node... actions) {
+    /// Validates a trailing action array.
+    private static void validateActions(Node... actions) {
         Objects.requireNonNull(actions, "actions");
         for (Node action : actions) {
             Objects.requireNonNull(action, "action");
         }
-        getActions().addAll(actions);
     }
 
     /// Updates the leading navigation slot.

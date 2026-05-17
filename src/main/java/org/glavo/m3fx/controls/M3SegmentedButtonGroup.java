@@ -115,16 +115,34 @@ public class M3SegmentedButtonGroup extends HBox {
     /// Creates a segmented button group with the supplied buttons.
     public M3SegmentedButtonGroup(M3SegmentedButton... buttons) {
         initialize();
-        Objects.requireNonNull(buttons, "buttons");
-        for (M3SegmentedButton button : buttons) {
-            Objects.requireNonNull(button, "button");
-        }
-        getItems().addAll(buttons);
+        addButtons(buttons);
     }
 
     /// Returns the mutable child list used as segmented button group content.
     public final ObservableList<Node> getItems() {
         return getChildren();
+    }
+
+    /// Adds one segmented button.
+    public final void addButton(M3SegmentedButton button) {
+        getItems().add(Objects.requireNonNull(button, "button"));
+    }
+
+    /// Adds segmented buttons.
+    public final void addButtons(M3SegmentedButton... buttons) {
+        validateButtons(buttons);
+        getItems().addAll(buttons);
+    }
+
+    /// Replaces all segmented buttons.
+    public final void setButtons(M3SegmentedButton... buttons) {
+        validateButtons(buttons);
+        getItems().setAll(buttons);
+    }
+
+    /// Removes all segmented button group content.
+    public final void clearItems() {
+        getItems().clear();
     }
 
     /// Returns the segmented button selection mode.
@@ -206,6 +224,33 @@ public class M3SegmentedButtonGroup extends HBox {
         M3SegmentedButton firstButton = firstButton();
         if (firstButton != null) {
             select(firstButton);
+        }
+    }
+
+    /// Selects the last segmented button when one exists.
+    public final void selectLast() {
+        @Nullable M3SegmentedButton lastButton =
+                M3SelectionNavigation.last(getChildren(), M3SegmentedButton.class);
+        if (lastButton != null) {
+            select(lastButton);
+        }
+    }
+
+    /// Selects the next segmented button after the current selected button, wrapping at the end.
+    public final void selectNext() {
+        @Nullable M3SegmentedButton nextButton =
+                M3SelectionNavigation.next(getChildren(), getSelectedButton(), M3SegmentedButton.class);
+        if (nextButton != null) {
+            select(nextButton);
+        }
+    }
+
+    /// Selects the previous segmented button before the current selected button, wrapping at the start.
+    public final void selectPrevious() {
+        @Nullable M3SegmentedButton previousButton =
+                M3SelectionNavigation.previous(getChildren(), getSelectedButton(), M3SegmentedButton.class);
+        if (previousButton != null) {
+            select(previousButton);
         }
     }
 
@@ -385,5 +430,13 @@ public class M3SegmentedButtonGroup extends HBox {
         button.getStyleClass().remove(FIRST_SEGMENT_STYLE_CLASS);
         button.getStyleClass().remove(MIDDLE_SEGMENT_STYLE_CLASS);
         button.getStyleClass().remove(LAST_SEGMENT_STYLE_CLASS);
+    }
+
+    /// Validates a segmented button array.
+    private static void validateButtons(M3SegmentedButton... buttons) {
+        Objects.requireNonNull(buttons, "buttons");
+        for (M3SegmentedButton button : buttons) {
+            Objects.requireNonNull(button, "button");
+        }
     }
 }

@@ -87,6 +87,28 @@ public class M3BottomAppBar extends HBox {
         return actions.getChildren();
     }
 
+    /// Adds one regular action node.
+    public final void addAction(Node action) {
+        getActions().add(Objects.requireNonNull(action, "action"));
+    }
+
+    /// Adds regular actions after validating the action array.
+    public final void addActions(Node... actions) {
+        validateActions(actions);
+        getActions().addAll(actions);
+    }
+
+    /// Replaces all regular action nodes.
+    public final void setActions(Node... actions) {
+        validateActions(actions);
+        getActions().setAll(actions);
+    }
+
+    /// Removes all regular action nodes.
+    public final void clearActions() {
+        getActions().clear();
+    }
+
     /// Returns the optional floating action node.
     public final @Nullable Node getFloatingAction() {
         return floatingAction.get();
@@ -138,13 +160,12 @@ public class M3BottomAppBar extends HBox {
         updateLayoutOrder();
     }
 
-    /// Adds regular actions after validating the action array.
-    private void addActions(Node... actions) {
+    /// Validates a regular action array.
+    private static void validateActions(Node... actions) {
         Objects.requireNonNull(actions, "actions");
         for (Node action : actions) {
             Objects.requireNonNull(action, "action");
         }
-        getActions().addAll(actions);
     }
 
     /// Updates the child order from the floating action alignment.

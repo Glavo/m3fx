@@ -64,11 +64,7 @@ public class M3SearchView extends VBox {
     /// Creates a search view with prompt text and initial result nodes.
     public M3SearchView(String promptText, Node... results) {
         this(promptText);
-        Objects.requireNonNull(results, "results");
-        for (Node result : results) {
-            Objects.requireNonNull(result, "result");
-        }
-        getResults().addAll(results);
+        addResults(results);
     }
 
     /// Returns the embedded search bar.
@@ -79,6 +75,28 @@ public class M3SearchView extends VBox {
     /// Returns the mutable result node list.
     public final ObservableList<Node> getResults() {
         return resultsBox.getChildren();
+    }
+
+    /// Adds one result node.
+    public final void addResult(Node result) {
+        getResults().add(Objects.requireNonNull(result, "result"));
+    }
+
+    /// Adds result nodes.
+    public final void addResults(Node... results) {
+        validateResults(results);
+        getResults().addAll(results);
+    }
+
+    /// Replaces all result nodes.
+    public final void setResults(Node... results) {
+        validateResults(results);
+        getResults().setAll(results);
+    }
+
+    /// Removes all result nodes.
+    public final void clearResults() {
+        getResults().clear();
     }
 
     /// Returns the editable search input used by the embedded search bar.
@@ -104,6 +122,26 @@ public class M3SearchView extends VBox {
     /// Returns the mutable trailing action list from the embedded search bar.
     public final ObservableList<Node> getTrailingActions() {
         return searchBar.getTrailingActions();
+    }
+
+    /// Adds one trailing action node to the embedded search bar.
+    public final void addTrailingAction(Node action) {
+        searchBar.addTrailingAction(action);
+    }
+
+    /// Adds trailing action nodes to the embedded search bar.
+    public final void addTrailingActions(Node... actions) {
+        searchBar.addTrailingActions(actions);
+    }
+
+    /// Replaces all trailing action nodes in the embedded search bar.
+    public final void setTrailingActions(Node... actions) {
+        searchBar.setTrailingActions(actions);
+    }
+
+    /// Removes all trailing action nodes from the embedded search bar.
+    public final void clearTrailingActions() {
+        searchBar.clearTrailingActions();
     }
 
     /// Returns the text entered in the embedded search bar.
@@ -240,5 +278,13 @@ public class M3SearchView extends VBox {
         resultsBox.setManaged(active);
         resultsBox.setOpacity(active ? 1.0 : 0.0);
         resultsBox.setTranslateY(active ? 0.0 : HIDDEN_RESULTS_TRANSLATE_Y);
+    }
+
+    /// Validates a result node array.
+    private static void validateResults(Node... results) {
+        Objects.requireNonNull(results, "results");
+        for (Node result : results) {
+            Objects.requireNonNull(result, "result");
+        }
     }
 }

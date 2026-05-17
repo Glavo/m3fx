@@ -99,16 +99,34 @@ public class M3IconToggleButtonGroup extends HBox {
     /// Creates a toggle icon button group containing the supplied buttons.
     public M3IconToggleButtonGroup(M3IconToggleButton... buttons) {
         initialize();
-        Objects.requireNonNull(buttons, "buttons");
-        for (M3IconToggleButton button : buttons) {
-            Objects.requireNonNull(button, "button");
-        }
-        getItems().addAll(buttons);
+        addButtons(buttons);
     }
 
     /// Returns the mutable child list used as toggle icon button group content.
     public final ObservableList<Node> getItems() {
         return getChildren();
+    }
+
+    /// Adds one toggle icon button.
+    public final void addButton(M3IconToggleButton button) {
+        getItems().add(Objects.requireNonNull(button, "button"));
+    }
+
+    /// Adds toggle icon buttons.
+    public final void addButtons(M3IconToggleButton... buttons) {
+        validateButtons(buttons);
+        getItems().addAll(buttons);
+    }
+
+    /// Replaces all toggle icon buttons.
+    public final void setButtons(M3IconToggleButton... buttons) {
+        validateButtons(buttons);
+        getItems().setAll(buttons);
+    }
+
+    /// Removes all toggle icon button group content.
+    public final void clearItems() {
+        getItems().clear();
     }
 
     /// Returns the icon toggle button selection mode.
@@ -190,6 +208,33 @@ public class M3IconToggleButtonGroup extends HBox {
         M3IconToggleButton firstButton = firstButton();
         if (firstButton != null) {
             select(firstButton);
+        }
+    }
+
+    /// Selects the last toggle icon button when one exists.
+    public final void selectLast() {
+        @Nullable M3IconToggleButton lastButton =
+                M3SelectionNavigation.last(getChildren(), M3IconToggleButton.class);
+        if (lastButton != null) {
+            select(lastButton);
+        }
+    }
+
+    /// Selects the next toggle icon button after the current selected button, wrapping at the end.
+    public final void selectNext() {
+        @Nullable M3IconToggleButton nextButton =
+                M3SelectionNavigation.next(getChildren(), getSelectedButton(), M3IconToggleButton.class);
+        if (nextButton != null) {
+            select(nextButton);
+        }
+    }
+
+    /// Selects the previous toggle icon button before the current selected button, wrapping at the start.
+    public final void selectPrevious() {
+        @Nullable M3IconToggleButton previousButton =
+                M3SelectionNavigation.previous(getChildren(), getSelectedButton(), M3IconToggleButton.class);
+        if (previousButton != null) {
+            select(previousButton);
         }
     }
 
@@ -322,5 +367,13 @@ public class M3IconToggleButtonGroup extends HBox {
             }
         }
         return null;
+    }
+
+    /// Validates a toggle icon button array.
+    private static void validateButtons(M3IconToggleButton... buttons) {
+        Objects.requireNonNull(buttons, "buttons");
+        for (M3IconToggleButton button : buttons) {
+            Objects.requireNonNull(button, "button");
+        }
     }
 }

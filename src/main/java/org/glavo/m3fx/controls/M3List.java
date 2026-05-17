@@ -103,16 +103,34 @@ public class M3List extends VBox {
     /// Creates a list containing the supplied nodes.
     public M3List(Node... items) {
         initialize();
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-        getItems().addAll(items);
+        addItems(items);
     }
 
     /// Returns the mutable child list used as list content.
     public final ObservableList<Node> getItems() {
         return getChildren();
+    }
+
+    /// Adds one list content node.
+    public final void addItem(Node item) {
+        getItems().add(Objects.requireNonNull(item, "item"));
+    }
+
+    /// Adds list content nodes.
+    public final void addItems(Node... items) {
+        validateItems(items);
+        getItems().addAll(items);
+    }
+
+    /// Replaces all list content nodes.
+    public final void setItems(Node... items) {
+        validateItems(items);
+        getItems().setAll(items);
+    }
+
+    /// Removes all list content nodes.
+    public final void clearItems() {
+        getItems().clear();
     }
 
     /// Returns the list item selection mode.
@@ -195,6 +213,32 @@ public class M3List extends VBox {
         M3ListItem firstItem = firstItem();
         if (firstItem != null) {
             select(firstItem);
+        }
+    }
+
+    /// Selects the last list item when one exists.
+    public final void selectLast() {
+        @Nullable M3ListItem lastItem = M3SelectionNavigation.last(getChildren(), M3ListItem.class);
+        if (lastItem != null) {
+            select(lastItem);
+        }
+    }
+
+    /// Selects the next list item after the current selected item, wrapping at the end.
+    public final void selectNext() {
+        @Nullable M3ListItem nextItem =
+                M3SelectionNavigation.next(getChildren(), getSelectedItem(), M3ListItem.class);
+        if (nextItem != null) {
+            select(nextItem);
+        }
+    }
+
+    /// Selects the previous list item before the current selected item, wrapping at the start.
+    public final void selectPrevious() {
+        @Nullable M3ListItem previousItem =
+                M3SelectionNavigation.previous(getChildren(), getSelectedItem(), M3ListItem.class);
+        if (previousItem != null) {
+            select(previousItem);
         }
     }
 
@@ -349,5 +393,13 @@ public class M3List extends VBox {
             }
         }
         return null;
+    }
+
+    /// Validates a list item array.
+    private static void validateItems(Node... items) {
+        Objects.requireNonNull(items, "items");
+        for (Node item : items) {
+            Objects.requireNonNull(item, "item");
+        }
     }
 }

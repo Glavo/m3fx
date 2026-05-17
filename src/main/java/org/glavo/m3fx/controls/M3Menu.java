@@ -103,16 +103,34 @@ public class M3Menu extends VBox {
     /// Creates a menu containing the supplied items.
     public M3Menu(Node... items) {
         initialize();
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-        getItems().addAll(items);
+        addItems(items);
     }
 
     /// Returns the mutable child list used as menu content.
     public final ObservableList<Node> getItems() {
         return getChildren();
+    }
+
+    /// Adds one menu content node.
+    public final void addItem(Node item) {
+        getItems().add(Objects.requireNonNull(item, "item"));
+    }
+
+    /// Adds menu content nodes.
+    public final void addItems(Node... items) {
+        validateItems(items);
+        getItems().addAll(items);
+    }
+
+    /// Replaces all menu content nodes.
+    public final void setItems(Node... items) {
+        validateItems(items);
+        getItems().setAll(items);
+    }
+
+    /// Removes all menu content nodes.
+    public final void clearItems() {
+        getItems().clear();
     }
 
     /// Returns the menu selection mode.
@@ -195,6 +213,32 @@ public class M3Menu extends VBox {
         M3MenuItem firstItem = firstItem();
         if (firstItem != null) {
             select(firstItem);
+        }
+    }
+
+    /// Selects the last menu item when one exists.
+    public final void selectLast() {
+        @Nullable M3MenuItem lastItem = M3SelectionNavigation.last(getChildren(), M3MenuItem.class);
+        if (lastItem != null) {
+            select(lastItem);
+        }
+    }
+
+    /// Selects the next menu item after the current selected item, wrapping at the end.
+    public final void selectNext() {
+        @Nullable M3MenuItem nextItem =
+                M3SelectionNavigation.next(getChildren(), getSelectedItem(), M3MenuItem.class);
+        if (nextItem != null) {
+            select(nextItem);
+        }
+    }
+
+    /// Selects the previous menu item before the current selected item, wrapping at the start.
+    public final void selectPrevious() {
+        @Nullable M3MenuItem previousItem =
+                M3SelectionNavigation.previous(getChildren(), getSelectedItem(), M3MenuItem.class);
+        if (previousItem != null) {
+            select(previousItem);
         }
     }
 
@@ -349,5 +393,13 @@ public class M3Menu extends VBox {
             }
         }
         return null;
+    }
+
+    /// Validates a menu item array.
+    private static void validateItems(Node... items) {
+        Objects.requireNonNull(items, "items");
+        for (Node item : items) {
+            Objects.requireNonNull(item, "item");
+        }
     }
 }

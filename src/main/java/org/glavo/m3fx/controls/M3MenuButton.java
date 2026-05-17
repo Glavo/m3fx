@@ -77,11 +77,7 @@ public class M3MenuButton extends M3Button {
     /// Creates a menu button with text and menu items.
     public M3MenuButton(String text, Node... items) {
         this(text);
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-        getItems().addAll(items);
+        addItems(items);
     }
 
     /// Returns the menu displayed by this button.
@@ -92,6 +88,28 @@ public class M3MenuButton extends M3Button {
     /// Returns the mutable item list shown by this button's menu.
     public final ObservableList<Node> getItems() {
         return menu.getItems();
+    }
+
+    /// Adds one menu item node.
+    public final void addItem(Node item) {
+        getItems().add(Objects.requireNonNull(item, "item"));
+    }
+
+    /// Adds menu item nodes.
+    public final void addItems(Node... items) {
+        validateItems(items);
+        getItems().addAll(items);
+    }
+
+    /// Replaces all menu item nodes.
+    public final void setItems(Node... items) {
+        validateItems(items);
+        getItems().setAll(items);
+    }
+
+    /// Removes all menu item nodes.
+    public final void clearItems() {
+        getItems().clear();
     }
 
     /// Returns the menu item selection mode used by this button's menu.
@@ -157,6 +175,21 @@ public class M3MenuButton extends M3Button {
     /// Selects the first menu item in this button's menu when one exists.
     public final void selectFirst() {
         menu.selectFirst();
+    }
+
+    /// Selects the last menu item in this button's menu when one exists.
+    public final void selectLast() {
+        menu.selectLast();
+    }
+
+    /// Selects the next menu item after the current selected item, wrapping at the end.
+    public final void selectNext() {
+        menu.selectNext();
+    }
+
+    /// Selects the previous menu item before the current selected item, wrapping at the start.
+    public final void selectPrevious() {
+        menu.selectPrevious();
     }
 
     /// Clears this button's menu selection when empty selection is allowed.
@@ -276,6 +309,14 @@ public class M3MenuButton extends M3Button {
         menu.setScaleX(1.0);
         menu.setScaleY(1.0);
         menu.setTranslateY(0.0);
+    }
+
+    /// Validates a menu item array.
+    private static void validateItems(Node... items) {
+        Objects.requireNonNull(items, "items");
+        for (Node item : items) {
+            Objects.requireNonNull(item, "item");
+        }
     }
 
     /// Copies scene styles and theme declarations into the popup-hosted menu.

@@ -105,16 +105,34 @@ public class M3ChipGroup extends FlowPane {
     /// Creates a chip group containing the supplied chips.
     public M3ChipGroup(M3Chip... chips) {
         initialize();
-        Objects.requireNonNull(chips, "chips");
-        for (M3Chip chip : chips) {
-            Objects.requireNonNull(chip, "chip");
-        }
-        getItems().addAll(chips);
+        addChips(chips);
     }
 
     /// Returns the mutable child list used as chip group content.
     public final ObservableList<Node> getItems() {
         return getChildren();
+    }
+
+    /// Adds one chip.
+    public final void addChip(M3Chip chip) {
+        getItems().add(Objects.requireNonNull(chip, "chip"));
+    }
+
+    /// Adds chips.
+    public final void addChips(M3Chip... chips) {
+        validateChips(chips);
+        getItems().addAll(chips);
+    }
+
+    /// Replaces all chip nodes.
+    public final void setChips(M3Chip... chips) {
+        validateChips(chips);
+        getItems().setAll(chips);
+    }
+
+    /// Removes all chip group content.
+    public final void clearItems() {
+        getItems().clear();
     }
 
     /// Returns the chip selection mode.
@@ -203,6 +221,31 @@ public class M3ChipGroup extends FlowPane {
         M3Chip firstChip = firstChip();
         if (firstChip != null) {
             select(firstChip);
+        }
+    }
+
+    /// Selects the last chip when one exists.
+    public final void selectLast() {
+        @Nullable M3Chip lastChip = M3SelectionNavigation.last(getChildren(), M3Chip.class);
+        if (lastChip != null) {
+            select(lastChip);
+        }
+    }
+
+    /// Selects the next chip after the current selected chip, wrapping at the end.
+    public final void selectNext() {
+        @Nullable M3Chip nextChip = M3SelectionNavigation.next(getChildren(), getSelectedChip(), M3Chip.class);
+        if (nextChip != null) {
+            select(nextChip);
+        }
+    }
+
+    /// Selects the previous chip before the current selected chip, wrapping at the start.
+    public final void selectPrevious() {
+        @Nullable M3Chip previousChip =
+                M3SelectionNavigation.previous(getChildren(), getSelectedChip(), M3Chip.class);
+        if (previousChip != null) {
+            select(previousChip);
         }
     }
 
@@ -328,5 +371,13 @@ public class M3ChipGroup extends FlowPane {
             }
         }
         return null;
+    }
+
+    /// Validates a chip array.
+    private static void validateChips(M3Chip... chips) {
+        Objects.requireNonNull(chips, "chips");
+        for (M3Chip chip : chips) {
+            Objects.requireNonNull(chip, "chip");
+        }
     }
 }

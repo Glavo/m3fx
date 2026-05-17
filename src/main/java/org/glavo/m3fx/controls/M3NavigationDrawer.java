@@ -87,16 +87,34 @@ public class M3NavigationDrawer extends VBox {
     /// Creates a navigation drawer containing the supplied nodes.
     public M3NavigationDrawer(Node... items) {
         initialize();
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-        getItems().addAll(items);
+        addItems(items);
     }
 
     /// Returns the mutable child list used as drawer content.
     public final ObservableList<Node> getItems() {
         return getChildren();
+    }
+
+    /// Adds one drawer content node.
+    public final void addItem(Node item) {
+        getItems().add(Objects.requireNonNull(item, "item"));
+    }
+
+    /// Adds drawer content nodes.
+    public final void addItems(Node... items) {
+        validateItems(items);
+        getItems().addAll(items);
+    }
+
+    /// Replaces all drawer content nodes.
+    public final void setItems(Node... items) {
+        validateItems(items);
+        getItems().setAll(items);
+    }
+
+    /// Removes all drawer content nodes.
+    public final void clearItems() {
+        getItems().clear();
     }
 
     /// Returns the selected drawer list items in child order.
@@ -159,6 +177,32 @@ public class M3NavigationDrawer extends VBox {
         M3ListItem firstItem = firstListItem();
         if (firstItem != null) {
             selectItem(firstItem);
+        }
+    }
+
+    /// Selects the last drawer list item when one exists.
+    public final void selectLast() {
+        @Nullable M3ListItem lastItem = M3SelectionNavigation.last(getChildren(), M3ListItem.class);
+        if (lastItem != null) {
+            selectItem(lastItem);
+        }
+    }
+
+    /// Selects the next drawer list item after the current selected item, wrapping at the end.
+    public final void selectNext() {
+        @Nullable M3ListItem nextItem =
+                M3SelectionNavigation.next(getChildren(), getSelectedItem(), M3ListItem.class);
+        if (nextItem != null) {
+            selectItem(nextItem);
+        }
+    }
+
+    /// Selects the previous drawer list item before the current selected item, wrapping at the start.
+    public final void selectPrevious() {
+        @Nullable M3ListItem previousItem =
+                M3SelectionNavigation.previous(getChildren(), getSelectedItem(), M3ListItem.class);
+        if (previousItem != null) {
+            selectItem(previousItem);
         }
     }
 
@@ -310,5 +354,13 @@ public class M3NavigationDrawer extends VBox {
             }
         }
         return null;
+    }
+
+    /// Validates a drawer item array.
+    private static void validateItems(Node... items) {
+        Objects.requireNonNull(items, "items");
+        for (Node item : items) {
+            Objects.requireNonNull(item, "item");
+        }
     }
 }

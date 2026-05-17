@@ -177,6 +177,28 @@ public class M3SearchBar extends HBox {
         return trailingBox.getChildren();
     }
 
+    /// Adds one trailing action node.
+    public final void addTrailingAction(Node action) {
+        getTrailingActions().add(Objects.requireNonNull(action, "action"));
+    }
+
+    /// Adds trailing action nodes.
+    public final void addTrailingActions(Node... actions) {
+        validateActions(actions);
+        getTrailingActions().addAll(actions);
+    }
+
+    /// Replaces all trailing action nodes.
+    public final void setTrailingActions(Node... actions) {
+        validateActions(actions);
+        getTrailingActions().setAll(actions);
+    }
+
+    /// Removes all trailing action nodes.
+    public final void clearTrailingActions() {
+        getTrailingActions().clear();
+    }
+
     /// Returns the action handler.
     public final @Nullable EventHandler<ActionEvent> getOnAction() {
         return onAction.get();
@@ -263,6 +285,14 @@ public class M3SearchBar extends HBox {
         boolean visible = !trailingBox.getChildren().isEmpty();
         trailingBox.setVisible(visible);
         trailingBox.setManaged(visible);
+    }
+
+    /// Validates a trailing action array.
+    private static void validateActions(Node... actions) {
+        Objects.requireNonNull(actions, "actions");
+        for (Node action : actions) {
+            Objects.requireNonNull(action, "action");
+        }
     }
 
     /// Creates the default leading search glyph node.

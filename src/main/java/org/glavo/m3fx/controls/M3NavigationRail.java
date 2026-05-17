@@ -83,16 +83,34 @@ public class M3NavigationRail extends VBox {
     /// Creates a navigation rail containing the supplied items.
     public M3NavigationRail(M3NavigationItem... items) {
         initialize();
-        Objects.requireNonNull(items, "items");
-        for (M3NavigationItem item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-        getItems().addAll(items);
+        addItems(items);
     }
 
     /// Returns the mutable child list used as navigation rail items.
     public final ObservableList<Node> getItems() {
         return getChildren();
+    }
+
+    /// Adds one navigation item.
+    public final void addItem(M3NavigationItem item) {
+        getItems().add(Objects.requireNonNull(item, "item"));
+    }
+
+    /// Adds navigation items.
+    public final void addItems(M3NavigationItem... items) {
+        validateItems(items);
+        getItems().addAll(items);
+    }
+
+    /// Replaces all navigation items.
+    public final void setItems(M3NavigationItem... items) {
+        validateItems(items);
+        getItems().setAll(items);
+    }
+
+    /// Removes all navigation rail content.
+    public final void clearItems() {
+        getItems().clear();
     }
 
     /// Returns the selected navigation items in child order.
@@ -155,6 +173,33 @@ public class M3NavigationRail extends VBox {
         M3NavigationItem firstItem = firstNavigationItem();
         if (firstItem != null) {
             selectItem(firstItem);
+        }
+    }
+
+    /// Selects the last navigation item when one exists.
+    public final void selectLast() {
+        @Nullable M3NavigationItem lastItem =
+                M3SelectionNavigation.last(getChildren(), M3NavigationItem.class);
+        if (lastItem != null) {
+            selectItem(lastItem);
+        }
+    }
+
+    /// Selects the next navigation item after the current selected item, wrapping at the end.
+    public final void selectNext() {
+        @Nullable M3NavigationItem nextItem =
+                M3SelectionNavigation.next(getChildren(), getSelectedItem(), M3NavigationItem.class);
+        if (nextItem != null) {
+            selectItem(nextItem);
+        }
+    }
+
+    /// Selects the previous navigation item before the current selected item, wrapping at the start.
+    public final void selectPrevious() {
+        @Nullable M3NavigationItem previousItem =
+                M3SelectionNavigation.previous(getChildren(), getSelectedItem(), M3NavigationItem.class);
+        if (previousItem != null) {
+            selectItem(previousItem);
         }
     }
 
@@ -269,5 +314,13 @@ public class M3NavigationRail extends VBox {
             }
         }
         return null;
+    }
+
+    /// Validates a navigation item array.
+    private static void validateItems(M3NavigationItem... items) {
+        Objects.requireNonNull(items, "items");
+        for (M3NavigationItem item : items) {
+            Objects.requireNonNull(item, "item");
+        }
     }
 }
