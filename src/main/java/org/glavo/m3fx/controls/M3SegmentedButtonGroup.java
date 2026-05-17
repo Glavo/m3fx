@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -273,8 +274,22 @@ public class M3SegmentedButtonGroup extends HBox {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setSpacing(DEFAULT_SPACING);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);
         updateSegmentStyles();
+    }
+
+    /// Applies keyboard navigation across enabled segmented buttons.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        M3SelectionNavigation.handleKeySelection(
+                event,
+                getChildren(),
+                getSelectedButton(),
+                M3SegmentedButton.class,
+                true,
+                false,
+                this::select
+        );
     }
 
     /// Installs a selected-state listener on a segmented button.
@@ -377,12 +392,7 @@ public class M3SegmentedButtonGroup extends HBox {
 
     /// Returns the first segmented button child.
     private @Nullable M3SegmentedButton firstButton() {
-        for (Node child : getChildren()) {
-            if (child instanceof M3SegmentedButton button) {
-                return button;
-            }
-        }
-        return null;
+        return M3SelectionNavigation.first(getChildren(), M3SegmentedButton.class);
     }
 
     /// Applies first, middle, last, or single segment style classes.

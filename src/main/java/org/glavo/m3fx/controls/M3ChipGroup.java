@@ -15,6 +15,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -270,7 +271,21 @@ public class M3ChipGroup extends FlowPane {
         setAlignment(Pos.CENTER_LEFT);
         setHgap(DEFAULT_HORIZONTAL_GAP);
         setVgap(DEFAULT_VERTICAL_GAP);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);
+    }
+
+    /// Applies keyboard navigation across enabled chips.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        M3SelectionNavigation.handleKeySelection(
+                event,
+                getChildren(),
+                getSelectedChip(),
+                M3Chip.class,
+                true,
+                true,
+                this::select
+        );
     }
 
     /// Installs a selected-state listener on a chip.
@@ -365,12 +380,7 @@ public class M3ChipGroup extends FlowPane {
 
     /// Returns the first chip child.
     private @Nullable M3Chip firstChip() {
-        for (Node child : getChildren()) {
-            if (child instanceof M3Chip chip) {
-                return chip;
-            }
-        }
-        return null;
+        return M3SelectionNavigation.first(getChildren(), M3Chip.class);
     }
 
     /// Validates a chip array.

@@ -16,6 +16,7 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -260,7 +261,33 @@ public class M3List extends VBox {
     /// Adds base style classes and installs child listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);
+    }
+
+    /// Applies keyboard navigation across enabled list items.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        if (getSelectionMode() == M3ListSelectionMode.NONE) {
+            M3SelectionNavigation.handleKeyFocus(
+                    event,
+                    getChildren(),
+                    M3SelectionNavigation.focused(getChildren(), M3ListItem.class),
+                    M3ListItem.class,
+                    false,
+                    true
+            );
+            return;
+        }
+
+        M3SelectionNavigation.handleKeySelection(
+                event,
+                getChildren(),
+                getSelectedItem(),
+                M3ListItem.class,
+                false,
+                true,
+                this::select
+        );
     }
 
     /// Installs action and selected-state listeners on a list item.
@@ -387,12 +414,7 @@ public class M3List extends VBox {
 
     /// Returns the first list item child.
     private @Nullable M3ListItem firstItem() {
-        for (Node child : getChildren()) {
-            if (child instanceof M3ListItem item) {
-                return item;
-            }
-        }
-        return null;
+        return M3SelectionNavigation.first(getChildren(), M3ListItem.class);
     }
 
     /// Validates a list item array.

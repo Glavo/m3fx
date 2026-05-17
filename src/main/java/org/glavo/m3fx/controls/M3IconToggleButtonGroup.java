@@ -15,6 +15,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -258,7 +259,21 @@ public class M3IconToggleButtonGroup extends HBox {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAlignment(Pos.CENTER_LEFT);
         setSpacing(8.0);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);
+    }
+
+    /// Applies keyboard navigation across enabled toggle icon buttons.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        M3SelectionNavigation.handleKeySelection(
+                event,
+                getChildren(),
+                getSelectedButton(),
+                M3IconToggleButton.class,
+                true,
+                false,
+                this::select
+        );
     }
 
     /// Installs a selected-state listener on a button.
@@ -361,12 +376,7 @@ public class M3IconToggleButtonGroup extends HBox {
 
     /// Returns the first toggle icon button child.
     private @Nullable M3IconToggleButton firstButton() {
-        for (Node child : getChildren()) {
-            if (child instanceof M3IconToggleButton button) {
-                return button;
-            }
-        }
-        return null;
+        return M3SelectionNavigation.first(getChildren(), M3IconToggleButton.class);
     }
 
     /// Validates a toggle icon button array.

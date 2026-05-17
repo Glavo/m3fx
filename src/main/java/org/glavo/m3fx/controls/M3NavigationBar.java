@@ -13,6 +13,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -223,7 +224,21 @@ public class M3NavigationBar extends HBox {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAlignment(Pos.CENTER);
         setSpacing(0.0);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);
+    }
+
+    /// Applies keyboard navigation across enabled navigation items.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        M3SelectionNavigation.handleKeySelection(
+                event,
+                getChildren(),
+                getSelectedItem(),
+                M3NavigationItem.class,
+                true,
+                false,
+                this::select
+        );
     }
 
     /// Installs a selected-state listener on a navigation item.
@@ -308,12 +323,7 @@ public class M3NavigationBar extends HBox {
 
     /// Returns the first navigation item child.
     private @Nullable M3NavigationItem firstNavigationItem() {
-        for (Node child : getChildren()) {
-            if (child instanceof M3NavigationItem item) {
-                return item;
-            }
-        }
-        return null;
+        return M3SelectionNavigation.first(getChildren(), M3NavigationItem.class);
     }
 
     /// Validates a navigation item array.

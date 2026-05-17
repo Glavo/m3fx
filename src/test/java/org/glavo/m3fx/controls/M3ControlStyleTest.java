@@ -3920,6 +3920,128 @@ final class M3ControlStyleTest {
         assertFalse(search.isSelected());
     }
 
+    /// Verifies that selection containers handle keyboard navigation and skip disabled children.
+    @Test
+    void selectionContainersHandleKeyboardNavigationAndSkipDisabledChildren() {
+        M3IconToggleButton iconFirst = new M3IconToggleButton("A");
+        M3IconToggleButton iconSecond = new M3IconToggleButton("B");
+        M3IconToggleButton iconThird = new M3IconToggleButton("C");
+        iconSecond.setDisable(true);
+        M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond, iconThird);
+
+        iconGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertEquals(iconFirst, iconGroup.getSelectedButton());
+        iconGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertEquals(iconThird, iconGroup.getSelectedButton());
+
+        M3SegmentedButton segmentFirst = new M3SegmentedButton("Day");
+        M3SegmentedButton segmentSecond = new M3SegmentedButton("Week");
+        M3SegmentedButton segmentThird = new M3SegmentedButton("Month");
+        segmentSecond.setDisable(true);
+        M3SegmentedButtonGroup segmentedGroup =
+                new M3SegmentedButtonGroup(segmentFirst, segmentSecond, segmentThird);
+
+        segmentedGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertEquals(segmentFirst, segmentedGroup.getSelectedButton());
+        segmentedGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertEquals(segmentThird, segmentedGroup.getSelectedButton());
+        segmentedGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+        assertEquals(segmentFirst, segmentedGroup.getSelectedButton());
+
+        M3Chip chipFirst = new M3Chip("Input");
+        M3Chip chipSecond = new M3Chip("Filter");
+        M3Chip chipThird = new M3Chip("Assist");
+        chipSecond.setDisable(true);
+        M3ChipGroup chipGroup = new M3ChipGroup(chipFirst, chipSecond, chipThird);
+        chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
+
+        chipGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertEquals(chipFirst, chipGroup.getSelectedChip());
+        chipGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+        assertEquals(chipThird, chipGroup.getSelectedChip());
+
+        M3Tab tabFirst = new M3Tab("Overview");
+        M3Tab tabSecond = new M3Tab("Details");
+        M3Tab tabThird = new M3Tab("Activity");
+        tabSecond.setDisable(true);
+        M3TabBar tabBar = new M3TabBar(tabFirst, tabSecond, tabThird);
+
+        tabBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertEquals(tabThird, tabBar.getSelectedTab());
+        tabBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+        assertEquals(tabThird, tabBar.getSelectedTab());
+
+        M3NavigationItem navFirst = new M3NavigationItem("Home");
+        M3NavigationItem navSecond = new M3NavigationItem("Search");
+        M3NavigationItem navThird = new M3NavigationItem("Inbox");
+        navSecond.setDisable(true);
+        M3NavigationBar navigationBar = new M3NavigationBar(navFirst, navSecond, navThird);
+
+        navigationBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertEquals(navThird, navigationBar.getSelectedItem());
+
+        M3NavigationItem railFirst = new M3NavigationItem("Home");
+        M3NavigationItem railSecond = new M3NavigationItem("Search");
+        M3NavigationItem railThird = new M3NavigationItem("Inbox");
+        railSecond.setDisable(true);
+        M3NavigationRail navigationRail = new M3NavigationRail(railFirst, railSecond, railThird);
+        navigationRail.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+        assertEquals(railThird, navigationRail.getSelectedItem());
+
+        M3ListItem drawerFirst = new M3ListItem("Home");
+        M3ListItem drawerSecond = new M3ListItem("Search");
+        M3ListItem drawerThird = new M3ListItem("Inbox");
+        drawerSecond.setDisable(true);
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(drawerFirst, drawerSecond, drawerThird);
+
+        navigationDrawer.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+        assertEquals(drawerThird, navigationDrawer.getSelectedItem());
+
+        M3ListItem listFirst = new M3ListItem("One");
+        M3ListItem listSecond = new M3ListItem("Two");
+        listFirst.setDisable(true);
+        M3List list = new M3List(listFirst, listSecond);
+        list.setSelectionMode(M3ListSelectionMode.SINGLE);
+
+        list.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+        assertEquals(listSecond, list.getSelectedItem());
+
+        M3MenuItem menuFirst = new M3MenuItem("Open");
+        M3MenuItem menuSecond = new M3MenuItem("Save");
+        menuFirst.setDisable(true);
+        M3Menu menu = new M3Menu(menuFirst, menuSecond);
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+
+        menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+        assertEquals(menuSecond, menu.getSelectedItem());
+
+        M3List listWithoutSelection = new M3List(new M3ListItem("Action"));
+        KeyEvent listFocusEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
+        assertTrue(M3SelectionNavigation.handleKeyFocus(
+                listFocusEvent,
+                listWithoutSelection.getItems(),
+                null,
+                M3ListItem.class,
+                false,
+                true
+        ));
+        assertTrue(listFocusEvent.isConsumed());
+        assertNull(listWithoutSelection.getSelectedItem());
+
+        M3Menu menuWithoutSelection = new M3Menu(new M3MenuItem("Action"));
+        KeyEvent menuFocusEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
+        assertTrue(M3SelectionNavigation.handleKeyFocus(
+                menuFocusEvent,
+                menuWithoutSelection.getItems(),
+                null,
+                M3MenuItem.class,
+                false,
+                true
+        ));
+        assertTrue(menuFocusEvent.isConsumed());
+        assertNull(menuWithoutSelection.getSelectedItem());
+    }
+
     /// Verifies that navigation drawer token rules override list item metrics.
     @Test
     void navigationDrawerAppliesItemMetrics() {

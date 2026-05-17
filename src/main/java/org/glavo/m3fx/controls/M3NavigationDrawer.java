@@ -14,6 +14,7 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -232,7 +233,21 @@ public class M3NavigationDrawer extends VBox {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setSpacing(4.0);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);
+    }
+
+    /// Applies keyboard navigation across enabled drawer items.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        M3SelectionNavigation.handleKeySelection(
+                event,
+                getChildren(),
+                getSelectedItem(),
+                M3ListItem.class,
+                false,
+                true,
+                this::select
+        );
     }
 
     /// Keeps drawer list item containers inside the drawer content area.
@@ -348,12 +363,7 @@ public class M3NavigationDrawer extends VBox {
 
     /// Returns the first drawer list item child.
     private @Nullable M3ListItem firstListItem() {
-        for (Node child : getChildren()) {
-            if (child instanceof M3ListItem item) {
-                return item;
-            }
-        }
-        return null;
+        return M3SelectionNavigation.first(getChildren(), M3ListItem.class);
     }
 
     /// Validates a drawer item array.

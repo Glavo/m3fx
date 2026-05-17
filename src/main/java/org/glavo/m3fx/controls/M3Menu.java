@@ -16,6 +16,7 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -260,7 +261,33 @@ public class M3Menu extends VBox {
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getChildren().addListener(childrenListener);
+    }
+
+    /// Applies keyboard navigation across enabled menu items.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        if (getSelectionMode() == M3MenuSelectionMode.NONE) {
+            M3SelectionNavigation.handleKeyFocus(
+                    event,
+                    getChildren(),
+                    M3SelectionNavigation.focused(getChildren(), M3MenuItem.class),
+                    M3MenuItem.class,
+                    false,
+                    true
+            );
+            return;
+        }
+
+        M3SelectionNavigation.handleKeySelection(
+                event,
+                getChildren(),
+                getSelectedItem(),
+                M3MenuItem.class,
+                false,
+                true,
+                this::select
+        );
     }
 
     /// Installs action and selected-state listeners on a menu item.
@@ -387,12 +414,7 @@ public class M3Menu extends VBox {
 
     /// Returns the first menu item child.
     private @Nullable M3MenuItem firstItem() {
-        for (Node child : getChildren()) {
-            if (child instanceof M3MenuItem item) {
-                return item;
-            }
-        }
-        return null;
+        return M3SelectionNavigation.first(getChildren(), M3MenuItem.class);
     }
 
     /// Validates a menu item array.
