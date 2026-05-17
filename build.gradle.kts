@@ -10,11 +10,12 @@ repositories {
 }
 
 val javafxVersion = providers.gradleProperty("m3fx.javafx.version").orElse("21").get()
-val javafxPlatform = when {
+val detectedJavafxPlatform = when {
     System.getProperty("os.name").lowercase().contains("win") -> "win"
     System.getProperty("os.name").lowercase().contains("mac") -> "mac"
     else -> "linux"
 }
+val javafxPlatform = providers.gradleProperty("m3fx.javafx.platform").orElse(detectedJavafxPlatform).get()
 
 val javafxModules = listOf("base", "graphics", "controls")
 
@@ -47,4 +48,10 @@ tasks.register("runDemo") {
     group = "application"
     description = "Runs the M3FX JavaFX demo application."
     dependsOn(":demo:run")
+}
+
+tasks.register("jlinkDemoRuntime") {
+    group = "distribution"
+    description = "Builds a jlink runtime image for the M3FX demo application."
+    dependsOn(":demo:jlinkRuntime")
 }
