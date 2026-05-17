@@ -26,11 +26,12 @@ fun DependencyHandler.addJavafxDependencies(configurationName: String, version: 
 }
 
 dependencies {
-    addJavafxDependencies("api", javafxVersion)
+    addJavafxDependencies("compileOnly", javafxVersion)
     api("org.glavo:MonetFX:0.4.0")
     compileOnlyApi("org.jetbrains:annotations:26.1.0")
 
     testImplementation(platform("org.junit:junit-bom:6.0.0"))
+    addJavafxDependencies("testImplementation", javafxVersion)
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

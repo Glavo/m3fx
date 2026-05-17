@@ -12,7 +12,8 @@
 ## Key Changes
 
 - Configure Gradle with Java release 17, JavaFX 21 by default, JetBrains annotations, MonetFX, and JUnit.
-- Add executable demo shadow-jar support for the configured JavaFX platform.
+- Keep JavaFX as a non-transitive compile/runtime dependency owned by applications, not as a library API dependency.
+- Add executable demo shadow-jar support without bundling JavaFX.
 - Add jlink runtime-image support for the demo app, using BellSoft LibericaJDK Full jmods for target-platform JavaFX runtime images, with independent Windows, Linux, and macOS x64/AArch64 tasks.
 - Add `module-info.java` with module name `org.glavo.m3fx`.
 - Add the public packages:
@@ -57,7 +58,7 @@
 ## Test Plan
 
 - Run `./gradlew -g .gradle-user-home compileJava`.
-- Run `./gradlew -g .gradle-user-home shadowDemoJar` when validating executable demo shadow-jar packaging.
+- Run `./gradlew -g .gradle-user-home shadowDemoJar` when validating executable demo shadow-jar packaging without bundled JavaFX.
 - Run `./gradlew -g .gradle-user-home jlinkDemoRuntime` when validating default demo runtime-image packaging.
 - Run platform-specific jlink tasks such as `jlinkDemoWindowsRuntime`, `jlinkDemoLinuxRuntime`, or `jlinkDemoMacosRuntime` when validating target-platform packaging.
 - Run architecture-specific jlink tasks such as `jlinkDemoWindowsX64Runtime`, `jlinkDemoLinuxAarch64Runtime`, or `jlinkDemoMacosAarch64Runtime` when validating fixed target architectures.

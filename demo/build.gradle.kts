@@ -18,8 +18,24 @@ repositories {
     mavenCentral()
 }
 
+val javafxVersion = providers.gradleProperty("m3fx.javafx.version").orElse("21").get()
+val detectedJavafxPlatform = when {
+    System.getProperty("os.name").lowercase().contains("win") -> "win"
+    System.getProperty("os.name").lowercase().contains("mac") -> "mac"
+    else -> "linux"
+}
+val javafxPlatform = providers.gradleProperty("m3fx.javafx.platform").orElse(detectedJavafxPlatform).get()
+val javafxModules = listOf("base", "graphics", "controls")
+
+fun DependencyHandler.addJavafxDependencies(configurationName: String, version: String) {
+    for (module in javafxModules) {
+        add(configurationName, "org.openjfx:javafx-$module:$version:$javafxPlatform")
+    }
+}
+
 dependencies {
     implementation(project(":"))
+    addJavafxDependencies("implementation", javafxVersion)
 }
 
 val jlinkTargetOs = providers.gradleProperty("m3fx.jlink.os").orElse(detectLibericaOs())
@@ -46,7 +62,7 @@ application {
 
 tasks.register<Jar>("shadowJar") {
     group = "distribution"
-    description = "Builds an executable fat JAR for the M3FX demo on the configured JavaFX platform."
+    description = "Builds an executable fat JAR for the M3FX demo without bundling JavaFX."
     archiveBaseName = "m3fx-demo"
     archiveClassifier = "shadow"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -54,7 +70,9 @@ tasks.register<Jar>("shadowJar") {
     dependsOn(configurations.runtimeClasspath)
     from(sourceSets.main.get().output)
     from({
-        configurations.runtimeClasspath.get().map { file ->
+        configurations.runtimeClasspath.get().filterNot { file ->
+            file.name.startsWith("javafx-")
+        }.map { file ->
             if (file.isDirectory) {
                 file
             } else {
