@@ -50,6 +50,16 @@ public class M3MenuButton extends M3Button {
         initialize();
     }
 
+    /// Creates a menu button with text and menu items.
+    public M3MenuButton(String text, Node... items) {
+        this(text);
+        Objects.requireNonNull(items, "items");
+        for (Node item : items) {
+            Objects.requireNonNull(item, "item");
+        }
+        getItems().addAll(items);
+    }
+
     /// Returns the menu displayed by this button.
     public final M3Menu getMenu() {
         return menu;

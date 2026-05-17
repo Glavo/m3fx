@@ -44,6 +44,16 @@ public class M3SearchView extends VBox {
         setPromptText(promptText);
     }
 
+    /// Creates a search view with prompt text and initial result nodes.
+    public M3SearchView(String promptText, Node... results) {
+        this(promptText);
+        Objects.requireNonNull(results, "results");
+        for (Node result : results) {
+            Objects.requireNonNull(result, "result");
+        }
+        getResults().addAll(results);
+    }
+
     /// Returns the embedded search bar.
     public final M3SearchBar getSearchBar() {
         return searchBar;

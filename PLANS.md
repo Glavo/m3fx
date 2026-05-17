@@ -35,7 +35,8 @@
   - Buttons: filled, tonal, outlined, text, elevated, icon button, toggle icon button, single- or multi-select toggle icon button group, and floating action button.
   - Inputs: filled and outlined text field, plus password field.
   - Selection: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and single- or multi-select segmented button groups.
-  - Navigation, feedback, utility, and containment: icons, tabs, top app bar variants, bottom app bar with configurable floating action alignment, navigation bar, navigation rail, navigation drawer, navigation item with badges, menus with selectable items, search bar, search view with result content and customizable slots, linear progress, circular progress, divider, badge, badged box, avatar, surface, scrim, list and list item, card, side sheet, bottom sheet, dialog, snackbar, and snackbar host with queued messages.
+  - Navigation, feedback, utility, and containment: icons, tabs, top app bar variants, bottom app bar with configurable floating action alignment, navigation bar, navigation rail, navigation drawer, navigation item with badges, menus with selectable items, search bar, search view with result content and customizable slots, linear progress, circular progress, divider, badge, badged box, avatar, surface, scrim, list and list item, card, side sheet, bottom sheet, dialog and dialog pane, snackbar, and snackbar host with queued messages.
+  - Provide convenience constructors for common composition-heavy controls such as menu buttons, menu items, search views, and sheets, while keeping all node ownership explicit through mutable child lists.
 - Implement controls with JavaFX `Control`, `Skin`, `CssMetaData`, and pseudo-class support.
 - Give JavaFX node/control-backed components a control-specific `getUserAgentStylesheet()`. Popup-only utilities that cannot expose this JavaFX hook keep their CSS split into a dedicated file imported by the base stylesheet.
 

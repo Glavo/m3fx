@@ -14,7 +14,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleGroup;
@@ -44,6 +43,7 @@ import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
 import org.glavo.m3fx.controls.M3ChipSelectionMode;
 import org.glavo.m3fx.controls.M3ChipVariant;
+import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
@@ -606,14 +606,14 @@ public final class M3FXDemoApp extends Application {
                 createMenuItem("Save", "S", "Ctrl+S")
         );
 
-        M3MenuButton menuButton = new M3MenuButton("Open menu");
-        menuButton.setVariant(M3ButtonVariant.OUTLINED);
-        menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
-        menuButton.getItems().addAll(
+        M3MenuButton menuButton = new M3MenuButton(
+                "Open menu",
                 createMenuItem("Duplicate", "D", "Ctrl+D"),
                 createMenuItem("Rename", "R", ""),
                 createMenuItem("Delete", "X", "")
         );
+        menuButton.setVariant(M3ButtonVariant.OUTLINED);
+        menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
 
         M3MenuItem selected = createMenuItem("Selected item", "S", "");
         M3Menu selectedMenu = new M3Menu(selected, createMenuItem("Regular item", "R", ""));
@@ -861,15 +861,12 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the sheet component page.
     private Node createSheetsPage() {
-        M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent());
-        sideSheet.getActions().add(createIconButton("X"));
+        M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent(), createIconButton("X"));
 
-        M3SideSheet modalSideSheet = new M3SideSheet("Filters", createSheetContent());
+        M3SideSheet modalSideSheet = new M3SideSheet("Filters", createSheetContent(), createIconButton("X"));
         modalSideSheet.setVariant(M3SheetVariant.MODAL);
-        modalSideSheet.getActions().add(createIconButton("X"));
 
-        M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent());
-        bottomSheet.getActions().add(createIconButton("X"));
+        M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent(), createIconButton("X"));
         bottomSheet.setPrefWidth(520.0);
 
         M3BottomSheet compactBottomSheet = new M3BottomSheet("Compact", createSheetContent());
@@ -1404,16 +1401,12 @@ public final class M3FXDemoApp extends Application {
 
     /// Opens the demo dialog.
     private void showDemoDialog() {
-        Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle("M3 Dialog");
-
-        M3DialogPane pane = new M3DialogPane();
+        M3Dialog<Void> dialog = new M3Dialog<>("M3 Dialog");
+        M3DialogPane pane = dialog.getM3DialogPane();
         pane.setHeaderText("Dialog title");
         pane.setContentText("This dialog uses the M3FX dialog pane style and active theme tokens.");
         pane.getButtonTypes().add(ButtonType.OK);
-        pane.getStylesheets().add(M3ThemeManager.stylesheetUrl());
-        pane.setStyle(createTheme().toRootStyleDeclarations());
-        dialog.setDialogPane(pane);
+        dialog.setTheme(createTheme());
 
         Scene activeScene = scene;
         if (activeScene != null) {

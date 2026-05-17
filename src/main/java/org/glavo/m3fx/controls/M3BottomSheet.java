@@ -120,6 +120,16 @@ public class M3BottomSheet extends BorderPane {
         setContent(content);
     }
 
+    /// Creates a bottom sheet with headline text, content, and trailing actions.
+    public M3BottomSheet(String headline, @Nullable Node content, Node... actions) {
+        this(headline, content);
+        Objects.requireNonNull(actions, "actions");
+        for (Node action : actions) {
+            Objects.requireNonNull(action, "action");
+        }
+        getActions().addAll(actions);
+    }
+
     /// Returns the sheet headline.
     public final String getHeadline() {
         return headline.get();

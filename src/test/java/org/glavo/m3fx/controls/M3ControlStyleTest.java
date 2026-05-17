@@ -14,6 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.Skin;
@@ -887,6 +888,67 @@ final class M3ControlStyleTest {
         assertEquals(Color.rgb(40, 41, 42), ((Labeled) dialogPane.lookup(".content")).getTextFill());
     }
 
+    /// Verifies that Material dialogs install a Material dialog pane and stylesheet.
+    @Test
+    void dialogInstallsMaterialPaneAndStylesheet() {
+        runOnFxThread(() -> {
+            M3Dialog<ButtonType> dialog = new M3Dialog<>(
+                    "Title",
+                    "Header",
+                    "Body",
+                    ButtonType.CANCEL,
+                    ButtonType.OK
+            );
+            M3DialogPane pane = dialog.getM3DialogPane();
+
+            assertEquals("Title", dialog.getTitle());
+            assertEquals(pane, dialog.getDialogPane());
+            assertEquals("Header", pane.getHeaderText());
+            assertEquals("Body", pane.getContentText());
+            assertEquals(java.util.List.of(ButtonType.CANCEL, ButtonType.OK), pane.getButtonTypes());
+            assertTrue(pane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
+            assertTrue(pane.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
+
+            applyCss(pane);
+
+            assertInstanceOf(M3Button.class, pane.lookupButton(ButtonType.OK));
+        });
+    }
+
+    /// Verifies that Material dialogs can apply and clear inline theme declarations.
+    @Test
+    void dialogAppliesAndClearsTheme() {
+        runOnFxThread(() -> {
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            M3DialogPane pane = dialog.getM3DialogPane();
+            M3Theme theme = M3Theme.defaultTheme();
+
+            pane.setStyle("-fx-opacity: 0.9;");
+            dialog.setTheme(theme);
+
+            assertEquals(theme, dialog.getTheme());
+            assertTrue(pane.getStyle().contains("-fx-opacity: 0.9;"));
+            assertTrue(pane.getStyle().contains("-m3-color-primary"));
+
+            dialog.setTheme(null);
+
+            assertNull(dialog.getTheme());
+            assertEquals("-fx-opacity: 0.9;", pane.getStyle());
+        });
+    }
+
+    /// Verifies that Material dialog pane access rejects a replaced plain pane.
+    @Test
+    void dialogRejectsReplacedPlainPane() {
+        runOnFxThread(() -> {
+            M3Dialog<Void> dialog = new M3Dialog<>();
+
+            dialog.setDialogPane(new DialogPane());
+
+            assertThrows(IllegalStateException.class, dialog::getM3DialogPane);
+        });
+    }
+
     /// Verifies that text field component token properties are styleable from CSS.
     @Test
     void textFieldTokensAreStyleable() {
@@ -1365,6 +1427,27 @@ final class M3ControlStyleTest {
         assertEquals(1, actions.get());
     }
 
+    /// Verifies that menu item constructors can install slots and actions.
+    @Test
+    void menuItemConstructorInstallsSlotsAndAction() {
+        Label leading = new Label("L");
+        Label trailing = new Label("T");
+        AtomicInteger actions = new AtomicInteger();
+        M3MenuItem item = new M3MenuItem(
+                "Open",
+                leading,
+                trailing,
+                event -> actions.incrementAndGet()
+        );
+
+        item.fire();
+
+        assertEquals("Open", item.getHeadlineText());
+        assertEquals(leading, item.getLeading());
+        assertEquals(trailing, item.getTrailing());
+        assertEquals(1, actions.get());
+    }
+
     /// Verifies that action menus do not auto-select items by default.
     @Test
     void menuDefaultSelectionModeDoesNotSelectOnAction() {
@@ -1492,10 +1575,9 @@ final class M3ControlStyleTest {
     /// Verifies that menu buttons expose their menu and still fire action events.
     @Test
     void menuButtonOwnsMenuItemsAndFiresActions() {
-        M3MenuButton menuButton = new M3MenuButton("More");
         M3MenuItem item = new M3MenuItem("Open");
+        M3MenuButton menuButton = new M3MenuButton("More", item);
         AtomicInteger actions = new AtomicInteger();
-        menuButton.getItems().add(item);
         menuButton.setOnAction(event -> actions.incrementAndGet());
 
         menuButton.fire();
@@ -1586,8 +1668,8 @@ final class M3ControlStyleTest {
     /// Verifies that search views own a search bar and mutable result list.
     @Test
     void searchViewOwnsSearchBarAndResults() {
-        M3SearchView searchView = new M3SearchView("Find");
         M3ListItem result = new M3ListItem("Result");
+        M3SearchView searchView = new M3SearchView("Find", result);
         Label leading = new Label("S");
         M3IconButton trailing = M3IconButton.withIcon("C");
         AtomicInteger actions = new AtomicInteger();
@@ -1596,7 +1678,6 @@ final class M3ControlStyleTest {
         searchView.getTrailingActions().add(trailing);
         searchView.setOnAction(event -> actions.incrementAndGet());
         searchView.setText("button");
-        searchView.getResults().add(result);
         searchView.fire();
 
         assertEquals("button", searchView.getSearchBar().getText());
@@ -1645,13 +1726,13 @@ final class M3ControlStyleTest {
     @Test
     void sheetControlsOwnContentActionsAndVariants() {
         Label sideContent = new Label("Side content");
-        M3SideSheet sideSheet = new M3SideSheet("Details", sideContent);
         M3IconButton closeAction = new M3IconButton();
-        sideSheet.getActions().add(closeAction);
+        M3SideSheet sideSheet = new M3SideSheet("Details", sideContent, closeAction);
         sideSheet.setVariant(M3SheetVariant.MODAL);
 
         Label bottomContent = new Label("Bottom content");
-        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent);
+        M3IconButton bottomAction = new M3IconButton();
+        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent, bottomAction);
         bottomSheet.setDragHandleVisible(false);
 
         assertEquals("Details", sideSheet.getHeadline());
@@ -1661,6 +1742,7 @@ final class M3ControlStyleTest {
         assertTrue(sideSheet.getStyleClass().contains(M3SheetVariant.MODAL.getStyleClass()));
         assertEquals("Queue", bottomSheet.getHeadline());
         assertEquals(bottomContent, bottomSheet.getContent());
+        assertEquals(bottomAction, bottomSheet.getActions().get(0));
         assertFalse(bottomSheet.isDragHandleVisible());
     }
 
