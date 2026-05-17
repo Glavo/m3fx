@@ -1496,17 +1496,32 @@ final class M3ControlStyleTest {
     void searchViewOwnsSearchBarAndResults() {
         M3SearchView searchView = new M3SearchView("Find");
         M3ListItem result = new M3ListItem("Result");
+        Label leading = new Label("S");
+        M3IconButton trailing = M3IconButton.withIcon("C");
         AtomicInteger actions = new AtomicInteger();
 
+        searchView.setLeading(leading);
+        searchView.getTrailingActions().add(trailing);
         searchView.setOnAction(event -> actions.incrementAndGet());
         searchView.setText("button");
         searchView.getResults().add(result);
         searchView.fire();
 
         assertEquals("button", searchView.getSearchBar().getText());
+        assertEquals("button", searchView.getEditor().getText());
         assertEquals("Find", searchView.getPromptText());
+        assertEquals(leading, searchView.getLeading());
+        assertEquals(leading, searchView.getSearchBar().getLeading());
+        assertEquals(leading, searchView.leadingProperty().get());
+        assertEquals(trailing, searchView.getTrailingActions().get(0));
+        assertEquals(trailing, searchView.getSearchBar().getTrailingActions().get(0));
         assertEquals(result, searchView.getResults().get(0));
         assertEquals(1, actions.get());
+
+        searchView.clear();
+
+        assertEquals("", searchView.getText());
+        assertEquals("", searchView.getEditor().getText());
     }
 
     /// Verifies that search views use active state to show or hide results.

@@ -480,7 +480,9 @@ public final class M3FXDemoApp extends Application {
     private Node createSearchPage() {
         M3SearchBar searchBar = new M3SearchBar("Search M3FX");
         searchBar.setPrefWidth(420.0);
-        searchBar.getTrailingActions().add(createIconButton("C"));
+        M3IconButton clearSearchBar = createIconButton("C");
+        clearSearchBar.setOnAction(event -> searchBar.clear());
+        searchBar.getTrailingActions().add(clearSearchBar);
 
         M3SearchBar populated = new M3SearchBar("Search M3FX");
         populated.setText("Buttons");
@@ -488,6 +490,9 @@ public final class M3FXDemoApp extends Application {
 
         M3SearchView searchView = new M3SearchView("Search components");
         searchView.setPrefWidth(520.0);
+        M3IconButton clearSearchView = createIconButton("C");
+        clearSearchView.setOnAction(event -> searchView.clear());
+        searchView.getTrailingActions().add(clearSearchView);
         searchView.getResults().addAll(
                 createSearchResult("Buttons", "Filled, tonal, outlined, text, and elevated variants"),
                 createSearchResult("Menus", "Menu surfaces, selected rows, and menu buttons"),

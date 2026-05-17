@@ -10,6 +10,7 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -51,6 +52,31 @@ public class M3SearchView extends VBox {
     /// Returns the mutable result node list.
     public final ObservableList<Node> getResults() {
         return resultsBox.getChildren();
+    }
+
+    /// Returns the editable search input used by the embedded search bar.
+    public final TextField getEditor() {
+        return searchBar.getEditor();
+    }
+
+    /// Returns the leading content node from the embedded search bar.
+    public final @Nullable Node getLeading() {
+        return searchBar.getLeading();
+    }
+
+    /// Sets the leading content node on the embedded search bar.
+    public final void setLeading(@Nullable Node leading) {
+        searchBar.setLeading(leading);
+    }
+
+    /// Returns the embedded search bar leading content node property.
+    public final ObjectProperty<@Nullable Node> leadingProperty() {
+        return searchBar.leadingProperty();
+    }
+
+    /// Returns the mutable trailing action list from the embedded search bar.
+    public final ObservableList<Node> getTrailingActions() {
+        return searchBar.getTrailingActions();
     }
 
     /// Returns the text entered in the embedded search bar.
