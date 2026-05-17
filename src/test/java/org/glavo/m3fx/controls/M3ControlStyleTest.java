@@ -3232,6 +3232,7 @@ final class M3ControlStyleTest {
         topAppBar.getActions().addAll(search, more);
 
         assertEquals("Inbox", topAppBar.getTitle());
+        assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
         assertEquals(navigation, topAppBar.getNavigation());
         assertTrue(topAppBar.getActions().contains(search));
         assertTrue(topAppBar.getActions().contains(more));
@@ -3241,6 +3242,46 @@ final class M3ControlStyleTest {
 
         assertEquals("Archive", topAppBar.getTitle());
         assertNull(topAppBar.getNavigation());
+    }
+
+    /// Verifies that top app bar variants update style classes and layout state.
+    @Test
+    void topAppBarVariantsUpdateStyleClassesAndLayout() {
+        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+
+        assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
+
+        topAppBar.setVariant(M3TopAppBarVariant.CENTER_ALIGNED);
+
+        assertEquals(M3TopAppBarVariant.CENTER_ALIGNED, topAppBar.getVariant());
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass()));
+        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
+        assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(Pos.CENTER_LEFT, topAppBar.getAlignment());
+
+        topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
+
+        assertEquals(M3TopAppBarVariant.MEDIUM, topAppBar.getVariant());
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
+        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass()));
+        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(Pos.BOTTOM_LEFT, topAppBar.getAlignment());
+
+        topAppBar.setVariant(M3TopAppBarVariant.LARGE);
+
+        assertEquals(M3TopAppBarVariant.LARGE, topAppBar.getVariant());
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE.getStyleClass()));
+        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
+        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(Pos.BOTTOM_LEFT, topAppBar.getAlignment());
+
+        topAppBar.variantProperty().set(null);
+
+        assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
+        assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(Pos.CENTER_LEFT, topAppBar.getAlignment());
     }
 
     /// Verifies that top app bar token rules apply container metrics.
@@ -3269,6 +3310,7 @@ final class M3ControlStyleTest {
         bottomAppBar.getActions().add(more);
         bottomAppBar.setFloatingAction(create);
 
+        assertEquals(M3BottomAppBarFloatingActionAlignment.END, bottomAppBar.getFloatingActionAlignment());
         assertTrue(bottomAppBar.getActions().contains(search));
         assertTrue(bottomAppBar.getActions().contains(more));
         assertEquals(create, bottomAppBar.getFloatingAction());
@@ -3276,6 +3318,44 @@ final class M3ControlStyleTest {
         bottomAppBar.setFloatingAction(null);
 
         assertNull(bottomAppBar.getFloatingAction());
+    }
+
+    /// Verifies that bottom app bars expose floating action alignment modes.
+    @Test
+    void bottomAppBarFloatingActionAlignmentUpdatesStyleClasses() {
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar(new Label("Search"));
+
+        assertEquals(M3BottomAppBarFloatingActionAlignment.END, bottomAppBar.getFloatingActionAlignment());
+        assertTrue(bottomAppBar.getStyleClass().contains(
+                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+        ));
+
+        bottomAppBar.setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment.CENTER);
+
+        assertEquals(M3BottomAppBarFloatingActionAlignment.CENTER, bottomAppBar.getFloatingActionAlignment());
+        assertTrue(bottomAppBar.getStyleClass().contains(
+                M3BottomAppBarFloatingActionAlignment.CENTER.getStyleClass()
+        ));
+        assertFalse(bottomAppBar.getStyleClass().contains(
+                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+        ));
+
+        bottomAppBar.setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment.START);
+
+        assertEquals(M3BottomAppBarFloatingActionAlignment.START, bottomAppBar.getFloatingActionAlignment());
+        assertTrue(bottomAppBar.getStyleClass().contains(
+                M3BottomAppBarFloatingActionAlignment.START.getStyleClass()
+        ));
+        assertFalse(bottomAppBar.getStyleClass().contains(
+                M3BottomAppBarFloatingActionAlignment.CENTER.getStyleClass()
+        ));
+
+        bottomAppBar.floatingActionAlignmentProperty().set(null);
+
+        assertEquals(M3BottomAppBarFloatingActionAlignment.END, bottomAppBar.getFloatingActionAlignment());
+        assertTrue(bottomAppBar.getStyleClass().contains(
+                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+        ));
     }
 
     /// Verifies that bottom app bar token rules apply container metrics.
@@ -3620,7 +3700,11 @@ final class M3ControlStyleTest {
         assertTrue(snackbar.getStyleClass().contains(M3Snackbar.STYLE_CLASS));
         assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBar.STYLE_CLASS));
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
         assertTrue(bottomAppBar.getStyleClass().contains(M3BottomAppBar.STYLE_CLASS));
+        assertTrue(bottomAppBar.getStyleClass().contains(
+                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+        ));
         assertTrue(sideSheet.getStyleClass().contains(M3SideSheet.STYLE_CLASS));
         assertTrue(bottomSheet.getStyleClass().contains(M3BottomSheet.STYLE_CLASS));
         assertTrue(scrim.getStyleClass().contains(M3Scrim.STYLE_CLASS));

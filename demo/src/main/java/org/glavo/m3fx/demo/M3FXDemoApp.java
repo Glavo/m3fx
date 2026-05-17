@@ -33,6 +33,7 @@ import org.glavo.m3fx.controls.M3AvatarVariant;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3BadgedBox;
 import org.glavo.m3fx.controls.M3BottomAppBar;
+import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
@@ -94,6 +95,7 @@ import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3TopAppBar;
+import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Density;
@@ -666,25 +668,30 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the app bar component page.
     private Node createAppBarsPage() {
-        M3TopAppBar primary = createTopAppBar("Inbox");
-        M3TopAppBar compact = createTopAppBar("Project");
-        compact.setStyle("-fx-pref-height: 56px;");
+        M3TopAppBar small = createTopAppBar("Inbox");
+        M3TopAppBar centerAligned = createTopAppBar("Calendar");
+        centerAligned.setVariant(M3TopAppBarVariant.CENTER_ALIGNED);
+        M3TopAppBar medium = createTopAppBar("Project");
+        medium.setVariant(M3TopAppBarVariant.MEDIUM);
+        M3TopAppBar large = createTopAppBar("Workspace");
+        large.setVariant(M3TopAppBarVariant.LARGE);
 
         return createGallery(
-                createShowcaseGroup("Small", primary),
-                createShowcaseGroup("Compact", compact)
+                createShowcaseGroup("Small", small, centerAligned),
+                createShowcaseGroup("Tall", medium, large)
         );
     }
 
     /// Creates the bottom app bar component page.
     private Node createBottomAppBarsPage() {
-        M3BottomAppBar primary = createBottomAppBar();
-        M3BottomAppBar compact = createBottomAppBar();
-        compact.setStyle("-fx-pref-height: 72px;");
+        M3BottomAppBar end = createBottomAppBar();
+        M3BottomAppBar center = createBottomAppBar();
+        center.setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment.CENTER);
+        M3BottomAppBar start = createBottomAppBar();
+        start.setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment.START);
 
         return createGallery(
-                createShowcaseGroup("With FAB", primary),
-                createShowcaseGroup("Compact", compact)
+                createShowcaseGroup("Floating Action", end, center, start)
         );
     }
 

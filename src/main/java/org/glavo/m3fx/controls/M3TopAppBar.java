@@ -39,6 +39,21 @@ public class M3TopAppBar extends HBox {
     /// The app bar title text property.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
+    /// The top app bar variant property.
+    private final ObjectProperty<M3TopAppBarVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", M3TopAppBarVariant.SMALL) {
+                /// Updates variant style classes and layout state when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3TopAppBarVariant.SMALL);
+                        return;
+                    }
+                    updateVariantStyle();
+                    updateVariantLayout();
+                }
+            };
+
     /// The optional leading navigation node property.
     private final ObjectProperty<@Nullable Node> navigation = new SimpleObjectProperty<>(this, "navigation");
 
@@ -80,6 +95,21 @@ public class M3TopAppBar extends HBox {
         return title;
     }
 
+    /// Returns the top app bar variant.
+    public final M3TopAppBarVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the top app bar variant.
+    public final void setVariant(M3TopAppBarVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the top app bar variant property.
+    public final ObjectProperty<M3TopAppBarVariant> variantProperty() {
+        return variant;
+    }
+
     /// Returns the optional leading navigation node.
     public final @Nullable Node getNavigation() {
         return navigation.get();
@@ -118,6 +148,8 @@ public class M3TopAppBar extends HBox {
         titleLabel.textProperty().bind(title);
         navigation.addListener((observable, oldValue, newValue) -> updateNavigation(newValue));
         updateNavigation(getNavigation());
+        updateVariantStyle();
+        updateVariantLayout();
 
         getChildren().addAll(navigationSlot, titleLabel, spacer, actions);
     }
@@ -131,5 +163,49 @@ public class M3TopAppBar extends HBox {
         }
         navigationSlot.setVisible(visible);
         navigationSlot.setManaged(visible);
+    }
+
+    /// Updates the active variant style class.
+    private void updateVariantStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getVariant().getStyleClass(),
+                M3TopAppBarVariant.SMALL.getStyleClass(),
+                M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass(),
+                M3TopAppBarVariant.MEDIUM.getStyleClass(),
+                M3TopAppBarVariant.LARGE.getStyleClass()
+        );
+    }
+
+    /// Updates layout state that cannot be expressed reliably through user-agent CSS.
+    private void updateVariantLayout() {
+        M3TopAppBarVariant variant = getVariant();
+        boolean centerAligned = variant == M3TopAppBarVariant.CENTER_ALIGNED;
+        boolean tall = variant == M3TopAppBarVariant.MEDIUM || variant == M3TopAppBarVariant.LARGE;
+
+        if (centerAligned) {
+            HBox.setHgrow(titleLabel, Priority.ALWAYS);
+            titleLabel.setAlignment(Pos.CENTER);
+            spacer.setVisible(false);
+            spacer.setManaged(false);
+        } else {
+            HBox.setHgrow(titleLabel, null);
+            titleLabel.setAlignment(Pos.CENTER_LEFT);
+            spacer.setVisible(true);
+            spacer.setManaged(true);
+        }
+
+        if (variant == M3TopAppBarVariant.MEDIUM) {
+            setMinHeight(112.0);
+            setPrefHeight(112.0);
+        } else if (variant == M3TopAppBarVariant.LARGE) {
+            setMinHeight(152.0);
+            setPrefHeight(152.0);
+        } else {
+            setMinHeight(Region.USE_COMPUTED_SIZE);
+            setPrefHeight(Region.USE_COMPUTED_SIZE);
+        }
+
+        setAlignment(tall ? Pos.BOTTOM_LEFT : Pos.CENTER_LEFT);
     }
 }

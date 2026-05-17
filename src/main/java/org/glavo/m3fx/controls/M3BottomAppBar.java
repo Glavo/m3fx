@@ -33,11 +33,29 @@ public class M3BottomAppBar extends HBox {
     /// The optional floating action node property.
     private final ObjectProperty<@Nullable Node> floatingAction = new SimpleObjectProperty<>(this, "floatingAction");
 
+    /// The floating action node alignment property.
+    private final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignment =
+            new SimpleObjectProperty<>(this, "floatingActionAlignment", M3BottomAppBarFloatingActionAlignment.END) {
+                /// Updates alignment style classes and child order when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3BottomAppBarFloatingActionAlignment.END);
+                        return;
+                    }
+                    updateFloatingActionAlignmentStyle();
+                    updateLayoutOrder();
+                }
+            };
+
     /// The trailing action node container.
     private final HBox actions = new HBox();
 
-    /// The flexible spacer between action and floating action regions.
-    private final Region spacer = new Region();
+    /// The flexible spacer before the floating action region.
+    private final Region leadingSpacer = new Region();
+
+    /// The flexible spacer after the floating action region.
+    private final Region trailingSpacer = new Region();
 
     /// The slot that hosts the optional floating action node.
     private final StackPane floatingActionSlot = new StackPane();
@@ -77,6 +95,21 @@ public class M3BottomAppBar extends HBox {
         return floatingAction;
     }
 
+    /// Returns the floating action node alignment.
+    public final M3BottomAppBarFloatingActionAlignment getFloatingActionAlignment() {
+        return floatingActionAlignment.get();
+    }
+
+    /// Sets the floating action node alignment.
+    public final void setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment floatingActionAlignment) {
+        this.floatingActionAlignment.set(Objects.requireNonNull(floatingActionAlignment, "floatingActionAlignment"));
+    }
+
+    /// Returns the floating action node alignment property.
+    public final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignmentProperty() {
+        return floatingActionAlignment;
+    }
+
     /// Returns the user-agent stylesheet for M3FX bottom app bars.
     @Override
     public String getUserAgentStylesheet() {
@@ -90,11 +123,22 @@ public class M3BottomAppBar extends HBox {
         floatingActionSlot.getStyleClass().add(FLOATING_ACTION_STYLE_CLASS);
 
         setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox.setHgrow(leadingSpacer, Priority.ALWAYS);
+        HBox.setHgrow(trailingSpacer, Priority.ALWAYS);
         floatingAction.addListener((observable, oldValue, newValue) -> updateFloatingAction(newValue));
         updateFloatingAction(getFloatingAction());
+        updateFloatingActionAlignmentStyle();
+        updateLayoutOrder();
+    }
 
-        getChildren().addAll(actions, spacer, floatingActionSlot);
+    /// Updates the child order from the floating action alignment.
+    private void updateLayoutOrder() {
+        getChildren().clear();
+        switch (getFloatingActionAlignment()) {
+            case START -> getChildren().addAll(floatingActionSlot, actions, trailingSpacer);
+            case CENTER -> getChildren().addAll(actions, leadingSpacer, floatingActionSlot, trailingSpacer);
+            case END -> getChildren().addAll(actions, leadingSpacer, floatingActionSlot);
+        }
     }
 
     /// Updates the floating action slot.
@@ -106,5 +150,16 @@ public class M3BottomAppBar extends HBox {
         }
         floatingActionSlot.setVisible(visible);
         floatingActionSlot.setManaged(visible);
+    }
+
+    /// Updates the active floating action alignment style class.
+    private void updateFloatingActionAlignmentStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getFloatingActionAlignment().getStyleClass(),
+                M3BottomAppBarFloatingActionAlignment.START.getStyleClass(),
+                M3BottomAppBarFloatingActionAlignment.CENTER.getStyleClass(),
+                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+        );
     }
 }

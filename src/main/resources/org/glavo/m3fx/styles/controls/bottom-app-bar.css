@@ -15,3 +15,15 @@
 .m3-bottom-app-bar-floating-action {
     -fx-alignment: center-right;
 }
+
+.m3-bottom-app-bar-floating-action-start .m3-bottom-app-bar-floating-action {
+    -fx-alignment: center-left;
+}
+
+.m3-bottom-app-bar-floating-action-center .m3-bottom-app-bar-floating-action {
+    -fx-alignment: center;
+}
+
+.m3-bottom-app-bar-floating-action-end .m3-bottom-app-bar-floating-action {
+    -fx-alignment: center-right;
+}
