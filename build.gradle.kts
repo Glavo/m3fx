@@ -2,8 +2,10 @@ plugins {
     `java-library`
 }
 
-group = "org.glavo"
-version = "1.0-SNAPSHOT"
+allprojects {
+    group = "org.glavo"
+    version = "1.0-SNAPSHOT"
+}
 
 repositories {
     mavenCentral()
