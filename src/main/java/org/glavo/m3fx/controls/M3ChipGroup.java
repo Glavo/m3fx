@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
@@ -24,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -94,6 +96,8 @@ public class M3ChipGroup extends FlowPane {
             }
         }
         enforceSelectionPolicy();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     };
 
     /// Whether the group is currently synchronizing selected states.
@@ -266,6 +270,19 @@ public class M3ChipGroup extends FlowPane {
         return M3Stylesheets.controlStylesheet("chip.css");
     }
 
+    /// Returns accessibility attributes for chip group content and selection state.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case ITEM_COUNT -> getItems().size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
+            case MULTIPLE_SELECTION -> getSelectionMode() == M3ChipSelectionMode.MULTIPLE;
+            case SELECTED_ITEMS -> selectedChipsView;
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Adds base style classes and installs child listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -371,6 +388,7 @@ public class M3ChipGroup extends FlowPane {
 
     /// Refreshes the selected chip list from current child states.
     private void refreshSelectedChips() {
+        List<M3Chip> previousSelection = List.copyOf(selectedChips);
         selectedChips.clear();
         for (Node child : getChildren()) {
             if (child instanceof M3Chip chip && chip.isSelected()) {
@@ -378,6 +396,9 @@ public class M3ChipGroup extends FlowPane {
             }
         }
         selectedChip.set(selectedChips.isEmpty() ? null : selectedChips.get(0));
+        if (!selectedChips.equals(previousSelection)) {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+        }
     }
 
     /// Returns the first chip child.

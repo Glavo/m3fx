@@ -15,6 +15,7 @@ import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -155,6 +156,16 @@ public class M3Snackbar extends Control {
             if (!event.isConsumed()) {
                 Event.fireEvent(this, event);
             }
+        }
+    }
+
+    /// Executes accessibility actions supported by snackbars with action text.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case FIRE -> fireAction();
+            default -> super.executeAccessibleAction(action, parameters);
         }
     }
 

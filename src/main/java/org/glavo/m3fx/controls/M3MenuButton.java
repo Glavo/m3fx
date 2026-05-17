@@ -14,6 +14,8 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -230,6 +232,7 @@ public class M3MenuButton extends M3Button {
         prepareMenuForShowAnimation();
         popup.show(this, bounds.getMinX(), bounds.getMaxY() + MENU_OFFSET_Y);
         showing.set(true);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         playShowAnimation();
     }
 
@@ -269,6 +272,29 @@ public class M3MenuButton extends M3Button {
         super.fire();
     }
 
+    /// Returns accessibility attributes for the menu popup.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case EXPANDED -> isShowing();
+            case SUBMENU -> menu;
+            case SELECTED_ITEMS -> getSelectedItems();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Executes menu-related accessibility actions.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SHOW_MENU, EXPAND -> showMenu();
+            case COLLAPSE -> hideMenu();
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Adds base style classes and configures popup behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -277,6 +303,7 @@ public class M3MenuButton extends M3Button {
         popup.getContent().add(menu);
         popup.setOnHidden(event -> {
             showing.set(false);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             resetMenuAnimationState();
         });
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);

@@ -17,6 +17,8 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -104,6 +106,7 @@ public class M3ListItem extends Control {
         @Override
         protected void invalidated() {
             pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
         }
     };
 
@@ -145,6 +148,7 @@ public class M3ListItem extends Control {
         setFocusTraversable(true);
         setHeadlineText(headlineText);
         updateLineCount();
+        updateAccessibleText();
     }
 
     /// Returns the overline text.
@@ -266,6 +270,27 @@ public class M3ListItem extends Control {
     public final void fire() {
         if (!isDisabled()) {
             Event.fireEvent(this, new ActionEvent(this, this));
+        }
+    }
+
+    /// Returns accessibility attributes for list item selection and position.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case SELECTED -> isSelected();
+            case INDEX -> M3Accessible.indexInParent(this);
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Executes accessibility actions supported by list items.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case FIRE -> fire();
+            default -> super.executeAccessibleAction(action, parameters);
         }
     }
 
@@ -448,8 +473,15 @@ public class M3ListItem extends Control {
 
     /// Installs listeners that keep the derived line count in sync with text content.
     private void installLineCountListeners() {
-        overlineText.addListener((observable, oldValue, newValue) -> updateLineCount());
-        supportingText.addListener((observable, oldValue, newValue) -> updateLineCount());
+        overlineText.addListener((observable, oldValue, newValue) -> {
+            updateLineCount();
+            updateAccessibleText();
+        });
+        headlineText.addListener((observable, oldValue, newValue) -> updateAccessibleText());
+        supportingText.addListener((observable, oldValue, newValue) -> {
+            updateLineCount();
+            updateAccessibleText();
+        });
     }
 
     /// Updates the derived line count and related pseudo-class state.
@@ -477,6 +509,26 @@ public class M3ListItem extends Control {
     /// Returns whether text contributes visible list item content.
     private static boolean hasText(String text) {
         return !text.isBlank();
+    }
+
+    /// Updates the accessibility label from the visible list item text.
+    private void updateAccessibleText() {
+        StringBuilder builder = new StringBuilder();
+        appendAccessibleText(builder, getOverlineText());
+        appendAccessibleText(builder, getHeadlineText());
+        appendAccessibleText(builder, getSupportingText());
+        setAccessibleText(builder.length() == 0 ? null : builder.toString());
+    }
+
+    /// Appends a non-blank text part to an accessibility label.
+    private static void appendAccessibleText(StringBuilder builder, String text) {
+        if (text.isBlank()) {
+            return;
+        }
+        if (builder.length() > 0) {
+            builder.append(' ');
+        }
+        builder.append(text);
     }
 
     /// Creates a non-negative styleable double property.

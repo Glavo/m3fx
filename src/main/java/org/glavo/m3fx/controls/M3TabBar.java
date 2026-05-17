@@ -12,6 +12,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.input.KeyEvent;
@@ -22,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -72,6 +74,8 @@ public class M3TabBar extends HBox {
             }
         }
         enforceSelectionPolicy();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     };
 
     /// Whether the tab bar is currently synchronizing selected states.
@@ -218,6 +222,19 @@ public class M3TabBar extends HBox {
         return M3Stylesheets.controlStylesheet("tab.css");
     }
 
+    /// Returns accessibility attributes for tab bar content and selection state.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case ITEM_COUNT -> getTabs().size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getTabs(), parameters);
+            case MULTIPLE_SELECTION -> false;
+            case SELECTED_ITEMS -> selectedTabsView;
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -311,6 +328,7 @@ public class M3TabBar extends HBox {
 
     /// Refreshes selected tab state from current child states.
     private void refreshSelectedTabs() {
+        List<M3Tab> previousSelection = List.copyOf(selectedTabs);
         selectedTabs.clear();
         for (Node child : getChildren()) {
             if (child instanceof M3Tab tab && tab.isSelected()) {
@@ -318,6 +336,9 @@ public class M3TabBar extends HBox {
             }
         }
         selectedTab.set(selectedTabs.isEmpty() ? null : selectedTabs.get(0));
+        if (!selectedTabs.equals(previousSelection)) {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+        }
     }
 
     /// Returns the first tab child.

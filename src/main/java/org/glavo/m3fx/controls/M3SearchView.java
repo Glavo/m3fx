@@ -9,9 +9,11 @@ import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
@@ -236,13 +238,32 @@ public class M3SearchView extends VBox {
         return M3Stylesheets.controlStylesheet("search.css");
     }
 
+    /// Returns accessibility attributes for search results and active state.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case EXPANDED -> isActive();
+            case ITEM_COUNT -> getResults().size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getResults(), parameters);
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Adds base style classes and child nodes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         resultsBox.getStyleClass().add(RESULTS_STYLE_CLASS);
         getChildren().addAll(searchBar, resultsBox);
-        searchBar.activeProperty().addListener((observable, oldValue, newValue) -> updateResultsVisibility());
+        searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            updateResultsVisibility();
+        });
+        resultsBox.getChildren().addListener((ListChangeListener<Node>) change -> {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        });
         setActive(true);
         applyResultsVisibilityImmediately(isActive());
     }

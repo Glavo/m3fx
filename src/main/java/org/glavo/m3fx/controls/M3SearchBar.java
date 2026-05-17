@@ -15,6 +15,8 @@ import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -82,6 +84,7 @@ public class M3SearchBar extends HBox {
         protected void invalidated() {
             boolean active = get();
             pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, active);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             if (active) {
                 editor.requestFocus();
             }
@@ -250,6 +253,34 @@ public class M3SearchBar extends HBox {
         deactivate();
     }
 
+    /// Returns accessibility attributes for the embedded search editor.
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case EXPANDED -> isActive();
+            case FOCUS_NODE -> editor;
+            case TEXT -> getText();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Executes accessibility actions supported by the search bar.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case FIRE -> fire();
+            case REQUEST_FOCUS -> activate();
+            case SET_TEXT -> {
+                if (parameters.length > 0 && parameters[0] instanceof String text) {
+                    setText(text);
+                }
+            }
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Adds base style classes, default slots, and search behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -266,6 +297,8 @@ public class M3SearchBar extends HBox {
 
         setLeading(defaultLeadingNode());
         trailingBox.getChildren().addListener((ListChangeListener<Node>) change -> updateTrailingVisibility());
+        editor.textProperty().addListener((observable, oldValue, newValue) ->
+                notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT));
         editor.focusedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 setActive(true);
