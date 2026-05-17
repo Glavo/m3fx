@@ -1089,6 +1089,87 @@ final class M3ControlStyleTest {
         assertEquals(18.0, textArea.getPadding().getBottom(), 0.0001);
     }
 
+    /// Verifies that text inputs expose an error pseudo-class state.
+    @Test
+    void textInputsExposeErrorState() {
+        PseudoClass error = PseudoClass.getPseudoClass("error");
+        M3TextField textField = new M3TextField();
+        M3PasswordField passwordField = new M3PasswordField();
+        M3TextArea textArea = new M3TextArea();
+
+        assertInstanceOf(M3TextInput.class, textField);
+        assertInstanceOf(M3TextInput.class, passwordField);
+        assertInstanceOf(M3TextInput.class, textArea);
+        assertFalse(textField.isError());
+        assertFalse(passwordField.isError());
+        assertFalse(textArea.isError());
+
+        textField.setError(true);
+        passwordField.setError(true);
+        textArea.setError(true);
+
+        assertTrue(textField.isError());
+        assertTrue(passwordField.isError());
+        assertTrue(textArea.isError());
+        assertTrue(textField.getPseudoClassStates().contains(error));
+        assertTrue(passwordField.getPseudoClassStates().contains(error));
+        assertTrue(textArea.getPseudoClassStates().contains(error));
+
+        textField.errorProperty().set(false);
+        passwordField.errorProperty().set(false);
+        textArea.errorProperty().set(false);
+
+        assertFalse(textField.getPseudoClassStates().contains(error));
+        assertFalse(passwordField.getPseudoClassStates().contains(error));
+        assertFalse(textArea.getPseudoClassStates().contains(error));
+    }
+
+    /// Verifies that text input error styles resolve to the Material error color token.
+    @Test
+    void textInputErrorStylesUseErrorColor() {
+        runOnFxThread(() -> {
+            Color errorColor = Color.rgb(186, 26, 26);
+            M3TextField filledField = new M3TextField("Filled error");
+            filledField.setError(true);
+            filledField.setPrefWidth(180.0);
+            M3TextField outlinedField = M3TextField.withVariant("Outlined error", M3TextInputVariant.OUTLINED);
+            outlinedField.setError(true);
+            outlinedField.setPrefWidth(190.0);
+            M3PasswordField passwordField = M3PasswordField.withVariant("secret", M3TextInputVariant.OUTLINED);
+            passwordField.setError(true);
+            passwordField.setPrefWidth(160.0);
+            M3TextArea textArea = M3TextArea.withVariant("Multiline\nerror", M3TextInputVariant.FILLED);
+            textArea.setError(true);
+            textArea.setPrefSize(240.0, 96.0);
+
+            FlowPane row = new FlowPane(16.0, 16.0, filledField, outlinedField, passwordField, textArea);
+            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(row, 840.0, 240.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            row.applyCss();
+            row.resize(840.0, 240.0);
+            row.layout();
+
+            assertBorderBottomColor(filledField, errorColor);
+            assertBorderColor(outlinedField, errorColor);
+            assertBorderColor(passwordField, errorColor);
+            assertBorderBottomColor(textArea, errorColor);
+
+            WritableImage image = snapshotImageOnFxThread(row);
+            assertSnapshotNodeBorderContainsContrast(image, filledField, Color.WHITE, 0.08);
+            assertSnapshotNodeBorderContainsContrast(image, outlinedField, Color.WHITE, 0.08);
+            assertSnapshotNodeBorderContainsContrast(image, passwordField, Color.WHITE, 0.08);
+            assertSnapshotNodeBorderContainsContrast(image, textArea, Color.WHITE, 0.08);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-input-errors.png"
+            ));
+        });
+    }
+
     /// Verifies that m3fx tooltips expose style and timing defaults.
     @Test
     void tooltipUsesMaterialDefaults() {
@@ -4827,6 +4908,9 @@ final class M3ControlStyleTest {
             outlinedField.setPrefWidth(210.0);
             M3PasswordField passwordField = M3PasswordField.withVariant("password", M3TextInputVariant.OUTLINED);
             passwordField.setPrefWidth(170.0);
+            M3TextField errorField = M3TextField.withVariant("Error", M3TextInputVariant.OUTLINED);
+            errorField.setError(true);
+            errorField.setPrefWidth(150.0);
             M3TextArea textArea = M3TextArea.withVariant("Multiline\ntext area", M3TextInputVariant.FILLED);
             textArea.setPrefSize(260.0, 96.0);
 
@@ -4992,7 +5076,7 @@ final class M3ControlStyleTest {
                             largeFab,
                             extendedFab
                     ),
-                    visualSection("Inputs", filledField, outlinedField, passwordField, textArea),
+                    visualSection("Inputs", filledField, outlinedField, passwordField, errorField, textArea),
                     visualSection("Selection", selectedCheckBox, selectedRadioButton, selectedSwitch, slider),
                     visualSection("Chips, Segments, Tabs", chipGroup, segmentedButtons, tabBar),
                     visualSection(
@@ -5027,6 +5111,7 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, iconToggleGroup, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, filledField, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, outlinedField, Color.WHITE, 0.04);
+            assertSnapshotNodeBorderContainsContrast(image, errorField, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, selectedCheckBox, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, selectedRadioButton, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, selectedSwitch, Color.WHITE, 0.08);
@@ -5861,7 +5946,11 @@ final class M3ControlStyleTest {
                 + "-m3-color-on-surface-variant: rgb(73, 69, 79); "
                 + "-m3-color-inverse-surface: rgb(49, 48, 51); "
                 + "-m3-color-inverse-on-surface: rgb(244, 239, 244); "
-                + "-m3-color-inverse-primary: rgb(207, 189, 255);";
+                + "-m3-color-inverse-primary: rgb(207, 189, 255); "
+                + "-m3-color-error: rgb(186, 26, 26); "
+                + "-m3-color-on-error: white; "
+                + "-m3-color-error-container: rgb(255, 218, 214); "
+                + "-m3-color-on-error-container: rgb(65, 0, 2);";
     }
 
     /// Returns deterministic color tokens used by snackbar style tests.

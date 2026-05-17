@@ -242,7 +242,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Buttons", "Variants, icon buttons, and floating actions", this::createButtonsPage),
                 new DemoPage("Typography", "Token-driven Material type roles", this::createTypographyPage),
                 new DemoPage("Icons", "Size roles and semantic icon colors", this::createIconsPage),
-                new DemoPage("Text Fields", "Filled, outlined, populated, and disabled fields", this::createTextFieldsPage),
+                new DemoPage("Text Fields", "Filled, outlined, populated, error, and disabled fields", this::createTextFieldsPage),
                 new DemoPage("Search", "Search bars, actions, and result surfaces", this::createSearchPage),
                 new DemoPage("Checkboxes", "Checked, unchecked, and disabled states", this::createCheckboxesPage),
                 new DemoPage("Radio Buttons", "Grouped single selection states", this::createRadioButtonsPage),
@@ -470,6 +470,14 @@ public final class M3FXDemoApp extends Application {
         M3PasswordField password = M3PasswordField.withVariant("", M3TextInputVariant.OUTLINED);
         password.setPromptText("Password");
         password.setPrefWidth(280.0);
+        M3TextField filledError = createTextField("Filled error", "Invalid value", M3TextInputVariant.FILLED, false);
+        filledError.setError(true);
+        M3TextField outlinedError = createTextField("Outlined error", "", M3TextInputVariant.OUTLINED, false);
+        outlinedError.setError(true);
+        M3PasswordField passwordError = M3PasswordField.withVariant("", M3TextInputVariant.OUTLINED);
+        passwordError.setPromptText("Password error");
+        passwordError.setError(true);
+        passwordError.setPrefWidth(280.0);
         M3TextArea filledArea = createTextArea(
                 "Filled text area",
                 "Write longer notes across multiple lines.",
@@ -482,10 +490,18 @@ public final class M3FXDemoApp extends Application {
                 M3TextInputVariant.OUTLINED,
                 false
         );
+        M3TextArea areaError = createTextArea(
+                "Text area error",
+                "This content needs review.",
+                M3TextInputVariant.FILLED,
+                false
+        );
+        areaError.setError(true);
 
         return createGallery(
                 createShowcaseGroup("Filled", filled, filledText, filledDisabled),
                 createShowcaseGroup("Outlined", outlined, outlinedText, password),
+                createShowcaseGroup("Error", filledError, outlinedError, passwordError, areaError),
                 createShowcaseGroup("Text Areas", filledArea, outlinedArea)
         );
     }

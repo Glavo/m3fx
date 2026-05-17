@@ -3,9 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -24,9 +27,12 @@ import java.util.Objects;
 
 /// A Material Design 3 password field.
 @NotNullByDefault
-public class M3PasswordField extends PasswordField {
+public class M3PasswordField extends PasswordField implements M3TextInput {
     /// The base style class for m3fx password fields.
     public static final String STYLE_CLASS = "m3-password-field";
+
+    /// The pseudo-class used while the field is in an error state.
+    private static final PseudoClass ERROR_PSEUDO_CLASS = PseudoClass.getPseudoClass("error");
 
     /// The default field container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 56.0;
@@ -47,6 +53,15 @@ public class M3PasswordField extends PasswordField {
                 return;
             }
             updateVariantStyle();
+        }
+            };
+
+    /// Whether this field should render its error state.
+    private final BooleanProperty error = new SimpleBooleanProperty(this, "error") {
+        /// Updates the error pseudo-class when the property changes.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(ERROR_PSEUDO_CLASS, get());
         }
     };
 
@@ -90,6 +105,21 @@ public class M3PasswordField extends PasswordField {
     /// Returns the text input variant property.
     public final ObjectProperty<M3TextInputVariant> variantProperty() {
         return variant;
+    }
+
+    /// Returns whether this field renders its error state.
+    public final boolean isError() {
+        return error.get();
+    }
+
+    /// Sets whether this field renders its error state.
+    public final void setError(boolean error) {
+        this.error.set(error);
+    }
+
+    /// Returns the error state property.
+    public final BooleanProperty errorProperty() {
+        return error;
     }
 
     /// Returns the preferred container height token.

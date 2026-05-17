@@ -18,6 +18,15 @@
     -fx-highlight-text-fill: -m3-color-on-primary;
 }
 
+.m3-text-field:error,
+.m3-text-field:error:focused,
+.m3-password-field:error,
+.m3-password-field:error:focused,
+.m3-text-area:error,
+.m3-text-area:error:focused {
+    -fx-prompt-text-fill: -m3-color-error;
+}
+
 .m3-text-area.m3-text-area,
 .m3-text-area.m3-text-area:focused {
     -m3-container-height: 112px;
@@ -57,6 +66,23 @@
     -fx-border-width: 0 0 2px 0;
 }
 
+.m3-text-field.m3-filled-field:error,
+.m3-text-field.m3-filled-field:error:hover,
+.m3-password-field.m3-filled-field:error,
+.m3-password-field.m3-filled-field:error:hover,
+.m3-text-area.m3-filled-field:error,
+.m3-text-area.m3-filled-field:error:hover {
+    -fx-border-color: transparent transparent -m3-color-error transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.m3-text-field.m3-filled-field:error:focused,
+.m3-password-field.m3-filled-field:error:focused,
+.m3-text-area.m3-filled-field:error:focused {
+    -fx-border-color: transparent transparent -m3-color-error transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
 .m3-text-field.m3-outlined-field,
 .m3-text-field.m3-outlined-field:hover,
 .m3-password-field.m3-outlined-field,
@@ -81,6 +107,23 @@
     -fx-border-color: -m3-color-primary;
     -fx-border-insets: 0;
     -fx-border-radius: 4px;
+    -fx-border-width: 2px;
+}
+
+.m3-text-field.m3-outlined-field:error,
+.m3-text-field.m3-outlined-field:error:hover,
+.m3-password-field.m3-outlined-field:error,
+.m3-password-field.m3-outlined-field:error:hover,
+.m3-text-area.m3-outlined-field:error,
+.m3-text-area.m3-outlined-field:error:hover {
+    -fx-border-color: -m3-color-error;
+    -fx-border-width: 1px;
+}
+
+.m3-text-field.m3-outlined-field:error:focused,
+.m3-password-field.m3-outlined-field:error:focused,
+.m3-text-area.m3-outlined-field:error:focused {
+    -fx-border-color: -m3-color-error;
     -fx-border-width: 2px;
 }
 
