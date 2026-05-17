@@ -3,14 +3,16 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.DoublePropertyBase;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
-import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
@@ -22,15 +24,25 @@ import java.util.List;
 
 /// A Material Design 3 linear progress indicator.
 @NotNullByDefault
-public class M3ProgressBar extends ProgressBar {
+public class M3ProgressBar extends Control {
     /// The base style class for m3fx progress bars.
     public static final String STYLE_CLASS = "m3-progress-bar";
+
+    /// The progress value that marks the control as indeterminate.
+    public static final double INDETERMINATE_PROGRESS = -1.0;
+
+    /// The pseudo class applied while progress is indeterminate.
+    private static final PseudoClass INDETERMINATE_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("indeterminate");
 
     /// The default progress track thickness.
     private static final double DEFAULT_TRACK_THICKNESS = 4.0;
 
     /// The default progress track shape radius.
     private static final double DEFAULT_TRACK_SHAPE = 999.0;
+
+    /// The current progress value.
+    private DoubleProperty progress;
 
     /// The styleable track thickness token.
     private StyleableDoubleProperty trackThickness;
@@ -45,8 +57,55 @@ public class M3ProgressBar extends ProgressBar {
 
     /// Creates a progress bar with an initial progress value.
     public M3ProgressBar(double progress) {
-        super(progress);
         initialize();
+        setProgress(progress);
+    }
+
+    /// Returns the current progress value.
+    public final double getProgress() {
+        return progress == null ? INDETERMINATE_PROGRESS : progress.get();
+    }
+
+    /// Sets the current progress value.
+    public final void setProgress(double progress) {
+        progressProperty().set(progress);
+    }
+
+    /// Returns the current progress value property.
+    public final DoubleProperty progressProperty() {
+        if (progress == null) {
+            progress = new DoublePropertyBase(INDETERMINATE_PROGRESS) {
+                /// Normalizes progress and updates the indeterminate pseudo class.
+                @Override
+                protected void invalidated() {
+                    double normalizedProgress = normalizeProgress(get());
+                    if (Double.compare(normalizedProgress, get()) != 0) {
+                        set(normalizedProgress);
+                        return;
+                    }
+                    pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, isIndeterminate());
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3ProgressBar.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "progress";
+                }
+            };
+        }
+        return progress;
+    }
+
+    /// Returns whether the current progress value is indeterminate.
+    public final boolean isIndeterminate() {
+        return getProgress() == INDETERMINATE_PROGRESS;
     }
 
     /// Returns the progress track thickness token.
@@ -161,6 +220,7 @@ public class M3ProgressBar extends ProgressBar {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
+        pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, true);
         updateMetrics();
     }
 
@@ -170,6 +230,14 @@ public class M3ProgressBar extends ProgressBar {
         setMinHeight(thickness);
         setPrefHeight(thickness);
         setMaxHeight(thickness);
+    }
+
+    /// Normalizes progress values to the supported range.
+    private static double normalizeProgress(double progress) {
+        if (Double.isNaN(progress) || progress < 0.0) {
+            return INDETERMINATE_PROGRESS;
+        }
+        return Math.min(1.0, progress);
     }
 
     /// CSS metadata for m3fx progress bar component tokens.

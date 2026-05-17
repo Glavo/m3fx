@@ -992,7 +992,7 @@ public final class M3FXDemoApp extends Application {
         M3Button longText = createButton("Long tooltip", M3ButtonVariant.OUTLINED);
         M3Tooltip tooltip = new M3Tooltip("Use tooltips for brief contextual labels when a control needs clarification.");
         tooltip.setPrefWidth(260.0);
-        longText.setTooltip(tooltip);
+        M3Tooltip.install(longText, tooltip);
 
         M3IconButton iconButton = createIconButton("i");
         M3Tooltip.install(iconButton, "Icon button");

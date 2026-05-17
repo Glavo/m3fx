@@ -5665,6 +5665,10 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.CheckBox.class.isAssignableFrom(M3CheckBox.class));
         assertFalse(javafx.scene.control.RadioButton.class.isAssignableFrom(M3RadioButton.class));
         assertFalse(javafx.scene.control.CheckBox.class.isAssignableFrom(M3Switch.class));
+        assertFalse(javafx.scene.control.Slider.class.isAssignableFrom(M3Slider.class));
+        assertFalse(javafx.scene.control.ProgressBar.class.isAssignableFrom(M3ProgressBar.class));
+        assertFalse(javafx.scene.control.ProgressIndicator.class.isAssignableFrom(M3ProgressIndicator.class));
+        assertFalse(javafx.scene.control.Tooltip.class.isAssignableFrom(M3Tooltip.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));

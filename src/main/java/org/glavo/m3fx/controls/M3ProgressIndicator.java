@@ -3,14 +3,16 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.DoublePropertyBase;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
-import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
@@ -22,15 +24,25 @@ import java.util.List;
 
 /// A Material Design 3 circular progress indicator.
 @NotNullByDefault
-public class M3ProgressIndicator extends ProgressIndicator {
+public class M3ProgressIndicator extends Control {
     /// The base style class for m3fx progress indicators.
     public static final String STYLE_CLASS = "m3-progress-indicator";
+
+    /// The progress value that marks the control as indeterminate.
+    public static final double INDETERMINATE_PROGRESS = -1.0;
+
+    /// The pseudo class applied while progress is indeterminate.
+    private static final PseudoClass INDETERMINATE_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("indeterminate");
 
     /// The default circular indicator stroke thickness.
     private static final double DEFAULT_TRACK_THICKNESS = 4.0;
 
     /// The default circular indicator size.
     private static final double DEFAULT_INDICATOR_SIZE = 48.0;
+
+    /// The current progress value.
+    private DoubleProperty progress;
 
     /// The styleable circular indicator stroke thickness token.
     private StyleableDoubleProperty trackThickness;
@@ -45,8 +57,55 @@ public class M3ProgressIndicator extends ProgressIndicator {
 
     /// Creates a progress indicator with an initial progress value.
     public M3ProgressIndicator(double progress) {
-        super(progress);
         initialize();
+        setProgress(progress);
+    }
+
+    /// Returns the current progress value.
+    public final double getProgress() {
+        return progress == null ? INDETERMINATE_PROGRESS : progress.get();
+    }
+
+    /// Sets the current progress value.
+    public final void setProgress(double progress) {
+        progressProperty().set(progress);
+    }
+
+    /// Returns the current progress value property.
+    public final DoubleProperty progressProperty() {
+        if (progress == null) {
+            progress = new DoublePropertyBase(INDETERMINATE_PROGRESS) {
+                /// Normalizes progress and updates the indeterminate pseudo class.
+                @Override
+                protected void invalidated() {
+                    double normalizedProgress = normalizeProgress(get());
+                    if (Double.compare(normalizedProgress, get()) != 0) {
+                        set(normalizedProgress);
+                        return;
+                    }
+                    pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, isIndeterminate());
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3ProgressIndicator.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "progress";
+                }
+            };
+        }
+        return progress;
+    }
+
+    /// Returns whether the current progress value is indeterminate.
+    public final boolean isIndeterminate() {
+        return getProgress() == INDETERMINATE_PROGRESS;
     }
 
     /// Returns the circular indicator stroke thickness token.
@@ -162,6 +221,7 @@ public class M3ProgressIndicator extends ProgressIndicator {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
+        pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, true);
         updateMetrics();
     }
 
@@ -171,6 +231,14 @@ public class M3ProgressIndicator extends ProgressIndicator {
         setMinSize(size, size);
         setPrefSize(size, size);
         setMaxSize(USE_COMPUTED_SIZE, USE_COMPUTED_SIZE);
+    }
+
+    /// Normalizes progress values to the supported range.
+    private static double normalizeProgress(double progress) {
+        if (Double.isNaN(progress) || progress < 0.0) {
+            return INDETERMINATE_PROGRESS;
+        }
+        return Math.min(1.0, progress);
     }
 
     /// CSS metadata for m3fx progress indicator component tokens.

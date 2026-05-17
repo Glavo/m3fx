@@ -10,7 +10,6 @@ import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SkinBase;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Arc;
@@ -143,7 +142,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// Updates the visible arc for determinate or indeterminate progress.
     private void updateIndicatorArc() {
         double progress = getSkinnable().getProgress();
-        if (progress == ProgressIndicator.INDETERMINATE_PROGRESS) {
+        if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             track.setVisible(false);
             indicator.setStartAngle(indeterminateStartAngle(indeterminatePhase.get()));
             indicator.setLength(-indeterminateSweep(indeterminatePhase.get()));
@@ -158,7 +157,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// Updates determinate or indeterminate animation state for the current progress value.
     private void updateProgressAnimation(boolean animateDeterminateProgress) {
         double progress = getSkinnable().getProgress();
-        if (progress == ProgressIndicator.INDETERMINATE_PROGRESS) {
+        if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
             if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
                 indeterminateAnimation.play();
@@ -189,7 +188,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
     /// Returns the initial displayed progress value for a public progress value.
     private static double initialDisplayedProgress(double progress) {
-        return progress == ProgressIndicator.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
+        return progress == M3ProgressIndicator.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
     }
 
     /// Returns the animated start angle for an indeterminate progress phase.

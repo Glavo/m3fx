@@ -10,7 +10,6 @@ import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
@@ -137,7 +136,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Lays out the determinate or indeterminate bar region.
     private void layoutBar(double x, double y, double width, double height, double radius) {
         double progress = getSkinnable().getProgress();
-        if (progress == ProgressIndicator.INDETERMINATE_PROGRESS) {
+        if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
             double segmentX = x - segmentWidth + (width + segmentWidth) * indeterminatePosition.get();
             bar.setVisible(true);
@@ -153,7 +152,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Updates determinate or indeterminate animation state for the current progress value.
     private void updateProgressAnimation(boolean animateDeterminateProgress) {
         double progress = getSkinnable().getProgress();
-        if (progress == ProgressIndicator.INDETERMINATE_PROGRESS) {
+        if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
             if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
                 indeterminateAnimation.play();
@@ -184,7 +183,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// Returns the initial displayed progress value for a public progress value.
     private static double initialDisplayedProgress(double progress) {
-        return progress == ProgressIndicator.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
+        return progress == M3ProgressBar.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
     }
 
     /// Clamps a progress value to the visible range.
