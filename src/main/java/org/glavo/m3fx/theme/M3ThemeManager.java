@@ -8,6 +8,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -53,6 +54,13 @@ public final class M3ThemeManager {
         installThemeStylesheet(scene, theme);
     }
 
+    /// Returns the theme installed on the scene root, or null when no M3FX theme is installed.
+    public static @Nullable M3Theme getTheme(Scene scene) {
+        Objects.requireNonNull(scene, "scene");
+
+        return getTheme(scene.getRoot());
+    }
+
     /// Installs theme tokens on a root node.
     public static void install(Parent root, M3Theme theme) {
         Objects.requireNonNull(root, "root");
@@ -70,6 +78,14 @@ public final class M3ThemeManager {
         String baseStyle = baseStyleValue instanceof String ? (String) baseStyleValue : "";
         root.setStyle(mergeStyles(baseStyle, theme.toRootStyleDeclarations()));
         root.getProperties().put(THEME_PROPERTY_KEY, theme);
+    }
+
+    /// Returns the theme installed on a root node, or null when no M3FX theme is installed.
+    public static @Nullable M3Theme getTheme(Parent root) {
+        Objects.requireNonNull(root, "root");
+
+        Object theme = root.getProperties().get(THEME_PROPERTY_KEY);
+        return theme instanceof M3Theme materialTheme ? materialTheme : null;
     }
 
     /// Adds the base m3fx stylesheet to a scene if it is not already present.

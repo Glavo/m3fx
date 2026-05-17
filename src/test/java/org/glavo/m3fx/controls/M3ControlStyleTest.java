@@ -7,6 +7,7 @@ import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventType;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -15,6 +16,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
@@ -35,6 +37,7 @@ import javafx.scene.shape.Arc;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
@@ -937,11 +940,40 @@ final class M3ControlStyleTest {
             assertEquals(theme, dialog.getTheme());
             assertTrue(pane.getStyle().contains("-fx-opacity: 0.9;"));
             assertTrue(pane.getStyle().contains("-m3-color-primary"));
+            assertEquals(M3ThemeManager.stylesheetUrl(), pane.getStylesheets().get(0));
+            assertEquals(M3ThemeManager.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
 
             dialog.setTheme(null);
 
             assertNull(dialog.getTheme());
             assertEquals("-fx-opacity: 0.9;", pane.getStyle());
+            assertEquals(java.util.List.of(M3ThemeManager.stylesheetUrl()), pane.getStylesheets());
+        });
+    }
+
+    /// Verifies that Material dialogs inherit the owner scene theme when they are shown.
+    @Test
+    void dialogInheritsOwnerSceneTheme() {
+        runOnFxThread(() -> {
+            Stage owner = new Stage();
+            try {
+                Pane root = new Pane();
+                Scene scene = new Scene(root);
+                M3Theme theme = M3Theme.defaultTheme();
+                M3Dialog<Void> dialog = new M3Dialog<>();
+                M3DialogPane pane = dialog.getM3DialogPane();
+
+                M3ThemeManager.install(scene, theme);
+                owner.setScene(scene);
+                dialog.initOwner(owner);
+                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
+
+                assertNull(dialog.getTheme());
+                assertTrue(pane.getStyle().contains("-m3-color-primary"));
+                assertEquals(M3ThemeManager.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
+            } finally {
+                owner.close();
+            }
         });
     }
 
@@ -1041,6 +1073,49 @@ final class M3ControlStyleTest {
         assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
 
         M3Tooltip.uninstall(target, tooltip);
+    }
+
+    /// Verifies that tooltips can apply and clear inline theme declarations.
+    @Test
+    void tooltipAppliesAndClearsTheme() {
+        M3Tooltip tooltip = new M3Tooltip("Details");
+        M3Theme theme = M3Theme.defaultTheme();
+
+        tooltip.setStyle("-fx-opacity: 0.9;");
+        tooltip.setTheme(theme);
+
+        assertEquals(theme, tooltip.getTheme());
+        assertTrue(tooltip.getStyle().contains("-fx-opacity: 0.9;"));
+        assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
+
+        tooltip.setTheme(null);
+
+        assertNull(tooltip.getTheme());
+        assertEquals("-fx-opacity: 0.9;", tooltip.getStyle());
+    }
+
+    /// Verifies that installed tooltips inherit the target node scene theme.
+    @Test
+    void tooltipInheritsInstalledSceneTheme() {
+        Label attachedTarget = new Label("Attached target");
+        Label delayedTarget = new Label("Delayed target");
+        Pane root = new Pane(attachedTarget);
+        Scene scene = new Scene(root);
+        M3Theme theme = M3Theme.defaultTheme();
+
+        M3ThemeManager.install(scene, theme);
+
+        M3Tooltip attachedTooltip = M3Tooltip.install(attachedTarget, "Installed");
+        M3Tooltip delayedTooltip = M3Tooltip.install(delayedTarget, "Delayed");
+
+        assertEquals(theme, attachedTooltip.getTheme());
+        assertTrue(attachedTooltip.getStyle().contains("-m3-color-primary"));
+        assertNull(delayedTooltip.getTheme());
+
+        root.getChildren().add(delayedTarget);
+
+        assertEquals(theme, delayedTooltip.getTheme());
+        assertTrue(delayedTooltip.getStyle().contains("-m3-color-primary"));
     }
 
     /// Verifies that avatars swap between text and graphic content.

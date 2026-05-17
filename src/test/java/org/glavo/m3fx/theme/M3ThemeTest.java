@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -233,6 +234,27 @@ final class M3ThemeTest {
         assertEquals(2, scene.getStylesheets().size());
         assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
         assertTrue(M3ThemeManager.stylesheetUrl().endsWith("/styles/base.css"));
+    }
+
+    /// Verifies that installed themes can be queried from scenes and roots.
+    @Test
+    void returnsInstalledTheme() {
+        Pane root = new Pane();
+        Scene scene = new Scene(root);
+        M3Theme theme = M3Theme.defaultTheme();
+
+        assertNull(M3ThemeManager.getTheme(root));
+        assertNull(M3ThemeManager.getTheme(scene));
+
+        M3ThemeManager.install(scene, theme);
+
+        assertSame(theme, M3ThemeManager.getTheme(root));
+        assertSame(theme, M3ThemeManager.getTheme(scene));
+
+        M3ThemeManager.uninstall(scene);
+
+        assertNull(M3ThemeManager.getTheme(root));
+        assertNull(M3ThemeManager.getTheme(scene));
     }
 
     /// Verifies that generated component stylesheets can be addressed directly.

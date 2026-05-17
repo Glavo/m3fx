@@ -1390,7 +1390,6 @@ public final class M3FXDemoApp extends Application {
         pane.setHeaderText("Dialog title");
         pane.setContentText("This dialog uses the M3FX dialog pane style and active theme tokens.");
         pane.getButtonTypes().add(ButtonType.OK);
-        dialog.setTheme(createTheme());
 
         Scene activeScene = scene;
         if (activeScene != null) {
