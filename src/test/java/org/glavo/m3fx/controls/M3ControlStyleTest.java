@@ -25,6 +25,7 @@ import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Skin;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
@@ -49,6 +50,7 @@ import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3CardSkin;
+import org.glavo.m3fx.skins.M3CarouselSkin;
 import org.glavo.m3fx.skins.M3CheckBoxSkin;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
@@ -686,6 +688,112 @@ final class M3ControlStyleTest {
         card.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
 
         assertEquals(2, actionCount.get());
+    }
+
+    /// Verifies that carousels manage items, selected state, and item click selection.
+    @Test
+    void carouselManagesItemsSelectionAndItemClicks() {
+        Label first = new Label("First");
+        Label second = new Label("Second");
+        Label third = new Label("Third");
+        third.setDisable(true);
+        M3Carousel carousel = new M3Carousel(first, second, third);
+
+        assertTrue(first.getStyleClass().contains(M3Carousel.ITEM_STYLE_CLASS));
+        assertEquals(-1, carousel.getSelectedIndex());
+        assertNull(carousel.getSelectedItem());
+
+        carousel.selectIndex(1);
+
+        assertSame(second, carousel.getSelectedItem());
+        assertEquals(1, carousel.getSelectedIndex());
+        assertEquals(carousel.getSelectedItems(), carousel.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+        assertTrue(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+
+        carousel.selectNext();
+
+        assertSame(first, carousel.getSelectedItem());
+        assertFalse(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+
+        second.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_CLICKED, 4.0, 4.0, false));
+
+        assertSame(second, carousel.getSelectedItem());
+        assertThrows(IllegalArgumentException.class, () -> carousel.select(new Label("Detached")));
+
+        carousel.getItems().remove(second);
+
+        assertFalse(second.getStyleClass().contains(M3Carousel.ITEM_STYLE_CLASS));
+        assertFalse(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+        assertSame(third, carousel.getSelectedItem());
+
+        carousel.clearItems();
+
+        assertEquals(-1, carousel.getSelectedIndex());
+        assertNull(carousel.getSelectedItem());
+    }
+
+    /// Verifies that carousels support keyboard navigation and accessibility selection.
+    @Test
+    void carouselHandlesKeyboardAndAccessibilitySelection() {
+        Label first = new Label("First");
+        Label second = new Label("Second");
+        Label third = new Label("Third");
+        M3Carousel carousel = new M3Carousel(first, second, third);
+
+        carousel.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+        assertSame(first, carousel.getSelectedItem());
+
+        carousel.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+        assertSame(second, carousel.getSelectedItem());
+        assertEquals(false, carousel.queryAccessibleAttribute(AccessibleAttribute.MULTIPLE_SELECTION));
+        assertEquals(third, carousel.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
+
+        carousel.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, third);
+
+        assertSame(third, carousel.getSelectedItem());
+
+        carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+
+        assertSame(first, carousel.getSelectedItem());
+
+        carousel.setWrapAround(false);
+        carousel.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+        assertSame(first, carousel.getSelectedItem());
+    }
+
+    /// Verifies that carousel skins create an internal viewport and reveal selected items.
+    @Test
+    void carouselCreatesMaterialSkinAndScrollsSelectedItemIntoView() {
+        runOnFxThread(() -> {
+            M3Carousel carousel = new M3Carousel(
+                    carouselTestItem("A"),
+                    carouselTestItem("B"),
+                    carouselTestItem("C"),
+                    carouselTestItem("D"),
+                    carouselTestItem("E")
+            );
+            carousel.setAnimatedScroll(false);
+            carousel.setPrefSize(260.0, 100.0);
+            Pane root = new Pane(carousel);
+            Scene scene = new Scene(root, 280.0, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            carousel.resizeRelocate(0.0, 0.0, 260.0, 100.0);
+            root.layout();
+
+            assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
+
+            carousel.selectIndex(4);
+            root.layout();
+
+            ScrollPane viewport = assertInstanceOf(ScrollPane.class, carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS));
+            assertTrue(viewport.getHvalue() > 0.5, () -> "hvalue=" + viewport.getHvalue());
+        });
     }
 
     /// Verifies that snackbar component token properties are styleable from CSS.
@@ -6063,6 +6171,45 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that carousel snapshots render the viewport and selected item.
+    @Test
+    void carouselSnapshotRendersViewportAndSelectedItem() {
+        runOnFxThread(() -> {
+            M3Card first = new M3Card(visualLabel("First"), M3CardVariant.FILLED);
+            first.setPrefSize(150.0, 84.0);
+            M3Card second = new M3Card(visualLabel("Selected"), M3CardVariant.ELEVATED);
+            second.setPrefSize(160.0, 84.0);
+            M3Card third = new M3Card(visualLabel("Third"), M3CardVariant.OUTLINED);
+            third.setPrefSize(150.0, 84.0);
+            M3Card fourth = new M3Card(visualLabel("Fourth"), M3CardVariant.FILLED);
+            fourth.setPrefSize(150.0, 84.0);
+            M3Carousel carousel = new M3Carousel(first, second, third, fourth);
+            carousel.setAnimatedScroll(false);
+            carousel.setPrefSize(360.0, 104.0);
+            carousel.selectIndex(1);
+
+            FlowPane root = new FlowPane(carousel);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 420.0, 160.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(420.0, 160.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, carousel, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, second, Color.WHITE, 0.04);
+            assertTrue(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-carousel.png"
+            ));
+        });
+    }
+
     /// Verifies that every implemented node-backed control family renders in a full visual gallery.
     @Test
     void allImplementedControlFamiliesRenderVisualGallery() {
@@ -6213,6 +6360,15 @@ final class M3ControlStyleTest {
             elevatedCard.setPrefSize(150.0, 80.0);
             M3Card outlinedCard = new M3Card(visualLabel("Outlined card"), M3CardVariant.OUTLINED);
             outlinedCard.setPrefSize(150.0, 80.0);
+            M3Carousel carousel = new M3Carousel(
+                    carouselTestItem("One"),
+                    carouselTestItem("Two"),
+                    carouselTestItem("Three"),
+                    carouselTestItem("Four")
+            );
+            carousel.setAnimatedScroll(false);
+            carousel.setPrefSize(420.0, 92.0);
+            carousel.selectIndex(1);
 
             M3Banner banner = M3Banner.withIcon(
                     "Banner message with persistent inline feedback.",
@@ -6366,7 +6522,7 @@ final class M3ControlStyleTest {
                             progressIndicator,
                             indeterminateProgressIndicator
                     ),
-                    visualSection("Surfaces", surface, filledCard, elevatedCard, outlinedCard),
+                    visualSection("Surfaces", surface, filledCard, elevatedCard, outlinedCard, carousel),
                     visualSection("Feedback", banner, snackbar, snackbarHost, scrim, dialogPane),
                     visualSection("Lists, Menus, Search", list, menu, menuButton, searchBar, searchView),
                     visualSection("App Bars", topAppBar, bottomAppBar),
@@ -6407,6 +6563,7 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, progressIndicator, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, indeterminateProgressIndicator, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, surface, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, carousel, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(
                     image,
                     lookupRegion(elevatedCard, ".m3-card-container"),
@@ -6681,6 +6838,7 @@ final class M3ControlStyleTest {
         M3SideSheet sideSheet = new M3SideSheet();
         M3BottomSheet bottomSheet = new M3BottomSheet();
         M3Scrim scrim = new M3Scrim();
+        M3Carousel carousel = new M3Carousel();
         M3NavigationBar navigationBar = new M3NavigationBar();
         M3NavigationRail navigationRail = new M3NavigationRail();
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
@@ -6702,6 +6860,7 @@ final class M3ControlStyleTest {
         assertTrue(sideSheet.getStyleClass().contains(M3SideSheet.STYLE_CLASS));
         assertTrue(bottomSheet.getStyleClass().contains(M3BottomSheet.STYLE_CLASS));
         assertTrue(scrim.getStyleClass().contains(M3Scrim.STYLE_CLASS));
+        assertTrue(carousel.getStyleClass().contains(M3Carousel.STYLE_CLASS));
         assertTrue(navigationBar.getStyleClass().contains(M3NavigationBar.STYLE_CLASS));
         assertTrue(navigationRail.getStyleClass().contains(M3NavigationRail.STYLE_CLASS));
         assertTrue(navigationDrawer.getStyleClass().contains(M3NavigationDrawer.STYLE_CLASS));
@@ -6778,6 +6937,7 @@ final class M3ControlStyleTest {
         assertFalse(StackPane.class.isAssignableFrom(M3BadgedBox.class));
         assertFalse(StackPane.class.isAssignableFrom(M3Surface.class));
         assertFalse(StackPane.class.isAssignableFrom(M3SnackbarHost.class));
+        assertFalse(ScrollPane.class.isAssignableFrom(M3Carousel.class));
         assertFalse(VBox.class.isAssignableFrom(M3List.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
@@ -7193,6 +7353,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.PARENT, new M3BottomSheet().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3Scrim().getAccessibleRole());
         assertEquals("Dismiss", new M3Scrim().getAccessibleText());
+        assertEquals(AccessibleRole.LIST_VIEW, new M3Carousel().getAccessibleRole());
         assertEquals(AccessibleRole.MENU, new M3Menu().getAccessibleRole());
         assertEquals(AccessibleRole.MENU_BUTTON, new M3MenuButton().getAccessibleRole());
         assertEquals(AccessibleRole.MENU_ITEM, new M3MenuItem().getAccessibleRole());
@@ -7273,6 +7434,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3ListSectionHeader(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");
         assertUserAgentStylesheet(new M3DialogPane(), "/styles/controls/dialog.css");
+        assertUserAgentStylesheet(new M3Carousel(), "/styles/controls/carousel.css");
         assertUserAgentStylesheet(new M3Banner(), "/styles/controls/banner.css");
         assertUserAgentStylesheet(new M3Snackbar(), "/styles/controls/snackbar.css");
         assertUserAgentStylesheet(new M3SnackbarHost(), "/styles/controls/snackbar.css");
@@ -7630,6 +7792,17 @@ final class M3ControlStyleTest {
         Label label = new Label(text);
         label.setStyle("-fx-text-fill: -m3-color-on-surface;");
         return label;
+    }
+
+    /// Creates a fixed-size carousel item for behavior tests.
+    private static StackPane carouselTestItem(String text) {
+        Label label = new Label(text);
+        StackPane item = new StackPane(label);
+        item.setPrefSize(140.0, 72.0);
+        item.setStyle("-fx-background-color: -m3-color-secondary-container; "
+                + "-fx-background-radius: 16px; "
+                + "-fx-padding: 16px;");
+        return item;
     }
 
     /// Creates a media node used by list item visual snapshot tests.

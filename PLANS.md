@@ -56,7 +56,7 @@
 - App bars: top app bar variants and bottom app bar with configurable floating action alignment.
 - Menus and search: menu, menu item, submenu item with hover and keyboard opening, menu section header, menu button with edge-aware popup placement, search bar, and search view with customizable result content and action slots.
 - Feedback and progress: banner, snackbar, snackbar host with queued messages, plain tooltip, rich tooltip, linear progress, and circular progress.
-- Containment and utility: surface, card, dialog, dialog pane, side sheet, bottom sheet, scrim, divider, list, list item with media slot sizes and trailing supporting text, and tokenized list section header.
+- Containment and utility: surface, card, carousel with selected-item snapping, dialog, dialog pane, side sheet, bottom sheet, scrim, divider, list, list item with media slot sizes and trailing supporting text, and tokenized list section header.
 - Composition-heavy controls expose mutable child lists and convenience constructors or factories where they simplify common usage without hiding node ownership.
 
 ### Demo And Verification
@@ -93,4 +93,4 @@
 - A web deployment target for the JavaFX demo.
 - SASS or another CSS preprocessor layer.
 - Large data components such as data tables.
-- High-complexity components such as pickers and carousel.
+- High-complexity components such as pickers and data tables.

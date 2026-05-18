@@ -1,0 +1,36 @@
+.m3-carousel {
+    -fx-background-color: transparent;
+}
+
+.m3-carousel-viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.m3-carousel-viewport > .viewport {
+    -fx-background-color: transparent;
+}
+
+.m3-carousel-viewport > .corner {
+    -fx-background-color: transparent;
+}
+
+.m3-carousel-track {
+    -fx-alignment: center-left;
+    -fx-padding: 4px;
+    -fx-spacing: 12px;
+}
+
+.m3-carousel-item {
+    -fx-opacity: 0.92;
+}
+
+.m3-carousel-item:hover,
+.m3-carousel-selected-item {
+    -fx-opacity: 1.0;
+}
+
+.m3-carousel-selected-item {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.14), 10, 0.12, 0, 3);
+}

@@ -178,6 +178,10 @@
     -fx-min-height: 92px;
 }
 
+.demo-carousel-card-content {
+    -fx-min-height: 96px;
+}
+
 .demo-card-title {
     -fx-font-size: 16px;
     -fx-font-weight: 600;

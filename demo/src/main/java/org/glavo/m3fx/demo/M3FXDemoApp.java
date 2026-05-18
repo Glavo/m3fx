@@ -41,6 +41,7 @@ import org.glavo.m3fx.controls.M3ButtonGroup;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
+import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
@@ -286,6 +287,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("App Bars", "App bars", ALL_OTHER_COMPONENTS_GROUP, "Top app bars with navigation and actions", this::createAppBarsPage),
                 new DemoPage("Badges", "Badges", ALL_OTHER_COMPONENTS_GROUP, "Dot, count, overflow, and attached badges", this::createBadgesPage),
                 new DemoPage("Cards", "Cards", ALL_OTHER_COMPONENTS_GROUP, "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
+                new DemoPage("Carousel", "Carousel", ALL_OTHER_COMPONENTS_GROUP, "Horizontal content browsing with selected-item snapping", this::createCarouselPage),
                 new DemoPage("Checkboxes", "Checkbox", ALL_OTHER_COMPONENTS_GROUP, "Checked, unchecked, and disabled states", this::createCheckboxesPage),
                 new DemoPage("Chips", "Chips", ALL_OTHER_COMPONENTS_GROUP, "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
                 new DemoPage("Dialogs", "Dialogs", ALL_OTHER_COMPONENTS_GROUP, "Dialog pane with themed actions", this::createDialogsPage),
@@ -1114,6 +1116,38 @@ public final class M3FXDemoApp extends Application {
         return createGallery(createShowcaseGroup("Cards", filled, outlined, elevated));
     }
 
+    /// Creates the carousel component page.
+    private Node createCarouselPage() {
+        M3Carousel multiBrowse = new M3Carousel(
+                createCarouselCard("Morning focus", "Deep work block", M3CardVariant.FILLED, 220.0, 140.0),
+                createCarouselCard("Design review", "Component polish", M3CardVariant.ELEVATED, 240.0, 140.0),
+                createCarouselCard("Release notes", "Packaging updates", M3CardVariant.OUTLINED, 220.0, 140.0),
+                createCarouselCard("Visual QA", "Snapshot inspection", M3CardVariant.FILLED, 220.0, 140.0),
+                createCarouselCard("Accessibility", "Keyboard checks", M3CardVariant.OUTLINED, 220.0, 140.0)
+        );
+        multiBrowse.setPrefWidth(760.0);
+        multiBrowse.selectIndex(1);
+
+        M3Button previous = createButton("Previous", M3ButtonVariant.OUTLINED);
+        previous.setOnAction(event -> multiBrowse.selectPrevious());
+        M3Button next = createButton("Next", M3ButtonVariant.FILLED);
+        next.setOnAction(event -> multiBrowse.selectNext());
+
+        M3Carousel compact = new M3Carousel(
+                createCarouselCard("Inbox", "24 unread", M3CardVariant.FILLED, 160.0, 112.0),
+                createCarouselCard("Tasks", "6 due", M3CardVariant.ELEVATED, 160.0, 112.0),
+                createCarouselCard("Files", "Recent docs", M3CardVariant.OUTLINED, 160.0, 112.0),
+                createCarouselCard("People", "Team updates", M3CardVariant.FILLED, 160.0, 112.0)
+        );
+        compact.setPrefWidth(460.0);
+        compact.selectFirst();
+
+        return createGallery(
+                createShowcaseGroup("Multi-browse", multiBrowse, previous, next),
+                createShowcaseGroup("Compact", compact)
+        );
+    }
+
     /// Creates the side sheet component page.
     private Node createSideSheetsPage() {
         M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent(), createIconButton("X"));
@@ -1684,6 +1718,28 @@ public final class M3FXDemoApp extends Application {
 
         M3Card card = new M3Card(content, variant, event -> showSnackbar());
         card.setPrefWidth(260.0);
+        return card;
+    }
+
+    /// Creates a sample carousel card.
+    private M3Card createCarouselCard(
+            String title,
+            String body,
+            M3CardVariant variant,
+            double width,
+            double height
+    ) {
+        VBox content = new VBox(6.0);
+        content.getStyleClass().add("demo-carousel-card-content");
+
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("demo-card-title");
+        Label bodyLabel = new Label(body);
+        bodyLabel.getStyleClass().add("demo-card-body");
+
+        content.getChildren().addAll(titleLabel, bodyLabel);
+        M3Card card = new M3Card(content, variant, event -> showSnackbar());
+        card.setPrefSize(width, height);
         return card;
     }
 
