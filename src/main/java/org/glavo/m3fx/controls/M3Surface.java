@@ -223,7 +223,7 @@ public class M3Surface extends Control {
 
     /// Returns accessibility attributes for the surface content collection.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
             case CONTENTS -> accessibleContents();
             case ITEM_COUNT -> getContent().size();

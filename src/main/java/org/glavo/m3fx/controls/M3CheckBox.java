@@ -21,6 +21,7 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3CheckBoxSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -262,7 +263,7 @@ public class M3CheckBox extends ButtonBase {
 
     /// Returns accessibility attributes for checkbox selection state.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case SELECTED -> isSelected();

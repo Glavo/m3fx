@@ -60,7 +60,7 @@ public class M3Avatar extends Control {
             };
 
     /// The styleable avatar container size token.
-    private StyleableDoubleProperty containerSize;
+    private @Nullable StyleableDoubleProperty containerSize;
 
     /// Creates an empty avatar.
     public M3Avatar() {

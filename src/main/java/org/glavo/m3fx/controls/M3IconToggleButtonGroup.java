@@ -262,7 +262,7 @@ public class M3IconToggleButtonGroup extends HBox {
 
     /// Returns accessibility attributes for toggle icon button group content and selection state.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case ITEM_COUNT -> getItems().size();

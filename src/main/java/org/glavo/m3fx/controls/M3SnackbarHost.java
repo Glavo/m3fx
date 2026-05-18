@@ -64,7 +64,7 @@ public class M3SnackbarHost extends Control {
             FXCollections.unmodifiableObservableList(queue);
 
     /// The display duration before automatic dismissal.
-    private final ObjectProperty<Duration> displayDuration =
+    private final ObjectProperty<@Nullable Duration> displayDuration =
             new SimpleObjectProperty<>(this, "displayDuration", DEFAULT_DISPLAY_DURATION) {
                 /// Restores the default duration when the property is set to null.
                 @Override
@@ -127,7 +127,7 @@ public class M3SnackbarHost extends Control {
     ///
     /// A zero, unknown, or indefinite duration disables automatic dismissal.
     public final Duration getDisplayDuration() {
-        return displayDuration.get();
+        return Objects.requireNonNull(displayDuration.get(), "displayDuration");
     }
 
     /// Sets the display duration before automatic dismissal.
@@ -140,7 +140,7 @@ public class M3SnackbarHost extends Control {
     /// Returns the display duration property.
     ///
     /// A zero, unknown, or indefinite duration disables automatic dismissal.
-    public final ObjectProperty<Duration> displayDurationProperty() {
+    public final ObjectProperty<@Nullable Duration> displayDurationProperty() {
         return displayDuration;
     }
 
@@ -258,7 +258,7 @@ public class M3SnackbarHost extends Control {
 
     /// Returns accessibility attributes for the current snackbar and queue state.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case CONTENTS -> getSnackbar();

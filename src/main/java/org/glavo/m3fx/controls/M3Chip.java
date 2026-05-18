@@ -296,7 +296,7 @@ public class M3Chip extends ButtonBase {
 
     /// Returns accessibility attributes for the chip selection state.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case SELECTED -> isSelected();

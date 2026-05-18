@@ -273,7 +273,7 @@ public class M3ChipGroup extends FlowPane {
 
     /// Returns accessibility attributes for chip group content and selection state.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case ITEM_COUNT -> getItems().size();

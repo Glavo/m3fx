@@ -158,7 +158,7 @@ public class M3DialogPane extends DialogPane {
 
     /// Returns accessibility attributes for the dialog text.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case TEXT -> {

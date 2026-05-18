@@ -275,7 +275,7 @@ public class M3ListItem extends Control {
 
     /// Returns accessibility attributes for list item selection and position.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case SELECTED -> isSelected();

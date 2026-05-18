@@ -167,7 +167,7 @@ public class M3BottomAppBar extends HBox {
 
     /// Returns accessibility attributes for the action and floating action collection.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
             case ITEM_COUNT -> M3Accessible.itemCount(getActions(), getFloatingAction());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getActions(), getFloatingAction(), parameters);

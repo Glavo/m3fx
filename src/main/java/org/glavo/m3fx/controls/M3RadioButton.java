@@ -24,6 +24,7 @@ import javafx.scene.control.ToggleGroup;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -264,7 +265,7 @@ public class M3RadioButton extends ButtonBase implements Toggle {
 
     /// Returns accessibility attributes for radio button selection state.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case SELECTED -> isSelected();

@@ -203,7 +203,7 @@ public class M3TopAppBar extends HBox {
 
     /// Returns accessibility attributes for the title and action collection.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
             case TEXT -> getTitle();
             case ITEM_COUNT -> M3Accessible.itemCount(getNavigation(), getActions());

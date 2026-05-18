@@ -274,7 +274,7 @@ public class M3MenuButton extends M3Button {
 
     /// Returns accessibility attributes for the menu popup.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case EXPANDED -> isShowing();

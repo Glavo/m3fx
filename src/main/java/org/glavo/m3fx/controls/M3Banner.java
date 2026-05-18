@@ -142,7 +142,7 @@ public class M3Banner extends HBox {
 
     /// Returns accessibility attributes for the message and action collection.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
             case TEXT -> getText();
             case ITEM_COUNT -> M3Accessible.itemCount(getIcon(), getActions());

@@ -43,7 +43,7 @@ public class M3List extends Control {
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
     /// The list item selection mode.
-    private final ObjectProperty<M3ListSelectionMode> selectionMode =
+    private final ObjectProperty<@Nullable M3ListSelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3ListSelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
                 @Override
@@ -147,7 +147,7 @@ public class M3List extends Control {
 
     /// Returns the list item selection mode.
     public final M3ListSelectionMode getSelectionMode() {
-        return selectionMode.get();
+        return Objects.requireNonNull(selectionMode.get(), "selectionMode");
     }
 
     /// Sets the list item selection mode.
@@ -156,7 +156,7 @@ public class M3List extends Control {
     }
 
     /// Returns the list item selection mode property.
-    public final ObjectProperty<M3ListSelectionMode> selectionModeProperty() {
+    public final ObjectProperty<@Nullable M3ListSelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
@@ -271,7 +271,7 @@ public class M3List extends Control {
 
     /// Returns accessibility attributes for list content and selection state.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case ITEM_COUNT -> getItems().size();

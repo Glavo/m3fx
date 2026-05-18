@@ -169,7 +169,7 @@ public class M3BadgedBox extends Control {
 
     /// Returns accessibility attributes for content and badge children.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
             case CONTENTS -> getContent();
             case ITEM_COUNT -> accessibleItemCount();

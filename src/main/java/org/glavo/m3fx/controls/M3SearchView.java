@@ -241,7 +241,7 @@ public class M3SearchView extends VBox {
 
     /// Returns accessibility attributes for search results and active state.
     @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case EXPANDED -> isActive();
