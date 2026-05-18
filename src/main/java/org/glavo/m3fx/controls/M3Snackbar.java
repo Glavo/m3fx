@@ -52,10 +52,10 @@ public class M3Snackbar extends Control {
             new SimpleObjectProperty<>(this, "onAction");
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable content padding token.
-    private StyleableDoubleProperty contentPadding;
+    private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Creates an empty snackbar.
     public M3Snackbar() {

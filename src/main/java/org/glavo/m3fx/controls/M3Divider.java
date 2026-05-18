@@ -17,6 +17,7 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,13 +51,13 @@ public class M3Divider extends Control {
     };
 
     /// The styleable divider thickness token.
-    private StyleableDoubleProperty thickness;
+    private @Nullable StyleableDoubleProperty thickness;
 
     /// The styleable leading inset token.
-    private StyleableDoubleProperty insetStart;
+    private @Nullable StyleableDoubleProperty insetStart;
 
     /// The styleable trailing inset token.
-    private StyleableDoubleProperty insetEnd;
+    private @Nullable StyleableDoubleProperty insetEnd;
 
     /// Creates a horizontal divider.
     public M3Divider() {

@@ -17,6 +17,7 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,13 +43,13 @@ public class M3ProgressIndicator extends Control {
     private static final double DEFAULT_INDICATOR_SIZE = 48.0;
 
     /// The current progress value.
-    private DoubleProperty progress;
+    private @Nullable DoubleProperty progress;
 
     /// The styleable circular indicator stroke thickness token.
-    private StyleableDoubleProperty trackThickness;
+    private @Nullable StyleableDoubleProperty trackThickness;
 
     /// The styleable indicator size token.
-    private StyleableDoubleProperty indicatorSize;
+    private @Nullable StyleableDoubleProperty indicatorSize;
 
     /// Creates an indeterminate progress indicator.
     public M3ProgressIndicator() {

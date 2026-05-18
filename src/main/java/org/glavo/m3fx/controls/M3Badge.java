@@ -18,6 +18,7 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,19 +61,19 @@ public class M3Badge extends Control {
     };
 
     /// The styleable small dot badge size token.
-    private StyleableDoubleProperty smallSize;
+    private @Nullable StyleableDoubleProperty smallSize;
 
     /// The styleable large badge height token.
-    private StyleableDoubleProperty largeHeight;
+    private @Nullable StyleableDoubleProperty largeHeight;
 
     /// The styleable large badge minimum width token.
-    private StyleableDoubleProperty largeMinWidth;
+    private @Nullable StyleableDoubleProperty largeMinWidth;
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable horizontal padding token.
-    private StyleableDoubleProperty horizontalPadding;
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Creates a small dot badge.
     public M3Badge() {

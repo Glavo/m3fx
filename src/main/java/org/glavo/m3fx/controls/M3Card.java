@@ -70,13 +70,13 @@ public class M3Card extends Control {
     };
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable content padding token.
-    private StyleableDoubleProperty contentPadding;
+    private @Nullable StyleableDoubleProperty contentPadding;
 
     /// The styleable outline width token.
-    private StyleableDoubleProperty outlineWidth;
+    private @Nullable StyleableDoubleProperty outlineWidth;
 
     /// Creates an empty filled card.
     public M3Card() {

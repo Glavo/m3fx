@@ -22,6 +22,7 @@ import javafx.scene.text.FontWeight;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3IconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,13 +73,13 @@ public class M3Icon extends Labeled {
             };
 
     /// The styleable icon font family token.
-    private StyleableObjectProperty<String> iconFontFamily;
+    private @Nullable StyleableObjectProperty<@Nullable String> iconFontFamily;
 
     /// The styleable icon size token.
-    private StyleableDoubleProperty iconSize;
+    private @Nullable StyleableDoubleProperty iconSize;
 
     /// The styleable icon font weight token.
-    private StyleableObjectProperty<FontWeight> iconFontWeight;
+    private @Nullable StyleableObjectProperty<@Nullable FontWeight> iconFontWeight;
 
     /// Creates an empty medium icon.
     public M3Icon() {
@@ -131,7 +132,9 @@ public class M3Icon extends Labeled {
 
     /// Returns the icon font family token.
     public final String getIconFontFamily() {
-        return iconFontFamily == null ? DEFAULT_ICON_FONT_FAMILY : iconFontFamily.get();
+        return iconFontFamily == null
+                ? DEFAULT_ICON_FONT_FAMILY
+                : Objects.requireNonNullElse(iconFontFamily.get(), DEFAULT_ICON_FONT_FAMILY);
     }
 
     /// Sets the icon font family token.
@@ -140,7 +143,7 @@ public class M3Icon extends Labeled {
     }
 
     /// Returns the icon font family token property.
-    public final StyleableObjectProperty<String> iconFontFamilyProperty() {
+    public final StyleableObjectProperty<@Nullable String> iconFontFamilyProperty() {
         if (iconFontFamily == null) {
             iconFontFamily = new StyleableObjectProperty<>(DEFAULT_ICON_FONT_FAMILY) {
                 /// Applies updated icon font family tokens.
@@ -167,7 +170,7 @@ public class M3Icon extends Labeled {
 
                 /// Returns the CSS metadata for this property.
                 @Override
-                public CssMetaData<M3Icon, String> getCssMetaData() {
+                public CssMetaData<M3Icon, @Nullable String> getCssMetaData() {
                     return StyleableProperties.ICON_FONT_FAMILY;
                 }
             };
@@ -230,7 +233,7 @@ public class M3Icon extends Labeled {
     }
 
     /// Returns the icon font weight token property.
-    public final StyleableObjectProperty<FontWeight> iconFontWeightProperty() {
+    public final StyleableObjectProperty<@Nullable FontWeight> iconFontWeightProperty() {
         if (iconFontWeight == null) {
             iconFontWeight = new StyleableObjectProperty<>(DEFAULT_ICON_FONT_WEIGHT) {
                 /// Applies updated icon font weight tokens.
@@ -257,7 +260,7 @@ public class M3Icon extends Labeled {
 
                 /// Returns the CSS metadata for this property.
                 @Override
-                public CssMetaData<M3Icon, FontWeight> getCssMetaData() {
+                public CssMetaData<M3Icon, @Nullable FontWeight> getCssMetaData() {
                     return StyleableProperties.ICON_FONT_WEIGHT;
                 }
             };
@@ -341,7 +344,9 @@ public class M3Icon extends Labeled {
 
     /// Returns the resolved icon font weight token.
     private FontWeight getIconFontWeightValue() {
-        return iconFontWeight == null ? DEFAULT_ICON_FONT_WEIGHT : iconFontWeight.get();
+        return iconFontWeight == null
+                ? DEFAULT_ICON_FONT_WEIGHT
+                : Objects.requireNonNullElse(iconFontWeight.get(), DEFAULT_ICON_FONT_WEIGHT);
     }
 
     /// Applies icon size tokens to layout metrics.
@@ -363,7 +368,7 @@ public class M3Icon extends Labeled {
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the icon font family token.
-        private static final CssMetaData<M3Icon, String> ICON_FONT_FAMILY =
+        private static final CssMetaData<M3Icon, @Nullable String> ICON_FONT_FAMILY =
                 new CssMetaData<>(
                         "-m3-icon-font-family",
                         StringConverter.getInstance(),
@@ -377,7 +382,7 @@ public class M3Icon extends Labeled {
 
                     /// Returns the styleable property for a control.
                     @Override
-                    public StyleableProperty<String> getStyleableProperty(M3Icon control) {
+                    public StyleableProperty<@Nullable String> getStyleableProperty(M3Icon control) {
                         return control.iconFontFamilyProperty();
                     }
                 };
@@ -403,7 +408,7 @@ public class M3Icon extends Labeled {
                 };
 
         /// CSS metadata for the icon font weight token.
-        private static final CssMetaData<M3Icon, FontWeight> ICON_FONT_WEIGHT =
+        private static final CssMetaData<M3Icon, @Nullable FontWeight> ICON_FONT_WEIGHT =
                 new CssMetaData<>(
                         "-m3-icon-font-weight",
                         FontConverter.FontWeightConverter.getInstance(),
@@ -417,7 +422,7 @@ public class M3Icon extends Labeled {
 
                     /// Returns the styleable property for a control.
                     @Override
-                    public StyleableProperty<FontWeight> getStyleableProperty(M3Icon control) {
+                    public StyleableProperty<@Nullable FontWeight> getStyleableProperty(M3Icon control) {
                         return control.iconFontWeightProperty();
                     }
                 };

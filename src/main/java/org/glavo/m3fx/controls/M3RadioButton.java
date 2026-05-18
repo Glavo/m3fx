@@ -44,13 +44,13 @@ public class M3RadioButton extends ButtonBase implements Toggle {
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 40.0;
 
     /// The styleable touch target size token.
-    private StyleableDoubleProperty touchTargetSize;
+    private @Nullable StyleableDoubleProperty touchTargetSize;
 
     /// The selected state property.
-    private BooleanProperty selected;
+    private @Nullable BooleanProperty selected;
 
     /// The toggle group this radio button belongs to.
-    private ObjectProperty<ToggleGroup> toggleGroup;
+    private @Nullable ObjectProperty<@Nullable ToggleGroup> toggleGroup;
 
     /// Creates an empty radio button.
     public M3RadioButton() {
@@ -123,22 +123,22 @@ public class M3RadioButton extends ButtonBase implements Toggle {
 
     /// Sets the toggle group that manages this radio button.
     @Override
-    public final void setToggleGroup(ToggleGroup toggleGroup) {
+    public final void setToggleGroup(@Nullable ToggleGroup toggleGroup) {
         toggleGroupProperty().set(toggleGroup);
     }
 
     /// Returns the toggle group that manages this radio button.
     @Override
-    public final ToggleGroup getToggleGroup() {
+    public final @Nullable ToggleGroup getToggleGroup() {
         return toggleGroup == null ? null : toggleGroup.get();
     }
 
     /// Returns the toggle group property.
     @Override
-    public final ObjectProperty<ToggleGroup> toggleGroupProperty() {
+    public final ObjectProperty<@Nullable ToggleGroup> toggleGroupProperty() {
         if (toggleGroup == null) {
             toggleGroup = new ObjectPropertyBase<>() {
-                private ToggleGroup oldGroup;
+                private @Nullable ToggleGroup oldGroup;
                 private boolean updatingGroup;
 
                 /// Keeps JavaFX ToggleGroup membership synchronized with this property.
@@ -148,14 +148,14 @@ public class M3RadioButton extends ButtonBase implements Toggle {
                         return;
                     }
 
-                    ToggleGroup newGroup = get();
+                    @Nullable ToggleGroup newGroup = get();
                     if (newGroup == oldGroup) {
                         return;
                     }
 
                     updatingGroup = true;
                     try {
-                        if (oldGroup != null && oldGroup.getToggles().contains(M3RadioButton.this)) {
+                        if (oldGroup != null) {
                             oldGroup.getToggles().remove(M3RadioButton.this);
                         }
 

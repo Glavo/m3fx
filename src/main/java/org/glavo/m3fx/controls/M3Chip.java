@@ -62,13 +62,13 @@ public class M3Chip extends ButtonBase {
     };
 
     /// The styleable container height token.
-    private StyleableDoubleProperty containerHeight;
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable horizontal padding token.
-    private StyleableDoubleProperty horizontalPadding;
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// The selected state property.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {

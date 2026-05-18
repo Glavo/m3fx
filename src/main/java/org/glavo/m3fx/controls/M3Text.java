@@ -21,6 +21,7 @@ import javafx.scene.text.FontWeight;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,16 +61,16 @@ public class M3Text extends Labeled {
             };
 
     /// The styleable typography font family token.
-    private StyleableObjectProperty<String> typographyFontFamily;
+    private @Nullable StyleableObjectProperty<@Nullable String> typographyFontFamily;
 
     /// The styleable typography font size token.
-    private StyleableDoubleProperty typographyFontSize;
+    private @Nullable StyleableDoubleProperty typographyFontSize;
 
     /// The styleable typography line height token.
-    private StyleableDoubleProperty typographyLineHeight;
+    private @Nullable StyleableDoubleProperty typographyLineHeight;
 
     /// The styleable typography font weight token.
-    private StyleableObjectProperty<FontWeight> typographyFontWeight;
+    private @Nullable StyleableObjectProperty<@Nullable FontWeight> typographyFontWeight;
 
     /// Creates an empty body-large text label.
     public M3Text() {
@@ -106,7 +107,9 @@ public class M3Text extends Labeled {
 
     /// Returns the typography font family token.
     public final String getTypographyFontFamily() {
-        return typographyFontFamily == null ? DEFAULT_TYPOGRAPHY_FONT_FAMILY : typographyFontFamily.get();
+        return typographyFontFamily == null
+                ? DEFAULT_TYPOGRAPHY_FONT_FAMILY
+                : Objects.requireNonNullElse(typographyFontFamily.get(), DEFAULT_TYPOGRAPHY_FONT_FAMILY);
     }
 
     /// Sets the typography font family token.
@@ -115,7 +118,7 @@ public class M3Text extends Labeled {
     }
 
     /// Returns the typography font family token property.
-    public final StyleableObjectProperty<String> typographyFontFamilyProperty() {
+    public final StyleableObjectProperty<@Nullable String> typographyFontFamilyProperty() {
         if (typographyFontFamily == null) {
             typographyFontFamily = new StyleableObjectProperty<>(DEFAULT_TYPOGRAPHY_FONT_FAMILY) {
                 /// Applies updated font family tokens.
@@ -142,7 +145,7 @@ public class M3Text extends Labeled {
 
                 /// Returns the CSS metadata for this property.
                 @Override
-                public CssMetaData<M3Text, String> getCssMetaData() {
+                public CssMetaData<M3Text, @Nullable String> getCssMetaData() {
                     return StyleableProperties.TYPOGRAPHY_FONT_FAMILY;
                 }
             };
@@ -247,7 +250,7 @@ public class M3Text extends Labeled {
     }
 
     /// Returns the typography font weight token property.
-    public final StyleableObjectProperty<FontWeight> typographyFontWeightProperty() {
+    public final StyleableObjectProperty<@Nullable FontWeight> typographyFontWeightProperty() {
         if (typographyFontWeight == null) {
             typographyFontWeight = new StyleableObjectProperty<>(DEFAULT_TYPOGRAPHY_FONT_WEIGHT) {
                 /// Applies updated font weight tokens.
@@ -274,7 +277,7 @@ public class M3Text extends Labeled {
 
                 /// Returns the CSS metadata for this property.
                 @Override
-                public CssMetaData<M3Text, FontWeight> getCssMetaData() {
+                public CssMetaData<M3Text, @Nullable FontWeight> getCssMetaData() {
                     return StyleableProperties.TYPOGRAPHY_FONT_WEIGHT;
                 }
             };
@@ -349,7 +352,9 @@ public class M3Text extends Labeled {
 
     /// Returns the resolved typography font weight token.
     private FontWeight getTypographyFontWeightValue() {
-        return typographyFontWeight == null ? DEFAULT_TYPOGRAPHY_FONT_WEIGHT : typographyFontWeight.get();
+        return typographyFontWeight == null
+                ? DEFAULT_TYPOGRAPHY_FONT_WEIGHT
+                : Objects.requireNonNullElse(typographyFontWeight.get(), DEFAULT_TYPOGRAPHY_FONT_WEIGHT);
     }
 
     /// Validates a font weight token.
@@ -364,7 +369,7 @@ public class M3Text extends Labeled {
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the typography font family token.
-        private static final CssMetaData<M3Text, String> TYPOGRAPHY_FONT_FAMILY =
+        private static final CssMetaData<M3Text, @Nullable String> TYPOGRAPHY_FONT_FAMILY =
                 new CssMetaData<>(
                         "-m3-typography-font-family",
                         StringConverter.getInstance(),
@@ -378,7 +383,7 @@ public class M3Text extends Labeled {
 
                     /// Returns the styleable property for a control.
                     @Override
-                    public StyleableProperty<String> getStyleableProperty(M3Text control) {
+                    public StyleableProperty<@Nullable String> getStyleableProperty(M3Text control) {
                         return control.typographyFontFamilyProperty();
                     }
                 };
@@ -404,7 +409,7 @@ public class M3Text extends Labeled {
                 };
 
         /// CSS metadata for the typography font weight token.
-        private static final CssMetaData<M3Text, FontWeight> TYPOGRAPHY_FONT_WEIGHT =
+        private static final CssMetaData<M3Text, @Nullable FontWeight> TYPOGRAPHY_FONT_WEIGHT =
                 new CssMetaData<>(
                         "-m3-typography-font-weight",
                         FontConverter.FontWeightConverter.getInstance(),
@@ -418,7 +423,7 @@ public class M3Text extends Labeled {
 
                     /// Returns the styleable property for a control.
                     @Override
-                    public StyleableProperty<FontWeight> getStyleableProperty(M3Text control) {
+                    public StyleableProperty<@Nullable FontWeight> getStyleableProperty(M3Text control) {
                         return control.typographyFontWeightProperty();
                     }
                 };

@@ -47,16 +47,16 @@ public class M3CheckBox extends ButtonBase {
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 40.0;
 
     /// The styleable touch target size token.
-    private StyleableDoubleProperty touchTargetSize;
+    private @Nullable StyleableDoubleProperty touchTargetSize;
 
     /// The selected state property.
-    private BooleanProperty selected;
+    private @Nullable BooleanProperty selected;
 
     /// The indeterminate state property.
-    private BooleanProperty indeterminate;
+    private @Nullable BooleanProperty indeterminate;
 
     /// Whether user activation cycles through the indeterminate state.
-    private BooleanProperty allowIndeterminate;
+    private @Nullable BooleanProperty allowIndeterminate;
 
     /// Creates an empty checkbox.
     public M3CheckBox() {

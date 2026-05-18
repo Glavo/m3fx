@@ -73,10 +73,10 @@ public class M3Surface extends Control {
             };
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable content padding token.
-    private StyleableDoubleProperty contentPadding;
+    private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Creates an empty surface.
     public M3Surface() {

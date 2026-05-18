@@ -18,6 +18,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.control.TextField;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,13 +66,13 @@ public class M3TextField extends TextField implements M3TextInput {
     };
 
     /// The styleable container height token.
-    private StyleableDoubleProperty containerHeight;
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable horizontal padding token.
-    private StyleableDoubleProperty horizontalPadding;
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Creates an empty filled text field.
     public M3TextField() {

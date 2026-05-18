@@ -72,13 +72,13 @@ public class M3FloatingActionButton extends ButtonBase {
             };
 
     /// The styleable container size token.
-    private StyleableDoubleProperty containerSize;
+    private @Nullable StyleableDoubleProperty containerSize;
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable horizontal padding token.
-    private StyleableDoubleProperty horizontalPadding;
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Creates an empty primary floating action button.
     public M3FloatingActionButton() {

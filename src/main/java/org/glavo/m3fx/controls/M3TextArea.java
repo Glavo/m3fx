@@ -18,6 +18,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.control.TextArea;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,16 +69,16 @@ public class M3TextArea extends TextArea implements M3TextInput {
     };
 
     /// The styleable container height token.
-    private StyleableDoubleProperty containerHeight;
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable horizontal padding token.
-    private StyleableDoubleProperty horizontalPadding;
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// The styleable vertical padding token.
-    private StyleableDoubleProperty verticalPadding;
+    private @Nullable StyleableDoubleProperty verticalPadding;
 
     /// Creates an empty filled text area.
     public M3TextArea() {

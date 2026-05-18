@@ -70,10 +70,10 @@ public class M3IconToggleButton extends ButtonBase {
     };
 
     /// The styleable container height token.
-    private StyleableDoubleProperty containerHeight;
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// Creates an empty standard toggle icon button.
     public M3IconToggleButton() {

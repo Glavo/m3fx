@@ -57,22 +57,22 @@ public class M3NavigationItem extends ButtonBase {
     private static final double DEFAULT_CONTENT_SPACING = 4.0;
 
     /// The styleable container height token.
-    private StyleableDoubleProperty containerHeight;
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// The styleable item width token.
-    private StyleableDoubleProperty itemWidth;
+    private @Nullable StyleableDoubleProperty itemWidth;
 
     /// The styleable selected indicator width token.
-    private StyleableDoubleProperty indicatorWidth;
+    private @Nullable StyleableDoubleProperty indicatorWidth;
 
     /// The styleable selected indicator height token.
-    private StyleableDoubleProperty indicatorHeight;
+    private @Nullable StyleableDoubleProperty indicatorHeight;
 
     /// The styleable selected indicator shape token.
-    private StyleableDoubleProperty indicatorShape;
+    private @Nullable StyleableDoubleProperty indicatorShape;
 
     /// The styleable content spacing token.
-    private StyleableDoubleProperty contentSpacing;
+    private @Nullable StyleableDoubleProperty contentSpacing;
 
     /// The selected state property.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {

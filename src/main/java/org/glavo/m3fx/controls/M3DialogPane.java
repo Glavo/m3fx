@@ -45,10 +45,10 @@ public class M3DialogPane extends DialogPane {
     private static final double DEFAULT_CONTENT_PADDING = 24.0;
 
     /// The styleable dialog container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable dialog content padding token.
-    private StyleableDoubleProperty contentPadding;
+    private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Creates a dialog pane.
     public M3DialogPane() {

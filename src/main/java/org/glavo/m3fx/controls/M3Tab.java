@@ -53,19 +53,19 @@ public class M3Tab extends ButtonBase {
     private static final double DEFAULT_ACTIVE_INDICATOR_SHAPE = 3.0;
 
     /// The styleable container height token.
-    private StyleableDoubleProperty containerHeight;
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// The styleable tab minimum width token.
-    private StyleableDoubleProperty tabMinWidth;
+    private @Nullable StyleableDoubleProperty tabMinWidth;
 
     /// The styleable horizontal padding token.
-    private StyleableDoubleProperty horizontalPadding;
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// The styleable active indicator height token.
-    private StyleableDoubleProperty activeIndicatorHeight;
+    private @Nullable StyleableDoubleProperty activeIndicatorHeight;
 
     /// The styleable active indicator shape token.
-    private StyleableDoubleProperty activeIndicatorShape;
+    private @Nullable StyleableDoubleProperty activeIndicatorShape;
 
     /// The selected state property.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {

@@ -115,25 +115,25 @@ public class M3ListItem extends Control {
             new ReadOnlyObjectWrapper<>(this, "lineCount", M3ListItemLineCount.ONE_LINE);
 
     /// The styleable one-line height token.
-    private StyleableDoubleProperty oneLineHeight;
+    private @Nullable StyleableDoubleProperty oneLineHeight;
 
     /// The styleable two-line height token.
-    private StyleableDoubleProperty twoLineHeight;
+    private @Nullable StyleableDoubleProperty twoLineHeight;
 
     /// The styleable three-line height token.
-    private StyleableDoubleProperty threeLineHeight;
+    private @Nullable StyleableDoubleProperty threeLineHeight;
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable horizontal padding token.
-    private StyleableDoubleProperty horizontalPadding;
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// The styleable vertical padding token.
-    private StyleableDoubleProperty verticalPadding;
+    private @Nullable StyleableDoubleProperty verticalPadding;
 
     /// The styleable content spacing token.
-    private StyleableDoubleProperty contentSpacing;
+    private @Nullable StyleableDoubleProperty contentSpacing;
 
     /// Creates an empty list item.
     public M3ListItem() {

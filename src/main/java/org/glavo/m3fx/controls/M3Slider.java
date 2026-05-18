@@ -21,6 +21,7 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SliderSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -57,34 +58,34 @@ public class M3Slider extends Control {
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 48.0;
 
     /// The minimum slider value.
-    private DoubleProperty min;
+    private @Nullable DoubleProperty min;
 
     /// The maximum slider value.
-    private DoubleProperty max;
+    private @Nullable DoubleProperty max;
 
     /// The current slider value.
-    private DoubleProperty value;
+    private @Nullable DoubleProperty value;
 
     /// The slider orientation.
-    private ObjectProperty<Orientation> orientation;
+    private @Nullable ObjectProperty<Orientation> orientation;
 
     /// Whether the value is currently being changed through direct interaction.
-    private BooleanProperty valueChanging;
+    private @Nullable BooleanProperty valueChanging;
 
     /// The amount changed by page and arrow navigation.
-    private DoubleProperty blockIncrement;
+    private @Nullable DoubleProperty blockIncrement;
 
     /// The styleable track thickness token.
-    private StyleableDoubleProperty trackThickness;
+    private @Nullable StyleableDoubleProperty trackThickness;
 
     /// The styleable track shape token.
-    private StyleableDoubleProperty trackShape;
+    private @Nullable StyleableDoubleProperty trackShape;
 
     /// The styleable thumb size token.
-    private StyleableDoubleProperty thumbSize;
+    private @Nullable StyleableDoubleProperty thumbSize;
 
     /// The styleable touch target size token.
-    private StyleableDoubleProperty touchTargetSize;
+    private @Nullable StyleableDoubleProperty touchTargetSize;
 
     /// Creates a slider with the JavaFX default range.
     public M3Slider() {

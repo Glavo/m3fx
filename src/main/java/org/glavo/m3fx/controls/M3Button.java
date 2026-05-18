@@ -66,19 +66,19 @@ public class M3Button extends ButtonBase {
     };
 
     /// The styleable container height token.
-    private StyleableDoubleProperty containerHeight;
+    private @Nullable StyleableDoubleProperty containerHeight;
 
     /// The styleable container shape token.
-    private StyleableDoubleProperty containerShape;
+    private @Nullable StyleableDoubleProperty containerShape;
 
     /// The styleable horizontal padding token.
-    private StyleableDoubleProperty horizontalPadding;
+    private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Whether this button is the default action in its containing context.
-    private BooleanProperty defaultButton;
+    private @Nullable BooleanProperty defaultButton;
 
     /// Whether this button is the cancel action in its containing context.
-    private BooleanProperty cancelButton;
+    private @Nullable BooleanProperty cancelButton;
 
     /// Creates an empty filled button.
     public M3Button() {

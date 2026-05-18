@@ -17,6 +17,7 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,13 +43,13 @@ public class M3ProgressBar extends Control {
     private static final double DEFAULT_TRACK_SHAPE = 999.0;
 
     /// The current progress value.
-    private DoubleProperty progress;
+    private @Nullable DoubleProperty progress;
 
     /// The styleable track thickness token.
-    private StyleableDoubleProperty trackThickness;
+    private @Nullable StyleableDoubleProperty trackThickness;
 
     /// The styleable track shape token.
-    private StyleableDoubleProperty trackShape;
+    private @Nullable StyleableDoubleProperty trackShape;
 
     /// Creates an indeterminate progress bar.
     public M3ProgressBar() {
