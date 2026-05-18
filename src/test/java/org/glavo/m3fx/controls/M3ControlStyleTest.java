@@ -1351,6 +1351,62 @@ final class M3ControlStyleTest {
         assertEquals("6 / 10", counter.getText());
     }
 
+    /// Verifies that text input layouts can enforce character limits and expose a clear button.
+    @Test
+    void textInputLayoutEnforcesCharacterLimitAndClearButton() {
+        M3TextField textField = new M3TextField("abcdef");
+        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        layout.setCharacterCounterVisible(true);
+        layout.setCharacterLimit(4);
+        layout.setCharacterLimitEnforced(true);
+        layout.setClearButtonEnabled(true);
+
+        applyCss(layout);
+
+        Label counter = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
+        StackPane trailingSlot = assertInstanceOf(
+                StackPane.class,
+                layout.lookup("." + M3TextInputLayout.TRAILING_STYLE_CLASS)
+        );
+        M3IconButton clearButton = layout.getClearButton();
+
+        assertEquals("abcd", textField.getText());
+        assertEquals(4, layout.getCharacterCount());
+        assertTrue(layout.isCharacterLimitEnforced());
+        assertTrue(layout.isClearButtonEnabled());
+        assertFalse(layout.isCharacterLimitExceeded());
+        assertFalse(textField.isError());
+        assertEquals("4 / 4", counter.getText());
+        assertTrue(clearButton.getStyleClass().contains(M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS));
+        assertEquals("Clear text", clearButton.getAccessibleText());
+        assertEquals(2, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(textField, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertEquals(clearButton, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertEquals(clearButton, trailingSlot.getChildren().get(0));
+        assertEquals(48.0, textField.getPadding().getRight(), 0.0001);
+
+        clearButton.fire();
+
+        assertEquals("", textField.getText());
+        assertEquals(1, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertTrue(trailingSlot.getChildren().isEmpty());
+        assertEquals(16.0, textField.getPadding().getRight(), 0.0001);
+        assertEquals("0 / 4", counter.getText());
+
+        textField.setText("123456");
+
+        assertEquals("1234", textField.getText());
+        assertFalse(textField.isError());
+        assertEquals("4 / 4", counter.getText());
+
+        M3Icon customTrailing = new M3Icon("T");
+        layout.setTrailing(customTrailing);
+
+        assertEquals(2, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(customTrailing, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertEquals(customTrailing, trailingSlot.getChildren().get(0));
+    }
+
     /// Verifies that text input layouts reject unsupported input nodes and invalid limits.
     @Test
     void textInputLayoutValidatesInputAndCharacterLimit() {
@@ -5401,7 +5457,7 @@ final class M3ControlStyleTest {
             counterField.setPrefWidth(320.0);
             M3TextInputLayout counterLayout = new M3TextInputLayout(counterField, "Email address");
             counterLayout.setLeading(new M3Icon("E"));
-            counterLayout.setTrailing(new M3IconButton(new M3Icon("C")));
+            counterLayout.setClearButtonEnabled(true);
             counterLayout.setCharacterCounterVisible(true);
             counterLayout.setCharacterLimit(32);
             counterLayout.setPrefWidth(320.0);
@@ -5415,20 +5471,32 @@ final class M3ControlStyleTest {
             errorLayout.setErrorText("Too long");
             errorLayout.setPrefWidth(220.0);
 
-            FlowPane row = new FlowPane(18.0, 18.0, supportingLayout, counterLayout, errorLayout);
+            M3TextField enforcedField = M3TextField.withVariant("Too many characters", M3TextInputVariant.OUTLINED);
+            enforcedField.setPrefWidth(260.0);
+            M3TextInputLayout enforcedLayout = new M3TextInputLayout(enforcedField, "Limit enforced");
+            enforcedLayout.setCharacterCounterVisible(true);
+            enforcedLayout.setCharacterLimit(8);
+            enforcedLayout.setCharacterLimitEnforced(true);
+            enforcedLayout.setPrefWidth(260.0);
+
+            FlowPane row = new FlowPane(18.0, 18.0, supportingLayout, counterLayout, errorLayout, enforcedLayout);
             row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(row, 900.0, 140.0);
+            Scene scene = new Scene(row, 920.0, 220.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             row.applyCss();
-            row.resize(900.0, 140.0);
+            row.resize(920.0, 220.0);
             row.layout();
 
             WritableImage image = snapshotImageOnFxThread(row);
             assertSnapshotNodeContainsContrast(image, supportingLayout, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, counterLayout, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, errorLayout, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, enforcedLayout, Color.WHITE, 0.04);
             assertTrue(errorField.isError());
+            assertFalse(enforcedField.isError());
+            assertEquals("Too many", enforcedField.getText());
+            assertEquals(counterLayout.getClearButton(), counterLayout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
             assertEquals("Too long", assertInstanceOf(
                     Label.class,
                     errorLayout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)

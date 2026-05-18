@@ -50,6 +50,9 @@ public class M3TextInputLayout extends VBox {
     /// The style class applied to the trailing adornment slot.
     public static final String TRAILING_STYLE_CLASS = "m3-text-input-trailing";
 
+    /// The style class applied to the built-in clear button.
+    public static final String CLEAR_BUTTON_STYLE_CLASS = "m3-text-input-clear-button";
+
     /// The style class applied to the supporting text and counter row.
     public static final String SUPPORTING_ROW_STYLE_CLASS = "m3-text-input-supporting-row";
 
@@ -144,6 +147,28 @@ public class M3TextInputLayout extends VBox {
                 }
             };
 
+    /// Whether text is truncated to the active character limit.
+    private final BooleanProperty characterLimitEnforced =
+            new SimpleBooleanProperty(this, "characterLimitEnforced") {
+                /// Enforces the active character limit when the policy changes.
+                @Override
+                protected void invalidated() {
+                    enforceCharacterLimit();
+                    updateInputErrorState();
+                    updateSupportingRow();
+                }
+            };
+
+    /// Whether the built-in clear button may occupy the trailing slot.
+    private final BooleanProperty clearButtonEnabled =
+            new SimpleBooleanProperty(this, "clearButtonEnabled") {
+                /// Updates the trailing slot when clear-button enablement changes.
+                @Override
+                protected void invalidated() {
+                    updateTrailing();
+                }
+            };
+
     /// The maximum character count, or `-1` when no maximum is active.
     private final IntegerProperty characterLimit = new SimpleIntegerProperty(this, "characterLimit", NO_CHARACTER_LIMIT) {
         /// Validates the character limit before setting it.
@@ -155,6 +180,7 @@ public class M3TextInputLayout extends VBox {
         /// Updates counter text and error state when the limit changes.
         @Override
         protected void invalidated() {
+            enforceCharacterLimit();
             updateInputErrorState();
             updateSupportingRow();
         }
@@ -163,9 +189,14 @@ public class M3TextInputLayout extends VBox {
     /// Whether the layout is currently applying adornment-aware input padding.
     private boolean applyingInputPadding = false;
 
+    /// Whether the layout is currently truncating text to the active character limit.
+    private boolean enforcingCharacterLimit = false;
+
     /// The listener used to track text length changes in the wrapped input.
     private final ChangeListener<String> textListener =
             (observable, oldValue, newValue) -> {
+                enforceCharacterLimit();
+                updateTrailing();
                 updateInputErrorState();
                 updateSupportingRow();
             };
@@ -200,6 +231,13 @@ public class M3TextInputLayout extends VBox {
     /// The label that renders the current character count.
     private final Label counterLabel = new Label();
 
+    /// The built-in trailing clear button.
+    private final M3IconButton clearButton = M3IconButton.withIcon(
+            "x",
+            M3IconSize.SMALL,
+            M3IconVariant.ON_SURFACE_VARIANT
+    );
+
     /// The previously installed input node.
     private @Nullable TextInputControl installedInput = null;
 
@@ -208,6 +246,9 @@ public class M3TextInputLayout extends VBox {
 
     /// Whether this layout applied the current error state to the installed input.
     private boolean inputErrorWasApplied = false;
+
+    /// The node currently installed in the trailing slot.
+    private @Nullable Node installedTrailing = null;
 
     /// Creates an empty text input layout.
     public M3TextInputLayout() {
@@ -322,6 +363,49 @@ public class M3TextInputLayout extends VBox {
         return characterCounterVisible;
     }
 
+    /// Returns whether text is truncated to the active character limit.
+    public final boolean isCharacterLimitEnforced() {
+        return characterLimitEnforced.get();
+    }
+
+    /// Sets whether text is truncated to the active character limit.
+    public final void setCharacterLimitEnforced(boolean characterLimitEnforced) {
+        this.characterLimitEnforced.set(characterLimitEnforced);
+    }
+
+    /// Returns the character limit enforcement property.
+    public final BooleanProperty characterLimitEnforcedProperty() {
+        return characterLimitEnforced;
+    }
+
+    /// Returns whether the built-in clear button may occupy an empty trailing slot.
+    public final boolean isClearButtonEnabled() {
+        return clearButtonEnabled.get();
+    }
+
+    /// Sets whether the built-in clear button may occupy an empty trailing slot.
+    public final void setClearButtonEnabled(boolean clearButtonEnabled) {
+        this.clearButtonEnabled.set(clearButtonEnabled);
+    }
+
+    /// Returns the clear button enablement property.
+    public final BooleanProperty clearButtonEnabledProperty() {
+        return clearButtonEnabled;
+    }
+
+    /// Returns the built-in clear button used when clear-button support is enabled.
+    public final M3IconButton getClearButton() {
+        return clearButton;
+    }
+
+    /// Clears the wrapped input text when one is installed.
+    public final void clearText() {
+        TextInputControl input = getInput();
+        if (input != null) {
+            input.clear();
+        }
+    }
+
     /// Returns the active character limit, or `-1` when no limit is active.
     public final int getCharacterLimit() {
         return characterLimit.get();
@@ -399,6 +483,9 @@ public class M3TextInputLayout extends VBox {
         supportingLabel.getStyleClass().add(SUPPORTING_TEXT_STYLE_CLASS);
         supportingLabel.setWrapText(true);
         counterLabel.getStyleClass().add(COUNTER_STYLE_CLASS);
+        M3ControlStyles.add(clearButton, CLEAR_BUTTON_STYLE_CLASS);
+        clearButton.setAccessibleText("Clear text");
+        clearButton.setOnAction(event -> clearText());
 
         HBox.setHgrow(supportingSpacer, Priority.ALWAYS);
         supportingRow.getChildren().setAll(supportingLabel, supportingSpacer, counterLabel);
@@ -447,7 +534,9 @@ public class M3TextInputLayout extends VBox {
         }
 
         updateInputContainer();
+        enforceCharacterLimit();
         updateInputPadding();
+        updateTrailing();
         updateInputErrorState();
         updateSupportingRow();
     }
@@ -472,13 +561,33 @@ public class M3TextInputLayout extends VBox {
 
     /// Updates the trailing adornment slot.
     private void updateTrailing() {
-        Node trailing = getTrailing();
+        @Nullable Node trailing = effectiveTrailing();
+        @Nullable Node previousTrailing = installedTrailing;
+        installedTrailing = trailing;
         trailingSlot.getChildren().clear();
         if (trailing != null) {
             trailingSlot.getChildren().add(trailing);
         }
         updateAdornmentSlot(trailingSlot, trailing);
         updateInputPadding();
+        if (previousTrailing != trailing) {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        }
+    }
+
+    /// Returns the node that currently occupies the trailing adornment slot.
+    private @Nullable Node effectiveTrailing() {
+        Node trailing = getTrailing();
+        if (trailing != null) {
+            return trailing;
+        }
+        return isClearButtonActive() ? clearButton : null;
+    }
+
+    /// Returns whether the built-in clear button should be visible.
+    private boolean isClearButtonActive() {
+        return isClearButtonEnabled() && getInput() != null && getCharacterCount() > 0;
     }
 
     /// Updates common adornment slot visibility.
@@ -513,7 +622,7 @@ public class M3TextInputLayout extends VBox {
         double left = getLeading() == null
                 ? basePadding.getLeft()
                 : Math.max(basePadding.getLeft(), ADORNED_HORIZONTAL_PADDING);
-        double right = getTrailing() == null
+        double right = effectiveTrailing() == null
                 ? basePadding.getRight()
                 : Math.max(basePadding.getRight(), ADORNED_HORIZONTAL_PADDING);
         applyingInputPadding = true;
@@ -586,6 +695,33 @@ public class M3TextInputLayout extends VBox {
         return !getErrorText().isEmpty() || isCharacterLimitExceeded();
     }
 
+    /// Applies the active character limit by truncating wrapped input text when requested.
+    private void enforceCharacterLimit() {
+        if (enforcingCharacterLimit || !isCharacterLimitEnforced() || getCharacterLimit() < 0) {
+            return;
+        }
+
+        TextInputControl input = getInput();
+        if (input == null) {
+            return;
+        }
+
+        @Nullable String text = input.getText();
+        if (text == null || text.length() <= getCharacterLimit()) {
+            return;
+        }
+
+        int caretPosition = input.getCaretPosition();
+        String truncatedText = text.substring(0, getCharacterLimit());
+        enforcingCharacterLimit = true;
+        try {
+            input.setText(truncatedText);
+            input.positionCaret(Math.min(caretPosition, truncatedText.length()));
+        } finally {
+            enforcingCharacterLimit = false;
+        }
+    }
+
     /// Returns text exposed to assistive technologies.
     private String accessibleText() {
         String message = displayedSupportingText();
@@ -606,6 +742,8 @@ public class M3TextInputLayout extends VBox {
             count++;
         }
         if (getTrailing() != null) {
+            count++;
+        } else if (isClearButtonActive()) {
             count++;
         }
         return count;
@@ -634,7 +772,7 @@ public class M3TextInputLayout extends VBox {
             index--;
         }
 
-        return index == 0 ? getTrailing() : null;
+        return index == 0 ? effectiveTrailing() : null;
     }
 
     /// Validates that a wrapped input can render Material text input error state.

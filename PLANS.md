@@ -50,7 +50,7 @@
 
 - Typography and icon primitives: `M3Text`, `M3Icon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
 - Buttons: filled, tonal, outlined, text, elevated, icon button, icon toggle button, icon toggle groups, and floating action buttons.
-- Inputs: filled and outlined text fields, password fields, text areas, shared error-state support, and text input layouts with leading/trailing adornments, supporting text, error text, and character counters.
+- Inputs: filled and outlined text fields, password fields, text areas, shared error-state support, and text input layouts with leading/trailing adornments, supporting text, error text, character counters, clear buttons, and optional hard character limits.
 - Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, and navigation drawer.
 - App bars: top app bar variants and bottom app bar with configurable floating action alignment.
@@ -71,7 +71,7 @@
 
 - Expand Material motion coverage so hover, press, release, selection, shape, indicator, and elevation transitions consistently use tokenized timing and easing.
 - Broaden visual checks beyond static contrast and color variety toward geometry, clipping, alignment, and animation-state assertions.
-- Continue filling component gaps such as additional list layouts, richer popup nesting policies, and more complete text input affordances.
+- Continue filling component gaps such as additional list layouts, richer popup nesting policies, and more complete text input label and validation affordances.
 - Tighten accessibility behavior for composite controls, especially indexed children, selection state, role choice, and keyboard navigation.
 - Add more focused demo pages for complex components whose behavior is hard to inspect in a single static gallery.
 - Document runtime packaging choices for applications that want regular jars, demo shadow jars, or jlink images.

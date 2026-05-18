@@ -510,7 +510,7 @@ public final class M3FXDemoApp extends Application {
         M3TextInputLayout filledLayout = createTextInputLayout(filled, "Supporting text");
         M3TextInputLayout filledTextLayout = createTextInputLayout(filledText, "Email address");
         filledTextLayout.setLeading(createDemoIcon("E", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
-        filledTextLayout.setTrailing(createIconButton("C"));
+        filledTextLayout.setClearButtonEnabled(true);
         filledTextLayout.setCharacterCounterVisible(true);
         filledTextLayout.setCharacterLimit(32);
         M3TextInputLayout filledDisabledLayout = createTextInputLayout(filledDisabled, "Disabled supporting text");
@@ -520,6 +520,7 @@ public final class M3FXDemoApp extends Application {
         outlinedTextLayout.setLeading(createDemoIcon("T", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
         outlinedTextLayout.setCharacterCounterVisible(true);
         outlinedTextLayout.setCharacterLimit(24);
+        outlinedTextLayout.setCharacterLimitEnforced(true);
         M3TextInputLayout passwordLayout = createTextInputLayout(password, "At least 8 characters");
         passwordLayout.setTrailing(createIconButton("V"));
         M3TextInputLayout filledErrorLayout = createTextInputLayout(filledError, "Supporting text");

@@ -152,6 +152,10 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
+.m3-text-input-clear-button {
+    -m3-container-height: 40px;
+}
+
 .m3-text-input-supporting-row {
     -fx-alignment: center-left;
     -fx-padding: 0 16px 0 16px;
