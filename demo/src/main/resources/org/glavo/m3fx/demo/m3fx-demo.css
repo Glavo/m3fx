@@ -69,6 +69,12 @@
     -fx-max-width: 320px;
 }
 
+.m3-navigation-drawer.demo-sidebar-drawer .demo-sidebar-child-item {
+    -m3-one-line-height: 40px;
+    -m3-container-shape: 20px;
+    -m3-horizontal-padding: 24px;
+}
+
 .demo-scroll-pane {
     -fx-background-color: transparent;
     -fx-background: transparent;
@@ -162,6 +168,10 @@
     -fx-font-size: 12px;
     -fx-font-weight: 700;
     -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.demo-sidebar-section {
+    -fx-padding: 16px 16px 2px 16px;
 }
 
 .demo-card-content {
