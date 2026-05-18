@@ -17,9 +17,12 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,11 +47,23 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// The supporting text label.
     private final Label supportingLabel = new Label();
 
+    /// The trailing supporting text and trailing node row.
+    private final HBox trailingBox = new HBox();
+
+    /// The trailing supporting text label.
+    private final Label trailingSupportingLabel = new Label();
+
     /// The leading node slot.
     private final StackPane leadingSlot = new StackPane();
 
     /// The trailing node slot.
     private final StackPane trailingSlot = new StackPane();
+
+    /// The clip used by fixed-size leading media slots.
+    private final Rectangle leadingClip = new Rectangle();
+
+    /// The clip used by fixed-size trailing media slots.
+    private final Rectangle trailingClip = new Rectangle();
 
     /// The background radius currently applied to the state container.
     private double containerRadius = Double.NaN;
@@ -70,6 +85,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Updates optional node slots after slot content changes.
     private final InvalidationListener slotInvalidation = observable -> updateSlots();
+
+    /// Updates optional node slot metrics after slot size changes.
+    private final InvalidationListener slotMetricsInvalidation = observable -> updateSlotMetrics();
 
     /// Applies metric token changes to the list item layout.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
@@ -95,25 +113,33 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         overlineLabel.getStyleClass().add("m3-list-item-overline");
         headlineLabel.getStyleClass().add("m3-list-item-headline");
         supportingLabel.getStyleClass().add("m3-list-item-supporting");
+        trailingBox.getStyleClass().add("m3-list-item-trailing-box");
+        trailingSupportingLabel.getStyleClass().add("m3-list-item-trailing-supporting");
         leadingSlot.getStyleClass().add("m3-list-item-leading");
         trailingSlot.getStyleClass().add("m3-list-item-trailing");
 
         textBox.setAlignment(Pos.CENTER_LEFT);
         textBox.getChildren().addAll(overlineLabel, headlineLabel, supportingLabel);
         HBox.setHgrow(textBox, Priority.ALWAYS);
-        container.getChildren().addAll(leadingSlot, textBox, trailingSlot);
+        trailingBox.setAlignment(Pos.CENTER_RIGHT);
+        trailingBox.getChildren().addAll(trailingSupportingLabel, trailingSlot);
+        container.getChildren().addAll(leadingSlot, textBox, trailingBox);
         getChildren().addAll(container, stateLayer);
 
         stateLayer.installStateTransitions(control);
         updateText();
         updateSlots();
+        updateSlotMetrics();
         updateMetrics();
         installBehaviorHandlers(control);
         control.overlineTextProperty().addListener(textInvalidation);
         control.headlineTextProperty().addListener(textInvalidation);
         control.supportingTextProperty().addListener(textInvalidation);
+        control.trailingSupportingTextProperty().addListener(textInvalidation);
         control.leadingProperty().addListener(slotInvalidation);
         control.trailingProperty().addListener(slotInvalidation);
+        control.leadingSlotSizeProperty().addListener(slotMetricsInvalidation);
+        control.trailingSlotSizeProperty().addListener(slotMetricsInvalidation);
         control.lineCountProperty().addListener(metricsInvalidation);
         control.oneLineHeightProperty().addListener(metricsInvalidation);
         control.twoLineHeightProperty().addListener(metricsInvalidation);
@@ -134,8 +160,11 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         item.overlineTextProperty().removeListener(textInvalidation);
         item.headlineTextProperty().removeListener(textInvalidation);
         item.supportingTextProperty().removeListener(textInvalidation);
+        item.trailingSupportingTextProperty().removeListener(textInvalidation);
         item.leadingProperty().removeListener(slotInvalidation);
         item.trailingProperty().removeListener(slotInvalidation);
+        item.leadingSlotSizeProperty().removeListener(slotMetricsInvalidation);
+        item.trailingSlotSizeProperty().removeListener(slotMetricsInvalidation);
         item.lineCountProperty().removeListener(metricsInvalidation);
         item.oneLineHeightProperty().removeListener(metricsInvalidation);
         item.twoLineHeightProperty().removeListener(metricsInvalidation);
@@ -173,6 +202,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         updateLabel(overlineLabel, item.getOverlineText());
         updateLabel(headlineLabel, item.getHeadlineText());
         updateLabel(supportingLabel, item.getSupportingText());
+        updateLabel(trailingSupportingLabel, item.getTrailingSupportingText());
+        updateTrailingBoxVisibility();
     }
 
     /// Updates one label from a string value.
@@ -188,6 +219,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         M3ListItem item = getSkinnable();
         updateSlot(leadingSlot, item.getLeading());
         updateSlot(trailingSlot, item.getTrailing());
+        updateTrailingBoxVisibility();
     }
 
     /// Updates a slot with an optional node.
@@ -201,6 +233,44 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         slot.getChildren().setAll(node);
         slot.setVisible(true);
         slot.setManaged(true);
+    }
+
+    /// Updates fixed metrics and clipping for optional node slots.
+    private void updateSlotMetrics() {
+        M3ListItem item = getSkinnable();
+        updateSlotMetrics(leadingSlot, leadingClip, item.getLeadingSlotSize());
+        updateSlotMetrics(trailingSlot, trailingClip, item.getTrailingSlotSize());
+        item.requestLayout();
+    }
+
+    /// Updates one optional node slot from its configured size role.
+    private static void updateSlotMetrics(StackPane slot, Rectangle clip, M3ListItemSlotSize slotSize) {
+        if (!slotSize.isFixedSize()) {
+            slot.setMinSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+            slot.setPrefSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+            slot.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+            slot.setClip(null);
+            return;
+        }
+
+        double width = slotSize.getWidth();
+        double height = slotSize.getHeight();
+        double arc = slotSize.getShapeRadius() * 2.0;
+        slot.setMinSize(width, height);
+        slot.setPrefSize(width, height);
+        slot.setMaxSize(width, height);
+        clip.setWidth(width);
+        clip.setHeight(height);
+        clip.setArcWidth(arc);
+        clip.setArcHeight(arc);
+        slot.setClip(clip);
+    }
+
+    /// Updates the trailing group visibility from its text and node slots.
+    private void updateTrailingBoxVisibility() {
+        boolean visible = trailingSupportingLabel.isVisible() || trailingSlot.isVisible();
+        trailingBox.setVisible(visible);
+        trailingBox.setManaged(visible);
     }
 
     /// Applies token-driven layout metrics.

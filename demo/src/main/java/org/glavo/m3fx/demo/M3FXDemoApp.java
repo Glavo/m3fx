@@ -63,6 +63,7 @@ import org.glavo.m3fx.controls.M3List;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListSelectionMode;
+import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
@@ -848,18 +849,32 @@ public final class M3FXDemoApp extends Application {
     /// Creates the list component page.
     private Node createListPage() {
         M3ListItem oneLine = new M3ListItem("One-line item");
-        oneLine.setLeading(new M3Badge());
+        oneLine.setLeadingIcon("I");
 
         M3ListItem twoLine = new M3ListItem("Two-line item");
         twoLine.setSupportingText("Supporting text");
-        twoLine.setTrailing(new M3Badge("3"));
+        twoLine.setTrailingSupportingText("3 min");
+        twoLine.setTrailingIcon(">");
 
         M3ListItem threeLine = new M3ListItem("Three-line item");
         threeLine.setOverlineText("Overline");
         threeLine.setSupportingText("Supporting text can span a denser row.");
+        threeLine.setLeadingAvatar("A");
+
+        M3ListItem thumbnail = new M3ListItem("Thumbnail item");
+        thumbnail.setSupportingText("Leading square media and trailing metadata.");
+        thumbnail.setLeadingThumbnail(createListThumbnail("T"));
+        thumbnail.setTrailingSupportingText("12:40");
+
+        M3ListItem wideThumbnail = new M3ListItem("Wide thumbnail item");
+        wideThumbnail.setSupportingText("Media content is clipped to the configured slot size.");
+        wideThumbnail.setLeadingMedia(createListThumbnail("W"), M3ListItemSlotSize.WIDE_THUMBNAIL);
+        wideThumbnail.setTrailingIcon(">");
 
         M3ListItem selected = new M3ListItem("Selected item");
         selected.setSupportingText("Current destination");
+        selected.setLeadingIcon("S");
+        selected.setTrailingSupportingText("Now");
 
         M3List list = new M3List();
         list.getStyleClass().add("demo-list");
@@ -872,12 +887,24 @@ public final class M3FXDemoApp extends Application {
                 new M3Divider(),
                 threeLine,
                 new M3Divider(),
+                thumbnail,
+                new M3Divider(),
+                wideThumbnail,
+                new M3Divider(),
                 new M3ListSectionHeader("Pinned"),
                 selected
         );
         list.select(selected);
 
         return createGallery(createShowcaseGroup("Rows", list));
+    }
+
+    /// Creates a sample thumbnail used by list item media rows.
+    private static StackPane createListThumbnail(String iconText) {
+        M3Icon icon = new M3Icon(iconText, M3IconSize.SMALL, M3IconVariant.ON_SURFACE);
+        StackPane thumbnail = new StackPane(icon);
+        thumbnail.getStyleClass().add("demo-list-thumbnail");
+        return thumbnail;
     }
 
     /// Creates the badge component page.

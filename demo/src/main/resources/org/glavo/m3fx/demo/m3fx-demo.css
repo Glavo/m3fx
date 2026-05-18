@@ -186,6 +186,15 @@
     -fx-max-width: 560px;
 }
 
+.demo-list-thumbnail {
+    -fx-background-color: -m3-color-tertiary-container;
+    -fx-background-radius: 4px;
+}
+
+.demo-list-thumbnail .m3-icon {
+    -fx-text-fill: -m3-color-on-tertiary-container;
+}
+
 .demo-scrim-preview {
     -fx-background-color: -m3-color-primary-container;
     -fx-background-radius: 12px;

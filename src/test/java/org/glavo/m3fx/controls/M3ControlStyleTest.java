@@ -4481,6 +4481,116 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3ListItemSkin.class, listItem.getSkin());
     }
 
+    /// Verifies that list items expose trailing supporting text without changing the row line count.
+    @Test
+    void listItemSupportsTrailingSupportingText() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        listItem.setTrailingSupportingText("3 min");
+        listItem.setTrailingIcon(">");
+        Pane root = new Pane(listItem);
+        Scene scene = new Scene(root, 280.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        listItem.resize(260.0, 56.0);
+        listItem.layout();
+
+        assertListItemLineCount(listItem, M3ListItemLineCount.ONE_LINE);
+        assertEquals("Headline 3 min", listItem.getAccessibleText());
+        Node trailingText = listItem.lookup(".m3-list-item-trailing-supporting");
+        assertInstanceOf(Label.class, trailingText);
+        assertEquals("3 min", ((Label) trailingText).getText());
+        assertTrue(trailingText.isVisible());
+        assertTrue(trailingText.isManaged());
+    }
+
+    /// Verifies that fixed list item slot sizes drive media layout and clipping.
+    @Test
+    void listItemSlotSizesDriveMediaLayout() {
+        M3ListItem listItem = new M3ListItem("Headline");
+        StackPane thumbnail = new StackPane(new Label("T"));
+        listItem.setLeadingThumbnail(thumbnail);
+        listItem.setTrailingIcon(">");
+        Pane root = new Pane(listItem);
+        Scene scene = new Scene(root, 320.0, 96.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        listItem.resize(300.0, 72.0);
+        listItem.layout();
+
+        Node leadingSlot = listItem.lookup(".m3-list-item-leading");
+        Node trailingSlot = listItem.lookup(".m3-list-item-trailing");
+        assertInstanceOf(Region.class, leadingSlot);
+        assertInstanceOf(Region.class, trailingSlot);
+        assertEquals(M3ListItemSlotSize.THUMBNAIL, listItem.getLeadingSlotSize());
+        assertEquals(M3ListItemSlotSize.ICON, listItem.getTrailingSlotSize());
+        assertEquals(56.0, ((Region) leadingSlot).getPrefWidth(), 0.0001);
+        assertEquals(56.0, ((Region) leadingSlot).getPrefHeight(), 0.0001);
+        assertEquals(24.0, ((Region) trailingSlot).getPrefWidth(), 0.0001);
+        assertEquals(24.0, ((Region) trailingSlot).getPrefHeight(), 0.0001);
+        assertInstanceOf(Rectangle.class, leadingSlot.getClip());
+        Rectangle clip = (Rectangle) leadingSlot.getClip();
+        assertEquals(56.0, clip.getWidth(), 0.0001);
+        assertEquals(56.0, clip.getHeight(), 0.0001);
+        assertEquals(8.0, clip.getArcWidth(), 0.0001);
+    }
+
+    /// Verifies that list item media slots render the supported fixed-size variants.
+    @Test
+    void listItemMediaSnapshotRendersSlotVariants() {
+        runOnFxThread(() -> {
+            M3ListItem iconItem = new M3ListItem("Icon row");
+            iconItem.setLeadingIcon("I");
+            iconItem.setTrailingSupportingText("Now");
+
+            M3ListItem avatarItem = new M3ListItem("Avatar row");
+            avatarItem.setSupportingText("Avatar-sized leading slot");
+            avatarItem.setLeadingAvatar("A");
+            avatarItem.setTrailingIcon(">");
+
+            M3ListItem thumbnailItem = new M3ListItem("Thumbnail row");
+            thumbnailItem.setSupportingText("Square thumbnail media");
+            thumbnailItem.setLeadingThumbnail(visualListMedia("T"));
+            thumbnailItem.setTrailingSupportingText("12:40");
+
+            M3ListItem wideThumbnailItem = new M3ListItem("Wide thumbnail row");
+            wideThumbnailItem.setSupportingText("Wide thumbnail media");
+            wideThumbnailItem.setLeadingWideThumbnail(visualListMedia("W"));
+            wideThumbnailItem.setTrailingIcon(">");
+
+            M3List list = new M3List(
+                    new M3ListSectionHeader("Media"),
+                    iconItem,
+                    avatarItem,
+                    thumbnailItem,
+                    wideThumbnailItem
+            );
+            list.setPrefWidth(420.0);
+            list.setStyle("-fx-background-color: white; -fx-padding: 8px 0 8px 0; " + visualTestColors());
+            Scene scene = new Scene(list, 440.0, 360.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            list.applyCss();
+            list.resize(420.0, 340.0);
+            list.layout();
+
+            WritableImage image = snapshotImageOnFxThread(list);
+            assertSnapshotNodeContainsContrast(image, listItemContainer(iconItem), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, listItemContainer(avatarItem), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, listItemContainer(thumbnailItem), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, listItemContainer(wideThumbnailItem), Color.WHITE, 0.03);
+            assertEquals(56.0, ((Region) thumbnailItem.lookup(".m3-list-item-leading")).getWidth(), 0.0001);
+            assertEquals(64.0, ((Region) wideThumbnailItem.lookup(".m3-list-item-leading")).getWidth(), 0.0001);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-list-item-media.png"
+            ));
+        });
+    }
+
     /// Verifies that list item line count state follows text content.
     @Test
     void listItemLineCountTracksTextContent() {
@@ -5957,9 +6067,10 @@ final class M3ControlStyleTest {
             dialogPane.setPrefWidth(320.0);
 
             M3ListItem selectedListItem = new M3ListItem("Selected list item");
-            selectedListItem.setLeading(new M3Icon("L"));
+            selectedListItem.setLeadingIcon("L");
             selectedListItem.setTrailing(new M3Badge("2"));
             selectedListItem.setSupportingText("Supporting text");
+            selectedListItem.setTrailingSupportingText("Now");
             selectedListItem.setSelected(true);
             M3List list = new M3List(
                     new M3ListSectionHeader("Inbox"),
@@ -7330,6 +7441,15 @@ final class M3ControlStyleTest {
         Label label = new Label(text);
         label.setStyle("-fx-text-fill: -m3-color-on-surface;");
         return label;
+    }
+
+    /// Creates a media node used by list item visual snapshot tests.
+    private static StackPane visualListMedia(String text) {
+        Label label = new Label(text);
+        label.setStyle("-fx-text-fill: -m3-color-on-tertiary-container; -fx-font-weight: 700;");
+        StackPane media = new StackPane(label);
+        media.setStyle("-fx-background-color: -m3-color-tertiary-container; -fx-background-radius: 4px;");
+        return media;
     }
 
     /// Creates a navigation drawer item for visual snapshot tests.

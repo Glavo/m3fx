@@ -66,6 +66,16 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
+.m3-list-item-trailing-box {
+    -fx-alignment: center-right;
+    -fx-spacing: 16px;
+}
+
+.m3-list-item-trailing-supporting {
+    -fx-font-size: 12px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
 .m3-list-item-leading,
 .m3-list-item-trailing {
     -fx-alignment: center;

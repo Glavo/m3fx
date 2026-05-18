@@ -84,11 +84,39 @@ public class M3ListItem extends Control {
     /// The supporting text property.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
 
+    /// The trailing supporting text property.
+    private final StringProperty trailingSupportingText =
+            new SimpleStringProperty(this, "trailingSupportingText", "");
+
     /// The leading content node property.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading");
 
     /// The trailing content node property.
     private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing");
+
+    /// The leading content slot size.
+    private final ObjectProperty<M3ListItemSlotSize> leadingSlotSize =
+            new SimpleObjectProperty<>(this, "leadingSlotSize", M3ListItemSlotSize.AUTO) {
+                /// Restores the default slot size when a null value is assigned through the property.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3ListItemSlotSize.AUTO);
+                    }
+                }
+            };
+
+    /// The trailing content slot size.
+    private final ObjectProperty<M3ListItemSlotSize> trailingSlotSize =
+            new SimpleObjectProperty<>(this, "trailingSlotSize", M3ListItemSlotSize.AUTO) {
+                /// Restores the default slot size when a null value is assigned through the property.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3ListItemSlotSize.AUTO);
+                    }
+                }
+            };
 
     /// The action handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
@@ -196,6 +224,21 @@ public class M3ListItem extends Control {
         return supportingText;
     }
 
+    /// Returns the trailing supporting text.
+    public final String getTrailingSupportingText() {
+        return trailingSupportingText.get();
+    }
+
+    /// Sets the trailing supporting text.
+    public final void setTrailingSupportingText(String trailingSupportingText) {
+        this.trailingSupportingText.set(Objects.requireNonNull(trailingSupportingText, "trailingSupportingText"));
+    }
+
+    /// Returns the trailing supporting text property.
+    public final StringProperty trailingSupportingTextProperty() {
+        return trailingSupportingText;
+    }
+
     /// Returns the leading content node.
     public final @Nullable Node getLeading() {
         return leading.get();
@@ -211,6 +254,36 @@ public class M3ListItem extends Control {
         return leading;
     }
 
+    /// Sets the leading content node and its list item slot size.
+    public final void setLeadingMedia(@Nullable Node leading, M3ListItemSlotSize slotSize) {
+        setLeading(leading);
+        setLeadingSlotSize(slotSize);
+    }
+
+    /// Sets a medium [M3Icon] as leading content and returns it for further customization.
+    public final M3Icon setLeadingIcon(String iconText) {
+        M3Icon icon = new M3Icon(iconText, M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT);
+        setLeadingMedia(icon, M3ListItemSlotSize.ICON);
+        return icon;
+    }
+
+    /// Sets an [M3Avatar] as leading content and returns it for further customization.
+    public final M3Avatar setLeadingAvatar(String text) {
+        M3Avatar avatar = new M3Avatar(text);
+        setLeadingMedia(avatar, M3ListItemSlotSize.AVATAR);
+        return avatar;
+    }
+
+    /// Sets a square thumbnail as leading content.
+    public final void setLeadingThumbnail(Node thumbnail) {
+        setLeadingMedia(Objects.requireNonNull(thumbnail, "thumbnail"), M3ListItemSlotSize.THUMBNAIL);
+    }
+
+    /// Sets a wide thumbnail as leading content.
+    public final void setLeadingWideThumbnail(Node thumbnail) {
+        setLeadingMedia(Objects.requireNonNull(thumbnail, "thumbnail"), M3ListItemSlotSize.WIDE_THUMBNAIL);
+    }
+
     /// Returns the trailing content node.
     public final @Nullable Node getTrailing() {
         return trailing.get();
@@ -224,6 +297,49 @@ public class M3ListItem extends Control {
     /// Returns the trailing content node property.
     public final ObjectProperty<@Nullable Node> trailingProperty() {
         return trailing;
+    }
+
+    /// Sets the trailing content node and its list item slot size.
+    public final void setTrailingMedia(@Nullable Node trailing, M3ListItemSlotSize slotSize) {
+        setTrailing(trailing);
+        setTrailingSlotSize(slotSize);
+    }
+
+    /// Sets a medium [M3Icon] as trailing content and returns it for further customization.
+    public final M3Icon setTrailingIcon(String iconText) {
+        M3Icon icon = new M3Icon(iconText, M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT);
+        setTrailingMedia(icon, M3ListItemSlotSize.ICON);
+        return icon;
+    }
+
+    /// Returns the leading content slot size.
+    public final M3ListItemSlotSize getLeadingSlotSize() {
+        return Objects.requireNonNull(leadingSlotSize.get(), "leadingSlotSize");
+    }
+
+    /// Sets the leading content slot size.
+    public final void setLeadingSlotSize(M3ListItemSlotSize leadingSlotSize) {
+        this.leadingSlotSize.set(Objects.requireNonNull(leadingSlotSize, "leadingSlotSize"));
+    }
+
+    /// Returns the leading content slot size property.
+    public final ObjectProperty<M3ListItemSlotSize> leadingSlotSizeProperty() {
+        return leadingSlotSize;
+    }
+
+    /// Returns the trailing content slot size.
+    public final M3ListItemSlotSize getTrailingSlotSize() {
+        return Objects.requireNonNull(trailingSlotSize.get(), "trailingSlotSize");
+    }
+
+    /// Sets the trailing content slot size.
+    public final void setTrailingSlotSize(M3ListItemSlotSize trailingSlotSize) {
+        this.trailingSlotSize.set(Objects.requireNonNull(trailingSlotSize, "trailingSlotSize"));
+    }
+
+    /// Returns the trailing content slot size property.
+    public final ObjectProperty<M3ListItemSlotSize> trailingSlotSizeProperty() {
+        return trailingSlotSize;
     }
 
     /// Returns the action handler.
@@ -482,6 +598,7 @@ public class M3ListItem extends Control {
             updateLineCount();
             updateAccessibleText();
         });
+        trailingSupportingText.addListener((observable, oldValue, newValue) -> updateAccessibleText());
     }
 
     /// Updates the derived line count and related pseudo-class state.
@@ -517,6 +634,7 @@ public class M3ListItem extends Control {
         appendAccessibleText(builder, getOverlineText());
         appendAccessibleText(builder, getHeadlineText());
         appendAccessibleText(builder, getSupportingText());
+        appendAccessibleText(builder, getTrailingSupportingText());
         setAccessibleText(builder.length() == 0 ? null : builder.toString());
     }
 
