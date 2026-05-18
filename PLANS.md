@@ -49,7 +49,7 @@
 ### Controls
 
 - Typography and icon primitives: `M3Text`, `M3Icon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
-- Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, and floating action buttons.
+- Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, floating action buttons, extended floating action buttons, and floating action button menus.
 - Inputs: filled and outlined text fields, password fields, text areas, shared error-state support, and text input layouts with floating labels, validators, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, and optional hard character limits.
 - Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, and navigation drawer.

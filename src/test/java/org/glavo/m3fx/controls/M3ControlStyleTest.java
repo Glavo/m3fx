@@ -92,6 +92,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -527,6 +528,76 @@ final class M3ControlStyleTest {
 
         assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.TERTIARY.getStyleClass()));
         assertTrue(button.getStyleClass().contains(M3FloatingActionButtonSize.LARGE.getStyleClass()));
+    }
+
+    /// Verifies that floating action button menus expand, collapse, and manage action item state.
+    @Test
+    void fabMenuExpandsAndCollapsesActionItems() {
+        M3FloatingActionButton first = new M3FloatingActionButton("A");
+        M3FloatingActionButton second = new M3FloatingActionButton("B");
+        M3FabMenu menu = new M3FabMenu(first, second);
+
+        assertTrue(menu.getStyleClass().contains(M3FabMenu.STYLE_CLASS));
+        assertTrue(menu.getToggleButton().getStyleClass().contains(M3FabMenu.TOGGLE_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3FabMenu.ACTION_STYLE_CLASS));
+        assertFalse(menu.isExpanded());
+        assertFalse(first.isVisible());
+        assertFalse(first.isManaged());
+        assertEquals(2, menu.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(second, menu.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+        menu.show();
+
+        assertTrue(menu.isExpanded());
+        assertTrue(first.isVisible());
+        assertTrue(first.isManaged());
+        assertEquals(1.0, first.getOpacity(), 0.0001);
+
+        first.fire();
+
+        assertFalse(menu.isExpanded());
+
+        menu.show();
+
+        menu.hide();
+
+        assertFalse(menu.isExpanded());
+        assertFalse(first.isVisible());
+        assertFalse(first.isManaged());
+
+        menu.getItems().remove(first);
+
+        assertFalse(first.getStyleClass().contains(M3FabMenu.ACTION_STYLE_CLASS));
+        assertTrue(first.isVisible());
+        assertTrue(first.isManaged());
+    }
+
+    /// Verifies that floating action button menus toggle through the main button and accessibility actions.
+    @Test
+    void fabMenuTogglesFromButtonAndAccessibilityActions() {
+        M3FloatingActionButton customToggle = new M3FloatingActionButton("+");
+        M3FloatingActionButton action = new M3FloatingActionButton("A");
+        M3FabMenu menu = M3FabMenu.withToggleButton(customToggle, action);
+
+        assertSame(customToggle, menu.getToggleButton());
+        assertEquals(false, menu.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+
+        menu.getToggleButton().fire();
+
+        assertTrue(menu.isExpanded());
+        assertEquals(true, menu.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+
+        menu.executeAccessibleAction(AccessibleAction.FIRE);
+
+        assertFalse(menu.isExpanded());
+
+        menu.executeAccessibleAction(AccessibleAction.EXPAND);
+
+        assertTrue(menu.isExpanded());
+
+        menu.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+        assertFalse(menu.isExpanded());
     }
 
     /// Verifies that card component token properties are styleable from CSS.
@@ -6077,6 +6148,19 @@ final class M3ControlStyleTest {
                     M3FloatingActionButtonVariant.SURFACE,
                     M3FloatingActionButtonSize.REGULAR
             );
+            M3FabMenu fabMenu = new M3FabMenu(
+                    M3FloatingActionButton.withGraphic(
+                            new M3Icon("A"),
+                            M3FloatingActionButtonVariant.PRIMARY,
+                            M3FloatingActionButtonSize.SMALL
+                    ),
+                    M3FloatingActionButton.withGraphic(
+                            new M3Icon("B"),
+                            M3FloatingActionButtonVariant.SECONDARY,
+                            M3FloatingActionButtonSize.SMALL
+                    )
+            );
+            fabMenu.setExpanded(true);
 
             M3TextField filledField = new M3TextField("Filled text field");
             filledField.setPrefWidth(190.0);
@@ -6269,7 +6353,8 @@ final class M3ControlStyleTest {
                             smallFab,
                             regularFab,
                             largeFab,
-                            extendedFab
+                            extendedFab,
+                            fabMenu
                     ),
                     visualSection("Inputs", filledField, outlinedField, passwordField, errorField, textArea),
                     visualSection("Selection", selectedCheckBox, selectedRadioButton, selectedSwitch, slider),
@@ -6306,6 +6391,7 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, buttonGroup, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, splitButton, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, iconToggleGroup, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, fabMenu, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, filledField, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, outlinedField, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, errorField, Color.WHITE, 0.08);
@@ -6601,6 +6687,7 @@ final class M3ControlStyleTest {
 
         assertTrue(new M3ButtonGroup().getStyleClass().contains(M3ButtonGroup.STYLE_CLASS));
         assertTrue(new M3SplitButton("Create").getStyleClass().contains(M3SplitButton.STYLE_CLASS));
+        assertTrue(new M3FabMenu().getStyleClass().contains(M3FabMenu.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3Card.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.getStyleClass()));
         assertTrue(banner.getStyleClass().contains(M3Banner.STYLE_CLASS));
@@ -6674,6 +6761,7 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3Button.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3ButtonGroup.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3SplitButton.class));
+        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3FabMenu.class));
         assertFalse(javafx.scene.control.MenuButton.class.isAssignableFrom(M3SplitButton.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3FloatingActionButton.class));
         assertFalse(javafx.scene.control.CheckBox.class.isAssignableFrom(M3CheckBox.class));
@@ -7070,6 +7158,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.BUTTON, new M3Button().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3ButtonGroup().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3SplitButton().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3FabMenu().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3IconButton().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3FloatingActionButton().getAccessibleRole());
         assertEquals(AccessibleRole.CHECK_BOX, new M3CheckBox().getAccessibleRole());
@@ -7136,6 +7225,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Button(), "/styles/controls/button.css");
         assertUserAgentStylesheet(new M3ButtonGroup(), "/styles/controls/button-group.css");
         assertUserAgentStylesheet(new M3SplitButton(), "/styles/controls/split-button.css");
+        assertUserAgentStylesheet(new M3FabMenu(), "/styles/controls/fab-menu.css");
         assertUserAgentStylesheet(new M3IconButton(), "/styles/controls/button.css");
         assertUserAgentStylesheet(new M3IconToggleButton(), "/styles/controls/icon-toggle-button.css");
         assertUserAgentStylesheet(new M3IconToggleButtonGroup(), "/styles/controls/icon-toggle-button.css");

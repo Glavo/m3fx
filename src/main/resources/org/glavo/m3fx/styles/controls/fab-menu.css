@@ -1,0 +1,17 @@
+.m3-fab-menu {
+    -fx-spacing: 12px;
+    -fx-alignment: bottom-right;
+}
+
+.m3-fab-menu-actions {
+    -fx-spacing: 12px;
+    -fx-alignment: bottom-right;
+}
+
+.m3-fab-menu-action {
+    -fx-cursor: hand;
+}
+
+.m3-fab-menu-toggle {
+    -fx-cursor: hand;
+}

@@ -49,6 +49,7 @@ import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
+import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
@@ -270,6 +271,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", this::createButtonGroupsPage),
                 new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", this::createButtonsPage),
                 new DemoPage("Extended FABs", "Extended FABs", BUTTONS_GROUP, "Extended floating action button examples", this::createExtendedFabsPage),
+                new DemoPage("FAB Menu", "FAB menu", BUTTONS_GROUP, "Expandable floating action shortcuts", this::createFabMenuPage),
                 new DemoPage("Floating Action Buttons", "Floating action buttons (FABs)", BUTTONS_GROUP, "Floating action button sizes and variants", this::createFloatingActionButtonsPage),
                 new DemoPage("Icon Buttons", "Icon buttons", BUTTONS_GROUP, "Icon button and toggle icon button states", this::createIconButtonsPage),
                 new DemoPage("Segmented Buttons", "Segmented buttons", BUTTONS_GROUP, "Single- and multi-select segmented control states", this::createSegmentedButtonsPage),
@@ -450,6 +452,25 @@ public final class M3FXDemoApp extends Application {
                         createExtendedFab("Compose", M3FloatingActionButtonVariant.PRIMARY),
                         createExtendedFab("Upload", M3FloatingActionButtonVariant.SECONDARY)
                 )
+        );
+    }
+
+    /// Creates the floating action button menu component page.
+    private Node createFabMenuPage() {
+        M3FabMenu expanded = createFabMenu();
+        expanded.setExpanded(true);
+
+        M3FabMenu collapsed = createFabMenu();
+        M3FabMenu secondary = createFabMenu(
+                M3FloatingActionButtonVariant.SECONDARY,
+                M3FloatingActionButtonVariant.TERTIARY
+        );
+        secondary.setExpanded(true);
+
+        return createGallery(
+                createShowcaseGroup("Expanded", expanded),
+                createShowcaseGroup("Collapsed", collapsed),
+                createShowcaseGroup("Variants", secondary)
         );
     }
 
@@ -1603,6 +1624,28 @@ public final class M3FXDemoApp extends Application {
         M3Icon icon = new M3Icon(iconText, M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE);
         icon.getStyleClass().add("demo-fab-icon");
         return M3FloatingActionButton.withGraphic(icon, variant, size);
+    }
+
+    /// Creates a floating action button menu sample.
+    private M3FabMenu createFabMenu() {
+        return createFabMenu(
+                M3FloatingActionButtonVariant.PRIMARY,
+                M3FloatingActionButtonVariant.SECONDARY
+        );
+    }
+
+    /// Creates a floating action button menu sample using item variants.
+    private M3FabMenu createFabMenu(
+            M3FloatingActionButtonVariant firstVariant,
+            M3FloatingActionButtonVariant secondVariant
+    ) {
+        M3FloatingActionButton create = createFab("C", firstVariant, M3FloatingActionButtonSize.SMALL);
+        M3FloatingActionButton edit = createFab("E", secondVariant, M3FloatingActionButtonSize.SMALL);
+        M3FloatingActionButton share = createFab("S", M3FloatingActionButtonVariant.SURFACE, M3FloatingActionButtonSize.SMALL);
+        create.setOnAction(event -> showSnackbar());
+        edit.setOnAction(event -> showSnackbar());
+        share.setOnAction(event -> showSnackbar());
+        return new M3FabMenu(create, edit, share);
     }
 
     /// Creates a sample standalone icon.
