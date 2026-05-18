@@ -131,6 +131,12 @@ public final class M3FXDemoApp extends Application {
             Color.web("#7d5260")
     );
 
+    /// The primary sidebar section aligned with the Material components navigation drawer.
+    private static final String COMPONENTS_SECTION = "Components";
+
+    /// The sidebar section for demo pages absent from the Material components navigation drawer.
+    private static final String ADDITIONAL_DEMOS_SECTION = "Additional demos";
+
     /// The current seed color used by the demo theme.
     private Color seedColor = M3Theme.DEFAULT_SEED_COLOR;
 
@@ -247,37 +253,39 @@ public final class M3FXDemoApp extends Application {
     /// Creates all component demo pages.
     private List<DemoPage> createPages() {
         return List.of(
-                new DemoPage("Buttons", "Variants, icon buttons, and floating actions", this::createButtonsPage),
-                new DemoPage("Typography", "Token-driven Material type roles", this::createTypographyPage),
-                new DemoPage("Icons", "Size roles and semantic icon colors", this::createIconsPage),
-                new DemoPage("Text Fields", "Filled, outlined, populated, error, and disabled fields", this::createTextFieldsPage),
-                new DemoPage("Search", "Search bars, actions, and result surfaces", this::createSearchPage),
-                new DemoPage("Checkboxes", "Checked, unchecked, and disabled states", this::createCheckboxesPage),
-                new DemoPage("Radio Buttons", "Grouped single selection states", this::createRadioButtonsPage),
-                new DemoPage("Switches", "On, off, and disabled switch states", this::createSwitchesPage),
-                new DemoPage("Sliders", "Different values and disabled slider states", this::createSlidersPage),
-                new DemoPage("Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
-                new DemoPage("Menus", "Menu surfaces, actions, and menu buttons", this::createMenusPage),
-                new DemoPage("Segmented Buttons", "Single- and multi-select segmented control states", this::createSegmentedButtonsPage),
-                new DemoPage("Tabs", "Primary tabs with animated active indicators", this::createTabsPage),
-                new DemoPage("App Bars", "Top app bars with navigation and actions", this::createAppBarsPage),
-                new DemoPage("Bottom App Bars", "Bottom app bars with actions and floating actions", this::createBottomAppBarsPage),
-                new DemoPage("Navigation", "Bottom navigation items and selected indicators", this::createNavigationPage),
-                new DemoPage("Navigation Rail", "Vertical destinations for wide layouts", this::createNavigationRailPage),
-                new DemoPage("Navigation Drawer", "Drawer destinations with selected rows", this::createNavigationDrawerPage),
-                new DemoPage("Progress", "Linear and circular progress indicators", this::createProgressPage),
-                new DemoPage("Lists", "One-line, two-line, three-line, and selected rows", this::createListPage),
-                new DemoPage("Badges", "Dot, count, overflow, and attached badges", this::createBadgesPage),
-                new DemoPage("Avatars", "Initials and graphic avatar slots", this::createAvatarsPage),
-                new DemoPage("Dividers", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
-                new DemoPage("Surfaces", "Color containers, shape, padding, and elevation", this::createSurfacesPage),
-                new DemoPage("Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
-                new DemoPage("Sheets", "Side and bottom containment surfaces", this::createSheetsPage),
-                new DemoPage("Scrims", "Modal overlays and dismiss actions", this::createScrimsPage),
-                new DemoPage("Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
+                new DemoPage("Bottom App Bars", "App bars: bottom", "Bottom app bars with actions and floating actions", this::createBottomAppBarsPage),
+                new DemoPage("App Bars", "App bars: top", "Top app bars with navigation and actions", this::createAppBarsPage),
                 new DemoPage("Banners", "Persistent inline feedback with optional actions", this::createBannersPage),
+                new DemoPage("Navigation", "Bottom navigation", "Bottom navigation items and selected indicators", this::createNavigationPage),
+                new DemoPage("Buttons", "Variants, icon buttons, and toggle icon buttons", this::createButtonsPage),
+                new DemoPage("Floating Action Buttons", "Buttons: floating action button", "Floating action button sizes and variants", this::createFloatingActionButtonsPage),
+                new DemoPage("Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
+                new DemoPage("Checkboxes", "Checked, unchecked, and disabled states", this::createCheckboxesPage),
+                new DemoPage("Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
+                new DemoPage("Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
+                new DemoPage("Dividers", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
+                new DemoPage("Lists", "One-line, two-line, three-line, and selected rows", this::createListPage),
+                new DemoPage("Menus", "Menu surfaces, actions, and menu buttons", this::createMenusPage),
+                new DemoPage("Navigation Drawer", "Drawer destinations with selected rows", this::createNavigationDrawerPage),
+                new DemoPage("Navigation Rail", "Vertical destinations for wide layouts", this::createNavigationRailPage),
+                new DemoPage("Progress", "Progress indicators", "Linear and circular progress indicators", this::createProgressPage),
+                new DemoPage("Radio Buttons", "Radio buttons", "Grouped single selection states", this::createRadioButtonsPage),
+                new DemoPage("Bottom Sheets", "Sheets: bottom", "Bottom sheet containment surfaces", this::createBottomSheetsPage),
+                new DemoPage("Side Sheets", "Sheets: side", "Side sheet containment surfaces", this::createSideSheetsPage),
+                new DemoPage("Sliders", "Different values and disabled slider states", this::createSlidersPage),
                 new DemoPage("Snackbars", "Snackbar host with action and queued messages", this::createSnackbarsPage),
-                new DemoPage("Tooltips", "Plain and longer contextual help", this::createTooltipsPage)
+                new DemoPage("Switches", "On, off, and disabled switch states", this::createSwitchesPage),
+                new DemoPage("Tabs", "Primary tabs with animated active indicators", this::createTabsPage),
+                new DemoPage("Text Fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", this::createTextFieldsPage),
+                new DemoPage("Tooltips", "Plain and longer contextual help", this::createTooltipsPage),
+                new DemoPage("Segmented Buttons", "Segmented buttons", ADDITIONAL_DEMOS_SECTION, "Single- and multi-select segmented control states", this::createSegmentedButtonsPage),
+                new DemoPage("Badges", "Badges", ADDITIONAL_DEMOS_SECTION, "Dot, count, overflow, and attached badges", this::createBadgesPage),
+                new DemoPage("Search", "Search", ADDITIONAL_DEMOS_SECTION, "Search bars, actions, and result surfaces", this::createSearchPage),
+                new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_SECTION, "Token-driven Material type roles", this::createTypographyPage),
+                new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_SECTION, "Size roles and semantic icon colors", this::createIconsPage),
+                new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_SECTION, "Initials and graphic avatar slots", this::createAvatarsPage),
+                new DemoPage("Surfaces", "Surfaces", ADDITIONAL_DEMOS_SECTION, "Color containers, shape, padding, and elevation", this::createSurfacesPage),
+                new DemoPage("Scrims", "Scrims", ADDITIONAL_DEMOS_SECTION, "Modal overlays and dismiss actions", this::createScrimsPage)
         );
     }
 
@@ -295,14 +303,18 @@ public final class M3FXDemoApp extends Application {
         M3NavigationDrawer sidebar = new M3NavigationDrawer();
         sidebar.getStyleClass().add("demo-sidebar-drawer");
 
-        Label heading = new Label("Components");
-        heading.getStyleClass().add("demo-drawer-section");
-        sidebar.getItems().add(heading);
-
         sidebarItems.clear();
+        @Nullable String currentSection = null;
         for (DemoPage page : pages) {
-            M3ListItem item = new M3ListItem(page.title());
-            item.setLeading(createNavigationIcon(sidebarIconText(page.title())));
+            if (!page.sidebarSection().equals(currentSection)) {
+                Label heading = new Label(page.sidebarSection());
+                heading.getStyleClass().add("demo-drawer-section");
+                sidebar.getItems().add(heading);
+                currentSection = page.sidebarSection();
+            }
+
+            M3ListItem item = new M3ListItem(page.navigationTitle());
+            item.setUserData(page);
             item.setOnAction(event -> showPage(page));
             sidebarItems.add(item);
             sidebar.getItems().add(item);
@@ -338,7 +350,7 @@ public final class M3FXDemoApp extends Application {
         }
 
         for (M3ListItem item : sidebarItems) {
-            item.setSelected(item.getHeadlineText().equals(page.title()));
+            item.setSelected(item.getUserData() == page);
         }
 
         VBox pageNode = new VBox(24.0);
@@ -407,7 +419,13 @@ public final class M3FXDemoApp extends Application {
                                 "U"
                         ),
                         createIconToggleButton("D", M3IconToggleButtonVariant.TONAL, false)
-                ),
+                )
+        );
+    }
+
+    /// Creates the floating action button component page.
+    private Node createFloatingActionButtonsPage() {
+        return createGallery(
                 createShowcaseGroup(
                         "Floating Action Buttons",
                         createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
@@ -979,13 +997,20 @@ public final class M3FXDemoApp extends Application {
         return createGallery(createShowcaseGroup("Cards", filled, outlined, elevated));
     }
 
-    /// Creates the sheet component page.
-    private Node createSheetsPage() {
+    /// Creates the side sheet component page.
+    private Node createSideSheetsPage() {
         M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent(), createIconButton("X"));
 
         M3SideSheet modalSideSheet = new M3SideSheet("Filters", createSheetContent(), createIconButton("X"));
         modalSideSheet.setVariant(M3SheetVariant.MODAL);
 
+        return createGallery(
+                createShowcaseGroup("Side Sheets", sideSheet, modalSideSheet)
+        );
+    }
+
+    /// Creates the bottom sheet component page.
+    private Node createBottomSheetsPage() {
         M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent(), createIconButton("X"));
         bottomSheet.setPrefWidth(520.0);
 
@@ -994,7 +1019,6 @@ public final class M3FXDemoApp extends Application {
         compactBottomSheet.setPrefWidth(520.0);
 
         return createGallery(
-                createShowcaseGroup("Side Sheets", sideSheet, modalSideSheet),
                 createShowcaseGroup("Bottom Sheets", bottomSheet, compactBottomSheet)
         );
     }
@@ -1401,21 +1425,6 @@ public final class M3FXDemoApp extends Application {
         return icon;
     }
 
-    /// Creates compact icon text from a page title.
-    private static String sidebarIconText(String title) {
-        Objects.requireNonNull(title, "title");
-        StringBuilder builder = new StringBuilder(2);
-        for (String part : title.split(" ")) {
-            if (!part.isBlank()) {
-                builder.append(part.charAt(0));
-                if (builder.length() == 2) {
-                    break;
-                }
-            }
-        }
-        return builder.length() == 0 ? "?" : builder.toString();
-    }
-
     /// Creates the sample icon button.
     private static M3IconButton createIconButton(String text) {
         M3Icon icon = new M3Icon(text, M3IconSize.SMALL, M3IconVariant.PRIMARY);
@@ -1692,31 +1701,43 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Describes one demo component page.
-    private static final class DemoPage {
-        /// The page title.
-        private final String title;
-
-        /// The page subtitle.
-        private final String subtitle;
-
-        /// Creates page content on demand.
-        private final Supplier<Node> contentFactory;
-
+    ///
+    /// @param title the page title
+    /// @param navigationTitle the page title displayed in the sidebar
+    /// @param sidebarSection the sidebar section containing this page
+    /// @param subtitle the page subtitle
+    /// @param contentFactory the factory used to create page content on demand
+    @NotNullByDefault
+    private record DemoPage(
+            String title,
+            String navigationTitle,
+            String sidebarSection,
+            String subtitle,
+            Supplier<Node> contentFactory
+    ) {
         /// Creates a demo page descriptor.
         private DemoPage(String title, String subtitle, Supplier<Node> contentFactory) {
+            this(title, title, subtitle, contentFactory);
+        }
+
+        /// Creates a demo page descriptor with a sidebar title.
+        private DemoPage(String title, String navigationTitle, String subtitle, Supplier<Node> contentFactory) {
+            this(title, navigationTitle, COMPONENTS_SECTION, subtitle, contentFactory);
+        }
+
+        /// Creates a demo page descriptor with a sidebar title and section.
+        private DemoPage(
+                String title,
+                String navigationTitle,
+                String sidebarSection,
+                String subtitle,
+                Supplier<Node> contentFactory
+        ) {
             this.title = Objects.requireNonNull(title, "title");
+            this.navigationTitle = Objects.requireNonNull(navigationTitle, "navigationTitle");
+            this.sidebarSection = Objects.requireNonNull(sidebarSection, "sidebarSection");
             this.subtitle = Objects.requireNonNull(subtitle, "subtitle");
             this.contentFactory = Objects.requireNonNull(contentFactory, "contentFactory");
-        }
-
-        /// Returns the page title.
-        private String title() {
-            return title;
-        }
-
-        /// Returns the page subtitle.
-        private String subtitle() {
-            return subtitle;
         }
 
         /// Creates page content.
