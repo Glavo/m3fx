@@ -44,6 +44,9 @@ public class M3TextInputLayout extends VBox {
     /// The style class applied to the input and adornment container.
     public static final String INPUT_CONTAINER_STYLE_CLASS = "m3-text-input-container";
 
+    /// The style class applied to the floating or resting label.
+    public static final String LABEL_STYLE_CLASS = "m3-text-input-label";
+
     /// The style class applied to the leading adornment slot.
     public static final String LEADING_STYLE_CLASS = "m3-text-input-leading";
 
@@ -65,11 +68,20 @@ public class M3TextInputLayout extends VBox {
     /// The pseudo-class used while the supporting row renders an error state.
     private static final PseudoClass ERROR_PSEUDO_CLASS = PseudoClass.getPseudoClass("error");
 
+    /// The pseudo-class used while the label is floating above entered text.
+    private static final PseudoClass FLOATING_PSEUDO_CLASS = PseudoClass.getPseudoClass("floating");
+
     /// The character limit value used when no limit is active.
     private static final int NO_CHARACTER_LIMIT = -1;
 
     /// The horizontal input padding reserved for each active adornment slot.
     private static final double ADORNED_HORIZONTAL_PADDING = 48.0;
+
+    /// The top input padding used when a single-line field has a floating label.
+    private static final double LABELED_SINGLE_LINE_TOP_PADDING = 20.0;
+
+    /// The top input padding used when a multiline field has a floating label.
+    private static final double LABELED_MULTILINE_TOP_PADDING = 28.0;
 
     /// The wrapped text input control.
     private final ObjectProperty<@Nullable TextInputControl> input =
@@ -87,6 +99,22 @@ public class M3TextInputLayout extends VBox {
                     updateInput();
                 }
             };
+
+    /// The field label displayed inside or above the wrapped input.
+    private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
+        /// Rejects null label text values.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "labelText"));
+        }
+
+        /// Updates label content and accessibility text.
+        @Override
+        protected void invalidated() {
+            updateLabel();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+        }
+    };
 
     /// The leading adornment node.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
@@ -196,10 +224,19 @@ public class M3TextInputLayout extends VBox {
     private final ChangeListener<String> textListener =
             (observable, oldValue, newValue) -> {
                 enforceCharacterLimit();
+                updateLabel();
                 updateTrailing();
                 updateInputErrorState();
                 updateSupportingRow();
             };
+
+    /// The listener used to update label state when the wrapped input focus changes.
+    private final ChangeListener<Boolean> focusListener =
+            (observable, oldValue, newValue) -> updateLabel();
+
+    /// The listener used to mirror the wrapped input variant onto this layout.
+    private final ChangeListener<M3TextInputVariant> variantListener =
+            (observable, oldValue, newValue) -> updateInputVariantStyle();
 
     /// The listener used to track input padding changes from CSS or application code.
     private final ChangeListener<Insets> paddingListener =
@@ -212,6 +249,9 @@ public class M3TextInputLayout extends VBox {
 
     /// The container that overlays leading and trailing adornments over the input.
     private final StackPane inputContainer = new StackPane();
+
+    /// The label rendered over the wrapped input.
+    private final Label label = new Label();
 
     /// The slot that renders the leading adornment.
     private final StackPane leadingSlot = new StackPane();
@@ -247,6 +287,9 @@ public class M3TextInputLayout extends VBox {
     /// Whether this layout applied the current error state to the installed input.
     private boolean inputErrorWasApplied = false;
 
+    /// Whether the label is currently floating.
+    private boolean labelFloating = false;
+
     /// The node currently installed in the trailing slot.
     private @Nullable Node installedTrailing = null;
 
@@ -265,6 +308,12 @@ public class M3TextInputLayout extends VBox {
     public M3TextInputLayout(TextInputControl input, String supportingText) {
         this(input);
         setSupportingText(supportingText);
+    }
+
+    /// Creates a text input layout wrapping the supplied input and showing label and supporting text.
+    public M3TextInputLayout(TextInputControl input, String labelText, String supportingText) {
+        this(input, supportingText);
+        setLabelText(labelText);
     }
 
     /// Returns the wrapped text input control.
@@ -286,6 +335,26 @@ public class M3TextInputLayout extends VBox {
     public final @Nullable M3TextInput getTextInput() {
         TextInputControl input = getInput();
         return input instanceof M3TextInput textInput ? textInput : null;
+    }
+
+    /// Returns the label text displayed inside or above the input.
+    public final String getLabelText() {
+        return labelText.get();
+    }
+
+    /// Sets the label text displayed inside or above the input.
+    public final void setLabelText(String labelText) {
+        this.labelText.set(Objects.requireNonNull(labelText, "labelText"));
+    }
+
+    /// Returns the label text property.
+    public final StringProperty labelTextProperty() {
+        return labelText;
+    }
+
+    /// Returns whether the label is currently floating.
+    public final boolean isLabelFloating() {
+        return labelFloating;
     }
 
     /// Returns the leading adornment node.
@@ -473,11 +542,14 @@ public class M3TextInputLayout extends VBox {
         setFillWidth(true);
 
         inputContainer.getStyleClass().add(INPUT_CONTAINER_STYLE_CLASS);
+        label.getStyleClass().add(LABEL_STYLE_CLASS);
+        label.setMouseTransparent(true);
         leadingSlot.getStyleClass().add(LEADING_STYLE_CLASS);
         trailingSlot.getStyleClass().add(TRAILING_STYLE_CLASS);
+        StackPane.setAlignment(label, Pos.CENTER_LEFT);
         StackPane.setAlignment(leadingSlot, Pos.CENTER_LEFT);
         StackPane.setAlignment(trailingSlot, Pos.CENTER_RIGHT);
-        inputContainer.getChildren().setAll(leadingSlot, trailingSlot);
+        inputContainer.getChildren().setAll(label, leadingSlot, trailingSlot);
 
         supportingRow.getStyleClass().add(SUPPORTING_ROW_STYLE_CLASS);
         supportingLabel.getStyleClass().add(SUPPORTING_TEXT_STYLE_CLASS);
@@ -491,6 +563,8 @@ public class M3TextInputLayout extends VBox {
         supportingRow.getChildren().setAll(supportingLabel, supportingSpacer, counterLabel);
         getChildren().addAll(inputContainer, supportingRow);
         updateInputContainer();
+        updateInputVariantStyle();
+        updateLabel();
         updateLeading();
         updateTrailing();
         updateSupportingRow();
@@ -500,14 +574,20 @@ public class M3TextInputLayout extends VBox {
     private void updateInput() {
         TextInputControl oldInput = installedInput;
         supportingRow.disableProperty().unbind();
+        label.disableProperty().unbind();
         leadingSlot.disableProperty().unbind();
         trailingSlot.disableProperty().unbind();
         supportingRow.setDisable(false);
+        label.setDisable(false);
         leadingSlot.setDisable(false);
         trailingSlot.setDisable(false);
         if (oldInput != null) {
             oldInput.textProperty().removeListener(textListener);
+            oldInput.focusedProperty().removeListener(focusListener);
             oldInput.paddingProperty().removeListener(paddingListener);
+            if (oldInput instanceof M3TextInput textInput) {
+                textInput.variantProperty().removeListener(variantListener);
+            }
             oldInput.getStyleClass().remove(INPUT_STYLE_CLASS);
             restoreInputPadding(oldInput);
             if (inputErrorWasApplied && oldInput instanceof M3TextInput textInput) {
@@ -524,7 +604,12 @@ public class M3TextInputLayout extends VBox {
         if (newInput != null) {
             M3ControlStyles.add(newInput, INPUT_STYLE_CLASS);
             newInput.textProperty().addListener(textListener);
+            newInput.focusedProperty().addListener(focusListener);
+            if (newInput instanceof M3TextInput textInput) {
+                textInput.variantProperty().addListener(variantListener);
+            }
             supportingRow.disableProperty().bind(newInput.disabledProperty());
+            label.disableProperty().bind(newInput.disabledProperty());
             leadingSlot.disableProperty().bind(newInput.disabledProperty());
             trailingSlot.disableProperty().bind(newInput.disabledProperty());
             installedInput = newInput;
@@ -534,6 +619,8 @@ public class M3TextInputLayout extends VBox {
         }
 
         updateInputContainer();
+        updateInputVariantStyle();
+        updateLabel();
         enforceCharacterLimit();
         updateInputPadding();
         updateTrailing();
@@ -548,6 +635,41 @@ public class M3TextInputLayout extends VBox {
         inputContainer.setManaged(visible);
     }
 
+    /// Mirrors the wrapped input variant onto this layout for label styling.
+    private void updateInputVariantStyle() {
+        M3TextInput textInput = getTextInput();
+        M3TextInputVariant variant = textInput == null ? M3TextInputVariant.FILLED : textInput.getVariant();
+        M3ControlStyles.replaceVariant(
+                this,
+                variant.getStyleClass(),
+                M3TextInputVariant.FILLED.getStyleClass(),
+                M3TextInputVariant.OUTLINED.getStyleClass()
+        );
+    }
+
+    /// Updates label content, floating state, and placement.
+    private void updateLabel() {
+        TextInputControl input = getInput();
+        String text = getLabelText();
+        boolean visible = input != null && !text.isBlank();
+        boolean floating = visible && shouldFloatLabel(input);
+
+        label.setText(text);
+        label.setVisible(visible);
+        label.setManaged(visible);
+        StackPane.setAlignment(label, floating ? Pos.TOP_LEFT : Pos.CENTER_LEFT);
+        label.pseudoClassStateChanged(FLOATING_PSEUDO_CLASS, floating);
+        label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, hasErrorState());
+        labelFloating = floating;
+        updateLabelPadding();
+        updateInputPadding();
+    }
+
+    /// Returns whether the label should float above input content.
+    private static boolean shouldFloatLabel(TextInputControl input) {
+        return input.isFocused() || textLength(input) > 0;
+    }
+
     /// Updates the leading adornment slot.
     private void updateLeading() {
         Node leading = getLeading();
@@ -556,6 +678,7 @@ public class M3TextInputLayout extends VBox {
             leadingSlot.getChildren().add(leading);
         }
         updateAdornmentSlot(leadingSlot, leading);
+        updateLabelPadding();
         updateInputPadding();
     }
 
@@ -569,6 +692,7 @@ public class M3TextInputLayout extends VBox {
             trailingSlot.getChildren().add(trailing);
         }
         updateAdornmentSlot(trailingSlot, trailing);
+        updateLabelPadding();
         updateInputPadding();
         if (previousTrailing != trailing) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
@@ -625,12 +749,28 @@ public class M3TextInputLayout extends VBox {
         double right = effectiveTrailing() == null
                 ? basePadding.getRight()
                 : Math.max(basePadding.getRight(), ADORNED_HORIZONTAL_PADDING);
+        double top = isLabelFloating()
+                ? Math.max(basePadding.getTop(), labeledTopPadding(input))
+                : basePadding.getTop();
         applyingInputPadding = true;
         try {
-            input.setPadding(new Insets(basePadding.getTop(), right, basePadding.getBottom(), left));
+            input.setPadding(new Insets(top, right, basePadding.getBottom(), left));
         } finally {
             applyingInputPadding = false;
         }
+    }
+
+    /// Updates label padding so labels align with input text and avoid adornment slots.
+    private void updateLabelPadding() {
+        double left = getLeading() == null ? 16.0 : ADORNED_HORIZONTAL_PADDING;
+        double right = effectiveTrailing() == null ? 16.0 : ADORNED_HORIZONTAL_PADDING;
+        double top = isLabelFloating() ? 2.0 : 0.0;
+        label.setPadding(new Insets(top, right, 0.0, left));
+    }
+
+    /// Returns the top padding required while a label is floating.
+    private static double labeledTopPadding(TextInputControl input) {
+        return input instanceof M3TextArea ? LABELED_MULTILINE_TOP_PADDING : LABELED_SINGLE_LINE_TOP_PADDING;
     }
 
     /// Applies the layout-owned error state to the wrapped input.
@@ -663,6 +803,7 @@ public class M3TextInputLayout extends VBox {
         supportingLabel.setVisible(showMessage);
         supportingLabel.setManaged(showMessage);
         supportingLabel.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
+        label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
 
         supportingSpacer.setVisible(showCounter);
         supportingSpacer.setManaged(showCounter);
@@ -724,12 +865,25 @@ public class M3TextInputLayout extends VBox {
 
     /// Returns text exposed to assistive technologies.
     private String accessibleText() {
+        String label = getLabelText();
         String message = displayedSupportingText();
         String counter = isCharacterCounterVisible() ? characterCounterText() : "";
-        if (message.isEmpty()) {
-            return counter;
+        StringBuilder builder = new StringBuilder();
+        appendAccessibleText(builder, label);
+        appendAccessibleText(builder, message);
+        appendAccessibleText(builder, counter);
+        return builder.toString();
+    }
+
+    /// Appends one accessible text part when it is non-blank.
+    private static void appendAccessibleText(StringBuilder builder, String text) {
+        if (text.isBlank()) {
+            return;
         }
-        return counter.isEmpty() ? message : message + " " + counter;
+        if (builder.length() > 0) {
+            builder.append(' ');
+        }
+        builder.append(text);
     }
 
     /// Returns the number of accessible input layout child items.

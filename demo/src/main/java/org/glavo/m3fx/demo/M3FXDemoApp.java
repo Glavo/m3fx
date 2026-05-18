@@ -1139,6 +1139,8 @@ public final class M3FXDemoApp extends Application {
     /// Creates a text input layout for the page gallery.
     private static M3TextInputLayout createTextInputLayout(TextInputControl input, String supportingText) {
         M3TextInputLayout layout = new M3TextInputLayout(input, supportingText);
+        layout.setLabelText(input.getPromptText());
+        input.setPromptText("");
         layout.setPrefWidth(input.getPrefWidth());
         layout.setMaxWidth(input.getPrefWidth());
         if (input.isDisabled()) {

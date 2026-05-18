@@ -141,6 +141,23 @@
     -fx-alignment: center;
 }
 
+.m3-text-input-label {
+    -fx-font-size: 16px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-text-input-label:floating {
+    -fx-font-size: 12px;
+}
+
+.m3-text-input-layout.m3-outlined-field .m3-text-input-label:floating {
+    -fx-background-color: -m3-color-surface;
+}
+
+.m3-text-input-label:error {
+    -fx-text-fill: -m3-color-error;
+}
+
 .m3-text-input-leading,
 .m3-text-input-trailing {
     -fx-alignment: center;
@@ -175,6 +192,7 @@
 
 .m3-text-input-leading:disabled,
 .m3-text-input-trailing:disabled,
+.m3-text-input-label:disabled,
 .m3-text-input-supporting-row:disabled {
     -fx-opacity: 0.38;
 }

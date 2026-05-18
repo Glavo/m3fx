@@ -1258,6 +1258,42 @@ final class M3ControlStyleTest {
         ).isDisable());
     }
 
+    /// Verifies that text input layouts expose labels and update floating label state.
+    @Test
+    void textInputLayoutDisplaysFloatingLabel() {
+        PseudoClass floating = PseudoClass.getPseudoClass("floating");
+        M3TextField textField = new M3TextField();
+        M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+
+        applyCss(layout);
+
+        Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        assertEquals("Email", layout.getLabelText());
+        assertEquals("Email", label.getText());
+        assertEquals("Email Helper text", layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertFalse(layout.isLabelFloating());
+        assertFalse(label.getPseudoClassStates().contains(floating));
+        assertEquals(Pos.CENTER_LEFT, StackPane.getAlignment(label));
+        assertEquals(8.0, textField.getPadding().getTop(), 0.0001);
+        assertTrue(layout.getStyleClass().contains(M3TextInputVariant.FILLED.getStyleClass()));
+
+        textField.setText("support@example.com");
+
+        assertTrue(layout.isLabelFloating());
+        assertTrue(label.getPseudoClassStates().contains(floating));
+        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(label));
+        assertEquals(20.0, textField.getPadding().getTop(), 0.0001);
+
+        textField.setVariant(M3TextInputVariant.OUTLINED);
+
+        assertTrue(layout.getStyleClass().contains(M3TextInputVariant.OUTLINED.getStyleClass()));
+
+        textField.clear();
+
+        assertFalse(layout.isLabelFloating());
+        assertEquals(8.0, textField.getPadding().getTop(), 0.0001);
+    }
+
     /// Verifies that text input layouts manage leading and trailing adornment slots.
     @Test
     void textInputLayoutManagesLeadingAndTrailingAdornments() {
@@ -5492,12 +5528,14 @@ final class M3ControlStyleTest {
             M3TextField supportingField = new M3TextField("Alpha");
             supportingField.setPrefWidth(220.0);
             M3TextInputLayout supportingLayout = new M3TextInputLayout(supportingField, "Supporting text");
+            supportingLayout.setLabelText("Project");
             supportingLayout.setLeading(new M3Icon("A"));
             supportingLayout.setPrefWidth(220.0);
 
             M3TextField counterField = M3TextField.withVariant("support@example.com", M3TextInputVariant.OUTLINED);
             counterField.setPrefWidth(320.0);
             M3TextInputLayout counterLayout = new M3TextInputLayout(counterField, "Email address");
+            counterLayout.setLabelText("Email");
             counterLayout.setLeading(new M3Icon("E"));
             counterLayout.setClearButtonEnabled(true);
             counterLayout.setCharacterCounterVisible(true);
@@ -5507,6 +5545,7 @@ final class M3ControlStyleTest {
             M3TextField errorField = M3TextField.withVariant("abcdef", M3TextInputVariant.OUTLINED);
             errorField.setPrefWidth(220.0);
             M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
+            errorLayout.setLabelText("Code");
             errorLayout.setLeading(new M3Icon("!"));
             errorLayout.setCharacterCounterVisible(true);
             errorLayout.setCharacterLimit(4);
@@ -5516,6 +5555,7 @@ final class M3ControlStyleTest {
             M3TextField enforcedField = M3TextField.withVariant("Too many characters", M3TextInputVariant.OUTLINED);
             enforcedField.setPrefWidth(260.0);
             M3TextInputLayout enforcedLayout = new M3TextInputLayout(enforcedField, "Limit enforced");
+            enforcedLayout.setLabelText("Limited");
             enforcedLayout.setCharacterCounterVisible(true);
             enforcedLayout.setCharacterLimit(8);
             enforcedLayout.setCharacterLimitEnforced(true);
@@ -5538,6 +5578,7 @@ final class M3ControlStyleTest {
             assertTrue(errorField.isError());
             assertFalse(enforcedField.isError());
             assertEquals("Too many", enforcedField.getText());
+            assertTrue(counterLayout.isLabelFloating());
             assertEquals(counterLayout.getClearButton(), counterLayout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
             assertEquals("Too long", assertInstanceOf(
                     Label.class,
