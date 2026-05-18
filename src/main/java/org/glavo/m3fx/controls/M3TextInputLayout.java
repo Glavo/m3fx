@@ -6,6 +6,10 @@ package org.glavo.m3fx.controls;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyStringProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -32,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// A Material Design 3 text input container with supporting text, error text, and a character counter.
+/// A Material Design 3 text input container with supporting text, validation, error text, and a character counter.
 @NotNullByDefault
 public class M3TextInputLayout extends VBox {
     /// The base style class for M3FX text input layouts.
@@ -165,6 +169,34 @@ public class M3TextInputLayout extends VBox {
         }
     };
 
+    /// The validator that can derive error text from the wrapped input value.
+    private final ObjectProperty<@Nullable M3TextInputValidator> validator =
+            new SimpleObjectProperty<>(this, "validator") {
+                /// Refreshes validation when a validator changes during an active validation cycle.
+                @Override
+                protected void invalidated() {
+                    if (isValidationActive()) {
+                        updateValidation();
+                    }
+                }
+            };
+
+    /// The last error text produced by the validator.
+    private final ReadOnlyStringWrapper validationErrorText =
+            new ReadOnlyStringWrapper(this, "validationErrorText", "");
+
+    /// Whether validation has been explicitly run or activated by focus loss.
+    private final ReadOnlyBooleanWrapper validationActive =
+            new ReadOnlyBooleanWrapper(this, "validationActive");
+
+    /// Whether validation runs after the wrapped input loses focus.
+    private final BooleanProperty validateOnFocusLost =
+            new SimpleBooleanProperty(this, "validateOnFocusLost", true);
+
+    /// Whether validation refreshes on edits after validation has become active.
+    private final BooleanProperty validateOnTextChange =
+            new SimpleBooleanProperty(this, "validateOnTextChange", true);
+
     /// Whether the character counter label is visible.
     private final BooleanProperty characterCounterVisible =
             new SimpleBooleanProperty(this, "characterCounterVisible") {
@@ -226,13 +258,17 @@ public class M3TextInputLayout extends VBox {
                 enforceCharacterLimit();
                 updateLabel();
                 updateTrailing();
-                updateInputErrorState();
-                updateSupportingRow();
+                if (isValidationActive() && isValidateOnTextChange()) {
+                    updateValidation();
+                } else {
+                    updateInputErrorState();
+                    updateSupportingRow();
+                }
             };
 
     /// The listener used to update label state when the wrapped input focus changes.
     private final ChangeListener<Boolean> focusListener =
-            (observable, oldValue, newValue) -> updateLabel();
+            (observable, oldValue, newValue) -> handleInputFocusChanged(newValue);
 
     /// The listener used to mirror the wrapped input variant onto this layout.
     private final ChangeListener<M3TextInputVariant> variantListener =
@@ -417,6 +453,90 @@ public class M3TextInputLayout extends VBox {
         return errorText;
     }
 
+    /// Returns the validator used to derive error text from the wrapped input value.
+    public final @Nullable M3TextInputValidator getValidator() {
+        return validator.get();
+    }
+
+    /// Sets the validator used to derive error text from the wrapped input value.
+    public final void setValidator(@Nullable M3TextInputValidator validator) {
+        this.validator.set(validator);
+    }
+
+    /// Returns the validator property.
+    public final ObjectProperty<@Nullable M3TextInputValidator> validatorProperty() {
+        return validator;
+    }
+
+    /// Returns the last error text produced by the validator.
+    public final String getValidationErrorText() {
+        return validationErrorText.get();
+    }
+
+    /// Returns the validator-produced error text property.
+    public final ReadOnlyStringProperty validationErrorTextProperty() {
+        return validationErrorText.getReadOnlyProperty();
+    }
+
+    /// Returns whether validation has been explicitly run or activated by focus loss.
+    public final boolean isValidationActive() {
+        return validationActive.get();
+    }
+
+    /// Returns the validation active state property.
+    public final ReadOnlyBooleanProperty validationActiveProperty() {
+        return validationActive.getReadOnlyProperty();
+    }
+
+    /// Returns whether validation runs after the wrapped input loses focus.
+    public final boolean isValidateOnFocusLost() {
+        return validateOnFocusLost.get();
+    }
+
+    /// Sets whether validation runs after the wrapped input loses focus.
+    public final void setValidateOnFocusLost(boolean validateOnFocusLost) {
+        this.validateOnFocusLost.set(validateOnFocusLost);
+    }
+
+    /// Returns the focus-loss validation property.
+    public final BooleanProperty validateOnFocusLostProperty() {
+        return validateOnFocusLost;
+    }
+
+    /// Returns whether validation refreshes on edits after validation has become active.
+    public final boolean isValidateOnTextChange() {
+        return validateOnTextChange.get();
+    }
+
+    /// Sets whether validation refreshes on edits after validation has become active.
+    public final void setValidateOnTextChange(boolean validateOnTextChange) {
+        this.validateOnTextChange.set(validateOnTextChange);
+    }
+
+    /// Returns the active validation text-change refresh property.
+    public final BooleanProperty validateOnTextChangeProperty() {
+        return validateOnTextChange;
+    }
+
+    /// Runs the configured validator and returns whether the current input is valid.
+    public final boolean validate() {
+        validationActive.set(true);
+        return updateValidation();
+    }
+
+    /// Clears validator-produced error state without changing the configured validator.
+    public final void clearValidation() {
+        validationActive.set(false);
+        setValidationErrorText("");
+        updateInputErrorState();
+        updateSupportingRow();
+    }
+
+    /// Returns whether the configured validator currently contributes an error.
+    public final boolean isValidationError() {
+        return !getValidationErrorText().isEmpty();
+    }
+
     /// Returns whether the character counter is visible.
     public final boolean isCharacterCounterVisible() {
         return characterCounterVisible.get();
@@ -599,6 +719,8 @@ public class M3TextInputLayout extends VBox {
         inputErrorWasApplied = false;
         installedInput = null;
         installedInputBasePadding = null;
+        validationActive.set(false);
+        setValidationErrorText("");
 
         TextInputControl newInput = getInput();
         if (newInput != null) {
@@ -626,6 +748,14 @@ public class M3TextInputLayout extends VBox {
         updateTrailing();
         updateInputErrorState();
         updateSupportingRow();
+    }
+
+    /// Updates floating label state and optionally validates when focus leaves the input.
+    private void handleInputFocusChanged(boolean focused) {
+        updateLabel();
+        if (!focused && isValidateOnFocusLost()) {
+            validate();
+        }
     }
 
     /// Updates the input container visibility.
@@ -820,8 +950,14 @@ public class M3TextInputLayout extends VBox {
 
     /// Returns the supporting row text that should be visible.
     private String displayedSupportingText() {
-        String errorText = getErrorText();
+        String errorText = displayedErrorText();
         return errorText.isEmpty() ? getSupportingText() : errorText;
+    }
+
+    /// Returns the error text currently displayed by the supporting row.
+    private String displayedErrorText() {
+        String explicitErrorText = getErrorText();
+        return explicitErrorText.isEmpty() ? getValidationErrorText() : explicitErrorText;
     }
 
     /// Returns the formatted character counter text.
@@ -833,7 +969,36 @@ public class M3TextInputLayout extends VBox {
 
     /// Returns whether error text or character overflow should render the error state.
     private boolean hasErrorState() {
-        return !getErrorText().isEmpty() || isCharacterLimitExceeded();
+        return !displayedErrorText().isEmpty() || isCharacterLimitExceeded();
+    }
+
+    /// Runs validation and updates validator-owned error state.
+    private boolean updateValidation() {
+        M3TextInputValidator validator = getValidator();
+        TextInputControl input = getInput();
+        if (validator == null || input == null) {
+            setValidationErrorText("");
+            updateInputErrorState();
+            updateSupportingRow();
+            return true;
+        }
+
+        @Nullable String text = input.getText();
+        @Nullable String errorText = validator.validate(input, text == null ? "" : text);
+        setValidationErrorText(errorText == null ? "" : errorText);
+        updateInputErrorState();
+        updateSupportingRow();
+        return getValidationErrorText().isEmpty();
+    }
+
+    /// Updates validator-owned error text.
+    private void setValidationErrorText(String errorText) {
+        String validatedErrorText = Objects.requireNonNull(errorText, "errorText");
+        String oldErrorText = getValidationErrorText();
+        validationErrorText.set(validatedErrorText);
+        if (!Objects.equals(oldErrorText, validatedErrorText)) {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+        }
     }
 
     /// Applies the active character limit by truncating wrapped input text when requested.

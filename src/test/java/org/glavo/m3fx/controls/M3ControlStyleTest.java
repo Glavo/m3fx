@@ -1387,6 +1387,121 @@ final class M3ControlStyleTest {
         assertEquals("6 / 10", counter.getText());
     }
 
+    /// Verifies that text input layouts run configured validators and refresh active validation on edits.
+    @Test
+    void textInputLayoutValidatesWithConfiguredValidator() {
+        PseudoClass error = PseudoClass.getPseudoClass("error");
+        M3TextField textField = new M3TextField();
+        M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+        layout.setValidator((input, text) -> text.isBlank()
+                ? "Email is required"
+                : text.contains("@") ? null : "Use an email address");
+
+        applyCss(layout);
+
+        Label supportingText = assertInstanceOf(
+                Label.class,
+                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+        );
+        assertTrue(layout.isValidateOnFocusLost());
+        assertTrue(layout.isValidateOnTextChange());
+        assertFalse(layout.isValidationActive());
+        assertFalse(layout.isValidationError());
+        assertEquals("", layout.getValidationErrorText());
+        assertEquals("Helper text", supportingText.getText());
+        assertFalse(textField.isError());
+
+        assertFalse(layout.validate());
+
+        assertTrue(layout.isValidationActive());
+        assertTrue(layout.validationActiveProperty().get());
+        assertTrue(layout.isValidationError());
+        assertEquals("Email is required", layout.getValidationErrorText());
+        assertEquals("Email is required", layout.validationErrorTextProperty().get());
+        assertEquals("Email Email is required", layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals("Email is required", supportingText.getText());
+        assertTrue(supportingText.getPseudoClassStates().contains(error));
+        assertTrue(textField.isError());
+
+        textField.setText("support");
+
+        assertEquals("Use an email address", layout.getValidationErrorText());
+        assertEquals("Use an email address", supportingText.getText());
+        assertTrue(textField.isError());
+
+        textField.setText("support@example.com");
+
+        assertFalse(layout.isValidationError());
+        assertEquals("", layout.getValidationErrorText());
+        assertEquals("Helper text", supportingText.getText());
+        assertFalse(supportingText.getPseudoClassStates().contains(error));
+        assertFalse(textField.isError());
+
+        layout.clearValidation();
+
+        assertFalse(layout.isValidationActive());
+        assertFalse(layout.isValidationError());
+        assertEquals("Email Helper text", layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+    }
+
+    /// Verifies that text input layouts can keep validation errors stable while editing.
+    @Test
+    void textInputLayoutCanDisableTextChangeValidationRefresh() {
+        M3TextField textField = new M3TextField();
+        M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+        layout.setValidateOnTextChange(false);
+        layout.setValidator((input, text) -> text.contains("@") ? null : "Use an email address");
+
+        applyCss(layout);
+
+        assertFalse(layout.validate());
+        assertEquals("Use an email address", layout.getValidationErrorText());
+
+        textField.setText("support@example.com");
+
+        assertEquals("Use an email address", layout.getValidationErrorText());
+        assertTrue(textField.isError());
+
+        assertTrue(layout.validate());
+
+        assertEquals("", layout.getValidationErrorText());
+        assertFalse(textField.isError());
+    }
+
+    /// Verifies that focus-loss validation activates configured validators.
+    @Test
+    void textInputLayoutValidatesOnFocusLoss() {
+        runOnFxThread(() -> {
+            M3TextField textField = new M3TextField();
+            M3Button nextButton = new M3Button("Next");
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+            layout.setValidator((input, text) -> text.isBlank() ? "Email is required" : null);
+
+            Pane root = new Pane(layout, nextButton);
+            Scene scene = new Scene(root, 420.0, 160.0);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+
+                textField.requestFocus();
+                assertTrue(textField.isFocused());
+                assertFalse(layout.isValidationActive());
+
+                nextButton.requestFocus();
+
+                assertFalse(textField.isFocused());
+                assertTrue(layout.isValidationActive());
+                assertEquals("Email is required", layout.getValidationErrorText());
+                assertTrue(textField.isError());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that text input layouts can enforce character limits and expose a clear button.
     @Test
     void textInputLayoutEnforcesCharacterLimitAndClearButton() {
@@ -5521,7 +5636,7 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that text input layouts render supporting text, errors, and character counters.
+    /// Verifies that text input layouts render supporting text, validation, errors, and character counters.
     @Test
     void inputLayoutSnapshotRendersSupportingErrorAndCounterText() {
         runOnFxThread(() -> {
@@ -5561,13 +5676,29 @@ final class M3ControlStyleTest {
             enforcedLayout.setCharacterLimitEnforced(true);
             enforcedLayout.setPrefWidth(260.0);
 
-            FlowPane row = new FlowPane(18.0, 18.0, supportingLayout, counterLayout, errorLayout, enforcedLayout);
+            M3TextField validatedField = M3TextField.withVariant("support", M3TextInputVariant.OUTLINED);
+            validatedField.setPrefWidth(260.0);
+            M3TextInputLayout validatedLayout = new M3TextInputLayout(validatedField, "Email format");
+            validatedLayout.setLabelText("Validated");
+            validatedLayout.setValidator((input, text) -> text.contains("@") ? null : "Use an email address");
+            validatedLayout.validate();
+            validatedLayout.setPrefWidth(260.0);
+
+            FlowPane row = new FlowPane(
+                    18.0,
+                    18.0,
+                    supportingLayout,
+                    counterLayout,
+                    errorLayout,
+                    enforcedLayout,
+                    validatedLayout
+            );
             row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(row, 920.0, 220.0);
+            Scene scene = new Scene(row, 1220.0, 220.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             row.applyCss();
-            row.resize(920.0, 220.0);
+            row.resize(1220.0, 220.0);
             row.layout();
 
             WritableImage image = snapshotImageOnFxThread(row);
@@ -5575,14 +5706,20 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, counterLayout, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, errorLayout, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, enforcedLayout, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, validatedLayout, Color.WHITE, 0.04);
             assertTrue(errorField.isError());
             assertFalse(enforcedField.isError());
+            assertTrue(validatedField.isError());
             assertEquals("Too many", enforcedField.getText());
             assertTrue(counterLayout.isLabelFloating());
             assertEquals(counterLayout.getClearButton(), counterLayout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
             assertEquals("Too long", assertInstanceOf(
                     Label.class,
                     errorLayout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+            ).getText());
+            assertEquals("Use an email address", assertInstanceOf(
+                    Label.class,
+                    validatedLayout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
             ).getText());
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",

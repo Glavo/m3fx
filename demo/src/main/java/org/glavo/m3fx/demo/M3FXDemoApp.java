@@ -524,6 +524,17 @@ public final class M3FXDemoApp extends Application {
         outlinedTextLayout.setCharacterLimitEnforced(true);
         M3TextInputLayout passwordLayout = createTextInputLayout(password, "At least 8 characters");
         passwordLayout.setTrailing(createIconButton("V"));
+        M3TextField validatedEmail = createTextField("Validated email", "support", M3TextInputVariant.OUTLINED, false);
+        validatedEmail.setPrefWidth(340.0);
+        M3TextInputLayout validatedEmailLayout = createTextInputLayout(validatedEmail, "Validation runs on focus loss");
+        validatedEmailLayout.setValidator((input, text) -> text.isBlank()
+                ? "Email is required"
+                : text.contains("@") ? null : "Use an email address");
+        validatedEmailLayout.validate();
+        M3TextField requiredProject = createTextField("Required project", "", M3TextInputVariant.FILLED, false);
+        M3TextInputLayout requiredProjectLayout = createTextInputLayout(requiredProject, "Required field");
+        requiredProjectLayout.setValidator((input, text) -> text.isBlank() ? "Project name is required" : null);
+        requiredProjectLayout.setValidateOnTextChange(true);
         M3TextInputLayout filledErrorLayout = createTextInputLayout(filledError, "Supporting text");
         filledErrorLayout.setErrorText("Use a valid value");
         M3TextInputLayout outlinedErrorLayout = createTextInputLayout(outlinedError, "Supporting text");
@@ -541,6 +552,7 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup("Filled", filledLayout, filledTextLayout, filledDisabledLayout),
                 createShowcaseGroup("Outlined", outlinedLayout, outlinedTextLayout, passwordLayout),
+                createShowcaseGroup("Validation", validatedEmailLayout, requiredProjectLayout),
                 createShowcaseGroup("Error", filledErrorLayout, outlinedErrorLayout, passwordErrorLayout, areaErrorLayout),
                 createShowcaseGroup("Text Areas", filledAreaLayout, outlinedAreaLayout)
         );
