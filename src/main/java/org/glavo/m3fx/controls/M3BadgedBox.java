@@ -11,8 +11,10 @@ import javafx.geometry.Pos;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.layout.StackPane;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3BadgedBoxSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,7 +22,7 @@ import java.util.Objects;
 
 /// A container that overlays a Material Design 3 badge on content.
 @NotNullByDefault
-public class M3BadgedBox extends StackPane {
+public class M3BadgedBox extends Control {
     /// The base style class for M3FX badged boxes.
     public static final String STYLE_CLASS = "m3-badged-box";
 
@@ -39,7 +41,7 @@ public class M3BadgedBox extends StackPane {
                 set(Pos.TOP_RIGHT);
                 return;
             }
-            updateBadgePlacement();
+            requestLayout();
         }
     };
 
@@ -48,7 +50,7 @@ public class M3BadgedBox extends StackPane {
         /// Updates badge placement after the offset changes.
         @Override
         protected void invalidated() {
-            updateBadgePlacement();
+            requestLayout();
         }
     };
 
@@ -57,7 +59,7 @@ public class M3BadgedBox extends StackPane {
         /// Updates badge placement after the offset changes.
         @Override
         protected void invalidated() {
-            updateBadgePlacement();
+            requestLayout();
         }
     };
 
@@ -159,6 +161,12 @@ public class M3BadgedBox extends StackPane {
         return M3Stylesheets.controlStylesheet("badge.css");
     }
 
+    /// Creates the default Material Design 3 badged box skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3BadgedBoxSkin(this);
+    }
+
     /// Returns accessibility attributes for content and badge children.
     @Override
     public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
@@ -174,27 +182,8 @@ public class M3BadgedBox extends StackPane {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
-        content.addListener(observable -> updateChildren());
-        badge.addListener(observable -> updateChildren());
-        updateChildren();
-    }
-
-    /// Updates child nodes and badge alignment.
-    private void updateChildren() {
-        @Nullable Node contentNode = getContent();
-        @Nullable M3Badge badgeNode = getBadge();
-        if (contentNode == null && badgeNode == null) {
-            getChildren().clear();
-        } else if (contentNode == null) {
-            updateBadgePlacement();
-            getChildren().setAll(badgeNode);
-        } else if (badgeNode == null) {
-            getChildren().setAll(contentNode);
-        } else {
-            updateBadgePlacement();
-            getChildren().setAll(contentNode, badgeNode);
-        }
-        notifyAccessibleItemsChanged();
+        content.addListener(observable -> handleContentChanged());
+        badge.addListener(observable -> handleContentChanged());
     }
 
     /// Notifies accessibility clients that content or badge children changed.
@@ -227,15 +216,9 @@ public class M3BadgedBox extends StackPane {
         return index == 0 ? getBadge() : null;
     }
 
-    /// Applies alignment and offset to the current badge node.
-    private void updateBadgePlacement() {
-        @Nullable M3Badge badgeNode = getBadge();
-        if (badgeNode == null) {
-            return;
-        }
-
-        StackPane.setAlignment(badgeNode, getBadgeAlignment());
-        badgeNode.setTranslateX(getBadgeOffsetX());
-        badgeNode.setTranslateY(getBadgeOffsetY());
+    /// Requests layout and notifies accessibility clients after content or badge changes.
+    private void handleContentChanged() {
+        requestLayout();
+        notifyAccessibleItemsChanged();
     }
 }

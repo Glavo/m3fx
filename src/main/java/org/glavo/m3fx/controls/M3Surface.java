@@ -5,7 +5,9 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
@@ -15,8 +17,10 @@ import javafx.geometry.Insets;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.layout.StackPane;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3SurfaceSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +31,7 @@ import java.util.Objects;
 
 /// A Material Design 3 surface container for arbitrary content.
 @NotNullByDefault
-public class M3Surface extends StackPane {
+public class M3Surface extends Control {
     /// The base style class for M3FX surfaces.
     public static final String STYLE_CLASS = "m3-surface";
 
@@ -36,6 +40,9 @@ public class M3Surface extends StackPane {
 
     /// The default surface content padding.
     private static final double DEFAULT_CONTENT_PADDING = 16.0;
+
+    /// The mutable content nodes displayed inside the surface.
+    private final ObservableList<Node> content = FXCollections.observableArrayList();
 
     /// The surface color variant property.
     private final ObjectProperty<M3SurfaceVariant> variant =
@@ -79,7 +86,12 @@ public class M3Surface extends StackPane {
     /// Creates a surface with content nodes.
     public M3Surface(Node... children) {
         initialize();
-        getChildren().addAll(children);
+        getContent().addAll(children);
+    }
+
+    /// Returns the mutable content nodes displayed inside the surface.
+    public final ObservableList<Node> getContent() {
+        return content;
     }
 
     /// Returns the surface color variant.
@@ -203,13 +215,19 @@ public class M3Surface extends StackPane {
         return M3Stylesheets.controlStylesheet("surface.css");
     }
 
+    /// Creates the default Material Design 3 surface skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3SurfaceSkin(this);
+    }
+
     /// Returns accessibility attributes for the surface content collection.
     @Override
     public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
             case CONTENTS -> accessibleContents();
-            case ITEM_COUNT -> getChildren().size();
-            case ITEM_AT_INDEX -> M3Accessible.itemAt(getChildren(), parameters);
+            case ITEM_COUNT -> getContent().size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), parameters);
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -221,7 +239,7 @@ public class M3Surface extends StackPane {
 
     /// Returns the CSS metadata for this node.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -229,7 +247,7 @@ public class M3Surface extends StackPane {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
-        getChildren().addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        getContent().addListener((ListChangeListener<Node>) change -> handleContentChanged());
         updateVariantStyle();
         updateElevationStyle();
         updatePadding();
@@ -237,7 +255,7 @@ public class M3Surface extends StackPane {
 
     /// Returns the single content node when the surface has one logical child.
     private @Nullable Node accessibleContents() {
-        return getChildren().size() == 1 ? getChildren().get(0) : null;
+        return getContent().size() == 1 ? getContent().get(0) : null;
     }
 
     /// Notifies accessibility clients that the surface content collection changed.
@@ -245,6 +263,12 @@ public class M3Surface extends StackPane {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+    }
+
+    /// Requests layout and notifies accessibility clients after content changes.
+    private void handleContentChanged() {
+        requestLayout();
+        notifyAccessibleItemsChanged();
     }
 
     /// Applies the current color variant style class.
@@ -323,7 +347,7 @@ public class M3Surface extends StackPane {
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(StackPane.getClassCssMetaData());
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(CONTAINER_SHAPE);
             styleables.add(CONTENT_PADDING);
             STYLEABLES = Collections.unmodifiableList(styleables);

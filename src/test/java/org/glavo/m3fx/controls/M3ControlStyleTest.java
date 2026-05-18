@@ -43,12 +43,14 @@ import javafx.scene.shape.Shape;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.skins.M3BadgeSkin;
+import org.glavo.m3fx.skins.M3BadgedBoxSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3CardSkin;
 import org.glavo.m3fx.skins.M3CheckBoxSkin;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
+import org.glavo.m3fx.skins.M3IconSkin;
 import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.skins.M3NavigationItemSkin;
@@ -58,8 +60,10 @@ import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
 import org.glavo.m3fx.skins.M3SnackbarSkin;
+import org.glavo.m3fx.skins.M3SurfaceSkin;
 import org.glavo.m3fx.skins.M3SwitchSkin;
 import org.glavo.m3fx.skins.M3TabSkin;
+import org.glavo.m3fx.skins.M3TextSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -1465,9 +1469,11 @@ final class M3ControlStyleTest {
 
         icon.setSize(M3IconSize.LARGE);
         icon.setVariant(M3IconVariant.PRIMARY);
+        applyCss(icon);
 
         assertEquals(M3IconSize.LARGE, icon.getSize());
         assertEquals(M3IconVariant.PRIMARY, icon.getVariant());
+        assertInstanceOf(M3IconSkin.class, icon.getSkin());
         assertEquals(32.0, icon.getIconSize(), 0.0001);
         assertTrue(icon.getStyleClass().contains(M3IconSize.LARGE.getStyleClass()));
         assertTrue(icon.getStyleClass().contains(M3IconVariant.PRIMARY.getStyleClass()));
@@ -1734,7 +1740,11 @@ final class M3ControlStyleTest {
     void textRoleUpdatesStyleClasses() {
         M3Text text = new M3Text("Title");
 
+        applyCss(text);
+
         assertEquals(M3TextRole.BODY_LARGE, text.getRole());
+        assertTrue(text.getStyleClass().contains(M3Text.STYLE_CLASS));
+        assertInstanceOf(M3TextSkin.class, text.getSkin());
         assertTrue(text.getStyleClass().contains(M3TextRole.BODY_LARGE.getStyleClass()));
 
         text.setRole(M3TextRole.TITLE_LARGE);
@@ -1789,7 +1799,8 @@ final class M3ControlStyleTest {
         assertEquals(20.0, surface.getContainerShape(), 0.0001);
         assertEquals(18.0, surface.getContentPadding(), 0.0001);
         assertEquals(18.0, surface.getPadding().getTop(), 0.0001);
-        assertEquals(1, surface.getChildren().size());
+        assertEquals(1, surface.getContent().size());
+        assertInstanceOf(M3SurfaceSkin.class, surface.getSkin());
     }
 
     /// Verifies that menu tokens apply to menu surfaces and items.
@@ -3786,12 +3797,16 @@ final class M3ControlStyleTest {
         badgedBox.setBadgeOffsetX(3.0);
         badgedBox.setBadgeOffsetY(-2.0);
 
+        applyCss(badgedBox);
+
         assertEquals(content, badgedBox.getContent());
         assertEquals(badge, badgedBox.getBadge());
+        assertInstanceOf(M3BadgedBoxSkin.class, badgedBox.getSkin());
         assertEquals(Pos.TOP_LEFT, badgedBox.getBadgeAlignment());
         assertEquals(3.0, badgedBox.getBadgeOffsetX(), 0.0001);
         assertEquals(-2.0, badgedBox.getBadgeOffsetY(), 0.0001);
-        assertEquals(2, badgedBox.getChildren().size());
+        assertInstanceOf(StackPane.class, content.getParent());
+        assertInstanceOf(StackPane.class, badge.getParent());
         assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(badge));
         assertEquals(3.0, badge.getTranslateX(), 0.0001);
         assertEquals(-2.0, badge.getTranslateY(), 0.0001);
@@ -3799,12 +3814,13 @@ final class M3ControlStyleTest {
         badgedBox.setBadge(null);
 
         assertNull(badgedBox.getBadge());
-        assertEquals(1, badgedBox.getChildren().size());
-        assertEquals(content, badgedBox.getChildren().get(0));
+        assertNull(badge.getParent());
+        assertInstanceOf(StackPane.class, content.getParent());
 
         M3Badge replacement = new M3Badge();
         badgedBox.setBadge(replacement);
 
+        assertInstanceOf(StackPane.class, replacement.getParent());
         assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(replacement));
         assertEquals(3.0, replacement.getTranslateX(), 0.0001);
         assertEquals(-2.0, replacement.getTranslateY(), 0.0001);
@@ -5669,6 +5685,10 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.ProgressBar.class.isAssignableFrom(M3ProgressBar.class));
         assertFalse(javafx.scene.control.ProgressIndicator.class.isAssignableFrom(M3ProgressIndicator.class));
         assertFalse(javafx.scene.control.Tooltip.class.isAssignableFrom(M3Tooltip.class));
+        assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Icon.class));
+        assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Text.class));
+        assertFalse(StackPane.class.isAssignableFrom(M3BadgedBox.class));
+        assertFalse(StackPane.class.isAssignableFrom(M3Surface.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
@@ -5980,7 +6000,7 @@ final class M3ControlStyleTest {
         assertEquals(surfaceContent, surface.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
         assertEquals(1, surface.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertEquals(surfaceContent, surface.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-        surface.getChildren().add(surfaceExtra);
+        surface.getContent().add(surfaceExtra);
         assertNull(surface.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
         assertEquals(2, surface.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertEquals(surfaceExtra, surface.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));

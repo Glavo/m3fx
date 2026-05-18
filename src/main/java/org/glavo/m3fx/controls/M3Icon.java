@@ -15,10 +15,12 @@ import javafx.css.converter.SizeConverter;
 import javafx.css.converter.StringConverter;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
-import javafx.scene.control.Label;
+import javafx.scene.control.Labeled;
+import javafx.scene.control.Skin;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3IconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -28,7 +30,7 @@ import java.util.Objects;
 
 /// A Material Design 3 icon label driven by size and color tokens.
 @NotNullByDefault
-public class M3Icon extends Label {
+public class M3Icon extends Labeled {
     /// The base style class for M3FX icon labels.
     public static final String STYLE_CLASS = "m3-icon";
 
@@ -85,14 +87,14 @@ public class M3Icon extends Label {
 
     /// Creates a medium icon with text content.
     public M3Icon(String text) {
-        super(Objects.requireNonNull(text, "text"));
         initialize();
+        setText(Objects.requireNonNull(text, "text"));
     }
 
     /// Creates an icon with text content, size, and color variant.
     public M3Icon(String text, M3IconSize size, M3IconVariant variant) {
-        super(Objects.requireNonNull(text, "text"));
         initialize();
+        setText(Objects.requireNonNull(text, "text"));
         setSize(size);
         setVariant(variant);
     }
@@ -280,6 +282,12 @@ public class M3Icon extends Label {
         return getClassCssMetaData();
     }
 
+    /// Creates the default Material Design 3 icon skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3IconSkin(this);
+    }
+
     /// Initializes style classes, layout, and font defaults.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -418,7 +426,7 @@ public class M3Icon extends Label {
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Label.getClassCssMetaData());
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Labeled.getClassCssMetaData());
             styleables.add(ICON_FONT_FAMILY);
             styleables.add(ICON_SIZE);
             styleables.add(ICON_FONT_WEIGHT);

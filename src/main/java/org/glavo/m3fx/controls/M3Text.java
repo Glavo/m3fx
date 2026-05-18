@@ -14,10 +14,12 @@ import javafx.css.converter.FontConverter;
 import javafx.css.converter.SizeConverter;
 import javafx.css.converter.StringConverter;
 import javafx.scene.AccessibleRole;
-import javafx.scene.control.Label;
+import javafx.scene.control.Labeled;
+import javafx.scene.control.Skin;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3TextSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -27,7 +29,7 @@ import java.util.Objects;
 
 /// A Material Design 3 text label driven by typography tokens.
 @NotNullByDefault
-public class M3Text extends Label {
+public class M3Text extends Labeled {
     /// The base style class for M3FX text labels.
     public static final String STYLE_CLASS = "m3-text";
 
@@ -76,14 +78,14 @@ public class M3Text extends Label {
 
     /// Creates a body-large text label.
     public M3Text(String text) {
-        super(text);
         initialize();
+        setText(text);
     }
 
     /// Creates a text label with a typography role.
     public M3Text(String text, M3TextRole role) {
-        super(text);
         initialize();
+        setText(text);
         setRole(role);
     }
 
@@ -297,6 +299,12 @@ public class M3Text extends Label {
         return getClassCssMetaData();
     }
 
+    /// Creates the default Material Design 3 text skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3TextSkin(this);
+    }
+
     /// Initializes style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -439,7 +447,7 @@ public class M3Text extends Label {
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Label.getClassCssMetaData());
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Labeled.getClassCssMetaData());
             styleables.add(TYPOGRAPHY_FONT_FAMILY);
             styleables.add(TYPOGRAPHY_FONT_SIZE);
             styleables.add(TYPOGRAPHY_LINE_HEIGHT);
