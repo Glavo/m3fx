@@ -9,8 +9,10 @@ import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventType;
+import javafx.geometry.BoundingBox;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -70,6 +72,7 @@ import org.glavo.m3fx.skins.M3TextSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -2281,6 +2284,116 @@ final class M3ControlStyleTest {
         pdf.fire();
 
         assertEquals(1, menuActions.get());
+    }
+
+    /// Verifies that submenu hover opens and closes the submenu popup after Material delays.
+    @Test
+    void subMenuItemHoverOpensAndClosesPopup() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<M3SubMenuItem> itemReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+                Stage stage = new Stage();
+                M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
+                M3Menu menu = new M3Menu(export);
+                Pane root = new Pane(menu);
+                Scene scene = new Scene(root, 320.0, 220.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(320.0, 220.0);
+                root.layout();
+
+                stageReference.set(stage);
+                itemReference.set(export);
+                export.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_ENTERED, 8.0, 8.0, false));
+            }, () -> {
+                M3SubMenuItem item = itemReference.get();
+                assertTrue(item.isSubMenuShowing());
+
+                WritableImage image = snapshotImageOnFxThread(item.getSubMenu());
+                assertSnapshotHasColorVariety(image, 3);
+                assertSnapshotNodeContainsContrast(image, item.getSubMenu(), Color.WHITE, 0.04);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-submenu-popup.png"
+                ));
+            });
+
+            runOnFxThreadAfterDelay(Duration.millis(420.0), () ->
+                    itemReference.get().fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 8.0, 8.0, false)),
+                    () -> assertFalse(itemReference.get().isSubMenuShowing()));
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that popup positioning flips submenus away from screen edges.
+    @Test
+    void popupPositioningFlipsSubMenusAwayFromScreenEdges() {
+        Rectangle2D screen = new Rectangle2D(0.0, 0.0, 300.0, 200.0);
+        M3PopupPositioning.Placement rightPlacement = M3PopupPositioning.subMenuBeside(
+                new BoundingBox(40.0, 40.0, 80.0, 32.0),
+                screen,
+                120.0,
+                80.0,
+                -1.0
+        );
+        M3PopupPositioning.Placement leftPlacement = M3PopupPositioning.subMenuBeside(
+                new BoundingBox(250.0, 40.0, 40.0, 32.0),
+                screen,
+                120.0,
+                80.0,
+                -1.0
+        );
+        M3PopupPositioning.Placement bottomClampedPlacement = M3PopupPositioning.subMenuBeside(
+                new BoundingBox(40.0, 180.0, 80.0, 32.0),
+                screen,
+                120.0,
+                80.0,
+                -1.0
+        );
+
+        assertFalse(rightPlacement.opensToLeft());
+        assertEquals(119.0, rightPlacement.x(), 0.0001);
+        assertTrue(leftPlacement.opensToLeft());
+        assertEquals(131.0, leftPlacement.x(), 0.0001);
+        assertEquals(120.0, bottomClampedPlacement.y(), 0.0001);
+    }
+
+    /// Verifies that popup positioning flips menu popups above their owner near the bottom edge.
+    @Test
+    void popupPositioningFlipsMenusAboveBottomEdges() {
+        Rectangle2D screen = new Rectangle2D(0.0, 0.0, 300.0, 200.0);
+        M3PopupPositioning.Placement belowPlacement = M3PopupPositioning.menuBelowOrAbove(
+                new BoundingBox(40.0, 40.0, 80.0, 32.0),
+                screen,
+                140.0,
+                80.0,
+                4.0
+        );
+        M3PopupPositioning.Placement abovePlacement = M3PopupPositioning.menuBelowOrAbove(
+                new BoundingBox(40.0, 170.0, 80.0, 24.0),
+                screen,
+                140.0,
+                80.0,
+                4.0
+        );
+
+        assertFalse(belowPlacement.opensAbove());
+        assertEquals(76.0, belowPlacement.y(), 0.0001);
+        assertTrue(abovePlacement.opensAbove());
+        assertEquals(86.0, abovePlacement.y(), 0.0001);
     }
 
     /// Verifies that menus update selection when items are removed.

@@ -6,19 +6,20 @@ package org.glavo.m3fx.controls;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
-import javafx.geometry.Bounds;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
@@ -52,6 +53,12 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The initial horizontal popup menu offset used for enter and exit motion.
     private static final double SUB_MENU_TRANSITION_OFFSET_X = -6.0;
 
+    /// The delay before pointer hover opens a submenu.
+    private static final Duration SUB_MENU_HOVER_OPEN_DELAY = M3Motion.SHORT4;
+
+    /// The delay before pointer exit hides a submenu.
+    private static final Duration SUB_MENU_HOVER_CLOSE_DELAY = M3Motion.SHORT4;
+
     /// The submenu displayed by this item.
     private final M3Menu subMenu = new M3Menu();
 
@@ -67,8 +74,23 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The submenu popup exit animation.
     private final Timeline hideAnimation = new Timeline();
 
+    /// The pointer-hover open delay.
+    private final PauseTransition hoverOpenDelay = new PauseTransition(SUB_MENU_HOVER_OPEN_DELAY);
+
+    /// The pointer-exit close delay.
+    private final PauseTransition hoverCloseDelay = new PauseTransition(SUB_MENU_HOVER_CLOSE_DELAY);
+
     /// Whether an action from the submenu is being forwarded to this item's parent menu.
     private boolean forwardingSubMenuAction = false;
+
+    /// Whether the pointer is currently over this menu item.
+    private boolean pointerInsideOwner = false;
+
+    /// Whether the pointer is currently over this item's submenu popup.
+    private boolean pointerInsideSubMenu = false;
+
+    /// The horizontal transition offset used by the current popup side.
+    private double currentTransitionOffsetX = SUB_MENU_TRANSITION_OFFSET_X;
 
     /// Creates an empty submenu item.
     public M3SubMenuItem() {
@@ -131,7 +153,15 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Shows the submenu popup beside this item.
     public final void showSubMenu() {
-        if (isDisabled() || popup.isShowing()) {
+        if (isDisabled()) {
+            return;
+        }
+        hoverOpenDelay.stop();
+        hoverCloseDelay.stop();
+        if (popup.isShowing()) {
+            hideAnimation.stop();
+            subMenuShowing.set(true);
+            playShowAnimation();
             return;
         }
 
@@ -142,14 +172,17 @@ public class M3SubMenuItem extends M3MenuItem {
 
         hideSiblingSubMenus();
         prepareSubMenuForPopup(scene);
-        Bounds bounds = localToScreen(getBoundsInLocal());
-        if (bounds == null) {
+        subMenu.setMinWidth(Math.max(getWidth(), subMenu.minWidth(-1.0)));
+        @Nullable M3PopupPositioning.Placement placement =
+                M3PopupPositioning.subMenuBeside(this, subMenu, SUB_MENU_OFFSET_X);
+        if (placement == null) {
             return;
         }
-
-        subMenu.setMinWidth(Math.max(getWidth(), subMenu.minWidth(-1.0)));
+        currentTransitionOffsetX = placement.opensToLeft()
+                ? -SUB_MENU_TRANSITION_OFFSET_X
+                : SUB_MENU_TRANSITION_OFFSET_X;
         prepareSubMenuForShowAnimation();
-        popup.show(this, bounds.getMaxX() + SUB_MENU_OFFSET_X, bounds.getMinY());
+        popup.show(this, placement.x(), placement.y());
         subMenuShowing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         playShowAnimation();
@@ -157,6 +190,8 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Hides the submenu popup.
     public final void hideSubMenu() {
+        hoverOpenDelay.stop();
+        hoverCloseDelay.stop();
         subMenu.hideSubMenusExcept(null);
         if (!popup.isShowing()) {
             return;
@@ -172,7 +207,7 @@ public class M3SubMenuItem extends M3MenuItem {
                 new KeyValue(subMenu.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE),
                 new KeyValue(subMenu.scaleXProperty(), SUB_MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
                 new KeyValue(subMenu.scaleYProperty(), SUB_MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(subMenu.translateXProperty(), SUB_MENU_TRANSITION_OFFSET_X, M3Motion.STANDARD_ACCELERATE)
+                new KeyValue(subMenu.translateXProperty(), currentTransitionOffsetX, M3Motion.STANDARD_ACCELERATE)
         ));
         hideAnimation.playFromStart();
     }
@@ -225,17 +260,33 @@ public class M3SubMenuItem extends M3MenuItem {
                 hideSubMenu();
             }
         });
+        hoverOpenDelay.setOnFinished(event -> {
+            if (pointerInsideOwner) {
+                showSubMenu();
+            }
+        });
+        hoverCloseDelay.setOnFinished(event -> {
+            if (!pointerInsideOwner && !pointerInsideSubMenu) {
+                hideSubMenu();
+            }
+        });
         popup.setAutoHide(true);
         popup.getContent().add(subMenu);
         popup.setOnHidden(event -> {
+            pointerInsideOwner = false;
+            pointerInsideSubMenu = false;
             subMenuShowing.set(false);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             resetSubMenuAnimationState();
         });
         addEventFilter(ActionEvent.ACTION, this::handleOwnActionEvent);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        addEventHandler(MouseEvent.MOUSE_ENTERED, this::handleMouseEntered);
+        addEventHandler(MouseEvent.MOUSE_EXITED, this::handleMouseExited);
         subMenu.addEventHandler(KeyEvent.KEY_PRESSED, this::handleSubMenuKeyPressed);
         subMenu.addEventHandler(ActionEvent.ACTION, this::handleSubMenuAction);
+        subMenu.addEventHandler(MouseEvent.MOUSE_ENTERED, this::handleSubMenuMouseEntered);
+        subMenu.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleSubMenuMouseExited);
     }
 
     /// Handles this item's own action event by opening the submenu.
@@ -245,6 +296,37 @@ public class M3SubMenuItem extends M3MenuItem {
         }
         showSubMenu();
         event.consume();
+    }
+
+    /// Schedules submenu opening when the pointer enters this item.
+    private void handleMouseEntered(MouseEvent event) {
+        if (isDisabled()) {
+            return;
+        }
+        pointerInsideOwner = true;
+        hoverCloseDelay.stop();
+        if (!popup.isShowing()) {
+            hoverOpenDelay.playFromStart();
+        }
+    }
+
+    /// Schedules submenu closing when the pointer exits this item.
+    private void handleMouseExited(MouseEvent event) {
+        pointerInsideOwner = false;
+        hoverOpenDelay.stop();
+        scheduleHoverClose();
+    }
+
+    /// Cancels submenu closing while the pointer is inside the submenu popup.
+    private void handleSubMenuMouseEntered(MouseEvent event) {
+        pointerInsideSubMenu = true;
+        hoverCloseDelay.stop();
+    }
+
+    /// Schedules submenu closing when the pointer exits the submenu popup.
+    private void handleSubMenuMouseExited(MouseEvent event) {
+        pointerInsideSubMenu = false;
+        scheduleHoverClose();
     }
 
     /// Handles keyboard actions on the submenu item.
@@ -314,7 +396,7 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.setOpacity(0.0);
         subMenu.setScaleX(SUB_MENU_TRANSITION_SCALE);
         subMenu.setScaleY(SUB_MENU_TRANSITION_SCALE);
-        subMenu.setTranslateX(SUB_MENU_TRANSITION_OFFSET_X);
+        subMenu.setTranslateX(currentTransitionOffsetX);
     }
 
     /// Plays the submenu popup enter animation.
@@ -338,6 +420,13 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.setScaleX(1.0);
         subMenu.setScaleY(1.0);
         subMenu.setTranslateX(0.0);
+    }
+
+    /// Starts the pointer-exit close delay when the submenu is open.
+    private void scheduleHoverClose() {
+        if (popup.isShowing()) {
+            hoverCloseDelay.playFromStart();
+        }
     }
 
     /// Copies scene styles and theme declarations into the popup-hosted submenu.

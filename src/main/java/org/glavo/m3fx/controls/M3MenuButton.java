@@ -13,7 +13,6 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ObservableList;
-import javafx.geometry.Bounds;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -223,14 +222,14 @@ public class M3MenuButton extends M3Button {
         }
 
         prepareMenuForPopup(scene);
-        Bounds bounds = localToScreen(getBoundsInLocal());
-        if (bounds == null) {
+        menu.setMinWidth(Math.max(getWidth(), menu.minWidth(-1.0)));
+        @Nullable M3PopupPositioning.Placement placement =
+                M3PopupPositioning.menuBelowOrAbove(this, menu, MENU_OFFSET_Y);
+        if (placement == null) {
             return;
         }
-
-        menu.setMinWidth(Math.max(getWidth(), menu.minWidth(-1.0)));
         prepareMenuForShowAnimation();
-        popup.show(this, bounds.getMinX(), bounds.getMaxY() + MENU_OFFSET_Y);
+        popup.show(this, placement.x(), placement.y());
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         playShowAnimation();
