@@ -10,6 +10,15 @@
     -fx-background-color: -m3-color-secondary-container;
 }
 
+.m3-sub-menu-item .m3-list-item-container {
+    -fx-cursor: hand;
+}
+
+.m3-sub-menu-indicator {
+    -m3-icon-font-weight: 700;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
 .m3-menu-section-header {
     -fx-alignment: center-left;
     -fx-min-height: 32px;

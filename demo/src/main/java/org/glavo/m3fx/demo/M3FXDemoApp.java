@@ -86,6 +86,7 @@ import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SnackbarHost;
+import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
 import org.glavo.m3fx.controls.M3SurfaceVariant;
@@ -664,6 +665,11 @@ public final class M3FXDemoApp extends Application {
                 new M3MenuSectionHeader("File"),
                 createMenuItem("New", "N", "Ctrl+N"),
                 createMenuItem("Open", "O", "Ctrl+O"),
+                new M3SubMenuItem(
+                        "Open Recent",
+                        createMenuItem("Project Alpha", "A", ""),
+                        createMenuItem("Project Beta", "B", "")
+                ),
                 createMenuItem("Save", "S", "Ctrl+S"),
                 new M3Divider(),
                 new M3MenuSectionHeader("Recent"),
@@ -675,6 +681,11 @@ public final class M3FXDemoApp extends Application {
                 "Open menu",
                 new M3MenuSectionHeader("Document"),
                 createMenuItem("Duplicate", "D", "Ctrl+D"),
+                new M3SubMenuItem(
+                        "Move to",
+                        createMenuItem("Archive", "A", ""),
+                        createMenuItem("Inbox", "I", "")
+                ),
                 createMenuItem("Rename", "R", ""),
                 new M3Divider(),
                 new M3MenuSectionHeader("Danger"),

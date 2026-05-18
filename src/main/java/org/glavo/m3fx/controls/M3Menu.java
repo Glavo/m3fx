@@ -84,6 +84,9 @@ public class M3Menu extends VBox {
         while (change.next()) {
             for (Node child : change.getRemoved()) {
                 if (child instanceof M3MenuItem item) {
+                    if (item instanceof M3SubMenuItem subMenuItem) {
+                        subMenuItem.hideSubMenu();
+                    }
                     uninstallItem(item);
                     item.setSelected(false);
                 }
@@ -138,6 +141,15 @@ public class M3Menu extends VBox {
     /// Removes all menu content nodes.
     public final void clearItems() {
         getItems().clear();
+    }
+
+    /// Hides any open submenu popups owned by this menu.
+    final void hideSubMenusExcept(@Nullable M3SubMenuItem exception) {
+        for (Node child : getChildren()) {
+            if (child instanceof M3SubMenuItem subMenuItem && subMenuItem != exception) {
+                subMenuItem.hideSubMenu();
+            }
+        }
     }
 
     /// Returns the menu selection mode.
@@ -197,6 +209,9 @@ public class M3Menu extends VBox {
         if (!getChildren().contains(item)) {
             throw new IllegalArgumentException("item must belong to this menu");
         }
+        if (!isSelectableMenuItem(item)) {
+            throw new IllegalArgumentException("item must be selectable");
+        }
 
         if (getSelectionMode() == M3MenuSelectionMode.MULTIPLE) {
             setItemSelected(item, true);
@@ -205,17 +220,17 @@ public class M3Menu extends VBox {
         }
     }
 
-    /// Selects the menu item at the given child index.
+    /// Selects the selectable menu item at the given child index.
     public final void selectIndex(int index) {
         Node child = getChildren().get(index);
-        if (child instanceof M3MenuItem item) {
+        if (child instanceof M3MenuItem item && isSelectableMenuItem(item)) {
             select(item);
             return;
         }
-        throw new IllegalArgumentException("child at index is not an M3MenuItem");
+        throw new IllegalArgumentException("child at index is not a selectable M3MenuItem");
     }
 
-    /// Selects the first menu item when one exists.
+    /// Selects the first selectable menu item when one exists.
     public final void selectFirst() {
         M3MenuItem firstItem = firstItem();
         if (firstItem != null) {
@@ -223,27 +238,25 @@ public class M3Menu extends VBox {
         }
     }
 
-    /// Selects the last menu item when one exists.
+    /// Selects the last selectable menu item when one exists.
     public final void selectLast() {
-        @Nullable M3MenuItem lastItem = M3SelectionNavigation.last(getChildren(), M3MenuItem.class);
+        @Nullable M3MenuItem lastItem = lastItem();
         if (lastItem != null) {
             select(lastItem);
         }
     }
 
-    /// Selects the next menu item after the current selected item, wrapping at the end.
+    /// Selects the next selectable menu item after the current selected item, wrapping at the end.
     public final void selectNext() {
-        @Nullable M3MenuItem nextItem =
-                M3SelectionNavigation.next(getChildren(), getSelectedItem(), M3MenuItem.class);
+        @Nullable M3MenuItem nextItem = nextItem(getSelectedItem());
         if (nextItem != null) {
             select(nextItem);
         }
     }
 
-    /// Selects the previous menu item before the current selected item, wrapping at the start.
+    /// Selects the previous selectable menu item before the current selected item, wrapping at the start.
     public final void selectPrevious() {
-        @Nullable M3MenuItem previousItem =
-                M3SelectionNavigation.previous(getChildren(), getSelectedItem(), M3MenuItem.class);
+        @Nullable M3MenuItem previousItem = previousItem(getSelectedItem());
         if (previousItem != null) {
             select(previousItem);
         }
@@ -309,15 +322,28 @@ public class M3Menu extends VBox {
             return;
         }
 
-        M3SelectionNavigation.handleKeySelection(
-                event,
-                getChildren(),
-                getSelectedItem(),
-                M3MenuItem.class,
-                false,
-                true,
-                this::select
-        );
+        handleSelectionNavigationKeyPressed(event);
+    }
+
+    /// Applies keyboard selection across selectable menu items.
+    private void handleSelectionNavigationKeyPressed(KeyEvent event) {
+        Objects.requireNonNull(event, "event");
+        @Nullable M3MenuItem target = switch (event.getCode()) {
+            case UP -> previousItem(getSelectedItem());
+            case DOWN -> nextItem(getSelectedItem());
+            case HOME -> firstItem();
+            case END -> lastItem();
+            default -> null;
+        };
+        if (target == null) {
+            return;
+        }
+
+        select(target);
+        if (target.isFocusTraversable()) {
+            target.requestFocus();
+        }
+        event.consume();
     }
 
     /// Applies selected menu items supplied by an accessibility client.
@@ -327,7 +353,7 @@ public class M3Menu extends VBox {
         }
 
         if (getSelectionMode() == M3MenuSelectionMode.SINGLE) {
-            @Nullable M3MenuItem item = M3Accessible.firstSelectionTarget(getItems(), M3MenuItem.class, parameters);
+            @Nullable M3MenuItem item = firstAccessibleSelectableItem(parameters);
             if (item == null) {
                 clearSelection();
             } else {
@@ -339,7 +365,7 @@ public class M3Menu extends VBox {
         updatingSelection = true;
         try {
             for (Node child : getChildren()) {
-                if (child instanceof M3MenuItem item) {
+                if (child instanceof M3MenuItem item && isSelectableMenuItem(item)) {
                     item.setSelected(M3Accessible.containsSelectionTarget(item, parameters));
                 }
             }
@@ -374,7 +400,8 @@ public class M3Menu extends VBox {
     private void handleItemAction(ActionEvent event) {
         if (!(event.getSource() instanceof M3MenuItem item)
                 || !getChildren().contains(item)
-                || item.isDisabled()) {
+                || item.isDisabled()
+                || !isSelectableMenuItem(item)) {
             return;
         }
 
@@ -395,6 +422,12 @@ public class M3Menu extends VBox {
     /// Keeps externally changed item selected states consistent with the current menu policy.
     private void handleItemSelectedChanged(M3MenuItem item, boolean selected) {
         if (updatingSelection) {
+            return;
+        }
+        if (!isSelectableMenuItem(item)) {
+            if (selected) {
+                setItemSelected(item, false);
+            }
             return;
         }
 
@@ -468,7 +501,7 @@ public class M3Menu extends VBox {
         List<M3MenuItem> previousSelection = List.copyOf(selectedItems);
         selectedItems.clear();
         for (Node child : getChildren()) {
-            if (child instanceof M3MenuItem item && item.isSelected()) {
+            if (child instanceof M3MenuItem item && isSelectableMenuItem(item) && item.isSelected()) {
                 selectedItems.add(item);
             }
         }
@@ -478,9 +511,99 @@ public class M3Menu extends VBox {
         }
     }
 
-    /// Returns the first menu item child.
+    /// Returns the first selectable menu item child.
     private @Nullable M3MenuItem firstItem() {
-        return M3SelectionNavigation.first(getChildren(), M3MenuItem.class);
+        for (Node child : getChildren()) {
+            @Nullable M3MenuItem item = selectableMenuItem(child);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the last selectable menu item child.
+    private @Nullable M3MenuItem lastItem() {
+        ObservableList<Node> children = getChildren();
+        for (int index = children.size() - 1; index >= 0; index--) {
+            @Nullable M3MenuItem item = selectableMenuItem(children.get(index));
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the next selectable menu item after the current item.
+    private @Nullable M3MenuItem nextItem(@Nullable M3MenuItem current) {
+        ObservableList<Node> children = getChildren();
+        int childCount = children.size();
+        if (childCount == 0) {
+            return null;
+        }
+
+        int currentIndex = current == null ? -1 : children.indexOf(current);
+        for (int offset = 1; offset <= childCount; offset++) {
+            @Nullable M3MenuItem item = selectableMenuItem(
+                    children.get(Math.floorMod(currentIndex + offset, childCount))
+            );
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the previous selectable menu item before the current item.
+    private @Nullable M3MenuItem previousItem(@Nullable M3MenuItem current) {
+        ObservableList<Node> children = getChildren();
+        int childCount = children.size();
+        if (childCount == 0) {
+            return null;
+        }
+
+        int currentIndex = current == null ? childCount : children.indexOf(current);
+        if (currentIndex < 0) {
+            currentIndex = childCount;
+        }
+
+        for (int offset = 1; offset <= childCount; offset++) {
+            @Nullable M3MenuItem item = selectableMenuItem(
+                    children.get(Math.floorMod(currentIndex - offset, childCount))
+            );
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first selectable menu item referenced by accessibility parameters.
+    private @Nullable M3MenuItem firstAccessibleSelectableItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Node child : getChildren()) {
+            @Nullable M3MenuItem item = selectableMenuItem(child);
+            if (item != null && M3Accessible.containsSelectionTarget(item, parameters)) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns a node as a selectable menu item when possible.
+    private static @Nullable M3MenuItem selectableMenuItem(Node child) {
+        if (child instanceof M3MenuItem item
+                && isSelectableMenuItem(item)
+                && !item.isDisabled()
+                && item.isVisible()) {
+            return item;
+        }
+        return null;
+    }
+
+    /// Returns whether a menu item participates in selection state.
+    private static boolean isSelectableMenuItem(M3MenuItem item) {
+        return !(item instanceof M3SubMenuItem);
     }
 
     /// Validates a menu item array.

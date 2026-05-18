@@ -2059,6 +2059,7 @@ final class M3ControlStyleTest {
         runOnFxThread(() -> {
             M3MenuSectionHeader fileHeader = new M3MenuSectionHeader("File");
             M3MenuItem open = new M3MenuItem("Open", new M3Icon("O"));
+            M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
             M3MenuItem save = new M3MenuItem("Save", new M3Icon("S"));
             M3MenuSectionHeader recentHeader = new M3MenuSectionHeader("Recent");
             M3MenuItem project = new M3MenuItem("Project Alpha", new M3Icon("A"));
@@ -2066,6 +2067,7 @@ final class M3ControlStyleTest {
             M3Menu menu = new M3Menu(
                     fileHeader,
                     open,
+                    export,
                     save,
                     new M3Divider(),
                     recentHeader,
@@ -2084,6 +2086,7 @@ final class M3ControlStyleTest {
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, fileHeader, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, export, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, recentHeader, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, project, Color.WHITE, 0.04);
             writeVisualSnapshot(image, java.nio.file.Path.of(
@@ -2213,6 +2216,71 @@ final class M3ControlStyleTest {
 
         assertEquals(second, menu.getSelectedItem());
         assertTrue(second.isSelected());
+    }
+
+    /// Verifies that submenu items own nested menu content and expose submenu accessibility state.
+    @Test
+    void subMenuItemOwnsNestedMenuContentAndAccessibleState() {
+        M3MenuItem exportPdf = new M3MenuItem("PDF");
+        M3MenuItem exportHtml = new M3MenuItem("HTML");
+        M3SubMenuItem export = new M3SubMenuItem("Export", exportPdf, exportHtml);
+
+        assertTrue(export.getStyleClass().contains(M3SubMenuItem.STYLE_CLASS));
+        assertEquals(2, export.getItems().size());
+        assertEquals(exportPdf, export.getItems().get(0));
+        assertEquals(export.getSubMenu(), export.queryAccessibleAttribute(AccessibleAttribute.SUBMENU));
+        assertEquals(false, export.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        assertEquals(2, export.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(exportHtml, export.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertInstanceOf(M3Icon.class, export.getTrailing());
+
+        export.clearItems();
+
+        assertTrue(export.getItems().isEmpty());
+    }
+
+    /// Verifies that submenu items are focusable menu items but do not participate in parent menu selection.
+    @Test
+    void menuSelectionSkipsSubMenuItems() {
+        M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
+        M3MenuItem open = new M3MenuItem("Open");
+        M3MenuItem save = new M3MenuItem("Save");
+        M3Menu menu = new M3Menu(export, open, save);
+
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.setAllowEmptySelection(false);
+
+        assertEquals(open, menu.getSelectedItem());
+        assertFalse(export.isSelected());
+        assertThrows(IllegalArgumentException.class, () -> menu.select(export));
+        assertThrows(IllegalArgumentException.class, () -> menu.selectIndex(0));
+
+        menu.selectNext();
+
+        assertEquals(save, menu.getSelectedItem());
+
+        export.setSelected(true);
+
+        assertFalse(export.isSelected());
+        assertEquals(save, menu.getSelectedItem());
+    }
+
+    /// Verifies that submenu item actions open locally and submenu child actions bubble to an owning menu.
+    @Test
+    void subMenuItemConsumesOwnActionAndForwardsNestedActions() {
+        M3MenuItem pdf = new M3MenuItem("PDF");
+        M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
+        M3Menu menu = new M3Menu(export);
+        AtomicInteger menuActions = new AtomicInteger();
+        menu.addEventHandler(ActionEvent.ACTION, event -> menuActions.incrementAndGet());
+
+        export.fire();
+
+        assertEquals(0, menuActions.get());
+
+        pdf.fire();
+
+        assertEquals(1, menuActions.get());
     }
 
     /// Verifies that menus update selection when items are removed.
@@ -5962,6 +6030,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3BadgedBox().getStyleClass().contains(M3BadgedBox.STYLE_CLASS));
         assertTrue(new M3Menu().getStyleClass().contains(M3Menu.STYLE_CLASS));
         assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
+        assertTrue(new M3SubMenuItem("Export").getStyleClass().contains(M3SubMenuItem.STYLE_CLASS));
         assertTrue(new M3MenuSectionHeader("File").getStyleClass().contains(M3MenuSectionHeader.STYLE_CLASS));
         assertTrue(new M3MenuButton("More").getStyleClass().contains(M3MenuButton.STYLE_CLASS));
         assertTrue(new M3SearchBar().getStyleClass().contains(M3SearchBar.STYLE_CLASS));
@@ -6417,6 +6486,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.MENU, new M3Menu().getAccessibleRole());
         assertEquals(AccessibleRole.MENU_BUTTON, new M3MenuButton().getAccessibleRole());
         assertEquals(AccessibleRole.MENU_ITEM, new M3MenuItem().getAccessibleRole());
+        assertEquals(AccessibleRole.MENU_ITEM, new M3SubMenuItem().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3MenuSectionHeader().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3SearchBar().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3SearchView().getAccessibleRole());
@@ -6456,6 +6526,8 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Surface(), "/styles/controls/surface.css");
         assertUserAgentStylesheet(new M3BadgedBox(), "/styles/controls/badge.css");
         assertUserAgentStylesheet(new M3Menu(), "/styles/controls/menu.css");
+        assertUserAgentStylesheet(new M3MenuItem(), "/styles/controls/list-item.css");
+        assertUserAgentStylesheet(new M3SubMenuItem(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3MenuSectionHeader(), "/styles/controls/menu.css");
         assertUserAgentStylesheet(new M3SearchBar(), "/styles/controls/search.css");
         assertUserAgentStylesheet(new M3SearchView(), "/styles/controls/search.css");

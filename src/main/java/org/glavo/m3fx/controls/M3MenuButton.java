@@ -238,6 +238,7 @@ public class M3MenuButton extends M3Button {
 
     /// Hides the menu popup.
     public final void hideMenu() {
+        menu.hideSubMenusExcept(null);
         if (!popup.isShowing()) {
             return;
         }
@@ -306,6 +307,7 @@ public class M3MenuButton extends M3Button {
         popup.setAutoHide(true);
         popup.getContent().add(menu);
         popup.setOnHidden(event -> {
+            menu.hideSubMenusExcept(null);
             showing.set(false);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             resetMenuAnimationState();
