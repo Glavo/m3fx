@@ -18,6 +18,7 @@ import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
@@ -94,6 +95,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-height"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-display-medium-text"));
         assertTrue(theme.toControlStyleRules().contains(".m3-body-small-text"));
@@ -113,6 +115,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-navigation-rail"));
         assertTrue(theme.toControlStyleRules().contains(".m3-navigation-drawer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-list-section-header"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.08"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.1"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.38"));
@@ -164,6 +167,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 112px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 384px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height: 64px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-height: 56px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
@@ -357,6 +361,7 @@ final class M3ThemeTest {
         M3SearchBar searchBar = new M3SearchBar();
         M3SearchView searchView = new M3SearchView();
         searchView.getResults().add(new M3ListItem("Result"));
+        M3ListSectionHeader listSectionHeader = new M3ListSectionHeader("Results");
         M3SideSheet sideSheet = new M3SideSheet();
         M3BottomSheet bottomSheet = new M3BottomSheet();
         M3Scrim scrim = new M3Scrim();
@@ -373,6 +378,7 @@ final class M3ThemeTest {
                 menu,
                 searchBar,
                 searchView,
+                listSectionHeader,
                 sideSheet,
                 bottomSheet,
                 scrim,
@@ -399,6 +405,8 @@ final class M3ThemeTest {
         assertEquals(56.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(64.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
+        assertEquals(56.0, listSectionHeader.prefHeight(-1.0), 0.0001);
+        assertEquals(16.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
@@ -419,6 +427,8 @@ final class M3ThemeTest {
         assertEquals(48.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(56.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
+        assertEquals(48.0, listSectionHeader.prefHeight(-1.0), 0.0001);
+        assertEquals(16.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(320.0, bottomSheet.getPrefHeight(), 0.0001);
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
@@ -461,7 +471,8 @@ final class M3ThemeTest {
     @Test
     void generatedComponentStylesheetAppliesListItemTokens() {
         M3ListItem listItem = new M3ListItem("Headline");
-        Pane root = new Pane(listItem);
+        M3ListSectionHeader sectionHeader = new M3ListSectionHeader("Pinned");
+        Pane root = new Pane(listItem, sectionHeader);
         Scene scene = new Scene(root);
 
         M3Theme expressiveTheme = M3Theme.fromSeed(
@@ -480,6 +491,8 @@ final class M3ThemeTest {
         assertEquals(16.0, listItem.getHorizontalPadding(), 0.0001);
         assertEquals(8.0, listItem.getVerticalPadding(), 0.0001);
         assertEquals(16.0, listItem.getContentSpacing(), 0.0001);
+        assertEquals(56.0, sectionHeader.prefHeight(-1.0), 0.0001);
+        assertEquals(16.0, sectionHeader.getPadding().getLeft(), 0.0001);
     }
 
     /// Verifies that generated component stylesheets apply container tokens.

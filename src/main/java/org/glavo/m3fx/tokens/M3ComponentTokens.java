@@ -215,6 +215,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double listItemOneLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
         double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
+        double listSectionHeaderHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
 
         return create(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
@@ -303,6 +304,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         profile == M3Profile.EXPRESSIVE_2025 ? shapeTokens.small() : 0.0,
                         16.0,
                         8.0,
+                        16.0,
+                        listSectionHeaderHeight,
                         16.0
                 )
         );
@@ -433,6 +436,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 navigationRail()
         );
         appendListItemRule(builder, ".m3-list-item", listItem());
+        appendListSectionHeaderRule(builder, ".m3-list-section-header", listItem());
         appendNavigationDrawerRule(builder, ".m3-navigation-drawer", navigationDrawer());
         appendNavigationDrawerItemRule(builder, ".m3-navigation-drawer .m3-list-item", navigationDrawer());
         return builder.toString().stripTrailing();
@@ -653,6 +657,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-list-item-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-list-item-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
         M3TokenCss.append(builder, "-m3-list-item-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        M3TokenCss.append(builder, "-m3-list-section-header-height", M3TokenCss.pixels(tokens.sectionHeaderHeight()));
+        M3TokenCss.append(
+                builder,
+                "-m3-list-section-header-horizontal-padding",
+                M3TokenCss.pixels(tokens.sectionHeaderHorizontalPadding())
+        );
     }
 
     /// Appends a button token CSS rule.
@@ -1200,6 +1210,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a list section header token CSS rule.
+    private static void appendListSectionHeaderRule(StringBuilder builder, String selector, ListItemTokens tokens) {
+        String height = M3TokenCss.pixels(tokens.sectionHeaderHeight());
+        String horizontalPadding = M3TokenCss.pixels(tokens.sectionHeaderHorizontalPadding());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-height", height);
+        appendDeclaration(builder, "-fx-pref-height", height);
+        appendDeclaration(builder, "-fx-padding", "0px " + horizontalPadding + " 0px " + horizontalPadding);
         endRule(builder);
     }
 
@@ -1795,6 +1816,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param horizontalPadding the horizontal content padding
     /// @param verticalPadding the vertical content padding
     /// @param contentSpacing the spacing between content regions
+    /// @param sectionHeaderHeight the preferred list section header height
+    /// @param sectionHeaderHorizontalPadding the horizontal list section header padding
     @NotNullByDefault
     record ListItemTokens(
             double oneLineHeight,
@@ -1803,7 +1826,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double containerShape,
             double horizontalPadding,
             double verticalPadding,
-            double contentSpacing
+            double contentSpacing,
+            double sectionHeaderHeight,
+            double sectionHeaderHorizontalPadding
     ) {
         /// Creates list item tokens.
         public ListItemTokens {
@@ -1814,6 +1839,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(verticalPadding, "verticalPadding");
             validateNonNegative(contentSpacing, "contentSpacing");
+            validateNonNegative(sectionHeaderHeight, "sectionHeaderHeight");
+            validateNonNegative(sectionHeaderHorizontalPadding, "sectionHeaderHorizontalPadding");
         }
     }
 
