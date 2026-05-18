@@ -286,9 +286,10 @@ public class M3List extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
-        switch (action) {
-            case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            default -> super.executeAccessibleAction(action, parameters);
+        if (action == AccessibleAction.SET_SELECTED_ITEMS) {
+            setAccessibleSelectedItems(parameters);
+        } else {
+            super.executeAccessibleAction(action, parameters);
         }
     }
 

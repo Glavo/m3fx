@@ -274,9 +274,10 @@ public class M3SnackbarHost extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
-        switch (action) {
-            case COLLAPSE -> dismiss();
-            default -> super.executeAccessibleAction(action, parameters);
+        if (action == AccessibleAction.COLLAPSE) {
+            dismiss();
+        } else {
+            super.executeAccessibleAction(action, parameters);
         }
     }
 

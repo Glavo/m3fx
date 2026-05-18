@@ -197,6 +197,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
+        double badgeLargeMinWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
         double avatarSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
         double topAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
         double bottomAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
@@ -258,7 +259,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new DialogTokens(shapeTokens.extraLarge(), 24.0),
                 new SnackbarTokens(shapeTokens.extraSmall(), 16.0),
                 new DividerTokens(1.0, 0.0, 0.0),
-                new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeHeight, badgeLargeHeight / 2.0, 4.0),
+                new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeMinWidth, badgeLargeHeight / 2.0, 4.0),
                 new AvatarTokens(avatarSize, shapeTokens.full()),
                 new TopAppBarTokens(topAppBarHeight, 16.0, 16.0, 8.0),
                 new BottomAppBarTokens(bottomAppBarHeight, 16.0, 16.0, 8.0),
@@ -1223,7 +1224,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerShape the button container radius
     /// @param horizontalPadding the horizontal content padding
     @NotNullByDefault
-    public record ButtonTokens(
+    record ButtonTokens(
             double height,
             double containerShape,
             double horizontalPadding
@@ -1248,7 +1249,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param regularHorizontalPadding the horizontal padding for regular extended floating action buttons
     /// @param largeHorizontalPadding the horizontal padding for large extended floating action buttons
     @NotNullByDefault
-    public record FabTokens(
+    record FabTokens(
             double smallSize,
             double regularSize,
             double largeSize,
@@ -1281,7 +1282,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param activeIndicatorHeight the active indicator height
     /// @param activeIndicatorShape the active indicator radius
     @NotNullByDefault
-    public record TabTokens(
+    record TabTokens(
             double containerHeight,
             double tabMinWidth,
             double horizontalPadding,
@@ -1304,7 +1305,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerShape the field container radius
     /// @param horizontalPadding the horizontal content padding
     @NotNullByDefault
-    public record FieldTokens(
+    record FieldTokens(
             double height,
             double containerShape,
             double horizontalPadding
@@ -1324,7 +1325,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param horizontalPadding the horizontal content padding
     /// @param verticalPadding the vertical content padding
     @NotNullByDefault
-    public record TextAreaTokens(
+    record TextAreaTokens(
             double height,
             double containerShape,
             double horizontalPadding,
@@ -1348,7 +1349,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param itemHorizontalPadding the horizontal item content padding
     /// @param itemContentSpacing the spacing between item content regions
     @NotNullByDefault
-    public record MenuTokens(
+    record MenuTokens(
             double containerShape,
             double containerPadding,
             double itemHeight,
@@ -1377,7 +1378,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param viewResultPadding the padding below search results
     /// @param resultHeight the one-line search result item height
     @NotNullByDefault
-    public record SearchTokens(
+    record SearchTokens(
             double barHeight,
             double barContainerShape,
             double barHorizontalPadding,
@@ -1409,7 +1410,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param dragHandleWidth the bottom sheet drag handle width
     /// @param dragHandleHeight the bottom sheet drag handle height
     @NotNullByDefault
-    public record SheetTokens(
+    record SheetTokens(
             double sideContainerWidth,
             double sideContainerShape,
             double bottomContainerHeight,
@@ -1436,10 +1437,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param containerOpacity the scrim container opacity
     @NotNullByDefault
-    public record ScrimTokens(double containerOpacity) {
+    record ScrimTokens(double containerOpacity) {
         /// Validates scrim tokens.
         public ScrimTokens {
-            validateOpacity(containerOpacity, "containerOpacity");
+            validateOpacity(containerOpacity);
         }
     }
 
@@ -1448,7 +1449,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param touchTargetSize the preferred touch target size
     /// @param trackShape the switch track radius
     @NotNullByDefault
-    public record SelectionTokens(
+    record SelectionTokens(
             double touchTargetSize,
             double trackShape
     ) {
@@ -1466,7 +1467,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param thumbSize the slider thumb size
     /// @param touchTargetSize the preferred slider touch target size
     @NotNullByDefault
-    public record SliderTokens(
+    record SliderTokens(
             double trackThickness,
             double trackShape,
             double thumbSize,
@@ -1487,7 +1488,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerShape the chip container radius
     /// @param horizontalPadding the horizontal content padding
     @NotNullByDefault
-    public record ChipTokens(
+    record ChipTokens(
             double height,
             double containerShape,
             double horizontalPadding
@@ -1506,7 +1507,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param shape the progress indicator radius
     /// @param indicatorSize the circular indicator size
     @NotNullByDefault
-    public record ProgressTokens(
+    record ProgressTokens(
             double thickness,
             double shape,
             double indicatorSize
@@ -1525,7 +1526,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param contentPadding the card content padding
     /// @param outlineWidth the outlined card border width
     @NotNullByDefault
-    public record CardTokens(
+    record CardTokens(
             double containerShape,
             double contentPadding,
             double outlineWidth
@@ -1543,7 +1544,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerShape the dialog container radius
     /// @param contentPadding the dialog content padding
     @NotNullByDefault
-    public record DialogTokens(
+    record DialogTokens(
             double containerShape,
             double contentPadding
     ) {
@@ -1559,7 +1560,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerShape the snackbar container radius
     /// @param contentPadding the snackbar content padding
     @NotNullByDefault
-    public record SnackbarTokens(
+    record SnackbarTokens(
             double containerShape,
             double contentPadding
     ) {
@@ -1576,7 +1577,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param insetStart the leading inset before the divider line
     /// @param insetEnd the trailing inset after the divider line
     @NotNullByDefault
-    public record DividerTokens(
+    record DividerTokens(
             double thickness,
             double insetStart,
             double insetEnd
@@ -1597,7 +1598,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerShape the text badge container radius
     /// @param horizontalPadding the text badge horizontal padding
     @NotNullByDefault
-    public record BadgeTokens(
+    record BadgeTokens(
             double smallSize,
             double largeHeight,
             double largeMinWidth,
@@ -1619,7 +1620,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerSize the avatar container size
     /// @param containerShape the avatar container radius
     @NotNullByDefault
-    public record AvatarTokens(
+    record AvatarTokens(
             double containerSize,
             double containerShape
     ) {
@@ -1637,7 +1638,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param contentSpacing the spacing between leading, title, and trailing regions
     /// @param actionSpacing the spacing between trailing action nodes
     @NotNullByDefault
-    public record TopAppBarTokens(
+    record TopAppBarTokens(
             double containerHeight,
             double horizontalPadding,
             double contentSpacing,
@@ -1659,7 +1660,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param contentSpacing the spacing between action and floating action regions
     /// @param actionSpacing the spacing between action nodes
     @NotNullByDefault
-    public record BottomAppBarTokens(
+    record BottomAppBarTokens(
             double containerHeight,
             double horizontalPadding,
             double contentSpacing,
@@ -1684,7 +1685,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param contentSpacing the spacing between item icon and label
     /// @param horizontalPadding the horizontal padding around items
     @NotNullByDefault
-    public record NavigationBarTokens(
+    record NavigationBarTokens(
             double containerHeight,
             double itemWidth,
             double indicatorWidth,
@@ -1718,7 +1719,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param horizontalPadding the horizontal padding around items
     /// @param itemSpacing the spacing between items
     @NotNullByDefault
-    public record NavigationRailTokens(
+    record NavigationRailTokens(
             double containerWidth,
             double itemHeight,
             double itemWidth,
@@ -1758,7 +1759,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param itemContentSpacing the spacing between item content regions
     /// @param itemSpacing the spacing between drawer items
     @NotNullByDefault
-    public record NavigationDrawerTokens(
+    record NavigationDrawerTokens(
             double containerWidth,
             double oneLineItemHeight,
             double twoLineItemHeight,
@@ -1795,7 +1796,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param verticalPadding the vertical content padding
     /// @param contentSpacing the spacing between content regions
     @NotNullByDefault
-    public record ListItemTokens(
+    record ListItemTokens(
             double oneLineHeight,
             double twoLineHeight,
             double threeLineHeight,
@@ -1824,9 +1825,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Validates that a token is a JavaFX opacity value.
-    private static void validateOpacity(double value, String name) {
+    private static void validateOpacity(double value) {
         if (value < 0.0 || value > 1.0) {
-            throw new IllegalArgumentException(name + " must be between 0 and 1");
+            throw new IllegalArgumentException("containerOpacity must be between 0 and 1");
         }
     }
 }
