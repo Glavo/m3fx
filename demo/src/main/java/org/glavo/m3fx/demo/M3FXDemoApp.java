@@ -16,6 +16,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
@@ -93,6 +94,7 @@ import org.glavo.m3fx.controls.M3TabBar;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
+import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3Tooltip;
@@ -501,11 +503,34 @@ public final class M3FXDemoApp extends Application {
         );
         areaError.setError(true);
 
+        M3TextInputLayout filledLayout = createTextInputLayout(filled, "Supporting text");
+        M3TextInputLayout filledTextLayout = createTextInputLayout(filledText, "Email address");
+        filledTextLayout.setCharacterCounterVisible(true);
+        filledTextLayout.setCharacterLimit(32);
+        M3TextInputLayout filledDisabledLayout = createTextInputLayout(filledDisabled, "Disabled supporting text");
+        M3TextInputLayout outlinedLayout = createTextInputLayout(outlined, "Outlined supporting text");
+        M3TextInputLayout outlinedTextLayout = createTextInputLayout(outlinedText, "Project name");
+        outlinedTextLayout.setCharacterCounterVisible(true);
+        outlinedTextLayout.setCharacterLimit(24);
+        M3TextInputLayout passwordLayout = createTextInputLayout(password, "At least 8 characters");
+        M3TextInputLayout filledErrorLayout = createTextInputLayout(filledError, "Supporting text");
+        filledErrorLayout.setErrorText("Use a valid value");
+        M3TextInputLayout outlinedErrorLayout = createTextInputLayout(outlinedError, "Supporting text");
+        outlinedErrorLayout.setErrorText("This field is required");
+        M3TextInputLayout passwordErrorLayout = createTextInputLayout(passwordError, "Supporting text");
+        passwordErrorLayout.setErrorText("Password cannot be empty");
+        M3TextInputLayout filledAreaLayout = createTextInputLayout(filledArea, "Filled multi-line input");
+        M3TextInputLayout outlinedAreaLayout = createTextInputLayout(outlinedArea, "Outlined multi-line input");
+        outlinedAreaLayout.setCharacterCounterVisible(true);
+        outlinedAreaLayout.setCharacterLimit(96);
+        M3TextInputLayout areaErrorLayout = createTextInputLayout(areaError, "Supporting text");
+        areaErrorLayout.setErrorText("Review this text before continuing");
+
         return createGallery(
-                createShowcaseGroup("Filled", filled, filledText, filledDisabled),
-                createShowcaseGroup("Outlined", outlined, outlinedText, password),
-                createShowcaseGroup("Error", filledError, outlinedError, passwordError, areaError),
-                createShowcaseGroup("Text Areas", filledArea, outlinedArea)
+                createShowcaseGroup("Filled", filledLayout, filledTextLayout, filledDisabledLayout),
+                createShowcaseGroup("Outlined", outlinedLayout, outlinedTextLayout, passwordLayout),
+                createShowcaseGroup("Error", filledErrorLayout, outlinedErrorLayout, passwordErrorLayout, areaErrorLayout),
+                createShowcaseGroup("Text Areas", filledAreaLayout, outlinedAreaLayout)
         );
     }
 
@@ -1076,6 +1101,17 @@ public final class M3FXDemoApp extends Application {
         textArea.setDisable(disabled);
         textArea.setPrefWidth(360.0);
         return textArea;
+    }
+
+    /// Creates a text input layout for the page gallery.
+    private static M3TextInputLayout createTextInputLayout(TextInputControl input, String supportingText) {
+        M3TextInputLayout layout = new M3TextInputLayout(input, supportingText);
+        layout.setPrefWidth(input.getPrefWidth());
+        layout.setMaxWidth(input.getPrefWidth());
+        if (input.isDisabled()) {
+            layout.setDisable(true);
+        }
+        return layout;
     }
 
     /// Creates a sample search result row.

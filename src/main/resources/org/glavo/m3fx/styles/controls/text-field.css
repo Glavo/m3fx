@@ -132,3 +132,28 @@
 .m3-text-area:disabled {
     -fx-opacity: 0.38;
 }
+
+.m3-text-input-layout {
+    -fx-spacing: 4px;
+}
+
+.m3-text-input-supporting-row {
+    -fx-alignment: center-left;
+    -fx-padding: 0 16px 0 16px;
+    -fx-spacing: 8px;
+}
+
+.m3-text-input-supporting-text,
+.m3-text-input-counter {
+    -fx-font-size: 12px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-text-input-supporting-text:error,
+.m3-text-input-counter:error {
+    -fx-text-fill: -m3-color-error;
+}
+
+.m3-text-input-supporting-row:disabled {
+    -fx-opacity: 0.38;
+}

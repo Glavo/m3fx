@@ -1220,6 +1220,89 @@ final class M3ControlStyleTest {
         assertFalse(textArea.getPseudoClassStates().contains(error));
     }
 
+    /// Verifies that text input layouts expose supporting text, counters, and wrapped input state.
+    @Test
+    void textInputLayoutDisplaysSupportingTextAndCounter() {
+        M3TextField textField = new M3TextField("abc");
+        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        layout.setCharacterCounterVisible(true);
+        layout.setCharacterLimit(5);
+
+        applyCss(layout);
+
+        assertEquals(textField, layout.getInput());
+        assertEquals(textField, layout.getTextInput());
+        assertEquals(3, layout.getCharacterCount());
+        assertFalse(layout.isCharacterLimitExceeded());
+        assertFalse(textField.isError());
+        assertTrue(textField.getStyleClass().contains(M3TextInputLayout.INPUT_STYLE_CLASS));
+
+        Label supportingText = assertInstanceOf(
+                Label.class,
+                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+        );
+        Label counter = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
+        assertEquals("Helper text", supportingText.getText());
+        assertEquals("3 / 5", counter.getText());
+        assertTrue(supportingText.isManaged());
+        assertTrue(counter.isManaged());
+
+        textField.setDisable(true);
+
+        assertTrue(assertInstanceOf(
+                Node.class,
+                layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+        ).isDisable());
+    }
+
+    /// Verifies that text input layouts apply error state from error text and character overflow.
+    @Test
+    void textInputLayoutAppliesErrorStateFromTextAndCharacterLimit() {
+        PseudoClass error = PseudoClass.getPseudoClass("error");
+        M3TextField textField = new M3TextField("abcdef");
+        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        layout.setCharacterCounterVisible(true);
+        layout.setCharacterLimit(4);
+
+        applyCss(layout);
+
+        Label supportingText = assertInstanceOf(
+                Label.class,
+                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+        );
+        Label counter = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
+        assertTrue(layout.isCharacterLimitExceeded());
+        assertTrue(textField.isError());
+        assertTrue(counter.getPseudoClassStates().contains(error));
+        assertEquals("Helper text", supportingText.getText());
+        assertEquals("6 / 4", counter.getText());
+
+        layout.setErrorText("Too long");
+
+        assertTrue(textField.isError());
+        assertTrue(supportingText.getPseudoClassStates().contains(error));
+        assertEquals("Too long", supportingText.getText());
+
+        layout.setCharacterLimit(10);
+        layout.setErrorText("");
+
+        assertFalse(layout.isCharacterLimitExceeded());
+        assertFalse(textField.isError());
+        assertFalse(supportingText.getPseudoClassStates().contains(error));
+        assertFalse(counter.getPseudoClassStates().contains(error));
+        assertEquals("Helper text", supportingText.getText());
+        assertEquals("6 / 10", counter.getText());
+    }
+
+    /// Verifies that text input layouts reject unsupported input nodes and invalid limits.
+    @Test
+    void textInputLayoutValidatesInputAndCharacterLimit() {
+        M3TextInputLayout layout = new M3TextInputLayout();
+
+        assertThrows(IllegalArgumentException.class, () -> layout.setInput(new javafx.scene.control.TextField()));
+        assertThrows(IllegalArgumentException.class, () -> layout.setCharacterLimit(-2));
+    }
+
     /// Verifies that text input error styles resolve to the Material error color token.
     @Test
     void textInputErrorStylesUseErrorColor() {
@@ -4974,6 +5057,57 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that text input layouts render supporting text, errors, and character counters.
+    @Test
+    void inputLayoutSnapshotRendersSupportingErrorAndCounterText() {
+        runOnFxThread(() -> {
+            M3TextField supportingField = new M3TextField("Alpha");
+            supportingField.setPrefWidth(220.0);
+            M3TextInputLayout supportingLayout = new M3TextInputLayout(supportingField, "Supporting text");
+            supportingLayout.setPrefWidth(220.0);
+
+            M3TextField counterField = M3TextField.withVariant("support@example.com", M3TextInputVariant.OUTLINED);
+            counterField.setPrefWidth(260.0);
+            M3TextInputLayout counterLayout = new M3TextInputLayout(counterField, "Email address");
+            counterLayout.setCharacterCounterVisible(true);
+            counterLayout.setCharacterLimit(32);
+            counterLayout.setPrefWidth(260.0);
+
+            M3TextField errorField = M3TextField.withVariant("abcdef", M3TextInputVariant.OUTLINED);
+            errorField.setPrefWidth(220.0);
+            M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
+            errorLayout.setCharacterCounterVisible(true);
+            errorLayout.setCharacterLimit(4);
+            errorLayout.setErrorText("Too long");
+            errorLayout.setPrefWidth(220.0);
+
+            FlowPane row = new FlowPane(18.0, 18.0, supportingLayout, counterLayout, errorLayout);
+            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(row, 820.0, 140.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            row.applyCss();
+            row.resize(820.0, 140.0);
+            row.layout();
+
+            WritableImage image = snapshotImageOnFxThread(row);
+            assertSnapshotNodeContainsContrast(image, supportingLayout, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, counterLayout, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, errorLayout, Color.WHITE, 0.04);
+            assertTrue(errorField.isError());
+            assertEquals("Too long", assertInstanceOf(
+                    Label.class,
+                    errorLayout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+            ).getText());
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-input-layouts.png"
+            ));
+        });
+    }
+
     /// Verifies that selection controls render their selected indicators.
     @Test
     void selectionSnapshotRendersSelectedIndicators() {
@@ -5658,6 +5792,7 @@ final class M3ControlStyleTest {
 
         assertTrue(textField.getStyleClass().contains(M3TextField.STYLE_CLASS));
         assertTrue(textField.getStyleClass().contains(M3TextInputVariant.OUTLINED.getStyleClass()));
+        assertTrue(new M3TextInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
         assertTrue(new M3TextArea().getStyleClass().contains(M3TextArea.STYLE_CLASS));
         assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
         assertTrue(new M3RichTooltip().getStyleClass().contains(M3RichTooltip.STYLE_CLASS));
@@ -6098,6 +6233,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.TEXT_FIELD, new M3TextField().getAccessibleRole());
         assertEquals(AccessibleRole.PASSWORD_FIELD, new M3PasswordField().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT_AREA, new M3TextArea().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3TextInputLayout().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3Text("Text").getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3Icon("info").getAccessibleRole());
         assertEquals(AccessibleRole.IMAGE_VIEW, new M3Avatar("A").getAccessibleRole());
@@ -6154,6 +6290,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3TextField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
+        assertUserAgentStylesheet(new M3TextInputLayout(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3Avatar(), "/styles/controls/avatar.css");
         assertUserAgentStylesheet(new M3Icon(), "/styles/controls/icon.css");
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
