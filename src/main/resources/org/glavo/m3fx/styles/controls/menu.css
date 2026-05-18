@@ -9,3 +9,13 @@
 .m3-menu .m3-menu-item:selected .m3-list-item-container {
     -fx-background-color: -m3-color-secondary-container;
 }
+
+.m3-menu-section-header {
+    -fx-alignment: center-left;
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 12px 12px 4px 12px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}

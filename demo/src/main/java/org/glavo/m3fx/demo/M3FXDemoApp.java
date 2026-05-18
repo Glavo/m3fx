@@ -65,6 +65,7 @@ import org.glavo.m3fx.controls.M3ListSelectionMode;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
+import org.glavo.m3fx.controls.M3MenuSectionHeader;
 import org.glavo.m3fx.controls.M3MenuSelectionMode;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
@@ -660,15 +661,23 @@ public final class M3FXDemoApp extends Application {
     /// Creates the menu component page.
     private Node createMenusPage() {
         M3Menu inlineMenu = new M3Menu(
+                new M3MenuSectionHeader("File"),
                 createMenuItem("New", "N", "Ctrl+N"),
                 createMenuItem("Open", "O", "Ctrl+O"),
-                createMenuItem("Save", "S", "Ctrl+S")
+                createMenuItem("Save", "S", "Ctrl+S"),
+                new M3Divider(),
+                new M3MenuSectionHeader("Recent"),
+                createMenuItem("Project Alpha", "A", ""),
+                createMenuItem("Project Beta", "B", "")
         );
 
         M3MenuButton menuButton = new M3MenuButton(
                 "Open menu",
+                new M3MenuSectionHeader("Document"),
                 createMenuItem("Duplicate", "D", "Ctrl+D"),
                 createMenuItem("Rename", "R", ""),
+                new M3Divider(),
+                new M3MenuSectionHeader("Danger"),
                 createMenuItem("Delete", "X", "")
         );
         menuButton.setVariant(M3ButtonVariant.OUTLINED);
@@ -681,6 +690,7 @@ public final class M3FXDemoApp extends Application {
         selectedMenu.selectIndex(0);
 
         M3Menu multiSelectMenu = new M3Menu(
+                new M3MenuSectionHeader("Visibility"),
                 createMenuItem("Icons", "I", ""),
                 createMenuItem("Labels", "L", ""),
                 createMenuItem("Badges", "B", "")

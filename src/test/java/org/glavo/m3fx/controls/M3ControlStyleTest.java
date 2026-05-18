@@ -2007,6 +2007,94 @@ final class M3ControlStyleTest {
         assertEquals(1, actions.get());
     }
 
+    /// Verifies that menu section headers are non-selectable menu content.
+    @Test
+    void menuSectionHeadersAreNonSelectableContent() {
+        M3MenuSectionHeader fileHeader = new M3MenuSectionHeader("File");
+        M3Divider divider = new M3Divider();
+        M3MenuItem open = new M3MenuItem("Open");
+        M3MenuItem save = new M3MenuItem("Save");
+        M3Menu menu = new M3Menu(fileHeader, open, divider, save);
+
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.setAllowEmptySelection(false);
+
+        assertEquals("File", fileHeader.getText());
+        assertFalse(fileHeader.isFocusTraversable());
+        assertEquals(4, menu.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(fileHeader, menu.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertEquals(open, menu.getSelectedItem());
+        assertThrows(IllegalArgumentException.class, () -> menu.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> menu.selectIndex(2));
+
+        menu.selectNext();
+
+        assertEquals(save, menu.getSelectedItem());
+
+        menu.selectPrevious();
+
+        assertEquals(open, menu.getSelectedItem());
+    }
+
+    /// Verifies that menu section headers receive menu-specific metrics.
+    @Test
+    void menuSectionHeaderUsesMenuStylesheet() {
+        M3MenuSectionHeader header = new M3MenuSectionHeader("Recent");
+        M3Menu menu = new M3Menu(header);
+        Pane root = new Pane(menu);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertTrue(header.getStyleClass().contains(M3MenuSectionHeader.STYLE_CLASS));
+        assertEquals(32.0, header.getPrefHeight(), 0.0001);
+        assertEquals(12.0, header.getPadding().getTop(), 0.0001);
+        assertEquals(4.0, header.getPadding().getBottom(), 0.0001);
+    }
+
+    /// Verifies that menu section headers and dividers render as grouped menu content.
+    @Test
+    void menuSectionHeaderSnapshotRendersGroupedContent() {
+        runOnFxThread(() -> {
+            M3MenuSectionHeader fileHeader = new M3MenuSectionHeader("File");
+            M3MenuItem open = new M3MenuItem("Open", new M3Icon("O"));
+            M3MenuItem save = new M3MenuItem("Save", new M3Icon("S"));
+            M3MenuSectionHeader recentHeader = new M3MenuSectionHeader("Recent");
+            M3MenuItem project = new M3MenuItem("Project Alpha", new M3Icon("A"));
+            project.setSelected(true);
+            M3Menu menu = new M3Menu(
+                    fileHeader,
+                    open,
+                    save,
+                    new M3Divider(),
+                    recentHeader,
+                    project
+            );
+            menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+            menu.setPrefWidth(280.0);
+            FlowPane root = new FlowPane(menu);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 340.0, 260.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(340.0, 260.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, fileHeader, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, recentHeader, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, project, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-menu-section-headers.png"
+            ));
+        });
+    }
+
     /// Verifies that action menus do not auto-select items by default.
     @Test
     void menuDefaultSelectionModeDoesNotSelectOnAction() {
@@ -5404,7 +5492,11 @@ final class M3ControlStyleTest {
             list.setPrefWidth(300.0);
             M3MenuItem selectedMenuItem = new M3MenuItem("Selected menu item", new M3Icon("M"));
             selectedMenuItem.setSelected(true);
-            M3Menu menu = new M3Menu(selectedMenuItem, new M3MenuItem("Menu item"));
+            M3Menu menu = new M3Menu(
+                    new M3MenuSectionHeader("Actions"),
+                    selectedMenuItem,
+                    new M3MenuItem("Menu item")
+            );
             menu.setPrefWidth(280.0);
             M3MenuButton menuButton = new M3MenuButton(
                     "Menu",
@@ -5870,6 +5962,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3BadgedBox().getStyleClass().contains(M3BadgedBox.STYLE_CLASS));
         assertTrue(new M3Menu().getStyleClass().contains(M3Menu.STYLE_CLASS));
         assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
+        assertTrue(new M3MenuSectionHeader("File").getStyleClass().contains(M3MenuSectionHeader.STYLE_CLASS));
         assertTrue(new M3MenuButton("More").getStyleClass().contains(M3MenuButton.STYLE_CLASS));
         assertTrue(new M3SearchBar().getStyleClass().contains(M3SearchBar.STYLE_CLASS));
         assertTrue(new M3SearchView().getStyleClass().contains(M3SearchView.STYLE_CLASS));
@@ -6324,6 +6417,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.MENU, new M3Menu().getAccessibleRole());
         assertEquals(AccessibleRole.MENU_BUTTON, new M3MenuButton().getAccessibleRole());
         assertEquals(AccessibleRole.MENU_ITEM, new M3MenuItem().getAccessibleRole());
+        assertEquals(AccessibleRole.TEXT, new M3MenuSectionHeader().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3SearchBar().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3SearchView().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3List().getAccessibleRole());
@@ -6362,6 +6456,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Surface(), "/styles/controls/surface.css");
         assertUserAgentStylesheet(new M3BadgedBox(), "/styles/controls/badge.css");
         assertUserAgentStylesheet(new M3Menu(), "/styles/controls/menu.css");
+        assertUserAgentStylesheet(new M3MenuSectionHeader(), "/styles/controls/menu.css");
         assertUserAgentStylesheet(new M3SearchBar(), "/styles/controls/search.css");
         assertUserAgentStylesheet(new M3SearchView(), "/styles/controls/search.css");
         assertUserAgentStylesheet(new M3SideSheet(), "/styles/controls/sheet.css");
