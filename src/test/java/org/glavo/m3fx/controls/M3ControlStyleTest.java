@@ -3059,7 +3059,7 @@ final class M3ControlStyleTest {
         assertLabeledColors(day, Color.TRANSPARENT, Color.rgb(34, 35, 36));
         assertBorderColor(day, Color.rgb(13, 14, 15));
         assertLabeledColors(month, Color.rgb(7, 8, 9), Color.rgb(10, 11, 12));
-        assertBorderColor(month, Color.rgb(7, 8, 9));
+        assertBorderColor(month, Color.rgb(13, 14, 15));
     }
 
     /// Verifies that segmented button groups assign segment position style classes.
@@ -5021,9 +5021,16 @@ final class M3ControlStyleTest {
             Color roundedCorner = image.getPixelReader().getColor(monthRight - 2, monthTop + 2);
 
             assertTrue(selectedBody.getOpacity() > 0.4, () -> "selectedBody=" + selectedBody);
+            assertSnapshotNodeBorderContainsContrast(image, month, selectedBody, 0.08);
             assertTrue(roundedCorner.getOpacity() < 0.4
                             || colorDistance(selectedBody, roundedCorner) > 0.1,
                     () -> "selectedBody=" + selectedBody + ", roundedCorner=" + roundedCorner);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-segmented-selected-border.png"
+            ));
         });
     }
 
