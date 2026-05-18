@@ -10,21 +10,24 @@ import javafx.animation.Timeline;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.layout.StackPane;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3SnackbarHostSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -33,7 +36,7 @@ import java.util.Objects;
 
 /// Hosts transient Material Design 3 snackbar messages.
 @NotNullByDefault
-public class M3SnackbarHost extends StackPane {
+public class M3SnackbarHost extends Control {
     /// The base style class for m3fx snackbar hosts.
     public static final String STYLE_CLASS = "m3-snackbar-host";
 
@@ -50,7 +53,8 @@ public class M3SnackbarHost extends StackPane {
     private static final double TRANSITION_OFFSET_Y = 16.0;
 
     /// The currently hosted snackbar.
-    private @Nullable M3Snackbar snackbar;
+    private final ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbar =
+            new ReadOnlyObjectWrapper<>(this, "snackbar");
 
     /// Pending snackbars waiting to be shown.
     private final ObservableList<M3Snackbar> queue = FXCollections.observableArrayList();
@@ -87,7 +91,6 @@ public class M3SnackbarHost extends StackPane {
     public M3SnackbarHost() {
         getStyleClass().add(STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
-        setAlignment(Pos.BOTTOM_CENTER);
         setPickOnBounds(false);
         showing.addListener((observable, oldValue, newValue) ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED));
@@ -97,7 +100,12 @@ public class M3SnackbarHost extends StackPane {
 
     /// Returns the currently hosted snackbar.
     public final @Nullable M3Snackbar getSnackbar() {
-        return snackbar;
+        return snackbar.get();
+    }
+
+    /// Returns the currently hosted snackbar property.
+    public final ReadOnlyObjectProperty<@Nullable M3Snackbar> snackbarProperty() {
+        return snackbar.getReadOnlyProperty();
     }
 
     /// Returns whether the current snackbar is in its visible display phase.
@@ -180,7 +188,7 @@ public class M3SnackbarHost extends StackPane {
     /// Adds the supplied snackbar to the end of the display queue.
     public final void enqueue(M3Snackbar snackbar) {
         Objects.requireNonNull(snackbar, "snackbar");
-        if (this.snackbar == null && !showing.get()) {
+        if (getSnackbar() == null && !showing.get()) {
             show(snackbar);
         } else {
             queue.add(snackbar);
@@ -200,17 +208,12 @@ public class M3SnackbarHost extends StackPane {
         showAnimation.stop();
         hideAnimation.stop();
 
-        M3Snackbar previousSnackbar = this.snackbar;
+        @Nullable M3Snackbar previousSnackbar = getSnackbar();
         if (previousSnackbar != snackbar) {
             if (previousSnackbar != null) {
-                getChildren().remove(previousSnackbar);
                 resetSnackbar(previousSnackbar);
             }
-            this.snackbar = snackbar;
-            if (!getChildren().contains(snackbar)) {
-                getChildren().add(snackbar);
-            }
-            StackPane.setAlignment(snackbar, Pos.BOTTOM_CENTER);
+            setSnackbar(snackbar);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
@@ -224,7 +227,7 @@ public class M3SnackbarHost extends StackPane {
 
     /// Dismisses the currently hosted snackbar.
     public final void dismiss() {
-        M3Snackbar currentSnackbar = snackbar;
+        @Nullable M3Snackbar currentSnackbar = getSnackbar();
         if (currentSnackbar == null || !showing.get()) {
             return;
         }
@@ -247,28 +250,10 @@ public class M3SnackbarHost extends StackPane {
         return M3Stylesheets.controlStylesheet("snackbar.css");
     }
 
-    /// Lays out the current snackbar at its preferred size instead of stretching it to the overlay bounds.
+    /// Creates the default Material Design 3 snackbar host skin.
     @Override
-    protected void layoutChildren() {
-        super.layoutChildren();
-
-        M3Snackbar currentSnackbar = snackbar;
-        if (currentSnackbar == null || !currentSnackbar.isManaged() || !getChildren().contains(currentSnackbar)) {
-            return;
-        }
-
-        double left = snappedLeftInset();
-        double right = snappedRightInset();
-        double top = snappedTopInset();
-        double bottom = snappedBottomInset();
-        double contentWidth = Math.max(0.0, getWidth() - left - right);
-        double contentHeight = Math.max(0.0, getHeight() - top - bottom);
-        double width = Math.min(contentWidth, snapSizeX(currentSnackbar.prefWidth(-1.0)));
-        double height = Math.min(contentHeight, snapSizeY(currentSnackbar.prefHeight(width)));
-        double x = left + (contentWidth - width) / 2.0;
-        double y = top + contentHeight - height;
-
-        currentSnackbar.resizeRelocate(snapPositionX(x), snapPositionY(y), width, height);
+    protected Skin<?> createDefaultSkin() {
+        return new M3SnackbarHostSkin(this);
     }
 
     /// Returns accessibility attributes for the current snackbar and queue state.
@@ -326,7 +311,7 @@ public class M3SnackbarHost extends StackPane {
 
     /// Schedules automatic dismissal for the target snackbar.
     private void scheduleAutoDismiss(M3Snackbar target) {
-        if (snackbar != target || !showing.get()) {
+        if (getSnackbar() != target || !showing.get()) {
             return;
         }
 
@@ -337,7 +322,7 @@ public class M3SnackbarHost extends StackPane {
 
         displayTimer.setDuration(duration);
         displayTimer.setOnFinished(event -> {
-            if (snackbar == target) {
+            if (getSnackbar() == target) {
                 dismiss();
             }
         });
@@ -346,13 +331,12 @@ public class M3SnackbarHost extends StackPane {
 
     /// Removes the snackbar after its exit transition finishes.
     private void removeSnackbar(M3Snackbar target) {
-        if (snackbar != target) {
+        if (getSnackbar() != target) {
             return;
         }
 
-        getChildren().remove(target);
         resetSnackbar(target);
-        snackbar = null;
+        setSnackbar(null);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
@@ -369,7 +353,7 @@ public class M3SnackbarHost extends StackPane {
 
     /// Shows the next queued snackbar when the host is idle.
     private void showNextQueuedSnackbar() {
-        if (snackbar != null || queue.isEmpty()) {
+        if (getSnackbar() != null || queue.isEmpty()) {
             return;
         }
 
@@ -379,7 +363,7 @@ public class M3SnackbarHost extends StackPane {
 
     /// Returns the number of currently exposed snackbar nodes.
     private int snackbarCount() {
-        return (snackbar == null ? 0 : 1) + queue.size();
+        return (getSnackbar() == null ? 0 : 1) + queue.size();
     }
 
     /// Returns the current or queued snackbar at the supplied accessibility index.
@@ -388,9 +372,10 @@ public class M3SnackbarHost extends StackPane {
         if (index < 0) {
             return null;
         }
-        if (snackbar != null) {
+        @Nullable M3Snackbar currentSnackbar = getSnackbar();
+        if (currentSnackbar != null) {
             if (index == 0) {
-                return snackbar;
+                return currentSnackbar;
             }
             index--;
         }
@@ -399,11 +384,16 @@ public class M3SnackbarHost extends StackPane {
 
     /// Returns text for the currently hosted snackbar.
     private String currentSnackbarText() {
-        M3Snackbar currentSnackbar = snackbar;
+        @Nullable M3Snackbar currentSnackbar = getSnackbar();
         if (currentSnackbar == null) {
             return "";
         }
         @Nullable String text = currentSnackbar.getAccessibleText();
         return text == null ? "" : text;
+    }
+
+    /// Sets the currently hosted snackbar.
+    private void setSnackbar(@Nullable M3Snackbar snackbar) {
+        this.snackbar.set(snackbar);
     }
 }

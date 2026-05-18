@@ -42,6 +42,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
@@ -53,12 +54,14 @@ import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3IconSkin;
 import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
+import org.glavo.m3fx.skins.M3ListSkin;
 import org.glavo.m3fx.skins.M3NavigationItemSkin;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
+import org.glavo.m3fx.skins.M3SnackbarHostSkin;
 import org.glavo.m3fx.skins.M3SnackbarSkin;
 import org.glavo.m3fx.skins.M3SurfaceSkin;
 import org.glavo.m3fx.skins.M3SwitchSkin;
@@ -709,8 +712,9 @@ final class M3ControlStyleTest {
 
             M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
             assertTrue(host.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
+            assertInstanceOf(M3SnackbarHostSkin.class, host.getSkin());
             assertTrue(host.isShowing());
-            assertTrue(host.getChildren().contains(snackbar));
+            assertTrue(snackbar.getParent() != null);
             assertTrue(snackbar.isVisible());
             assertTrue(snackbar.isManaged());
 
@@ -774,7 +778,7 @@ final class M3ControlStyleTest {
                 PauseTransition pause = new PauseTransition(Duration.millis(180.0));
                 pause.setOnFinished(event -> {
                     try {
-                        assertFalse(host.getChildren().contains(snackbar));
+                        assertNull(snackbar.getParent());
                         assertFalse(snackbar.isVisible());
                     } catch (Throwable e) {
                         failure.set(e);
@@ -826,7 +830,7 @@ final class M3ControlStyleTest {
 
                     assertEquals(first, host.getSnackbar());
                     assertEquals(java.util.List.of(second), host.getQueue());
-                    assertTrue(host.getChildren().contains(first));
+                    assertTrue(first.getParent() != null);
 
                     hostReference.set(host);
                     firstReference.set(first);
@@ -841,8 +845,8 @@ final class M3ControlStyleTest {
                     assertEquals(second, host.getSnackbar());
                     assertTrue(host.isShowing());
                     assertTrue(host.getQueue().isEmpty());
-                    assertFalse(host.getChildren().contains(first));
-                    assertTrue(host.getChildren().contains(second));
+                    assertNull(first.getParent());
+                    assertTrue(second.getParent() != null);
                     assertFalse(first.isVisible());
                 }
         );
@@ -887,10 +891,11 @@ final class M3ControlStyleTest {
             first.setOpacity(0.25);
             first.setTranslateY(8.0);
             host.show(second);
+            applyCss(host);
 
             assertEquals(second, host.getSnackbar());
-            assertFalse(host.getChildren().contains(first));
-            assertTrue(host.getChildren().contains(second));
+            assertNull(first.getParent());
+            assertTrue(second.getParent() != null);
             assertFalse(first.isVisible());
             assertFalse(first.isManaged());
             assertEquals(1.0, first.getOpacity(), 0.0001);
@@ -931,8 +936,8 @@ final class M3ControlStyleTest {
                     assertNull(host.getSnackbar());
                     assertFalse(host.isShowing());
                     assertTrue(host.getQueue().isEmpty());
-                    assertFalse(host.getChildren().contains(first));
-                    assertFalse(host.getChildren().contains(second));
+                    assertNull(first.getParent());
+                    assertNull(second.getParent());
                     assertFalse(first.isVisible());
                 }
         );
@@ -1403,9 +1408,12 @@ final class M3ControlStyleTest {
         Label graphic = new Label("G");
         graphic.setAccessibleText("Graphic avatar");
 
+        applyCss(avatar);
+
         assertEquals("AB", avatar.getText());
         assertEquals("AB", avatar.getAccessibleText());
-        assertEquals(1, avatar.getChildren().size());
+        assertInstanceOf(M3AvatarSkin.class, avatar.getSkin());
+        assertInstanceOf(Label.class, avatar.lookup("." + M3Avatar.LABEL_STYLE_CLASS));
 
         avatar.setText("CD");
         assertEquals("CD", avatar.getAccessibleText());
@@ -1413,13 +1421,15 @@ final class M3ControlStyleTest {
         avatar.setGraphic(graphic);
 
         assertEquals(graphic, avatar.getGraphic());
-        assertEquals(graphic, avatar.getChildren().get(0));
+        assertInstanceOf(StackPane.class, graphic.getParent());
+        assertNull(avatar.lookup("." + M3Avatar.LABEL_STYLE_CLASS));
         assertEquals("Graphic avatar", avatar.getAccessibleText());
 
         avatar.setGraphic(null);
 
         assertNull(avatar.getGraphic());
-        assertEquals(1, avatar.getChildren().size());
+        assertNull(graphic.getParent());
+        assertInstanceOf(Label.class, avatar.lookup("." + M3Avatar.LABEL_STYLE_CLASS));
         assertEquals("CD", avatar.getAccessibleText());
     }
 
@@ -1431,14 +1441,19 @@ final class M3ControlStyleTest {
 
         applyCss(avatar);
 
+        double preferredWidth = avatar.prefWidth(-1.0);
+        double preferredHeight = avatar.prefHeight(-1.0);
+
         assertEquals(48.0, avatar.getContainerSize(), 0.0001);
-        assertEquals(48.0, avatar.getPrefWidth(), 0.0001);
-        assertEquals(48.0, avatar.getPrefHeight(), 0.0001);
+        assertEquals(48.0, preferredWidth, 0.0001,
+                () -> "containerSize=" + avatar.getContainerSize() + ", prefWidthProperty=" + avatar.getPrefWidth());
+        assertEquals(48.0, preferredHeight, 0.0001,
+                () -> "containerSize=" + avatar.getContainerSize() + ", prefHeightProperty=" + avatar.getPrefHeight());
 
         avatar.setContainerSize(32.0);
 
-        assertEquals(32.0, avatar.getPrefWidth(), 0.0001);
-        assertEquals(32.0, avatar.getPrefHeight(), 0.0001);
+        assertEquals(32.0, avatar.prefWidth(-1.0), 0.0001);
+        assertEquals(32.0, avatar.prefHeight(-1.0), 0.0001);
     }
 
     /// Verifies that avatar variants update style classes.
@@ -3931,6 +3946,9 @@ final class M3ControlStyleTest {
         M3ListItem third = new M3ListItem("Third");
         M3List list = new M3List(first, new M3Divider(), second, third);
 
+        applyCss(list);
+
+        assertInstanceOf(M3ListSkin.class, list.getSkin());
         assertEquals(M3ListSelectionMode.NONE, list.getSelectionMode());
         first.fire();
 
@@ -5687,8 +5705,11 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.Tooltip.class.isAssignableFrom(M3Tooltip.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Icon.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Text.class));
+        assertFalse(StackPane.class.isAssignableFrom(M3Avatar.class));
         assertFalse(StackPane.class.isAssignableFrom(M3BadgedBox.class));
         assertFalse(StackPane.class.isAssignableFrom(M3Surface.class));
+        assertFalse(StackPane.class.isAssignableFrom(M3SnackbarHost.class));
+        assertFalse(VBox.class.isAssignableFrom(M3List.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
@@ -5737,6 +5758,8 @@ final class M3ControlStyleTest {
         AtomicInteger listActions = new AtomicInteger();
         listItem.setOnAction(event -> listActions.incrementAndGet());
         M3List list = new M3List(new M3Divider(), listItem);
+
+        applyCss(list);
 
         assertEquals("Overline Headline Supporting", listItem.getAccessibleText());
         assertEquals(true, listItem.queryAccessibleAttribute(AccessibleAttribute.SELECTED));

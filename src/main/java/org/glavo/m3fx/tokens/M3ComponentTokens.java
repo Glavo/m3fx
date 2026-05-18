@@ -1056,12 +1056,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void appendAvatarRule(StringBuilder builder, String selector, AvatarTokens tokens) {
         String size = M3TokenCss.pixels(tokens.containerSize());
         beginRule(builder, selector);
-        appendDeclaration(builder, "-fx-min-width", size);
-        appendDeclaration(builder, "-fx-pref-width", size);
-        appendDeclaration(builder, "-fx-max-width", size);
-        appendDeclaration(builder, "-fx-min-height", size);
-        appendDeclaration(builder, "-fx-pref-height", size);
-        appendDeclaration(builder, "-fx-max-height", size);
+        appendDeclaration(builder, "-m3-container-size", size);
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         endRule(builder);
     }

@@ -12,12 +12,12 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.layout.StackPane;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -29,7 +29,7 @@ import java.util.Objects;
 
 /// A Material Design 3 avatar for initials, icons, or small images.
 @NotNullByDefault
-public class M3Avatar extends StackPane {
+public class M3Avatar extends Control {
     /// The base style class for M3FX avatars.
     public static final String STYLE_CLASS = "m3-avatar";
 
@@ -61,9 +61,6 @@ public class M3Avatar extends StackPane {
 
     /// The styleable avatar container size token.
     private StyleableDoubleProperty containerSize;
-
-    /// The label used when this avatar has no graphic node.
-    private final Label textLabel = new Label();
 
     /// Creates an empty avatar.
     public M3Avatar() {
@@ -191,7 +188,7 @@ public class M3Avatar extends StackPane {
 
     /// Returns the CSS metadata for this node.
     @Override
-    public List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
@@ -205,16 +202,9 @@ public class M3Avatar extends StackPane {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.IMAGE_VIEW);
-        setAlignment(Pos.CENTER);
-        textLabel.getStyleClass().add(LABEL_STYLE_CLASS);
-        textLabel.textProperty().bind(text);
         text.addListener((observable, oldValue, newValue) -> updateAccessibleText());
-        graphic.addListener((observable, oldValue, newValue) -> {
-            updateContent(newValue);
-            updateAccessibleText();
-        });
+        graphic.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         updateVariantStyle();
-        updateContent(getGraphic());
         updateAccessibleText();
         updateMetrics();
     }
@@ -231,15 +221,6 @@ public class M3Avatar extends StackPane {
         );
     }
 
-    /// Updates the avatar content shown in the center slot.
-    private void updateContent(@Nullable Node node) {
-        if (node == null) {
-            getChildren().setAll(textLabel);
-        } else {
-            getChildren().setAll(node);
-        }
-    }
-
     /// Updates the text exposed to assistive technologies.
     private void updateAccessibleText() {
         @Nullable Node graphicNode = getGraphic();
@@ -253,12 +234,51 @@ public class M3Avatar extends StackPane {
         setAccessibleText(getText());
     }
 
-    /// Applies size-related component tokens to layout metrics.
+    /// Requests layout after size-related component tokens change.
     private void updateMetrics() {
-        double size = getContainerSize();
-        setMinSize(size, size);
-        setPrefSize(size, size);
-        setMaxSize(size, size);
+        requestLayout();
+    }
+
+    /// Computes the minimum avatar width from the container size token.
+    @Override
+    protected double computeMinWidth(double height) {
+        return getContainerSize();
+    }
+
+    /// Computes the minimum avatar height from the container size token.
+    @Override
+    protected double computeMinHeight(double width) {
+        return getContainerSize();
+    }
+
+    /// Computes the preferred avatar width from the container size token.
+    @Override
+    protected double computePrefWidth(double height) {
+        return getContainerSize();
+    }
+
+    /// Computes the preferred avatar height from the container size token.
+    @Override
+    protected double computePrefHeight(double width) {
+        return getContainerSize();
+    }
+
+    /// Computes the maximum avatar width from the container size token.
+    @Override
+    protected double computeMaxWidth(double height) {
+        return getContainerSize();
+    }
+
+    /// Computes the maximum avatar height from the container size token.
+    @Override
+    protected double computeMaxHeight(double width) {
+        return getContainerSize();
+    }
+
+    /// Creates the default Material Design 3 avatar skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3AvatarSkin(this);
     }
 
     /// CSS metadata for M3FX avatar component tokens.
@@ -284,7 +304,7 @@ public class M3Avatar extends StackPane {
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(StackPane.getClassCssMetaData());
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(CONTAINER_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

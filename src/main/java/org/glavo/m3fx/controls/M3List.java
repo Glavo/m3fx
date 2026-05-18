@@ -19,9 +19,11 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3ListSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -33,9 +35,12 @@ import java.util.Objects;
 
 /// A Material Design 3 list container.
 @NotNullByDefault
-public class M3List extends VBox {
+public class M3List extends Control {
     /// The base style class for M3FX lists.
     public static final String STYLE_CLASS = "m3-list";
+
+    /// The mutable list content.
+    private final ObservableList<Node> items = FXCollections.observableArrayList();
 
     /// The list item selection mode.
     private final ObjectProperty<M3ListSelectionMode> selectionMode =
@@ -115,7 +120,7 @@ public class M3List extends VBox {
 
     /// Returns the mutable child list used as list content.
     public final ObservableList<Node> getItems() {
-        return getChildren();
+        return items;
     }
 
     /// Adds one list content node.
@@ -188,13 +193,13 @@ public class M3List extends VBox {
     /// Returns the child index of the first selected list item, or `-1` when no item is selected.
     public final int getSelectedIndex() {
         @Nullable M3ListItem item = getSelectedItem();
-        return item == null ? -1 : getChildren().indexOf(item);
+        return item == null ? -1 : getItems().indexOf(item);
     }
 
     /// Selects a list item that belongs to this list.
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
-        if (!getChildren().contains(item)) {
+        if (!getItems().contains(item)) {
             throw new IllegalArgumentException("item must belong to this list");
         }
 
@@ -207,7 +212,7 @@ public class M3List extends VBox {
 
     /// Selects the list item at the given child index.
     public final void selectIndex(int index) {
-        Node child = getChildren().get(index);
+        Node child = getItems().get(index);
         if (child instanceof M3ListItem item) {
             select(item);
             return;
@@ -225,7 +230,7 @@ public class M3List extends VBox {
 
     /// Selects the last list item when one exists.
     public final void selectLast() {
-        @Nullable M3ListItem lastItem = M3SelectionNavigation.last(getChildren(), M3ListItem.class);
+        @Nullable M3ListItem lastItem = M3SelectionNavigation.last(getItems(), M3ListItem.class);
         if (lastItem != null) {
             select(lastItem);
         }
@@ -234,7 +239,7 @@ public class M3List extends VBox {
     /// Selects the next list item after the current selected item, wrapping at the end.
     public final void selectNext() {
         @Nullable M3ListItem nextItem =
-                M3SelectionNavigation.next(getChildren(), getSelectedItem(), M3ListItem.class);
+                M3SelectionNavigation.next(getItems(), getSelectedItem(), M3ListItem.class);
         if (nextItem != null) {
             select(nextItem);
         }
@@ -243,7 +248,7 @@ public class M3List extends VBox {
     /// Selects the previous list item before the current selected item, wrapping at the start.
     public final void selectPrevious() {
         @Nullable M3ListItem previousItem =
-                M3SelectionNavigation.previous(getChildren(), getSelectedItem(), M3ListItem.class);
+                M3SelectionNavigation.previous(getItems(), getSelectedItem(), M3ListItem.class);
         if (previousItem != null) {
             select(previousItem);
         }
@@ -292,7 +297,7 @@ public class M3List extends VBox {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        getChildren().addListener(childrenListener);
+        getItems().addListener(childrenListener);
     }
 
     /// Applies keyboard navigation across enabled list items.
@@ -300,8 +305,8 @@ public class M3List extends VBox {
         if (getSelectionMode() == M3ListSelectionMode.NONE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
-                    getChildren(),
-                    M3SelectionNavigation.focused(getChildren(), M3ListItem.class),
+                    getItems(),
+                    M3SelectionNavigation.focused(getItems(), M3ListItem.class),
                     M3ListItem.class,
                     false,
                     true
@@ -311,7 +316,7 @@ public class M3List extends VBox {
 
         M3SelectionNavigation.handleKeySelection(
                 event,
-                getChildren(),
+                getItems(),
                 getSelectedItem(),
                 M3ListItem.class,
                 false,
@@ -338,7 +343,7 @@ public class M3List extends VBox {
 
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3ListItem item) {
                     item.setSelected(M3Accessible.containsSelectionTarget(item, parameters));
                 }
@@ -373,7 +378,7 @@ public class M3List extends VBox {
     /// Applies the configured selection policy to a list item action.
     private void handleItemAction(ActionEvent event) {
         if (!(event.getSource() instanceof M3ListItem item)
-                || !getChildren().contains(item)
+                || !getItems().contains(item)
                 || item.isDisabled()) {
             return;
         }
@@ -452,7 +457,7 @@ public class M3List extends VBox {
     private void selectOnly(@Nullable M3ListItem item) {
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3ListItem listItem) {
                     listItem.setSelected(listItem == item);
                 }
@@ -467,7 +472,7 @@ public class M3List extends VBox {
     private void refreshSelectedItems() {
         List<M3ListItem> previousSelection = List.copyOf(selectedItems);
         selectedItems.clear();
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             if (child instanceof M3ListItem item && item.isSelected()) {
                 selectedItems.add(item);
             }
@@ -480,7 +485,13 @@ public class M3List extends VBox {
 
     /// Returns the first list item child.
     private @Nullable M3ListItem firstItem() {
-        return M3SelectionNavigation.first(getChildren(), M3ListItem.class);
+        return M3SelectionNavigation.first(getItems(), M3ListItem.class);
+    }
+
+    /// Creates the default Material Design 3 list skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3ListSkin(this);
     }
 
     /// Validates a list item array.

@@ -796,7 +796,7 @@ public final class M3FXDemoApp extends Application {
         M3List list = new M3List();
         list.getStyleClass().add("demo-list");
         list.setSelectionMode(M3ListSelectionMode.SINGLE);
-        list.getChildren().addAll(
+        list.getItems().addAll(
                 oneLine,
                 new M3Divider(),
                 twoLine,
