@@ -17,6 +17,7 @@ import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
+import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3Menu;
@@ -326,6 +327,44 @@ final class M3ThemeTest {
         assertEquals(320.0, navigationDrawer.getMaxWidth(), 0.0001);
     }
 
+    /// Verifies that application styles can pin icon button metrics across theme reinstallations.
+    @Test
+    void preservesApplicationIconButtonMetricsAcrossThemeReinstall() throws Exception {
+        M3IconButton button = new M3IconButton();
+        button.getStyleClass().add("test-seed-button");
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root);
+        String applicationStylesheet = temporaryStylesheet("""
+                .m3-icon-button.test-seed-button {
+                    -m3-container-height: 32px;
+                    -m3-container-shape: 999px;
+                    -m3-horizontal-padding: 0px;
+                    -fx-min-width: 32px;
+                    -fx-min-height: 32px;
+                    -fx-pref-width: 32px;
+                    -fx-pref-height: 32px;
+                    -fx-max-width: 32px;
+                    -fx-max-height: 32px;
+                    -fx-background-radius: 999px;
+                    -fx-border-radius: 999px;
+                }
+                """);
+
+        scene.getStylesheets().add(applicationStylesheet);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertSeedButtonMetrics(button);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(Color.web("#006a6a")));
+        root.applyCss();
+
+        assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
+        assertEquals(M3ThemeManager.themeStylesheetUrl(M3Theme.fromSeed(Color.web("#006a6a"))), scene.getStylesheets().get(1));
+        assertEquals(applicationStylesheet, scene.getStylesheets().get(2));
+        assertSeedButtonMetrics(button);
+    }
+
     /// Verifies that theme manager installation can be reverted.
     @Test
     void uninstallsThemeFromScene() {
@@ -526,5 +565,17 @@ final class M3ThemeTest {
         Files.writeString(path, content);
         path.toFile().deleteOnExit();
         return path.toUri().toString();
+    }
+
+    /// Verifies that an icon button keeps the fixed swatch metrics from application CSS.
+    private static void assertSeedButtonMetrics(M3IconButton button) {
+        assertEquals(32.0, button.getContainerHeight(), 0.0001);
+        assertEquals(999.0, button.getContainerShape(), 0.0001);
+        assertEquals(32.0, button.getMinWidth(), 0.0001);
+        assertEquals(32.0, button.getMinHeight(), 0.0001);
+        assertEquals(32.0, button.getPrefWidth(), 0.0001);
+        assertEquals(32.0, button.getPrefHeight(), 0.0001);
+        assertEquals(32.0, button.getMaxWidth(), 0.0001);
+        assertEquals(32.0, button.getMaxHeight(), 0.0001);
     }
 }
