@@ -1255,6 +1255,60 @@ final class M3ControlStyleTest {
         ).isDisable());
     }
 
+    /// Verifies that text input layouts manage leading and trailing adornment slots.
+    @Test
+    void textInputLayoutManagesLeadingAndTrailingAdornments() {
+        M3TextField textField = new M3TextField("abc");
+        M3Icon leading = new M3Icon("S");
+        M3IconButton trailing = new M3IconButton(new M3Icon("C"));
+        M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+        layout.setLeading(leading);
+        layout.setTrailing(trailing);
+
+        applyCss(layout);
+
+        assertEquals(leading, layout.getLeading());
+        assertEquals(trailing, layout.getTrailing());
+        assertEquals(3, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(leading, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertEquals(textField, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertEquals(trailing, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
+        assertEquals(leading, assertInstanceOf(
+                StackPane.class,
+                layout.lookup("." + M3TextInputLayout.LEADING_STYLE_CLASS)
+        ).getChildren().get(0));
+        assertEquals(trailing, assertInstanceOf(
+                StackPane.class,
+                layout.lookup("." + M3TextInputLayout.TRAILING_STYLE_CLASS)
+        ).getChildren().get(0));
+        assertEquals(48.0, textField.getPadding().getLeft(), 0.0001);
+        assertEquals(48.0, textField.getPadding().getRight(), 0.0001);
+
+        layout.setTrailing(null);
+
+        assertNull(layout.getTrailing());
+        assertEquals(2, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(48.0, textField.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, textField.getPadding().getRight(), 0.0001);
+
+        layout.setLeading(null);
+
+        assertNull(layout.getLeading());
+        assertEquals(1, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(16.0, textField.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, textField.getPadding().getRight(), 0.0001);
+
+        M3TextField widePaddingField = new M3TextField("wide");
+        widePaddingField.setStyle("-m3-horizontal-padding: 64px;");
+        M3TextInputLayout widePaddingLayout = new M3TextInputLayout(widePaddingField);
+        widePaddingLayout.setLeading(new M3Icon("W"));
+
+        applyCss(widePaddingLayout);
+
+        assertEquals(64.0, widePaddingField.getPadding().getLeft(), 0.0001);
+        assertEquals(64.0, widePaddingField.getPadding().getRight(), 0.0001);
+    }
+
     /// Verifies that text input layouts apply error state from error text and character overflow.
     @Test
     void textInputLayoutAppliesErrorStateFromTextAndCharacterLimit() {
@@ -4968,7 +5022,7 @@ final class M3ControlStyleTest {
 
             assertTrue(selectedBody.getOpacity() > 0.4, () -> "selectedBody=" + selectedBody);
             assertTrue(roundedCorner.getOpacity() < 0.4
-                    || colorDistance(selectedBody, roundedCorner) > 0.1,
+                            || colorDistance(selectedBody, roundedCorner) > 0.1,
                     () -> "selectedBody=" + selectedBody + ", roundedCorner=" + roundedCorner);
         });
     }
@@ -5008,7 +5062,7 @@ final class M3ControlStyleTest {
             assertTrue(track.getOpacity() > 0.8, () -> "track=" + track);
             assertTrue(colorDistance(fill, track) > 0.1, () -> "fill=" + fill + ", track=" + track);
             assertTrue(roundedCorner.getOpacity() < 0.4
-                    || colorDistance(fill, roundedCorner) > 0.1,
+                            || colorDistance(fill, roundedCorner) > 0.1,
                     () -> "fill=" + fill + ", roundedCorner=" + roundedCorner);
         });
     }
@@ -5064,18 +5118,22 @@ final class M3ControlStyleTest {
             M3TextField supportingField = new M3TextField("Alpha");
             supportingField.setPrefWidth(220.0);
             M3TextInputLayout supportingLayout = new M3TextInputLayout(supportingField, "Supporting text");
+            supportingLayout.setLeading(new M3Icon("A"));
             supportingLayout.setPrefWidth(220.0);
 
             M3TextField counterField = M3TextField.withVariant("support@example.com", M3TextInputVariant.OUTLINED);
-            counterField.setPrefWidth(260.0);
+            counterField.setPrefWidth(320.0);
             M3TextInputLayout counterLayout = new M3TextInputLayout(counterField, "Email address");
+            counterLayout.setLeading(new M3Icon("E"));
+            counterLayout.setTrailing(new M3IconButton(new M3Icon("C")));
             counterLayout.setCharacterCounterVisible(true);
             counterLayout.setCharacterLimit(32);
-            counterLayout.setPrefWidth(260.0);
+            counterLayout.setPrefWidth(320.0);
 
             M3TextField errorField = M3TextField.withVariant("abcdef", M3TextInputVariant.OUTLINED);
             errorField.setPrefWidth(220.0);
             M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
+            errorLayout.setLeading(new M3Icon("!"));
             errorLayout.setCharacterCounterVisible(true);
             errorLayout.setCharacterLimit(4);
             errorLayout.setErrorText("Too long");
@@ -5083,11 +5141,11 @@ final class M3ControlStyleTest {
 
             FlowPane row = new FlowPane(18.0, 18.0, supportingLayout, counterLayout, errorLayout);
             row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(row, 820.0, 140.0);
+            Scene scene = new Scene(row, 900.0, 140.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             row.applyCss();
-            row.resize(820.0, 140.0);
+            row.resize(900.0, 140.0);
             row.layout();
 
             WritableImage image = snapshotImageOnFxThread(row);

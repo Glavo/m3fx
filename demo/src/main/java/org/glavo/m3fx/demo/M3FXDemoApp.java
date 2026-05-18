@@ -469,12 +469,14 @@ public final class M3FXDemoApp extends Application {
     private Node createTextFieldsPage() {
         M3TextField filled = createTextField("Filled text field", "", M3TextInputVariant.FILLED, false);
         M3TextField filledText = createTextField("Filled with text", "support@example.com", M3TextInputVariant.FILLED, false);
+        filledText.setPrefWidth(340.0);
         M3TextField filledDisabled = createTextField("Disabled filled", "Read only", M3TextInputVariant.FILLED, true);
         M3TextField outlined = createTextField("Outlined text field", "", M3TextInputVariant.OUTLINED, false);
         M3TextField outlinedText = createTextField("Outlined with text", "M3FX", M3TextInputVariant.OUTLINED, false);
+        outlinedText.setPrefWidth(320.0);
         M3PasswordField password = M3PasswordField.withVariant("", M3TextInputVariant.OUTLINED);
         password.setPromptText("Password");
-        password.setPrefWidth(280.0);
+        password.setPrefWidth(320.0);
         M3TextField filledError = createTextField("Filled error", "Invalid value", M3TextInputVariant.FILLED, false);
         filledError.setError(true);
         M3TextField outlinedError = createTextField("Outlined error", "", M3TextInputVariant.OUTLINED, false);
@@ -505,17 +507,23 @@ public final class M3FXDemoApp extends Application {
 
         M3TextInputLayout filledLayout = createTextInputLayout(filled, "Supporting text");
         M3TextInputLayout filledTextLayout = createTextInputLayout(filledText, "Email address");
+        filledTextLayout.setLeading(createDemoIcon("E", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
+        filledTextLayout.setTrailing(createIconButton("C"));
         filledTextLayout.setCharacterCounterVisible(true);
         filledTextLayout.setCharacterLimit(32);
         M3TextInputLayout filledDisabledLayout = createTextInputLayout(filledDisabled, "Disabled supporting text");
+        filledDisabledLayout.setLeading(createDemoIcon("R", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
         M3TextInputLayout outlinedLayout = createTextInputLayout(outlined, "Outlined supporting text");
         M3TextInputLayout outlinedTextLayout = createTextInputLayout(outlinedText, "Project name");
+        outlinedTextLayout.setLeading(createDemoIcon("T", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
         outlinedTextLayout.setCharacterCounterVisible(true);
         outlinedTextLayout.setCharacterLimit(24);
         M3TextInputLayout passwordLayout = createTextInputLayout(password, "At least 8 characters");
+        passwordLayout.setTrailing(createIconButton("V"));
         M3TextInputLayout filledErrorLayout = createTextInputLayout(filledError, "Supporting text");
         filledErrorLayout.setErrorText("Use a valid value");
         M3TextInputLayout outlinedErrorLayout = createTextInputLayout(outlinedError, "Supporting text");
+        outlinedErrorLayout.setLeading(createDemoIcon("!", M3IconSize.SMALL, M3IconVariant.ERROR));
         outlinedErrorLayout.setErrorText("This field is required");
         M3TextInputLayout passwordErrorLayout = createTextInputLayout(passwordError, "Supporting text");
         passwordErrorLayout.setErrorText("Password cannot be empty");

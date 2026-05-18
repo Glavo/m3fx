@@ -13,14 +13,18 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.css.PseudoClass;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -37,6 +41,15 @@ public class M3TextInputLayout extends VBox {
     /// The style class applied to the wrapped text input control.
     public static final String INPUT_STYLE_CLASS = "m3-text-input-layout-input";
 
+    /// The style class applied to the input and adornment container.
+    public static final String INPUT_CONTAINER_STYLE_CLASS = "m3-text-input-container";
+
+    /// The style class applied to the leading adornment slot.
+    public static final String LEADING_STYLE_CLASS = "m3-text-input-leading";
+
+    /// The style class applied to the trailing adornment slot.
+    public static final String TRAILING_STYLE_CLASS = "m3-text-input-trailing";
+
     /// The style class applied to the supporting text and counter row.
     public static final String SUPPORTING_ROW_STYLE_CLASS = "m3-text-input-supporting-row";
 
@@ -51,6 +64,9 @@ public class M3TextInputLayout extends VBox {
 
     /// The character limit value used when no limit is active.
     private static final int NO_CHARACTER_LIMIT = -1;
+
+    /// The horizontal input padding reserved for each active adornment slot.
+    private static final double ADORNED_HORIZONTAL_PADDING = 48.0;
 
     /// The wrapped text input control.
     private final ObjectProperty<@Nullable TextInputControl> input =
@@ -68,6 +84,24 @@ public class M3TextInputLayout extends VBox {
                     updateInput();
                 }
             };
+
+    /// The leading adornment node.
+    private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
+        /// Updates the leading slot when the node changes.
+        @Override
+        protected void invalidated() {
+            updateLeading();
+        }
+    };
+
+    /// The trailing adornment node.
+    private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
+        /// Updates the trailing slot when the node changes.
+        @Override
+        protected void invalidated() {
+            updateTrailing();
+        }
+    };
 
     /// The supporting text displayed when no error is active.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
@@ -126,12 +160,33 @@ public class M3TextInputLayout extends VBox {
         }
     };
 
+    /// Whether the layout is currently applying adornment-aware input padding.
+    private boolean applyingInputPadding = false;
+
     /// The listener used to track text length changes in the wrapped input.
     private final ChangeListener<String> textListener =
             (observable, oldValue, newValue) -> {
                 updateInputErrorState();
                 updateSupportingRow();
             };
+
+    /// The listener used to track input padding changes from CSS or application code.
+    private final ChangeListener<Insets> paddingListener =
+            (observable, oldValue, newValue) -> {
+                if (!applyingInputPadding) {
+                    installedInputBasePadding = Objects.requireNonNull(newValue, "newValue");
+                    updateInputPadding();
+                }
+            };
+
+    /// The container that overlays leading and trailing adornments over the input.
+    private final StackPane inputContainer = new StackPane();
+
+    /// The slot that renders the leading adornment.
+    private final StackPane leadingSlot = new StackPane();
+
+    /// The slot that renders the trailing adornment.
+    private final StackPane trailingSlot = new StackPane();
 
     /// The row containing supporting text, spacer, and counter labels.
     private final HBox supportingRow = new HBox();
@@ -147,6 +202,9 @@ public class M3TextInputLayout extends VBox {
 
     /// The previously installed input node.
     private @Nullable TextInputControl installedInput = null;
+
+    /// The input padding captured before adornment padding is applied.
+    private @Nullable Insets installedInputBasePadding = null;
 
     /// Whether this layout applied the current error state to the installed input.
     private boolean inputErrorWasApplied = false;
@@ -187,6 +245,36 @@ public class M3TextInputLayout extends VBox {
     public final @Nullable M3TextInput getTextInput() {
         TextInputControl input = getInput();
         return input instanceof M3TextInput textInput ? textInput : null;
+    }
+
+    /// Returns the leading adornment node.
+    public final @Nullable Node getLeading() {
+        return leading.get();
+    }
+
+    /// Sets the leading adornment node.
+    public final void setLeading(@Nullable Node leading) {
+        this.leading.set(leading);
+    }
+
+    /// Returns the leading adornment node property.
+    public final ObjectProperty<@Nullable Node> leadingProperty() {
+        return leading;
+    }
+
+    /// Returns the trailing adornment node.
+    public final @Nullable Node getTrailing() {
+        return trailing.get();
+    }
+
+    /// Sets the trailing adornment node.
+    public final void setTrailing(@Nullable Node trailing) {
+        this.trailing.set(trailing);
+    }
+
+    /// Returns the trailing adornment node property.
+    public final ObjectProperty<@Nullable Node> trailingProperty() {
+        return trailing;
     }
 
     /// Returns the supporting text shown when no error is active.
@@ -273,6 +361,8 @@ public class M3TextInputLayout extends VBox {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case FOCUS_NODE -> getInput();
+            case ITEM_COUNT -> accessibleItemCount();
+            case ITEM_AT_INDEX -> accessibleItemAt(parameters);
             case TEXT -> accessibleText();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -298,6 +388,13 @@ public class M3TextInputLayout extends VBox {
         setAccessibleRole(AccessibleRole.PARENT);
         setFillWidth(true);
 
+        inputContainer.getStyleClass().add(INPUT_CONTAINER_STYLE_CLASS);
+        leadingSlot.getStyleClass().add(LEADING_STYLE_CLASS);
+        trailingSlot.getStyleClass().add(TRAILING_STYLE_CLASS);
+        StackPane.setAlignment(leadingSlot, Pos.CENTER_LEFT);
+        StackPane.setAlignment(trailingSlot, Pos.CENTER_RIGHT);
+        inputContainer.getChildren().setAll(leadingSlot, trailingSlot);
+
         supportingRow.getStyleClass().add(SUPPORTING_ROW_STYLE_CLASS);
         supportingLabel.getStyleClass().add(SUPPORTING_TEXT_STYLE_CLASS);
         supportingLabel.setWrapText(true);
@@ -305,7 +402,10 @@ public class M3TextInputLayout extends VBox {
 
         HBox.setHgrow(supportingSpacer, Priority.ALWAYS);
         supportingRow.getChildren().setAll(supportingLabel, supportingSpacer, counterLabel);
-        getChildren().add(supportingRow);
+        getChildren().addAll(inputContainer, supportingRow);
+        updateInputContainer();
+        updateLeading();
+        updateTrailing();
         updateSupportingRow();
     }
 
@@ -313,30 +413,115 @@ public class M3TextInputLayout extends VBox {
     private void updateInput() {
         TextInputControl oldInput = installedInput;
         supportingRow.disableProperty().unbind();
+        leadingSlot.disableProperty().unbind();
+        trailingSlot.disableProperty().unbind();
         supportingRow.setDisable(false);
+        leadingSlot.setDisable(false);
+        trailingSlot.setDisable(false);
         if (oldInput != null) {
             oldInput.textProperty().removeListener(textListener);
+            oldInput.paddingProperty().removeListener(paddingListener);
             oldInput.getStyleClass().remove(INPUT_STYLE_CLASS);
+            restoreInputPadding(oldInput);
             if (inputErrorWasApplied && oldInput instanceof M3TextInput textInput) {
                 textInput.setError(false);
             }
-            getChildren().remove(oldInput);
+            inputContainer.getChildren().remove(oldInput);
         }
 
         inputErrorWasApplied = false;
         installedInput = null;
+        installedInputBasePadding = null;
 
         TextInputControl newInput = getInput();
         if (newInput != null) {
             M3ControlStyles.add(newInput, INPUT_STYLE_CLASS);
             newInput.textProperty().addListener(textListener);
             supportingRow.disableProperty().bind(newInput.disabledProperty());
+            leadingSlot.disableProperty().bind(newInput.disabledProperty());
+            trailingSlot.disableProperty().bind(newInput.disabledProperty());
             installedInput = newInput;
-            getChildren().add(0, newInput);
+            installedInputBasePadding = newInput.getPadding();
+            newInput.paddingProperty().addListener(paddingListener);
+            inputContainer.getChildren().add(0, newInput);
         }
 
+        updateInputContainer();
+        updateInputPadding();
         updateInputErrorState();
         updateSupportingRow();
+    }
+
+    /// Updates the input container visibility.
+    private void updateInputContainer() {
+        boolean visible = getInput() != null;
+        inputContainer.setVisible(visible);
+        inputContainer.setManaged(visible);
+    }
+
+    /// Updates the leading adornment slot.
+    private void updateLeading() {
+        Node leading = getLeading();
+        leadingSlot.getChildren().clear();
+        if (leading != null) {
+            leadingSlot.getChildren().add(leading);
+        }
+        updateAdornmentSlot(leadingSlot, leading);
+        updateInputPadding();
+    }
+
+    /// Updates the trailing adornment slot.
+    private void updateTrailing() {
+        Node trailing = getTrailing();
+        trailingSlot.getChildren().clear();
+        if (trailing != null) {
+            trailingSlot.getChildren().add(trailing);
+        }
+        updateAdornmentSlot(trailingSlot, trailing);
+        updateInputPadding();
+    }
+
+    /// Updates common adornment slot visibility.
+    private static void updateAdornmentSlot(StackPane slot, @Nullable Node content) {
+        boolean visible = content != null;
+        slot.setVisible(visible);
+        slot.setManaged(visible);
+        slot.setMouseTransparent(content == null);
+    }
+
+    /// Restores the input padding captured before adornments were installed.
+    private void restoreInputPadding(TextInputControl input) {
+        Insets basePadding = installedInputBasePadding;
+        if (basePadding != null) {
+            applyingInputPadding = true;
+            try {
+                input.setPadding(basePadding);
+            } finally {
+                applyingInputPadding = false;
+            }
+        }
+    }
+
+    /// Updates the wrapped input padding so text does not overlap adornments.
+    private void updateInputPadding() {
+        TextInputControl input = installedInput;
+        Insets basePadding = installedInputBasePadding;
+        if (input == null || basePadding == null) {
+            return;
+        }
+
+        double left = getLeading() == null
+                ? basePadding.getLeft()
+                : Math.max(basePadding.getLeft(), ADORNED_HORIZONTAL_PADDING);
+        double right = getTrailing() == null
+                ? basePadding.getRight()
+                : Math.max(basePadding.getRight(), ADORNED_HORIZONTAL_PADDING);
+        applyingInputPadding = true;
+        try {
+            input.setPadding(new Insets(basePadding.getTop(), right, basePadding.getBottom(), left));
+        } finally {
+            applyingInputPadding = false;
+        }
     }
 
     /// Applies the layout-owned error state to the wrapped input.
@@ -409,6 +594,47 @@ public class M3TextInputLayout extends VBox {
             return counter;
         }
         return counter.isEmpty() ? message : message + " " + counter;
+    }
+
+    /// Returns the number of accessible input layout child items.
+    private int accessibleItemCount() {
+        int count = 0;
+        if (getLeading() != null) {
+            count++;
+        }
+        if (getInput() != null) {
+            count++;
+        }
+        if (getTrailing() != null) {
+            count++;
+        }
+        return count;
+    }
+
+    /// Returns one accessible input layout child item by index.
+    private @Nullable Node accessibleItemAt(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+
+        Node leading = getLeading();
+        if (leading != null) {
+            if (index == 0) {
+                return leading;
+            }
+            index--;
+        }
+
+        TextInputControl input = getInput();
+        if (input != null) {
+            if (index == 0) {
+                return input;
+            }
+            index--;
+        }
+
+        return index == 0 ? getTrailing() : null;
     }
 
     /// Validates that a wrapped input can render Material text input error state.

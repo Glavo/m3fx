@@ -137,6 +137,21 @@
     -fx-spacing: 4px;
 }
 
+.m3-text-input-container {
+    -fx-alignment: center;
+}
+
+.m3-text-input-leading,
+.m3-text-input-trailing {
+    -fx-alignment: center;
+    -fx-min-width: 48px;
+    -fx-pref-width: 48px;
+    -fx-max-width: 48px;
+    -fx-min-height: 56px;
+    -fx-pref-height: 56px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
 .m3-text-input-supporting-row {
     -fx-alignment: center-left;
     -fx-padding: 0 16px 0 16px;
@@ -154,6 +169,8 @@
     -fx-text-fill: -m3-color-error;
 }
 
+.m3-text-input-leading:disabled,
+.m3-text-input-trailing:disabled,
 .m3-text-input-supporting-row:disabled {
     -fx-opacity: 0.38;
 }
