@@ -666,7 +666,7 @@ public final class M3FXDemoApp extends Application {
     private Node createSegmentedButtonsPage() {
         M3SegmentedButtonGroup dateRange = createSegmentedGroup("Day", "Week", "Month");
         M3SegmentedButtonGroup priority = createSegmentedGroup("Low", "Medium", "High");
-        ((M3SegmentedButton) priority.getChildren().get(2)).setDisable(true);
+        priority.getChildren().get(2).setDisable(true);
         M3SegmentedButtonGroup channels = createSegmentedGroup("Email", "Chat", "Push");
         channels.clearSelection();
         channels.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);
@@ -684,7 +684,7 @@ public final class M3FXDemoApp extends Application {
     private Node createTabsPage() {
         M3TabBar primary = createTabBar("Overview", "Activity", "Files");
         M3TabBar disabled = createTabBar("Today", "Week", "Month");
-        ((M3Tab) disabled.getTabs().get(2)).setDisable(true);
+        disabled.getTabs().get(2).setDisable(true);
 
         return createGallery(
                 createShowcaseGroup("Primary", primary),

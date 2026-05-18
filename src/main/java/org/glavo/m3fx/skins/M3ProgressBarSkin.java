@@ -129,24 +129,24 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         clip.setHeight(thickness);
         clip.setArcWidth(radius * 2.0);
         clip.setArcHeight(radius * 2.0);
-        layoutRectangle(track, 0.0, 0.0, width, thickness, radius);
-        layoutBar(0.0, 0.0, width, thickness, radius);
+        layoutRectangle(track, 0.0, width, thickness, radius);
+        layoutBar(width, thickness, radius);
     }
 
     /// Lays out the determinate or indeterminate bar region.
-    private void layoutBar(double x, double y, double width, double height, double radius) {
+    private void layoutBar(double width, double height, double radius) {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
-            double segmentX = x - segmentWidth + (width + segmentWidth) * indeterminatePosition.get();
+            double segmentX = -segmentWidth + (width + segmentWidth) * indeterminatePosition.get();
             bar.setVisible(true);
-            layoutRectangle(bar, segmentX, y, segmentWidth, height, radius);
+            layoutRectangle(bar, segmentX, segmentWidth, height, radius);
             return;
         }
 
         double progressWidth = width * displayedProgress.get();
         bar.setVisible(progressWidth > 0.0);
-        layoutRectangle(bar, x, y, progressWidth, height, Math.min(radius, progressWidth / 2.0));
+        layoutRectangle(bar, 0.0, progressWidth, height, Math.min(radius, progressWidth / 2.0));
     }
 
     /// Updates determinate or indeterminate animation state for the current progress value.
@@ -200,13 +200,12 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     private static void layoutRectangle(
             Rectangle rectangle,
             double x,
-            double y,
             double width,
             double height,
             double radius
     ) {
         rectangle.setX(x);
-        rectangle.setY(y);
+        rectangle.setY(0.0);
         rectangle.setWidth(width);
         rectangle.setHeight(height);
         rectangle.setArcWidth(radius * 2.0);
