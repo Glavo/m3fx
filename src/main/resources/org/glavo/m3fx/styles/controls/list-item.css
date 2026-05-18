@@ -2,6 +2,16 @@
     -fx-background-color: transparent;
 }
 
+.m3-list-section-header {
+    -fx-alignment: center-left;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-padding: 0px 16px 0px 16px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+}
+
 .m3-list-item {
     -m3-one-line-height: 56px;
     -m3-two-line-height: 72px;

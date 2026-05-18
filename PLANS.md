@@ -56,7 +56,7 @@
 - App bars: top app bar variants and bottom app bar with configurable floating action alignment.
 - Menus and search: menu, menu item, submenu item with hover and keyboard opening, menu section header, menu button with edge-aware popup placement, search bar, and search view with customizable result content and action slots.
 - Feedback and progress: banner, snackbar, snackbar host with queued messages, plain tooltip, rich tooltip, linear progress, and circular progress.
-- Containment and utility: surface, card, dialog, dialog pane, side sheet, bottom sheet, scrim, divider, list, and list item.
+- Containment and utility: surface, card, dialog, dialog pane, side sheet, bottom sheet, scrim, divider, list, list item, and list section header.
 - Composition-heavy controls expose mutable child lists and convenience constructors or factories where they simplify common usage without hiding node ownership.
 
 ### Demo And Verification
@@ -71,7 +71,7 @@
 
 - Expand Material motion coverage so hover, press, release, selection, shape, indicator, and elevation transitions consistently use tokenized timing and easing.
 - Broaden visual checks beyond static contrast and color variety toward geometry, clipping, alignment, and animation-state assertions.
-- Continue filling component gaps such as additional list layouts, richer popup nesting policies, and more complete text input label and validation affordances.
+- Continue filling component gaps such as richer list item media and density variants, richer popup nesting policies, and more complete text input label and validation affordances.
 - Tighten accessibility behavior for composite controls, especially indexed children, selection state, role choice, and keyboard navigation.
 - Add more focused demo pages for complex components whose behavior is hard to inspect in a single static gallery.
 - Document runtime packaging choices for applications that want regular jars, demo shadow jars, or jlink images.

@@ -61,6 +61,7 @@ import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
 import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3List;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListSelectionMode;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
@@ -852,15 +853,17 @@ public final class M3FXDemoApp extends Application {
         list.getStyleClass().add("demo-list");
         list.setSelectionMode(M3ListSelectionMode.SINGLE);
         list.getItems().addAll(
+                new M3ListSectionHeader("Recent"),
                 oneLine,
                 new M3Divider(),
                 twoLine,
                 new M3Divider(),
                 threeLine,
                 new M3Divider(),
+                new M3ListSectionHeader("Pinned"),
                 selected
         );
-        list.selectIndex(6);
+        list.select(selected);
 
         return createGallery(createShowcaseGroup("Rows", list));
     }

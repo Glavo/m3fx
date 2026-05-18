@@ -4463,6 +4463,48 @@ final class M3ControlStyleTest {
         assertEquals(0, list.getSelectedIndex());
     }
 
+    /// Verifies that list section headers behave as non-selectable list content.
+    @Test
+    void listSectionHeadersAreNonSelectableContent() {
+        M3ListSectionHeader primaryHeader = new M3ListSectionHeader("Primary");
+        M3ListSectionHeader secondaryHeader = new M3ListSectionHeader("Secondary");
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem second = new M3ListItem("Second");
+        M3List list = new M3List(primaryHeader, first, new M3Divider(), secondaryHeader, second);
+
+        list.setSelectionMode(M3ListSelectionMode.SINGLE);
+        list.selectFirst();
+
+        assertEquals(first, list.getSelectedItem());
+        assertEquals(1, list.getSelectedIndex());
+        assertFalse(primaryHeader.isFocusTraversable());
+        assertFalse(secondaryHeader.isFocusTraversable());
+        assertThrows(IllegalArgumentException.class, () -> list.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> list.selectIndex(3));
+
+        list.selectLast();
+
+        assertEquals(second, list.getSelectedItem());
+        assertEquals(4, list.getSelectedIndex());
+        assertEquals(5, list.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(primaryHeader, list.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertEquals(secondaryHeader, list.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 3));
+    }
+
+    /// Verifies that list section headers use list typography and spacing tokens.
+    @Test
+    void listSectionHeaderUsesListStylesheet() {
+        M3ListSectionHeader header = new M3ListSectionHeader("Pinned");
+
+        applyCss(header);
+
+        assertEquals("Pinned", header.getText());
+        assertTrue(header.getStyleClass().contains(M3ListSectionHeader.STYLE_CLASS));
+        assertEquals(AccessibleRole.TEXT, header.getAccessibleRole());
+        assertInstanceOf(M3TextSkin.class, header.getSkin());
+        assertEquals(48.0, header.prefHeight(320.0), 0.0001);
+    }
+
     /// Verifies that lists can use multiple selected items.
     @Test
     void listCanUseMultipleSelection() {
@@ -5546,6 +5588,9 @@ final class M3ControlStyleTest {
             M3ListItem listItem = new M3ListItem("Inbox");
             listItem.setSupportingText("Latest updates");
             listItem.setSelected(true);
+            M3ListSectionHeader listHeader = new M3ListSectionHeader("Recent");
+            M3List list = new M3List(listHeader, listItem, new M3Divider(), new M3ListItem("Archive"));
+            list.setPrefWidth(280.0);
             M3Card card = new M3Card(new Label("Elevated card"));
             card.setVariant(M3CardVariant.ELEVATED);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
@@ -5553,19 +5598,20 @@ final class M3ControlStyleTest {
             M3NavigationItem search = new M3NavigationItem("Search", new M3Icon("S"));
             M3NavigationBar navigationBar = new M3NavigationBar(home, search);
 
-            FlowPane topRow = new FlowPane(18.0, 18.0, avatar, badgedBox, listItem, card);
+            FlowPane topRow = new FlowPane(18.0, 18.0, avatar, badgedBox, list, card);
             VBox root = new VBox(18.0, topRow, snackbar, navigationBar);
             root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(root, 640.0, 300.0);
+            Scene scene = new Scene(root, 640.0, 420.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
-            root.resize(640.0, 300.0);
+            root.resize(640.0, 420.0);
             root.layout();
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, avatar, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, badgedBox, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, list, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, listItemContainer(listItem), Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, lookupRegion(card, ".m3-card-container"), Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, lookupRegion(snackbar, ".m3-snackbar-container"), Color.WHITE, 0.1);
@@ -5737,7 +5783,13 @@ final class M3ControlStyleTest {
             selectedListItem.setTrailing(new M3Badge("2"));
             selectedListItem.setSupportingText("Supporting text");
             selectedListItem.setSelected(true);
-            M3List list = new M3List(selectedListItem, new M3ListItem("List item"));
+            M3List list = new M3List(
+                    new M3ListSectionHeader("Inbox"),
+                    selectedListItem,
+                    new M3Divider(),
+                    new M3ListSectionHeader("Labels"),
+                    new M3ListItem("List item")
+            );
             list.setPrefWidth(300.0);
             M3MenuItem selectedMenuItem = new M3MenuItem("Selected menu item", new M3Icon("M"));
             selectedMenuItem.setSelected(true);
@@ -6232,6 +6284,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3NavigationItem("Home").getStyleClass().contains(M3NavigationItem.STYLE_CLASS));
         assertTrue(new M3List().getStyleClass().contains(M3List.STYLE_CLASS));
         assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));
+        assertTrue(new M3ListSectionHeader("Section").getStyleClass().contains(M3ListSectionHeader.STYLE_CLASS));
     }
 
     /// Verifies that M3FX controls avoid concrete JavaFX control inheritance.
@@ -6248,6 +6301,7 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.Tooltip.class.isAssignableFrom(M3Tooltip.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Icon.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Text.class));
+        assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3ListSectionHeader.class));
         assertFalse(StackPane.class.isAssignableFrom(M3Avatar.class));
         assertFalse(StackPane.class.isAssignableFrom(M3BadgedBox.class));
         assertFalse(StackPane.class.isAssignableFrom(M3Surface.class));
@@ -6673,6 +6727,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.PARENT, new M3SearchView().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3List().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_ITEM, new M3ListItem().getAccessibleRole());
+        assertEquals(AccessibleRole.TEXT, new M3ListSectionHeader().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3ChipGroup().getAccessibleRole());
         assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3Chip().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3IconToggleButtonGroup().getAccessibleRole());
@@ -6737,6 +6792,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3NavigationItem(), "/styles/controls/navigation-bar.css");
         assertUserAgentStylesheet(new M3List(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3ListItem(), "/styles/controls/list-item.css");
+        assertUserAgentStylesheet(new M3ListSectionHeader(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");
         assertUserAgentStylesheet(new M3DialogPane(), "/styles/controls/dialog.css");
         assertUserAgentStylesheet(new M3Banner(), "/styles/controls/banner.css");
