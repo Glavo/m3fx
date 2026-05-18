@@ -358,6 +358,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendButtonRule(builder, ".m3-elevated-button", elevatedButton());
         appendButtonRule(builder, ".m3-icon-button", iconButton());
         appendButtonRule(builder, ".m3-icon-toggle-button", iconButton());
+        appendConnectedButtonRules(builder, filledButton());
         appendFabRule(
                 builder,
                 ".m3-small-fab",
@@ -749,6 +750,77 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 radius,
                 "0"
         );
+    }
+
+    /// Appends connected button group and split button override rules.
+    private static void appendConnectedButtonRules(StringBuilder builder, ButtonTokens tokens) {
+        String radius = M3TokenCss.pixels(tokens.containerShape());
+        beginRule(builder, ".m3-button.m3-grouped-button");
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(20.0));
+        endRule(builder);
+
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button.m3-button-group-single",
+                radius,
+                radius,
+                radius,
+                radius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button.m3-button-group-first",
+                radius,
+                "0",
+                "0",
+                radius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button.m3-button-group-middle",
+                "0",
+                "0",
+                "0",
+                "0"
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button.m3-button-group-last",
+                "0",
+                radius,
+                radius,
+                "0"
+        );
+
+        beginRule(builder, ".m3-button.m3-split-button-action");
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(20.0));
+        appendDeclaration(builder, "-fx-background-radius", radius + " 0 0 " + radius);
+        appendDeclaration(builder, "-fx-border-radius", radius + " 0 0 " + radius);
+        endRule(builder);
+
+        beginRule(builder, ".m3-button.m3-split-button-menu");
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(0.0));
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(48.0));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(48.0));
+        appendDeclaration(builder, "-fx-background-radius", "0 " + radius + " " + radius + " 0");
+        appendDeclaration(builder, "-fx-border-radius", "0 " + radius + " " + radius + " 0");
+        endRule(builder);
+    }
+
+    /// Appends a connected button position shape CSS rule.
+    private static void appendConnectedButtonShapeRule(
+            StringBuilder builder,
+            String selector,
+            String topLeft,
+            String topRight,
+            String bottomRight,
+            String bottomLeft
+    ) {
+        String radii = topLeft + " " + topRight + " " + bottomRight + " " + bottomLeft;
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", radii);
+        appendDeclaration(builder, "-fx-border-radius", radii);
+        endRule(builder);
     }
 
     /// Appends a segmented button position shape CSS rule.

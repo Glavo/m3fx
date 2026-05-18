@@ -18,11 +18,13 @@ import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3ButtonGroup;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
+import org.glavo.m3fx.controls.M3SplitButton;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A base animated skin for m3fx labeled button controls.
@@ -282,6 +284,9 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             layoutSegmentedButtonStateLayer(segmentedButton, width, height);
             return;
         }
+        if (control instanceof M3Button button && layoutGroupedButtonStateLayer(button, width, height)) {
+            return;
+        }
         stateLayer.layoutLayer(0.0, 0.0, width, height, stateLayerShapeRadius());
     }
 
@@ -299,6 +304,30 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         } else {
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
         }
+    }
+
+    /// Lays out button feedback with button-group or split-button corner radii.
+    private boolean layoutGroupedButtonStateLayer(M3Button button, double width, double height) {
+        double radius = button.getContainerShape();
+        if (button.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
+            return true;
+        }
+        if (button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, 0.0, width, height, radius, 0.0, 0.0, radius);
+            return true;
+        }
+        if (button.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0);
+            return true;
+        }
+        if (button.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS)) {
+            stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0, radius, radius, 0.0);
+            return true;
+        }
+        return false;
     }
 
     /// Returns the shape radius used to clip state layer feedback.

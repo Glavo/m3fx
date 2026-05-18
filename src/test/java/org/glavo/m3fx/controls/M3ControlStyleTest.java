@@ -409,6 +409,82 @@ final class M3ControlStyleTest {
         assertEquals(48.0, button.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that button groups assign connected position style classes.
+    @Test
+    void buttonGroupAssignsPositionStyleClasses() {
+        M3Button first = new M3Button("First");
+        M3Button second = new M3Button("Second");
+        M3Button third = new M3Button("Third");
+        M3ButtonGroup group = new M3ButtonGroup(first, second, third);
+
+        assertTrue(group.getStyleClass().contains(M3ButtonGroup.STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
+        assertTrue(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+        assertEquals(3, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(second, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+        group.getItems().remove(second);
+
+        assertFalse(second.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
+        assertFalse(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+
+        group.getItems().remove(first);
+
+        assertFalse(first.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS));
+    }
+
+    /// Verifies that split buttons delegate action and menu APIs to their child buttons.
+    @Test
+    void splitButtonDelegatesActionAndMenuApis() {
+        M3MenuItem first = new M3MenuItem("First");
+        M3MenuItem second = new M3MenuItem("Second");
+        M3SplitButton splitButton = new M3SplitButton("Create", first, second);
+        AtomicInteger actions = new AtomicInteger();
+
+        splitButton.setOnAction(event -> actions.incrementAndGet());
+        splitButton.fire();
+        splitButton.setVariant(M3ButtonVariant.OUTLINED);
+        splitButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        splitButton.setAllowEmptySelection(false);
+        splitButton.selectIndex(1);
+
+        assertEquals(1, actions.get());
+        assertEquals("Create", splitButton.getText());
+        assertEquals(splitButton.getActionButton().getText(), splitButton.textProperty().get());
+        assertEquals(M3ButtonVariant.OUTLINED, splitButton.getActionButton().getVariant());
+        assertEquals(M3ButtonVariant.OUTLINED, splitButton.getMenuButton().getVariant());
+        assertEquals(second, splitButton.getSelectedItem());
+        assertEquals(1, splitButton.getSelectedIndex());
+        assertEquals(splitButton.getMenu(), splitButton.queryAccessibleAttribute(AccessibleAttribute.SUBMENU));
+        assertEquals(2, splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(splitButton.getMenuButton(), splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertFalse(splitButton.isShowing());
+    }
+
+    /// Verifies that split buttons apply stable style classes to both child button parts.
+    @Test
+    void splitButtonAppliesPartStyleClasses() {
+        M3SplitButton splitButton = M3SplitButton.withVariant(
+                "Export",
+                M3ButtonVariant.TONAL,
+                new M3MenuItem("PDF")
+        );
+
+        assertTrue(splitButton.getStyleClass().contains(M3SplitButton.STYLE_CLASS));
+        assertTrue(splitButton.getActionButton().getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS));
+        assertTrue(splitButton.getMenuButton().getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS));
+
+        applyCss(splitButton);
+
+        assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
+        assertEquals(0.0, splitButton.getMenuButton().getHorizontalPadding(), 0.0001);
+    }
+
     /// Verifies that floating action button component token properties are styleable from CSS.
     @Test
     void floatingActionButtonTokensAreStyleable() {
@@ -5940,6 +6016,16 @@ final class M3ControlStyleTest {
             M3Button elevatedButton = M3Button.withVariant("Elevated", M3ButtonVariant.ELEVATED);
             M3Button disabledButton = M3Button.withVariant("Disabled", M3ButtonVariant.FILLED);
             disabledButton.setDisable(true);
+            M3ButtonGroup buttonGroup = new M3ButtonGroup(
+                    M3Button.withVariant("Edit", M3ButtonVariant.TONAL),
+                    M3Button.withVariant("Share", M3ButtonVariant.TONAL),
+                    M3Button.withVariant("Done", M3ButtonVariant.TONAL)
+            );
+            M3SplitButton splitButton = M3SplitButton.withVariant(
+                    "Create",
+                    M3ButtonVariant.OUTLINED,
+                    new M3MenuItem("Copy")
+            );
 
             M3IconButton iconButton = new M3IconButton(new M3Icon("i"));
             M3IconToggleButton standardToggle = M3IconToggleButton.withIcon(
@@ -6176,6 +6262,8 @@ final class M3ControlStyleTest {
                             textButton,
                             elevatedButton,
                             disabledButton,
+                            buttonGroup,
+                            splitButton,
                             iconButton,
                             iconToggleGroup,
                             smallFab,
@@ -6215,6 +6303,8 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, badge, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, filledButton, Color.WHITE, 0.08);
             assertSnapshotNodeBorderContainsContrast(image, outlinedButton, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, buttonGroup, Color.WHITE, 0.04);
+            assertSnapshotNodeBorderContainsContrast(image, splitButton, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, iconToggleGroup, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, filledField, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, outlinedField, Color.WHITE, 0.04);
@@ -6509,6 +6599,8 @@ final class M3ControlStyleTest {
         M3NavigationRail navigationRail = new M3NavigationRail();
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
 
+        assertTrue(new M3ButtonGroup().getStyleClass().contains(M3ButtonGroup.STYLE_CLASS));
+        assertTrue(new M3SplitButton("Create").getStyleClass().contains(M3SplitButton.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3Card.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.getStyleClass()));
         assertTrue(banner.getStyleClass().contains(M3Banner.STYLE_CLASS));
@@ -6580,6 +6672,9 @@ final class M3ControlStyleTest {
     @Test
     void controlsDoNotExtendConcreteJavaFxControls() {
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3Button.class));
+        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3ButtonGroup.class));
+        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3SplitButton.class));
+        assertFalse(javafx.scene.control.MenuButton.class.isAssignableFrom(M3SplitButton.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3FloatingActionButton.class));
         assertFalse(javafx.scene.control.CheckBox.class.isAssignableFrom(M3CheckBox.class));
         assertFalse(javafx.scene.control.RadioButton.class.isAssignableFrom(M3RadioButton.class));
@@ -6973,6 +7068,8 @@ final class M3ControlStyleTest {
         });
 
         assertEquals(AccessibleRole.BUTTON, new M3Button().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3ButtonGroup().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3SplitButton().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3IconButton().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3FloatingActionButton().getAccessibleRole());
         assertEquals(AccessibleRole.CHECK_BOX, new M3CheckBox().getAccessibleRole());
@@ -7037,6 +7134,8 @@ final class M3ControlStyleTest {
     @Test
     void controlsExposeUserAgentStylesheets() {
         assertUserAgentStylesheet(new M3Button(), "/styles/controls/button.css");
+        assertUserAgentStylesheet(new M3ButtonGroup(), "/styles/controls/button-group.css");
+        assertUserAgentStylesheet(new M3SplitButton(), "/styles/controls/split-button.css");
         assertUserAgentStylesheet(new M3IconButton(), "/styles/controls/button.css");
         assertUserAgentStylesheet(new M3IconToggleButton(), "/styles/controls/icon-toggle-button.css");
         assertUserAgentStylesheet(new M3IconToggleButtonGroup(), "/styles/controls/icon-toggle-button.css");

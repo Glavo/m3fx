@@ -37,6 +37,7 @@ import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3ButtonGroup;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
@@ -88,6 +89,7 @@ import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SnackbarHost;
+import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
@@ -265,11 +267,13 @@ public final class M3FXDemoApp extends Application {
     /// Creates all component demo pages.
     private List<DemoPage> createPages() {
         return List.of(
+                new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", this::createButtonGroupsPage),
                 new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", this::createButtonsPage),
                 new DemoPage("Extended FABs", "Extended FABs", BUTTONS_GROUP, "Extended floating action button examples", this::createExtendedFabsPage),
                 new DemoPage("Floating Action Buttons", "Floating action buttons (FABs)", BUTTONS_GROUP, "Floating action button sizes and variants", this::createFloatingActionButtonsPage),
                 new DemoPage("Icon Buttons", "Icon buttons", BUTTONS_GROUP, "Icon button and toggle icon button states", this::createIconButtonsPage),
                 new DemoPage("Segmented Buttons", "Segmented buttons", BUTTONS_GROUP, "Single- and multi-select segmented control states", this::createSegmentedButtonsPage),
+                new DemoPage("Split Buttons", "Split buttons", BUTTONS_GROUP, "Primary actions with attached menus", this::createSplitButtonsPage),
                 new DemoPage("Loading Indicator", "Loading indicator", LOADING_PROGRESS_GROUP, "Indeterminate loading indicators", this::createLoadingIndicatorPage),
                 new DemoPage("Progress", "Progress indicators", LOADING_PROGRESS_GROUP, "Linear and circular progress indicators", this::createProgressPage),
                 new DemoPage("Navigation", "Navigation bar", NAVIGATION_GROUP, "Bottom navigation items and selected indicators", this::createNavigationPage),
@@ -388,6 +392,35 @@ public final class M3FXDemoApp extends Application {
             animation.stop();
         }
         animations.clear();
+    }
+
+    /// Creates the button group component page.
+    private Node createButtonGroupsPage() {
+        M3ButtonGroup tonalGroup = new M3ButtonGroup(
+                createButton("Edit", M3ButtonVariant.TONAL),
+                createButton("Share", M3ButtonVariant.TONAL),
+                createButton("Archive", M3ButtonVariant.TONAL)
+        );
+
+        M3ButtonGroup outlinedGroup = new M3ButtonGroup(
+                createButton("Day", M3ButtonVariant.OUTLINED),
+                createButton("Week", M3ButtonVariant.OUTLINED),
+                createButton("Month", M3ButtonVariant.OUTLINED)
+        );
+
+        M3Button disabled = createButton("Disabled", M3ButtonVariant.FILLED);
+        disabled.setDisable(true);
+        M3ButtonGroup filledGroup = new M3ButtonGroup(
+                createButton("Accept", M3ButtonVariant.FILLED),
+                createButton("Review", M3ButtonVariant.FILLED),
+                disabled
+        );
+
+        return createGallery(
+                createShowcaseGroup("Tonal Group", tonalGroup),
+                createShowcaseGroup("Outlined Group", outlinedGroup),
+                createShowcaseGroup("Filled Group", filledGroup)
+        );
     }
 
     /// Creates the button component page.
@@ -798,6 +831,19 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup("Date Range", dateRange),
                 createShowcaseGroup("Availability", priority),
                 createShowcaseGroup("Multi Select", channels)
+        );
+    }
+
+    /// Creates the split button component page.
+    private Node createSplitButtonsPage() {
+        M3SplitButton tonal = createSplitButton("Create", M3ButtonVariant.TONAL);
+        M3SplitButton outlined = createSplitButton("Export", M3ButtonVariant.OUTLINED);
+        M3SplitButton filled = createSplitButton("Publish", M3ButtonVariant.FILLED);
+        M3SplitButton disabled = createSplitButton("Disabled", M3ButtonVariant.TONAL);
+        disabled.setDisable(true);
+
+        return createGallery(
+                createShowcaseGroup("Variants", tonal, outlined, filled, disabled)
         );
     }
 
@@ -1219,6 +1265,19 @@ public final class M3FXDemoApp extends Application {
     /// Creates a button configured with the requested variant.
     private static M3Button createButton(String text, M3ButtonVariant variant) {
         return M3Button.withVariant(text, variant);
+    }
+
+    /// Creates a split button configured with the requested variant.
+    private M3SplitButton createSplitButton(String text, M3ButtonVariant variant) {
+        M3SplitButton splitButton = M3SplitButton.withVariant(
+                text,
+                variant,
+                new M3MenuItem("Duplicate"),
+                new M3MenuItem("Move"),
+                new M3MenuItem("Delete")
+        );
+        splitButton.setOnAction(event -> showSnackbar());
+        return splitButton;
     }
 
     /// Creates a text field for the page gallery.
