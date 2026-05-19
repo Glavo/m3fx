@@ -58,6 +58,9 @@ import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
+import org.glavo.m3fx.controls.M3FormPane;
+import org.glavo.m3fx.controls.M3FormRow;
+import org.glavo.m3fx.controls.M3FormSection;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconSize;
@@ -318,6 +321,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Toolbars", "Toolbars", ALL_OTHER_COMPONENTS_GROUP, "Bottom app bars with actions and floating actions", this::createBottomAppBarsPage),
                 new DemoPage("Tooltips", "Tooltips", ALL_OTHER_COMPONENTS_GROUP, "Plain and longer contextual help", this::createTooltipsPage),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", this::createBannersPage),
+                new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", this::createFormsPage),
                 new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", this::createTypographyPage),
                 new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", this::createIconsPage),
                 new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_GROUP, "Initials and graphic avatar slots", this::createAvatarsPage),
@@ -1399,6 +1403,54 @@ public final class M3FXDemoApp extends Application {
         queueButton.setOnAction(event -> showQueuedSnackbars());
 
         return createGallery(createShowcaseGroup("Snackbar Host", messageButton, actionButton, queueButton));
+    }
+
+    /// Creates the form helpers demo page.
+    private Node createFormsPage() {
+        M3TextField displayName = createTextField("Display name", "M3FX Project", M3TextInputVariant.OUTLINED, false);
+        M3TextInputLayout displayNameLayout = createTextInputLayout(displayName, "Visible to collaborators");
+
+        M3TextField email = createTextField("Email", "support@example.com", M3TextInputVariant.OUTLINED, false);
+        M3TextInputLayout emailLayout = createTextInputLayout(email, "Used for project notifications");
+        emailLayout.setValidator(M3TextInputValidators.pattern(
+                Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
+                "Enter a valid email address"
+        ));
+
+        M3DateRangePickerField availability =
+                new M3DateRangePickerField(LocalDate.now().plusDays(2), LocalDate.now().plusDays(6));
+        availability.setStartLabelText("Start");
+        availability.setEndLabelText("End");
+        availability.setPrefWidth(420.0);
+        availability.setMaxWidth(420.0);
+
+        M3Switch notifications = M3Switch.withSelected("", true);
+        M3CheckBox beta = new M3CheckBox();
+        beta.setAllowIndeterminate(true);
+        beta.setIndeterminate(true);
+
+        M3FormSection account = new M3FormSection(
+                "Account",
+                "Common fields use the same label column and content alignment.",
+                new M3FormRow("Display name", "Primary profile label", displayNameLayout),
+                new M3FormRow("Email", "Validated on focus loss", emailLayout),
+                new M3FormRow("Availability", "Editable start and end dates", availability)
+        );
+
+        M3FormSection preferences = new M3FormSection(
+                "Preferences",
+                "Boolean settings keep labels aligned with selection controls.",
+                new M3FormRow("Notifications", "Receive product and release updates", notifications),
+                new M3FormRow("Beta channel", "Tri-state checkbox in a form row", beta)
+        );
+
+        M3FormPane form = new M3FormPane(account, preferences);
+        form.getStyleClass().add("demo-form");
+        form.setContentPadding(18.0);
+        form.setPrefWidth(760.0);
+        form.setMaxWidth(760.0);
+
+        return createGallery(createShowcaseGroup("Structured Form", form));
     }
 
     /// Creates the tooltip component page.

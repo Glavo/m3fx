@@ -3180,9 +3180,14 @@ final class M3ControlStyleTest {
                 M3SubMenuItem item = itemReference.get();
                 assertTrue(item.isSubMenuShowing());
 
-                WritableImage image = snapshotImageOnFxThread(item.getSubMenu());
+                M3Menu subMenu = item.getSubMenu();
+                subMenu.applyCss();
+                subMenu.resize(subMenu.prefWidth(-1.0), subMenu.prefHeight(-1.0));
+                subMenu.layout();
+
+                WritableImage image = snapshotImageOnFxThread(subMenu);
                 assertSnapshotHasColorVariety(image, 3);
-                assertSnapshotNodeContainsContrast(image, item.getSubMenu(), Color.WHITE, 0.04);
+                assertSnapshotNodeContainsContrast(image, subMenu, Color.WHITE, 0.04);
                 writeVisualSnapshot(image, java.nio.file.Path.of(
                         "build",
                         "reports",
@@ -9567,6 +9572,9 @@ final class M3ControlStyleTest {
         assertEquals("12+", badge.getAccessibleText());
         assertEquals(AccessibleRole.NODE, new M3Divider().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3Surface().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3FormPane().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3FormSection().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, new M3FormRow().getAccessibleRole());
         assertEquals(AccessibleRole.DIALOG, new M3DialogPane().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, passiveCard.getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, actionCard.getAccessibleRole());
@@ -9633,6 +9641,9 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Icon(), "/styles/controls/icon.css");
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
         assertUserAgentStylesheet(new M3Surface(), "/styles/controls/surface.css");
+        assertUserAgentStylesheet(new M3FormPane(), "/styles/controls/form.css");
+        assertUserAgentStylesheet(new M3FormSection(), "/styles/controls/form.css");
+        assertUserAgentStylesheet(new M3FormRow(), "/styles/controls/form.css");
         assertUserAgentStylesheet(new M3BadgedBox(), "/styles/controls/badge.css");
         assertUserAgentStylesheet(new M3Menu(), "/styles/controls/menu.css");
         assertUserAgentStylesheet(new M3MenuItem(), "/styles/controls/list-item.css");

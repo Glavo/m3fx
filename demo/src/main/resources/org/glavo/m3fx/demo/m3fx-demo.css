@@ -209,6 +209,11 @@
     -fx-text-fill: -m3-color-on-tertiary-container;
 }
 
+.m3-form-pane.demo-form {
+    -fx-background-color: -m3-color-surface;
+    -fx-background-radius: 12px;
+}
+
 .demo-scrim-preview {
     -fx-background-color: -m3-color-primary-container;
     -fx-background-radius: 12px;
