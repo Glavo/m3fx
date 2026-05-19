@@ -48,6 +48,7 @@ import org.glavo.m3fx.controls.M3ChipGroup;
 import org.glavo.m3fx.controls.M3ChipSelectionMode;
 import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DatePicker;
+import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
@@ -109,6 +110,7 @@ import org.glavo.m3fx.controls.M3TextInputValidators;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
+import org.glavo.m3fx.controls.M3TimePickerField;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
@@ -815,6 +817,22 @@ public final class M3FXDemoApp extends Application {
     /// Creates the date picker component page.
     private Node createDatePickersPage() {
         LocalDate today = LocalDate.now();
+        M3DatePickerField field = new M3DatePickerField(today);
+        field.setLabelText("Event date");
+        field.setSupportingText("Editable ISO date with popup calendar");
+        field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
+        field.setPrefWidth(320.0);
+        field.setMaxWidth(320.0);
+
+        M3DatePickerField boundedField = new M3DatePickerField(today.plusDays(2));
+        boundedField.setLabelText("Booking date");
+        boundedField.setSupportingText("Limited to the next two weeks");
+        boundedField.getEditor().setVariant(M3TextInputVariant.FILLED);
+        boundedField.setMinDate(today);
+        boundedField.setMaxDate(today.plusDays(14));
+        boundedField.setPrefWidth(320.0);
+        boundedField.setMaxWidth(320.0);
+
         M3DatePicker selected = new M3DatePicker(today);
 
         M3DatePicker range = new M3DatePicker(today.plusDays(4));
@@ -826,6 +844,7 @@ public final class M3FXDemoApp extends Application {
         monthOnly.setShowAdjacentMonthDays(false);
 
         return createGallery(
+                createShowcaseGroup("Fields", field, boundedField),
                 createShowcaseGroup("Selected Date", selected),
                 createShowcaseGroup("Bounded Range", range),
                 createShowcaseGroup("Month Only", monthOnly)
@@ -834,6 +853,25 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the time picker component page.
     private Node createTimePickersPage() {
+        M3TimePickerField field = new M3TimePickerField(LocalTime.of(10, 30));
+        field.setLabelText("Start time");
+        field.setSupportingText("Editable 24-hour time with popup picker");
+        field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
+        field.setUse24HourClock(true);
+        field.setMinuteStep(15);
+        field.setPrefWidth(320.0);
+        field.setMaxWidth(320.0);
+
+        M3TimePickerField boundedField = new M3TimePickerField(LocalTime.of(9, 30));
+        boundedField.setLabelText("Office hours");
+        boundedField.setSupportingText("Limited to 09:00 through 17:30");
+        boundedField.getEditor().setVariant(M3TextInputVariant.FILLED);
+        boundedField.setMinTime(LocalTime.of(9, 0));
+        boundedField.setMaxTime(LocalTime.of(17, 30));
+        boundedField.setMinuteStep(30);
+        boundedField.setPrefWidth(320.0);
+        boundedField.setMaxWidth(320.0);
+
         M3TimePicker twelveHour = new M3TimePicker(LocalTime.of(10, 30));
 
         M3TimePicker twentyFourHour = new M3TimePicker(LocalTime.of(14, 45));
@@ -845,6 +883,7 @@ public final class M3FXDemoApp extends Application {
         bounded.setMaxTime(LocalTime.of(17, 30));
 
         return createGallery(
+                createShowcaseGroup("Fields", field, boundedField),
                 createShowcaseGroup("12 Hour", twelveHour),
                 createShowcaseGroup("24 Hour", twentyFourHour),
                 createShowcaseGroup("Bounded Range", bounded)

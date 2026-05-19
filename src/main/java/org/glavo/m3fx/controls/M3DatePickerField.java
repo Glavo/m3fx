@@ -1,0 +1,204 @@
+// Copyright (c) 2026 Glavo
+// SPDX-License-Identifier: Apache-2.0
+
+package org.glavo.m3fx.controls;
+
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.scene.control.Skin;
+import org.glavo.m3fx.skins.M3PickerFieldSkin;
+import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+
+/// A Material Design 3 date picker field that combines an editable text field with a popup calendar.
+@NotNullByDefault
+public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePicker> {
+    /// The style class applied to date picker field controls.
+    public static final String STYLE_CLASS = "m3-date-picker-field";
+
+    /// The style class applied to date picker field popup surfaces.
+    public static final String POPUP_STYLE_CLASS = "m3-date-picker-field-popup";
+
+    /// Creates an empty date picker field.
+    public M3DatePickerField() {
+        this(new M3DatePicker());
+    }
+
+    /// Creates a date picker field initialized with the supplied value.
+    public M3DatePickerField(LocalDate value) {
+        this(new M3DatePicker());
+        setValue(value);
+    }
+
+    /// Creates a date picker field around a fresh popup date picker.
+    private M3DatePickerField(M3DatePicker picker) {
+        super(
+                picker,
+                picker.valueProperty(),
+                DateTimeFormatter.ISO_LOCAL_DATE,
+                STYLE_CLASS,
+                POPUP_STYLE_CLASS,
+                "v",
+                "Open date picker",
+                "Enter a valid date",
+                "Date is outside the selectable range"
+        );
+    }
+
+    /// Returns the month currently displayed by the popup calendar grid.
+    public YearMonth getDisplayedMonth() {
+        return getPicker().getDisplayedMonth();
+    }
+
+    /// Sets the month displayed by the popup calendar grid.
+    public void setDisplayedMonth(YearMonth displayedMonth) {
+        getPicker().setDisplayedMonth(displayedMonth);
+    }
+
+    /// Returns the displayed month property from the popup date picker.
+    public ObjectProperty<YearMonth> displayedMonthProperty() {
+        return getPicker().displayedMonthProperty();
+    }
+
+    /// Returns the weekday shown in the first popup calendar column.
+    public DayOfWeek getFirstDayOfWeek() {
+        return getPicker().getFirstDayOfWeek();
+    }
+
+    /// Sets the weekday shown in the first popup calendar column.
+    public void setFirstDayOfWeek(DayOfWeek firstDayOfWeek) {
+        getPicker().setFirstDayOfWeek(firstDayOfWeek);
+    }
+
+    /// Returns the first day of week property from the popup date picker.
+    public ObjectProperty<DayOfWeek> firstDayOfWeekProperty() {
+        return getPicker().firstDayOfWeekProperty();
+    }
+
+    /// Returns the earliest selectable date, or `null` when there is no lower bound.
+    public @Nullable LocalDate getMinDate() {
+        return getPicker().getMinDate();
+    }
+
+    /// Sets the earliest selectable date, or clears the lower bound when `null` is supplied.
+    public void setMinDate(@Nullable LocalDate minDate) {
+        getPicker().setMinDate(minDate);
+    }
+
+    /// Returns the minimum date property from the popup date picker.
+    public ObjectProperty<@Nullable LocalDate> minDateProperty() {
+        return getPicker().minDateProperty();
+    }
+
+    /// Returns the latest selectable date, or `null` when there is no upper bound.
+    public @Nullable LocalDate getMaxDate() {
+        return getPicker().getMaxDate();
+    }
+
+    /// Sets the latest selectable date, or clears the upper bound when `null` is supplied.
+    public void setMaxDate(@Nullable LocalDate maxDate) {
+        getPicker().setMaxDate(maxDate);
+    }
+
+    /// Returns the maximum date property from the popup date picker.
+    public ObjectProperty<@Nullable LocalDate> maxDateProperty() {
+        return getPicker().maxDateProperty();
+    }
+
+    /// Returns whether adjacent-month days are visible in popup leading and trailing grid cells.
+    public boolean isShowAdjacentMonthDays() {
+        return getPicker().isShowAdjacentMonthDays();
+    }
+
+    /// Sets whether adjacent-month days are visible in popup leading and trailing grid cells.
+    public void setShowAdjacentMonthDays(boolean showAdjacentMonthDays) {
+        getPicker().setShowAdjacentMonthDays(showAdjacentMonthDays);
+    }
+
+    /// Returns the adjacent-month visibility property from the popup date picker.
+    public BooleanProperty showAdjacentMonthDaysProperty() {
+        return getPicker().showAdjacentMonthDaysProperty();
+    }
+
+    /// Selects a date if it is inside the configured range.
+    public void selectDate(LocalDate date) {
+        setValue(Objects.requireNonNull(date, "date"));
+    }
+
+    /// Selects today's date when it is inside the configured range.
+    public void selectToday() {
+        selectDate(LocalDate.now());
+    }
+
+    /// Clears the selected date.
+    public void clearValue() {
+        setValue(null);
+    }
+
+    /// Shows the month before the current displayed month.
+    public void showPreviousMonth() {
+        getPicker().showPreviousMonth();
+    }
+
+    /// Shows the month after the current displayed month.
+    public void showNextMonth() {
+        getPicker().showNextMonth();
+    }
+
+    /// Shows the supplied month without changing the selected date.
+    public void showMonth(YearMonth month) {
+        getPicker().showMonth(month);
+    }
+
+    /// Shows the month containing today's date without changing the selected date.
+    public void showToday() {
+        getPicker().showToday();
+    }
+
+    /// Returns whether the supplied date is outside the configured selectable range.
+    public boolean isDateDisabled(LocalDate date) {
+        return getPicker().isDateDisabled(date);
+    }
+
+    /// Creates the default Material Design 3 picker field skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3PickerFieldSkin<>(this);
+    }
+
+    /// Parses one editor date string.
+    @Override
+    protected LocalDate parseValue(String text, DateTimeFormatter formatter) {
+        return LocalDate.from(formatter.parse(text));
+    }
+
+    /// Formats one date value for editor display.
+    @Override
+    protected String formatValue(LocalDate value, DateTimeFormatter formatter) {
+        return formatter.format(value);
+    }
+
+    /// Dates already use the popup picker's precision.
+    @Override
+    protected LocalDate normalizeValue(LocalDate value) {
+        return Objects.requireNonNull(value, "value");
+    }
+
+    /// Returns whether a date is outside the popup picker's selectable range.
+    @Override
+    protected boolean isPickerValueDisabled(LocalDate value) {
+        return getPicker().isDateDisabled(value);
+    }
+
+    /// Applies a value to the popup date picker.
+    @Override
+    protected void setPickerValue(@Nullable LocalDate value) {
+        getPicker().setValue(value);
+    }
+}

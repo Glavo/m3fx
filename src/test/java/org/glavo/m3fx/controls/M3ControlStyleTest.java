@@ -9624,7 +9624,9 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3TextInputLayout(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3DatePicker(), "/styles/controls/date-picker.css");
+        assertUserAgentStylesheet(new M3DatePickerField(), "/styles/controls/picker-field.css");
         assertUserAgentStylesheet(new M3TimePicker(), "/styles/controls/time-picker.css");
+        assertUserAgentStylesheet(new M3TimePickerField(), "/styles/controls/picker-field.css");
         assertUserAgentStylesheet(new M3Avatar(), "/styles/controls/avatar.css");
         assertUserAgentStylesheet(new M3Icon(), "/styles/controls/icon.css");
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
