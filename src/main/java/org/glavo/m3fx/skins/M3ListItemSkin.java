@@ -3,6 +3,9 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
@@ -21,6 +24,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
+import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -29,6 +34,15 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3ListItem].
 @NotNullByDefault
 public class M3ListItemSkin extends SkinBase<M3ListItem> {
+    /// The selected container animation duration.
+    private static final Duration SELECTION_DURATION = M3Motion.SHORT4;
+
+    /// The hidden selected container scale.
+    private static final double HIDDEN_SELECTION_SCALE = 0.96;
+
+    /// The selected container background layer.
+    private final Region selectionContainer = new Region();
+
     /// The root container that receives background styling.
     private final HBox container = new HBox();
 
@@ -65,6 +79,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// The clip used by fixed-size trailing media slots.
     private final Rectangle trailingClip = new Rectangle();
 
+    /// The selected container appearance animation.
+    private final Timeline selectionAnimation = new Timeline();
+
     /// The background radius currently applied to the state container.
     private double containerRadius = Double.NaN;
 
@@ -92,6 +109,10 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Applies metric token changes to the list item layout.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
+    /// Animates the selected container when selection changes.
+    private final ChangeListener<Boolean> selectedListener =
+            (observable, oldValue, newValue) -> animateSelectionContainer(newValue);
+
     /// Clears transient interaction feedback when the item becomes disabled.
     private final ChangeListener<Boolean> disabledListener = (observable, oldValue, newValue) -> {
         if (newValue) {
@@ -108,6 +129,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Creates a list item skin.
     public M3ListItemSkin(M3ListItem control) {
         super(control);
+        selectionContainer.getStyleClass().add("m3-list-item-selection-container");
         container.getStyleClass().add("m3-list-item-container");
         textBox.getStyleClass().add("m3-list-item-text");
         overlineLabel.getStyleClass().add("m3-list-item-overline");
@@ -118,15 +140,18 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         leadingSlot.getStyleClass().add("m3-list-item-leading");
         trailingSlot.getStyleClass().add("m3-list-item-trailing");
 
+        selectionContainer.setManaged(false);
+        selectionContainer.setMouseTransparent(true);
         textBox.setAlignment(Pos.CENTER_LEFT);
         textBox.getChildren().addAll(overlineLabel, headlineLabel, supportingLabel);
         HBox.setHgrow(textBox, Priority.ALWAYS);
         trailingBox.setAlignment(Pos.CENTER_RIGHT);
         trailingBox.getChildren().addAll(trailingSupportingLabel, trailingSlot);
         container.getChildren().addAll(leadingSlot, textBox, trailingBox);
-        getChildren().addAll(container, stateLayer);
+        getChildren().addAll(selectionContainer, container, stateLayer);
 
         stateLayer.installStateTransitions(control);
+        updateSelectionContainerImmediate(control.isSelected());
         updateText();
         updateSlots();
         updateSlotMetrics();
@@ -148,6 +173,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         control.horizontalPaddingProperty().addListener(metricsInvalidation);
         control.verticalPaddingProperty().addListener(metricsInvalidation);
         control.contentSpacingProperty().addListener(metricsInvalidation);
+        control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
     }
 
@@ -155,6 +181,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     @Override
     public void dispose() {
         M3ListItem item = getSkinnable();
+        selectionAnimation.stop();
         resetInteractionState();
         stateLayer.uninstallStateTransitions();
         item.overlineTextProperty().removeListener(textInvalidation);
@@ -173,6 +200,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         item.horizontalPaddingProperty().removeListener(metricsInvalidation);
         item.verticalPaddingProperty().removeListener(metricsInvalidation);
         item.contentSpacingProperty().removeListener(metricsInvalidation);
+        item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
         item.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         item.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
@@ -185,6 +213,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         double shapeRadius = getSkinnable().getContainerShape();
+        selectionContainer.resizeRelocate(x, y, width, height);
         container.resizeRelocate(x, y, width, height);
         updateContainerShape(width, height, shapeRadius);
         stateLayer.layoutLayer(x, y, width, height, shapeRadius);
@@ -305,8 +334,30 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
             return;
         }
         containerRadius = radius;
-        container.setStyle("-fx-background-radius: " + formatPixels(radius) + ";");
+        String style = "-fx-background-radius: " + formatPixels(radius) + ";";
+        selectionContainer.setStyle(style);
+        container.setStyle(style);
+        selectionContainer.applyCss();
         container.applyCss();
+    }
+
+    /// Animates the selected container to the requested state.
+    private void animateSelectionContainer(boolean selected) {
+        double targetOpacity = selected ? 1.0 : 0.0;
+        double targetScale = selected ? 1.0 : HIDDEN_SELECTION_SCALE;
+        selectionAnimation.stop();
+        selectionAnimation.getKeyFrames().setAll(new KeyFrame(
+                SELECTION_DURATION,
+                new KeyValue(selectionContainer.opacityProperty(), targetOpacity, M3Motion.STANDARD),
+                new KeyValue(selectionContainer.scaleXProperty(), targetScale, M3Motion.STANDARD)
+        ));
+        selectionAnimation.playFromStart();
+    }
+
+    /// Updates the selected container without animation.
+    private void updateSelectionContainerImmediate(boolean selected) {
+        selectionContainer.setOpacity(selected ? 1.0 : 0.0);
+        selectionContainer.setScaleX(selected ? 1.0 : HIDDEN_SELECTION_SCALE);
     }
 
     /// Resolves a shape token to a radius that can be represented within the current bounds.

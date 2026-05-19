@@ -5744,6 +5744,92 @@ final class M3ControlStyleTest {
         listItem.layout();
 
         assertRegionRadii(listItemContainer(listItem), 28.0, 28.0, 28.0, 28.0);
+        assertRegionRadii(listItemSelectionContainer(listItem), 28.0, 28.0, 28.0, 28.0);
+    }
+
+    /// Verifies that list and drawer selected containers animate incoming and outgoing states.
+    @Test
+    void listItemSelectionContainerAnimationsRenderIntermediateAndFinalStates() {
+        runOnFxThread(() -> {
+            M3ListItem listFirst = new M3ListItem("Inbox");
+            M3ListItem listSecond = new M3ListItem("Archive");
+            M3List list = new M3List(listFirst, listSecond);
+            list.setSelectionMode(M3ListSelectionMode.SINGLE);
+            list.select(listFirst);
+            list.setPrefWidth(280.0);
+
+            M3ListItem drawerFirst = new M3ListItem("Home");
+            M3ListItem drawerSecond = new M3ListItem("Search");
+            M3NavigationDrawer drawer = new M3NavigationDrawer(drawerFirst, drawerSecond);
+            drawer.select(drawerFirst);
+            drawer.setPrefWidth(320.0);
+
+            VBox root = new VBox(18.0, list, drawer);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 380.0, 260.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(380.0, 260.0);
+            root.layout();
+
+            list.select(listSecond);
+            drawer.select(drawerSecond);
+            root.applyCss();
+
+            Timeline outgoingListAnimation = skinTimeline(listFirst.getSkin(), "selectionAnimation");
+            Timeline incomingListAnimation = skinTimeline(listSecond.getSkin(), "selectionAnimation");
+            Timeline outgoingDrawerAnimation = skinTimeline(drawerFirst.getSkin(), "selectionAnimation");
+            Timeline incomingDrawerAnimation = skinTimeline(drawerSecond.getSkin(), "selectionAnimation");
+            outgoingListAnimation.jumpTo(Duration.millis(80.0));
+            incomingListAnimation.jumpTo(Duration.millis(80.0));
+            outgoingDrawerAnimation.jumpTo(Duration.millis(80.0));
+            incomingDrawerAnimation.jumpTo(Duration.millis(80.0));
+            root.layout();
+
+            Region outgoingListSelection = listItemSelectionContainer(listFirst);
+            Region incomingListSelection = listItemSelectionContainer(listSecond);
+            Region outgoingDrawerSelection = listItemSelectionContainer(drawerFirst);
+            Region incomingDrawerSelection = listItemSelectionContainer(drawerSecond);
+
+            assertBetween(outgoingListSelection.getOpacity(), 0.0, 1.0, "outgoing list selection opacity");
+            assertBetween(incomingListSelection.getOpacity(), 0.0, 1.0, "incoming list selection opacity");
+            assertBetween(outgoingDrawerSelection.getOpacity(), 0.0, 1.0, "outgoing drawer selection opacity");
+            assertBetween(incomingDrawerSelection.getOpacity(), 0.0, 1.0, "incoming drawer selection opacity");
+            assertBetween(incomingListSelection.getScaleX(), 0.96, 1.0, "incoming list selection scale");
+            assertBetween(incomingDrawerSelection.getScaleX(), 0.96, 1.0, "incoming drawer selection scale");
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, incomingListSelection, Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, incomingDrawerSelection, Color.WHITE, 0.03);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-list-drawer-selection-animation-frame.png"
+            ));
+
+            outgoingListAnimation.jumpTo(Duration.millis(200.0));
+            incomingListAnimation.jumpTo(Duration.millis(200.0));
+            outgoingDrawerAnimation.jumpTo(Duration.millis(200.0));
+            incomingDrawerAnimation.jumpTo(Duration.millis(200.0));
+            root.layout();
+
+            assertEquals(0.0, outgoingListSelection.getOpacity(), 0.0001);
+            assertEquals(1.0, incomingListSelection.getOpacity(), 0.0001);
+            assertEquals(0.0, outgoingDrawerSelection.getOpacity(), 0.0001);
+            assertEquals(1.0, incomingDrawerSelection.getOpacity(), 0.0001);
+            assertEquals(0.96, outgoingListSelection.getScaleX(), 0.0001);
+            assertEquals(1.0, incomingListSelection.getScaleX(), 0.0001);
+            assertEquals(0.96, outgoingDrawerSelection.getScaleX(), 0.0001);
+            assertEquals(1.0, incomingDrawerSelection.getScaleX(), 0.0001);
+            stopTimelines(
+                    outgoingListAnimation,
+                    incomingListAnimation,
+                    outgoingDrawerAnimation,
+                    incomingDrawerAnimation
+            );
+        });
     }
 
     /// Verifies that navigation item component token properties are styleable from CSS.
@@ -6489,6 +6575,7 @@ final class M3ControlStyleTest {
         assertEquals(12.0, home.getLayoutX(), 0.0001);
         assertEquals(296.0, home.getWidth(), 0.0001);
         assertEquals(296.0, listItemContainer(home).getWidth(), 0.0001);
+        assertEquals(296.0, listItemSelectionContainer(home).getWidth(), 0.0001);
 
         Color selectedPixel = snapshotPixel(navigationDrawer, 30, 40);
         Color rightPaddingPixel = snapshotPixel(navigationDrawer, 318, 40);
@@ -8988,6 +9075,13 @@ final class M3ControlStyleTest {
     /// Returns the list item skin container region.
     private static javafx.scene.layout.Region listItemContainer(M3ListItem listItem) {
         javafx.scene.Node container = listItem.lookup(".m3-list-item-container");
+        assertInstanceOf(javafx.scene.layout.Region.class, container);
+        return (javafx.scene.layout.Region) container;
+    }
+
+    /// Returns the list item selected container region.
+    private static javafx.scene.layout.Region listItemSelectionContainer(M3ListItem listItem) {
+        javafx.scene.Node container = listItem.lookup(".m3-list-item-selection-container");
         assertInstanceOf(javafx.scene.layout.Region.class, container);
         return (javafx.scene.layout.Region) container;
     }

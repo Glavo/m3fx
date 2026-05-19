@@ -28,6 +28,10 @@
     -fx-background-color: transparent;
 }
 
+.m3-list-item-selection-container {
+    -fx-background-color: -m3-color-secondary-container;
+}
+
 .m3-list-item .m3-state-layer,
 .m3-list-item .m3-ripple {
     -fx-background-color: -m3-color-on-surface;
@@ -46,8 +50,8 @@
     -fx-background-color: -m3-color-surface-container-highest;
 }
 
-.m3-list-item:selected .m3-list-item-container {
-    -fx-background-color: -m3-color-secondary-container;
+.m3-list-item:selected:hover .m3-list-item-container {
+    -fx-background-color: transparent;
 }
 
 .m3-list-item-overline {
