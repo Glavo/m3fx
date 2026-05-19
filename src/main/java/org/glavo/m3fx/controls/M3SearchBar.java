@@ -64,6 +64,7 @@ public class M3SearchBar extends HBox {
         @Override
         protected void invalidated() {
             updateLeading();
+            notifyAccessibleItemsChanged();
         }
     };
 
@@ -85,6 +86,7 @@ public class M3SearchBar extends HBox {
             boolean active = get();
             pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, active);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             if (active) {
                 editor.requestFocus();
             }
@@ -258,8 +260,11 @@ public class M3SearchBar extends HBox {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
+            case CONTENTS -> editor;
             case EXPANDED -> isActive();
             case FOCUS_NODE -> editor;
+            case ITEM_COUNT -> accessibleItemCount();
+            case ITEM_AT_INDEX -> accessibleItemAt(parameters);
             case TEXT -> getText();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -271,7 +276,10 @@ public class M3SearchBar extends HBox {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fire();
-            case REQUEST_FOCUS -> activate();
+            case REQUEST_FOCUS -> focusEditor();
+            case SHOW_ITEM -> focusAccessibleItem(accessibleActionItem(parameters));
+            case EXPAND -> activate();
+            case COLLAPSE -> deactivate();
             case SET_TEXT -> {
                 if (parameters.length > 0 && parameters[0] instanceof String text) {
                     setText(text);
@@ -285,6 +293,7 @@ public class M3SearchBar extends HBox {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(true);
         setMinHeight(DEFAULT_HEIGHT);
         setPrefHeight(DEFAULT_HEIGHT);
         setPadding(new Insets(0.0, DEFAULT_HORIZONTAL_PADDING, 0.0, DEFAULT_HORIZONTAL_PADDING));
@@ -296,7 +305,10 @@ public class M3SearchBar extends HBox {
         HBox.setHgrow(editor, Priority.ALWAYS);
 
         setLeading(defaultLeadingNode());
-        trailingBox.getChildren().addListener((ListChangeListener<Node>) change -> updateTrailingVisibility());
+        trailingBox.getChildren().addListener((ListChangeListener<Node>) change -> {
+            updateTrailingVisibility();
+            notifyAccessibleItemsChanged();
+        });
         editor.textProperty().addListener((observable, oldValue, newValue) ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT));
         editor.focusedProperty().addListener((observable, oldValue, newValue) -> {
@@ -321,9 +333,119 @@ public class M3SearchBar extends HBox {
                     event.consume();
                 }
             }
+            case ENTER, SPACE -> {
+                if (!isActive()) {
+                    focusEditor();
+                    event.consume();
+                }
+            }
             default -> {
             }
         }
+    }
+
+    /// Focuses the embedded editor and enters active input state.
+    private void focusEditor() {
+        activate();
+        editor.requestFocus();
+    }
+
+    /// Returns the number of indexed child items exposed by the search bar.
+    private int accessibleItemCount() {
+        return (getLeading() == null ? 0 : 1) + 1 + getTrailingActions().size();
+    }
+
+    /// Returns the child item at an accessibility index.
+    private @Nullable Node accessibleItemAt(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+
+        @Nullable Node leading = getLeading();
+        if (leading != null) {
+            if (index == 0) {
+                return leading;
+            }
+            index--;
+        }
+
+        if (index == 0) {
+            return editor;
+        }
+        index--;
+
+        ObservableList<Node> trailingActions = getTrailingActions();
+        return index < trailingActions.size() ? trailingActions.get(index) : null;
+    }
+
+    /// Returns the child item referenced by accessibility action parameters.
+    private @Nullable Node accessibleActionItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return editor;
+        }
+        if (parameters[0] instanceof Number) {
+            return accessibleItemAt(parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = accessibleActionItem(parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the child item referenced by one accessibility action parameter.
+    private @Nullable Node accessibleActionItem(@Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return accessibleItemAt(number);
+        }
+        if (parameter instanceof Node node && containsAccessibleItem(node)) {
+            return node;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleActionItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleActionItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a node is one of the search bar's indexed accessibility items.
+    private boolean containsAccessibleItem(Node node) {
+        @Nullable Node leading = getLeading();
+        return node == leading || node == editor || getTrailingActions().contains(node);
+    }
+
+    /// Focuses an indexed child item, falling back to the editor when the item is not focusable.
+    private void focusAccessibleItem(@Nullable Node item) {
+        activate();
+        if (M3Accessible.focusTarget(item) == null) {
+            editor.requestFocus();
+            return;
+        }
+        M3Accessible.showItem(item);
+    }
+
+    /// Notifies accessibility clients that indexed child items changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Updates the leading slot content.

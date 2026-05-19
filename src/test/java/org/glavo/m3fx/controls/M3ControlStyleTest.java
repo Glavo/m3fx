@@ -3136,6 +3136,55 @@ final class M3ControlStyleTest {
         assertFalse(searchBar.isActive());
     }
 
+    /// Verifies that search bars expose their slots as indexed accessibility items.
+    @Test
+    void searchBarExposesIndexedAccessibleSlots() {
+        runOnFxThread(() -> {
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            Label leading = new Label("S");
+            M3Button clear = new M3Button("Clear");
+            M3Button filter = new M3Button("Filter");
+            searchBar.setLeading(leading);
+            searchBar.setTrailingActions(clear, filter);
+
+            Pane root = new Pane(searchBar);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 420.0, 120.0));
+                stage.show();
+                root.applyCss();
+
+                assertEquals(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+                assertEquals(4, searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertEquals(leading, searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertEquals(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertEquals(clear, searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
+                assertEquals(filter, searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 3));
+                assertNull(searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 4));
+
+                searchBar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(searchBar.isActive());
+                assertTrue(searchBar.getEditor().isFocused());
+
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+
+                assertTrue(searchBar.getEditor().isFocused());
+
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, filter);
+
+                assertTrue(filter.isFocused());
+
+                searchBar.executeAccessibleAction(AccessibleAction.COLLAPSE);
+                assertFalse(searchBar.isActive());
+                searchBar.executeAccessibleAction(AccessibleAction.EXPAND);
+                assertTrue(searchBar.isActive());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search component token metrics apply through the active theme.
     @Test
     void searchComponentsApplyTokenMetrics() {
@@ -3228,6 +3277,55 @@ final class M3ControlStyleTest {
         assertTrue(searchView.isActive());
         assertTrue(results.isVisible());
         assertTrue(results.isManaged());
+    }
+
+    /// Verifies that search views move keyboard focus between the editor and results.
+    @Test
+    void searchViewKeyboardNavigatesResults() {
+        runOnFxThread(() -> {
+            M3ListItem first = new M3ListItem("First");
+            M3ListItem second = new M3ListItem("Second");
+            M3SearchView searchView = new M3SearchView("Search", first, second);
+
+            Pane root = new Pane(searchView);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 420.0, 240.0));
+                stage.show();
+                root.applyCss();
+
+                searchView.getEditor().requestFocus();
+                assertTrue(searchView.getEditor().isFocused());
+
+                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(first.isFocused());
+
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(second.isFocused());
+
+                second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(first.isFocused());
+
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(searchView.getEditor().isFocused());
+
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(first.isFocused());
+
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, second);
+                assertTrue(second.isFocused());
+
+                second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+                assertFalse(searchView.isActive());
+                assertTrue(searchView.getSearchBar().isFocused());
+
+                searchView.getSearchBar().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertTrue(searchView.isActive());
+                assertTrue(searchView.getEditor().isFocused());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that sheet controls own content, actions, and variants.

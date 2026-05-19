@@ -18,6 +18,8 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
@@ -269,10 +271,7 @@ public class M3SearchView extends VBox {
             }
             case FIRE -> fire();
             case EXPAND -> activate();
-            case SHOW_ITEM -> {
-                activate();
-                M3Accessible.showItem(getResults(), parameters);
-            }
+            case SHOW_ITEM -> showAccessibleResult(parameters);
             case COLLAPSE -> deactivate();
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -286,14 +285,170 @@ public class M3SearchView extends VBox {
         getChildren().addAll(searchBar, resultsBox);
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             updateResultsVisibility();
         });
+        searchBar.textProperty().addListener((observable, oldValue, newValue) ->
+                notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT));
         resultsBox.getChildren().addListener((ListChangeListener<Node>) change -> {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         });
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         setActive(true);
         applyResultsVisibilityImmediately(isActive());
+    }
+
+    /// Handles keyboard movement between the search editor and result items.
+    private void handleKeyPressed(KeyEvent event) {
+        KeyCode code = event.getCode();
+        switch (code) {
+            case DOWN -> {
+                if (focusNextResult()) {
+                    event.consume();
+                }
+            }
+            case UP -> {
+                if (focusPreviousResult()) {
+                    event.consume();
+                }
+            }
+            case ESCAPE -> {
+                if (isActive()) {
+                    deactivate();
+                    searchBar.requestFocus();
+                    event.consume();
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
+    /// Shows and focuses the result referenced by accessibility action parameters.
+    private void showAccessibleResult(Object... parameters) {
+        activate();
+        if (parameters.length == 0) {
+            if (!focusResultAt(0)) {
+                getEditor().requestFocus();
+            }
+            return;
+        }
+
+        @Nullable Node item = accessibleResultActionItem(parameters);
+        if (item == null || M3Accessible.focusTarget(item) == null) {
+            getEditor().requestFocus();
+            return;
+        }
+        M3Accessible.showItem(item);
+    }
+
+    /// Returns the result referenced by accessibility action parameters.
+    private @Nullable Node accessibleResultActionItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return null;
+        }
+        if (parameters[0] instanceof Number) {
+            return M3Accessible.itemAt(getResults(), parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = accessibleResultActionItem(parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the result referenced by one accessibility action parameter.
+    private @Nullable Node accessibleResultActionItem(@Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return M3Accessible.itemAt(getResults(), number);
+        }
+        if (parameter instanceof Node node && getResults().contains(node)) {
+            return node;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleResultActionItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleResultActionItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Focuses the next result relative to the current focus owner.
+    private boolean focusNextResult() {
+        if (!isActive()) {
+            activate();
+        }
+
+        int currentIndex = focusedResultIndex();
+        if (currentIndex < 0) {
+            return focusResultAt(0);
+        }
+        return focusResultAt(currentIndex + 1);
+    }
+
+    /// Focuses the previous result or returns focus to the editor from the first result.
+    private boolean focusPreviousResult() {
+        int currentIndex = focusedResultIndex();
+        if (currentIndex < 0) {
+            return false;
+        }
+        if (currentIndex == 0) {
+            getEditor().requestFocus();
+            return true;
+        }
+        return focusResultAt(currentIndex - 1);
+    }
+
+    /// Focuses a result at an index when it can be reached.
+    private boolean focusResultAt(int index) {
+        if (index < 0 || index >= getResults().size()) {
+            return false;
+        }
+
+        @Nullable Node result = getResults().get(index);
+        if (M3Accessible.focusTarget(result) == null) {
+            return false;
+        }
+        M3Accessible.showItem(result);
+        return true;
+    }
+
+    /// Returns the index of the result containing current keyboard focus.
+    private int focusedResultIndex() {
+        if (getScene() == null) {
+            return -1;
+        }
+
+        @Nullable Node focusOwner = getScene().getFocusOwner();
+        if (focusOwner == null) {
+            return -1;
+        }
+
+        ObservableList<Node> results = getResults();
+        for (int index = 0; index < results.size(); index++) {
+            Node result = results.get(index);
+            if (M3Accessible.containsNode(result, focusOwner)) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     /// Updates result container visibility from the active state, using motion when attached to a scene.
