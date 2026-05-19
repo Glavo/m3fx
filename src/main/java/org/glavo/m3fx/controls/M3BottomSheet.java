@@ -19,6 +19,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
@@ -90,10 +91,14 @@ public class M3BottomSheet extends BorderPane {
         /// Updates the sheet visibility when the property changes.
         @Override
         protected void invalidated() {
-            updateShownState(get());
+            handleShownChanged(get());
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         }
     };
+
+    /// Whether focus returns to the previously focused node when a modal sheet hides.
+    private final BooleanProperty restoreFocusOnHide =
+            new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
 
     /// Whether the drag handle is visible.
     private final BooleanProperty dragHandleVisible =
@@ -107,6 +112,12 @@ public class M3BottomSheet extends BorderPane {
 
     /// The sheet show and hide animation.
     private final Timeline visibilityAnimation = new Timeline();
+
+    /// The node focused before this modal sheet was shown.
+    private @Nullable Node focusOwnerBeforeShown;
+
+    /// The last processed shown state.
+    private boolean lastShown = true;
 
     /// The top area containing the drag handle and header.
     private final VBox topArea = new VBox();
@@ -219,6 +230,21 @@ public class M3BottomSheet extends BorderPane {
         return shown;
     }
 
+    /// Returns whether modal sheet hiding restores focus to the previous focus owner.
+    public final boolean isRestoreFocusOnHide() {
+        return restoreFocusOnHide.get();
+    }
+
+    /// Sets whether modal sheet hiding restores focus to the previous focus owner.
+    public final void setRestoreFocusOnHide(boolean restoreFocusOnHide) {
+        this.restoreFocusOnHide.set(restoreFocusOnHide);
+    }
+
+    /// Returns the focus restoration property.
+    public final BooleanProperty restoreFocusOnHideProperty() {
+        return restoreFocusOnHide;
+    }
+
     /// Returns whether the drag handle is visible.
     public final boolean isDragHandleVisible() {
         return dragHandleVisible.get();
@@ -262,6 +288,9 @@ public class M3BottomSheet extends BorderPane {
         return switch (attribute) {
             case CONTENTS -> getContent();
             case EXPANDED -> isShown();
+            case FOCUS_NODE -> M3Accessible.focusTarget(M3Accessible.itemAt(getContent(), getActions(), 0));
+            case ITEM_COUNT -> M3Accessible.itemCount(getContent(), getActions());
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), getActions(), parameters);
             case TEXT -> getHeadline();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -272,7 +301,12 @@ public class M3BottomSheet extends BorderPane {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case EXPAND, SHOW_ITEM -> show();
+            case EXPAND -> show();
+            case REQUEST_FOCUS -> M3Accessible.showItem(getContent(), getActions());
+            case SHOW_ITEM -> {
+                show();
+                M3Accessible.showItem(getContent(), getActions(), parameters);
+            }
             case COLLAPSE -> hide();
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -299,9 +333,10 @@ public class M3BottomSheet extends BorderPane {
             updateContent(newValue);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         });
         actions.getChildren().addListener((ListChangeListener<Node>) change ->
-                notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN));
+                notifyAccessibleItemsChanged());
         header.getChildren().addAll(headlineLabel, spacer, actions);
         topArea.getChildren().addAll(dragHandleSlot, header);
         setTop(topArea);
@@ -327,6 +362,21 @@ public class M3BottomSheet extends BorderPane {
         }
     }
 
+    /// Processes shown state transitions and related focus bookkeeping.
+    private void handleShownChanged(boolean shown) {
+        if (shown == lastShown) {
+            updateShownState(shown);
+            return;
+        }
+        if (shown) {
+            rememberFocusOwnerBeforeShown();
+        } else {
+            restoreFocusAfterHide();
+        }
+        lastShown = shown;
+        updateShownState(shown);
+    }
+
     /// Updates the sheet content slot.
     private void updateContent(@Nullable Node node) {
         contentSlot.getChildren().clear();
@@ -342,11 +392,39 @@ public class M3BottomSheet extends BorderPane {
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
     }
 
+    /// Notifies accessibility clients that indexed sheet items changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+    }
+
     /// Updates the drag handle visibility.
     private void updateDragHandleVisibility() {
         boolean visible = isDragHandleVisible();
         dragHandleSlot.setVisible(visible);
         dragHandleSlot.setManaged(visible);
+    }
+
+    /// Stores the current scene focus owner before a modal sheet takes interaction.
+    private void rememberFocusOwnerBeforeShown() {
+        if (getVariant() != M3SheetVariant.MODAL) {
+            focusOwnerBeforeShown = null;
+            return;
+        }
+
+        @Nullable Scene scene = getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        focusOwnerBeforeShown =
+                focusOwner == null || M3Accessible.containsNode(this, focusOwner) ? null : focusOwner;
+    }
+
+    /// Restores focus to the node that owned focus before this modal sheet was shown.
+    private void restoreFocusAfterHide() {
+        @Nullable Node focusOwner = focusOwnerBeforeShown;
+        focusOwnerBeforeShown = null;
+        if (getVariant() == M3SheetVariant.MODAL && isRestoreFocusOnHide() && M3Accessible.canReach(focusOwner)) {
+            focusOwner.requestFocus();
+        }
     }
 
     /// Updates shown state with motion when the sheet is attached to a scene.

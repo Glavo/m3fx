@@ -83,11 +83,59 @@ final class M3Accessible {
         showItem(actionItem(items, parameters));
     }
 
+    /// Requests focus for the leading item or one of the indexed trailing items.
+    static void showItem(@Nullable Node leading, ObservableList<? extends Node> items, Object... parameters) {
+        Objects.requireNonNull(items, "items");
+        showItem(actionItem(leading, items, parameters));
+    }
+
     /// Requests focus for an accessibility item when it can be reached.
     static void showItem(@Nullable Node item) {
-        if (item != null && item.isVisible() && !item.isDisabled()) {
-            item.requestFocus();
+        @Nullable Node focusTarget = focusTarget(item);
+        if (focusTarget != null) {
+            focusTarget.requestFocus();
         }
+    }
+
+    /// Returns the focusable item or descendant used for accessibility focus requests.
+    static @Nullable Node focusTarget(@Nullable Node item) {
+        if (!canReach(item)) {
+            return null;
+        }
+        if (item.isFocusTraversable()) {
+            return item;
+        }
+        if (item instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable Node focusTarget = focusTarget(child);
+                if (focusTarget != null) {
+                    return focusTarget;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a node can receive a direct or descendant focus request.
+    static boolean canReach(@Nullable Node node) {
+        return node != null && node.isVisible() && !node.isDisabled() && node.getScene() != null;
+    }
+
+    /// Returns whether the possible ancestor contains the requested descendant node.
+    static boolean containsNode(Node possibleAncestor, Node possibleDescendant) {
+        Objects.requireNonNull(possibleAncestor, "possibleAncestor");
+        Objects.requireNonNull(possibleDescendant, "possibleDescendant");
+        if (possibleAncestor == possibleDescendant) {
+            return true;
+        }
+        if (possibleAncestor instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (containsNode(child, possibleDescendant)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /// Returns the first child item referenced by accessibility selection parameters.
@@ -143,6 +191,75 @@ final class M3Accessible {
         for (Object parameter : parameters) {
             @Nullable Node item = actionItem(items, parameter);
             if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the leading or child item referenced by accessibility action parameters.
+    private static @Nullable Node actionItem(
+            @Nullable Node leading,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return focusTarget(leading) != null ? leading : firstFocusableItem(items);
+        }
+        @Nullable Object firstParameter = parameters[0];
+        if (firstParameter instanceof Number) {
+            return itemAt(leading, items, parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = actionItem(leading, items, parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the leading or child item referenced by one accessibility action parameter.
+    private static @Nullable Node actionItem(
+            @Nullable Node leading,
+            ObservableList<? extends Node> items,
+            @Nullable Object parameter
+    ) {
+        if (parameter instanceof Number number) {
+            return itemAt(leading, items, number);
+        }
+        if (parameter instanceof Node node) {
+            if (node == leading) {
+                return node;
+            }
+            return items.contains(node) ? node : null;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(leading, items, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(leading, items, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first child item with a focusable target from a list.
+    private static @Nullable Node firstFocusableItem(ObservableList<? extends Node> items) {
+        for (Node item : items) {
+            if (focusTarget(item) != null) {
                 return item;
             }
         }

@@ -16,7 +16,9 @@ import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Region;
 import javafx.util.Duration;
@@ -58,6 +60,7 @@ public class M3Scrim extends Region {
         @Override
         protected void invalidated() {
             updateShownState(get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         }
     };
 
@@ -85,8 +88,10 @@ public class M3Scrim extends Region {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         setAccessibleText("Dismiss");
+        setFocusTraversable(true);
         setOpacity(getVisibleOpacity());
         setPickOnBounds(true);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         setOnMouseClicked(event -> {
             if (isDismissOnClick() && event.getButton() == MouseButton.PRIMARY) {
                 fire();
@@ -178,13 +183,43 @@ public class M3Scrim extends Region {
         return M3Stylesheets.controlStylesheet("scrim.css");
     }
 
+    /// Returns accessibility attributes for scrim visibility state.
+    @Override
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case EXPANDED -> isShown();
+            case FOCUS_NODE -> isShown() ? this : null;
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Executes assistive-technology actions supported by this scrim.
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fire();
+            case EXPAND, SHOW_ITEM -> show();
+            case COLLAPSE -> hide();
+            case REQUEST_FOCUS -> {
+                if (isShown()) {
+                    requestFocus();
+                }
+            }
             default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
+    /// Handles keyboard activation for focused scrims.
+    private void handleKeyPressed(KeyEvent event) {
+        switch (event.getCode()) {
+            case ENTER, SPACE, ESCAPE -> {
+                fire();
+                event.consume();
+            }
+            default -> {
+            }
         }
     }
 
@@ -205,9 +240,6 @@ public class M3Scrim extends Region {
             ));
             visibilityAnimation.playFromStart();
         } else {
-            if (!visibleOpacity.isBound() && getOpacity() > 0.0) {
-                setVisibleOpacity(getOpacity());
-            }
             if (getScene() == null || !isVisible()) {
                 applyShownStateImmediately(false);
                 return;

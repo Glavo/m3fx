@@ -3201,6 +3201,47 @@ final class M3ControlStyleTest {
         assertTrue(standardBottomSheet.isShown());
     }
 
+    /// Verifies that modal sheets restore focus to the trigger after keyboard dismissal.
+    @Test
+    void modalSheetsRestoreFocusAfterEscapeKey() {
+        runOnFxThread(() -> {
+            M3Button trigger = new M3Button("Open");
+            M3Button sideAction = new M3Button("Side action");
+            M3Button bottomAction = new M3Button("Bottom action");
+            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side"), sideAction);
+            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom"), bottomAction);
+            Stage stage = new Stage();
+            try {
+                sideSheet.setVariant(M3SheetVariant.MODAL);
+                bottomSheet.setVariant(M3SheetVariant.MODAL);
+                sideSheet.hide();
+                bottomSheet.hide();
+                stage.setScene(new Scene(new VBox(trigger, sideSheet, bottomSheet), 480.0, 360.0));
+                stage.show();
+
+                trigger.requestFocus();
+                sideSheet.show();
+                sideAction.requestFocus();
+                KeyEvent sideEscape = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE);
+                sideSheet.fireEvent(sideEscape);
+
+                assertFalse(sideSheet.isShown());
+                assertTrue(trigger.isFocused());
+
+                trigger.requestFocus();
+                bottomSheet.show();
+                bottomAction.requestFocus();
+                KeyEvent bottomEscape = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE);
+                bottomSheet.fireEvent(bottomEscape);
+
+                assertFalse(bottomSheet.isShown());
+                assertTrue(trigger.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that sheets expose accessible state, content, and visibility actions.
     @Test
     void sheetsExposeAccessibleStateAndActions() {
@@ -3213,6 +3254,8 @@ final class M3ControlStyleTest {
         assertEquals("Details", sideSheet.queryAccessibleAttribute(AccessibleAttribute.TEXT));
         assertEquals(sideContent, sideSheet.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
         assertEquals(true, sideSheet.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        assertEquals(1, sideSheet.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(sideContent, sideSheet.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
 
         sideSheet.setHeadline("Updated");
         Label replacementContent = new Label("Replacement");
@@ -3221,6 +3264,7 @@ final class M3ControlStyleTest {
         assertEquals("Updated", sideSheet.getAccessibleText());
         assertEquals("Updated", sideSheet.queryAccessibleAttribute(AccessibleAttribute.TEXT));
         assertEquals(replacementContent, sideSheet.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+        assertEquals(replacementContent, sideSheet.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
 
         sideSheet.executeAccessibleAction(AccessibleAction.COLLAPSE);
         assertFalse(sideSheet.isShown());
@@ -3231,12 +3275,55 @@ final class M3ControlStyleTest {
         assertEquals("Queue", bottomSheet.getAccessibleText());
         assertEquals("Queue", bottomSheet.queryAccessibleAttribute(AccessibleAttribute.TEXT));
         assertEquals(bottomContent, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+        assertEquals(1, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(bottomContent, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
 
         bottomSheet.executeAccessibleAction(AccessibleAction.COLLAPSE);
         assertFalse(bottomSheet.isShown());
         bottomSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
         assertTrue(bottomSheet.isShown());
         assertEquals(true, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+    }
+
+    /// Verifies that sheet accessibility show-item actions focus content and trailing actions.
+    @Test
+    void sheetsFocusIndexedAccessibleItems() {
+        runOnFxThread(() -> {
+            M3Button sideContent = new M3Button("Side content");
+            M3Button sideAction = new M3Button("Side action");
+            M3SideSheet sideSheet = new M3SideSheet("Details", sideContent, sideAction);
+
+            M3Button bottomContent = new M3Button("Bottom content");
+            M3Button bottomAction = new M3Button("Bottom action");
+            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent, bottomAction);
+
+            Stage stage = new Stage();
+            try {
+                sideSheet.hide();
+                bottomSheet.hide();
+                stage.setScene(new Scene(new VBox(sideSheet, bottomSheet), 480.0, 360.0));
+                stage.show();
+
+                assertEquals(sideContent, sideSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(bottomContent, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sideSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+                assertTrue(sideSheet.isShown());
+                assertTrue(sideContent.isFocused());
+
+                sideSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, sideAction);
+                assertTrue(sideAction.isFocused());
+
+                bottomSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+                assertTrue(bottomSheet.isShown());
+                assertTrue(bottomContent.isFocused());
+
+                bottomSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, bottomAction);
+                assertTrue(bottomAction.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that sheet controls expose animated shown state changes.
@@ -3367,6 +3454,31 @@ final class M3ControlStyleTest {
 
         assertThrows(IllegalArgumentException.class, () -> scrim.setVisibleOpacity(-0.1));
         assertThrows(IllegalArgumentException.class, () -> scrim.setVisibleOpacity(1.1));
+    }
+
+    /// Verifies that scrims expose visibility actions and keyboard dismissal.
+    @Test
+    void scrimSupportsAccessibleVisibilityAndKeyboardActions() {
+        M3Scrim scrim = new M3Scrim();
+        AtomicInteger actions = new AtomicInteger();
+        scrim.setOnAction(event -> actions.incrementAndGet());
+
+        assertEquals(true, scrim.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        scrim.executeAccessibleAction(AccessibleAction.COLLAPSE);
+        assertFalse(scrim.isShown());
+        assertEquals(false, scrim.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        scrim.executeAccessibleAction(AccessibleAction.EXPAND);
+        assertTrue(scrim.isShown());
+        assertEquals(scrim, scrim.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+        KeyEvent enter = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER);
+        KeyEvent space = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE);
+        KeyEvent escape = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE);
+        scrim.fireEvent(enter);
+        scrim.fireEvent(space);
+        scrim.fireEvent(escape);
+
+        assertEquals(3, actions.get());
     }
 
     /// Verifies that custom actionable surfaces respond to accessibility fire actions.
