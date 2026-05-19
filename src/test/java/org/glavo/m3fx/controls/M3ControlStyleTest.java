@@ -1293,6 +1293,78 @@ final class M3ControlStyleTest {
         assertEquals("Dialog title Dialog body", dialogPane.queryAccessibleAttribute(AccessibleAttribute.TEXT));
     }
 
+    /// Verifies that dialog panes expose content and action buttons as indexed accessibility items.
+    @Test
+    void dialogPaneExposesIndexedAccessibleItems() {
+        runOnFxThread(() -> {
+            M3Button contentAction = new M3Button("Content action");
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(contentAction);
+            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            Pane root = new Pane(dialogPane);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 420.0, 220.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+
+                Node cancelButton = dialogPane.lookupButton(ButtonType.CANCEL);
+                Node okButton = dialogPane.lookupButton(ButtonType.OK);
+
+                assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+                assertEquals(3, dialogPane.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertEquals(cancelButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertEquals(okButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
+                assertNull(dialogPane.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, -1));
+                assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(contentAction.isFocused());
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, ButtonType.OK);
+                assertTrue(okButton.isFocused());
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                assertTrue(cancelButton.isFocused());
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, contentAction);
+                assertTrue(contentAction.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog panes fall back to the default action when content is not focusable.
+    @Test
+    void dialogPaneFocusNodeUsesDefaultActionWhenContentIsStatic() {
+        runOnFxThread(() -> {
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(new Label("Dialog body"));
+            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            Pane root = new Pane(dialogPane);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 420.0, 220.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+
+                Node okButton = dialogPane.lookupButton(ButtonType.OK);
+
+                assertEquals(okButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(okButton.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that Material dialogs install a Material dialog pane and stylesheet.
     @Test
     void dialogInstallsMaterialPaneAndStylesheet() {

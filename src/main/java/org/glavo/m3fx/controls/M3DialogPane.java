@@ -3,12 +3,14 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.collections.ListChangeListener;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -56,6 +58,8 @@ public class M3DialogPane extends DialogPane {
         setAccessibleRole(AccessibleRole.DIALOG);
         headerTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
         contentTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
+        contentProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
+        getButtonTypes().addListener((ListChangeListener<ButtonType>) change -> notifyAccessibleItemsChanged());
         updateMetrics();
         updateAccessibleText();
     }
@@ -161,12 +165,27 @@ public class M3DialogPane extends DialogPane {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
+            case CONTENTS -> getContent();
+            case FOCUS_NODE -> firstFocusableItem();
+            case ITEM_COUNT -> accessibleItemCount();
+            case ITEM_AT_INDEX -> accessibleItemAt(parameters);
             case TEXT -> {
                 @Nullable String text = getAccessibleText();
                 yield text == null ? "" : text;
             }
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    /// Executes accessibility actions for dialog content and action buttons.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(firstFocusableItem());
+            case SHOW_ITEM -> M3Accessible.showItem(accessibleActionItem(parameters));
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Creates the dialog action button bar.
@@ -224,6 +243,153 @@ public class M3DialogPane extends DialogPane {
         appendAccessibleText(builder, getContentText());
         setAccessibleText(builder.length() == 0 ? null : builder.toString());
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+    }
+
+    /// Notifies accessibility clients that dialog content or actions changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+    }
+
+    /// Returns the indexed accessibility item count for content and action buttons.
+    private int accessibleItemCount() {
+        return (getContent() == null ? 0 : 1) + getButtonTypes().size();
+    }
+
+    /// Returns the dialog content or action button at an accessibility index.
+    private @Nullable Node accessibleItemAt(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+
+        @Nullable Node content = getContent();
+        if (content != null) {
+            if (index == 0) {
+                return content;
+            }
+            index--;
+        }
+
+        return buttonAt(index);
+    }
+
+    /// Returns the item requested by accessibility action parameters.
+    private @Nullable Node accessibleActionItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return firstFocusableItem();
+        }
+        if (parameters[0] instanceof Number) {
+            return accessibleItemAt(parameters);
+        }
+
+        for (Object parameter : parameters) {
+            @Nullable Node item = accessibleActionItem(parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the item requested by one accessibility action parameter.
+    private @Nullable Node accessibleActionItem(@Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return accessibleItemAt(number);
+        }
+        if (parameter instanceof ButtonType buttonType) {
+            return lookupButton(buttonType);
+        }
+        if (parameter instanceof Node node) {
+            if (node == getContent() || isDialogButton(node)) {
+                return node;
+            }
+            @Nullable Node content = getContent();
+            if (content != null && M3Accessible.containsNode(content, node)) {
+                return node;
+            }
+            return null;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleActionItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleActionItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the preferred focus target for the dialog pane.
+    private @Nullable Node firstFocusableItem() {
+        @Nullable Node content = getContent();
+        @Nullable Node contentFocusTarget = M3Accessible.focusTarget(content);
+        if (contentFocusTarget != null) {
+            return contentFocusTarget;
+        }
+
+        @Nullable Node defaultButton = defaultButton();
+        @Nullable Node defaultFocusTarget = M3Accessible.focusTarget(defaultButton);
+        if (defaultFocusTarget != null) {
+            return defaultFocusTarget;
+        }
+
+        for (ButtonType buttonType : getButtonTypes()) {
+            @Nullable Node button = lookupButton(buttonType);
+            @Nullable Node buttonFocusTarget = M3Accessible.focusTarget(button);
+            if (buttonFocusTarget != null) {
+                return buttonFocusTarget;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the action button at an index in button type order.
+    private @Nullable Node buttonAt(int index) {
+        return index >= 0 && index < getButtonTypes().size() ? lookupButton(getButtonTypes().get(index)) : null;
+    }
+
+    /// Returns the default action button when one exists.
+    private @Nullable Node defaultButton() {
+        for (ButtonType buttonType : getButtonTypes()) {
+            @Nullable Node button = lookupButton(buttonType);
+            if (isDefaultButton(button)) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a node is one of this dialog pane's action buttons.
+    private boolean isDialogButton(Node node) {
+        for (ButtonType buttonType : getButtonTypes()) {
+            if (lookupButton(buttonType) == node) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether a dialog action button is the default action.
+    private static boolean isDefaultButton(@Nullable Node button) {
+        if (button instanceof M3Button materialButton) {
+            return materialButton.isDefaultButton();
+        }
+        return button != null && ButtonBar.getButtonData(button) != null
+                && ButtonBar.getButtonData(button).isDefaultButton();
     }
 
     /// Appends a non-blank text part to an accessibility label.
