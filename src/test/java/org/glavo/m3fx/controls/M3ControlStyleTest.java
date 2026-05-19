@@ -34,6 +34,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -61,7 +62,10 @@ import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
 import org.glavo.m3fx.skins.M3ListViewSkin;
+import org.glavo.m3fx.skins.M3NavigationBarSkin;
+import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.glavo.m3fx.skins.M3NavigationItemSkin;
+import org.glavo.m3fx.skins.M3NavigationRailSkin;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
@@ -6328,6 +6332,29 @@ final class M3ControlStyleTest {
         assertFalse(search.isSelected());
     }
 
+    /// Verifies that navigation containers delegate layout to Material Design 3 skins.
+    @Test
+    void navigationContainersCreateMaterialSkins() {
+        M3NavigationItem barHome = new M3NavigationItem("Home");
+        M3NavigationItem railHome = new M3NavigationItem("Home");
+        M3ListItem drawerHome = new M3ListItem("Home");
+        M3NavigationBar navigationBar = new M3NavigationBar(barHome);
+        M3NavigationRail navigationRail = new M3NavigationRail(railHome);
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(drawerHome);
+        Pane root = new Pane(navigationBar, navigationRail, navigationDrawer);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertInstanceOf(M3NavigationBarSkin.class, navigationBar.getSkin());
+        assertInstanceOf(M3NavigationRailSkin.class, navigationRail.getSkin());
+        assertInstanceOf(M3NavigationDrawerSkin.class, navigationDrawer.getSkin());
+        assertSame(barHome, navigationBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertSame(railHome, navigationRail.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertSame(drawerHome, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+    }
+
     /// Verifies that selection containers handle keyboard navigation and skip disabled children.
     @Test
     void selectionContainersHandleKeyboardNavigationAndSkipDisabledChildren() {
@@ -6665,7 +6692,11 @@ final class M3ControlStyleTest {
         navigationDrawer.layout();
         home.layout();
 
-        assertEquals(12.0, home.getLayoutX(), 0.0001);
+        assertEquals(
+                navigationDrawer.localToScene(12.0, 0.0).getX(),
+                home.localToScene(0.0, 0.0).getX(),
+                0.0001
+        );
         assertEquals(296.0, home.getWidth(), 0.0001);
         assertEquals(296.0, listItemContainer(home).getWidth(), 0.0001);
         assertEquals(296.0, listItemSelectionContainer(home).getWidth(), 0.0001);
@@ -8423,6 +8454,9 @@ final class M3ControlStyleTest {
         assertFalse(ScrollPane.class.isAssignableFrom(M3Carousel.class));
         assertFalse(VBox.class.isAssignableFrom(M3ListPane.class));
         assertFalse(javafx.scene.control.ListView.class.isAssignableFrom(M3ListView.class));
+        assertFalse(HBox.class.isAssignableFrom(M3NavigationBar.class));
+        assertFalse(VBox.class.isAssignableFrom(M3NavigationRail.class));
+        assertFalse(VBox.class.isAssignableFrom(M3NavigationDrawer.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));

@@ -11,14 +11,15 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3NavigationRailSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -30,9 +31,12 @@ import java.util.Objects;
 
 /// A Material Design 3 navigation rail.
 @NotNullByDefault
-public class M3NavigationRail extends VBox {
+public class M3NavigationRail extends Control {
     /// The base style class for M3FX navigation rails.
     public static final String STYLE_CLASS = "m3-navigation-rail";
+
+    /// The mutable navigation rail content.
+    private final ObservableList<Node> items = FXCollections.observableArrayList();
 
     /// The currently selected navigation item.
     private final ReadOnlyObjectWrapper<@Nullable M3NavigationItem> selectedItem =
@@ -95,7 +99,7 @@ public class M3NavigationRail extends VBox {
 
     /// Returns the mutable child list used as navigation rail items.
     public final ObservableList<Node> getItems() {
-        return getChildren();
+        return items;
     }
 
     /// Adds one navigation item.
@@ -138,7 +142,7 @@ public class M3NavigationRail extends VBox {
     /// Returns the child index of the selected navigation item, or `-1` when no item is selected.
     public final int getSelectedIndex() {
         @Nullable M3NavigationItem item = getSelectedItem();
-        return item == null ? -1 : getChildren().indexOf(item);
+        return item == null ? -1 : getItems().indexOf(item);
     }
 
     /// Returns whether this rail allows all navigation items to be unselected.
@@ -159,7 +163,7 @@ public class M3NavigationRail extends VBox {
     /// Selects a navigation item that belongs to this rail.
     public final void select(M3NavigationItem item) {
         Objects.requireNonNull(item, "item");
-        if (!getChildren().contains(item)) {
+        if (!getItems().contains(item)) {
             throw new IllegalArgumentException("item must belong to this navigation rail");
         }
         selectItem(item);
@@ -167,7 +171,7 @@ public class M3NavigationRail extends VBox {
 
     /// Selects the navigation item at the given child index.
     public final void selectIndex(int index) {
-        Node child = getChildren().get(index);
+        Node child = getItems().get(index);
         if (child instanceof M3NavigationItem item) {
             select(item);
             return;
@@ -186,7 +190,7 @@ public class M3NavigationRail extends VBox {
     /// Selects the last navigation item when one exists.
     public final void selectLast() {
         @Nullable M3NavigationItem lastItem =
-                M3SelectionNavigation.last(getChildren(), M3NavigationItem.class);
+                M3SelectionNavigation.last(getItems(), M3NavigationItem.class);
         if (lastItem != null) {
             selectItem(lastItem);
         }
@@ -195,7 +199,7 @@ public class M3NavigationRail extends VBox {
     /// Selects the next navigation item after the current selected item, wrapping at the end.
     public final void selectNext() {
         @Nullable M3NavigationItem nextItem =
-                M3SelectionNavigation.next(getChildren(), getSelectedItem(), M3NavigationItem.class);
+                M3SelectionNavigation.next(getItems(), getSelectedItem(), M3NavigationItem.class);
         if (nextItem != null) {
             selectItem(nextItem);
         }
@@ -204,7 +208,7 @@ public class M3NavigationRail extends VBox {
     /// Selects the previous navigation item before the current selected item, wrapping at the start.
     public final void selectPrevious() {
         @Nullable M3NavigationItem previousItem =
-                M3SelectionNavigation.previous(getChildren(), getSelectedItem(), M3NavigationItem.class);
+                M3SelectionNavigation.previous(getItems(), getSelectedItem(), M3NavigationItem.class);
         if (previousItem != null) {
             selectItem(previousItem);
         }
@@ -253,17 +257,15 @@ public class M3NavigationRail extends VBox {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        setAlignment(Pos.TOP_CENTER);
-        setSpacing(8.0);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        getChildren().addListener(childrenListener);
+        getItems().addListener(childrenListener);
     }
 
     /// Applies keyboard navigation across enabled navigation items.
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeySelection(
                 event,
-                getChildren(),
+                getItems(),
                 getSelectedItem(),
                 M3NavigationItem.class,
                 false,
@@ -341,7 +343,7 @@ public class M3NavigationRail extends VBox {
     private void selectItem(@Nullable M3NavigationItem item) {
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3NavigationItem navigationItem) {
                     navigationItem.setSelected(navigationItem == item);
                 }
@@ -356,7 +358,7 @@ public class M3NavigationRail extends VBox {
     private void refreshSelectedItems() {
         List<M3NavigationItem> previousSelection = List.copyOf(selectedItems);
         selectedItems.clear();
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             if (child instanceof M3NavigationItem item && item.isSelected()) {
                 selectedItems.add(item);
             }
@@ -369,7 +371,13 @@ public class M3NavigationRail extends VBox {
 
     /// Returns the first navigation item child.
     private @Nullable M3NavigationItem firstNavigationItem() {
-        return M3SelectionNavigation.first(getChildren(), M3NavigationItem.class);
+        return M3SelectionNavigation.first(getItems(), M3NavigationItem.class);
+    }
+
+    /// Creates the default Material Design 3 navigation rail skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3NavigationRailSkin(this);
     }
 
     /// Validates a navigation item array.

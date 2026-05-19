@@ -17,9 +17,11 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -31,9 +33,12 @@ import java.util.Objects;
 
 /// A Material Design 3 navigation drawer.
 @NotNullByDefault
-public class M3NavigationDrawer extends VBox {
+public class M3NavigationDrawer extends Control {
     /// The base style class for M3FX navigation drawers.
     public static final String STYLE_CLASS = "m3-navigation-drawer";
+
+    /// The mutable navigation drawer content.
+    private final ObservableList<Node> items = FXCollections.observableArrayList();
 
     /// The currently selected navigation drawer item.
     private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
@@ -99,7 +104,7 @@ public class M3NavigationDrawer extends VBox {
 
     /// Returns the mutable child list used as drawer content.
     public final ObservableList<Node> getItems() {
-        return getChildren();
+        return items;
     }
 
     /// Adds one drawer content node.
@@ -142,7 +147,7 @@ public class M3NavigationDrawer extends VBox {
     /// Returns the child index of the selected drawer list item, or `-1` when no item is selected.
     public final int getSelectedIndex() {
         @Nullable M3ListItem item = getSelectedItem();
-        return item == null ? -1 : getChildren().indexOf(item);
+        return item == null ? -1 : getItems().indexOf(item);
     }
 
     /// Returns whether this drawer allows all list items to be unselected.
@@ -163,7 +168,7 @@ public class M3NavigationDrawer extends VBox {
     /// Selects a drawer list item that belongs to this drawer.
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
-        if (!getChildren().contains(item)) {
+        if (!getItems().contains(item)) {
             throw new IllegalArgumentException("item must belong to this navigation drawer");
         }
         selectItem(item);
@@ -171,7 +176,7 @@ public class M3NavigationDrawer extends VBox {
 
     /// Selects the drawer list item at the given child index.
     public final void selectIndex(int index) {
-        Node child = getChildren().get(index);
+        Node child = getItems().get(index);
         if (child instanceof M3ListItem item) {
             select(item);
             return;
@@ -189,7 +194,7 @@ public class M3NavigationDrawer extends VBox {
 
     /// Selects the last drawer list item when one exists.
     public final void selectLast() {
-        @Nullable M3ListItem lastItem = M3SelectionNavigation.last(getChildren(), M3ListItem.class);
+        @Nullable M3ListItem lastItem = M3SelectionNavigation.last(getItems(), M3ListItem.class);
         if (lastItem != null) {
             selectItem(lastItem);
         }
@@ -198,7 +203,7 @@ public class M3NavigationDrawer extends VBox {
     /// Selects the next drawer list item after the current selected item, wrapping at the end.
     public final void selectNext() {
         @Nullable M3ListItem nextItem =
-                M3SelectionNavigation.next(getChildren(), getSelectedItem(), M3ListItem.class);
+                M3SelectionNavigation.next(getItems(), getSelectedItem(), M3ListItem.class);
         if (nextItem != null) {
             selectItem(nextItem);
         }
@@ -207,7 +212,7 @@ public class M3NavigationDrawer extends VBox {
     /// Selects the previous drawer list item before the current selected item, wrapping at the start.
     public final void selectPrevious() {
         @Nullable M3ListItem previousItem =
-                M3SelectionNavigation.previous(getChildren(), getSelectedItem(), M3ListItem.class);
+                M3SelectionNavigation.previous(getItems(), getSelectedItem(), M3ListItem.class);
         if (previousItem != null) {
             selectItem(previousItem);
         }
@@ -252,27 +257,19 @@ public class M3NavigationDrawer extends VBox {
         }
     }
 
-    /// Lays out drawer content within the drawer padding.
-    @Override
-    protected void layoutChildren() {
-        updateListItemWidths();
-        super.layoutChildren();
-    }
-
     /// Adds base style classes and installs content listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
-        setSpacing(4.0);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        getChildren().addListener(childrenListener);
+        getItems().addListener(childrenListener);
     }
 
     /// Applies keyboard navigation across enabled drawer items.
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeySelection(
                 event,
-                getChildren(),
+                getItems(),
                 getSelectedItem(),
                 M3ListItem.class,
                 false,
@@ -288,26 +285,6 @@ public class M3NavigationDrawer extends VBox {
             clearSelection();
         } else {
             select(item);
-        }
-    }
-
-    /// Keeps drawer list item containers inside the drawer content area.
-    private void updateListItemWidths() {
-        double width = getWidth();
-        if (width <= 0.0) {
-            return;
-        }
-
-        double itemWidth = Math.max(0.0, width - snappedLeftInset() - snappedRightInset());
-        for (Node child : getChildren()) {
-            if (child instanceof M3ListItem item) {
-                if (Double.compare(item.getMinWidth(), 0.0) != 0) {
-                    item.setMinWidth(0.0);
-                }
-                if (Double.compare(item.getMaxWidth(), itemWidth) != 0) {
-                    item.setMaxWidth(itemWidth);
-                }
-            }
         }
     }
 
@@ -331,7 +308,7 @@ public class M3NavigationDrawer extends VBox {
 
     /// Selects the drawer item that fired an action event.
     private void handleItemAction(ActionEvent event) {
-        if (event.getSource() instanceof M3ListItem item && getChildren().contains(item) && !item.isDisabled()) {
+        if (event.getSource() instanceof M3ListItem item && getItems().contains(item) && !item.isDisabled()) {
             selectItem(item);
         }
     }
@@ -356,7 +333,7 @@ public class M3NavigationDrawer extends VBox {
     private void selectItem(@Nullable M3ListItem item) {
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3ListItem listItem) {
                     listItem.setSelected(listItem == item);
                 }
@@ -383,7 +360,7 @@ public class M3NavigationDrawer extends VBox {
     private void refreshSelectedItems() {
         List<M3ListItem> previousSelection = List.copyOf(selectedItems);
         selectedItems.clear();
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             if (child instanceof M3ListItem item && item.isSelected()) {
                 selectedItems.add(item);
             }
@@ -408,7 +385,13 @@ public class M3NavigationDrawer extends VBox {
 
     /// Returns the first drawer list item child.
     private @Nullable M3ListItem firstListItem() {
-        return M3SelectionNavigation.first(getChildren(), M3ListItem.class);
+        return M3SelectionNavigation.first(getItems(), M3ListItem.class);
+    }
+
+    /// Creates the default Material Design 3 navigation drawer skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3NavigationDrawerSkin(this);
     }
 
     /// Validates a drawer item array.

@@ -1,7 +1,6 @@
 .m3-navigation-drawer {
     -fx-background-color: -m3-color-surface-container-low;
     -fx-padding: 12px;
-    -fx-spacing: 4px;
     -fx-min-width: 360px;
     -fx-pref-width: 360px;
 }
