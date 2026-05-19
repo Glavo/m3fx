@@ -2948,6 +2948,57 @@ final class M3ControlStyleTest {
         assertFalse(menuButton.isShowing());
     }
 
+    /// Verifies that popup menus activate focused items and reveal requested menu content.
+    @Test
+    void popupMenusActivateFocusedItemsAndRevealRequestedContent() {
+        runOnFxThread(() -> {
+            M3MenuItem open = new M3MenuItem("Open");
+            M3MenuItem pdf = new M3MenuItem("PDF");
+            M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
+            M3Menu menu = new M3Menu(open, export);
+            AtomicInteger actions = new AtomicInteger();
+            open.setOnAction(event -> actions.incrementAndGet());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(new Pane(menu), 240.0, 160.0));
+                stage.show();
+
+                open.requestFocus();
+                open.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+
+                assertEquals(1, actions.get());
+
+                export.requestFocus();
+                export.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(export.isSubMenuShowing());
+                assertTrue(pdf.isFocused());
+            } finally {
+                export.hideSubMenu();
+                stage.close();
+            }
+        });
+
+        runOnFxThread(() -> {
+            M3MenuItem first = new M3MenuItem("First");
+            M3MenuItem second = new M3MenuItem("Second");
+            M3MenuButton menuButton = new M3MenuButton("More", first, second);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(new Pane(menuButton), 240.0, 120.0));
+                stage.show();
+
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, second);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(second.isFocused());
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search bars delegate text and action APIs to their embedded editor.
     @Test
     void searchBarDelegatesTextAndActions() {

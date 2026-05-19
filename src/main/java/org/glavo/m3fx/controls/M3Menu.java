@@ -19,6 +19,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -150,6 +151,26 @@ public class M3Menu extends VBox {
                 subMenuItem.hideSubMenu();
             }
         }
+    }
+
+    /// Focuses the first enabled visible menu item when one exists.
+    final boolean focusFirstItem() {
+        @Nullable M3MenuItem firstItem = M3SelectionNavigation.first(getItems(), M3MenuItem.class);
+        if (firstItem == null) {
+            return false;
+        }
+        firstItem.requestFocus();
+        return true;
+    }
+
+    /// Focuses the last enabled visible menu item when one exists.
+    final boolean focusLastItem() {
+        @Nullable M3MenuItem lastItem = M3SelectionNavigation.last(getItems(), M3MenuItem.class);
+        if (lastItem == null) {
+            return false;
+        }
+        lastItem.requestFocus();
+        return true;
     }
 
     /// Returns the menu selection mode.
@@ -311,6 +332,10 @@ public class M3Menu extends VBox {
 
     /// Applies keyboard navigation across enabled menu items.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (handleFocusedItemKey(event)) {
+            return;
+        }
+
         if (getSelectionMode() == M3MenuSelectionMode.NONE
                 || getSelectionMode() == M3MenuSelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
@@ -325,6 +350,27 @@ public class M3Menu extends VBox {
         }
 
         handleSelectionNavigationKeyPressed(event);
+    }
+
+    /// Handles activation and submenu opening for the currently focused menu item.
+    private boolean handleFocusedItemKey(KeyEvent event) {
+        @Nullable M3MenuItem focusedItem = M3SelectionNavigation.focused(getChildren(), M3MenuItem.class);
+        if (focusedItem == null) {
+            return false;
+        }
+
+        KeyCode code = event.getCode();
+        if (code == KeyCode.ENTER || code == KeyCode.SPACE) {
+            focusedItem.fire();
+            event.consume();
+            return true;
+        }
+        if (code == KeyCode.RIGHT && focusedItem instanceof M3SubMenuItem subMenuItem) {
+            subMenuItem.showSubMenuAndFocusFirstItem();
+            event.consume();
+            return true;
+        }
+        return false;
     }
 
     /// Applies keyboard selection across selectable menu items.

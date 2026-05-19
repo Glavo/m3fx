@@ -66,6 +66,9 @@ public class M3MenuButton extends M3Button {
     /// The menu popup exit animation.
     private final Timeline hideAnimation = new Timeline();
 
+    /// Whether focus should return to the owner button after the popup hides.
+    private boolean focusOwnerOnHidden;
+
     /// Creates an empty menu button.
     public M3MenuButton() {
         this("");
@@ -237,11 +240,17 @@ public class M3MenuButton extends M3Button {
 
     /// Hides the menu popup.
     public final void hideMenu() {
+        hideMenu(false);
+    }
+
+    /// Hides the menu popup and optionally returns focus to the owner button.
+    private void hideMenu(boolean focusOwner) {
         menu.hideSubMenusExcept(null);
         if (!popup.isShowing()) {
             return;
         }
 
+        focusOwnerOnHidden = focusOwner;
         showAnimation.stop();
         if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
@@ -293,8 +302,12 @@ public class M3MenuButton extends M3Button {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case SHOW_MENU, EXPAND -> showMenu();
-            case COLLAPSE -> hideMenu();
-            case SET_SELECTED_ITEMS, SHOW_ITEM -> menu.executeAccessibleAction(action, parameters);
+            case COLLAPSE -> hideMenu(true);
+            case SET_SELECTED_ITEMS -> menu.executeAccessibleAction(action, parameters);
+            case SHOW_ITEM -> {
+                showMenu();
+                menu.executeAccessibleAction(action, parameters);
+            }
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -310,10 +323,14 @@ public class M3MenuButton extends M3Button {
             showing.set(false);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             resetMenuAnimationState();
+            if (focusOwnerOnHidden) {
+                focusOwnerOnHidden = false;
+                requestFocus();
+            }
         });
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         menu.addEventHandler(KeyEvent.KEY_PRESSED, this::handleMenuKeyPressed);
-        menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> hideMenu());
+        menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> hideMenu(true));
     }
 
     /// Handles keyboard opening and dismissal for the popup menu.
@@ -331,8 +348,7 @@ public class M3MenuButton extends M3Button {
             }
             case ESCAPE -> {
                 if (popup.isShowing()) {
-                    hideMenu();
-                    requestFocus();
+                    hideMenu(true);
                     event.consume();
                 }
             }
@@ -346,8 +362,7 @@ public class M3MenuButton extends M3Button {
         switch (event.getCode()) {
             case ESCAPE -> {
                 if (popup.isShowing()) {
-                    hideMenu();
-                    requestFocus();
+                    hideMenu(true);
                     event.consume();
                 }
             }
@@ -364,11 +379,7 @@ public class M3MenuButton extends M3Button {
             return false;
         }
 
-        @Nullable M3MenuItem firstItem = M3SelectionNavigation.first(menu.getItems(), M3MenuItem.class);
-        if (firstItem != null) {
-            firstItem.requestFocus();
-        }
-        return true;
+        return menu.focusFirstItem() || popup.isShowing();
     }
 
     /// Shows the popup menu and focuses the last enabled visible menu item.
@@ -379,11 +390,7 @@ public class M3MenuButton extends M3Button {
             return false;
         }
 
-        @Nullable M3MenuItem lastItem = M3SelectionNavigation.last(menu.getItems(), M3MenuItem.class);
-        if (lastItem != null) {
-            lastItem.requestFocus();
-        }
-        return true;
+        return menu.focusLastItem() || popup.isShowing();
     }
 
     /// Applies initial visual state before the popup is shown.

@@ -234,7 +234,11 @@ public class M3SubMenuItem extends M3MenuItem {
         switch (action) {
             case SHOW_MENU, EXPAND -> showSubMenu();
             case COLLAPSE -> hideSubMenu();
-            case SET_SELECTED_ITEMS, SHOW_ITEM -> subMenu.executeAccessibleAction(action, parameters);
+            case SET_SELECTED_ITEMS -> subMenu.executeAccessibleAction(action, parameters);
+            case SHOW_ITEM -> {
+                showSubMenu();
+                subMenu.executeAccessibleAction(action, parameters);
+            }
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -376,7 +380,7 @@ public class M3SubMenuItem extends M3MenuItem {
     }
 
     /// Shows the submenu and focuses its first enabled visible item.
-    private boolean showSubMenuAndFocusFirstItem() {
+    final boolean showSubMenuAndFocusFirstItem() {
         boolean showingBefore = popup.isShowing();
         showSubMenu();
         if (!popup.isShowing() && !showingBefore) {
