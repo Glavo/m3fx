@@ -23,14 +23,16 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
+import javafx.scene.control.Skin;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +40,7 @@ import java.util.Objects;
 
 /// A Material Design 3 text input container with supporting text, validation, error text, and a character counter.
 @NotNullByDefault
-public class M3TextInputLayout extends VBox {
+public class M3TextInputLayout extends Control {
     /// The base style class for M3FX text input layouts.
     public static final String STYLE_CLASS = "m3-text-input-layout";
 
@@ -628,6 +630,16 @@ public class M3TextInputLayout extends VBox {
         return M3Stylesheets.controlStylesheet("text-field.css");
     }
 
+    /// Returns the input and adornment container used by the default skin.
+    public final StackPane getInputContainer() {
+        return inputContainer;
+    }
+
+    /// Returns the supporting text and counter row used by the default skin.
+    public final HBox getSupportingRow() {
+        return supportingRow;
+    }
+
     /// Returns accessibility attributes for the wrapped input and supporting text.
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
@@ -667,7 +679,6 @@ public class M3TextInputLayout extends VBox {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
-        setFillWidth(true);
 
         inputContainer.getStyleClass().add(INPUT_CONTAINER_STYLE_CLASS);
         label.getStyleClass().add(LABEL_STYLE_CLASS);
@@ -689,13 +700,18 @@ public class M3TextInputLayout extends VBox {
 
         HBox.setHgrow(supportingSpacer, Priority.ALWAYS);
         supportingRow.getChildren().setAll(supportingLabel, supportingSpacer, counterLabel);
-        getChildren().addAll(inputContainer, supportingRow);
         updateInputContainer();
         updateInputVariantStyle();
         updateLabel();
         updateLeading();
         updateTrailing();
         updateSupportingRow();
+    }
+
+    /// Creates the default Material Design 3 text input layout skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3TextInputLayoutSkin(this);
     }
 
     /// Installs the current input node and removes state from the previous input.

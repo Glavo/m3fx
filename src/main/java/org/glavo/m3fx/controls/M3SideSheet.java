@@ -12,24 +12,21 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3SideSheetSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,7 +34,7 @@ import java.util.Objects;
 
 /// A Material Design 3 side sheet container.
 @NotNullByDefault
-public class M3SideSheet extends BorderPane {
+public class M3SideSheet extends Control {
     /// The base style class for M3FX side sheets.
     public static final String STYLE_CLASS = "m3-side-sheet";
 
@@ -93,6 +90,9 @@ public class M3SideSheet extends BorderPane {
     private final BooleanProperty restoreFocusOnHide =
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
 
+    /// The mutable trailing action node list.
+    private final ObservableList<Node> actions = FXCollections.observableArrayList();
+
     /// The sheet show and hide animation.
     private final Timeline visibilityAnimation = new Timeline();
 
@@ -101,21 +101,6 @@ public class M3SideSheet extends BorderPane {
 
     /// The last processed shown state.
     private boolean lastShown = true;
-
-    /// The header row.
-    private final HBox header = new HBox();
-
-    /// The headline label.
-    private final Label headlineLabel = new Label();
-
-    /// The flexible header spacer.
-    private final Region spacer = new Region();
-
-    /// The trailing action node container.
-    private final HBox actions = new HBox();
-
-    /// The content slot.
-    private final StackPane contentSlot = new StackPane();
 
     /// Creates an empty side sheet.
     public M3SideSheet() {
@@ -137,10 +122,7 @@ public class M3SideSheet extends BorderPane {
     /// Creates a side sheet with headline text, content, and trailing actions.
     public M3SideSheet(String headline, @Nullable Node content, Node... actions) {
         this(headline, content);
-        Objects.requireNonNull(actions, "actions");
-        for (Node action : actions) {
-            Objects.requireNonNull(action, "action");
-        }
+        validateActions(actions);
         getActions().addAll(actions);
     }
 
@@ -221,7 +203,7 @@ public class M3SideSheet extends BorderPane {
 
     /// Returns the mutable trailing action node list.
     public final ObservableList<Node> getActions() {
-        return actions.getChildren();
+        return actions;
     }
 
     /// Shows this side sheet using the Material visibility motion.
@@ -271,34 +253,25 @@ public class M3SideSheet extends BorderPane {
         }
     }
 
-    /// Initializes child nodes, style classes, and property listeners.
+    /// Creates the default Material Design 3 side sheet skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3SideSheetSkin(this);
+    }
+
+    /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
-        header.getStyleClass().add(HEADER_STYLE_CLASS);
-        headlineLabel.getStyleClass().add(TITLE_STYLE_CLASS);
-        actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
-        contentSlot.getStyleClass().add(CONTENT_STYLE_CLASS);
-        contentSlot.setAlignment(Pos.TOP_LEFT);
-
-        header.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        headlineLabel.textProperty().bind(headline);
         headline.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         content.addListener((observable, oldValue, newValue) -> {
-            updateContent(newValue);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         });
-        actions.getChildren().addListener((ListChangeListener<Node>) change ->
-                notifyAccessibleItemsChanged());
-        header.getChildren().addAll(headlineLabel, spacer, actions);
-        setTop(header);
-        setCenter(contentSlot);
+        actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         updateVariantStyle();
-        updateContent(getContent());
         updateAccessibleText();
     }
 
@@ -329,14 +302,6 @@ public class M3SideSheet extends BorderPane {
         }
         lastShown = shown;
         updateShownState(shown);
-    }
-
-    /// Updates the sheet content slot.
-    private void updateContent(@Nullable Node node) {
-        contentSlot.getChildren().clear();
-        if (node != null) {
-            contentSlot.getChildren().add(node);
-        }
     }
 
     /// Updates the accessibility label from the sheet headline.
@@ -437,5 +402,13 @@ public class M3SideSheet extends BorderPane {
                 M3SheetVariant.STANDARD.getStyleClass(),
                 M3SheetVariant.MODAL.getStyleClass()
         );
+    }
+
+    /// Validates an action node array.
+    private static void validateActions(Node... actions) {
+        Objects.requireNonNull(actions, "actions");
+        for (Node action : actions) {
+            Objects.requireNonNull(action, "action");
+        }
     }
 }

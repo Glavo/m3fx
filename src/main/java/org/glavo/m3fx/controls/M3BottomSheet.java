@@ -12,25 +12,21 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3BottomSheetSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +34,7 @@ import java.util.Objects;
 
 /// A Material Design 3 bottom sheet container.
 @NotNullByDefault
-public class M3BottomSheet extends BorderPane {
+public class M3BottomSheet extends Control {
     /// The base style class for M3FX bottom sheets.
     public static final String STYLE_CLASS = "m3-bottom-sheet";
 
@@ -103,12 +99,15 @@ public class M3BottomSheet extends BorderPane {
     /// Whether the drag handle is visible.
     private final BooleanProperty dragHandleVisible =
             new SimpleBooleanProperty(this, "dragHandleVisible", true) {
-                /// Updates the handle slot visibility.
+                /// Requests skin layout when handle visibility changes.
                 @Override
                 protected void invalidated() {
-                    updateDragHandleVisibility();
+                    requestLayout();
                 }
             };
+
+    /// The mutable trailing action node list.
+    private final ObservableList<Node> actions = FXCollections.observableArrayList();
 
     /// The sheet show and hide animation.
     private final Timeline visibilityAnimation = new Timeline();
@@ -118,30 +117,6 @@ public class M3BottomSheet extends BorderPane {
 
     /// The last processed shown state.
     private boolean lastShown = true;
-
-    /// The top area containing the drag handle and header.
-    private final VBox topArea = new VBox();
-
-    /// The drag handle slot.
-    private final StackPane dragHandleSlot = new StackPane();
-
-    /// The drag handle region.
-    private final Region dragHandle = new Region();
-
-    /// The header row.
-    private final HBox header = new HBox();
-
-    /// The headline label.
-    private final Label headlineLabel = new Label();
-
-    /// The flexible header spacer.
-    private final Region spacer = new Region();
-
-    /// The trailing action node container.
-    private final HBox actions = new HBox();
-
-    /// The content slot.
-    private final StackPane contentSlot = new StackPane();
 
     /// Creates an empty bottom sheet.
     public M3BottomSheet() {
@@ -163,10 +138,7 @@ public class M3BottomSheet extends BorderPane {
     /// Creates a bottom sheet with headline text, content, and trailing actions.
     public M3BottomSheet(String headline, @Nullable Node content, Node... actions) {
         this(headline, content);
-        Objects.requireNonNull(actions, "actions");
-        for (Node action : actions) {
-            Objects.requireNonNull(action, "action");
-        }
+        validateActions(actions);
         getActions().addAll(actions);
     }
 
@@ -262,7 +234,7 @@ public class M3BottomSheet extends BorderPane {
 
     /// Returns the mutable trailing action node list.
     public final ObservableList<Node> getActions() {
-        return actions.getChildren();
+        return actions;
     }
 
     /// Shows this bottom sheet using the Material visibility motion.
@@ -312,40 +284,26 @@ public class M3BottomSheet extends BorderPane {
         }
     }
 
-    /// Initializes child nodes, style classes, and property listeners.
+    /// Creates the default Material Design 3 bottom sheet skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3BottomSheetSkin(this);
+    }
+
+    /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
-        dragHandleSlot.getStyleClass().add(DRAG_HANDLE_CONTAINER_STYLE_CLASS);
-        dragHandle.getStyleClass().add(DRAG_HANDLE_STYLE_CLASS);
-        header.getStyleClass().add(HEADER_STYLE_CLASS);
-        headlineLabel.getStyleClass().add(TITLE_STYLE_CLASS);
-        actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
-        contentSlot.getStyleClass().add(CONTENT_STYLE_CLASS);
-        contentSlot.setAlignment(Pos.TOP_LEFT);
-
-        dragHandleSlot.getChildren().add(dragHandle);
-        header.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        headlineLabel.textProperty().bind(headline);
         headline.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         content.addListener((observable, oldValue, newValue) -> {
-            updateContent(newValue);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         });
-        actions.getChildren().addListener((ListChangeListener<Node>) change ->
-                notifyAccessibleItemsChanged());
-        header.getChildren().addAll(headlineLabel, spacer, actions);
-        topArea.getChildren().addAll(dragHandleSlot, header);
-        setTop(topArea);
-        setCenter(contentSlot);
+        actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         updateVariantStyle();
-        updateContent(getContent());
         updateAccessibleText();
-        updateDragHandleVisibility();
     }
 
     /// Handles keyboard dismissal for modal sheets.
@@ -377,14 +335,6 @@ public class M3BottomSheet extends BorderPane {
         updateShownState(shown);
     }
 
-    /// Updates the sheet content slot.
-    private void updateContent(@Nullable Node node) {
-        contentSlot.getChildren().clear();
-        if (node != null) {
-            contentSlot.getChildren().add(node);
-        }
-    }
-
     /// Updates the accessibility label from the sheet headline.
     private void updateAccessibleText() {
         String text = getHeadline();
@@ -396,13 +346,6 @@ public class M3BottomSheet extends BorderPane {
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-    }
-
-    /// Updates the drag handle visibility.
-    private void updateDragHandleVisibility() {
-        boolean visible = isDragHandleVisible();
-        dragHandleSlot.setVisible(visible);
-        dragHandleSlot.setManaged(visible);
     }
 
     /// Stores the current scene focus owner before a modal sheet takes interaction.
@@ -490,5 +433,13 @@ public class M3BottomSheet extends BorderPane {
                 M3SheetVariant.STANDARD.getStyleClass(),
                 M3SheetVariant.MODAL.getStyleClass()
         );
+    }
+
+    /// Validates an action node array.
+    private static void validateActions(Node... actions) {
+        Objects.requireNonNull(actions, "actions");
+        for (Node action : actions) {
+            Objects.requireNonNull(action, "action");
+        }
     }
 }

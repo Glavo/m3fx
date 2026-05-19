@@ -52,6 +52,7 @@ import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
 import org.glavo.m3fx.skins.M3BannerSkin;
 import org.glavo.m3fx.skins.M3BottomAppBarSkin;
+import org.glavo.m3fx.skins.M3BottomSheetSkin;
 import org.glavo.m3fx.skins.M3ButtonGroupSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3CardSkin;
@@ -84,10 +85,12 @@ import org.glavo.m3fx.skins.M3SliderSkin;
 import org.glavo.m3fx.skins.M3SplitButtonSkin;
 import org.glavo.m3fx.skins.M3SnackbarHostSkin;
 import org.glavo.m3fx.skins.M3SnackbarSkin;
+import org.glavo.m3fx.skins.M3SideSheetSkin;
 import org.glavo.m3fx.skins.M3SurfaceSkin;
 import org.glavo.m3fx.skins.M3SwitchSkin;
 import org.glavo.m3fx.skins.M3TabBarSkin;
 import org.glavo.m3fx.skins.M3TabSkin;
+import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.glavo.m3fx.skins.M3TextSkin;
 import org.glavo.m3fx.skins.M3TopAppBarSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -1686,6 +1689,8 @@ final class M3ControlStyleTest {
 
         applyCss(layout);
 
+        assertInstanceOf(M3TextInputLayoutSkin.class, layout.getSkin());
+        assertFalse(VBox.class.isAssignableFrom(M3TextInputLayout.class));
         assertEquals(textField, layout.getInput());
         assertEquals(textField, layout.getTextInput());
         assertEquals(3, layout.getCharacterCount());
@@ -3738,6 +3743,10 @@ final class M3ControlStyleTest {
 
         assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(320.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertInstanceOf(M3SideSheetSkin.class, sideSheet.getSkin());
+        assertInstanceOf(M3BottomSheetSkin.class, bottomSheet.getSkin());
+        assertFalse(javafx.scene.layout.BorderPane.class.isAssignableFrom(M3SideSheet.class));
+        assertFalse(javafx.scene.layout.BorderPane.class.isAssignableFrom(M3BottomSheet.class));
         assertEquals(
                 24.0,
                 lookupRegion(sideSheet, "." + M3SideSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),

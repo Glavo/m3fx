@@ -133,10 +133,6 @@
     -fx-opacity: 0.38;
 }
 
-.m3-text-input-layout {
-    -fx-spacing: 4px;
-}
-
 .m3-text-input-container {
     -fx-alignment: center;
 }
