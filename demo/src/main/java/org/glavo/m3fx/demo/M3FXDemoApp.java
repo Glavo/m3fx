@@ -47,6 +47,7 @@ import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
 import org.glavo.m3fx.controls.M3ChipSelectionMode;
 import org.glavo.m3fx.controls.M3ChipVariant;
+import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
@@ -118,6 +119,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -290,6 +293,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Carousel", "Carousel", ALL_OTHER_COMPONENTS_GROUP, "Horizontal content browsing with selected-item snapping", this::createCarouselPage),
                 new DemoPage("Checkboxes", "Checkbox", ALL_OTHER_COMPONENTS_GROUP, "Checked, unchecked, and disabled states", this::createCheckboxesPage),
                 new DemoPage("Chips", "Chips", ALL_OTHER_COMPONENTS_GROUP, "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
+                new DemoPage("Date Pickers", "Date pickers", ALL_OTHER_COMPONENTS_GROUP, "Calendar date selection, ranges, and month visibility", this::createDatePickersPage),
                 new DemoPage("Dialogs", "Dialogs", ALL_OTHER_COMPONENTS_GROUP, "Dialog pane with themed actions", this::createDialogsPage),
                 new DemoPage("Dividers", "Divider", ALL_OTHER_COMPONENTS_GROUP, "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
                 new DemoPage("Lists", "Lists", ALL_OTHER_COMPONENTS_GROUP, "One-line, two-line, three-line, and selected rows", this::createListPage),
@@ -779,6 +783,26 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup("States", selectedFilter, disabled),
                 createShowcaseGroup("Multi Select", multiSelect),
                 createShowcaseGroup("Single Select", singleSelect)
+        );
+    }
+
+    /// Creates the date picker component page.
+    private Node createDatePickersPage() {
+        LocalDate today = LocalDate.now();
+        M3DatePicker selected = new M3DatePicker(today);
+
+        M3DatePicker range = new M3DatePicker(today.plusDays(4));
+        range.setMinDate(today.minusDays(3));
+        range.setMaxDate(today.plusDays(18));
+
+        M3DatePicker monthOnly = new M3DatePicker();
+        monthOnly.setDisplayedMonth(YearMonth.from(today.plusMonths(1)));
+        monthOnly.setShowAdjacentMonthDays(false);
+
+        return createGallery(
+                createShowcaseGroup("Selected Date", selected),
+                createShowcaseGroup("Bounded Range", range),
+                createShowcaseGroup("Month Only", monthOnly)
         );
     }
 

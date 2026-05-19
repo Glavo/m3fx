@@ -82,6 +82,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -6320,6 +6321,7 @@ final class M3ControlStyleTest {
             errorField.setPrefWidth(150.0);
             M3TextArea textArea = M3TextArea.withVariant("Multiline\ntext area", M3TextInputVariant.FILLED);
             textArea.setPrefSize(260.0, 96.0);
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
 
             M3CheckBox selectedCheckBox = M3CheckBox.withSelected("Checkbox", true);
             M3RadioButton selectedRadioButton = M3RadioButton.withSelected("Radio", true);
@@ -6512,7 +6514,7 @@ final class M3ControlStyleTest {
                             extendedFab,
                             fabMenu
                     ),
-                    visualSection("Inputs", filledField, outlinedField, passwordField, errorField, textArea),
+                    visualSection("Inputs", filledField, outlinedField, passwordField, errorField, textArea, datePicker),
                     visualSection("Selection", selectedCheckBox, selectedRadioButton, selectedSwitch, slider),
                     visualSection("Chips, Segments, Tabs", chipGroup, segmentedButtons, tabBar),
                     visualSection(
@@ -6551,6 +6553,7 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, filledField, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, outlinedField, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, errorField, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, selectedCheckBox, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, selectedRadioButton, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, selectedSwitch, Color.WHITE, 0.08);
@@ -7395,6 +7398,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3PasswordField(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3TextArea(), "/styles/controls/text-field.css");
         assertUserAgentStylesheet(new M3TextInputLayout(), "/styles/controls/text-field.css");
+        assertUserAgentStylesheet(new M3DatePicker(), "/styles/controls/date-picker.css");
         assertUserAgentStylesheet(new M3Avatar(), "/styles/controls/avatar.css");
         assertUserAgentStylesheet(new M3Icon(), "/styles/controls/icon.css");
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
