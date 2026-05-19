@@ -11,14 +11,15 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3TabBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -30,9 +31,12 @@ import java.util.Objects;
 
 /// A Material Design 3 tab bar.
 @NotNullByDefault
-public class M3TabBar extends HBox {
+public class M3TabBar extends Control {
     /// The base style class for M3FX tab bars.
     public static final String STYLE_CLASS = "m3-tab-bar";
+
+    /// The mutable tab content.
+    private final ObservableList<Node> tabs = FXCollections.observableArrayList();
 
     /// The currently selected tab.
     private final ReadOnlyObjectWrapper<@Nullable M3Tab> selectedTab =
@@ -95,7 +99,7 @@ public class M3TabBar extends HBox {
 
     /// Returns the mutable child list used as tabs.
     public final ObservableList<Node> getTabs() {
-        return getChildren();
+        return tabs;
     }
 
     /// Adds one tab.
@@ -138,7 +142,7 @@ public class M3TabBar extends HBox {
     /// Returns the child index of the selected tab, or `-1` when no tab is selected.
     public final int getSelectedIndex() {
         @Nullable M3Tab tab = getSelectedTab();
-        return tab == null ? -1 : getChildren().indexOf(tab);
+        return tab == null ? -1 : getTabs().indexOf(tab);
     }
 
     /// Returns whether this tab bar allows all tabs to be unselected.
@@ -159,7 +163,7 @@ public class M3TabBar extends HBox {
     /// Selects a tab that belongs to this tab bar.
     public final void select(M3Tab tab) {
         Objects.requireNonNull(tab, "tab");
-        if (!getChildren().contains(tab)) {
+        if (!getTabs().contains(tab)) {
             throw new IllegalArgumentException("tab must belong to this tab bar");
         }
         selectTab(tab);
@@ -167,7 +171,7 @@ public class M3TabBar extends HBox {
 
     /// Selects the tab at the given child index.
     public final void selectIndex(int index) {
-        Node child = getChildren().get(index);
+        Node child = getTabs().get(index);
         if (child instanceof M3Tab tab) {
             select(tab);
             return;
@@ -185,7 +189,7 @@ public class M3TabBar extends HBox {
 
     /// Selects the last tab when one exists.
     public final void selectLast() {
-        @Nullable M3Tab lastTab = M3SelectionNavigation.last(getChildren(), M3Tab.class);
+        @Nullable M3Tab lastTab = M3SelectionNavigation.last(getTabs(), M3Tab.class);
         if (lastTab != null) {
             selectTab(lastTab);
         }
@@ -193,7 +197,7 @@ public class M3TabBar extends HBox {
 
     /// Selects the next tab after the current selected tab, wrapping at the end.
     public final void selectNext() {
-        @Nullable M3Tab nextTab = M3SelectionNavigation.next(getChildren(), getSelectedTab(), M3Tab.class);
+        @Nullable M3Tab nextTab = M3SelectionNavigation.next(getTabs(), getSelectedTab(), M3Tab.class);
         if (nextTab != null) {
             selectTab(nextTab);
         }
@@ -202,7 +206,7 @@ public class M3TabBar extends HBox {
     /// Selects the previous tab before the current selected tab, wrapping at the start.
     public final void selectPrevious() {
         @Nullable M3Tab previousTab =
-                M3SelectionNavigation.previous(getChildren(), getSelectedTab(), M3Tab.class);
+                M3SelectionNavigation.previous(getTabs(), getSelectedTab(), M3Tab.class);
         if (previousTab != null) {
             selectTab(previousTab);
         }
@@ -251,16 +255,15 @@ public class M3TabBar extends HBox {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TAB_PANE);
-        setAlignment(Pos.CENTER_LEFT);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        getChildren().addListener(childrenListener);
+        getTabs().addListener(childrenListener);
     }
 
     /// Applies keyboard navigation across enabled tabs.
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeySelection(
                 event,
-                getChildren(),
+                getTabs(),
                 getSelectedTab(),
                 M3Tab.class,
                 true,
@@ -337,7 +340,7 @@ public class M3TabBar extends HBox {
     private void selectTab(@Nullable M3Tab tab) {
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getTabs()) {
                 if (child instanceof M3Tab item) {
                     item.setSelected(item == tab);
                 }
@@ -352,7 +355,7 @@ public class M3TabBar extends HBox {
     private void refreshSelectedTabs() {
         List<M3Tab> previousSelection = List.copyOf(selectedTabs);
         selectedTabs.clear();
-        for (Node child : getChildren()) {
+        for (Node child : getTabs()) {
             if (child instanceof M3Tab tab && tab.isSelected()) {
                 selectedTabs.add(tab);
             }
@@ -365,7 +368,13 @@ public class M3TabBar extends HBox {
 
     /// Returns the first tab child.
     private @Nullable M3Tab firstTab() {
-        return M3SelectionNavigation.first(getChildren(), M3Tab.class);
+        return M3SelectionNavigation.first(getTabs(), M3Tab.class);
+    }
+
+    /// Creates the default Material Design 3 tab bar skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3TabBarSkin(this);
     }
 
     /// Validates a tab array.

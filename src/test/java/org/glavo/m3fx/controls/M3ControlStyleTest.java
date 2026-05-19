@@ -50,14 +50,17 @@ import javafx.util.Duration;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
+import org.glavo.m3fx.skins.M3ButtonGroupSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3CardSkin;
 import org.glavo.m3fx.skins.M3CarouselSkin;
 import org.glavo.m3fx.skins.M3CheckBoxSkin;
+import org.glavo.m3fx.skins.M3ChipGroupSkin;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3IconSkin;
+import org.glavo.m3fx.skins.M3IconToggleButtonGroupSkin;
 import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
@@ -69,12 +72,14 @@ import org.glavo.m3fx.skins.M3NavigationRailSkin;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
+import org.glavo.m3fx.skins.M3SegmentedButtonGroupSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
 import org.glavo.m3fx.skins.M3SnackbarHostSkin;
 import org.glavo.m3fx.skins.M3SnackbarSkin;
 import org.glavo.m3fx.skins.M3SurfaceSkin;
 import org.glavo.m3fx.skins.M3SwitchSkin;
+import org.glavo.m3fx.skins.M3TabBarSkin;
 import org.glavo.m3fx.skins.M3TabSkin;
 import org.glavo.m3fx.skins.M3TextSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -449,6 +454,31 @@ final class M3ControlStyleTest {
 
         assertFalse(first.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
         assertTrue(third.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS));
+    }
+
+    /// Verifies that grouped selection containers create Material Design 3 skins.
+    @Test
+    void groupedSelectionContainersCreateMaterialSkins() {
+        M3ButtonGroup buttonGroup = new M3ButtonGroup(new M3Button("A"), new M3Button("B"));
+        M3IconToggleButtonGroup iconGroup =
+                new M3IconToggleButtonGroup(new M3IconToggleButton("A"), new M3IconToggleButton("B"));
+        M3ChipGroup chipGroup = new M3ChipGroup(new M3Chip("A"), new M3Chip("B"));
+        M3SegmentedButtonGroup segmentedGroup =
+                new M3SegmentedButtonGroup(new M3SegmentedButton("A"), new M3SegmentedButton("B"));
+        M3TabBar tabBar = new M3TabBar(new M3Tab("A"), new M3Tab("B"));
+        Pane root = new Pane(buttonGroup, iconGroup, chipGroup, segmentedGroup, tabBar);
+        Scene scene = new Scene(root);
+
+        chipGroup.setPrefWrapLength(240.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertInstanceOf(M3ButtonGroupSkin.class, buttonGroup.getSkin());
+        assertInstanceOf(M3IconToggleButtonGroupSkin.class, iconGroup.getSkin());
+        assertInstanceOf(M3ChipGroupSkin.class, chipGroup.getSkin());
+        assertInstanceOf(M3SegmentedButtonGroupSkin.class, segmentedGroup.getSkin());
+        assertInstanceOf(M3TabBarSkin.class, tabBar.getSkin());
+        assertEquals(240.0, chipGroup.getPrefWrapLength(), 0.0001);
     }
 
     /// Verifies that split buttons delegate action and menu APIs to their child buttons.
@@ -4267,13 +4297,13 @@ final class M3ControlStyleTest {
         assertTrue(second.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS));
         assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
 
-        group.getChildren().remove(second);
+        group.getItems().remove(second);
 
         assertFalse(second.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS));
         assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
         assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
 
-        group.getChildren().remove(first);
+        group.getItems().remove(first);
 
         assertFalse(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
         assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS));
@@ -8433,6 +8463,7 @@ final class M3ControlStyleTest {
     void controlsDoNotExtendConcreteJavaFxControls() {
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3Button.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3ButtonGroup.class));
+        assertFalse(HBox.class.isAssignableFrom(M3ButtonGroup.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3SplitButton.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3FabMenu.class));
         assertFalse(javafx.scene.control.MenuButton.class.isAssignableFrom(M3SplitButton.class));
@@ -8458,9 +8489,13 @@ final class M3ControlStyleTest {
         assertFalse(VBox.class.isAssignableFrom(M3NavigationRail.class));
         assertFalse(VBox.class.isAssignableFrom(M3NavigationDrawer.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
+        assertFalse(FlowPane.class.isAssignableFrom(M3ChipGroup.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
+        assertFalse(HBox.class.isAssignableFrom(M3IconToggleButtonGroup.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
+        assertFalse(HBox.class.isAssignableFrom(M3SegmentedButtonGroup.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Tab.class));
+        assertFalse(HBox.class.isAssignableFrom(M3TabBar.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3NavigationItem.class));
     }
 

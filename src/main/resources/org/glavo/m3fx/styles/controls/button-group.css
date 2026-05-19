@@ -1,8 +1,3 @@
-.m3-button-group {
-    -fx-spacing: -1px;
-    -fx-alignment: center-left;
-}
-
 .m3-button-group .m3-button.m3-grouped-button {
     -m3-horizontal-padding: 20px;
 }

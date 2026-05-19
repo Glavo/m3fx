@@ -908,7 +908,7 @@ public final class M3FXDemoApp extends Application {
     private Node createSegmentedButtonsPage() {
         M3SegmentedButtonGroup dateRange = createSegmentedGroup("Day", "Week", "Month");
         M3SegmentedButtonGroup priority = createSegmentedGroup("Low", "Medium", "High");
-        priority.getChildren().get(2).setDisable(true);
+        priority.getItems().get(2).setDisable(true);
         M3SegmentedButtonGroup channels = createSegmentedGroup("Email", "Chat", "Push");
         channels.clearSelection();
         channels.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);

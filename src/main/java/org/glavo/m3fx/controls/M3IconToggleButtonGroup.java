@@ -13,14 +13,15 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3IconToggleButtonGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -32,9 +33,12 @@ import java.util.Objects;
 
 /// A Material Design 3 toggle icon button group.
 @NotNullByDefault
-public class M3IconToggleButtonGroup extends HBox {
+public class M3IconToggleButtonGroup extends Control {
     /// The base style class for M3FX toggle icon button groups.
     public static final String STYLE_CLASS = "m3-icon-toggle-button-group";
+
+    /// The mutable toggle icon button group content.
+    private final ObservableList<Node> items = FXCollections.observableArrayList();
 
     /// The icon toggle button selection mode.
     private final ObjectProperty<M3IconToggleButtonSelectionMode> selectionMode =
@@ -111,7 +115,7 @@ public class M3IconToggleButtonGroup extends HBox {
 
     /// Returns the mutable child list used as toggle icon button group content.
     public final ObservableList<Node> getItems() {
-        return getChildren();
+        return items;
     }
 
     /// Adds one toggle icon button.
@@ -169,7 +173,7 @@ public class M3IconToggleButtonGroup extends HBox {
     /// Returns the child index of the first selected toggle icon button, or `-1` when none is selected.
     public final int getSelectedIndex() {
         @Nullable M3IconToggleButton button = getSelectedButton();
-        return button == null ? -1 : getChildren().indexOf(button);
+        return button == null ? -1 : getItems().indexOf(button);
     }
 
     /// Returns whether this group allows all buttons to be unselected.
@@ -190,7 +194,7 @@ public class M3IconToggleButtonGroup extends HBox {
     /// Selects a toggle icon button that belongs to this group.
     public final void select(M3IconToggleButton button) {
         Objects.requireNonNull(button, "button");
-        if (!getChildren().contains(button)) {
+        if (!getItems().contains(button)) {
             throw new IllegalArgumentException("button must belong to this toggle icon button group");
         }
         if (getSelectionMode() == M3IconToggleButtonSelectionMode.MULTIPLE) {
@@ -202,7 +206,7 @@ public class M3IconToggleButtonGroup extends HBox {
 
     /// Selects the toggle icon button at the given child index.
     public final void selectIndex(int index) {
-        Node child = getChildren().get(index);
+        Node child = getItems().get(index);
         if (child instanceof M3IconToggleButton button) {
             select(button);
             return;
@@ -221,7 +225,7 @@ public class M3IconToggleButtonGroup extends HBox {
     /// Selects the last toggle icon button when one exists.
     public final void selectLast() {
         @Nullable M3IconToggleButton lastButton =
-                M3SelectionNavigation.last(getChildren(), M3IconToggleButton.class);
+                M3SelectionNavigation.last(getItems(), M3IconToggleButton.class);
         if (lastButton != null) {
             select(lastButton);
         }
@@ -230,7 +234,7 @@ public class M3IconToggleButtonGroup extends HBox {
     /// Selects the next toggle icon button after the current selected button, wrapping at the end.
     public final void selectNext() {
         @Nullable M3IconToggleButton nextButton =
-                M3SelectionNavigation.next(getChildren(), getSelectedButton(), M3IconToggleButton.class);
+                M3SelectionNavigation.next(getItems(), getSelectedButton(), M3IconToggleButton.class);
         if (nextButton != null) {
             select(nextButton);
         }
@@ -239,7 +243,7 @@ public class M3IconToggleButtonGroup extends HBox {
     /// Selects the previous toggle icon button before the current selected button, wrapping at the start.
     public final void selectPrevious() {
         @Nullable M3IconToggleButton previousButton =
-                M3SelectionNavigation.previous(getChildren(), getSelectedButton(), M3IconToggleButton.class);
+                M3SelectionNavigation.previous(getItems(), getSelectedButton(), M3IconToggleButton.class);
         if (previousButton != null) {
             select(previousButton);
         }
@@ -288,10 +292,8 @@ public class M3IconToggleButtonGroup extends HBox {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        setAlignment(Pos.CENTER_LEFT);
-        setSpacing(8.0);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        getChildren().addListener(childrenListener);
+        getItems().addListener(childrenListener);
     }
 
     /// Applies keyboard navigation across enabled toggle icon buttons.
@@ -299,9 +301,9 @@ public class M3IconToggleButtonGroup extends HBox {
         if (getSelectionMode() == M3IconToggleButtonSelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
-                    getChildren(),
+                    getItems(),
                     M3SelectionNavigation.focusAnchor(
-                            getChildren(),
+                            getItems(),
                             getSelectedButton(),
                             M3IconToggleButton.class
                     ),
@@ -314,7 +316,7 @@ public class M3IconToggleButtonGroup extends HBox {
 
         M3SelectionNavigation.handleKeySelection(
                 event,
-                getChildren(),
+                getItems(),
                 getSelectedButton(),
                 M3IconToggleButton.class,
                 true,
@@ -338,7 +340,7 @@ public class M3IconToggleButtonGroup extends HBox {
 
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3IconToggleButton button) {
                     button.setSelected(M3Accessible.containsSelectionTarget(button, parameters));
                 }
@@ -428,7 +430,7 @@ public class M3IconToggleButtonGroup extends HBox {
     private void selectOnly(@Nullable M3IconToggleButton button) {
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3IconToggleButton toggleButton) {
                     toggleButton.setSelected(toggleButton == button);
                 }
@@ -443,7 +445,7 @@ public class M3IconToggleButtonGroup extends HBox {
     private void refreshSelectedButtons() {
         List<M3IconToggleButton> previousSelection = List.copyOf(selectedButtons);
         selectedButtons.clear();
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             if (child instanceof M3IconToggleButton button && button.isSelected()) {
                 selectedButtons.add(button);
             }
@@ -456,7 +458,13 @@ public class M3IconToggleButtonGroup extends HBox {
 
     /// Returns the first toggle icon button child.
     private @Nullable M3IconToggleButton firstButton() {
-        return M3SelectionNavigation.first(getChildren(), M3IconToggleButton.class);
+        return M3SelectionNavigation.first(getItems(), M3IconToggleButton.class);
+    }
+
+    /// Creates the default Material Design 3 toggle icon button group skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3IconToggleButtonGroupSkin(this);
     }
 
     /// Validates a toggle icon button array.

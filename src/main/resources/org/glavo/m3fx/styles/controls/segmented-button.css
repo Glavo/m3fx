@@ -41,11 +41,6 @@
     -fx-background-color: -m3-color-on-secondary-container;
 }
 
-.m3-segmented-button-group {
-    -fx-spacing: -1px;
-    -fx-alignment: center-left;
-}
-
 .m3-segmented-button.m3-segmented-button-single {
     -fx-background-radius: 999px;
     -fx-border-radius: 999px;

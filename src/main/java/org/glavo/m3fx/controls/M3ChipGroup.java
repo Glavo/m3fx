@@ -4,23 +4,26 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.FlowPane;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3ChipGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -32,15 +35,21 @@ import java.util.Objects;
 
 /// A Material Design 3 chip group that lays chips out as a wrapping set.
 @NotNullByDefault
-public class M3ChipGroup extends FlowPane {
+public class M3ChipGroup extends Control {
     /// The base style class for M3FX chip groups.
     public static final String STYLE_CLASS = "m3-chip-group";
 
-    /// The default horizontal gap between chips.
-    private static final double DEFAULT_HORIZONTAL_GAP = 8.0;
+    /// The mutable chip group content.
+    private final ObservableList<Node> items = FXCollections.observableArrayList();
 
-    /// The default vertical gap between wrapped chip rows.
-    private static final double DEFAULT_VERTICAL_GAP = 8.0;
+    /// The preferred wrapping width used by the internal flow layout.
+    private final DoubleProperty prefWrapLength = new SimpleDoubleProperty(this, "prefWrapLength", 400.0) {
+        /// Validates updated preferred wrap length values.
+        @Override
+        protected void invalidated() {
+            set(M3Css.nonNegative(get(), "prefWrapLength"));
+        }
+    };
 
     /// The chip selection mode.
     private final ObjectProperty<M3ChipSelectionMode> selectionMode =
@@ -117,7 +126,7 @@ public class M3ChipGroup extends FlowPane {
 
     /// Returns the mutable child list used as chip group content.
     public final ObservableList<Node> getItems() {
-        return getChildren();
+        return items;
     }
 
     /// Adds one chip.
@@ -140,6 +149,21 @@ public class M3ChipGroup extends FlowPane {
     /// Removes all chip group content.
     public final void clearItems() {
         getItems().clear();
+    }
+
+    /// Returns the preferred wrapping width used by the chip flow layout.
+    public final double getPrefWrapLength() {
+        return prefWrapLength.get();
+    }
+
+    /// Sets the preferred wrapping width used by the chip flow layout.
+    public final void setPrefWrapLength(double prefWrapLength) {
+        this.prefWrapLength.set(M3Css.nonNegative(prefWrapLength, "prefWrapLength"));
+    }
+
+    /// Returns the preferred wrapping width property.
+    public final DoubleProperty prefWrapLengthProperty() {
+        return prefWrapLength;
     }
 
     /// Returns the chip selection mode.
@@ -190,13 +214,13 @@ public class M3ChipGroup extends FlowPane {
     /// Returns the child index of the first selected chip, or `-1` when no chip is selected.
     public final int getSelectedIndex() {
         @Nullable M3Chip chip = getSelectedChip();
-        return chip == null ? -1 : getChildren().indexOf(chip);
+        return chip == null ? -1 : getItems().indexOf(chip);
     }
 
     /// Selects a chip that belongs to this group.
     public final void select(M3Chip chip) {
         Objects.requireNonNull(chip, "chip");
-        if (!getChildren().contains(chip)) {
+        if (!getItems().contains(chip)) {
             throw new IllegalArgumentException("chip must belong to this chip group");
         }
 
@@ -215,7 +239,7 @@ public class M3ChipGroup extends FlowPane {
 
     /// Selects the chip at the given child index.
     public final void selectIndex(int index) {
-        Node child = getChildren().get(index);
+        Node child = getItems().get(index);
         if (child instanceof M3Chip chip) {
             select(chip);
             return;
@@ -233,7 +257,7 @@ public class M3ChipGroup extends FlowPane {
 
     /// Selects the last chip when one exists.
     public final void selectLast() {
-        @Nullable M3Chip lastChip = M3SelectionNavigation.last(getChildren(), M3Chip.class);
+        @Nullable M3Chip lastChip = M3SelectionNavigation.last(getItems(), M3Chip.class);
         if (lastChip != null) {
             select(lastChip);
         }
@@ -241,7 +265,7 @@ public class M3ChipGroup extends FlowPane {
 
     /// Selects the next chip after the current selected chip, wrapping at the end.
     public final void selectNext() {
-        @Nullable M3Chip nextChip = M3SelectionNavigation.next(getChildren(), getSelectedChip(), M3Chip.class);
+        @Nullable M3Chip nextChip = M3SelectionNavigation.next(getItems(), getSelectedChip(), M3Chip.class);
         if (nextChip != null) {
             select(nextChip);
         }
@@ -250,7 +274,7 @@ public class M3ChipGroup extends FlowPane {
     /// Selects the previous chip before the current selected chip, wrapping at the start.
     public final void selectPrevious() {
         @Nullable M3Chip previousChip =
-                M3SelectionNavigation.previous(getChildren(), getSelectedChip(), M3Chip.class);
+                M3SelectionNavigation.previous(getItems(), getSelectedChip(), M3Chip.class);
         if (previousChip != null) {
             select(previousChip);
         }
@@ -299,11 +323,8 @@ public class M3ChipGroup extends FlowPane {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
-        setAlignment(Pos.CENTER_LEFT);
-        setHgap(DEFAULT_HORIZONTAL_GAP);
-        setVgap(DEFAULT_VERTICAL_GAP);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        getChildren().addListener(childrenListener);
+        getItems().addListener(childrenListener);
     }
 
     /// Applies keyboard navigation across enabled chips.
@@ -311,8 +332,8 @@ public class M3ChipGroup extends FlowPane {
         if (getSelectionMode() == M3ChipSelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
-                    getChildren(),
-                    M3SelectionNavigation.focusAnchor(getChildren(), getSelectedChip(), M3Chip.class),
+                    getItems(),
+                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedChip(), M3Chip.class),
                     M3Chip.class,
                     true,
                     true
@@ -322,7 +343,7 @@ public class M3ChipGroup extends FlowPane {
 
         M3SelectionNavigation.handleKeySelection(
                 event,
-                getChildren(),
+                getItems(),
                 getSelectedChip(),
                 M3Chip.class,
                 true,
@@ -345,7 +366,7 @@ public class M3ChipGroup extends FlowPane {
 
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3Chip chip) {
                     chip.setSelected(M3Accessible.containsSelectionTarget(chip, parameters));
                 }
@@ -427,7 +448,7 @@ public class M3ChipGroup extends FlowPane {
     private void selectOnly(@Nullable M3Chip chip) {
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3Chip item) {
                     item.setSelected(item == chip);
                 }
@@ -442,7 +463,7 @@ public class M3ChipGroup extends FlowPane {
     private void refreshSelectedChips() {
         List<M3Chip> previousSelection = List.copyOf(selectedChips);
         selectedChips.clear();
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             if (child instanceof M3Chip chip && chip.isSelected()) {
                 selectedChips.add(chip);
             }
@@ -455,7 +476,13 @@ public class M3ChipGroup extends FlowPane {
 
     /// Returns the first chip child.
     private @Nullable M3Chip firstChip() {
-        return M3SelectionNavigation.first(getChildren(), M3Chip.class);
+        return M3SelectionNavigation.first(getItems(), M3Chip.class);
+    }
+
+    /// Creates the default Material Design 3 chip group skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3ChipGroupSkin(this);
     }
 
     /// Validates a chip array.

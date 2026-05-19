@@ -4,14 +4,17 @@
 package org.glavo.m3fx.controls;
 
 import javafx.collections.ListChangeListener;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3ButtonGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,7 +22,7 @@ import java.util.Objects;
 
 /// A Material Design 3 button group for adjacent related action buttons.
 @NotNullByDefault
-public class M3ButtonGroup extends HBox {
+public class M3ButtonGroup extends Control {
     /// The base style class for M3FX button groups.
     public static final String STYLE_CLASS = "m3-button-group";
 
@@ -38,8 +41,8 @@ public class M3ButtonGroup extends HBox {
     /// The style class applied to the last grouped button.
     public static final String LAST_BUTTON_STYLE_CLASS = "m3-button-group-last";
 
-    /// The default spacing that lets adjacent button borders overlap.
-    private static final double DEFAULT_SPACING = -1.0;
+    /// The mutable button group content.
+    private final ObservableList<Node> items = FXCollections.observableArrayList();
 
     /// Updates grouped button position style classes when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -68,7 +71,7 @@ public class M3ButtonGroup extends HBox {
 
     /// Returns the mutable child list used as button group content.
     public final ObservableList<Node> getItems() {
-        return getChildren();
+        return items;
     }
 
     /// Adds one button to the group.
@@ -124,9 +127,8 @@ public class M3ButtonGroup extends HBox {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        setSpacing(DEFAULT_SPACING);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        getChildren().addListener(childrenListener);
+        getItems().addListener(childrenListener);
         updateButtonStyles();
     }
 
@@ -134,8 +136,8 @@ public class M3ButtonGroup extends HBox {
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeyFocus(
                 event,
-                getChildren(),
-                M3SelectionNavigation.focused(getChildren(), M3Button.class),
+                getItems(),
+                M3SelectionNavigation.focused(getItems(), M3Button.class),
                 M3Button.class,
                 true,
                 false
@@ -145,14 +147,14 @@ public class M3ButtonGroup extends HBox {
     /// Applies first, middle, last, or single button style classes.
     private void updateButtonStyles() {
         int buttonCount = 0;
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             if (child instanceof M3Button) {
                 buttonCount++;
             }
         }
 
         int buttonIndex = 0;
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             if (child instanceof M3Button button) {
                 M3ControlStyles.add(button, GROUPED_BUTTON_STYLE_CLASS);
                 M3ControlStyles.replaceVariant(
@@ -191,6 +193,12 @@ public class M3ButtonGroup extends HBox {
         button.getStyleClass().remove(MIDDLE_BUTTON_STYLE_CLASS);
         button.getStyleClass().remove(LAST_BUTTON_STYLE_CLASS);
         button.requestLayout();
+    }
+
+    /// Creates the default Material Design 3 button group skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3ButtonGroupSkin(this);
     }
 
     /// Validates a button array.
