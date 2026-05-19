@@ -8075,6 +8075,51 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that validation summaries render invalid input rows in snapshots.
+    @Test
+    void validationSummarySnapshotRendersInvalidInputRows() {
+        runOnFxThread(() -> {
+            M3TextField nameField = new M3TextField();
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
+            nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
+
+            M3TextField emailField = new M3TextField("support");
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Format");
+            emailLayout.setValidator(M3TextInputValidators.pattern(
+                    Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
+                    "Enter a valid email address"
+            ));
+
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            summary.setPrefWidth(420.0);
+            assertFalse(validator.validate());
+
+            VBox root = new VBox(summary);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 500.0, 190.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(500.0, 190.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, summary, Color.WHITE, 0.04);
+            assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertEquals("Display name", assertInstanceOf(
+                    Label.class,
+                    summary.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+            ).getText());
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-validation-summary.png"
+            ));
+        });
+    }
+
     /// Verifies that selection controls render selected, indeterminate, and disabled states.
     @Test
     void selectionSnapshotRendersStateMatrix() {
@@ -9104,6 +9149,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3IconToggleButtonGroup().getStyleClass().contains(M3IconToggleButtonGroup.STYLE_CLASS));
         assertTrue(new M3Text("Text").getStyleClass().contains(M3Text.STYLE_CLASS));
         assertTrue(new M3Surface().getStyleClass().contains(M3Surface.STYLE_CLASS));
+        assertTrue(new M3ValidationSummary().getStyleClass().contains(M3ValidationSummary.STYLE_CLASS));
         assertTrue(new M3BadgedBox().getStyleClass().contains(M3BadgedBox.STYLE_CLASS));
         assertTrue(new M3Menu().getStyleClass().contains(M3Menu.STYLE_CLASS));
         assertTrue(new M3MenuItem("Open").getStyleClass().contains(M3MenuItem.STYLE_CLASS));
@@ -9644,6 +9690,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3FormPane(), "/styles/controls/form.css");
         assertUserAgentStylesheet(new M3FormSection(), "/styles/controls/form.css");
         assertUserAgentStylesheet(new M3FormRow(), "/styles/controls/form.css");
+        assertUserAgentStylesheet(new M3ValidationSummary(), "/styles/controls/validation-summary.css");
         assertUserAgentStylesheet(new M3BadgedBox(), "/styles/controls/badge.css");
         assertUserAgentStylesheet(new M3Menu(), "/styles/controls/menu.css");
         assertUserAgentStylesheet(new M3MenuItem(), "/styles/controls/list-item.css");

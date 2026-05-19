@@ -124,6 +124,7 @@ import org.glavo.m3fx.controls.M3TimePickerField;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
+import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Density;
@@ -1463,6 +1464,12 @@ public final class M3FXDemoApp extends Application {
         );
 
         M3FormValidator validator = new M3FormValidator(displayNameLayout, emailLayout);
+        M3ValidationSummary validationSummary = new M3ValidationSummary(validator);
+        validationSummary.setTitleText("Review form fields");
+        validationSummary.setEmptyText("All registered fields are valid");
+        validationSummary.setPrefWidth(720.0);
+        validationSummary.setMaxWidth(720.0);
+
         M3Button validateButton = createButton("Validate form", M3ButtonVariant.FILLED);
         validateButton.setOnAction(event -> {
             if (validator.validateAndFocusFirstInvalidInput()) {
@@ -1487,7 +1494,7 @@ public final class M3FXDemoApp extends Application {
                 new M3FormRow("Actions", "Validate all registered inputs", validationActions)
         );
 
-        M3FormPane form = new M3FormPane(account, preferences, validation);
+        M3FormPane form = new M3FormPane(validationSummary, account, preferences, validation);
         form.getStyleClass().add("demo-form");
         form.setContentPadding(18.0);
         form.setPrefWidth(760.0);

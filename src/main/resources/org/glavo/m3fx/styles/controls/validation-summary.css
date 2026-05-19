@@ -1,0 +1,54 @@
+.m3-validation-summary {
+    -fx-background-color: -m3-color-error-container;
+    -fx-background-radius: 12px;
+    -fx-padding: 16px;
+}
+
+.m3-validation-summary:empty {
+    -fx-background-color: transparent;
+    -fx-padding: 0px;
+}
+
+.m3-validation-summary-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -m3-color-on-error-container;
+}
+
+.m3-validation-summary-empty-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: -m3-color-on-error-container;
+}
+
+.m3-validation-summary-items {
+    -fx-spacing: 4px;
+}
+
+.m3-validation-summary-item {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+    -fx-padding: 8px 10px 8px 10px;
+    -fx-cursor: hand;
+}
+
+.m3-validation-summary-item:hover {
+    -fx-background-color: derive(-m3-color-error-container, -6%);
+}
+
+.m3-validation-summary-item:focused {
+    -fx-border-color: -m3-color-on-error-container;
+}
+
+.m3-validation-summary-item-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -m3-color-on-error-container;
+}
+
+.m3-validation-summary-item-error {
+    -fx-font-size: 13px;
+    -fx-text-fill: -m3-color-on-error-container;
+}

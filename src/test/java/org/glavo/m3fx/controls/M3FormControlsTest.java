@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -14,6 +15,7 @@ import javafx.scene.layout.VBox;
 import org.glavo.m3fx.skins.M3FormPaneSkin;
 import org.glavo.m3fx.skins.M3FormRowSkin;
 import org.glavo.m3fx.skins.M3FormSectionSkin;
+import org.glavo.m3fx.skins.M3ValidationSummarySkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -153,6 +155,8 @@ final class M3FormControlsTest {
         assertTrue(new M3FormPane().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
         assertTrue(new M3FormSection().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
         assertTrue(new M3FormRow().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
+        assertTrue(new M3ValidationSummary().getUserAgentStylesheet()
+                .endsWith("/styles/controls/validation-summary.css"));
     }
 
     /// Verifies that form validators coordinate text input validation state.
@@ -224,6 +228,53 @@ final class M3FormControlsTest {
             assertFalse(validator.removeInput(first));
             assertTrue(validator.getInputs().isEmpty());
             assertFalse(validator.focusFirstInvalidInput());
+        });
+    }
+
+    /// Verifies that validation summaries render validator errors and expose accessibility targets.
+    @Test
+    void validationSummaryMirrorsValidatorErrorsIntoSkin() {
+        runOnFxThread(() -> {
+            PseudoClass empty = PseudoClass.getPseudoClass("empty");
+            M3TextField nameField = new M3TextField();
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
+            nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
+
+            M3TextField emailField = new M3TextField("support");
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Format");
+            emailLayout.setValidator(M3TextInputValidators.pattern(
+                    Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
+                    "Enter a valid email address"
+            ));
+
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            applyCss(new VBox(summary, nameLayout, emailLayout));
+
+            assertInstanceOf(M3ValidationSummarySkin.class, summary.getSkin());
+            assertTrue(summary.getPseudoClassStates().contains(empty));
+            assertFalse(summary.isShowingSummary());
+
+            summary.setShowWhenValid(true);
+
+            assertFalse(summary.getPseudoClassStates().contains(empty));
+            assertTrue(summary.isShowingSummary());
+            assertEquals("Fix the following fields No validation issues",
+                    summary.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+
+            summary.setShowWhenValid(false);
+
+            assertFalse(validator.validate());
+            summary.applyCss();
+
+            assertFalse(summary.getPseudoClassStates().contains(empty));
+            assertEquals(2, summary.getInvalidInputCount());
+            assertSame(nameLayout, summary.getInvalidInput(0));
+            assertSame(emailLayout, summary.getInvalidInput(1));
+            assertEquals(2, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertSame(nameLayout, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+            assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+            assertTrue(summary.focusInput(nameLayout));
         });
     }
 
