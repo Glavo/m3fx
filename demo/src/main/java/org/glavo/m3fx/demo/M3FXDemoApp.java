@@ -293,7 +293,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Badges", "Badges", ALL_OTHER_COMPONENTS_GROUP, "Dot, count, overflow, and attached badges", this::createBadgesPage),
                 new DemoPage("Cards", "Cards", ALL_OTHER_COMPONENTS_GROUP, "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
                 new DemoPage("Carousel", "Carousel", ALL_OTHER_COMPONENTS_GROUP, "Horizontal content browsing with selected-item snapping", this::createCarouselPage),
-                new DemoPage("Checkboxes", "Checkbox", ALL_OTHER_COMPONENTS_GROUP, "Checked, unchecked, and disabled states", this::createCheckboxesPage),
+                new DemoPage("Checkboxes", "Checkbox", ALL_OTHER_COMPONENTS_GROUP, "Checked, unchecked, indeterminate, and disabled states", this::createCheckboxesPage),
                 new DemoPage("Chips", "Chips", ALL_OTHER_COMPONENTS_GROUP, "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
                 new DemoPage("Date Pickers", "Date pickers", ALL_OTHER_COMPONENTS_GROUP, "Calendar date selection, ranges, and month visibility", this::createDatePickersPage),
                 new DemoPage("Dialogs", "Dialogs", ALL_OTHER_COMPONENTS_GROUP, "Dialog pane with themed actions", this::createDialogsPage),
@@ -713,12 +713,20 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the checkbox component page.
     private Node createCheckboxesPage() {
-        M3CheckBox checked = M3CheckBox.withSelected("Checked", true);
-        M3CheckBox unchecked = new M3CheckBox("Unchecked");
-        M3CheckBox disabled = new M3CheckBox("Disabled");
-        disabled.setDisable(true);
+        M3CheckBox unchecked = createCheckBox("Unchecked", false, false, false, false);
+        M3CheckBox checked = createCheckBox("Checked", true, false, false, false);
+        M3CheckBox indeterminate = createCheckBox("Indeterminate", false, true, true, false);
+        M3CheckBox threeState = createCheckBox("Three-state cycle", false, false, true, false);
 
-        return createGallery(createShowcaseGroup("States", checked, unchecked, disabled));
+        M3CheckBox disabledUnchecked = createCheckBox("Disabled unchecked", false, false, false, true);
+        M3CheckBox disabledChecked = createCheckBox("Disabled checked", true, false, false, true);
+        M3CheckBox disabledIndeterminate =
+                createCheckBox("Disabled indeterminate", false, true, false, true);
+
+        return createGallery(
+                createShowcaseGroup("Interactive States", unchecked, checked, indeterminate, threeState),
+                createShowcaseGroup("Disabled States", disabledUnchecked, disabledChecked, disabledIndeterminate)
+        );
     }
 
     /// Creates the radio button component page.
@@ -726,22 +734,32 @@ public final class M3FXDemoApp extends Application {
         ToggleGroup radioGroup = new ToggleGroup();
         M3RadioButton radioOne = M3RadioButton.withSelected("Radio A", true);
         M3RadioButton radioTwo = new M3RadioButton("Radio B");
-        M3RadioButton radioDisabled = new M3RadioButton("Disabled");
+        M3RadioButton disabledUnchecked = new M3RadioButton("Disabled unchecked");
+        M3RadioButton disabledSelected = M3RadioButton.withSelected("Disabled selected", true);
         radioOne.setToggleGroup(radioGroup);
         radioTwo.setToggleGroup(radioGroup);
-        radioDisabled.setDisable(true);
+        disabledUnchecked.setDisable(true);
+        disabledSelected.setDisable(true);
 
-        return createGallery(createShowcaseGroup("Group", radioOne, radioTwo, radioDisabled));
+        return createGallery(
+                createShowcaseGroup("Selection Group", radioOne, radioTwo),
+                createShowcaseGroup("Disabled States", disabledUnchecked, disabledSelected)
+        );
     }
 
     /// Creates the switch component page.
     private Node createSwitchesPage() {
-        M3Switch enabledSwitch = M3Switch.withSelected("On", true);
+        M3Switch onSwitch = M3Switch.withSelected("On", true);
         M3Switch offSwitch = new M3Switch("Off");
-        M3Switch disabledSwitch = new M3Switch("Disabled");
-        disabledSwitch.setDisable(true);
+        M3Switch disabledOffSwitch = new M3Switch("Disabled off");
+        M3Switch disabledOnSwitch = M3Switch.withSelected("Disabled on", true);
+        disabledOffSwitch.setDisable(true);
+        disabledOnSwitch.setDisable(true);
 
-        return createGallery(createShowcaseGroup("States", enabledSwitch, offSwitch, disabledSwitch));
+        return createGallery(
+                createShowcaseGroup("Interactive States", onSwitch, offSwitch),
+                createShowcaseGroup("Disabled States", disabledOffSwitch, disabledOnSwitch)
+        );
     }
 
     /// Creates the slider component page.
@@ -1452,6 +1470,21 @@ public final class M3FXDemoApp extends Application {
         M3Chip chip = M3Chip.withVariant(text, variant, selected);
         chip.setDisable(disabled);
         return chip;
+    }
+
+    /// Creates a checkbox sample.
+    private static M3CheckBox createCheckBox(
+            String text,
+            boolean selected,
+            boolean indeterminate,
+            boolean allowIndeterminate,
+            boolean disabled
+    ) {
+        M3CheckBox checkBox = M3CheckBox.withSelected(text, selected);
+        checkBox.setIndeterminate(indeterminate);
+        checkBox.setAllowIndeterminate(allowIndeterminate);
+        checkBox.setDisable(disabled);
+        return checkBox;
     }
 
     /// Creates a slider sample.
