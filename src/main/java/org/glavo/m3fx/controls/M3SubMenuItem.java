@@ -62,6 +62,9 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The submenu displayed by this item.
     private final M3Menu subMenu = new M3Menu();
 
+    /// The menu that directly owns this submenu item.
+    private @Nullable M3Menu ownerMenu;
+
     /// The popup window used to host the submenu.
     private final Popup popup = new Popup();
 
@@ -139,6 +142,11 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Removes all submenu item nodes.
     public final void clearItems() {
         getItems().clear();
+    }
+
+    /// Sets the menu that directly owns this submenu item.
+    final void setOwnerMenu(@Nullable M3Menu ownerMenu) {
+        this.ownerMenu = ownerMenu;
     }
 
     /// Returns whether the submenu popup is currently showing.
@@ -219,6 +227,7 @@ public class M3SubMenuItem extends M3MenuItem {
         return switch (attribute) {
             case EXPANDED -> isSubMenuShowing();
             case SUBMENU -> subMenu;
+            case FOCUS_NODE -> focusNode();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
             case MULTIPLE_SELECTION -> subMenu.getSelectionMode() == M3MenuSelectionMode.MULTIPLE;
@@ -291,6 +300,15 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.addEventHandler(ActionEvent.ACTION, this::handleSubMenuAction);
         subMenu.addEventHandler(MouseEvent.MOUSE_ENTERED, this::handleSubMenuMouseEntered);
         subMenu.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleSubMenuMouseExited);
+    }
+
+    /// Returns the current submenu focus node for accessibility clients.
+    private Node focusNode() {
+        if (!isSubMenuShowing()) {
+            return this;
+        }
+        @Nullable Object focusNode = subMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        return focusNode instanceof Node node ? node : this;
     }
 
     /// Handles this item's own action event by opening the submenu.
@@ -392,10 +410,7 @@ public class M3SubMenuItem extends M3MenuItem {
             return false;
         }
 
-        @Nullable M3MenuItem firstItem = M3SelectionNavigation.first(subMenu.getItems(), M3MenuItem.class);
-        if (firstItem != null) {
-            firstItem.requestFocus();
-        }
+        subMenu.focusFirstItem();
         return true;
     }
 
@@ -454,8 +469,8 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Hides sibling submenu popups owned by the same parent menu.
     private void hideSiblingSubMenus() {
-        if (getParent() instanceof M3Menu parentMenu) {
-            parentMenu.hideSubMenusExcept(this);
+        if (ownerMenu != null) {
+            ownerMenu.hideSubMenusExcept(this);
         }
     }
 

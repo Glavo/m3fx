@@ -288,6 +288,7 @@ public class M3MenuButton extends M3Button {
         return switch (attribute) {
             case EXPANDED -> isShowing();
             case SUBMENU -> menu;
+            case FOCUS_NODE -> focusNode();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
             case MULTIPLE_SELECTION -> getSelectionMode() == M3MenuSelectionMode.MULTIPLE;
@@ -331,6 +332,15 @@ public class M3MenuButton extends M3Button {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         menu.addEventHandler(KeyEvent.KEY_PRESSED, this::handleMenuKeyPressed);
         menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> hideMenu(true));
+    }
+
+    /// Returns the current popup focus node for accessibility clients.
+    private Node focusNode() {
+        if (!isShowing()) {
+            return this;
+        }
+        @Nullable Object focusNode = menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        return focusNode instanceof Node node ? node : this;
     }
 
     /// Handles keyboard opening and dismissal for the popup menu.

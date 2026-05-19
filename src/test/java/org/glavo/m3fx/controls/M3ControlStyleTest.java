@@ -3317,6 +3317,210 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that menu keyboard focus can land on submenu items without corrupting menu selection.
+    @Test
+    void menuKeyboardNavigationFocusesSubMenuItemsWithoutChangingSelection() {
+        runOnFxThread(() -> {
+            M3MenuItem open = new M3MenuItem("Open");
+            M3MenuItem save = new M3MenuItem("Save");
+            M3MenuItem pdf = new M3MenuItem("PDF");
+            M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
+            M3Menu menu = new M3Menu(export, open, save);
+            menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+            menu.select(open);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(menu);
+                stage.setScene(new Scene(root, 240.0, 180.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                open.requestFocus();
+                menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+
+                assertTrue(export.isFocused());
+                assertEquals(open, menu.getSelectedItem());
+                assertEquals(export, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+                assertTrue(open.isFocused());
+                assertEquals(open, menu.getSelectedItem());
+
+                menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertTrue(save.isFocused());
+                assertEquals(save, menu.getSelectedItem());
+
+                menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+                menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(export.isSubMenuShowing());
+                assertTrue(pdf.isFocused());
+                assertEquals(pdf, export.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(pdf, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                export.hideSubMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that opening one submenu closes sibling submenus and keeps focus in the active branch.
+    @Test
+    void siblingSubMenusAreMutuallyExclusive() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
+        AtomicReference<M3SubMenuItem> shareReference = new AtomicReference<>();
+        AtomicReference<M3MenuItem> emailReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadAfterDelay(Duration.millis(220.0), () -> {
+                M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
+                M3MenuItem email = new M3MenuItem("Email");
+                M3SubMenuItem share = new M3SubMenuItem("Share", email);
+                M3Menu menu = new M3Menu(export, share);
+                Stage stage = new Stage();
+                Pane root = new Pane(menu);
+                stage.setScene(new Scene(root, 320.0, 180.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                stageReference.set(stage);
+                exportReference.set(export);
+                shareReference.set(share);
+                emailReference.set(email);
+
+                assertTrue(export.showSubMenuAndFocusFirstItem());
+                assertTrue(export.isSubMenuShowing());
+                assertTrue(share.showSubMenuAndFocusFirstItem());
+            }, () -> {
+                M3SubMenuItem export = Objects.requireNonNull(exportReference.get());
+                M3SubMenuItem share = Objects.requireNonNull(shareReference.get());
+                M3MenuItem email = Objects.requireNonNull(emailReference.get());
+
+                assertFalse(export.isSubMenuShowing());
+                assertTrue(share.isSubMenuShowing());
+                assertTrue(email.isFocused());
+            });
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3SubMenuItem export = exportReference.get();
+                if (export != null) {
+                    export.hideSubMenu();
+                }
+                @Nullable M3SubMenuItem share = shareReference.get();
+                if (share != null) {
+                    share.hideSubMenu();
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that submenu dismissal returns focus to the owning item without closing the parent popup.
+    @Test
+    void subMenuEscapeReturnsFocusToOwnerItem() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<M3MenuButton> buttonReference = new AtomicReference<>();
+        AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadAfterDelay(Duration.millis(220.0), () -> {
+                M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
+                M3MenuButton menuButton = new M3MenuButton("More", export);
+                Stage stage = new Stage();
+                Pane root = new Pane(menuButton);
+                stage.setScene(new Scene(root, 280.0, 160.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                stageReference.set(stage);
+                buttonReference.set(menuButton);
+                exportReference.set(export);
+
+                menuButton.showMenu();
+                assertTrue(export.showSubMenuAndFocusFirstItem());
+                export.getSubMenu().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+            }, () -> {
+                M3MenuButton menuButton = Objects.requireNonNull(buttonReference.get());
+                M3SubMenuItem export = Objects.requireNonNull(exportReference.get());
+
+                assertTrue(menuButton.isShowing());
+                assertFalse(export.isSubMenuShowing());
+                assertTrue(export.isFocused());
+                assertEquals(export, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            });
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3MenuButton menuButton = buttonReference.get();
+                if (menuButton != null) {
+                    menuButton.hideMenu();
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that submenu actions close the owning popup menu and return focus to the menu button.
+    @Test
+    void subMenuActionClosesMenuButtonPopup() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<M3MenuButton> buttonReference = new AtomicReference<>();
+        AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+                M3MenuItem pdf = new M3MenuItem("PDF");
+                M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
+                M3MenuButton menuButton = new M3MenuButton("More", export);
+                Stage stage = new Stage();
+                Pane root = new Pane(menuButton);
+                stage.setScene(new Scene(root, 280.0, 160.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                stageReference.set(stage);
+                buttonReference.set(menuButton);
+                exportReference.set(export);
+
+                menuButton.showMenu();
+                assertTrue(export.showSubMenuAndFocusFirstItem());
+                assertEquals(pdf, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                pdf.fire();
+            }, () -> {
+                M3MenuButton menuButton = Objects.requireNonNull(buttonReference.get());
+                M3SubMenuItem export = Objects.requireNonNull(exportReference.get());
+
+                assertFalse(export.isSubMenuShowing());
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+            });
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3MenuButton menuButton = buttonReference.get();
+                if (menuButton != null) {
+                    menuButton.hideMenu();
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that search bars delegate text and action APIs to their embedded editor.
     @Test
     void searchBarDelegatesTextAndActions() {

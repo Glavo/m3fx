@@ -181,7 +181,7 @@ final class M3Accessible {
     }
 
     /// Returns the child item referenced by accessibility action parameters.
-    private static @Nullable Node actionItem(ObservableList<? extends Node> items, Object... parameters) {
+    static @Nullable Node actionItem(ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
