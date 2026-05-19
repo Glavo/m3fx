@@ -8418,6 +8418,44 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that time dialog presets render beside the picker.
+    @Test
+    void timePresetDialogSnapshotRendersPresetColumn() {
+        runOnFxThread(() -> {
+            M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(10, 30));
+            dialog.setUse24HourClock(true);
+            dialog.setMinuteStep(15);
+            dialog.setCommonPresets(LocalTime.of(10, 30));
+            M3DialogPane pane = dialog.getM3DialogPane();
+            pane.setPrefWidth(720.0);
+
+            StackPane root = new StackPane(pane);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 780.0, 620.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(780.0, 620.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, pane, Color.WHITE, 0.04);
+            assertEquals(5, pane.lookupAll("." + M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertSnapshotNodeContainsContrast(
+                    image,
+                    assertInstanceOf(Node.class, pane.lookup("." + M3TimePickerDialog.PRESET_LIST_STYLE_CLASS)),
+                    Color.WHITE,
+                    0.04
+            );
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-time-presets.png"
+            ));
+        });
+    }
+
     /// Verifies that date range field presets render beside the popup picker.
     @Test
     void dateRangePickerFieldPresetPopupSnapshotRendersPresetColumn() throws InterruptedException {

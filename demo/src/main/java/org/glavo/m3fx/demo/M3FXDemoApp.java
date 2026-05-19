@@ -123,6 +123,7 @@ import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.controls.M3TimePickerDialog;
 import org.glavo.m3fx.controls.M3TimePickerField;
+import org.glavo.m3fx.controls.M3TimePresets;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
@@ -905,6 +906,7 @@ public final class M3FXDemoApp extends Application {
         field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
         field.setUse24HourClock(true);
         field.setMinuteStep(15);
+        field.setCommonPresets(LocalTime.of(10, 30));
         field.setPrefWidth(320.0);
         field.setMaxWidth(320.0);
 
@@ -915,6 +917,7 @@ public final class M3FXDemoApp extends Application {
         boundedField.setMinTime(LocalTime.of(9, 0));
         boundedField.setMaxTime(LocalTime.of(17, 30));
         boundedField.setMinuteStep(30);
+        boundedField.setPresets(M3TimePresets.morning(), M3TimePresets.noon(), M3TimePresets.afternoon());
         boundedField.setPrefWidth(320.0);
         boundedField.setMaxWidth(320.0);
 
@@ -2142,6 +2145,7 @@ public final class M3FXDemoApp extends Application {
         M3TimePickerDialog dialog = new M3TimePickerDialog(initialTime);
         dialog.setUse24HourClock(true);
         dialog.setMinuteStep(15);
+        dialog.setCommonPresets(initialTime);
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             @Nullable LocalTime result = dialog.getResult();

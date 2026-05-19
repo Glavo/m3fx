@@ -142,6 +142,50 @@ final class M3PickerFieldTest {
         assertEquals(field.getInvalidTextErrorText(), field.getErrorText());
     }
 
+    /// Verifies that time picker field presets render next to the picker and update the field value.
+    @Test
+    void timePickerFieldPresetsRenderAndApplyTime() {
+        runOnFxThread(() -> {
+            LocalTime anchor = LocalTime.of(10, 30);
+            M3TimePickerField field = new M3TimePickerField();
+
+            field.setCommonPresets(anchor);
+
+            assertEquals(5, field.getPresets().size());
+            Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+            assertTrue(presetContent.getStyleClass().contains(M3TimePickerField.PRESET_CONTENT_STYLE_CLASS));
+            assertEquals(5, presetContent.lookupAll("." + M3TimePickerField.PRESET_BUTTON_STYLE_CLASS).size());
+
+            M3TimePreset preset = M3TimePresets.minutesFrom(anchor, 15);
+            field.applyPreset(preset);
+
+            assertEquals(LocalTime.of(10, 45), field.getValue());
+            assertEquals("10:45", field.getEditor().getText());
+
+            field.clearPresets();
+
+            assertTrue(field.getPresets().isEmpty());
+            assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
+                    .contains(M3TimePickerField.PRESET_CONTENT_STYLE_CLASS));
+        });
+    }
+
+    /// Verifies that time picker field presets outside the current bounds are rendered disabled.
+    @Test
+    void timePickerFieldDisablesOutOfBoundsPresetButtons() {
+        runOnFxThread(() -> {
+            M3TimePickerField field = new M3TimePickerField();
+            field.setMinTime(LocalTime.of(9, 0));
+            field.setMaxTime(LocalTime.of(17, 30));
+
+            field.setPresets(M3TimePresets.midnight(), M3TimePresets.morning());
+
+            Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+            assertTrue(findTimePresetButton(presetContent, "Midnight").isDisabled());
+            assertFalse(findTimePresetButton(presetContent, "Morning").isDisabled());
+        });
+    }
+
     /// Verifies that picker fields install the shared picker field skin and render their input layouts.
     @Test
     void pickerFieldSkinInstallsInputLayouts() {
@@ -232,6 +276,16 @@ final class M3PickerFieldTest {
     /// Returns a date preset button with the supplied text.
     private static M3Button findPresetButton(Node root, String text) {
         for (Node node : root.lookupAll("." + M3DatePickerField.PRESET_BUTTON_STYLE_CLASS)) {
+            if (node instanceof M3Button button && button.getText().equals(text)) {
+                return button;
+            }
+        }
+        throw new AssertionError("Missing preset button: " + text);
+    }
+
+    /// Returns a time preset button with the supplied text.
+    private static M3Button findTimePresetButton(Node root, String text) {
+        for (Node node : root.lookupAll("." + M3TimePickerField.PRESET_BUTTON_STYLE_CLASS)) {
             if (node instanceof M3Button button && button.getText().equals(text)) {
                 return button;
             }

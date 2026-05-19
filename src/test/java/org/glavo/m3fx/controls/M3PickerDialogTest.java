@@ -345,6 +345,62 @@ final class M3PickerDialogTest {
         });
     }
 
+    /// Verifies common time preset factories.
+    @Test
+    void timePresetsCreateCommonTimes() {
+        LocalTime anchor = LocalTime.of(10, 30, 45);
+
+        assertEquals(LocalTime.of(10, 30), M3TimePresets.now(anchor).time());
+        assertEquals(LocalTime.of(10, 45), M3TimePresets.minutesFrom(anchor, 15).time());
+        assertEquals(LocalTime.of(10, 15), M3TimePresets.minutesFrom(anchor, -15).time());
+        assertEquals(LocalTime.MIDNIGHT, M3TimePresets.midnight().time());
+        assertEquals(LocalTime.of(9, 0), M3TimePresets.morning().time());
+        assertEquals(LocalTime.NOON, M3TimePresets.noon().time());
+        assertEquals(LocalTime.of(15, 0), M3TimePresets.afternoon().time());
+        assertEquals(LocalTime.of(18, 0), M3TimePresets.evening().time());
+        assertEquals(5, M3TimePresets.common(anchor).size());
+    }
+
+    /// Verifies time dialog preset actions update the selected time.
+    @Test
+    void timePickerDialogAppliesPresetActions() {
+        runOnFxThread(() -> {
+            LocalTime anchor = LocalTime.of(10, 30);
+            M3TimePickerDialog dialog = new M3TimePickerDialog();
+            M3DialogPane pane = dialog.getM3DialogPane();
+
+            applyCss(pane);
+            assertSame(dialog.getPicker(), pane.getContent());
+
+            dialog.addPreset(M3TimePresets.now(anchor));
+            dialog.addPresets(
+                    M3TimePresets.minutesFrom(anchor, 15),
+                    M3TimePresets.morning(),
+                    M3TimePresets.noon(),
+                    M3TimePresets.evening()
+            );
+            applyCss(pane);
+
+            assertInstanceOf(HBox.class, pane.getContent());
+            assertEquals(5, dialog.getPresets().size());
+            assertEquals(5, pane.lookupAll("." + M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+
+            presetButton(pane, M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS, "In 15 min").fire();
+
+            assertEquals(LocalTime.of(10, 45), dialog.getValue());
+            assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
+
+            M3TimePreset custom = new M3TimePreset("Release", LocalTime.of(16, 30));
+            custom.applyTo(dialog.getPicker());
+
+            assertEquals(custom.time(), dialog.getValue());
+
+            dialog.clearPresets();
+
+            assertSame(dialog.getPicker(), pane.getContent());
+        });
+    }
+
     /// Applies the M3FX theme to a dialog pane and creates its content skin.
     private static void applyCss(M3DialogPane pane) {
         Pane root = new Pane(pane);

@@ -260,6 +260,11 @@ public class M3TimePicker extends Control {
         setValue(normalizeTime(LocalTime.now()));
     }
 
+    /// Applies a labeled time preset.
+    public final void applyPreset(M3TimePreset preset) {
+        setValue(Objects.requireNonNull(preset, "preset").time());
+    }
+
     /// Clears the selected time.
     public final void clearValue() {
         setValue(null);

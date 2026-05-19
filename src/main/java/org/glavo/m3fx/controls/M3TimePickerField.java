@@ -6,7 +6,13 @@ package org.glavo.m3fx.controls;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.geometry.Pos;
 import javafx.scene.control.Skin;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -23,6 +29,27 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
 
     /// The style class applied to time picker field popup surfaces.
     public static final String POPUP_STYLE_CLASS = "m3-time-picker-field-popup";
+
+    /// The style class applied to popup content when preset actions are visible.
+    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-time-picker-field-preset-content";
+
+    /// The style class applied to the popup preset action column.
+    public static final String PRESET_LIST_STYLE_CLASS = "m3-time-picker-field-preset-list";
+
+    /// The style class applied to each popup preset action button.
+    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-time-picker-field-preset-button";
+
+    /// The mutable preset list rendered before the popup picker.
+    private final ObservableList<M3TimePreset> presets = FXCollections.observableArrayList();
+
+    /// The wrapper used when the popup renders preset actions next to the picker.
+    private final HBox presetContent = new HBox(16.0);
+
+    /// The vertical preset action container.
+    private final VBox presetList = new VBox(6.0);
+
+    /// Rebuilds preset action buttons when the public preset list changes.
+    private final ListChangeListener<M3TimePreset> presetsListener = change -> updatePresetContent();
 
     /// Creates an empty time picker field.
     public M3TimePickerField() {
@@ -48,6 +75,39 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
                 "Enter a valid time",
                 "Time is outside the selectable range"
         );
+        initializePresetContent();
+    }
+
+    /// Returns the mutable time preset list rendered in the popup.
+    public ObservableList<M3TimePreset> getPresets() {
+        return presets;
+    }
+
+    /// Adds one time preset to the popup.
+    public void addPreset(M3TimePreset preset) {
+        presets.add(Objects.requireNonNull(preset, "preset"));
+    }
+
+    /// Adds time presets after validating the preset array.
+    public void addPresets(M3TimePreset... presets) {
+        validatePresets(presets);
+        this.presets.addAll(presets);
+    }
+
+    /// Replaces all time presets.
+    public void setPresets(M3TimePreset... presets) {
+        validatePresets(presets);
+        this.presets.setAll(presets);
+    }
+
+    /// Replaces all time presets with the default common time set.
+    public void setCommonPresets(LocalTime anchorTime) {
+        presets.setAll(M3TimePresets.common(anchorTime));
+    }
+
+    /// Removes all time presets from the popup.
+    public void clearPresets() {
+        presets.clear();
     }
 
     /// Returns whether the popup picker displays 24-hour time.
@@ -120,6 +180,14 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
         setValue(normalizeValue(LocalTime.now()));
     }
 
+    /// Applies a time preset, updates the editor, and closes the popup when it is showing.
+    public void applyPreset(M3TimePreset preset) {
+        setValue(Objects.requireNonNull(preset, "preset").time());
+        if (isShowing()) {
+            hidePicker();
+        }
+    }
+
     /// Clears the selected time.
     public void clearValue() {
         setValue(null);
@@ -164,5 +232,54 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
     @Override
     protected void setPickerValue(@Nullable LocalTime value) {
         getPicker().setValue(value);
+    }
+
+    /// Configures popup preset containers and listeners.
+    private void initializePresetContent() {
+        presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
+        presetContent.setAlignment(Pos.TOP_LEFT);
+        presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
+        presetList.setAlignment(Pos.TOP_LEFT);
+        getPicker().minTimeProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        getPicker().maxTimeProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        presets.addListener(presetsListener);
+    }
+
+    /// Rebuilds popup content from the current preset list.
+    private void updatePresetContent() {
+        presetContent.getChildren().clear();
+        presetList.getChildren().clear();
+
+        if (presets.isEmpty()) {
+            resetPopupContent();
+            return;
+        }
+
+        for (M3TimePreset preset : presets) {
+            presetList.getChildren().add(createPresetButton(preset));
+        }
+        presetContent.getChildren().setAll(presetList, getPicker());
+        setPopupContent(presetContent);
+    }
+
+    /// Creates one popup preset action button.
+    private M3Button createPresetButton(M3TimePreset preset) {
+        M3Button button = M3Button.withVariant(preset.text(), M3ButtonVariant.TEXT);
+        button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setDisable(getPicker().isTimeDisabled(preset.time()));
+        button.setOnAction(event -> {
+            applyPreset(preset);
+            event.consume();
+        });
+        return button;
+    }
+
+    /// Validates a time preset array.
+    private static void validatePresets(M3TimePreset... presets) {
+        Objects.requireNonNull(presets, "presets");
+        for (M3TimePreset preset : presets) {
+            Objects.requireNonNull(preset, "preset");
+        }
     }
 }

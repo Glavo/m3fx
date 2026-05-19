@@ -54,7 +54,7 @@
 - Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, animated text input layouts with floating labels, reusable validators, multi-validator pipelines, group-level form validation coordination, validation summaries, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, optional hard character limits, and form pane, section, and row helpers for structured input layouts.
 - Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
 - Checkbox, radio button, and switch disabled visuals use part-level state token opacity so selected indicators remain legible.
-- Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, inclusive min/max date range support, reusable labeled date presets, and field/dialog preset actions; date range picker with start/end selection, in-range styling, normalized range endpoint selection, inclusive min/max date bounds, reusable labeled range presets, and field/dialog preset actions; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, and inclusive min/max time range support; date, date-range, and time picker fields with editable text, popup picker selection, formatter-based parsing, range validation, and shared popup motion; date, date-range, and time picker dialogs with Material dialog panes and accepted-result conversion.
+- Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, inclusive min/max date range support, reusable labeled date presets, and field/dialog preset actions; date range picker with start/end selection, in-range styling, normalized range endpoint selection, inclusive min/max date bounds, reusable labeled range presets, and field/dialog preset actions; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, inclusive min/max time range support, reusable labeled time presets, and field/dialog preset actions; date, date-range, and time picker fields with editable text, popup picker selection, formatter-based parsing, range validation, and shared popup motion; date, date-range, and time picker dialogs with Material dialog panes and accepted-result conversion.
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, and navigation drawer.
 - App bars: top app bar variants and bottom app bar with configurable floating action alignment.
 - Menus and search: menu, menu item, submenu item with hover and keyboard opening, menu section header, menu button with edge-aware popup placement, search bar, and search view with customizable result content and action slots.
@@ -73,14 +73,14 @@
 - Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
 - Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.
 - Selection control visual snapshots cover selected, unchecked, indeterminate, disabled, and disabled-selected states.
-- Date and time picker visual tests render selected, today, adjacent-month, 12-hour/24-hour, minute-step, and disabled range states into dedicated snapshots.
+- Date and time picker visual tests render selected, today, adjacent-month, preset actions, 12-hour/24-hour, minute-step, and disabled range states into dedicated snapshots.
 - Demo packaging tests cover the executable shadow jar and verify that JavaFX classes are not bundled.
 
 ## Remaining Work
 
 - Expand Material motion coverage so hover, press, release, selection, shape, indicator, and elevation transitions consistently use tokenized timing and easing.
 - Broaden visual checks beyond static contrast and color variety toward geometry, clipping, alignment, and animation-state assertions.
-- Continue filling component gaps such as advanced validation workflows and additional date/time picker affordances.
+- Continue filling component gaps such as advanced validation workflows and additional picker affordances.
 - Tighten accessibility behavior for composite controls, especially indexed children, role choice, and keyboard navigation parity across complex popups.
 - Add more focused demo pages for complex components whose behavior is hard to inspect in a single static gallery.
 - Document runtime packaging choices for applications that want regular jars, demo shadow jars, or jlink images.

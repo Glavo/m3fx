@@ -33,13 +33,15 @@
 }
 
 .m3-date-picker-dialog-preset-content,
-.m3-date-range-picker-dialog-preset-content {
+.m3-date-range-picker-dialog-preset-content,
+.m3-time-picker-dialog-preset-content {
     -fx-alignment: top-left;
     -fx-spacing: 16px;
 }
 
 .m3-date-picker-dialog-preset-list,
-.m3-date-range-picker-dialog-preset-list {
+.m3-date-range-picker-dialog-preset-list,
+.m3-time-picker-dialog-preset-list {
     -fx-alignment: top-left;
     -fx-spacing: 6px;
     -fx-padding: 4px 0 0 0;
@@ -47,7 +49,8 @@
 }
 
 .m3-date-picker-dialog-preset-button,
-.m3-date-range-picker-dialog-preset-button {
+.m3-date-range-picker-dialog-preset-button,
+.m3-time-picker-dialog-preset-button {
     -m3-horizontal-padding: 12px;
     -fx-alignment: center-left;
     -fx-pref-width: 132px;

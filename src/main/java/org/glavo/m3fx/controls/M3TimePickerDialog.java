@@ -6,8 +6,14 @@ package org.glavo.m3fx.controls;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,8 +26,29 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// The default title and header text for time picker dialogs.
     public static final String DEFAULT_TITLE = "Select time";
 
+    /// The style class applied to dialog content when preset actions are visible.
+    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-time-picker-dialog-preset-content";
+
+    /// The style class applied to the preset action column.
+    public static final String PRESET_LIST_STYLE_CLASS = "m3-time-picker-dialog-preset-list";
+
+    /// The style class applied to each preset action button.
+    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-time-picker-dialog-preset-button";
+
     /// The time picker displayed as dialog content.
     private final M3TimePicker picker = new M3TimePicker();
+
+    /// The mutable preset list rendered before the picker.
+    private final ObservableList<M3TimePreset> presets = FXCollections.observableArrayList();
+
+    /// The wrapper used when the dialog renders preset actions next to the picker.
+    private final HBox presetContent = new HBox(16.0);
+
+    /// The vertical preset action container.
+    private final VBox presetList = new VBox(6.0);
+
+    /// Rebuilds preset action buttons when the public preset list changes.
+    private final ListChangeListener<M3TimePreset> presetsListener = change -> updatePresetContent();
 
     /// Creates an empty time picker dialog.
     public M3TimePickerDialog() {
@@ -37,6 +64,38 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// Returns the time picker displayed by this dialog.
     public final M3TimePicker getPicker() {
         return picker;
+    }
+
+    /// Returns the mutable time preset list.
+    public final ObservableList<M3TimePreset> getPresets() {
+        return presets;
+    }
+
+    /// Adds one time preset.
+    public final void addPreset(M3TimePreset preset) {
+        presets.add(Objects.requireNonNull(preset, "preset"));
+    }
+
+    /// Adds time presets after validating the preset array.
+    public final void addPresets(M3TimePreset... presets) {
+        validatePresets(presets);
+        this.presets.addAll(presets);
+    }
+
+    /// Replaces all time presets.
+    public final void setPresets(M3TimePreset... presets) {
+        validatePresets(presets);
+        this.presets.setAll(presets);
+    }
+
+    /// Replaces all time presets with the default common time set.
+    public final void setCommonPresets(LocalTime anchorTime) {
+        presets.setAll(M3TimePresets.common(anchorTime));
+    }
+
+    /// Removes all time presets.
+    public final void clearPresets() {
+        presets.clear();
     }
 
     /// Returns the selected time, or `null` when no time is selected.
@@ -129,6 +188,12 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
         picker.selectNow();
     }
 
+    /// Applies a time preset and leaves the dialog open for confirmation.
+    public final void applyPreset(M3TimePreset preset) {
+        picker.applyPreset(Objects.requireNonNull(preset, "preset"));
+        updateOkButtonState();
+    }
+
     /// Returns whether the supplied time is outside the configured selectable range.
     public final boolean isTimeDisabled(LocalTime time) {
         return picker.isTimeDisabled(Objects.requireNonNull(time, "time"));
@@ -141,10 +206,46 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
         M3DialogPane pane = getM3DialogPane();
         pane.setHeaderText(DEFAULT_TITLE);
         pane.setContent(picker);
+        presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
+        presetContent.setAlignment(Pos.TOP_LEFT);
+        presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
+        presetList.setAlignment(Pos.TOP_LEFT);
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
         setResultConverter(this::convertResult);
         picker.valueProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
+        picker.minTimeProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        picker.maxTimeProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        presets.addListener(presetsListener);
         updateOkButtonState();
+    }
+
+    /// Rebuilds dialog content from the current preset list.
+    private void updatePresetContent() {
+        M3DialogPane pane = getM3DialogPane();
+        presetContent.getChildren().clear();
+        presetList.getChildren().clear();
+        pane.setContent(null);
+
+        if (presets.isEmpty()) {
+            pane.setContent(picker);
+            return;
+        }
+
+        for (M3TimePreset preset : presets) {
+            presetList.getChildren().add(createPresetButton(preset));
+        }
+        presetContent.getChildren().setAll(presetList, picker);
+        pane.setContent(presetContent);
+    }
+
+    /// Creates one preset action button.
+    private M3Button createPresetButton(M3TimePreset preset) {
+        M3Button button = M3Button.withVariant(preset.text(), M3ButtonVariant.TEXT);
+        button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setDisable(picker.isTimeDisabled(preset.time()));
+        button.setOnAction(event -> applyPreset(preset));
+        return button;
     }
 
     /// Converts a dialog button into the selected time result.
@@ -157,6 +258,14 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
         @Nullable Node okButton = getM3DialogPane().lookupButton(ButtonType.OK);
         if (okButton != null) {
             okButton.setDisable(getValue() == null);
+        }
+    }
+
+    /// Validates a time preset array.
+    private static void validatePresets(M3TimePreset... presets) {
+        Objects.requireNonNull(presets, "presets");
+        for (M3TimePreset preset : presets) {
+            Objects.requireNonNull(preset, "preset");
         }
     }
 }
