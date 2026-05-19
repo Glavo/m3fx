@@ -5,7 +5,13 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.geometry.Pos;
 import javafx.scene.control.Skin;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -24,6 +30,27 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
 
     /// The style class applied to date picker field popup surfaces.
     public static final String POPUP_STYLE_CLASS = "m3-date-picker-field-popup";
+
+    /// The style class applied to popup content when preset actions are visible.
+    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-picker-field-preset-content";
+
+    /// The style class applied to the popup preset action column.
+    public static final String PRESET_LIST_STYLE_CLASS = "m3-date-picker-field-preset-list";
+
+    /// The style class applied to each popup preset action button.
+    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-picker-field-preset-button";
+
+    /// The mutable preset list rendered before the popup picker.
+    private final ObservableList<M3DatePreset> presets = FXCollections.observableArrayList();
+
+    /// The wrapper used when the popup renders preset actions next to the picker.
+    private final HBox presetContent = new HBox(16.0);
+
+    /// The vertical preset action container.
+    private final VBox presetList = new VBox(6.0);
+
+    /// Rebuilds preset action buttons when the public preset list changes.
+    private final ListChangeListener<M3DatePreset> presetsListener = change -> updatePresetContent();
 
     /// Creates an empty date picker field.
     public M3DatePickerField() {
@@ -49,6 +76,39 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
                 "Enter a valid date",
                 "Date is outside the selectable range"
         );
+        initializePresetContent();
+    }
+
+    /// Returns the mutable date preset list rendered in the popup.
+    public ObservableList<M3DatePreset> getPresets() {
+        return presets;
+    }
+
+    /// Adds one date preset to the popup.
+    public void addPreset(M3DatePreset preset) {
+        presets.add(Objects.requireNonNull(preset, "preset"));
+    }
+
+    /// Adds date presets after validating the preset array.
+    public void addPresets(M3DatePreset... presets) {
+        validatePresets(presets);
+        this.presets.addAll(presets);
+    }
+
+    /// Replaces all date presets.
+    public void setPresets(M3DatePreset... presets) {
+        validatePresets(presets);
+        this.presets.setAll(presets);
+    }
+
+    /// Replaces all date presets with the default common date set.
+    public void setCommonPresets(LocalDate anchorDate) {
+        presets.setAll(M3DatePresets.common(anchorDate));
+    }
+
+    /// Removes all date presets from the popup.
+    public void clearPresets() {
+        presets.clear();
     }
 
     /// Returns the month currently displayed by the popup calendar grid.
@@ -136,6 +196,16 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
         selectDate(LocalDate.now());
     }
 
+    /// Applies a date preset, updates the editor, and closes the popup when it is showing.
+    public void applyPreset(M3DatePreset preset) {
+        LocalDate date = Objects.requireNonNull(preset, "preset").date();
+        setValue(date);
+        getPicker().showMonth(YearMonth.from(date));
+        if (isShowing()) {
+            hidePicker();
+        }
+    }
+
     /// Clears the selected date.
     public void clearValue() {
         setValue(null);
@@ -200,5 +270,54 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
     @Override
     protected void setPickerValue(@Nullable LocalDate value) {
         getPicker().setValue(value);
+    }
+
+    /// Configures popup preset containers and listeners.
+    private void initializePresetContent() {
+        presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
+        presetContent.setAlignment(Pos.TOP_LEFT);
+        presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
+        presetList.setAlignment(Pos.TOP_LEFT);
+        getPicker().minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        getPicker().maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        presets.addListener(presetsListener);
+    }
+
+    /// Rebuilds popup content from the current preset list.
+    private void updatePresetContent() {
+        presetContent.getChildren().clear();
+        presetList.getChildren().clear();
+
+        if (presets.isEmpty()) {
+            resetPopupContent();
+            return;
+        }
+
+        for (M3DatePreset preset : presets) {
+            presetList.getChildren().add(createPresetButton(preset));
+        }
+        presetContent.getChildren().setAll(presetList, getPicker());
+        setPopupContent(presetContent);
+    }
+
+    /// Creates one popup preset action button.
+    private M3Button createPresetButton(M3DatePreset preset) {
+        M3Button button = M3Button.withVariant(preset.text(), M3ButtonVariant.TEXT);
+        button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setDisable(getPicker().isDateDisabled(preset.date()));
+        button.setOnAction(event -> {
+            applyPreset(preset);
+            event.consume();
+        });
+        return button;
+    }
+
+    /// Validates a date preset array.
+    private static void validatePresets(M3DatePreset... presets) {
+        Objects.requireNonNull(presets, "presets");
+        for (M3DatePreset preset : presets) {
+            Objects.requireNonNull(preset, "preset");
+        }
     }
 }

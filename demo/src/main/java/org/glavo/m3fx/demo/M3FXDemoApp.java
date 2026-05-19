@@ -51,6 +51,7 @@ import org.glavo.m3fx.controls.M3DateRange;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerDialog;
 import org.glavo.m3fx.controls.M3DatePickerField;
+import org.glavo.m3fx.controls.M3DatePresets;
 import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3DateRangePickerDialog;
 import org.glavo.m3fx.controls.M3DateRangePickerField;
@@ -834,6 +835,7 @@ public final class M3FXDemoApp extends Application {
         field.setLabelText("Event date");
         field.setSupportingText("Editable ISO date with popup calendar");
         field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
+        field.setCommonPresets(today);
         field.setPrefWidth(320.0);
         field.setMaxWidth(320.0);
 
@@ -843,6 +845,11 @@ public final class M3FXDemoApp extends Application {
         boundedField.getEditor().setVariant(M3TextInputVariant.FILLED);
         boundedField.setMinDate(today);
         boundedField.setMaxDate(today.plusDays(14));
+        boundedField.setPresets(
+                M3DatePresets.today(today),
+                M3DatePresets.tomorrow(today),
+                M3DatePresets.daysFrom(today, 7)
+        );
         boundedField.setPrefWidth(320.0);
         boundedField.setMaxWidth(320.0);
 
@@ -2090,6 +2097,7 @@ public final class M3FXDemoApp extends Application {
     /// Opens a date picker dialog and reports the accepted date.
     private void showDatePickerDialog(LocalDate initialDate) {
         M3DatePickerDialog dialog = new M3DatePickerDialog(initialDate);
+        dialog.setCommonPresets(initialDate);
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             @Nullable LocalDate result = dialog.getResult();

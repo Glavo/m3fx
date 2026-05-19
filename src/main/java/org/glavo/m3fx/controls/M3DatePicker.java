@@ -258,6 +258,13 @@ public class M3DatePicker extends Control {
         selectDate(LocalDate.now());
     }
 
+    /// Applies a labeled date preset and shows the preset month.
+    public final void applyPreset(M3DatePreset preset) {
+        LocalDate date = Objects.requireNonNull(preset, "preset").date();
+        selectDate(date);
+        showMonth(YearMonth.from(date));
+    }
+
     /// Clears the selected date.
     public final void clearValue() {
         setValue(null);

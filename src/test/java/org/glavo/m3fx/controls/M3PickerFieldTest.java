@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -67,6 +69,52 @@ final class M3PickerFieldTest {
         field.getPicker().setValue(LocalDate.of(2026, 5, 22));
         assertEquals(LocalDate.of(2026, 5, 22), field.getValue());
         assertEquals("2026-05-22", field.getEditor().getText());
+    }
+
+    /// Verifies that date picker field presets render next to the picker and update the field value.
+    @Test
+    void datePickerFieldPresetsRenderAndApplyDate() {
+        runOnFxThread(() -> {
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DatePickerField field = new M3DatePickerField();
+
+            field.setCommonPresets(anchor);
+
+            assertEquals(5, field.getPresets().size());
+            Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+            assertTrue(presetContent.getStyleClass().contains(M3DatePickerField.PRESET_CONTENT_STYLE_CLASS));
+            assertEquals(5, presetContent.lookupAll("." + M3DatePickerField.PRESET_BUTTON_STYLE_CLASS).size());
+
+            M3DatePreset preset = M3DatePresets.daysFrom(anchor, 7);
+            field.applyPreset(preset);
+
+            assertEquals(anchor.plusDays(7), field.getValue());
+            assertEquals(YearMonth.from(anchor), field.getDisplayedMonth());
+            assertEquals("2026-05-26", field.getEditor().getText());
+
+            field.clearPresets();
+
+            assertTrue(field.getPresets().isEmpty());
+            assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
+                    .contains(M3DatePickerField.PRESET_CONTENT_STYLE_CLASS));
+        });
+    }
+
+    /// Verifies that date picker field presets outside the current bounds are rendered disabled.
+    @Test
+    void datePickerFieldDisablesOutOfBoundsPresetButtons() {
+        runOnFxThread(() -> {
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DatePickerField field = new M3DatePickerField();
+            field.setMinDate(anchor.plusDays(1));
+            field.setMaxDate(anchor.plusDays(30));
+
+            field.setPresets(M3DatePresets.today(anchor), M3DatePresets.tomorrow(anchor));
+
+            Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+            assertTrue(findPresetButton(presetContent, "Today").isDisabled());
+            assertFalse(findPresetButton(presetContent, "Tomorrow").isDisabled());
+        });
     }
 
     /// Verifies that a time picker field normalizes seconds, parses text, and reports invalid input.
@@ -179,5 +227,15 @@ final class M3PickerFieldTest {
         if (exception != null) {
             throw new AssertionError(exception);
         }
+    }
+
+    /// Returns a date preset button with the supplied text.
+    private static M3Button findPresetButton(Node root, String text) {
+        for (Node node : root.lookupAll("." + M3DatePickerField.PRESET_BUTTON_STYLE_CLASS)) {
+            if (node instanceof M3Button button && button.getText().equals(text)) {
+                return button;
+            }
+        }
+        throw new AssertionError("Missing preset button: " + text);
     }
 }

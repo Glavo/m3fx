@@ -8382,6 +8382,42 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that single-date dialog presets render beside the picker.
+    @Test
+    void datePresetDialogSnapshotRendersPresetColumn() {
+        runOnFxThread(() -> {
+            M3DatePickerDialog dialog = new M3DatePickerDialog();
+            dialog.setCommonPresets(LocalDate.of(2026, 5, 19));
+            M3DialogPane pane = dialog.getM3DialogPane();
+            pane.setPrefWidth(620.0);
+
+            StackPane root = new StackPane(pane);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 680.0, 600.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(680.0, 600.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, pane, Color.WHITE, 0.04);
+            assertEquals(5, pane.lookupAll("." + M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertSnapshotNodeContainsContrast(
+                    image,
+                    assertInstanceOf(Node.class, pane.lookup("." + M3DatePickerDialog.PRESET_LIST_STYLE_CLASS)),
+                    Color.WHITE,
+                    0.04
+            );
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-date-presets.png"
+            ));
+        });
+    }
+
     /// Verifies that date range field presets render beside the popup picker.
     @Test
     void dateRangePickerFieldPresetPopupSnapshotRendersPresetColumn() throws InterruptedException {

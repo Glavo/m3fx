@@ -72,6 +72,23 @@ final class M3DatePickerTest {
         assertNull(picker.getValue());
     }
 
+    /// Verifies that date presets update selection and visible month.
+    @Test
+    void datePickerAppliesPreset() {
+        LocalDate anchor = LocalDate.of(2026, 5, 19);
+        M3DatePicker picker = new M3DatePicker();
+        M3DatePreset preset = M3DatePresets.daysFrom(anchor, 7);
+
+        picker.applyPreset(preset);
+
+        assertEquals(anchor.plusDays(7), picker.getValue());
+        assertEquals(YearMonth.from(anchor), picker.getDisplayedMonth());
+        assertThrows(IllegalArgumentException.class, () -> {
+            picker.setMaxDate(anchor.plusDays(3));
+            picker.applyPreset(preset);
+        });
+    }
+
     /// Verifies that the skin creates reusable cells and selects dates from cell actions.
     @Test
     void datePickerSkinBuildsCalendarCellsAndSelectsDate() {

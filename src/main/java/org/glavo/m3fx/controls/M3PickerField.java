@@ -427,6 +427,16 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// Applies a field value to the concrete picker without changing field-specific state.
     protected abstract void setPickerValue(@Nullable T value);
 
+    /// Replaces the node hosted by the popup surface.
+    protected final void setPopupContent(Node content) {
+        popupContent.getChildren().setAll(Objects.requireNonNull(content, "content"));
+    }
+
+    /// Restores the popup surface to host only the concrete picker.
+    protected final void resetPopupContent() {
+        setPopupContent(picker);
+    }
+
     /// Adds style classes, installs handlers, and prepares the popup.
     private void initialize(String styleClass, String popupStyleClass, String openButtonAccessibleText) {
         M3ControlStyles.add(this, STYLE_CLASS);
