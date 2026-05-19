@@ -54,6 +54,7 @@ import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3DateRangePickerDialog;
 import org.glavo.m3fx.controls.M3DateRangePickerField;
+import org.glavo.m3fx.controls.M3DateRangePresets;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
@@ -875,11 +876,13 @@ public final class M3FXDemoApp extends Application {
         dateDialogButton.setOnAction(event -> showDatePickerDialog(today));
         M3Button rangeDialogButton = createButton("Open range dialog", M3ButtonVariant.TONAL);
         rangeDialogButton.setOnAction(event -> showDateRangePickerDialog(today.plusDays(2), today.plusDays(8)));
+        M3Button presetRangeDialogButton = createButton("Open preset range dialog", M3ButtonVariant.OUTLINED);
+        presetRangeDialogButton.setOnAction(event -> showPresetDateRangePickerDialog(today));
 
         return createGallery(
                 createShowcaseGroup("Fields", field, boundedField),
                 createShowcaseGroup("Range Field", rangeField),
-                createShowcaseGroup("Dialogs", dateDialogButton, rangeDialogButton),
+                createShowcaseGroup("Dialogs", dateDialogButton, rangeDialogButton, presetRangeDialogButton),
                 createShowcaseGroup("Selected Date", selected),
                 createShowcaseGroup("Bounded Range", range, dateRange),
                 createShowcaseGroup("Month Only", monthOnly)
@@ -2103,6 +2106,22 @@ public final class M3FXDemoApp extends Application {
             @Nullable M3DateRange result = dialog.getResult();
             if (result != null) {
                 showSnackbar("Selected range " + result.startDate() + " to " + result.endDate());
+            }
+        });
+        dialog.show();
+    }
+
+    /// Opens a date range picker dialog with common range presets.
+    private void showPresetDateRangePickerDialog(LocalDate anchorDate) {
+        M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
+        dialog.setMinDate(anchorDate.minusMonths(1));
+        dialog.setMaxDate(anchorDate.plusMonths(3));
+        dialog.getPresets().setAll(M3DateRangePresets.common(anchorDate, dialog.getFirstDayOfWeek()));
+        initDialogOwner(dialog);
+        dialog.setOnHidden(event -> {
+            @Nullable M3DateRange result = dialog.getResult();
+            if (result != null) {
+                showSnackbar("Selected preset range " + result.startDate() + " to " + result.endDate());
             }
         });
         dialog.show();

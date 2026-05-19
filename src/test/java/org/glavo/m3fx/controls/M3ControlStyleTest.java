@@ -8346,6 +8346,42 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that date range dialog presets render beside the picker.
+    @Test
+    void dateRangePresetDialogSnapshotRendersPresetColumn() {
+        runOnFxThread(() -> {
+            M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
+            dialog.setCommonPresets(LocalDate.of(2026, 5, 19));
+            M3DialogPane pane = dialog.getM3DialogPane();
+            pane.setPrefWidth(660.0);
+
+            StackPane root = new StackPane(pane);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 720.0, 600.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(720.0, 600.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, pane, Color.WHITE, 0.04);
+            assertEquals(6, pane.lookupAll("." + M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertSnapshotNodeContainsContrast(
+                    image,
+                    assertInstanceOf(Node.class, pane.lookup("." + M3DateRangePickerDialog.PRESET_LIST_STYLE_CLASS)),
+                    Color.WHITE,
+                    0.04
+            );
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-date-range-presets.png"
+            ));
+        });
+    }
+
     /// Verifies that date pickers expose rendered day cells to accessibility clients.
     @Test
     void datePickerExposesAccessibleDayCellsAndActions() {

@@ -31,3 +31,22 @@
 .m3-dialog-pane .m3-dialog-button {
     -m3-horizontal-padding: 12px;
 }
+
+.m3-date-range-picker-dialog-preset-content {
+    -fx-alignment: top-left;
+    -fx-spacing: 16px;
+}
+
+.m3-date-range-picker-dialog-preset-list {
+    -fx-alignment: top-left;
+    -fx-spacing: 6px;
+    -fx-padding: 4px 0 0 0;
+    -fx-pref-width: 132px;
+}
+
+.m3-date-range-picker-dialog-preset-button {
+    -m3-horizontal-padding: 12px;
+    -fx-alignment: center-left;
+    -fx-pref-width: 132px;
+    -fx-max-width: 132px;
+}

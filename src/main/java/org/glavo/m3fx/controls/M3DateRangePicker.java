@@ -233,6 +233,12 @@ public class M3DateRangePicker extends Control {
         }
     }
 
+    /// Sets both range endpoints from the supplied inclusive range.
+    public final void setRange(M3DateRange range) {
+        M3DateRange validatedRange = Objects.requireNonNull(range, "range");
+        setRange(validatedRange.startDate(), validatedRange.endDate());
+    }
+
     /// Clears both range endpoints.
     public final void clearRange() {
         setRange(null, null);
@@ -241,6 +247,20 @@ public class M3DateRangePicker extends Control {
     /// Returns whether both range endpoints are selected.
     public final boolean isRangeComplete() {
         return getStartDate() != null && getEndDate() != null;
+    }
+
+    /// Returns the selected range, or `null` when the range is incomplete.
+    public final @Nullable M3DateRange getRange() {
+        @Nullable LocalDate start = getStartDate();
+        @Nullable LocalDate end = getEndDate();
+        return start == null || end == null ? null : new M3DateRange(start, end);
+    }
+
+    /// Applies a labeled date range preset and shows the preset start month.
+    public final void applyPreset(M3DateRangePreset preset) {
+        M3DateRange range = Objects.requireNonNull(preset, "preset").range();
+        setRange(range);
+        showMonth(YearMonth.from(range.startDate()));
     }
 
     /// Returns whether the supplied date is inside the selected inclusive range.

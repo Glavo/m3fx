@@ -5,8 +5,14 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,8 +27,29 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     /// The default title and header text for date range picker dialogs.
     public static final String DEFAULT_TITLE = "Select date range";
 
+    /// The style class applied to dialog content when preset actions are visible.
+    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-range-picker-dialog-preset-content";
+
+    /// The style class applied to the preset action column.
+    public static final String PRESET_LIST_STYLE_CLASS = "m3-date-range-picker-dialog-preset-list";
+
+    /// The style class applied to each preset action button.
+    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-range-picker-dialog-preset-button";
+
     /// The date range picker displayed as dialog content.
     private final M3DateRangePicker picker = new M3DateRangePicker();
+
+    /// The mutable preset list rendered before the picker.
+    private final ObservableList<M3DateRangePreset> presets = FXCollections.observableArrayList();
+
+    /// The wrapper used when the dialog renders preset actions next to the picker.
+    private final HBox presetContent = new HBox(16.0);
+
+    /// The vertical preset action container.
+    private final VBox presetList = new VBox(6.0);
+
+    /// Rebuilds preset action buttons when the public preset list changes.
+    private final ListChangeListener<M3DateRangePreset> presetsListener = change -> updatePresetContent();
 
     /// Creates an empty date range picker dialog.
     public M3DateRangePickerDialog() {
@@ -43,6 +70,38 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     /// Returns the date range picker displayed by this dialog.
     public final M3DateRangePicker getPicker() {
         return picker;
+    }
+
+    /// Returns the mutable date range preset list.
+    public final ObservableList<M3DateRangePreset> getPresets() {
+        return presets;
+    }
+
+    /// Adds one date range preset.
+    public final void addPreset(M3DateRangePreset preset) {
+        presets.add(Objects.requireNonNull(preset, "preset"));
+    }
+
+    /// Adds date range presets after validating the preset array.
+    public final void addPresets(M3DateRangePreset... presets) {
+        validatePresets(presets);
+        this.presets.addAll(presets);
+    }
+
+    /// Replaces all date range presets.
+    public final void setPresets(M3DateRangePreset... presets) {
+        validatePresets(presets);
+        this.presets.setAll(presets);
+    }
+
+    /// Replaces all date range presets with the default common range set.
+    public final void setCommonPresets(LocalDate anchorDate) {
+        presets.setAll(M3DateRangePresets.common(anchorDate, getFirstDayOfWeek()));
+    }
+
+    /// Removes all date range presets.
+    public final void clearPresets() {
+        presets.clear();
     }
 
     /// Returns the first selected date, or `null` when no range start is selected.
@@ -92,9 +151,7 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
 
     /// Returns the selected range, or `null` when the range is incomplete.
     public final @Nullable M3DateRange getRange() {
-        @Nullable LocalDate start = getStartDate();
-        @Nullable LocalDate end = getEndDate();
-        return start == null || end == null ? null : new M3DateRange(start, end);
+        return picker.getRange();
     }
 
     /// Returns whether the supplied date is inside the selected inclusive range.
@@ -187,6 +244,12 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
         picker.selectToday();
     }
 
+    /// Applies a date range preset and leaves the dialog open for confirmation.
+    public final void applyPreset(M3DateRangePreset preset) {
+        picker.applyPreset(Objects.requireNonNull(preset, "preset"));
+        updateOkButtonState();
+    }
+
     /// Shows the month before the current displayed month.
     public final void showPreviousMonth() {
         picker.showPreviousMonth();
@@ -219,11 +282,44 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
         M3DialogPane pane = getM3DialogPane();
         pane.setHeaderText(DEFAULT_TITLE);
         pane.setContent(picker);
+        presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
+        presetContent.setAlignment(Pos.TOP_LEFT);
+        presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
+        presetList.setAlignment(Pos.TOP_LEFT);
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
         setResultConverter(this::convertResult);
         picker.startDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.endDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
+        presets.addListener(presetsListener);
         updateOkButtonState();
+    }
+
+    /// Rebuilds dialog content from the current preset list.
+    private void updatePresetContent() {
+        M3DialogPane pane = getM3DialogPane();
+        presetContent.getChildren().clear();
+        presetList.getChildren().clear();
+        pane.setContent(null);
+
+        if (presets.isEmpty()) {
+            pane.setContent(picker);
+            return;
+        }
+
+        for (M3DateRangePreset preset : presets) {
+            presetList.getChildren().add(createPresetButton(preset));
+        }
+        presetContent.getChildren().setAll(presetList, picker);
+        pane.setContent(presetContent);
+    }
+
+    /// Creates one preset action button.
+    private M3Button createPresetButton(M3DateRangePreset preset) {
+        M3Button button = M3Button.withVariant(preset.text(), M3ButtonVariant.TEXT);
+        button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setOnAction(event -> applyPreset(preset));
+        return button;
     }
 
     /// Converts a dialog button into the selected date range result.
@@ -236,6 +332,14 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
         @Nullable Node okButton = getM3DialogPane().lookupButton(ButtonType.OK);
         if (okButton != null) {
             okButton.setDisable(!isRangeComplete());
+        }
+    }
+
+    /// Validates a date range preset array.
+    private static void validatePresets(M3DateRangePreset... presets) {
+        Objects.requireNonNull(presets, "presets");
+        for (M3DateRangePreset preset : presets) {
+            Objects.requireNonNull(preset, "preset");
         }
     }
 }

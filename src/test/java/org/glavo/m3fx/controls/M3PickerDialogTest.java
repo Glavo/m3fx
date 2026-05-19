@@ -4,8 +4,10 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -111,6 +113,29 @@ final class M3PickerDialogTest {
         assertThrows(IllegalArgumentException.class, () -> new M3DateRange(end, start));
     }
 
+    /// Verifies common date range preset factories.
+    @Test
+    void dateRangePresetsCreateCommonRanges() {
+        LocalDate anchor = LocalDate.of(2026, 5, 19);
+
+        assertEquals(new M3DateRange(anchor, anchor), M3DateRangePresets.today(anchor).range());
+        assertEquals(new M3DateRange(anchor.plusDays(1), anchor.plusDays(1)),
+                M3DateRangePresets.tomorrow(anchor).range());
+        assertEquals(new M3DateRange(anchor, anchor.plusDays(6)), M3DateRangePresets.nextDays(anchor, 7).range());
+        assertEquals(new M3DateRange(anchor.minusDays(6), anchor),
+                M3DateRangePresets.previousDays(anchor, 7).range());
+        assertEquals(new M3DateRange(LocalDate.of(2026, 5, 18), LocalDate.of(2026, 5, 24)),
+                M3DateRangePresets.thisWeek(anchor, DayOfWeek.MONDAY).range());
+        assertEquals(new M3DateRange(LocalDate.of(2026, 5, 25), LocalDate.of(2026, 5, 31)),
+                M3DateRangePresets.nextWeek(anchor, DayOfWeek.MONDAY).range());
+        assertEquals(new M3DateRange(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31)),
+                M3DateRangePresets.thisMonth(anchor).range());
+        assertEquals(new M3DateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)),
+                M3DateRangePresets.nextMonth(anchor).range());
+        assertEquals(6, M3DateRangePresets.common(anchor, DayOfWeek.MONDAY).size());
+        assertThrows(IllegalArgumentException.class, () -> M3DateRangePresets.nextDays(anchor, 0));
+    }
+
     /// Verifies range dialog content, OK state, and result conversion.
     @Test
     void dateRangePickerDialogConvertsCompleteRange() {
@@ -164,6 +189,53 @@ final class M3PickerDialogTest {
             dialog.clearRange();
 
             assertNull(dialog.getRange());
+        });
+    }
+
+    /// Verifies date range dialog preset actions update the selected range.
+    @Test
+    void dateRangePickerDialogAppliesPresetActions() {
+        runOnFxThread(() -> {
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
+            M3DialogPane pane = dialog.getM3DialogPane();
+
+            applyCss(pane);
+            assertSame(dialog.getPicker(), pane.getContent());
+
+            dialog.addPreset(M3DateRangePresets.today(anchor));
+            dialog.addPresets(
+                    M3DateRangePresets.tomorrow(anchor),
+                    M3DateRangePresets.nextDays(anchor, 7),
+                    M3DateRangePresets.thisWeek(anchor, dialog.getFirstDayOfWeek()),
+                    M3DateRangePresets.nextWeek(anchor, dialog.getFirstDayOfWeek()),
+                    M3DateRangePresets.thisMonth(anchor)
+            );
+            applyCss(pane);
+
+            assertInstanceOf(HBox.class, pane.getContent());
+            assertEquals(6, dialog.getPresets().size());
+            assertEquals(6, pane.lookupAll("." + M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+
+            nextSevenDaysPresetButton(pane).fire();
+
+            assertEquals(new M3DateRange(anchor, anchor.plusDays(6)), dialog.getRange());
+            assertEquals(YearMonth.from(anchor), dialog.getDisplayedMonth());
+            assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
+
+            M3DateRangePreset custom = new M3DateRangePreset(
+                    "Sprint",
+                    LocalDate.of(2026, 6, 1),
+                    LocalDate.of(2026, 6, 14)
+            );
+            custom.applyTo(dialog.getPicker());
+
+            assertEquals(custom.range(), dialog.getRange());
+            assertEquals(YearMonth.of(2026, 6), dialog.getDisplayedMonth());
+
+            dialog.clearPresets();
+
+            assertSame(dialog.getPicker(), pane.getContent());
         });
     }
 
@@ -228,6 +300,16 @@ final class M3PickerDialogTest {
     @SuppressWarnings("DataFlowIssue")
     private static <T> @Nullable T convertResult(M3Dialog<T> dialog, ButtonType buttonType) {
         return dialog.getResultConverter().call(buttonType);
+    }
+
+    /// Returns the `Next 7 days` preset button.
+    private static M3Button nextSevenDaysPresetButton(M3DialogPane pane) {
+        for (Node node : pane.lookupAll("." + M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS)) {
+            if (node instanceof M3Button button && button.getText().equals("Next 7 days")) {
+                return button;
+            }
+        }
+        throw new AssertionError("Preset button not found: Next 7 days");
     }
 
     /// Runs one assertion block on the JavaFX application thread.
