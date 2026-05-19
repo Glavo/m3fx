@@ -24,10 +24,14 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -149,6 +153,78 @@ final class M3FormControlsTest {
         assertTrue(new M3FormPane().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
         assertTrue(new M3FormSection().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
         assertTrue(new M3FormRow().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
+    }
+
+    /// Verifies that form validators coordinate text input validation state.
+    @Test
+    void formValidatorCoordinatesTextInputValidation() {
+        runOnFxThread(() -> {
+            M3TextField nameField = new M3TextField();
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
+            nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
+
+            M3TextField emailField = new M3TextField("support@example.com");
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Format");
+            emailLayout.setValidator(M3TextInputValidators.pattern(
+                    Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
+                    "Enter a valid email address"
+            ));
+
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+
+            assertEquals(List.of(nameLayout, emailLayout), validator.getInputs());
+            assertFalse(validator.validate());
+            assertFalse(validator.isValid());
+            assertEquals(List.of(nameLayout), validator.getInvalidInputs());
+            assertSame(nameLayout, validator.getFirstInvalidInput());
+            assertTrue(validator.focusFirstInvalidInput());
+
+            nameField.setText("M3FX Project");
+
+            assertTrue(validator.validateAndFocusFirstInvalidInput());
+            assertTrue(validator.isValid());
+            assertTrue(validator.getInvalidInputs().isEmpty());
+            assertNull(validator.getFirstInvalidInput());
+        });
+    }
+
+    /// Verifies that form validators track external validation updates.
+    @Test
+    void formValidatorTracksExternalValidationChanges() {
+        runOnFxThread(() -> {
+            M3TextField field = new M3TextField();
+            M3TextInputLayout layout = new M3TextInputLayout(field, "Name", "Required");
+            layout.setValidator(M3TextInputValidators.required("Name is required"));
+            M3FormValidator validator = new M3FormValidator(layout);
+
+            assertTrue(validator.isValid());
+
+            assertFalse(layout.validate());
+            assertFalse(validator.isValid());
+            assertEquals(List.of(layout), validator.getInvalidInputs());
+
+            layout.clearValidation();
+
+            assertTrue(validator.isValid());
+            assertTrue(validator.getInvalidInputs().isEmpty());
+        });
+    }
+
+    /// Verifies that form validators reject duplicate registrations and update list state.
+    @Test
+    void formValidatorMaintainsDistinctInputs() {
+        runOnFxThread(() -> {
+            M3TextInputLayout first = new M3TextInputLayout(new M3TextField());
+            M3TextInputLayout second = new M3TextInputLayout(new M3TextField());
+            M3FormValidator validator = new M3FormValidator(first);
+
+            assertThrows(IllegalArgumentException.class, () -> validator.addInput(first));
+            assertThrows(IllegalArgumentException.class, () -> validator.addInputs(second, second));
+            assertTrue(validator.removeInput(first));
+            assertFalse(validator.removeInput(first));
+            assertTrue(validator.getInputs().isEmpty());
+            assertFalse(validator.focusFirstInvalidInput());
+        });
     }
 
     /// Applies the M3FX theme to a node and creates its skin.

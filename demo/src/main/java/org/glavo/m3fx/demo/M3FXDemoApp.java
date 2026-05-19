@@ -64,6 +64,7 @@ import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
 import org.glavo.m3fx.controls.M3FormPane;
 import org.glavo.m3fx.controls.M3FormRow;
 import org.glavo.m3fx.controls.M3FormSection;
+import org.glavo.m3fx.controls.M3FormValidator;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconSize;
@@ -1421,8 +1422,10 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the form helpers demo page.
     private Node createFormsPage() {
-        M3TextField displayName = createTextField("Display name", "M3FX Project", M3TextInputVariant.OUTLINED, false);
+        M3TextField displayName = createTextField("Display name", "", M3TextInputVariant.OUTLINED, false);
         M3TextInputLayout displayNameLayout = createTextInputLayout(displayName, "Visible to collaborators");
+        displayNameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
+        displayNameLayout.setValidateOnFocusLost(true);
 
         M3TextField email = createTextField("Email", "support@example.com", M3TextInputVariant.OUTLINED, false);
         M3TextInputLayout emailLayout = createTextInputLayout(email, "Used for project notifications");
@@ -1430,6 +1433,7 @@ public final class M3FXDemoApp extends Application {
                 Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
                 "Enter a valid email address"
         ));
+        emailLayout.setValidateOnFocusLost(true);
 
         M3DateRangePickerField availability =
                 new M3DateRangePickerField(LocalDate.now().plusDays(2), LocalDate.now().plusDays(6));
@@ -1458,7 +1462,32 @@ public final class M3FXDemoApp extends Application {
                 new M3FormRow("Beta channel", "Tri-state checkbox in a form row", beta)
         );
 
-        M3FormPane form = new M3FormPane(account, preferences);
+        M3FormValidator validator = new M3FormValidator(displayNameLayout, emailLayout);
+        M3Button validateButton = createButton("Validate form", M3ButtonVariant.FILLED);
+        validateButton.setOnAction(event -> {
+            if (validator.validateAndFocusFirstInvalidInput()) {
+                showSnackbar("Form is valid");
+            } else {
+                showSnackbar("Fix highlighted fields");
+            }
+        });
+
+        M3Button clearValidationButton = createButton("Clear validation", M3ButtonVariant.OUTLINED);
+        clearValidationButton.setOnAction(event -> {
+            validator.clearValidation();
+            showSnackbar("Validation cleared");
+        });
+
+        HBox validationActions = new HBox(12.0, validateButton, clearValidationButton);
+        validationActions.setAlignment(Pos.CENTER_LEFT);
+
+        M3FormSection validation = new M3FormSection(
+                "Validation",
+                "Group-level validation keeps form feedback and focus movement coordinated.",
+                new M3FormRow("Actions", "Validate all registered inputs", validationActions)
+        );
+
+        M3FormPane form = new M3FormPane(account, preferences, validation);
         form.getStyleClass().add("demo-form");
         form.setContentPadding(18.0);
         form.setPrefWidth(760.0);
