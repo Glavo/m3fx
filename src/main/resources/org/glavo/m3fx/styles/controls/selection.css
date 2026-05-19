@@ -184,8 +184,48 @@
     -fx-max-height: 24px;
 }
 
-.m3-checkbox:disabled,
 .m3-radio-button:disabled,
 .m3-switch:disabled {
     -fx-opacity: 0.38;
+}
+
+.m3-checkbox:disabled .m3-selection-label {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-checkbox:disabled .box,
+.m3-checkbox:disabled:hover .box,
+.m3-checkbox:disabled:focused .box,
+.m3-checkbox:disabled:armed .box,
+.m3-checkbox:disabled:pressed .box {
+    -fx-border-color: -m3-color-on-surface;
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-checkbox:selected:disabled .box,
+.m3-checkbox:selected:disabled:hover .box,
+.m3-checkbox:selected:disabled:focused .box,
+.m3-checkbox:selected:disabled:armed .box,
+.m3-checkbox:selected:disabled:pressed .box,
+.m3-checkbox:indeterminate:disabled .box,
+.m3-checkbox:indeterminate:disabled:hover .box,
+.m3-checkbox:indeterminate:disabled:focused .box,
+.m3-checkbox:indeterminate:disabled:armed .box,
+.m3-checkbox:indeterminate:disabled:pressed .box {
+    -fx-background-color: -m3-color-on-surface;
+    -fx-border-color: -m3-color-on-surface;
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-checkbox:selected:disabled .mark,
+.m3-checkbox:selected:disabled:hover .mark,
+.m3-checkbox:selected:disabled:focused .mark,
+.m3-checkbox:selected:disabled:armed .mark,
+.m3-checkbox:selected:disabled:pressed .mark,
+.m3-checkbox:indeterminate:disabled .mark,
+.m3-checkbox:indeterminate:disabled:hover .mark,
+.m3-checkbox:indeterminate:disabled:focused .mark,
+.m3-checkbox:indeterminate:disabled:armed .mark,
+.m3-checkbox:indeterminate:disabled:pressed .mark {
+    -fx-background-color: -m3-color-surface;
 }

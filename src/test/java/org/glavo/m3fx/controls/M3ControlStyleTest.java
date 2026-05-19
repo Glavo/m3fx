@@ -6734,30 +6734,97 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that selection controls render their selected indicators.
+    /// Verifies that selection controls render selected, indeterminate, and disabled states.
     @Test
-    void selectionSnapshotRendersSelectedIndicators() {
+    void selectionSnapshotRendersStateMatrix() {
         runOnFxThread(() -> {
-            M3CheckBox checkBox = M3CheckBox.withSelected("Check", true);
-            M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
-            M3Switch switchControl = M3Switch.withSelected("Switch", true);
+            M3CheckBox uncheckedCheckBox = new M3CheckBox("Unchecked");
+            M3CheckBox checkedCheckBox = M3CheckBox.withSelected("Checked", true);
+            M3CheckBox indeterminateCheckBox = new M3CheckBox("Indeterminate");
+            indeterminateCheckBox.setIndeterminate(true);
+            M3CheckBox disabledUncheckedCheckBox = new M3CheckBox("Disabled unchecked");
+            M3CheckBox disabledCheckedCheckBox = M3CheckBox.withSelected("Disabled checked", true);
+            M3CheckBox disabledIndeterminateCheckBox = new M3CheckBox("Disabled indeterminate");
+            disabledIndeterminateCheckBox.setIndeterminate(true);
+            disabledUncheckedCheckBox.setDisable(true);
+            disabledCheckedCheckBox.setDisable(true);
+            disabledIndeterminateCheckBox.setDisable(true);
 
-            FlowPane row = new FlowPane(20.0, 16.0, checkBox, radioButton, switchControl);
+            M3RadioButton uncheckedRadioButton = new M3RadioButton("Radio off");
+            M3RadioButton selectedRadioButton = M3RadioButton.withSelected("Radio on", true);
+            M3RadioButton disabledUncheckedRadioButton = new M3RadioButton("Disabled off");
+            M3RadioButton disabledSelectedRadioButton = M3RadioButton.withSelected("Disabled on", true);
+            disabledUncheckedRadioButton.setDisable(true);
+            disabledSelectedRadioButton.setDisable(true);
+
+            M3Switch offSwitch = new M3Switch("Switch off");
+            M3Switch onSwitch = M3Switch.withSelected("Switch on", true);
+            M3Switch disabledOffSwitch = new M3Switch("Disabled off");
+            M3Switch disabledOnSwitch = M3Switch.withSelected("Disabled on", true);
+            disabledOffSwitch.setDisable(true);
+            disabledOnSwitch.setDisable(true);
+
+            FlowPane row = new FlowPane(
+                    20.0,
+                    16.0,
+                    uncheckedCheckBox,
+                    checkedCheckBox,
+                    indeterminateCheckBox,
+                    disabledUncheckedCheckBox,
+                    disabledCheckedCheckBox,
+                    disabledIndeterminateCheckBox,
+                    uncheckedRadioButton,
+                    selectedRadioButton,
+                    disabledUncheckedRadioButton,
+                    disabledSelectedRadioButton,
+                    offSwitch,
+                    onSwitch,
+                    disabledOffSwitch,
+                    disabledOnSwitch
+            );
+            row.setPrefWrapLength(720.0);
             row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(row, 420.0, 96.0);
+            Scene scene = new Scene(row, 760.0, 220.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             row.applyCss();
-            row.resize(420.0, 96.0);
+            row.resize(760.0, 220.0);
             row.layout();
 
             WritableImage image = snapshotImageOnFxThread(row);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(checkBox, ".box"), Color.WHITE, 0.1);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(checkBox, ".mark"), Color.rgb(84, 50, 185), 0.1);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(radioButton, ".radio"), Color.WHITE, 0.1);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(radioButton, ".dot"), Color.WHITE, 0.1);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(switchControl, ".box"), Color.WHITE, 0.1);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(switchControl, ".thumb"), Color.rgb(84, 50, 185), 0.1);
+            assertSnapshotNodeBorderContainsContrast(image, lookupRegion(uncheckedCheckBox, ".box"), Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(checkedCheckBox, ".box"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(checkedCheckBox, ".mark"), Color.rgb(84, 50, 185), 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(indeterminateCheckBox, ".box"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(
+                    image,
+                    lookupRegion(indeterminateCheckBox, ".mark"),
+                    Color.rgb(84, 50, 185),
+                    0.1
+            );
+            assertSnapshotNodeContainsContrast(image, lookupRegion(disabledUncheckedCheckBox, ".box"), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(disabledCheckedCheckBox, ".box"), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(
+                    image,
+                    lookupRegion(disabledIndeterminateCheckBox, ".mark"),
+                    Color.rgb(30, 28, 32),
+                    0.1
+            );
+            assertSnapshotNodeBorderContainsContrast(image, lookupRegion(uncheckedRadioButton, ".radio"), Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(selectedRadioButton, ".dot"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(disabledUncheckedRadioButton, ".radio"), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(disabledSelectedRadioButton, ".dot"), Color.WHITE, 0.03);
+            assertSnapshotNodeBorderContainsContrast(image, lookupRegion(offSwitch, ".box"), Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(onSwitch, ".box"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(onSwitch, ".thumb"), Color.rgb(84, 50, 185), 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(disabledOffSwitch, ".box"), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, lookupRegion(disabledOnSwitch, ".thumb"), Color.WHITE, 0.03);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-selection-states.png"
+            ));
         });
     }
 
@@ -7062,8 +7129,12 @@ final class M3ControlStyleTest {
             M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
 
             M3CheckBox selectedCheckBox = M3CheckBox.withSelected("Checkbox", true);
+            M3CheckBox indeterminateCheckBox = new M3CheckBox("Mixed");
+            indeterminateCheckBox.setIndeterminate(true);
             M3RadioButton selectedRadioButton = M3RadioButton.withSelected("Radio", true);
             M3Switch selectedSwitch = M3Switch.withSelected("Switch", true);
+            M3Switch disabledSwitch = M3Switch.withSelected("Disabled", true);
+            disabledSwitch.setDisable(true);
             M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
             slider.setPrefWidth(260.0);
 
@@ -7262,7 +7333,15 @@ final class M3ControlStyleTest {
                             datePicker,
                             timePicker
                     ),
-                    visualSection("Selection", selectedCheckBox, selectedRadioButton, selectedSwitch, slider),
+                    visualSection(
+                            "Selection",
+                            selectedCheckBox,
+                            indeterminateCheckBox,
+                            selectedRadioButton,
+                            selectedSwitch,
+                            disabledSwitch,
+                            slider
+                    ),
                     visualSection("Chips, Segments, Tabs", chipGroup, segmentedButtons, tabBar),
                     visualSection(
                             "Progress",
@@ -7303,8 +7382,10 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, timePicker, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, selectedCheckBox, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, indeterminateCheckBox, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, selectedRadioButton, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, selectedSwitch, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, disabledSwitch, Color.WHITE, 0.03);
             assertSnapshotNodeContainsContrast(image, slider, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, chipGroup, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, segmentedButtons, Color.WHITE, 0.04);

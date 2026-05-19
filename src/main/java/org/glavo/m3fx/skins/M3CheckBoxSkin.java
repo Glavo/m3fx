@@ -58,8 +58,7 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         super(control);
         box.getStyleClass().addAll("box", "m3-checkbox-box");
         mark.getStyleClass().addAll("mark", "m3-checkbox-mark");
-        box.getChildren().add(mark);
-        indicatorSlot().getChildren().add(box);
+        indicatorSlot().getChildren().addAll(box, mark);
 
         applyMarkState(control.isSelected() || control.isIndeterminate());
         updateMetrics();
