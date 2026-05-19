@@ -34,6 +34,12 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// The on-state thumb center within the track.
     private static final double ON_THUMB_CENTER_X = 36.0;
 
+    /// The off-state thumb size.
+    private static final double OFF_THUMB_SIZE = 16.0;
+
+    /// The on-state thumb size.
+    private static final double ON_THUMB_SIZE = 24.0;
+
     /// The visual switch track.
     private final StackPane box = new StackPane();
 
@@ -119,13 +125,13 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
     /// Lays out the thumb from the animated position value.
     private void layoutThumb() {
-        double thumbWidth = thumb.prefWidth(-1.0);
-        double thumbHeight = thumb.prefHeight(-1.0);
-        double thumbCenterX = OFF_THUMB_CENTER_X + (ON_THUMB_CENTER_X - OFF_THUMB_CENTER_X) * thumbPosition.get();
-        double thumbX = thumbCenterX - thumbWidth / 2.0;
+        double position = thumbPosition.get();
+        double thumbSize = OFF_THUMB_SIZE + (ON_THUMB_SIZE - OFF_THUMB_SIZE) * position;
+        double thumbCenterX = OFF_THUMB_CENTER_X + (ON_THUMB_CENTER_X - OFF_THUMB_CENTER_X) * position;
+        double thumbX = thumbCenterX - thumbSize / 2.0;
         double touchTargetHeight = Math.max(getSkinnable().getTouchTargetSize(), TRACK_HEIGHT);
-        double thumbY = (touchTargetHeight - thumbHeight) / 2.0;
-        thumb.resizeRelocate(thumbX, thumbY, thumbWidth, thumbHeight);
+        double thumbY = (touchTargetHeight - thumbSize) / 2.0;
+        thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbSize);
     }
 
     /// Formats a CSS pixel value.

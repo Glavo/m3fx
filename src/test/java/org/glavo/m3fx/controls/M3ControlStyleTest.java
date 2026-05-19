@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.PauseTransition;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
@@ -4514,6 +4515,73 @@ final class M3ControlStyleTest {
         assertTrue(switchControl.isSelected());
     }
 
+    /// Verifies that selection indicator animations expose intermediate and final rendered states.
+    @Test
+    void selectionIndicatorAnimationsRenderIntermediateAndFinalStates() {
+        runOnFxThread(() -> {
+            M3CheckBox checkBox = new M3CheckBox("Check");
+            M3RadioButton radioButton = new M3RadioButton("Radio");
+            M3Switch switchControl = new M3Switch("Switch");
+            FlowPane row = new FlowPane(18.0, 12.0, checkBox, radioButton, switchControl);
+            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(row, 420.0, 96.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            row.applyCss();
+            row.resize(420.0, 96.0);
+            row.layout();
+
+            checkBox.setSelected(true);
+            radioButton.setSelected(true);
+            switchControl.setSelected(true);
+
+            Timeline checkBoxAnimation = skinTimeline(checkBox.getSkin(), "selectionAnimation");
+            Timeline radioAnimation = skinTimeline(radioButton.getSkin(), "selectionAnimation");
+            Timeline switchAnimation = skinTimeline(switchControl.getSkin(), "selectionAnimation");
+            checkBoxAnimation.jumpTo(Duration.millis(30.0));
+            radioAnimation.jumpTo(Duration.millis(30.0));
+            switchAnimation.jumpTo(Duration.millis(50.0));
+            row.layout();
+
+            Region mark = lookupRegion(checkBox, ".mark");
+            Region dot = lookupRegion(radioButton, ".dot");
+            Region thumb = lookupRegion(switchControl, ".thumb");
+            assertBetween(mark.getOpacity(), 0.0, 1.0, "checkbox mark opacity");
+            assertBetween(mark.getScaleX(), 0.72, 1.0, "checkbox mark scale");
+            assertBetween(dot.getOpacity(), 0.0, 1.0, "radio dot opacity");
+            assertBetween(dot.getScaleX(), 0.64, 1.0, "radio dot scale");
+            assertBetween(thumb.getLayoutX(), 4.0, 24.0, "switch thumb x");
+            assertBetween(thumb.getWidth(), 16.0, 24.0, "switch thumb width");
+
+            WritableImage image = snapshotImageOnFxThread(row);
+            assertSnapshotNodeContainsContrast(image, mark, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, dot, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, thumb, Color.rgb(84, 50, 185), 0.05);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-selection-animation-frame.png"
+            ));
+
+            checkBoxAnimation.jumpTo(Duration.millis(100.0));
+            radioAnimation.jumpTo(Duration.millis(100.0));
+            switchAnimation.jumpTo(Duration.millis(150.0));
+            row.layout();
+
+            assertEquals(1.0, mark.getOpacity(), 0.0001);
+            assertEquals(1.0, mark.getScaleX(), 0.0001);
+            assertEquals(1.0, dot.getOpacity(), 0.0001);
+            assertEquals(1.0, dot.getScaleX(), 0.0001);
+            assertEquals(24.0, thumb.getLayoutX(), 0.0001);
+            assertEquals(24.0, thumb.getWidth(), 0.0001);
+
+            checkBoxAnimation.stop();
+            radioAnimation.stop();
+            switchAnimation.stop();
+        });
+    }
+
     /// Verifies that selection control skins expose bounded indicator ripple feedback.
     @Test
     void selectionControlSkinsPlayBoundedRippleOnPress() {
@@ -8540,6 +8608,25 @@ final class M3ControlStyleTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Region.class, child);
         return (Region) child;
+    }
+
+    /// Returns a private skin timeline used by animation-focused tests.
+    private static Timeline skinTimeline(Skin<?> skin, String fieldName) {
+        try {
+            java.lang.reflect.Field field = skin.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return assertInstanceOf(Timeline.class, field.get(skin));
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /// Verifies that a value is between two exclusive bounds.
+    private static void assertBetween(double actual, double lowerBound, double upperBound, String description) {
+        assertTrue(actual > lowerBound && actual < upperBound,
+                () -> description + ": actual=" + actual
+                        + ", lowerBound=" + lowerBound
+                        + ", upperBound=" + upperBound);
     }
 
     /// Verifies the resolved shape radius used by a control's state layer.

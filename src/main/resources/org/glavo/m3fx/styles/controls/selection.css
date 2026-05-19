@@ -162,12 +162,6 @@
     -fx-background-color: -m3-color-outline;
     -fx-background-insets: 0;
     -fx-background-radius: 999px;
-    -fx-min-width: 16px;
-    -fx-pref-width: 16px;
-    -fx-max-width: 16px;
-    -fx-min-height: 16px;
-    -fx-pref-height: 16px;
-    -fx-max-height: 16px;
 }
 
 .m3-switch:selected .thumb,
@@ -176,12 +170,6 @@
 .m3-switch:selected:armed .thumb,
 .m3-switch:selected:pressed .thumb {
     -fx-background-color: -m3-color-on-primary;
-    -fx-min-width: 24px;
-    -fx-pref-width: 24px;
-    -fx-max-width: 24px;
-    -fx-min-height: 24px;
-    -fx-pref-height: 24px;
-    -fx-max-height: 24px;
 }
 
 .m3-checkbox:disabled .m3-selection-label,
