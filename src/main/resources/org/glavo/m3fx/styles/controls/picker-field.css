@@ -2,6 +2,15 @@
     -fx-background-color: transparent;
 }
 
+.m3-date-range-picker-field {
+    -fx-background-color: transparent;
+}
+
+.m3-date-range-picker-field-container {
+    -fx-alignment: center-left;
+    -fx-spacing: 12px;
+}
+
 .m3-picker-field-open-button {
     -m3-container-height: 40px;
     -m3-container-shape: 999px;
