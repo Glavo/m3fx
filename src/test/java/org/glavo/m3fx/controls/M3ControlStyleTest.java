@@ -6932,16 +6932,60 @@ final class M3ControlStyleTest {
             row.layout();
 
             WritableImage image = snapshotImageOnFxThread(row);
+            Region checkedBox = lookupRegion(checkedCheckBox, ".box");
+            Region indeterminateBox = lookupRegion(indeterminateCheckBox, ".box");
+            Region indeterminateMark = lookupRegion(indeterminateCheckBox, ".mark");
             assertSnapshotNodeBorderContainsContrast(image, lookupRegion(uncheckedCheckBox, ".box"), Color.WHITE, 0.08);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(checkedCheckBox, ".box"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, checkedBox, Color.WHITE, 0.1);
             assertSnapshotNodeContainsContrast(image, lookupRegion(checkedCheckBox, ".mark"), Color.rgb(84, 50, 185), 0.1);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(indeterminateCheckBox, ".box"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, indeterminateBox, Color.WHITE, 0.1);
             assertSnapshotNodeContainsContrast(
                     image,
-                    lookupRegion(indeterminateCheckBox, ".mark"),
+                    indeterminateMark,
                     Color.rgb(84, 50, 185),
                     0.1
             );
+            assertEquals(12.0, indeterminateMark.getLayoutBounds().getWidth(), 0.0001);
+            assertEquals(2.0, indeterminateMark.getLayoutBounds().getHeight(), 0.0001);
+            Color checkedBoxFill = snapshotNodePixel(image, checkedBox, checkedBox.getWidth() / 2.0, 3.0);
+            Color indeterminateBoxTop = snapshotNodePixel(
+                    image,
+                    indeterminateBox,
+                    indeterminateBox.getWidth() / 2.0,
+                    5.0
+            );
+            Color indeterminateDash = snapshotNodePixel(
+                    image,
+                    indeterminateBox,
+                    indeterminateBox.getWidth() / 2.0,
+                    indeterminateBox.getHeight() / 2.0
+            );
+            Color indeterminateBoxBottom = snapshotNodePixel(
+                    image,
+                    indeterminateBox,
+                    indeterminateBox.getWidth() / 2.0,
+                    indeterminateBox.getHeight() - 5.0
+            );
+            assertColorNear(
+                    indeterminateBoxTop,
+                    checkedBoxFill,
+                    0.24,
+                    "indeterminate checkbox top fill"
+            );
+            assertColorNear(
+                    indeterminateDash,
+                    Color.WHITE,
+                    0.18,
+                    "indeterminate checkbox dash"
+            );
+            assertColorNear(
+                    indeterminateBoxBottom,
+                    checkedBoxFill,
+                    0.24,
+                    "indeterminate checkbox bottom fill"
+            );
+            assertTrue(colorDistance(indeterminateBoxTop, indeterminateDash) > 0.6);
+            assertTrue(colorDistance(indeterminateBoxBottom, indeterminateDash) > 0.6);
             assertSnapshotNodeContainsContrast(image, lookupRegion(disabledUncheckedCheckBox, ".box"), Color.WHITE, 0.03);
             assertSnapshotNodeContainsContrast(image, lookupRegion(disabledCheckedCheckBox, ".box"), Color.WHITE, 0.03);
             assertSnapshotNodeContainsContrast(
@@ -8831,6 +8875,19 @@ final class M3ControlStyleTest {
         return snapshotImageOnFxThread(node).getPixelReader().getColor(x, y);
     }
 
+    /// Returns a rendered pixel from a node-local coordinate in a root snapshot.
+    private static Color snapshotNodePixel(WritableImage image, Node node, double x, double y) {
+        var point = node.localToScene(x, y);
+        int pixelX = clampPixelCoordinate((int) Math.round(point.getX()), (int) image.getWidth());
+        int pixelY = clampPixelCoordinate((int) Math.round(point.getY()), (int) image.getHeight());
+        return image.getPixelReader().getColor(pixelX, pixelY);
+    }
+
+    /// Clamps a pixel coordinate to a rendered snapshot dimension.
+    private static int clampPixelCoordinate(int coordinate, int dimension) {
+        return Math.max(0, Math.min(dimension - 1, coordinate));
+    }
+
     /// Returns a rendered image snapshot from a node on the FX thread.
     private static WritableImage snapshotImageOnFxThread(Node node) {
         WritableImage image = new WritableImage(
@@ -8978,6 +9035,12 @@ final class M3ControlStyleTest {
         return Math.abs(first.getRed() - second.getRed())
                 + Math.abs(first.getGreen() - second.getGreen())
                 + Math.abs(first.getBlue() - second.getBlue());
+    }
+
+    /// Verifies that a sampled snapshot pixel is close to the expected color.
+    private static void assertColorNear(Color actual, Color expected, double maximumDistance, String description) {
+        assertTrue(colorDistance(actual, expected) <= maximumDistance,
+                () -> description + ": actual=" + actual + ", expected=" + expected);
     }
 
     /// Creates a primary mouse event for control behavior tests.

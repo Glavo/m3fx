@@ -28,10 +28,16 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     private static final double BOX_SIZE = 18.0;
 
     /// The visual check mark width.
-    private static final double MARK_WIDTH = 12.0;
+    private static final double CHECK_MARK_WIDTH = 12.0;
 
     /// The visual check mark height.
-    private static final double MARK_HEIGHT = 10.0;
+    private static final double CHECK_MARK_HEIGHT = 10.0;
+
+    /// The visual indeterminate dash width.
+    private static final double DASH_MARK_WIDTH = 12.0;
+
+    /// The visual indeterminate dash height.
+    private static final double DASH_MARK_HEIGHT = 2.0;
 
     /// The visual checkbox container.
     private final StackPane box = new StackPane();
@@ -82,7 +88,16 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         double touchTargetSize = getSkinnable().getTouchTargetSize();
         setIndicatorSlotSize(touchTargetSize, touchTargetSize);
         setFixedSize(box, BOX_SIZE, BOX_SIZE);
-        setFixedSize(mark, MARK_WIDTH, MARK_HEIGHT);
+        updateMarkMetrics();
+    }
+
+    /// Applies the current selected or indeterminate mark dimensions.
+    private void updateMarkMetrics() {
+        if (getSkinnable().isIndeterminate()) {
+            setFixedSize(mark, DASH_MARK_WIDTH, DASH_MARK_HEIGHT);
+        } else {
+            setFixedSize(mark, CHECK_MARK_WIDTH, CHECK_MARK_HEIGHT);
+        }
     }
 
     /// Applies the selected mark state without animation.
@@ -96,6 +111,7 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     private void animateMarkState() {
         boolean visible = getSkinnable().isSelected() || getSkinnable().isIndeterminate();
         selectionAnimation.stop();
+        updateMarkMetrics();
         selectionAnimation.getKeyFrames().setAll(new KeyFrame(
                 SELECTION_DURATION,
                 new KeyValue(mark.opacityProperty(), visible ? 1.0 : 0.0, M3Motion.STANDARD),
