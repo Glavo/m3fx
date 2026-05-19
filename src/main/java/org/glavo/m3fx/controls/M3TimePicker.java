@@ -9,8 +9,10 @@ import javafx.beans.property.IntegerPropertyBase;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
@@ -20,6 +22,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 time picker control.
@@ -91,6 +94,8 @@ public class M3TimePicker extends Control {
                         }
                     }
                     notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+                    notifyAccessibleItemsChanged();
                 }
             };
 
@@ -101,6 +106,7 @@ public class M3TimePicker extends Control {
                 @Override
                 protected void invalidated() {
                     notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+                    notifyAccessibleItemsChanged();
                 }
             };
 
@@ -110,6 +116,7 @@ public class M3TimePicker extends Control {
         @Override
         protected void invalidated() {
             validateMinuteStep(get());
+            notifyAccessibleItemsChanged();
         }
 
         /// Returns the owning bean.
@@ -132,6 +139,7 @@ public class M3TimePicker extends Control {
                 @Override
                 protected void invalidated() {
                     clearValueIfOutOfRange();
+                    notifyAccessibleItemsChanged();
                 }
             };
 
@@ -142,6 +150,7 @@ public class M3TimePicker extends Control {
                 @Override
                 protected void invalidated() {
                     clearValueIfOutOfRange();
+                    notifyAccessibleItemsChanged();
                 }
             };
 
@@ -276,9 +285,25 @@ public class M3TimePicker extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
+            case FOCUS_NODE -> accessibleFocusNode();
+            case ITEM_COUNT -> accessibleCellCount();
+            case ITEM_AT_INDEX -> accessibleCellAt(parameters);
+            case SELECTED_ITEMS -> selectedItems();
             case TEXT -> accessibleText();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    /// Executes accessibility actions for time selection and focus.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case REQUEST_FOCUS -> focusAccessibleNode(accessibleFocusNode());
+            case SHOW_ITEM -> showAccessibleTime(parameters);
+            case SET_SELECTED_ITEMS -> selectAccessibleTime(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Creates the default Material Design 3 time picker skin.
@@ -370,6 +395,162 @@ public class M3TimePicker extends Control {
     private String accessibleText() {
         @Nullable LocalTime selectedTime = getValue();
         return selectedTime == null ? "" : selectedTime.toString();
+    }
+
+    /// Returns the current selected time as an immutable accessibility selection list.
+    private List<LocalTime> selectedItems() {
+        @Nullable LocalTime selectedTime = getValue();
+        return selectedTime == null ? List.of() : List.of(selectedTime);
+    }
+
+    /// Returns the number of visible selectable cells.
+    private int accessibleCellCount() {
+        @Nullable M3TimePickerSkin skin = materialSkin();
+        return skin == null ? logicalCellCount() : skin.getVisibleCellCount();
+    }
+
+    /// Returns the visible selectable cell at an accessibility index.
+    private @Nullable Node accessibleCellAt(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+
+        @Nullable M3TimePickerSkin skin = materialSkin();
+        return skin == null ? null : skin.getVisibleCell(index);
+    }
+
+    /// Returns the preferred focus node for the currently displayed time cells.
+    private Node accessibleFocusNode() {
+        @Nullable M3TimePickerSkin skin = materialSkin();
+        if (skin == null) {
+            return this;
+        }
+
+        @Nullable LocalTime selectedTime = getValue();
+        if (selectedTime != null) {
+            @Nullable Node selectedCell = skin.getCell(selectedTime);
+            if (selectedCell != null && !selectedCell.isDisabled()) {
+                return selectedCell;
+            }
+        }
+
+        @Nullable Node firstEnabledCell = skin.getFirstEnabledCell();
+        return firstEnabledCell == null ? this : firstEnabledCell;
+    }
+
+    /// Focuses an accessibility target or the picker itself.
+    private void focusAccessibleNode(@Nullable Node node) {
+        if (node == null) {
+            requestFocus();
+        } else {
+            M3Accessible.showItem(node);
+        }
+    }
+
+    /// Shows and focuses the time item requested by accessibility parameters.
+    private void showAccessibleTime(Object... parameters) {
+        @Nullable Object item = accessibleTimeItem(parameters);
+        if (item instanceof Node node) {
+            M3Accessible.showItem(node);
+            return;
+        }
+        if (item instanceof LocalTime time) {
+            focusAccessibleTime(time);
+            return;
+        }
+        focusAccessibleNode(accessibleFocusNode());
+    }
+
+    /// Selects the time requested by accessibility parameters.
+    private void selectAccessibleTime(Object... parameters) {
+        @Nullable Object item = accessibleTimeItem(parameters);
+        @Nullable LocalTime time = item instanceof LocalTime localTime ? localTime : timeFromNode(item);
+        if (time != null && !isTimeDisabled(time)) {
+            setValue(time);
+            focusAccessibleTime(time);
+        }
+    }
+
+    /// Focuses the rendered time cell for a time when it is visible.
+    private void focusAccessibleTime(LocalTime time) {
+        @Nullable M3TimePickerSkin skin = materialSkin();
+        focusAccessibleNode(skin == null ? this : skin.getCell(normalizeTime(time)));
+    }
+
+    /// Returns the time item requested by accessibility parameters.
+    private @Nullable Object accessibleTimeItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return accessibleFocusNode();
+        }
+        if (parameters[0] instanceof Number) {
+            return accessibleCellAt(parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Object item = accessibleTimeItem(parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the time item requested by one accessibility action parameter.
+    private @Nullable Object accessibleTimeItem(@Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return accessibleCellAt(number);
+        }
+        if (parameter instanceof LocalTime time) {
+            return normalizeTime(time);
+        }
+        if (parameter instanceof Node node) {
+            return timeFromNode(node) == null ? null : node;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Object item = accessibleTimeItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Object item = accessibleTimeItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the time stored on a rendered selectable cell.
+    private static @Nullable LocalTime timeFromNode(@Nullable Object item) {
+        return item instanceof Node node && node.getUserData() instanceof LocalTime time ? time : null;
+    }
+
+    /// Returns the current logical selectable cell count before the skin is installed.
+    private int logicalCellCount() {
+        int hourCellCount = isUse24HourClock() ? 24 : 12;
+        int minuteCellCount = 60 / getMinuteStep();
+        int periodCellCount = isUse24HourClock() ? 0 : 2;
+        return hourCellCount + minuteCellCount + periodCellCount;
+    }
+
+    /// Returns the current Material time picker skin.
+    private @Nullable M3TimePickerSkin materialSkin() {
+        Skin<?> skin = getSkin();
+        return skin instanceof M3TimePickerSkin materialSkin ? materialSkin : null;
+    }
+
+    /// Notifies accessibility clients that visible time cells changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 
     /// Clears seconds and nanos because this picker edits hour and minute precision.

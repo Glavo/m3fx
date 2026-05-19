@@ -7,8 +7,10 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
@@ -21,6 +23,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.WeekFields;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -74,6 +77,8 @@ public class M3DatePicker extends Control {
                         showMonth(YearMonth.from(selectedDate));
                     }
                     notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
                 }
             };
 
@@ -88,6 +93,7 @@ public class M3DatePicker extends Control {
                         return;
                     }
                     notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+                    notifyAccessibleItemsChanged();
                 }
             };
 
@@ -100,6 +106,7 @@ public class M3DatePicker extends Control {
                     if (get() == null) {
                         set(defaultFirstDayOfWeek());
                     }
+                    notifyAccessibleItemsChanged();
                 }
             };
 
@@ -110,6 +117,7 @@ public class M3DatePicker extends Control {
                 @Override
                 protected void invalidated() {
                     clearValueIfOutOfRange();
+                    notifyAccessibleItemsChanged();
                 }
             };
 
@@ -120,12 +128,19 @@ public class M3DatePicker extends Control {
                 @Override
                 protected void invalidated() {
                     clearValueIfOutOfRange();
+                    notifyAccessibleItemsChanged();
                 }
             };
 
     /// Whether days from adjacent months are shown in leading and trailing grid cells.
     private final BooleanProperty showAdjacentMonthDays =
-            new SimpleBooleanProperty(this, "showAdjacentMonthDays", true);
+            new SimpleBooleanProperty(this, "showAdjacentMonthDays", true) {
+                /// Notifies accessibility clients when visible day cells change.
+                @Override
+                protected void invalidated() {
+                    notifyAccessibleItemsChanged();
+                }
+            };
 
     /// Creates a date picker showing the current month with no selected date.
     public M3DatePicker() {
@@ -287,9 +302,25 @@ public class M3DatePicker extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
+            case FOCUS_NODE -> accessibleFocusNode();
+            case ITEM_COUNT -> accessibleDayCellCount();
+            case ITEM_AT_INDEX -> accessibleDayCellAt(parameters);
+            case SELECTED_ITEMS -> selectedItems();
             case TEXT -> accessibleText();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    /// Executes accessibility actions for day selection and focus.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case REQUEST_FOCUS -> focusAccessibleNode(accessibleFocusNode());
+            case SHOW_ITEM -> showAccessibleDay(parameters);
+            case SET_SELECTED_ITEMS -> selectAccessibleDay(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Creates the default Material Design 3 date picker skin.
@@ -396,6 +427,192 @@ public class M3DatePicker extends Control {
     private String accessibleText() {
         @Nullable LocalDate selectedDate = getValue();
         return selectedDate == null ? getDisplayedMonth().toString() : selectedDate.toString();
+    }
+
+    /// Returns the current selected date as an immutable accessibility selection list.
+    private List<LocalDate> selectedItems() {
+        @Nullable LocalDate selectedDate = getValue();
+        return selectedDate == null ? List.of() : List.of(selectedDate);
+    }
+
+    /// Returns the number of visible day cells.
+    private int accessibleDayCellCount() {
+        @Nullable M3DatePickerSkin skin = materialSkin();
+        return skin == null ? visibleDateCount() : skin.getVisibleDayCellCount();
+    }
+
+    /// Returns the visible day cell or logical date at an accessibility index.
+    private @Nullable Object accessibleDayCellAt(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+
+        @Nullable M3DatePickerSkin skin = materialSkin();
+        if (skin != null) {
+            return skin.getVisibleDayCell(index);
+        }
+        return visibleDateAt(index);
+    }
+
+    /// Returns the preferred focus node for the currently displayed dates.
+    private Node accessibleFocusNode() {
+        @Nullable M3DatePickerSkin skin = materialSkin();
+        if (skin == null) {
+            return this;
+        }
+
+        @Nullable LocalDate selectedDate = getValue();
+        if (selectedDate != null) {
+            @Nullable Node selectedCell = skin.getDayCell(selectedDate);
+            if (selectedCell != null && !selectedCell.isDisabled()) {
+                return selectedCell;
+            }
+        }
+
+        LocalDate today = LocalDate.now();
+        if (YearMonth.from(today).equals(getDisplayedMonth())) {
+            @Nullable Node todayCell = skin.getDayCell(today);
+            if (todayCell != null && !todayCell.isDisabled()) {
+                return todayCell;
+            }
+        }
+
+        @Nullable Node firstEnabledCell = skin.getFirstEnabledDayCell();
+        return firstEnabledCell == null ? this : firstEnabledCell;
+    }
+
+    /// Focuses an accessibility target or the picker itself.
+    private void focusAccessibleNode(@Nullable Node node) {
+        if (node == null) {
+            requestFocus();
+        } else {
+            M3Accessible.showItem(node);
+        }
+    }
+
+    /// Shows and focuses the day requested by accessibility parameters.
+    private void showAccessibleDay(Object... parameters) {
+        @Nullable Object item = accessibleDayItem(parameters);
+        if (item instanceof Node node) {
+            M3Accessible.showItem(node);
+            return;
+        }
+        if (item instanceof LocalDate date) {
+            showMonth(YearMonth.from(date));
+            focusAccessibleDate(date);
+            return;
+        }
+        focusAccessibleNode(accessibleFocusNode());
+    }
+
+    /// Selects the day requested by accessibility parameters.
+    private void selectAccessibleDay(Object... parameters) {
+        @Nullable Object item = accessibleDayItem(parameters);
+        @Nullable LocalDate date = item instanceof LocalDate localDate ? localDate : dateFromNode(item);
+        if (date != null && !isDateDisabled(date)) {
+            setValue(date);
+            focusAccessibleDate(date);
+        }
+    }
+
+    /// Focuses the rendered day cell for a date when it is visible.
+    private void focusAccessibleDate(LocalDate date) {
+        @Nullable M3DatePickerSkin skin = materialSkin();
+        focusAccessibleNode(skin == null ? this : skin.getDayCell(date));
+    }
+
+    /// Returns the day item requested by accessibility parameters.
+    private @Nullable Object accessibleDayItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return accessibleFocusNode();
+        }
+        if (parameters[0] instanceof Number) {
+            return accessibleDayCellAt(parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Object item = accessibleDayItem(parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the day item requested by one accessibility action parameter.
+    private @Nullable Object accessibleDayItem(@Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return accessibleDayCellAt(number);
+        }
+        if (parameter instanceof LocalDate date) {
+            return date;
+        }
+        if (parameter instanceof Node node) {
+            return dateFromNode(node) == null ? null : node;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Object item = accessibleDayItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Object item = accessibleDayItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the date stored on a rendered day cell.
+    private static @Nullable LocalDate dateFromNode(@Nullable Object item) {
+        return item instanceof Node node && node.getUserData() instanceof LocalDate date ? date : null;
+    }
+
+    /// Returns the date at a visible logical index.
+    private @Nullable LocalDate visibleDateAt(int index) {
+        if (index < 0 || index >= visibleDateCount()) {
+            return null;
+        }
+        if (!isShowAdjacentMonthDays()) {
+            return getDisplayedMonth().atDay(index + 1);
+        }
+        return gridStartDate().plusDays(index);
+    }
+
+    /// Returns the number of visible logical dates.
+    private int visibleDateCount() {
+        return isShowAdjacentMonthDays() ? 42 : getDisplayedMonth().lengthOfMonth();
+    }
+
+    /// Returns the first logical date in the displayed calendar grid.
+    private LocalDate gridStartDate() {
+        LocalDate firstOfMonth = getDisplayedMonth().atDay(1);
+        int leadingDays = Math.floorMod(
+                firstOfMonth.getDayOfWeek().getValue() - getFirstDayOfWeek().getValue(),
+                7
+        );
+        return firstOfMonth.minusDays(leadingDays);
+    }
+
+    /// Returns the current Material date picker skin.
+    private @Nullable M3DatePickerSkin materialSkin() {
+        Skin<?> skin = getSkin();
+        return skin instanceof M3DatePickerSkin materialSkin ? materialSkin : null;
+    }
+
+    /// Notifies accessibility clients that visible day cells changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 
     /// Validates an optional inclusive date range.

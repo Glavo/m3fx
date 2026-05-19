@@ -25,6 +25,7 @@ import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -100,6 +101,56 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         control.maxDateProperty().removeListener(refreshListener);
         control.showAdjacentMonthDaysProperty().removeListener(refreshListener);
         super.dispose();
+    }
+
+    /// Returns the number of visible day cells currently exposed by the skin.
+    public final int getVisibleDayCellCount() {
+        int count = 0;
+        for (DateCellButton dayCell : dayCells) {
+            if (isAccessibleDayCell(dayCell)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /// Returns a visible day cell by visible index.
+    public final @Nullable Node getVisibleDayCell(int visibleIndex) {
+        if (visibleIndex < 0) {
+            return null;
+        }
+
+        int currentIndex = 0;
+        for (DateCellButton dayCell : dayCells) {
+            if (!isAccessibleDayCell(dayCell)) {
+                continue;
+            }
+            if (currentIndex == visibleIndex) {
+                return dayCell;
+            }
+            currentIndex++;
+        }
+        return null;
+    }
+
+    /// Returns the visible day cell for a date.
+    public final @Nullable Node getDayCell(LocalDate date) {
+        for (DateCellButton dayCell : dayCells) {
+            if (isAccessibleDayCell(dayCell) && date.equals(dayCell.getUserData())) {
+                return dayCell;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible enabled day cell.
+    public final @Nullable Node getFirstEnabledDayCell() {
+        for (DateCellButton dayCell : dayCells) {
+            if (isAccessibleDayCell(dayCell) && !dayCell.isDisabled()) {
+                return dayCell;
+            }
+        }
+        return null;
     }
 
     /// Computes the minimum width from the calendar container.
@@ -239,6 +290,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
 
             dayCell.setText(Integer.toString(date.getDayOfMonth()));
             dayCell.setUserData(date);
+            dayCell.setAccessibleText(date.toString());
             dayCell.setVisible(visible);
             dayCell.setMouseTransparent(!visible);
             dayCell.setDisable(disabled);
@@ -293,6 +345,11 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         return button;
     }
 
+    /// Returns whether a day cell is visible to users and accessibility clients.
+    private static boolean isAccessibleDayCell(DateCellButton dayCell) {
+        return dayCell.isVisible() && !dayCell.isMouseTransparent();
+    }
+
     /// Adds or removes a style class.
     private static void setStyleClass(Node node, String styleClass, boolean active) {
         List<String> styleClasses = node.getStyleClass();
@@ -313,7 +370,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
             super("");
             getStyleClass().add(M3DatePicker.DAY_CELL_STYLE_CLASS);
             setAccessibleRole(AccessibleRole.BUTTON);
-            setFocusTraversable(false);
+            setFocusTraversable(true);
             setMnemonicParsing(false);
             setTextOverrun(OverrunStyle.CLIP);
             setMinSize(DAY_CELL_SIZE, DAY_CELL_SIZE);

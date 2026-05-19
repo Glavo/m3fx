@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /// The default selectable-grid skin for [M3TimePicker].
@@ -101,6 +102,57 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         control.minTimeProperty().removeListener(refreshListener);
         control.maxTimeProperty().removeListener(refreshListener);
         super.dispose();
+    }
+
+    /// Returns the number of visible selectable cells currently exposed by the skin.
+    public final int getVisibleCellCount() {
+        int count = 0;
+        for (Node cell : selectableCells()) {
+            if (isAccessibleCell(cell)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /// Returns a visible selectable cell by visible index.
+    public final @Nullable Node getVisibleCell(int visibleIndex) {
+        if (visibleIndex < 0) {
+            return null;
+        }
+
+        int currentIndex = 0;
+        for (Node cell : selectableCells()) {
+            if (!isAccessibleCell(cell)) {
+                continue;
+            }
+            if (currentIndex == visibleIndex) {
+                return cell;
+            }
+            currentIndex++;
+        }
+        return null;
+    }
+
+    /// Returns the first visible enabled cell representing the supplied time.
+    public final @Nullable Node getCell(LocalTime time) {
+        LocalTime normalizedTime = time.withSecond(0).withNano(0);
+        for (Node cell : selectableCells()) {
+            if (isAccessibleCell(cell) && normalizedTime.equals(cell.getUserData())) {
+                return cell;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible enabled selectable cell.
+    public final @Nullable Node getFirstEnabledCell() {
+        for (Node cell : selectableCells()) {
+            if (isAccessibleCell(cell) && !cell.isDisabled()) {
+                return cell;
+            }
+        }
+        return null;
     }
 
     /// Computes the minimum width from the picker container.
@@ -216,6 +268,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
                 LocalTime candidate = baseTime.withHour(hour);
                 TimeCellButton cell = createCell(formatTwoDigits(hour), HOUR_CELL_WIDTH, M3TimePicker.HOUR_CELL_STYLE_CLASS);
                 cell.setUserData(candidate);
+                cell.setAccessibleText(candidate.toString());
                 setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS,
                         selectedTime != null && selectedTime.getHour() == hour);
                 cell.setDisable(!hourHasSelectableMinute(control, hour));
@@ -229,6 +282,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
                 LocalTime candidate = baseTime.withHour(actualHour);
                 TimeCellButton cell = createCell(Integer.toString(displayHour), HOUR_CELL_WIDTH, M3TimePicker.HOUR_CELL_STYLE_CLASS);
                 cell.setUserData(candidate);
+                cell.setAccessibleText(candidate.toString());
                 setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS,
                         selectedTime != null && toDisplayHour(selectedTime.getHour()) == displayHour);
                 cell.setDisable(!hourHasSelectableMinute(control, actualHour));
@@ -247,6 +301,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             LocalTime candidate = baseTime.withMinute(minute);
             TimeCellButton cell = createCell(formatTwoDigits(minute), MINUTE_CELL_WIDTH, M3TimePicker.MINUTE_CELL_STYLE_CLASS);
             cell.setUserData(candidate);
+            cell.setAccessibleText(candidate.toString());
             setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS,
                     selectedTime != null && selectedTime.getMinute() == minute);
             cell.setDisable(control.isTimeDisabled(candidate));
@@ -269,6 +324,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         TimeCellButton am = createCell("AM", 92.0, M3TimePicker.PERIOD_CELL_STYLE_CLASS);
         am.getStyleClass().add("m3-time-picker-period-start");
         am.setUserData(baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), false)));
+        am.setAccessibleText(am.getUserData().toString());
         am.setDisable(!periodHasSelectableTime(control, false));
         setStyleClass(am, M3TimePicker.SELECTED_CELL_STYLE_CLASS, !afternoon);
         am.setOnAction(this::handleTimeCellAction);
@@ -276,6 +332,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         TimeCellButton pm = createCell("PM", 92.0, M3TimePicker.PERIOD_CELL_STYLE_CLASS);
         pm.getStyleClass().add("m3-time-picker-period-end");
         pm.setUserData(baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), true)));
+        pm.setAccessibleText(pm.getUserData().toString());
         pm.setDisable(!periodHasSelectableTime(control, true));
         setStyleClass(pm, M3TimePicker.SELECTED_CELL_STYLE_CLASS, afternoon);
         pm.setOnAction(this::handleTimeCellAction);
@@ -339,6 +396,20 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         return cell;
     }
 
+    /// Returns selectable cells in their visible traversal order.
+    private List<Node> selectableCells() {
+        ArrayList<Node> cells = new ArrayList<>();
+        cells.addAll(hourGrid.getChildren());
+        cells.addAll(minuteGrid.getChildren());
+        cells.addAll(periodRow.getChildren());
+        return cells;
+    }
+
+    /// Returns whether a time cell is visible to users and accessibility clients.
+    private static boolean isAccessibleCell(Node cell) {
+        return cell.isVisible() && !cell.isMouseTransparent();
+    }
+
     /// Formats an hour for the active display mode.
     private static String formatHour(LocalTime time, boolean use24HourClock) {
         if (use24HourClock) {
@@ -385,7 +456,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             getStyleClass().add(M3TimePicker.CELL_STYLE_CLASS);
             setAccessibleRole(AccessibleRole.BUTTON);
             setAlignment(Pos.CENTER);
-            setFocusTraversable(false);
+            setFocusTraversable(true);
             setMnemonicParsing(false);
             setTextOverrun(OverrunStyle.CLIP);
         }

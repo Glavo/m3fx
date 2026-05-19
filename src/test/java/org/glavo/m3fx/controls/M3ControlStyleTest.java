@@ -82,8 +82,10 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -6628,6 +6630,105 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-carousel.png"
             ));
+        });
+    }
+
+    /// Verifies that date pickers expose rendered day cells to accessibility clients.
+    @Test
+    void datePickerExposesAccessibleDayCellsAndActions() {
+        runOnFxThread(() -> {
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 19));
+            datePicker.setDisplayedMonth(YearMonth.of(2026, 5));
+            datePicker.setFirstDayOfWeek(DayOfWeek.MONDAY);
+            datePicker.setShowAdjacentMonthDays(false);
+
+            Pane root = new Pane(datePicker);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 420.0, 360.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertEquals(31, datePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                Node firstDay = assertInstanceOf(Node.class,
+                        datePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertEquals(LocalDate.of(2026, 5, 1), firstDay.getUserData());
+                assertNull(datePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 31));
+
+                Node selectedDay = assertInstanceOf(Node.class,
+                        datePicker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(LocalDate.of(2026, 5, 19), selectedDay.getUserData());
+                assertEquals(java.util.List.of(LocalDate.of(2026, 5, 19)),
+                        datePicker.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+
+                datePicker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(selectedDay.isFocused());
+
+                datePicker.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 14);
+                Node shownDay = assertInstanceOf(Node.class,
+                        datePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 14));
+                assertEquals(LocalDate.of(2026, 5, 15), shownDay.getUserData());
+                assertTrue(shownDay.isFocused());
+
+                datePicker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, LocalDate.of(2026, 5, 21));
+
+                assertEquals(LocalDate.of(2026, 5, 21), datePicker.getValue());
+                assertEquals(java.util.List.of(LocalDate.of(2026, 5, 21)),
+                        datePicker.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that time pickers expose rendered selectable cells to accessibility clients.
+    @Test
+    void timePickerExposesAccessibleCellsAndActions() {
+        runOnFxThread(() -> {
+            M3TimePicker timePicker = new M3TimePicker(LocalTime.of(9, 30));
+            timePicker.setUse24HourClock(true);
+            timePicker.setMinuteStep(15);
+
+            Pane root = new Pane(timePicker);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 520.0, 360.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertEquals(28, timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                Node firstHour = assertInstanceOf(Node.class,
+                        timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertEquals(LocalTime.of(0, 30), firstHour.getUserData());
+                assertNull(timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 28));
+
+                Node selectedTime = assertInstanceOf(Node.class,
+                        timePicker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(LocalTime.of(9, 30), selectedTime.getUserData());
+                assertEquals(java.util.List.of(LocalTime.of(9, 30)),
+                        timePicker.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+
+                timePicker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(selectedTime.isFocused());
+
+                timePicker.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 25);
+                Node shownMinute = assertInstanceOf(Node.class,
+                        timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 25));
+                assertEquals(LocalTime.of(9, 15), shownMinute.getUserData());
+                assertTrue(shownMinute.isFocused());
+
+                timePicker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, LocalTime.of(14, 45, 12));
+
+                assertEquals(LocalTime.of(14, 45), timePicker.getValue());
+                assertEquals(java.util.List.of(LocalTime.of(14, 45)),
+                        timePicker.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+            } finally {
+                stage.close();
+            }
         });
     }
 
