@@ -6444,6 +6444,146 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that representative interactive states render visible state layer feedback.
+    @Test
+    void interactiveStateSnapshotRendersHoverFocusAndPressedFeedback() {
+        runOnFxThread(() -> {
+            M3Button normalButton = M3Button.withVariant("Normal", M3ButtonVariant.FILLED);
+            M3Button hoverButton = M3Button.withVariant("Hover", M3ButtonVariant.FILLED);
+            M3Button focusButton = M3Button.withVariant("Focus", M3ButtonVariant.FILLED);
+            M3Button pressedButton = M3Button.withVariant("Pressed", M3ButtonVariant.FILLED);
+            applyPseudoState(hoverButton, "hover");
+            applyPseudoState(focusButton, "focus-visible");
+            applyPseudoState(pressedButton, "pressed");
+
+            M3CheckBox hoverCheckBox = M3CheckBox.withSelected("Checkbox hover", true);
+            M3RadioButton focusRadioButton = M3RadioButton.withSelected("Radio focus", true);
+            M3Switch pressedSwitch = M3Switch.withSelected("Switch pressed", true);
+            applyPseudoState(hoverCheckBox, "hover");
+            applyPseudoState(focusRadioButton, "focus-visible");
+            applyPseudoState(pressedSwitch, "pressed");
+
+            M3Slider pressedSlider = new M3Slider(0.0, 100.0, 56.0);
+            pressedSlider.setPrefWidth(180.0);
+            M3Tab focusTab = M3Tab.withSelected("Tab focus", true);
+            M3NavigationItem hoverNavigationItem = M3NavigationItem.withSelected(
+                    "Home",
+                    new M3Icon("H"),
+                    true
+            );
+            applyPseudoState(pressedSlider, "pressed");
+            applyPseudoState(focusTab, "focus-visible");
+            applyPseudoState(hoverNavigationItem, "hover");
+
+            M3ListItem pressedListItem = new M3ListItem("Pressed list item");
+            pressedListItem.setLeadingIcon("L");
+            pressedListItem.setPrefWidth(220.0);
+            M3Card hoverCard = new M3Card(
+                    visualLabel("Hover card"),
+                    M3CardVariant.ELEVATED,
+                    event -> {
+                    }
+            );
+            hoverCard.setPrefSize(160.0, 72.0);
+            applyPseudoState(pressedListItem, "pressed");
+            applyPseudoState(hoverCard, "hover");
+
+            VBox root = new VBox(
+                    18.0,
+                    interactiveStateSection(
+                            "Buttons",
+                            interactiveStateSample("Normal", normalButton),
+                            interactiveStateSample("Hover", hoverButton),
+                            interactiveStateSample("Focus Visible", focusButton),
+                            interactiveStateSample("Pressed", pressedButton)
+                    ),
+                    interactiveStateSection(
+                            "Selection",
+                            interactiveStateSample("Hover", hoverCheckBox),
+                            interactiveStateSample("Focus Visible", focusRadioButton),
+                            interactiveStateSample("Pressed", pressedSwitch)
+                    ),
+                    interactiveStateSection(
+                            "Navigation",
+                            interactiveStateSample("Pressed", pressedSlider),
+                            interactiveStateSample("Focus Visible", focusTab),
+                            interactiveStateSample("Hover", hoverNavigationItem)
+                    ),
+                    interactiveStateSection(
+                            "Containers",
+                            interactiveStateSample("Pressed", pressedListItem),
+                            interactiveStateSample("Hover", hoverCard)
+                    )
+            );
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 920.0, 560.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(920.0, Math.ceil(root.prefHeight(920.0)));
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotHasColorVariety(image, 18);
+            assertStateLayerOpacity(normalButton, 0.0);
+            assertStateLayerOpacity(hoverButton, 0.08);
+            assertStateLayerOpacity(focusButton, 0.1);
+            assertStateLayerOpacity(pressedButton, 0.1);
+            assertStateLayerOpacity(hoverCheckBox, 0.08);
+            assertStateLayerOpacity(focusRadioButton, 0.1);
+            assertStateLayerOpacity(pressedSwitch, 0.1);
+            assertStateLayerOpacity(pressedSlider, 0.1);
+            assertStateLayerOpacity(focusTab, 0.1);
+            assertStateLayerOpacity(hoverNavigationItem, 0.08);
+            assertStateLayerOpacity(pressedListItem, 0.1);
+            assertStateLayerOpacity(hoverCard, 0.08);
+            assertSnapshotNodeContainsContrast(image, hoverButton, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, focusButton, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, pressedButton, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, hoverCheckBox, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, focusRadioButton, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, pressedSwitch, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, pressedSlider, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, focusTab, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, hoverNavigationItem, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, pressedListItem, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, hoverCard, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-interactive-states.png"
+            ));
+        });
+    }
+
+    /// Verifies that a real button ripple remains visible after release and fades out through animation.
+    @Test
+    void buttonRippleReleaseAnimationFadesAfterPointerRelease() throws InterruptedException {
+        M3Button button = M3Button.withVariant("Ripple", M3ButtonVariant.FILLED);
+        Pane root = new Pane(button);
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(260.0),
+                () -> {
+                    Scene scene = new Scene(root, 200.0, 100.0);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    root.applyCss();
+                    button.resize(120.0, 40.0);
+                    button.layout();
+
+                    button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 24.0, 20.0, true));
+                    Region ripple = lookupRegion(button, ".m3-ripple");
+                    assertTrue(ripple.getOpacity() > 0.0);
+
+                    button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
+                    assertTrue(ripple.getOpacity() > 0.0);
+                    assertFalse(button.isArmed());
+                },
+                () -> assertEquals(0.0, lookupRegion(button, ".m3-ripple").getOpacity(), 0.0001)
+        );
+    }
+
     /// Verifies that a representative control set renders non-blank visible output.
     @Test
     void visualSmokeSnapshotRendersCoreControlsWithContrast() {
@@ -8619,6 +8759,36 @@ final class M3ControlStyleTest {
                 + "-fx-background-radius: 18px; "
                 + "-fx-padding: 16px;");
         return new VBox(8.0, heading, row);
+    }
+
+    /// Creates a section for interactive-state visual snapshot tests.
+    private static VBox interactiveStateSection(String title, Node... samples) {
+        M3Text heading = new M3Text(title, M3TextRole.TITLE_MEDIUM);
+        FlowPane row = new FlowPane(16.0, 16.0, samples);
+        row.setPrefWrapLength(860.0);
+        row.setStyle("-fx-background-color: -m3-color-surface-container-low; "
+                + "-fx-background-radius: 18px; "
+                + "-fx-padding: 16px;");
+        return new VBox(8.0, heading, row);
+    }
+
+    /// Creates a labeled sample for interactive-state visual snapshot tests.
+    private static VBox interactiveStateSample(String title, Node node) {
+        Label label = visualLabel(title);
+        label.setStyle(label.getStyle() + " -fx-font-size: 11px;");
+        VBox sample = new VBox(6.0, label, node);
+        sample.setAlignment(Pos.CENTER_LEFT);
+        return sample;
+    }
+
+    /// Applies a pseudo-class used by visual state snapshots.
+    private static void applyPseudoState(Node node, String pseudoClass) {
+        node.pseudoClassStateChanged(PseudoClass.getPseudoClass(pseudoClass), true);
+    }
+
+    /// Verifies that the state layer overlay resolved to the expected opacity.
+    private static void assertStateLayerOpacity(Node node, double expectedOpacity) {
+        assertEquals(expectedOpacity, lookupRegion(node, ".m3-state-layer").getOpacity(), 0.0001);
     }
 
     /// Creates a text label that inherits the gallery's Material color tokens.

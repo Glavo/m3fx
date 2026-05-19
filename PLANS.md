@@ -67,6 +67,8 @@
 - Demo pages cover common variants, disabled states, selected states, error states, and animated progress examples.
 - Unit tests cover style classes, token CSS metadata, accessibility attributes, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
 - Snapshot-based visual tests render implemented control families into report images for manual and automated inspection.
+- Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
+- Animation tests verify ripple release behavior on both the shared state layer and real controls.
 - Selection control visual snapshots cover selected, unchecked, indeterminate, disabled, and disabled-selected states.
 - Date and time picker visual tests render selected, today, adjacent-month, 12-hour/24-hour, minute-step, and disabled range states into dedicated snapshots.
 - Demo packaging tests cover the executable shadow jar and verify that JavaFX classes are not bundled.
