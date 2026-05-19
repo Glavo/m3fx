@@ -645,11 +645,19 @@ public class M3TextInputLayout extends VBox {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
-        if (action == AccessibleAction.REQUEST_FOCUS) {
-            TextInputControl input = getInput();
-            if (input != null) {
-                input.requestFocus();
+        switch (action) {
+            case REQUEST_FOCUS -> {
+                TextInputControl input = getInput();
+                if (input != null) {
+                    input.requestFocus();
+                    return;
+                }
+            }
+            case SHOW_ITEM -> {
+                M3Accessible.showItem(accessibleItemAt(parameters));
                 return;
+            }
+            default -> {
             }
         }
         super.executeAccessibleAction(action, parameters);

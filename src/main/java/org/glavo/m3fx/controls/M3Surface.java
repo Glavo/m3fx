@@ -14,6 +14,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -230,6 +231,16 @@ public class M3Surface extends Control {
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), parameters);
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    /// Executes accessibility actions for indexed surface content children.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SHOW_ITEM -> M3Accessible.showItem(getContent(), parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Returns the CSS metadata for this node class.

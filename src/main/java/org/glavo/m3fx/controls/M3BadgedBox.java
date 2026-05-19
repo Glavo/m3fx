@@ -8,6 +8,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -176,6 +177,16 @@ public class M3BadgedBox extends Control {
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    /// Executes accessibility actions for content and badge children.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SHOW_ITEM -> M3Accessible.showItem(accessibleItemAt(parameters));
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Initializes style classes and property listeners.

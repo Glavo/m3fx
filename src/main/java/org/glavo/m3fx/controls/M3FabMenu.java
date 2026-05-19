@@ -199,7 +199,11 @@ public class M3FabMenu extends VBox {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> toggle();
-            case EXPAND, SHOW_ITEM -> show();
+            case EXPAND -> show();
+            case SHOW_ITEM -> {
+                show();
+                M3Accessible.showItem(getItems(), parameters);
+            }
             case COLLAPSE -> hide();
             default -> super.executeAccessibleAction(action, parameters);
         }

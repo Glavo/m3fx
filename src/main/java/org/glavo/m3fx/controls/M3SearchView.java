@@ -268,7 +268,11 @@ public class M3SearchView extends VBox {
                 getEditor().requestFocus();
             }
             case FIRE -> fire();
-            case EXPAND, SHOW_ITEM -> activate();
+            case EXPAND -> activate();
+            case SHOW_ITEM -> {
+                activate();
+                M3Accessible.showItem(getResults(), parameters);
+            }
             case COLLAPSE -> deactivate();
             default -> super.executeAccessibleAction(action, parameters);
         }

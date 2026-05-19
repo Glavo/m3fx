@@ -10,6 +10,7 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -210,6 +211,16 @@ public class M3TopAppBar extends HBox {
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getNavigation(), getActions(), parameters);
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    /// Executes accessibility actions for indexed navigation and action children.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SHOW_ITEM -> M3Accessible.showItem(M3Accessible.itemAt(getNavigation(), getActions(), parameters));
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Validates a trailing action array.

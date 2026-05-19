@@ -274,10 +274,10 @@ public class M3SnackbarHost extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
-        if (action == AccessibleAction.COLLAPSE) {
-            dismiss();
-        } else {
-            super.executeAccessibleAction(action, parameters);
+        switch (action) {
+            case COLLAPSE -> dismiss();
+            case SHOW_ITEM -> showAccessibleSnackbar(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
         }
     }
 
@@ -381,6 +381,42 @@ public class M3SnackbarHost extends Control {
             index--;
         }
         return index < queue.size() ? queue.get(index) : null;
+    }
+
+    /// Shows or focuses the snackbar referenced by accessibility action parameters.
+    private void showAccessibleSnackbar(Object... parameters) {
+        @Nullable M3Snackbar target = accessibleSnackbar(parameters);
+        if (target == null) {
+            return;
+        }
+
+        if (target == getSnackbar()) {
+            M3Accessible.showItem(target);
+            return;
+        }
+        if (queue.remove(target)) {
+            show(target);
+        }
+    }
+
+    /// Returns the snackbar referenced by accessibility action parameters.
+    private @Nullable M3Snackbar accessibleSnackbar(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        if (index >= 0) {
+            Node item = snackbarAt(parameters);
+            return item instanceof M3Snackbar snackbar ? snackbar : null;
+        }
+
+        @Nullable M3Snackbar currentSnackbar = getSnackbar();
+        if (currentSnackbar != null && M3Accessible.containsSelectionTarget(currentSnackbar, parameters)) {
+            return currentSnackbar;
+        }
+        for (M3Snackbar queuedSnackbar : queue) {
+            if (M3Accessible.containsSelectionTarget(queuedSnackbar, parameters)) {
+                return queuedSnackbar;
+            }
+        }
+        return null;
     }
 
     /// Returns text for the currently hosted snackbar.

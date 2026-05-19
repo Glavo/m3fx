@@ -80,7 +80,11 @@ final class M3Accessible {
 
     /// Requests focus for the item referenced by accessibility action parameters.
     static void showItem(ObservableList<? extends Node> items, Object... parameters) {
-        @Nullable Node item = actionItem(items, parameters);
+        showItem(actionItem(items, parameters));
+    }
+
+    /// Requests focus for an accessibility item when it can be reached.
+    static void showItem(@Nullable Node item) {
         if (item != null && item.isVisible() && !item.isDisabled()) {
             item.requestFocus();
         }
@@ -147,6 +151,9 @@ final class M3Accessible {
 
     /// Returns the child item referenced by one accessibility action parameter.
     private static @Nullable Node actionItem(ObservableList<? extends Node> items, @Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return itemAt(items, number);
+        }
         if (parameter instanceof Node node) {
             return items.contains(node) ? node : null;
         }

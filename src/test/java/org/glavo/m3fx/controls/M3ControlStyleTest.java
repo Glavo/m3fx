@@ -5749,6 +5749,99 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that structural indexed containers focus or reveal requested accessibility items.
+    @Test
+    void structuralIndexedContainersSupportAccessibleShowItemActions() {
+        runOnFxThread(() -> {
+            M3Button navigation = new M3Button("Navigation");
+            M3Button topAction = new M3Button("Top action");
+            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", navigation, topAction);
+
+            M3Button bottomAction = new M3Button("Bottom action");
+            M3Button floatingAction = new M3Button("Floating action");
+            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                    M3BottomAppBarFloatingActionAlignment.END,
+                    floatingAction,
+                    bottomAction
+            );
+
+            M3Button bannerAction = new M3Button("Dismiss");
+            M3Banner banner = M3Banner.withIcon("Network unavailable", new M3Icon("!"), bannerAction);
+            M3Button surfaceAction = new M3Button("Surface action");
+            M3Surface surface = new M3Surface(surfaceAction);
+            M3Button badgedContent = new M3Button("Messages");
+            M3BadgedBox badgedBox = new M3BadgedBox(badgedContent, new M3Badge("3"));
+
+            M3TextField textField = new M3TextField();
+            M3Button leading = new M3Button("Leading");
+            M3TextInputLayout inputLayout = new M3TextInputLayout(textField, "Helper text");
+            inputLayout.setLeading(leading);
+
+            M3ListItem firstResult = new M3ListItem("First result");
+            M3ListItem secondResult = new M3ListItem("Second result");
+            M3SearchView searchView = new M3SearchView("Search", firstResult, secondResult);
+            M3Button fabAction = new M3Button("Create note");
+            M3FabMenu fabMenu = new M3FabMenu(fabAction);
+
+            VBox root = new VBox(
+                    topAppBar,
+                    bottomAppBar,
+                    banner,
+                    surface,
+                    badgedBox,
+                    inputLayout,
+                    searchView,
+                    fabMenu
+            );
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 560.0, 560.0));
+                stage.show();
+
+                topAppBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                assertTrue(topAction.isFocused());
+
+                bottomAppBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                assertTrue(floatingAction.isFocused());
+
+                banner.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                assertTrue(bannerAction.isFocused());
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+                assertTrue(surfaceAction.isFocused());
+
+                badgedBox.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+                assertTrue(badgedContent.isFocused());
+
+                inputLayout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                assertTrue(textField.isFocused());
+
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                assertTrue(searchView.isActive());
+                assertTrue(secondResult.isFocused());
+
+                fabMenu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+                assertTrue(fabMenu.isExpanded());
+                assertTrue(fabAction.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+
+        runOnFxThread(() -> {
+            M3SnackbarHost snackbarHost = new M3SnackbarHost();
+            M3Snackbar first = new M3Snackbar("First");
+            M3Snackbar second = new M3Snackbar("Second");
+            snackbarHost.show(first);
+            snackbarHost.enqueue(second);
+
+            snackbarHost.executeAccessibleAction(AccessibleAction.SHOW_ITEM, second);
+
+            assertSame(second, snackbarHost.getSnackbar());
+            assertTrue(snackbarHost.getQueue().isEmpty());
+        });
+    }
+
     /// Verifies that navigation drawer token rules override list item metrics.
     @Test
     void navigationDrawerAppliesItemMetrics() {
