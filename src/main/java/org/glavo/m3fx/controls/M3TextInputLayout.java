@@ -19,6 +19,9 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -40,6 +43,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.Objects;
 
@@ -209,6 +213,13 @@ public class M3TextInputLayout extends Control {
                 }
             };
 
+    /// The additional validators applied after the primary validator.
+    private final ObservableList<M3TextInputValidator> validators = FXCollections.observableArrayList();
+
+    /// The read-only additional validator list.
+    private final @UnmodifiableView ObservableList<M3TextInputValidator> validatorsView =
+            FXCollections.unmodifiableObservableList(validators);
+
     /// The last error text produced by the validator.
     private final ReadOnlyStringWrapper validationErrorText =
             new ReadOnlyStringWrapper(this, "validationErrorText", "");
@@ -310,6 +321,14 @@ public class M3TextInputLayout extends Control {
                     updateInputPadding();
                 }
             };
+
+    /// Refreshes validation when the additional validator list changes.
+    private final ListChangeListener<M3TextInputValidator> validatorsListener = change -> {
+        validateValidatorChanges(change);
+        if (isValidationActive()) {
+            updateValidation();
+        }
+    };
 
     /// The container that overlays leading and trailing adornments over the input.
     private final StackPane inputContainer = new StackPane();
@@ -524,6 +543,38 @@ public class M3TextInputLayout extends Control {
     /// Returns the validator property.
     public final ObjectProperty<@Nullable M3TextInputValidator> validatorProperty() {
         return validator;
+    }
+
+    /// Returns the additional validators applied after the primary validator.
+    public final @UnmodifiableView ObservableList<M3TextInputValidator> getValidators() {
+        return validatorsView;
+    }
+
+    /// Adds an additional validator to the end of the validation pipeline.
+    public final void addValidator(M3TextInputValidator validator) {
+        validators.add(Objects.requireNonNull(validator, "validator"));
+    }
+
+    /// Adds additional validators to the end of the validation pipeline.
+    public final void addValidators(M3TextInputValidator... validators) {
+        validateValidators(validators);
+        this.validators.addAll(validators);
+    }
+
+    /// Replaces the additional validation pipeline.
+    public final void setValidators(M3TextInputValidator... validators) {
+        validateValidators(validators);
+        this.validators.setAll(validators);
+    }
+
+    /// Removes an additional validator from the validation pipeline.
+    public final void removeValidator(M3TextInputValidator validator) {
+        validators.remove(Objects.requireNonNull(validator, "validator"));
+    }
+
+    /// Removes all additional validators from the validation pipeline.
+    public final void clearValidators() {
+        validators.clear();
     }
 
     /// Returns the last error text produced by the validator.
@@ -755,6 +806,7 @@ public class M3TextInputLayout extends Control {
         M3ControlStyles.add(clearButton, CLEAR_BUTTON_STYLE_CLASS);
         clearButton.setAccessibleText("Clear text");
         clearButton.setOnAction(event -> clearText());
+        validators.addListener(validatorsListener);
 
         HBox.setHgrow(supportingSpacer, Priority.ALWAYS);
         supportingRow.getChildren().setAll(supportingLabel, supportingSpacer, counterLabel);
@@ -1161,9 +1213,8 @@ public class M3TextInputLayout extends Control {
 
     /// Runs validation and updates validator-owned error state.
     private boolean updateValidation() {
-        M3TextInputValidator validator = getValidator();
         TextInputControl input = getInput();
-        if (validator == null || input == null) {
+        if (input == null) {
             setValidationErrorText("");
             updateInputErrorState();
             updateSupportingRow();
@@ -1171,11 +1222,32 @@ public class M3TextInputLayout extends Control {
         }
 
         @Nullable String text = input.getText();
-        @Nullable String errorText = validator.validate(input, text == null ? "" : text);
+        @Nullable String errorText = firstValidationError(input, text == null ? "" : text);
         setValidationErrorText(errorText == null ? "" : errorText);
         updateInputErrorState();
         updateSupportingRow();
         return getValidationErrorText().isEmpty();
+    }
+
+    /// Returns the first error from the primary validator and additional validators.
+    private @Nullable String firstValidationError(TextInputControl input, String text) {
+        @Nullable M3TextInputValidator primaryValidator = getValidator();
+        if (primaryValidator != null) {
+            @Nullable String primaryError = primaryValidator.validate(input, text);
+            if (primaryError != null && !primaryError.isEmpty()) {
+                return primaryError;
+            }
+        }
+        return M3TextInputValidators.firstError(input, text, validators);
+    }
+
+    /// Validates additional validator list changes.
+    private static void validateValidatorChanges(ListChangeListener.Change<? extends M3TextInputValidator> change) {
+        while (change.next()) {
+            for (M3TextInputValidator validator : change.getAddedSubList()) {
+                Objects.requireNonNull(validator, "validator");
+            }
+        }
     }
 
     /// Updates validator-owned error text.
@@ -1294,6 +1366,14 @@ public class M3TextInputLayout extends Control {
             throw new IllegalArgumentException("characterLimit must be -1 or greater");
         }
         return characterLimit;
+    }
+
+    /// Validates additional validators before installing them.
+    private static void validateValidators(M3TextInputValidator... validators) {
+        Objects.requireNonNull(validators, "validators");
+        for (M3TextInputValidator validator : validators) {
+            Objects.requireNonNull(validator, "validator");
+        }
     }
 
     /// Returns the text length of a JavaFX text input control.

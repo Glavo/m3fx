@@ -105,6 +105,7 @@ import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
+import org.glavo.m3fx.controls.M3TextInputValidators;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
@@ -128,6 +129,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 /// A demo application that showcases M3FX controls.
 @NotNullByDefault
@@ -644,13 +646,15 @@ public final class M3FXDemoApp extends Application {
         M3TextField validatedEmail = createTextField("Validated email", "support", M3TextInputVariant.OUTLINED, false);
         validatedEmail.setPrefWidth(340.0);
         M3TextInputLayout validatedEmailLayout = createTextInputLayout(validatedEmail, "Validation runs on focus loss");
-        validatedEmailLayout.setValidator((input, text) -> text.isBlank()
-                ? "Email is required"
-                : text.contains("@") ? null : "Use an email address");
+        validatedEmailLayout.setValidator(M3TextInputValidators.required("Email is required"));
+        validatedEmailLayout.addValidator(M3TextInputValidators.pattern(
+                Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
+                "Use an email address"
+        ));
         validatedEmailLayout.validate();
         M3TextField requiredProject = createTextField("Required project", "", M3TextInputVariant.FILLED, false);
         M3TextInputLayout requiredProjectLayout = createTextInputLayout(requiredProject, "Required field");
-        requiredProjectLayout.setValidator((input, text) -> text.isBlank() ? "Project name is required" : null);
+        requiredProjectLayout.setValidator(M3TextInputValidators.required("Project name is required"));
         requiredProjectLayout.setValidateOnTextChange(true);
         M3TextInputLayout filledErrorLayout = createTextInputLayout(filledError, "Supporting text");
         filledErrorLayout.setErrorText("Use a valid value");

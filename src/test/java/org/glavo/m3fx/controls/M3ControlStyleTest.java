@@ -117,6 +117,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1972,6 +1973,89 @@ final class M3ControlStyleTest {
         assertFalse(layout.isValidationActive());
         assertFalse(layout.isValidationError());
         assertEquals("Email Helper text", layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+    }
+
+    /// Verifies that reusable text input validators cover common validation rules.
+    @Test
+    void textInputValidatorsProvideReusableRules() {
+        M3TextField textField = new M3TextField();
+        M3TextInputValidator validator = M3TextInputValidators.all(
+                M3TextInputValidators.required("Required"),
+                M3TextInputValidators.lengthBetween(3, 5, "Too short", "Too long"),
+                M3TextInputValidators.pattern(Pattern.compile("[a-z]+"), "Letters only")
+        );
+
+        assertNull(M3TextInputValidators.none().validate(textField, ""));
+        assertEquals("Required", validator.validate(textField, ""));
+        assertEquals("Too short", validator.validate(textField, "ab"));
+        assertEquals("Too long", validator.validate(textField, "abcdef"));
+        assertEquals("Letters only", validator.validate(textField, "abc1"));
+        assertNull(validator.validate(textField, "abc"));
+        assertEquals("Predicate failed", M3TextInputValidators.predicate(
+                (input, text) -> text.equals(input.getText()),
+                "Predicate failed"
+        ).validate(textField, "other"));
+        assertThrows(IllegalArgumentException.class, () ->
+                M3TextInputValidators.lengthBetween(4, 3, "Too short", "Too long"));
+        assertThrows(IllegalArgumentException.class, () ->
+                M3TextInputValidators.minLength(-1, "Too short"));
+        assertThrows(NullPointerException.class, () ->
+                M3TextInputValidators.all(M3TextInputValidators.none(), null));
+    }
+
+    /// Verifies that text input layouts evaluate an additional validation pipeline.
+    @Test
+    void textInputLayoutRunsAdditionalValidators() {
+        PseudoClass error = PseudoClass.getPseudoClass("error");
+        M3TextField textField = new M3TextField();
+        M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+        M3TextInputValidator emailValidator = M3TextInputValidators.pattern(
+                Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
+                "Use an email address"
+        );
+        M3TextInputValidator maxLengthValidator = M3TextInputValidators.maxLength(12, "Email is too long");
+
+        layout.setValidator(M3TextInputValidators.required("Email is required"));
+        layout.addValidator(emailValidator);
+        layout.addValidator(maxLengthValidator);
+
+        applyCss(layout);
+
+        Label supportingText = assertInstanceOf(
+                Label.class,
+                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+        );
+        assertEquals(java.util.List.of(emailValidator, maxLengthValidator), layout.getValidators());
+
+        assertFalse(layout.validate());
+
+        assertEquals("Email is required", layout.getValidationErrorText());
+        assertEquals("Email is required", supportingText.getText());
+        assertTrue(supportingText.getPseudoClassStates().contains(error));
+        assertTrue(textField.isError());
+
+        textField.setText("support");
+
+        assertEquals("Use an email address", layout.getValidationErrorText());
+
+        textField.setText("support@example.com");
+
+        assertEquals("Email is too long", layout.getValidationErrorText());
+
+        layout.removeValidator(maxLengthValidator);
+
+        assertEquals("", layout.getValidationErrorText());
+        assertFalse(textField.isError());
+        assertEquals("Helper text", supportingText.getText());
+
+        layout.setValidators(maxLengthValidator);
+
+        assertEquals("Email is too long", layout.getValidationErrorText());
+
+        layout.clearValidators();
+
+        assertEquals("", layout.getValidationErrorText());
+        assertTrue(layout.getValidators().isEmpty());
     }
 
     /// Verifies that text input layouts can keep validation errors stable while editing.
