@@ -47,9 +47,12 @@ import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
 import org.glavo.m3fx.controls.M3ChipSelectionMode;
 import org.glavo.m3fx.controls.M3ChipVariant;
+import org.glavo.m3fx.controls.M3DateRange;
 import org.glavo.m3fx.controls.M3DatePicker;
+import org.glavo.m3fx.controls.M3DatePickerDialog;
 import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3DateRangePicker;
+import org.glavo.m3fx.controls.M3DateRangePickerDialog;
 import org.glavo.m3fx.controls.M3DateRangePickerField;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
@@ -115,6 +118,7 @@ import org.glavo.m3fx.controls.M3TextInputValidators;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
+import org.glavo.m3fx.controls.M3TimePickerDialog;
 import org.glavo.m3fx.controls.M3TimePickerField;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3TopAppBar;
@@ -865,9 +869,15 @@ public final class M3FXDemoApp extends Application {
         monthOnly.setDisplayedMonth(YearMonth.from(today.plusMonths(1)));
         monthOnly.setShowAdjacentMonthDays(false);
 
+        M3Button dateDialogButton = createButton("Open date dialog", M3ButtonVariant.FILLED);
+        dateDialogButton.setOnAction(event -> showDatePickerDialog(today));
+        M3Button rangeDialogButton = createButton("Open range dialog", M3ButtonVariant.TONAL);
+        rangeDialogButton.setOnAction(event -> showDateRangePickerDialog(today.plusDays(2), today.plusDays(8)));
+
         return createGallery(
                 createShowcaseGroup("Fields", field, boundedField),
                 createShowcaseGroup("Range Field", rangeField),
+                createShowcaseGroup("Dialogs", dateDialogButton, rangeDialogButton),
                 createShowcaseGroup("Selected Date", selected),
                 createShowcaseGroup("Bounded Range", range, dateRange),
                 createShowcaseGroup("Month Only", monthOnly)
@@ -905,8 +915,12 @@ public final class M3FXDemoApp extends Application {
         bounded.setMinTime(LocalTime.of(9, 0));
         bounded.setMaxTime(LocalTime.of(17, 30));
 
+        M3Button dialogButton = createButton("Open time dialog", M3ButtonVariant.FILLED);
+        dialogButton.setOnAction(event -> showTimePickerDialog(LocalTime.of(10, 30)));
+
         return createGallery(
                 createShowcaseGroup("Fields", field, boundedField),
+                createShowcaseGroup("Dialog", dialogButton),
                 createShowcaseGroup("12 Hour", twelveHour),
                 createShowcaseGroup("24 Hour", twentyFourHour),
                 createShowcaseGroup("Bounded Range", bounded)
@@ -2028,20 +2042,71 @@ public final class M3FXDemoApp extends Application {
         pane.setContentText("This dialog uses the M3FX dialog pane style and active theme tokens.");
         pane.getButtonTypes().add(ButtonType.OK);
 
+        initDialogOwner(dialog);
+        dialog.showAndWait();
+    }
+
+    /// Opens a date picker dialog and reports the accepted date.
+    private void showDatePickerDialog(LocalDate initialDate) {
+        M3DatePickerDialog dialog = new M3DatePickerDialog(initialDate);
+        initDialogOwner(dialog);
+        dialog.setOnHidden(event -> {
+            @Nullable LocalDate result = dialog.getResult();
+            if (result != null) {
+                showSnackbar("Selected date " + result);
+            }
+        });
+        dialog.show();
+    }
+
+    /// Opens a date range picker dialog and reports the accepted range.
+    private void showDateRangePickerDialog(LocalDate startDate, LocalDate endDate) {
+        M3DateRangePickerDialog dialog = new M3DateRangePickerDialog(startDate, endDate);
+        initDialogOwner(dialog);
+        dialog.setOnHidden(event -> {
+            @Nullable M3DateRange result = dialog.getResult();
+            if (result != null) {
+                showSnackbar("Selected range " + result.startDate() + " to " + result.endDate());
+            }
+        });
+        dialog.show();
+    }
+
+    /// Opens a time picker dialog and reports the accepted time.
+    private void showTimePickerDialog(LocalTime initialTime) {
+        M3TimePickerDialog dialog = new M3TimePickerDialog(initialTime);
+        dialog.setUse24HourClock(true);
+        dialog.setMinuteStep(15);
+        initDialogOwner(dialog);
+        dialog.setOnHidden(event -> {
+            @Nullable LocalTime result = dialog.getResult();
+            if (result != null) {
+                showSnackbar("Selected time " + result);
+            }
+        });
+        dialog.show();
+    }
+
+    /// Initializes a dialog owner from the active demo scene.
+    private void initDialogOwner(M3Dialog<?> dialog) {
         Scene activeScene = scene;
         if (activeScene != null) {
             dialog.initOwner(activeScene.getWindow());
         }
-        dialog.showAndWait();
     }
 
     /// Shows the demo snackbar.
     private void showSnackbar() {
+        showSnackbar("Theme-aware snackbar");
+    }
+
+    /// Shows a demo snackbar message.
+    private void showSnackbar(String message) {
         M3SnackbarHost snackbarHost = this.snackbarHost;
         if (snackbarHost == null) {
             return;
         }
-        snackbarHost.show("Theme-aware snackbar");
+        snackbarHost.show(message);
     }
 
     /// Shows the demo snackbar with an action.
