@@ -49,6 +49,7 @@ import org.glavo.m3fx.controls.M3ChipSelectionMode;
 import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerField;
+import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
@@ -839,6 +840,10 @@ public final class M3FXDemoApp extends Application {
         range.setMinDate(today.minusDays(3));
         range.setMaxDate(today.plusDays(18));
 
+        M3DateRangePicker dateRange = new M3DateRangePicker(today.plusDays(2), today.plusDays(8));
+        dateRange.setMinDate(today.minusDays(7));
+        dateRange.setMaxDate(today.plusDays(30));
+
         M3DatePicker monthOnly = new M3DatePicker();
         monthOnly.setDisplayedMonth(YearMonth.from(today.plusMonths(1)));
         monthOnly.setShowAdjacentMonthDays(false);
@@ -846,7 +851,7 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup("Fields", field, boundedField),
                 createShowcaseGroup("Selected Date", selected),
-                createShowcaseGroup("Bounded Range", range),
+                createShowcaseGroup("Bounded Range", range, dateRange),
                 createShowcaseGroup("Month Only", monthOnly)
         );
     }

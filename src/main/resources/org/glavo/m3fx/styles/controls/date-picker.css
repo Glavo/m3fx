@@ -2,6 +2,10 @@
     -fx-background-color: transparent;
 }
 
+.m3-date-range-picker {
+    -fx-background-color: transparent;
+}
+
 .m3-date-picker-container {
     -fx-background-color: -m3-color-surface-container-low;
     -fx-background-radius: 28px;
@@ -34,6 +38,10 @@
     -fx-spacing: 4px;
 }
 
+.m3-date-range-picker-weekday-row {
+    -fx-spacing: 0px;
+}
+
 .m3-date-picker-weekday-label {
     -fx-font-size: 12px;
     -fx-font-weight: 600;
@@ -44,6 +52,10 @@
 .m3-date-picker-day-grid {
     -fx-hgap: 4px;
     -fx-vgap: 4px;
+}
+
+.m3-date-range-picker-day-grid {
+    -fx-hgap: 0px;
 }
 
 .m3-date-picker-day-cell,
@@ -114,6 +126,70 @@
 .m3-date-picker-selected-day .m3-state-layer,
 .m3-date-picker-selected-day .m3-ripple {
     -fx-background-color: -m3-color-on-primary;
+}
+
+.m3-date-picker-day-cell.m3-date-range-picker-range-middle-day,
+.m3-date-picker-day-cell.m3-date-range-picker-range-middle-day:hover,
+.m3-date-picker-day-cell.m3-date-range-picker-range-middle-day:focused,
+.m3-date-picker-day-cell.m3-date-range-picker-range-middle-day:armed,
+.m3-date-picker-day-cell.m3-date-range-picker-range-middle-day:pressed {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-radius: 0px;
+    -fx-text-fill: -m3-color-on-secondary-container;
+    -fx-opacity: 1.0;
+}
+
+.m3-date-picker-day-cell.m3-date-range-picker-range-middle-day .m3-state-layer,
+.m3-date-picker-day-cell.m3-date-range-picker-range-middle-day .m3-ripple {
+    -fx-background-color: -m3-color-on-secondary-container;
+}
+
+.m3-date-picker-day-cell.m3-date-range-picker-range-start-day,
+.m3-date-picker-day-cell.m3-date-range-picker-range-start-day:hover,
+.m3-date-picker-day-cell.m3-date-range-picker-range-start-day:focused,
+.m3-date-picker-day-cell.m3-date-range-picker-range-start-day:armed,
+.m3-date-picker-day-cell.m3-date-range-picker-range-start-day:pressed {
+    -fx-background-radius: 999px 0 0 999px;
+}
+
+.m3-date-picker-day-cell.m3-date-range-picker-range-end-day,
+.m3-date-picker-day-cell.m3-date-range-picker-range-end-day:hover,
+.m3-date-picker-day-cell.m3-date-range-picker-range-end-day:focused,
+.m3-date-picker-day-cell.m3-date-range-picker-range-end-day:armed,
+.m3-date-picker-day-cell.m3-date-range-picker-range-end-day:pressed {
+    -fx-background-radius: 0 999px 999px 0;
+}
+
+.m3-date-picker-day-cell.m3-date-range-picker-range-single-day,
+.m3-date-picker-day-cell.m3-date-range-picker-range-single-day:hover,
+.m3-date-picker-day-cell.m3-date-range-picker-range-single-day:focused,
+.m3-date-picker-day-cell.m3-date-range-picker-range-single-day:armed,
+.m3-date-picker-day-cell.m3-date-range-picker-range-single-day:pressed {
+    -fx-background-radius: 999px;
+}
+
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day:hover,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day:focused,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day:armed,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day:pressed {
+    -fx-background-radius: 999px 0 0 999px;
+}
+
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day:hover,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day:focused,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day:armed,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day:pressed {
+    -fx-background-radius: 0 999px 999px 0;
+}
+
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:hover,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:focused,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:armed,
+.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:pressed {
+    -fx-background-radius: 999px;
 }
 
 .m3-date-picker-day-cell:disabled {
