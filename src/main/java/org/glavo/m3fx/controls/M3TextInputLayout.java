@@ -3,6 +3,9 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
@@ -31,6 +34,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -88,6 +93,27 @@ public class M3TextInputLayout extends Control {
 
     /// The top input padding used when a multiline field has a floating label.
     private static final double LABELED_MULTILINE_TOP_PADDING = 28.0;
+
+    /// The duration used for label state transitions.
+    private static final Duration LABEL_TRANSITION_DURATION = M3Motion.SHORT3;
+
+    /// The duration used for supporting row reveal transitions.
+    private static final Duration SUPPORTING_ROW_TRANSITION_DURATION = M3Motion.SHORT2;
+
+    /// The duration used for clear-button reveal transitions.
+    private static final Duration TRAILING_TRANSITION_DURATION = M3Motion.SHORT2;
+
+    /// The label transition start opacity.
+    private static final double LABEL_TRANSITION_START_OPACITY = 0.72;
+
+    /// The label transition start offset.
+    private static final double LABEL_TRANSITION_OFFSET_Y = 4.0;
+
+    /// The supporting row transition start offset.
+    private static final double SUPPORTING_ROW_TRANSITION_OFFSET_Y = -4.0;
+
+    /// The clear-button transition start scale.
+    private static final double TRAILING_TRANSITION_START_SCALE = 0.86;
 
     /// The wrapped text input control.
     private final ObjectProperty<@Nullable TextInputControl> input =
@@ -316,6 +342,15 @@ public class M3TextInputLayout extends Control {
             M3IconVariant.ON_SURFACE_VARIANT
     );
 
+    /// The animation used when the label changes between resting and floating states.
+    private final Timeline labelAnimation = new Timeline();
+
+    /// The animation used when supporting row content appears or changes.
+    private final Timeline supportingRowAnimation = new Timeline();
+
+    /// The animation used when the built-in clear button enters the trailing slot.
+    private final Timeline trailingAnimation = new Timeline();
+
     /// The previously installed input node.
     private @Nullable TextInputControl installedInput = null;
 
@@ -328,8 +363,29 @@ public class M3TextInputLayout extends Control {
     /// Whether the label is currently floating.
     private boolean labelFloating = false;
 
+    /// Whether the label was visible during the last label update.
+    private boolean labelVisible = false;
+
+    /// Whether label motion has been initialized.
+    private boolean labelMotionInitialized = false;
+
     /// The node currently installed in the trailing slot.
     private @Nullable Node installedTrailing = null;
+
+    /// Whether the supporting row was visible during the last supporting row update.
+    private boolean supportingRowVisible = false;
+
+    /// The supporting message used during the last supporting row update.
+    private String displayedSupportingRowText = "";
+
+    /// The counter message used during the last supporting row update.
+    private String displayedCounterText = "";
+
+    /// Whether the supporting row rendered error state during the last update.
+    private boolean supportingRowError = false;
+
+    /// Whether supporting row motion has been initialized.
+    private boolean supportingRowMotionInitialized = false;
 
     /// Creates an empty text input layout.
     public M3TextInputLayout() {
@@ -685,6 +741,8 @@ public class M3TextInputLayout extends Control {
         label.setMouseTransparent(true);
         leadingSlot.getStyleClass().add(LEADING_STYLE_CLASS);
         trailingSlot.getStyleClass().add(TRAILING_STYLE_CLASS);
+        label.setOpacity(0.0);
+        supportingRow.setOpacity(0.0);
         StackPane.setAlignment(label, Pos.CENTER_LEFT);
         StackPane.setAlignment(leadingSlot, Pos.CENTER_LEFT);
         StackPane.setAlignment(trailingSlot, Pos.CENTER_RIGHT);
@@ -744,6 +802,8 @@ public class M3TextInputLayout extends Control {
         installedInput = null;
         installedInputBasePadding = null;
         validationActive.set(false);
+        labelMotionInitialized = false;
+        supportingRowMotionInitialized = false;
         setValidationErrorText("");
 
         TextInputControl newInput = getInput();
@@ -814,7 +874,9 @@ public class M3TextInputLayout extends Control {
         StackPane.setAlignment(label, floating ? Pos.TOP_LEFT : Pos.CENTER_LEFT);
         label.pseudoClassStateChanged(FLOATING_PSEUDO_CLASS, floating);
         label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, hasErrorState());
+        updateLabelMotion(visible, floating);
         labelFloating = floating;
+        labelVisible = visible;
         updateLabelPadding();
         updateInputPadding();
     }
@@ -846,6 +908,7 @@ public class M3TextInputLayout extends Control {
             trailingSlot.getChildren().add(trailing);
         }
         updateAdornmentSlot(trailingSlot, trailing);
+        updateTrailingMotion(previousTrailing, trailing);
         updateLabelPadding();
         updateInputPadding();
         if (previousTrailing != trailing) {
@@ -952,6 +1015,11 @@ public class M3TextInputLayout extends Control {
         boolean showCounter = isCharacterCounterVisible() && getInput() != null;
         boolean showRow = showMessage || showCounter;
         boolean error = hasErrorState();
+        String counterText = characterCounterText();
+        boolean contentChanged = supportingRowVisible != showRow
+                || !Objects.equals(displayedSupportingRowText, message)
+                || !Objects.equals(displayedCounterText, counterText)
+                || supportingRowError != error;
 
         supportingLabel.setText(message);
         supportingLabel.setVisible(showMessage);
@@ -962,7 +1030,7 @@ public class M3TextInputLayout extends Control {
         supportingSpacer.setVisible(showCounter);
         supportingSpacer.setManaged(showCounter);
 
-        counterLabel.setText(characterCounterText());
+        counterLabel.setText(counterText);
         counterLabel.setVisible(showCounter);
         counterLabel.setManaged(showCounter);
         counterLabel.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
@@ -970,6 +1038,101 @@ public class M3TextInputLayout extends Control {
         supportingRow.setVisible(showRow);
         supportingRow.setManaged(showRow);
         supportingRow.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
+        updateSupportingRowMotion(showRow, contentChanged);
+        supportingRowVisible = showRow;
+        displayedSupportingRowText = message;
+        displayedCounterText = counterText;
+        supportingRowError = error;
+    }
+
+    /// Updates label transition state when the label appears or changes floating state.
+    private void updateLabelMotion(boolean visible, boolean floating) {
+        boolean changed = labelVisible != visible || labelFloating != floating;
+        if (!visible) {
+            labelAnimation.stop();
+            label.setOpacity(0.0);
+            label.setTranslateY(0.0);
+            labelMotionInitialized = false;
+            return;
+        }
+
+        if (!labelMotionInitialized || getScene() == null) {
+            label.setOpacity(1.0);
+            label.setTranslateY(0.0);
+            labelMotionInitialized = true;
+            return;
+        }
+
+        if (!changed) {
+            return;
+        }
+
+        labelAnimation.stop();
+        label.setOpacity(LABEL_TRANSITION_START_OPACITY);
+        label.setTranslateY(floating ? LABEL_TRANSITION_OFFSET_Y : -LABEL_TRANSITION_OFFSET_Y);
+        labelAnimation.getKeyFrames().setAll(new KeyFrame(
+                LABEL_TRANSITION_DURATION,
+                new KeyValue(label.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                new KeyValue(label.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+        ));
+        labelAnimation.playFromStart();
+    }
+
+    /// Updates the built-in clear-button entry transition when it occupies the trailing slot.
+    private void updateTrailingMotion(@Nullable Node previousTrailing, @Nullable Node trailing) {
+        if (previousTrailing == trailing || trailing != clearButton) {
+            return;
+        }
+
+        if (getScene() == null) {
+            clearButton.setOpacity(1.0);
+            clearButton.setScaleX(1.0);
+            clearButton.setScaleY(1.0);
+            return;
+        }
+
+        trailingAnimation.stop();
+        clearButton.setOpacity(0.0);
+        clearButton.setScaleX(TRAILING_TRANSITION_START_SCALE);
+        clearButton.setScaleY(TRAILING_TRANSITION_START_SCALE);
+        trailingAnimation.getKeyFrames().setAll(new KeyFrame(
+                TRAILING_TRANSITION_DURATION,
+                new KeyValue(clearButton.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                new KeyValue(clearButton.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                new KeyValue(clearButton.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE)
+        ));
+        trailingAnimation.playFromStart();
+    }
+
+    /// Updates supporting row transition state when text, counter, or error presentation changes.
+    private void updateSupportingRowMotion(boolean showRow, boolean contentChanged) {
+        if (!supportingRowMotionInitialized || getScene() == null) {
+            supportingRow.setOpacity(showRow ? 1.0 : 0.0);
+            supportingRow.setTranslateY(0.0);
+            supportingRowMotionInitialized = true;
+            return;
+        }
+
+        if (!showRow) {
+            supportingRowAnimation.stop();
+            supportingRow.setOpacity(0.0);
+            supportingRow.setTranslateY(0.0);
+            return;
+        }
+
+        if (!contentChanged) {
+            return;
+        }
+
+        supportingRowAnimation.stop();
+        supportingRow.setOpacity(0.0);
+        supportingRow.setTranslateY(SUPPORTING_ROW_TRANSITION_OFFSET_Y);
+        supportingRowAnimation.getKeyFrames().setAll(new KeyFrame(
+                SUPPORTING_ROW_TRANSITION_DURATION,
+                new KeyValue(supportingRow.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
+                new KeyValue(supportingRow.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+        ));
+        supportingRowAnimation.playFromStart();
     }
 
     /// Returns the supporting row text that should be visible.
@@ -1069,7 +1232,7 @@ public class M3TextInputLayout extends Control {
         if (text.isBlank()) {
             return;
         }
-        if (builder.length() > 0) {
+        if (!builder.isEmpty()) {
             builder.append(' ');
         }
         builder.append(text);

@@ -51,7 +51,7 @@
 
 - Typography and icon primitives: `M3Text`, `M3Icon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
 - Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, floating action buttons, extended floating action buttons, and floating action button menus.
-- Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, text input layouts with floating labels, validators, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, and optional hard character limits.
+- Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, animated text input layouts with floating labels, validators, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, and optional hard character limits.
 - Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
 - Checkbox, radio button, and switch disabled visuals use part-level state token opacity so selected indicators remain legible.
 - Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, and inclusive min/max date range support; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, and inclusive min/max time range support.
@@ -69,7 +69,7 @@
 - Unit tests cover style classes, token CSS metadata, accessibility attributes, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
 - Snapshot-based visual tests render implemented control families into report images for manual and automated inspection.
 - Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
-- Animation tests verify ripple release behavior on both the shared state layer and real controls.
+- Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.
 - Selection control visual snapshots cover selected, unchecked, indeterminate, disabled, and disabled-selected states.
 - Date and time picker visual tests render selected, today, adjacent-month, 12-hour/24-hour, minute-step, and disabled range states into dedicated snapshots.
 - Demo packaging tests cover the executable shadow jar and verify that JavaFX classes are not bundled.

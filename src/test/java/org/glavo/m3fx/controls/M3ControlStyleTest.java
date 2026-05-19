@@ -1780,6 +1780,48 @@ final class M3ControlStyleTest {
         assertEquals(8.0, textField.getPadding().getTop(), 0.0001);
     }
 
+    /// Verifies that text input layout presentation changes use Material motion timelines.
+    @Test
+    void textInputLayoutAnimatesLabelClearButtonAndSupportingRow() {
+        runOnFxThread(() -> {
+            M3TextField textField = new M3TextField();
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setLabelText("Email");
+            layout.setClearButtonEnabled(true);
+
+            applyCss(layout);
+
+            Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+
+            textField.setText("alpha");
+
+            Timeline labelAnimation = controlTimeline(layout, "labelAnimation");
+            Timeline trailingAnimation = controlTimeline(layout, "trailingAnimation");
+            M3IconButton clearButton = layout.getClearButton();
+            labelAnimation.jumpTo(Duration.millis(75.0));
+            trailingAnimation.jumpTo(Duration.millis(50.0));
+
+            assertBetween(label.getOpacity(), 0.72, 1.0, "floating label opacity");
+            assertBetween(Math.abs(label.getTranslateY()), 0.0, 4.0, "floating label translateY");
+            assertBetween(clearButton.getOpacity(), 0.0, 1.0, "clear button opacity");
+            assertBetween(clearButton.getScaleX(), 0.86, 1.0, "clear button scaleX");
+            assertBetween(clearButton.getScaleY(), 0.86, 1.0, "clear button scaleY");
+
+            layout.setSupportingText("Helper text");
+
+            Timeline supportingRowAnimation = controlTimeline(layout, "supportingRowAnimation");
+            HBox supportingRow = assertInstanceOf(
+                    HBox.class,
+                    layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+            );
+            supportingRowAnimation.jumpTo(Duration.millis(50.0));
+
+            assertBetween(supportingRow.getOpacity(), 0.0, 1.0, "supporting row opacity");
+            assertBetween(Math.abs(supportingRow.getTranslateY()), 0.0, 4.0, "supporting row translateY");
+            stopTimelines(labelAnimation, trailingAnimation, supportingRowAnimation);
+        });
+    }
+
     /// Verifies that text input layouts manage leading and trailing adornment slots.
     @Test
     void textInputLayoutManagesLeadingAndTrailingAdornments() {
@@ -9159,10 +9201,20 @@ final class M3ControlStyleTest {
 
     /// Returns a private skin timeline used by animation-focused tests.
     private static Timeline skinTimeline(Skin<?> skin, String fieldName) {
+        return reflectedTimeline(skin, fieldName);
+    }
+
+    /// Returns a private control timeline used by animation-focused tests.
+    private static Timeline controlTimeline(Object control, String fieldName) {
+        return reflectedTimeline(control, fieldName);
+    }
+
+    /// Returns a private timeline field from a test target.
+    private static Timeline reflectedTimeline(Object target, String fieldName) {
         try {
-            java.lang.reflect.Field field = skin.getClass().getDeclaredField(fieldName);
+            java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
-            return assertInstanceOf(Timeline.class, field.get(skin));
+            return assertInstanceOf(Timeline.class, field.get(target));
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
