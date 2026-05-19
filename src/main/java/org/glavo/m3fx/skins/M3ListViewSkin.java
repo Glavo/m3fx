@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
@@ -29,6 +30,15 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Updates visible cells when selection changes.
     private final ListChangeListener<Integer> selectedIndicesListener = change -> refreshCells();
 
+    /// Updates logical focused-row visuals when the list view focus owner state changes.
+    private final InvalidationListener focusedInvalidation = observable -> refreshCells();
+
+    /// Whether a focused cell should refresh logical row focus after the next layout pass.
+    private boolean focusRequestPending;
+
+    /// Whether a deferred focus retry has already been queued for the next pulse.
+    private boolean focusRetryScheduled;
+
     /// Creates a virtualized list view skin.
     public M3ListViewSkin(M3ListView<T> control) {
         super(control);
@@ -42,6 +52,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         control.getItems().addListener(itemsListener);
         control.cellFactoryProperty().addListener(cellFactoryInvalidation);
         control.getSelectedIndices().addListener(selectedIndicesListener);
+        control.focusedProperty().addListener(focusedInvalidation);
         refreshItemCount();
     }
 
@@ -52,6 +63,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         listView.getItems().removeListener(itemsListener);
         listView.cellFactoryProperty().removeListener(cellFactoryInvalidation);
         listView.getSelectedIndices().removeListener(selectedIndicesListener);
+        listView.focusedProperty().removeListener(focusedInvalidation);
         flow.fixedCellSizeProperty().unbind();
         flow.setCellFactory(null);
         super.dispose();
@@ -61,6 +73,12 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         flow.resizeRelocate(x, y, width, height);
+        if (focusRequestPending) {
+            flow.applyCss();
+            flow.layout();
+        }
+        focusVisibleCellIfNeeded();
+        scheduleFocusRetry();
     }
 
     /// Computes the preferred width from the virtual flow.
@@ -101,6 +119,18 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.refreshCells();
     }
 
+    /// Requests visible cell focus updates, optionally asking the list view to own node focus.
+    public void refreshFocus(boolean requestNodeFocus) {
+        focusRequestPending |= requestNodeFocus;
+        flow.refreshCells();
+        if (getSkinnable().getFocusedIndex() >= 0) {
+            flow.scrollTo(getSkinnable().getFocusedIndex());
+        }
+        getSkinnable().requestLayout();
+        focusVisibleCellIfNeeded();
+        scheduleFocusRetry();
+    }
+
     /// Recreates visible cells after the cell factory changes.
     public void rebuildCells() {
         flow.rebuildAllCells();
@@ -127,6 +157,48 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         return flow -> new M3ListViewCell<>(listView);
     }
 
+    /// Refreshes the visible cell that owns the focused index when it has been materialized.
+    private void focusVisibleCellIfNeeded() {
+        if (!focusRequestPending) {
+            return;
+        }
+
+        int index = getSkinnable().getFocusedIndex();
+        if (index < 0) {
+            getSkinnable().requestFocus();
+            focusRequestPending = false;
+            return;
+        }
+
+        @Nullable M3ListViewCell<T> cell = flow.findVisibleCell(index);
+        if (cell != null && cell.focusCell()) {
+            focusRequestPending = false;
+        }
+    }
+
+    /// Queues a next-pulse focus retry when `VirtualFlow` has not materialized the requested row yet.
+    private void scheduleFocusRetry() {
+        if (!focusRequestPending || focusRetryScheduled) {
+            return;
+        }
+
+        focusRetryScheduled = true;
+        Platform.runLater(() -> {
+            focusRetryScheduled = false;
+            if (!focusRequestPending) {
+                return;
+            }
+
+            getSkinnable().applyCss();
+            flow.applyCss();
+            flow.layout();
+            focusVisibleCellIfNeeded();
+            if (focusRequestPending) {
+                getSkinnable().requestLayout();
+            }
+        });
+    }
+
     /// A public-API wrapper exposing protected virtual flow refresh hooks to this skin.
     @NotNullByDefault
     private static final class ListViewVirtualFlow<T> extends VirtualFlow<M3ListViewCell<T>> {
@@ -136,7 +208,18 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             requestLayout();
             for (M3ListViewCell<T> cell : getCells()) {
                 cell.refreshSelection();
+                cell.refreshFocus();
             }
+        }
+
+        /// Returns a currently attached cell for the requested index.
+        private @Nullable M3ListViewCell<T> findVisibleCell(int index) {
+            for (M3ListViewCell<T> cell : getCells()) {
+                if (!cell.isEmpty() && cell.getIndex() == index && cell.getScene() != null) {
+                    return cell;
+                }
+            }
+            return null;
         }
 
         /// Rebuilds the virtual flow cell pile from the current cell factory.

@@ -110,6 +110,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -5904,6 +5905,220 @@ final class M3ControlStyleTest {
                 );
                 assertEquals("Row 80", visibleEightieth.getHeadlineText());
                 assertTrue(factoryCalls.get() < listView.getItems().size());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that virtualized list views expose keyboard focus and selection navigation.
+    @Test
+    void listViewSupportsKeyboardFocusAndSelectionNavigation() {
+        M3ListView<String> listView = new M3ListView<>("First", "Second", "Third");
+        listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+        assertEquals(0, listView.getFocusedIndex());
+        assertEquals("First", listView.getFocusedItem());
+        assertEquals(0, listView.getSelectedIndex());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+        assertEquals(1, listView.getFocusedIndex());
+        assertEquals("Second", listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+        assertEquals(2, listView.getFocusedIndex());
+        assertEquals("Third", listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+
+        assertEquals(1, listView.getFocusedIndex());
+        assertEquals("Second", listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+
+        assertEquals(0, listView.getFocusedIndex());
+        assertEquals("First", listView.getSelectedItem());
+
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        listView.clearFocus();
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+        assertEquals(1, listView.getFocusedIndex());
+        assertEquals(java.util.List.of(0), listView.getSelectedIndices());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+
+        assertEquals(java.util.List.of(0, 1), listView.getSelectedIndices());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+
+        assertEquals(java.util.List.of(0), listView.getSelectedIndices());
+    }
+
+    /// Verifies that virtualized list view keyboard and accessibility focus scrolls rows into view.
+    @Test
+    void listViewFocusesVirtualizedRowsFromKeyboardAndAccessibility() {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListView<Integer>> listViewReference = new AtomicReference<>();
+
+        try {
+            runOnFxThread(() -> {
+                M3ListView<Integer> listView = new M3ListView<>();
+                for (int i = 0; i < 100; i++) {
+                    listView.addItem(i);
+                }
+                listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+                listView.setFixedCellSize(56.0);
+                listView.setPrefSize(260.0, 168.0);
+                listView.setCellFactory(value -> new M3ListItem("Row " + value));
+                Pane root = new StackPane(listView);
+                Scene scene = new Scene(root, 300.0, 220.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                Stage stage = new Stage();
+                stageReference.set(stage);
+                rootReference.set(root);
+                listViewReference.set(listView);
+
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                listView.requestFocus();
+                listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+                root.layout();
+            });
+
+            runOnFxThread(() -> {
+                Pane root = Objects.requireNonNull(rootReference.get(), "root");
+                M3ListView<Integer> listView = Objects.requireNonNull(listViewReference.get(), "listView");
+                root.layout();
+
+                assertEquals(99, listView.getFocusedIndex());
+                assertEquals(99, listView.getSelectedIndex());
+                M3ListItem lastItem = Objects.requireNonNull(assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 99)
+                ));
+                assertEquals("Row 99", lastItem.getHeadlineText());
+                assertSame(listView, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(listView.isFocused());
+
+                listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 40);
+                root.layout();
+            });
+
+            runOnFxThread(() -> {
+                Pane root = Objects.requireNonNull(rootReference.get(), "root");
+                M3ListView<Integer> listView = Objects.requireNonNull(listViewReference.get(), "listView");
+                root.layout();
+
+                assertEquals(40, listView.getFocusedIndex());
+                M3ListItem focusedItem = Objects.requireNonNull(assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 40)
+                ));
+                assertEquals("Row 40", focusedItem.getHeadlineText());
+                assertSame(listView, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(listView.isFocused());
+            });
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that focused virtualized list rows update after item changes.
+    @Test
+    void listViewRefreshesFocusedItemAfterDataChanges() {
+        M3ListView<String> listView = new M3ListView<>("First", "Second", "Third");
+
+        listView.focusIndex(1);
+        listView.getItems().set(1, "Updated");
+
+        assertEquals(1, listView.getFocusedIndex());
+        assertEquals("Updated", listView.getFocusedItem());
+
+        listView.getItems().remove(2);
+
+        assertEquals(1, listView.getFocusedIndex());
+        assertEquals("Updated", listView.getFocusedItem());
+
+        listView.getItems().remove(1);
+
+        assertEquals(-1, listView.getFocusedIndex());
+        assertNull(listView.getFocusedItem());
+    }
+
+    /// Verifies that focus convenience methods wrap around list data.
+    @Test
+    void listViewFocusConvenienceMethodsWrapAroundData() {
+        M3ListView<String> listView = new M3ListView<>("First", "Second", "Third");
+
+        listView.focusFirst();
+
+        assertEquals(0, listView.getFocusedIndex());
+
+        listView.focusPrevious();
+
+        assertEquals(2, listView.getFocusedIndex());
+
+        listView.focusNext();
+
+        assertEquals(0, listView.getFocusedIndex());
+
+        listView.focusLast();
+
+        assertEquals(2, listView.getFocusedIndex());
+
+        listView.clearFocus();
+
+        assertEquals(-1, listView.getFocusedIndex());
+        assertNull(listView.getFocusedItem());
+    }
+
+    /// Verifies that virtualized list view row content stays out of direct tab traversal.
+    @Test
+    void listViewKeepsVirtualRowsOutOfDirectTabTraversal() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 8; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new Pane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3ListItem firstItem = Objects.requireNonNull(assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                ));
+                assertFalse(firstItem.isFocusTraversable());
+
+                listView.focusIndex(0);
+                root.layout();
+
+                assertTrue(firstItem.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focus-visible")));
             } finally {
                 stage.close();
             }

@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAttribute;
@@ -20,6 +21,9 @@ import java.util.Objects;
 public class M3ListViewCell<T> extends IndexedCell<T> {
     /// The base style class for M3FX list view cells.
     public static final String STYLE_CLASS = "m3-list-view-cell";
+
+    /// The pseudo-class used when this virtualized row owns logical keyboard focus.
+    private static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
 
     /// The owning virtualized list view.
     private final M3ListView<T> listView;
@@ -123,8 +127,30 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
 
     /// Updates the list item's selected state from the owning view.
     public final void refreshSelection() {
+        boolean selected = !isEmpty() && getListView().isIndexSelected(getIndex());
+        updateSelected(selected);
         if (listItem != null) {
-            listItem.setSelected(!isEmpty() && getListView().isIndexSelected(getIndex()));
+            listItem.setSelected(selected);
+        }
+    }
+
+    /// Requests list focus when this cell owns logical row focus.
+    public final boolean focusCell() {
+        if (listItem == null || isEmpty() || !getListView().isIndexFocused(getIndex())) {
+            return false;
+        }
+
+        getListView().requestFocus();
+        refreshFocus();
+        return getListView().isFocused();
+    }
+
+    /// Updates logical focus pseudo-class state for this virtualized row.
+    public final void refreshFocus() {
+        boolean focused = !isEmpty() && getListView().isIndexFocused(getIndex());
+        pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focused);
+        if (listItem != null) {
+            listItem.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focused && getListView().isFocused());
         }
     }
 
@@ -140,7 +166,11 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
 
     /// Applies the list view selection policy when the rendered item fires.
     private void handleItemAction(ActionEvent event) {
-        getListView().activateIndex(getIndex());
+        int index = getIndex();
+        if (index >= 0 && index < getListView().getItems().size()) {
+            getListView().focusIndex(index);
+            getListView().activateIndex(index);
+        }
         event.consume();
     }
 }

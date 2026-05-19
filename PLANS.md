@@ -61,6 +61,7 @@
 - Feedback and progress: banner, snackbar, snackbar host with queued messages, plain tooltip, rich tooltip, linear progress, and circular progress.
 - Containment and utility: surface, card, carousel with selected-item snapping, dialog, dialog pane, side sheet, bottom sheet, scrim, divider, list, list item with media slot sizes and trailing supporting text, and tokenized list section header.
 - Composition-heavy controls expose mutable child lists and convenience constructors or factories where they simplify common usage without hiding node ownership.
+- Virtualized list views expose data selection, keyboard focus navigation, accessible focus routing, and `VirtualFlow`-backed row reuse.
 
 ### Demo And Verification
 
@@ -79,7 +80,7 @@
 - Expand Material motion coverage so hover, press, release, selection, shape, indicator, and elevation transitions consistently use tokenized timing and easing.
 - Broaden visual checks beyond static contrast and color variety toward geometry, clipping, alignment, and animation-state assertions.
 - Continue filling component gaps such as richer popup nesting policies and richer validation presentation patterns.
-- Tighten accessibility behavior for composite controls, especially indexed children, selection state, role choice, and keyboard navigation.
+- Tighten accessibility behavior for composite controls, especially indexed children, role choice, and keyboard navigation parity across complex popups.
 - Add more focused demo pages for complex components whose behavior is hard to inspect in a single static gallery.
 - Document runtime packaging choices for applications that want regular jars, demo shadow jars, or jlink images.
 - Keep JavaFX 14 API compatibility checked during implementation while continuing to build by default against JavaFX 21.

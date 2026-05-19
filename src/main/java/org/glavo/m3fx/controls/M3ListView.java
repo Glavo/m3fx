@@ -22,6 +22,8 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListViewSkin;
@@ -112,9 +114,17 @@ public class M3ListView<T> extends Control {
     private final ReadOnlyObjectWrapper<@Nullable T> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
+    /// The keyboard-focused data index, or `-1` when no row has list focus.
+    private final ReadOnlyIntegerWrapper focusedIndex = new ReadOnlyIntegerWrapper(this, "focusedIndex", -1);
+
+    /// The keyboard-focused data item, or `null` when no row has list focus.
+    private final ReadOnlyObjectWrapper<@Nullable T> focusedItem =
+            new ReadOnlyObjectWrapper<>(this, "focusedItem");
+
     /// Updates selection and cells when data items change.
     private final ListChangeListener<T> itemsListener = change -> {
         trimSelectedIndices();
+        trimFocusedIndex();
         if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE && selectedIndices.isEmpty()) {
             selectFirstItemIfNeeded();
         } else {
@@ -258,9 +268,34 @@ public class M3ListView<T> extends Control {
         return selectedItem.getReadOnlyProperty();
     }
 
+    /// Returns the keyboard-focused data index, or `-1` when no row has list focus.
+    public final int getFocusedIndex() {
+        return focusedIndex.get();
+    }
+
+    /// Returns the keyboard-focused data index property.
+    public final ReadOnlyIntegerProperty focusedIndexProperty() {
+        return focusedIndex.getReadOnlyProperty();
+    }
+
+    /// Returns the keyboard-focused data item, or `null` when no row has list focus.
+    public final @Nullable T getFocusedItem() {
+        return focusedItem.get();
+    }
+
+    /// Returns the keyboard-focused data item property.
+    public final ReadOnlyObjectProperty<@Nullable T> focusedItemProperty() {
+        return focusedItem.getReadOnlyProperty();
+    }
+
     /// Returns whether the supplied item index is selected.
     public final boolean isIndexSelected(int index) {
         return selectedIndices.contains(index);
+    }
+
+    /// Returns whether the supplied item index owns list keyboard focus.
+    public final boolean isIndexFocused(int index) {
+        return focusedIndex.get() == index;
     }
 
     /// Selects the item at the supplied index.
@@ -366,6 +401,48 @@ public class M3ListView<T> extends Control {
         selectIndex(index <= 0 ? size - 1 : index - 1);
     }
 
+    /// Moves list keyboard focus to the supplied item index and scrolls it into view.
+    public final void focusIndex(int index) {
+        checkItemIndex(index);
+        updateFocusedIndex(index, true);
+    }
+
+    /// Clears list keyboard focus without changing selection.
+    public final void clearFocus() {
+        updateFocusedIndex(-1, false);
+    }
+
+    /// Moves list keyboard focus to the first data item when one exists.
+    public final void focusFirst() {
+        if (!getItems().isEmpty()) {
+            focusIndex(0);
+        }
+    }
+
+    /// Moves list keyboard focus to the last data item when one exists.
+    public final void focusLast() {
+        int lastIndex = getItems().size() - 1;
+        if (lastIndex >= 0) {
+            focusIndex(lastIndex);
+        }
+    }
+
+    /// Moves list keyboard focus to the next item, wrapping at the end.
+    public final void focusNext() {
+        int target = nextIndex(navigationAnchorIndex());
+        if (target >= 0) {
+            focusIndex(target);
+        }
+    }
+
+    /// Moves list keyboard focus to the previous item, wrapping at the start.
+    public final void focusPrevious() {
+        int target = previousIndex(navigationAnchorIndex());
+        if (target >= 0) {
+            focusIndex(target);
+        }
+    }
+
     /// Scrolls the virtual flow to the supplied item index.
     public final void scrollTo(int index) {
         checkItemIndex(index);
@@ -385,6 +462,7 @@ public class M3ListView<T> extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
+            case FOCUS_NODE -> accessibleFocusNode();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
             case MULTIPLE_SELECTION -> getSelectionMode() == M3ListSelectionMode.MULTIPLE;
@@ -398,6 +476,7 @@ public class M3ListView<T> extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -415,6 +494,7 @@ public class M3ListView<T> extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(true);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(itemsListener);
     }
 
@@ -429,6 +509,49 @@ public class M3ListView<T> extends Control {
             case SINGLE -> selectOnly(index);
             case MULTIPLE -> setIndexSelected(index, !isIndexSelected(index));
         }
+    }
+
+    /// Handles list keyboard navigation and focused-row activation.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        Objects.requireNonNull(event, "event");
+        KeyCode code = event.getCode();
+        switch (code) {
+            case UP -> moveKeyboardFocus(previousIndex(navigationAnchorIndex()), event);
+            case DOWN -> moveKeyboardFocus(nextIndex(navigationAnchorIndex()), event);
+            case HOME -> moveKeyboardFocus(firstIndex(), event);
+            case END -> moveKeyboardFocus(lastIndex(), event);
+            case ENTER, SPACE -> activateFocusedIndex(event);
+            default -> {
+            }
+        }
+    }
+
+    /// Moves keyboard focus from a navigation event and selects rows in single-selection mode.
+    private void moveKeyboardFocus(int index, KeyEvent event) {
+        if (index < 0) {
+            return;
+        }
+
+        updateFocusedIndex(index, true);
+        if (getSelectionMode() == M3ListSelectionMode.SINGLE) {
+            selectOnly(index);
+        }
+        event.consume();
+    }
+
+    /// Applies the selection policy to the focused row for Enter and Space keys.
+    private void activateFocusedIndex(KeyEvent event) {
+        int index = focusedIndex.get();
+        if (index < 0) {
+            index = getSelectedIndex();
+        }
+        if (index < 0 || index >= getItems().size()) {
+            return;
+        }
+
+        updateFocusedIndex(index, true);
+        activateIndex(index);
+        event.consume();
     }
 
     /// Returns the visible accessibility item at the supplied index when available.
@@ -447,6 +570,27 @@ public class M3ListView<T> extends Control {
 
         T item = getItems().get(index);
         return item instanceof Node node ? node : null;
+    }
+
+    /// Returns the current visible focus node for accessibility clients.
+    private Node accessibleFocusNode() {
+        return this;
+    }
+
+    /// Moves focus to the focused row, selected row, or first row for accessibility clients.
+    private void focusAccessibleNode() {
+        int index = focusedIndex.get();
+        if (index < 0) {
+            index = getSelectedIndex();
+        }
+        if (index < 0 && !getItems().isEmpty()) {
+            index = 0;
+        }
+        if (index >= 0) {
+            focusIndex(index);
+        } else {
+            requestFocus();
+        }
     }
 
     /// Applies selected items supplied by an accessibility client.
@@ -476,7 +620,7 @@ public class M3ListView<T> extends Control {
     private void showAccessibleItem(Object... parameters) {
         int index = firstSelectionIndex(parameters);
         if (index >= 0) {
-            scrollTo(index);
+            focusIndex(index);
         }
     }
 
@@ -605,6 +749,16 @@ public class M3ListView<T> extends Control {
         selectedIndices.removeIf(index -> index < 0 || index >= size);
     }
 
+    /// Clears the focused index when it no longer points at a data item.
+    private void trimFocusedIndex() {
+        int index = focusedIndex.get();
+        if (index >= getItems().size()) {
+            updateFocusedIndex(-1, false);
+        } else if (index >= 0) {
+            focusedItem.set(getItems().get(index));
+        }
+    }
+
     /// Refreshes selected item state from selected indices.
     private void refreshSelectedItems() {
         List<T> previousItems = new ArrayList<>(selectedItems);
@@ -622,6 +776,61 @@ public class M3ListView<T> extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             requestVisibleCellRefresh();
         }
+    }
+
+    /// Updates the focused data item and asks the skin to keep its cell visible.
+    private void updateFocusedIndex(int index, boolean requestNodeFocus) {
+        int previousIndex = focusedIndex.get();
+        @Nullable T previousItem = focusedItem.get();
+        focusedIndex.set(index);
+        focusedItem.set(index < 0 ? null : getItems().get(index));
+        if (previousIndex != index || !Objects.equals(previousItem, focusedItem.get())) {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        }
+        if (requestNodeFocus) {
+            requestFocus();
+        }
+        if (getSkin() instanceof M3ListViewSkin<?> skin) {
+            skin.refreshFocus(requestNodeFocus);
+        }
+    }
+
+    /// Returns the current navigation anchor index.
+    private int navigationAnchorIndex() {
+        int focused = focusedIndex.get();
+        if (focused >= 0 && focused < getItems().size()) {
+            return focused;
+        }
+        int selected = getSelectedIndex();
+        return selected >= 0 && selected < getItems().size() ? selected : -1;
+    }
+
+    /// Returns the first data item index.
+    private int firstIndex() {
+        return getItems().isEmpty() ? -1 : 0;
+    }
+
+    /// Returns the last data item index.
+    private int lastIndex() {
+        return getItems().size() - 1;
+    }
+
+    /// Returns the next data item index, wrapping at the end.
+    private int nextIndex(int currentIndex) {
+        int size = getItems().size();
+        if (size == 0) {
+            return -1;
+        }
+        return currentIndex < 0 || currentIndex + 1 >= size ? 0 : currentIndex + 1;
+    }
+
+    /// Returns the previous data item index, wrapping at the start.
+    private int previousIndex(int currentIndex) {
+        int size = getItems().size();
+        if (size == 0) {
+            return -1;
+        }
+        return currentIndex <= 0 ? size - 1 : currentIndex - 1;
     }
 
     /// Requests visible cell state updates from the installed skin.
