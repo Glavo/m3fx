@@ -2,7 +2,6 @@
     -fx-background-color: -m3-color-surface-container-high;
     -fx-background-radius: 999px;
     -fx-background-insets: 0;
-    -fx-alignment: center-left;
 }
 
 .m3-search-bar:hover,
@@ -51,7 +50,7 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 12, 0.16, 0, 4);
 }
 
-.m3-search-view > .m3-search-bar {
+.m3-search-view .m3-search-bar {
     -fx-background-color: transparent;
 }
 

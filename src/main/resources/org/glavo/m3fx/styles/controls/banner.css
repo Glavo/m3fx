@@ -4,8 +4,6 @@
     -fx-border-width: 0 0 1px 0;
     -fx-min-height: 80px;
     -fx-padding: 16px 24px 16px 24px;
-    -fx-spacing: 16px;
-    -fx-alignment: center-left;
 }
 
 .m3-banner-icon {

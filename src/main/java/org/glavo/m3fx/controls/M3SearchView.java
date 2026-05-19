@@ -17,6 +17,8 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -24,6 +26,7 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3SearchViewSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +34,7 @@ import java.util.Objects;
 
 /// A Material Design 3 search view with a search bar and result content.
 @NotNullByDefault
-public class M3SearchView extends VBox {
+public class M3SearchView extends Control {
     /// The base style class for M3FX search views.
     public static final String STYLE_CLASS = "m3-search-view";
 
@@ -76,6 +79,11 @@ public class M3SearchView extends VBox {
     /// Returns the embedded search bar.
     public final M3SearchBar getSearchBar() {
         return searchBar;
+    }
+
+    /// Returns the result container used by the default skin.
+    public final VBox getResultsContainer() {
+        return resultsBox;
     }
 
     /// Returns the mutable result node list.
@@ -277,12 +285,17 @@ public class M3SearchView extends VBox {
         }
     }
 
-    /// Adds base style classes and child nodes.
+    /// Creates the default Material Design 3 search view skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3SearchViewSkin(this);
+    }
+
+    /// Adds base style classes and configures search result behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         resultsBox.getStyleClass().add(RESULTS_STYLE_CLASS);
-        getChildren().addAll(searchBar, resultsBox);
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);

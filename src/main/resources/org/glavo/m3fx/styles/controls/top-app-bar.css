@@ -3,22 +3,18 @@
     -fx-min-height: 64px;
     -fx-pref-height: 64px;
     -fx-padding: 0px 16px 0px 16px;
-    -fx-spacing: 16px;
-    -fx-alignment: center-left;
 }
 
 .m3-top-app-bar-medium {
     -fx-min-height: 112px;
     -fx-pref-height: 112px;
     -fx-padding: 0px 16px 20px 16px;
-    -fx-alignment: bottom-left;
 }
 
 .m3-top-app-bar-large {
     -fx-min-height: 152px;
     -fx-pref-height: 152px;
     -fx-padding: 0px 16px 28px 16px;
-    -fx-alignment: bottom-left;
 }
 
 .m3-top-app-bar-navigation {

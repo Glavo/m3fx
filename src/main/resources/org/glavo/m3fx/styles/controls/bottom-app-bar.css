@@ -3,8 +3,6 @@
     -fx-min-height: 80px;
     -fx-pref-height: 80px;
     -fx-padding: 0px 16px 0px 16px;
-    -fx-spacing: 16px;
-    -fx-alignment: center-left;
 }
 
 .m3-bottom-app-bar-actions {

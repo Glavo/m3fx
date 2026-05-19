@@ -8,6 +8,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
@@ -19,13 +20,13 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
+import javafx.scene.control.Skin;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3SearchBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +34,7 @@ import java.util.Objects;
 
 /// A Material Design 3 search bar.
 @NotNullByDefault
-public class M3SearchBar extends HBox {
+public class M3SearchBar extends Control {
     /// The base style class for M3FX search bars.
     public static final String STYLE_CLASS = "m3-search-bar";
 
@@ -55,15 +56,11 @@ public class M3SearchBar extends HBox {
     /// The default horizontal padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
-    /// The default spacing between content slots.
-    private static final double DEFAULT_CONTENT_SPACING = 12.0;
-
     /// The leading content node property.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
-        /// Updates the leading slot.
+        /// Updates accessibility state when the leading slot changes.
         @Override
         protected void invalidated() {
-            updateLeading();
             notifyAccessibleItemsChanged();
         }
     };
@@ -93,14 +90,11 @@ public class M3SearchBar extends HBox {
         }
     };
 
-    /// The leading slot.
-    private final StackPane leadingSlot = new StackPane();
-
     /// The editable search input.
     private final TextField editor = new TextField();
 
-    /// The trailing action slot.
-    private final HBox trailingBox = new HBox();
+    /// The mutable trailing action list.
+    private final ObservableList<Node> trailingActions = FXCollections.observableArrayList();
 
     /// Creates an empty search bar.
     public M3SearchBar() {
@@ -181,7 +175,7 @@ public class M3SearchBar extends HBox {
 
     /// Returns the mutable trailing action list.
     public final ObservableList<Node> getTrailingActions() {
-        return trailingBox.getChildren();
+        return trailingActions;
     }
 
     /// Adds one trailing action node.
@@ -289,25 +283,26 @@ public class M3SearchBar extends HBox {
         }
     }
 
+    /// Creates the default Material Design 3 search bar skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3SearchBarSkin(this);
+    }
+
     /// Adds base style classes, default slots, and search behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        editor.getStyleClass().add(INPUT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(true);
         setMinHeight(DEFAULT_HEIGHT);
         setPrefHeight(DEFAULT_HEIGHT);
         setPadding(new Insets(0.0, DEFAULT_HORIZONTAL_PADDING, 0.0, DEFAULT_HORIZONTAL_PADDING));
-        setSpacing(DEFAULT_CONTENT_SPACING);
-
-        leadingSlot.getStyleClass().add(LEADING_STYLE_CLASS);
-        editor.getStyleClass().add(INPUT_STYLE_CLASS);
-        trailingBox.getStyleClass().add(TRAILING_STYLE_CLASS);
-        HBox.setHgrow(editor, Priority.ALWAYS);
 
         setLeading(defaultLeadingNode());
-        trailingBox.getChildren().addListener((ListChangeListener<Node>) change -> {
-            updateTrailingVisibility();
+        trailingActions.addListener((ListChangeListener<Node>) change -> {
             notifyAccessibleItemsChanged();
+            requestLayout();
         });
         editor.textProperty().addListener((observable, oldValue, newValue) ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT));
@@ -319,9 +314,6 @@ public class M3SearchBar extends HBox {
         editor.setOnAction(event -> fire());
         setOnMouseClicked(event -> activate());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
-        getChildren().addAll(leadingSlot, editor, trailingBox);
-        updateLeading();
-        updateTrailingVisibility();
     }
 
     /// Handles keyboard shortcuts owned by the search bar container.
@@ -446,24 +438,6 @@ public class M3SearchBar extends HBox {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-    }
-
-    /// Updates the leading slot content.
-    private void updateLeading() {
-        @Nullable Node node = getLeading();
-        leadingSlot.getChildren().clear();
-        leadingSlot.setVisible(node != null);
-        leadingSlot.setManaged(node != null);
-        if (node != null) {
-            leadingSlot.getChildren().add(node);
-        }
-    }
-
-    /// Updates trailing action container visibility.
-    private void updateTrailingVisibility() {
-        boolean visible = !trailingBox.getChildren().isEmpty();
-        trailingBox.setVisible(visible);
-        trailingBox.setManaged(visible);
     }
 
     /// Validates a trailing action array.

@@ -5,18 +5,17 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3BottomAppBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,7 +23,7 @@ import java.util.Objects;
 
 /// A Material Design 3 bottom app bar.
 @NotNullByDefault
-public class M3BottomAppBar extends HBox {
+public class M3BottomAppBar extends Control {
     /// The base style class for M3FX bottom app bars.
     public static final String STYLE_CLASS = "m3-bottom-app-bar";
 
@@ -40,7 +39,7 @@ public class M3BottomAppBar extends HBox {
     /// The floating action node alignment property.
     private final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignment =
             new SimpleObjectProperty<>(this, "floatingActionAlignment", M3BottomAppBarFloatingActionAlignment.END) {
-                /// Updates alignment style classes and child order when the property changes.
+                /// Updates alignment style classes when the property changes.
                 @Override
                 protected void invalidated() {
                     if (get() == null) {
@@ -48,21 +47,12 @@ public class M3BottomAppBar extends HBox {
                         return;
                     }
                     updateFloatingActionAlignmentStyle();
-                    updateLayoutOrder();
+                    requestLayout();
                 }
             };
 
-    /// The trailing action node container.
-    private final HBox actions = new HBox();
-
-    /// The flexible spacer before the floating action region.
-    private final Region leadingSpacer = new Region();
-
-    /// The flexible spacer after the floating action region.
-    private final Region trailingSpacer = new Region();
-
-    /// The slot that hosts the optional floating action node.
-    private final StackPane floatingActionSlot = new StackPane();
+    /// The mutable regular action node list.
+    private final ObservableList<Node> actions = FXCollections.observableArrayList();
 
     /// Creates an empty bottom app bar.
     public M3BottomAppBar() {
@@ -88,7 +78,7 @@ public class M3BottomAppBar extends HBox {
 
     /// Returns the mutable action node list.
     public final ObservableList<Node> getActions() {
-        return actions.getChildren();
+        return actions;
     }
 
     /// Adds one regular action node.
@@ -149,21 +139,13 @@ public class M3BottomAppBar extends HBox {
         return M3Stylesheets.controlStylesheet("bottom-app-bar.css");
     }
 
-    /// Initializes child nodes, style classes, and property listeners.
+    /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
-        floatingActionSlot.getStyleClass().add(FLOATING_ACTION_STYLE_CLASS);
-
-        setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(leadingSpacer, Priority.ALWAYS);
-        HBox.setHgrow(trailingSpacer, Priority.ALWAYS);
-        floatingAction.addListener((observable, oldValue, newValue) -> updateFloatingAction(newValue));
-        actions.getChildren().addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
-        updateFloatingAction(getFloatingAction());
+        floatingAction.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
+        actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         updateFloatingActionAlignmentStyle();
-        updateLayoutOrder();
     }
 
     /// Returns accessibility attributes for the action and floating action collection.
@@ -186,34 +168,18 @@ public class M3BottomAppBar extends HBox {
         }
     }
 
+    /// Creates the default Material Design 3 bottom app bar skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3BottomAppBarSkin(this);
+    }
+
     /// Validates a regular action array.
     private static void validateActions(Node... actions) {
         Objects.requireNonNull(actions, "actions");
         for (Node action : actions) {
             Objects.requireNonNull(action, "action");
         }
-    }
-
-    /// Updates the child order from the floating action alignment.
-    private void updateLayoutOrder() {
-        getChildren().clear();
-        switch (getFloatingActionAlignment()) {
-            case START -> getChildren().addAll(floatingActionSlot, actions, trailingSpacer);
-            case CENTER -> getChildren().addAll(actions, leadingSpacer, floatingActionSlot, trailingSpacer);
-            case END -> getChildren().addAll(actions, leadingSpacer, floatingActionSlot);
-        }
-    }
-
-    /// Updates the floating action slot.
-    private void updateFloatingAction(@Nullable Node node) {
-        boolean visible = node != null;
-        floatingActionSlot.getChildren().clear();
-        if (node != null) {
-            floatingActionSlot.getChildren().add(node);
-        }
-        floatingActionSlot.setVisible(visible);
-        floatingActionSlot.setManaged(visible);
-        notifyAccessibleItemsChanged();
     }
 
     /// Notifies accessibility clients that the indexed bottom app bar item collection changed.

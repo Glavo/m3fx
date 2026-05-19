@@ -50,6 +50,8 @@ import javafx.util.Duration;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
+import org.glavo.m3fx.skins.M3BannerSkin;
+import org.glavo.m3fx.skins.M3BottomAppBarSkin;
 import org.glavo.m3fx.skins.M3ButtonGroupSkin;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.glavo.m3fx.skins.M3CardSkin;
@@ -76,6 +78,8 @@ import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonGroupSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
+import org.glavo.m3fx.skins.M3SearchBarSkin;
+import org.glavo.m3fx.skins.M3SearchViewSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
 import org.glavo.m3fx.skins.M3SplitButtonSkin;
 import org.glavo.m3fx.skins.M3SnackbarHostSkin;
@@ -85,6 +89,7 @@ import org.glavo.m3fx.skins.M3SwitchSkin;
 import org.glavo.m3fx.skins.M3TabBarSkin;
 import org.glavo.m3fx.skins.M3TabSkin;
 import org.glavo.m3fx.skins.M3TextSkin;
+import org.glavo.m3fx.skins.M3TopAppBarSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -3363,7 +3368,10 @@ final class M3ControlStyleTest {
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, searchBar.getPadding().getRight(), 0.0001);
-        assertEquals(12.0, searchBar.getSpacing(), 0.0001);
+        assertInstanceOf(M3SearchBarSkin.class, searchBar.getSkin());
+        assertInstanceOf(M3SearchViewSkin.class, searchView.getSkin());
+        assertFalse(HBox.class.isAssignableFrom(M3SearchBar.class));
+        assertFalse(VBox.class.isAssignableFrom(M3SearchView.class));
         assertEquals(56.0, result.getOneLineHeight(), 0.0001);
     }
 
@@ -6188,7 +6196,6 @@ final class M3ControlStyleTest {
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
         assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(Pos.CENTER_LEFT, topAppBar.getAlignment());
 
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
 
@@ -6196,7 +6203,6 @@ final class M3ControlStyleTest {
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass()));
         assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(Pos.BOTTOM_LEFT, topAppBar.getAlignment());
 
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
 
@@ -6204,14 +6210,12 @@ final class M3ControlStyleTest {
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE.getStyleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
         assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(Pos.BOTTOM_LEFT, topAppBar.getAlignment());
 
         topAppBar.variantProperty().set(null);
 
         assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
         assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(Pos.CENTER_LEFT, topAppBar.getAlignment());
     }
 
     /// Verifies that top app bar token rules apply container metrics.
@@ -6226,7 +6230,9 @@ final class M3ControlStyleTest {
 
         assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
         assertEquals(16.0, topAppBar.getPadding().getLeft(), 0.0001);
-        assertEquals(16.0, topAppBar.getSpacing(), 0.0001);
+        assertInstanceOf(M3TopAppBarSkin.class, topAppBar.getSkin());
+        assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
+        assertInstanceOf(HBox.class, topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
     }
 
     /// Verifies that bottom app bars expose action and floating action slots.
@@ -6309,7 +6315,28 @@ final class M3ControlStyleTest {
 
         assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
         assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
-        assertEquals(16.0, bottomAppBar.getSpacing(), 0.0001);
+        assertInstanceOf(M3BottomAppBarSkin.class, bottomAppBar.getSkin());
+        assertInstanceOf(HBox.class, bottomAppBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS));
+    }
+
+    /// Verifies that app bars and banners create Material Design 3 skins.
+    @Test
+    void appBarsAndBannersCreateMaterialSkins() {
+        M3Banner banner = new M3Banner("Message");
+        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        Pane root = new Pane(banner, topAppBar, bottomAppBar);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertInstanceOf(M3BannerSkin.class, banner.getSkin());
+        assertInstanceOf(M3TopAppBarSkin.class, topAppBar.getSkin());
+        assertInstanceOf(M3BottomAppBarSkin.class, bottomAppBar.getSkin());
+        assertFalse(HBox.class.isAssignableFrom(M3Banner.class));
+        assertFalse(HBox.class.isAssignableFrom(M3TopAppBar.class));
+        assertFalse(HBox.class.isAssignableFrom(M3BottomAppBar.class));
     }
 
     /// Verifies that navigation drawers group list items and keep one selected item.

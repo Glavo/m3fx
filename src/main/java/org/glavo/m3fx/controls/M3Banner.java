@@ -7,18 +7,17 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3BannerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +25,7 @@ import java.util.Objects;
 
 /// A Material Design 3 banner for persistent contextual messages and actions.
 @NotNullByDefault
-public class M3Banner extends HBox {
+public class M3Banner extends Control {
     /// The base style class for M3FX banners.
     public static final String STYLE_CLASS = "m3-banner";
 
@@ -45,14 +44,8 @@ public class M3Banner extends HBox {
     /// The optional leading icon property.
     private final ObjectProperty<@Nullable Node> icon = new SimpleObjectProperty<>(this, "icon");
 
-    /// The slot that hosts the optional leading icon.
-    private final StackPane iconSlot = new StackPane();
-
-    /// The label that renders the banner message.
-    private final Label textLabel = new Label();
-
-    /// The trailing action node container.
-    private final HBox actions = new HBox();
+    /// The mutable trailing action node list.
+    private final ObservableList<Node> actions = FXCollections.observableArrayList();
 
     /// Creates an empty banner.
     public M3Banner() {
@@ -110,7 +103,7 @@ public class M3Banner extends HBox {
 
     /// Returns the mutable trailing action node list.
     public final ObservableList<Node> getActions() {
-        return actions.getChildren();
+        return actions;
     }
 
     /// Adds one trailing action node.
@@ -162,33 +155,20 @@ public class M3Banner extends HBox {
         }
     }
 
-    /// Initializes child nodes, style classes, and property listeners.
+    /// Creates the default Material Design 3 banner skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3BannerSkin(this);
+    }
+
+    /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
-
-        iconSlot.getStyleClass().add(ICON_STYLE_CLASS);
-        textLabel.getStyleClass().add(TEXT_STYLE_CLASS);
-        actions.getStyleClass().add(ACTIONS_STYLE_CLASS);
-
-        setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(textLabel, Priority.ALWAYS);
-        textLabel.setMaxWidth(Double.MAX_VALUE);
-        textLabel.setWrapText(true);
-        textLabel.textProperty().bind(text);
-
         text.addListener(observable -> updateAccessibleText());
-        icon.addListener((observable, oldValue, newValue) -> updateIcon(newValue));
-        actions.getChildren().addListener((ListChangeListener<Node>) change -> {
-            updateActionsVisibility();
-            notifyAccessibleItemsChanged();
-        });
-
-        updateIcon(getIcon());
-        updateActionsVisibility();
+        icon.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
+        actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         updateAccessibleText();
-
-        getChildren().addAll(iconSlot, textLabel, actions);
     }
 
     /// Validates a trailing action array.
@@ -197,25 +177,6 @@ public class M3Banner extends HBox {
         for (Node action : actions) {
             Objects.requireNonNull(action, "action");
         }
-    }
-
-    /// Updates the leading icon slot.
-    private void updateIcon(@Nullable Node node) {
-        boolean visible = node != null;
-        iconSlot.getChildren().clear();
-        if (node != null) {
-            iconSlot.getChildren().add(node);
-        }
-        iconSlot.setVisible(visible);
-        iconSlot.setManaged(visible);
-        notifyAccessibleItemsChanged();
-    }
-
-    /// Updates the trailing action container visibility.
-    private void updateActionsVisibility() {
-        boolean visible = !actions.getChildren().isEmpty();
-        actions.setVisible(visible);
-        actions.setManaged(visible);
     }
 
     /// Updates the accessible text exposed by the banner.
