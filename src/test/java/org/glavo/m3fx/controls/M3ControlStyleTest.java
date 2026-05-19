@@ -900,6 +900,46 @@ final class M3ControlStyleTest {
         assertEquals(1, actionCount.get());
     }
 
+    /// Verifies that snackbars expose their rendered action button to accessibility clients.
+    @Test
+    void snackbarExposesAccessibleActionButton() {
+        runOnFxThread(() -> {
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(snackbar);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 320.0, 120.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+
+                assertEquals("Saved Undo", snackbar.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+                assertEquals(1, snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertEquals(actionButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                snackbar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(actionButton.isFocused());
+
+                snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, actionButton);
+                assertTrue(actionButton.isFocused());
+
+                snackbar.setActionText("");
+
+                assertEquals(0, snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertNull(snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertNull(snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that snackbar internal padding changes when the action slot is visible.
     @Test
     void snackbarSkinUsesSymmetricPaddingWithoutAction() {
@@ -1228,6 +1268,40 @@ final class M3ControlStyleTest {
 
             assertFalse(host.isShowing());
             assertEquals(false, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        });
+    }
+
+    /// Verifies that snackbar hosts route focus to the current snackbar action and support Escape dismissal.
+    @Test
+    void snackbarHostSupportsAccessibleFocusAndKeyboardDismissal() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(host);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 360.0, 140.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                host.show(snackbar);
+                root.applyCss();
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(M3Button.class, snackbar.lookup(".m3-snackbar-action"));
+
+                assertEquals(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                host.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(actionButton.isFocused());
+
+                actionButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                assertFalse(host.isShowing());
+                assertEquals(false, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+            } finally {
+                stage.close();
+            }
         });
     }
 

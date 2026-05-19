@@ -9,6 +9,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
+import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -24,7 +25,7 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     private final Label textLabel = new Label();
 
     /// The snackbar action button.
-    private final org.glavo.m3fx.controls.M3Button actionButton = new org.glavo.m3fx.controls.M3Button();
+    private final M3Button actionButton = new M3Button();
 
     /// Updates action visibility after action text changes.
     private final InvalidationListener actionTextInvalidation =
@@ -53,6 +54,11 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         getChildren().add(container);
         updateActionVisibility(control.getActionText());
         updateTokenStyles();
+    }
+
+    /// Returns the action button when the snackbar currently exposes an action.
+    public final @Nullable M3Button getActionButton() {
+        return actionButton.isManaged() ? actionButton : null;
     }
 
     /// Unbinds skin nodes and removes listeners before disposal.

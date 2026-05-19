@@ -24,6 +24,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -96,6 +97,7 @@ public class M3SnackbarHost extends Control {
                 notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED));
         queue.addListener((ListChangeListener<M3Snackbar>) change ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT));
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
     }
 
     /// Returns the currently hosted snackbar.
@@ -263,6 +265,7 @@ public class M3SnackbarHost extends Control {
         return switch (attribute) {
             case CONTENTS -> getSnackbar();
             case EXPANDED -> isShowing();
+            case FOCUS_NODE -> currentFocusNode();
             case ITEM_COUNT -> snackbarCount();
             case ITEM_AT_INDEX -> snackbarAt(parameters);
             case TEXT -> currentSnackbarText();
@@ -276,8 +279,23 @@ public class M3SnackbarHost extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case COLLAPSE -> dismiss();
+            case REQUEST_FOCUS -> M3Accessible.showItem(currentFocusNode());
             case SHOW_ITEM -> showAccessibleSnackbar(parameters);
             default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
+    /// Handles keyboard dismissal while focus is inside the snackbar host.
+    private void handleKeyPressed(KeyEvent event) {
+        switch (event.getCode()) {
+            case ESCAPE -> {
+                if (isShowing()) {
+                    dismiss();
+                    event.consume();
+                }
+            }
+            default -> {
+            }
         }
     }
 
@@ -381,6 +399,17 @@ public class M3SnackbarHost extends Control {
             index--;
         }
         return index < queue.size() ? queue.get(index) : null;
+    }
+
+    /// Returns the preferred focus node for the current snackbar.
+    private @Nullable Node currentFocusNode() {
+        @Nullable M3Snackbar currentSnackbar = getSnackbar();
+        if (currentSnackbar == null || !isShowing()) {
+            return null;
+        }
+
+        @Nullable Object focusNode = currentSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        return focusNode instanceof Node node ? node : null;
     }
 
     /// Shows or focuses the snackbar referenced by accessibility action parameters.

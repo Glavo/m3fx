@@ -16,7 +16,9 @@ import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -66,8 +68,15 @@ public class M3Snackbar extends Control {
     public M3Snackbar(String text) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
-        this.text.addListener((observable, oldValue, newValue) -> updateAccessibleText());
-        actionText.addListener((observable, oldValue, newValue) -> updateAccessibleText());
+        this.text.addListener((observable, oldValue, newValue) -> {
+            updateAccessibleText();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+        });
+        actionText.addListener((observable, oldValue, newValue) -> {
+            updateAccessibleText();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+            notifyAccessibleItemsChanged();
+        });
         setText(text);
         updateAccessibleText();
     }
@@ -159,12 +168,27 @@ public class M3Snackbar extends Control {
         }
     }
 
+    /// Returns accessibility attributes for snackbar text and action content.
+    @Override
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case FOCUS_NODE -> accessibleFocusNode();
+            case ITEM_COUNT -> hasAction() ? 1 : 0;
+            case ITEM_AT_INDEX -> actionButtonAt(parameters);
+            case TEXT -> accessibleText();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Executes accessibility actions supported by snackbars with action text.
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fireAction();
+            case REQUEST_FOCUS -> focusAccessibleNode();
+            case SHOW_ITEM -> M3Accessible.showItem(accessibleActionButton(parameters));
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -274,6 +298,59 @@ public class M3Snackbar extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("snackbar.css");
+    }
+
+    /// Returns the snackbar text exposed through accessibility queries.
+    private String accessibleText() {
+        @Nullable String accessibleText = getAccessibleText();
+        return accessibleText == null ? "" : accessibleText;
+    }
+
+    /// Returns the preferred action focus node when one is rendered.
+    private @Nullable Node accessibleFocusNode() {
+        @Nullable M3SnackbarSkin skin = materialSkin();
+        return skin == null ? null : skin.getActionButton();
+    }
+
+    /// Focuses the snackbar action button when it exists.
+    private void focusAccessibleNode() {
+        M3Accessible.showItem(accessibleFocusNode());
+    }
+
+    /// Returns the action button for an accessibility item index.
+    private @Nullable Node actionButtonAt(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        return index == 0 ? accessibleFocusNode() : null;
+    }
+
+    /// Returns the action button referenced by accessibility action parameters.
+    private @Nullable Node accessibleActionButton(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return accessibleFocusNode();
+        }
+        if (parameters[0] instanceof Number) {
+            return actionButtonAt(parameters);
+        }
+
+        @Nullable Node actionButton = accessibleFocusNode();
+        if (actionButton == null) {
+            return null;
+        }
+        return M3Accessible.containsSelectionTarget(actionButton, parameters) ? actionButton : null;
+    }
+
+    /// Returns the installed Material snackbar skin.
+    private @Nullable M3SnackbarSkin materialSkin() {
+        Skin<?> skin = getSkin();
+        return skin instanceof M3SnackbarSkin snackbarSkin ? snackbarSkin : null;
+    }
+
+    /// Notifies accessibility clients that the action item changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 
     /// CSS metadata for m3fx snackbar component tokens.
