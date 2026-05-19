@@ -9,6 +9,7 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -16,9 +17,11 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3SplitButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -27,7 +30,7 @@ import java.util.Objects;
 
 /// A Material Design 3 split button with a primary action and an attached menu action.
 @NotNullByDefault
-public class M3SplitButton extends HBox {
+public class M3SplitButton extends Control {
     /// The base style class for M3FX split buttons.
     public static final String STYLE_CLASS = "m3-split-button";
 
@@ -36,9 +39,6 @@ public class M3SplitButton extends HBox {
 
     /// The style class applied to the menu button.
     public static final String MENU_BUTTON_STYLE_CLASS = "m3-split-button-menu";
-
-    /// The default spacing that lets adjacent button borders overlap.
-    private static final double DEFAULT_SPACING = -1.0;
 
     /// The minimum width used for the menu side of the split button.
     private static final double DEFAULT_MENU_BUTTON_WIDTH = 48.0;
@@ -51,6 +51,9 @@ public class M3SplitButton extends HBox {
 
     /// The attached menu button.
     private final M3MenuButton menuButton = new M3MenuButton(MENU_INDICATOR_TEXT);
+
+    /// The focusable button parts exposed to accessibility and keyboard navigation.
+    private final ObservableList<Node> buttonParts = FXCollections.observableArrayList();
 
     /// The visual variant applied to both split button parts.
     private final ObjectProperty<M3ButtonVariant> variant =
@@ -304,8 +307,8 @@ public class M3SplitButton extends HBox {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case EXPANDED -> isShowing();
-            case ITEM_COUNT -> getChildren().size();
-            case ITEM_AT_INDEX -> M3Accessible.itemAt(getChildren(), parameters);
+            case ITEM_COUNT -> buttonParts.size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(buttonParts, parameters);
             case SUBMENU -> getMenu();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -319,7 +322,7 @@ public class M3SplitButton extends HBox {
             case FIRE -> fire();
             case SHOW_MENU, EXPAND -> showMenu();
             case COLLAPSE -> hideMenu();
-            case SHOW_ITEM -> M3Accessible.showItem(getChildren(), parameters);
+            case SHOW_ITEM -> M3Accessible.showItem(buttonParts, parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -330,7 +333,7 @@ public class M3SplitButton extends HBox {
         M3ControlStyles.add(actionButton, ACTION_BUTTON_STYLE_CLASS);
         M3ControlStyles.add(menuButton, MENU_BUTTON_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        setSpacing(DEFAULT_SPACING);
+        buttonParts.setAll(actionButton, menuButton);
         menuButton.setMinWidth(DEFAULT_MENU_BUTTON_WIDTH);
         menuButton.setPrefWidth(DEFAULT_MENU_BUTTON_WIDTH);
         menuButton.setHorizontalPadding(0.0);
@@ -338,7 +341,6 @@ public class M3SplitButton extends HBox {
         menuButton.showingProperty().addListener((observable, oldValue, newValue) ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED));
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        getChildren().setAll(actionButton, menuButton);
         updateVariant();
     }
 
@@ -346,8 +348,8 @@ public class M3SplitButton extends HBox {
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeyFocus(
                 event,
-                getChildren(),
-                M3SelectionNavigation.focused(getChildren(), M3Button.class),
+                buttonParts,
+                M3SelectionNavigation.focused(buttonParts, M3Button.class),
                 M3Button.class,
                 true,
                 false
@@ -359,5 +361,11 @@ public class M3SplitButton extends HBox {
         M3ButtonVariant currentVariant = getVariant();
         actionButton.setVariant(currentVariant);
         menuButton.setVariant(currentVariant);
+    }
+
+    /// Creates the default Material Design 3 split button skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3SplitButtonSkin(this);
     }
 }

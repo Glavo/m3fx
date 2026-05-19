@@ -379,6 +379,11 @@ public class M3SubMenuItem extends M3MenuItem {
         }
     }
 
+    /// Returns whether this item is currently forwarding an action from its submenu.
+    final boolean isForwardingSubMenuAction() {
+        return forwardingSubMenuAction;
+    }
+
     /// Shows the submenu and focuses its first enabled visible item.
     final boolean showSubMenuAndFocusFirstItem() {
         boolean showingBefore = popup.isShowing();

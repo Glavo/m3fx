@@ -13,15 +13,19 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +35,7 @@ import java.util.Objects;
 
 /// A Material Design 3 floating action button menu.
 @NotNullByDefault
-public class M3FabMenu extends VBox {
+public class M3FabMenu extends Control {
     /// The base style class for M3FX floating action button menus.
     public static final String STYLE_CLASS = "m3-fab-menu";
 
@@ -43,9 +47,6 @@ public class M3FabMenu extends VBox {
 
     /// The style class applied to the menu toggle floating action button.
     public static final String TOGGLE_STYLE_CLASS = "m3-fab-menu-toggle";
-
-    /// The default spacing between floating action buttons.
-    private static final double DEFAULT_SPACING = 12.0;
 
     /// The offset used when action buttons enter or exit.
     private static final double ACTION_TRANSITION_OFFSET_Y = 16.0;
@@ -60,7 +61,7 @@ public class M3FabMenu extends VBox {
     private static final Duration COLLAPSE_DURATION = M3Motion.SHORT4;
 
     /// The action item container.
-    private final VBox actions = new VBox(DEFAULT_SPACING);
+    private final VBox actions = new VBox();
 
     /// The toggle floating action button.
     private final M3FloatingActionButton toggleButton;
@@ -76,6 +77,9 @@ public class M3FabMenu extends VBox {
 
     /// The currently running expand or collapse animation.
     private @Nullable Animation animation;
+
+    /// Handles detached action item activation before the default skin attaches the item.
+    private final EventHandler<ActionEvent> actionItemActionHandler = this::handleActionItemAction;
 
     /// Updates item styles and visibility when action items change.
     private final ListChangeListener<Node> actionsListener = change -> {
@@ -116,6 +120,11 @@ public class M3FabMenu extends VBox {
     /// Returns the toggle floating action button.
     public final M3FloatingActionButton getToggleButton() {
         return toggleButton;
+    }
+
+    /// Returns the action item container used by the default skin.
+    public final VBox getActionsContainer() {
+        return actions;
     }
 
     /// Returns the mutable action item list.
@@ -215,11 +224,8 @@ public class M3FabMenu extends VBox {
         M3ControlStyles.add(actions, ACTIONS_STYLE_CLASS);
         M3ControlStyles.add(toggleButton, TOGGLE_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        setSpacing(DEFAULT_SPACING);
-        actions.setFillWidth(false);
-        getChildren().setAll(actions, toggleButton);
         actions.getChildren().addListener(actionsListener);
-        actions.addEventHandler(ActionEvent.ACTION, this::handleActionItemAction);
+        addEventHandler(ActionEvent.ACTION, this::handleActionItemAction);
         toggleButton.addEventHandler(ActionEvent.ACTION, event -> toggle());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         applyCollapsedState();
@@ -228,7 +234,7 @@ public class M3FabMenu extends VBox {
     /// Collapses the menu after an action item fires.
     private void handleActionItemAction(ActionEvent event) {
         Objects.requireNonNull(event, "event");
-        if (isExpanded()) {
+        if (isExpanded() && event.getSource() instanceof Node node && getItems().contains(node)) {
             hide();
         }
     }
@@ -398,6 +404,7 @@ public class M3FabMenu extends VBox {
     /// Adds style classes and current visibility to an action item.
     private void installAction(Node item) {
         M3ControlStyles.add(item, ACTION_STYLE_CLASS);
+        item.addEventHandler(ActionEvent.ACTION, actionItemActionHandler);
         if (isExpanded()) {
             item.setVisible(true);
             item.setManaged(true);
@@ -421,8 +428,9 @@ public class M3FabMenu extends VBox {
     }
 
     /// Removes menu-specific style classes and transient transforms from an action item.
-    private static void clearActionStyle(Node item) {
+    private void clearActionStyle(Node item) {
         item.getStyleClass().remove(ACTION_STYLE_CLASS);
+        item.removeEventHandler(ActionEvent.ACTION, actionItemActionHandler);
         item.setVisible(true);
         item.setManaged(true);
         item.setOpacity(1.0);
@@ -438,6 +446,12 @@ public class M3FabMenu extends VBox {
                 M3FloatingActionButtonVariant.PRIMARY,
                 M3FloatingActionButtonSize.REGULAR
         );
+    }
+
+    /// Creates the default Material Design 3 floating action button menu skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3FabMenuSkin(this);
     }
 
     /// Validates an action item array.

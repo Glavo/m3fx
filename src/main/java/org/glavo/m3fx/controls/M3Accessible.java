@@ -14,6 +14,9 @@ import java.util.Objects;
 /// Provides shared accessibility query helpers for M3FX controls.
 @NotNullByDefault
 final class M3Accessible {
+    /// The node property key used to provide an accessibility index before a skin attaches nodes.
+    private static final Object ACCESSIBLE_INDEX_ITEMS_KEY = new Object();
+
     /// Prevents utility class instantiation.
     private M3Accessible() {
     }
@@ -298,7 +301,24 @@ final class M3Accessible {
     static int indexInParent(Node node) {
         Objects.requireNonNull(node, "node");
         @Nullable Parent parent = node.getParent();
-        return parent == null ? -1 : parent.getChildrenUnmodifiable().indexOf(node);
+        if (parent != null) {
+            return parent.getChildrenUnmodifiable().indexOf(node);
+        }
+        @Nullable Object ownerItems = node.getProperties().get(ACCESSIBLE_INDEX_ITEMS_KEY);
+        return ownerItems instanceof ObservableList<?> items ? items.indexOf(node) : -1;
+    }
+
+    /// Sets the owner item list used for accessibility index lookup before skin attachment.
+    static void setIndexOwner(Node node, ObservableList<? extends Node> items) {
+        Objects.requireNonNull(node, "node");
+        Objects.requireNonNull(items, "items");
+        node.getProperties().put(ACCESSIBLE_INDEX_ITEMS_KEY, items);
+    }
+
+    /// Clears the owner item list used for accessibility index lookup.
+    static void clearIndexOwner(Node node) {
+        Objects.requireNonNull(node, "node");
+        node.getProperties().remove(ACCESSIBLE_INDEX_ITEMS_KEY);
     }
 
     /// Returns the first integer accessibility parameter, or `-1` when none was supplied.

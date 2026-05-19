@@ -19,10 +19,12 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3MenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -34,9 +36,12 @@ import java.util.Objects;
 
 /// A Material Design 3 menu surface.
 @NotNullByDefault
-public class M3Menu extends VBox {
+public class M3Menu extends Control {
     /// The base style class for M3FX menus.
     public static final String STYLE_CLASS = "m3-menu";
+
+    /// The mutable menu content.
+    private final ObservableList<Node> items = FXCollections.observableArrayList();
 
     /// The menu selection mode.
     private final ObjectProperty<M3MenuSelectionMode> selectionMode =
@@ -77,8 +82,8 @@ public class M3Menu extends VBox {
     /// The selected-state listeners installed on menu items.
     private final Map<M3MenuItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
-    /// Handles menu item actions by applying the configured selection policy.
-    private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
+    /// The action listeners installed on menu items.
+    private final Map<M3MenuItem, EventHandler<ActionEvent>> actionListeners = new HashMap<>();
 
     /// Updates item listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -119,7 +124,7 @@ public class M3Menu extends VBox {
 
     /// Returns the mutable child list used as menu content.
     public final ObservableList<Node> getItems() {
-        return getChildren();
+        return items;
     }
 
     /// Adds one menu content node.
@@ -146,7 +151,7 @@ public class M3Menu extends VBox {
 
     /// Hides any open submenu popups owned by this menu.
     final void hideSubMenusExcept(@Nullable M3SubMenuItem exception) {
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             if (child instanceof M3SubMenuItem subMenuItem && subMenuItem != exception) {
                 subMenuItem.hideSubMenu();
             }
@@ -221,13 +226,13 @@ public class M3Menu extends VBox {
     /// Returns the child index of the first selected menu item, or `-1` when no item is selected.
     public final int getSelectedIndex() {
         @Nullable M3MenuItem item = getSelectedItem();
-        return item == null ? -1 : getChildren().indexOf(item);
+        return item == null ? -1 : getItems().indexOf(item);
     }
 
     /// Selects a menu item that belongs to this menu.
     public final void select(M3MenuItem item) {
         Objects.requireNonNull(item, "item");
-        if (!getChildren().contains(item)) {
+        if (!getItems().contains(item)) {
             throw new IllegalArgumentException("item must belong to this menu");
         }
         if (!isSelectableMenuItem(item)) {
@@ -243,7 +248,7 @@ public class M3Menu extends VBox {
 
     /// Selects the selectable menu item at the given child index.
     public final void selectIndex(int index) {
-        Node child = getChildren().get(index);
+        Node child = getItems().get(index);
         if (child instanceof M3MenuItem item && isSelectableMenuItem(item)) {
             select(item);
             return;
@@ -327,7 +332,7 @@ public class M3Menu extends VBox {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.MENU);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        getChildren().addListener(childrenListener);
+        getItems().addListener(childrenListener);
     }
 
     /// Applies keyboard navigation across enabled menu items.
@@ -340,8 +345,8 @@ public class M3Menu extends VBox {
                 || getSelectionMode() == M3MenuSelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
-                    getChildren(),
-                    M3SelectionNavigation.focusAnchor(getChildren(), getSelectedItem(), M3MenuItem.class),
+                    getItems(),
+                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3MenuItem.class),
                     M3MenuItem.class,
                     false,
                     true
@@ -354,7 +359,7 @@ public class M3Menu extends VBox {
 
     /// Handles activation and submenu opening for the currently focused menu item.
     private boolean handleFocusedItemKey(KeyEvent event) {
-        @Nullable M3MenuItem focusedItem = M3SelectionNavigation.focused(getChildren(), M3MenuItem.class);
+        @Nullable M3MenuItem focusedItem = M3SelectionNavigation.focused(getItems(), M3MenuItem.class);
         if (focusedItem == null) {
             return false;
         }
@@ -412,7 +417,7 @@ public class M3Menu extends VBox {
 
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3MenuItem item && isSelectableMenuItem(item)) {
                     item.setSelected(M3Accessible.containsSelectionTarget(item, parameters));
                 }
@@ -428,7 +433,10 @@ public class M3Menu extends VBox {
 
     /// Installs action and selected-state listeners on a menu item.
     private void installItem(M3MenuItem item) {
-        item.addEventHandler(ActionEvent.ACTION, itemActionHandler);
+        M3Accessible.setIndexOwner(item, getItems());
+        EventHandler<ActionEvent> actionHandler = event -> handleItemAction(item, event);
+        actionListeners.put(item, actionHandler);
+        item.addEventHandler(ActionEvent.ACTION, actionHandler);
         ChangeListener<Boolean> listener = (observable, oldValue, newValue) ->
                 handleItemSelectedChanged(item, newValue);
         selectedListeners.put(item, listener);
@@ -437,7 +445,11 @@ public class M3Menu extends VBox {
 
     /// Removes action and selected-state listeners from a menu item.
     private void uninstallItem(M3MenuItem item) {
-        item.removeEventHandler(ActionEvent.ACTION, itemActionHandler);
+        M3Accessible.clearIndexOwner(item);
+        EventHandler<ActionEvent> actionHandler = actionListeners.remove(item);
+        if (actionHandler != null) {
+            item.removeEventHandler(ActionEvent.ACTION, actionHandler);
+        }
         ChangeListener<Boolean> listener = selectedListeners.remove(item);
         if (listener != null) {
             item.selectedProperty().removeListener(listener);
@@ -445,25 +457,33 @@ public class M3Menu extends VBox {
     }
 
     /// Applies menu selection policy to an item action.
-    private void handleItemAction(ActionEvent event) {
-        if (!(event.getSource() instanceof M3MenuItem item)
-                || !getChildren().contains(item)
-                || item.isDisabled()
-                || !isSelectableMenuItem(item)) {
+    private void handleItemAction(M3MenuItem directItem, ActionEvent event) {
+        @Nullable M3MenuItem sourceItem = event.getSource() instanceof M3MenuItem item ? item : null;
+        boolean shouldForwardDetachedAction = shouldForwardDetachedAction(sourceItem, directItem);
+        if (sourceItem == null
+                || !getItems().contains(sourceItem)
+                || sourceItem.isDisabled()
+                || !isSelectableMenuItem(sourceItem)) {
+            if (shouldForwardDetachedAction) {
+                fireEvent(new ActionEvent(event.getSource(), this));
+            }
             return;
         }
 
         switch (getSelectionMode()) {
             case NONE -> {
             }
-            case SINGLE -> selectOnly(item);
+            case SINGLE -> selectOnly(sourceItem);
             case MULTIPLE -> {
-                if (item.isSelected() && !isAllowEmptySelection() && selectedItems.size() == 1) {
-                    selectOnly(item);
+                if (sourceItem.isSelected() && !isAllowEmptySelection() && selectedItems.size() == 1) {
+                    selectOnly(sourceItem);
                 } else {
-                    setItemSelected(item, !item.isSelected());
+                    setItemSelected(sourceItem, !sourceItem.isSelected());
                 }
             }
+        }
+        if (shouldForwardDetachedAction) {
+            fireEvent(new ActionEvent(event.getSource(), this));
         }
     }
 
@@ -533,7 +553,7 @@ public class M3Menu extends VBox {
     private void selectOnly(@Nullable M3MenuItem item) {
         updatingSelection = true;
         try {
-            for (Node child : getChildren()) {
+            for (Node child : getItems()) {
                 if (child instanceof M3MenuItem menuItem) {
                     menuItem.setSelected(menuItem == item);
                 }
@@ -548,7 +568,7 @@ public class M3Menu extends VBox {
     private void refreshSelectedItems() {
         List<M3MenuItem> previousSelection = List.copyOf(selectedItems);
         selectedItems.clear();
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             if (child instanceof M3MenuItem item && isSelectableMenuItem(item) && item.isSelected()) {
                 selectedItems.add(item);
             }
@@ -561,7 +581,7 @@ public class M3Menu extends VBox {
 
     /// Returns the first selectable menu item child.
     private @Nullable M3MenuItem firstItem() {
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             @Nullable M3MenuItem item = selectableMenuItem(child);
             if (item != null) {
                 return item;
@@ -572,7 +592,7 @@ public class M3Menu extends VBox {
 
     /// Returns the last selectable menu item child.
     private @Nullable M3MenuItem lastItem() {
-        ObservableList<Node> children = getChildren();
+        ObservableList<Node> children = getItems();
         for (int index = children.size() - 1; index >= 0; index--) {
             @Nullable M3MenuItem item = selectableMenuItem(children.get(index));
             if (item != null) {
@@ -584,7 +604,7 @@ public class M3Menu extends VBox {
 
     /// Returns the next selectable menu item after the current item.
     private @Nullable M3MenuItem nextItem(@Nullable M3MenuItem current) {
-        ObservableList<Node> children = getChildren();
+        ObservableList<Node> children = getItems();
         int childCount = children.size();
         if (childCount == 0) {
             return null;
@@ -604,7 +624,7 @@ public class M3Menu extends VBox {
 
     /// Returns the previous selectable menu item before the current item.
     private @Nullable M3MenuItem previousItem(@Nullable M3MenuItem current) {
-        ObservableList<Node> children = getChildren();
+        ObservableList<Node> children = getItems();
         int childCount = children.size();
         if (childCount == 0) {
             return null;
@@ -629,7 +649,7 @@ public class M3Menu extends VBox {
     /// Returns the first selectable menu item referenced by accessibility parameters.
     private @Nullable M3MenuItem firstAccessibleSelectableItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        for (Node child : getChildren()) {
+        for (Node child : getItems()) {
             @Nullable M3MenuItem item = selectableMenuItem(child);
             if (item != null && M3Accessible.containsSelectionTarget(item, parameters)) {
                 return item;
@@ -652,6 +672,27 @@ public class M3Menu extends VBox {
     /// Returns whether a menu item participates in selection state.
     private static boolean isSelectableMenuItem(M3MenuItem item) {
         return !(item instanceof M3SubMenuItem);
+    }
+
+    /// Returns whether an action handled by a detached item must be forwarded through this menu.
+    private boolean shouldForwardDetachedAction(
+            @Nullable M3MenuItem sourceItem,
+            @Nullable M3MenuItem directItem
+    ) {
+        if (sourceItem == null || directItem == null || M3Accessible.containsNode(this, directItem)) {
+            return false;
+        }
+        if (sourceItem == directItem) {
+            return getItems().contains(directItem) && (isSelectableMenuItem(sourceItem)
+                    || sourceItem instanceof M3SubMenuItem subMenuItem && subMenuItem.isForwardingSubMenuAction());
+        }
+        return getItems().contains(directItem);
+    }
+
+    /// Creates the default Material Design 3 menu skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3MenuSkin(this);
     }
 
     /// Validates a menu item array.

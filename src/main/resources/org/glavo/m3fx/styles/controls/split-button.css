@@ -1,8 +1,3 @@
-.m3-split-button {
-    -fx-spacing: -1px;
-    -fx-alignment: center-left;
-}
-
 .m3-split-button .m3-button.m3-split-button-action {
     -m3-horizontal-padding: 20px;
     -fx-background-radius: 999px 0 0 999px;

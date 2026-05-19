@@ -58,6 +58,7 @@ import org.glavo.m3fx.skins.M3CheckBoxSkin;
 import org.glavo.m3fx.skins.M3ChipGroupSkin;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
+import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3IconSkin;
 import org.glavo.m3fx.skins.M3IconToggleButtonGroupSkin;
@@ -65,6 +66,7 @@ import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
 import org.glavo.m3fx.skins.M3ListViewSkin;
+import org.glavo.m3fx.skins.M3MenuSkin;
 import org.glavo.m3fx.skins.M3NavigationBarSkin;
 import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.glavo.m3fx.skins.M3NavigationItemSkin;
@@ -75,6 +77,7 @@ import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonGroupSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.skins.M3SliderSkin;
+import org.glavo.m3fx.skins.M3SplitButtonSkin;
 import org.glavo.m3fx.skins.M3SnackbarHostSkin;
 import org.glavo.m3fx.skins.M3SnackbarSkin;
 import org.glavo.m3fx.skins.M3SurfaceSkin;
@@ -524,6 +527,7 @@ final class M3ControlStyleTest {
 
         applyCss(splitButton);
 
+        assertInstanceOf(M3SplitButtonSkin.class, splitButton.getSkin());
         assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
         assertEquals(0.0, splitButton.getMenuButton().getHorizontalPadding(), 0.0001);
     }
@@ -621,6 +625,9 @@ final class M3ControlStyleTest {
         M3FloatingActionButton action = new M3FloatingActionButton("A");
         M3FabMenu menu = M3FabMenu.withToggleButton(customToggle, action);
 
+        applyCss(menu);
+
+        assertInstanceOf(M3FabMenuSkin.class, menu.getSkin());
         assertSame(customToggle, menu.getToggleButton());
         assertEquals(false, menu.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
 
@@ -2661,6 +2668,7 @@ final class M3ControlStyleTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
+        assertInstanceOf(M3MenuSkin.class, menu.getSkin());
         assertEquals(8.0, menu.getPadding().getTop(), 0.0001);
         assertEquals(48.0, open.getOneLineHeight(), 0.0001);
         assertEquals(4.0, open.getContainerShape(), 0.0001);
@@ -8465,7 +8473,9 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3ButtonGroup.class));
         assertFalse(HBox.class.isAssignableFrom(M3ButtonGroup.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3SplitButton.class));
+        assertFalse(HBox.class.isAssignableFrom(M3SplitButton.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3FabMenu.class));
+        assertFalse(VBox.class.isAssignableFrom(M3FabMenu.class));
         assertFalse(javafx.scene.control.MenuButton.class.isAssignableFrom(M3SplitButton.class));
         assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3FloatingActionButton.class));
         assertFalse(javafx.scene.control.CheckBox.class.isAssignableFrom(M3CheckBox.class));
@@ -8475,6 +8485,7 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.ProgressBar.class.isAssignableFrom(M3ProgressBar.class));
         assertFalse(javafx.scene.control.ProgressIndicator.class.isAssignableFrom(M3ProgressIndicator.class));
         assertFalse(javafx.scene.control.Tooltip.class.isAssignableFrom(M3Tooltip.class));
+        assertFalse(VBox.class.isAssignableFrom(M3Menu.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Icon.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Text.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3ListSectionHeader.class));
