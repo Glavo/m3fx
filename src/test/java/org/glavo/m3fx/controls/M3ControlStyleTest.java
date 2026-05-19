@@ -4576,9 +4576,93 @@ final class M3ControlStyleTest {
             assertEquals(24.0, thumb.getLayoutX(), 0.0001);
             assertEquals(24.0, thumb.getWidth(), 0.0001);
 
+            checkBox.setSelected(false);
+            radioButton.setSelected(false);
+            switchControl.setSelected(false);
+            checkBoxAnimation.jumpTo(Duration.millis(30.0));
+            radioAnimation.jumpTo(Duration.millis(30.0));
+            switchAnimation.jumpTo(Duration.millis(50.0));
+            row.layout();
+
+            assertBetween(mark.getOpacity(), 0.0, 1.0, "checkbox mark reverse opacity");
+            assertBetween(dot.getOpacity(), 0.0, 1.0, "radio dot reverse opacity");
+            assertBetween(thumb.getLayoutX(), 8.0, 24.0, "switch thumb reverse x");
+            assertBetween(thumb.getWidth(), 16.0, 24.0, "switch thumb reverse width");
+
+            checkBoxAnimation.jumpTo(Duration.millis(100.0));
+            radioAnimation.jumpTo(Duration.millis(100.0));
+            switchAnimation.jumpTo(Duration.millis(150.0));
+            row.layout();
+
+            assertEquals(0.0, mark.getOpacity(), 0.0001);
+            assertEquals(0.0, dot.getOpacity(), 0.0001);
+            assertEquals(8.0, thumb.getLayoutX(), 0.0001);
+            assertEquals(16.0, thumb.getWidth(), 0.0001);
+
             checkBoxAnimation.stop();
             radioAnimation.stop();
             switchAnimation.stop();
+        });
+    }
+
+    /// Verifies that checkbox indeterminate-to-selected transitions replay the mark animation.
+    @Test
+    void checkBoxIndeterminateTransitionReplaysMarkAnimation() {
+        runOnFxThread(() -> {
+            M3CheckBox checkBox = new M3CheckBox("Three-state");
+            checkBox.setAllowIndeterminate(true);
+            FlowPane row = new FlowPane(checkBox);
+            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(row, 220.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            row.applyCss();
+            row.resize(220.0, 80.0);
+            row.layout();
+
+            checkBox.fire();
+            Timeline animation = skinTimeline(checkBox.getSkin(), "selectionAnimation");
+            animation.jumpTo(Duration.millis(100.0));
+            row.applyCss();
+            row.layout();
+
+            Region mark = lookupRegion(checkBox, ".mark");
+            assertFalse(checkBox.isSelected());
+            assertTrue(checkBox.isIndeterminate());
+            assertEquals(12.0, mark.getLayoutBounds().getWidth(), 0.0001);
+            assertEquals(2.0, mark.getLayoutBounds().getHeight(), 0.0001);
+            assertEquals(1.0, mark.getOpacity(), 0.0001);
+
+            checkBox.fire();
+            row.applyCss();
+            row.layout();
+
+            assertTrue(checkBox.isSelected());
+            assertFalse(checkBox.isIndeterminate());
+            assertEquals(12.0, mark.getLayoutBounds().getWidth(), 0.0001);
+            assertEquals(10.0, mark.getLayoutBounds().getHeight(), 0.0001);
+            assertEquals(0.0, mark.getOpacity(), 0.0001);
+            assertEquals(0.72, mark.getScaleX(), 0.0001);
+
+            animation.jumpTo(Duration.millis(30.0));
+            row.layout();
+            assertBetween(mark.getOpacity(), 0.0, 1.0, "checkbox indeterminate-to-selected opacity");
+            assertBetween(mark.getScaleX(), 0.72, 1.0, "checkbox indeterminate-to-selected scale");
+
+            WritableImage image = snapshotImageOnFxThread(row);
+            assertSnapshotNodeContainsContrast(image, mark, Color.WHITE, 0.05);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-checkbox-indeterminate-transition.png"
+            ));
+
+            animation.jumpTo(Duration.millis(100.0));
+            row.layout();
+            assertEquals(1.0, mark.getOpacity(), 0.0001);
+            assertEquals(1.0, mark.getScaleX(), 0.0001);
+            animation.stop();
         });
     }
 
@@ -4739,6 +4823,14 @@ final class M3ControlStyleTest {
         assertTrue(checkBox.isSelected());
         assertFalse(checkBox.isIndeterminate());
         assertEquals(AccessibleAttribute.ToggleState.CHECKED,
+                checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
+
+        checkBox.fire();
+
+        assertFalse(checkBox.isSelected());
+        assertFalse(checkBox.isIndeterminate());
+        assertTrue(checkBox.getPseudoClassStates().contains(PseudoClass.getPseudoClass("determinate")));
+        assertEquals(AccessibleAttribute.ToggleState.UNCHECKED,
                 checkBox.queryAccessibleAttribute(AccessibleAttribute.TOGGLE_STATE));
     }
 

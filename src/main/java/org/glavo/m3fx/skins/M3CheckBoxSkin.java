@@ -48,6 +48,9 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     /// The selected mark appearance animation.
     private final Timeline selectionAnimation = new Timeline();
 
+    /// The currently displayed selected mark shape.
+    private MarkKind displayedMarkKind = MarkKind.CHECK;
+
     /// Applies touch target token changes to checkbox geometry.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
@@ -66,6 +69,7 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         mark.getStyleClass().addAll("mark", "m3-checkbox-mark");
         indicatorSlot().getChildren().addAll(box, mark);
 
+        displayedMarkKind = currentMarkKind();
         applyMarkState(control.isSelected() || control.isIndeterminate());
         updateMetrics();
         control.touchTargetSizeProperty().addListener(metricsInvalidation);
@@ -88,12 +92,12 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         double touchTargetSize = getSkinnable().getTouchTargetSize();
         setIndicatorSlotSize(touchTargetSize, touchTargetSize);
         setFixedSize(box, BOX_SIZE, BOX_SIZE);
-        updateMarkMetrics();
+        updateMarkMetrics(displayedMarkKind);
     }
 
-    /// Applies the current selected or indeterminate mark dimensions.
-    private void updateMarkMetrics() {
-        if (getSkinnable().isIndeterminate()) {
+    /// Applies the selected or indeterminate mark dimensions.
+    private void updateMarkMetrics(MarkKind markKind) {
+        if (markKind == MarkKind.DASH) {
             setFixedSize(mark, DASH_MARK_WIDTH, DASH_MARK_HEIGHT);
         } else {
             setFixedSize(mark, CHECK_MARK_WIDTH, CHECK_MARK_HEIGHT);
@@ -110,8 +114,14 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     /// Animates the selected or indeterminate mark state.
     private void animateMarkState() {
         boolean visible = getSkinnable().isSelected() || getSkinnable().isIndeterminate();
+        MarkKind targetMarkKind = currentMarkKind();
+        boolean markKindChanged = displayedMarkKind != targetMarkKind;
         selectionAnimation.stop();
-        updateMarkMetrics();
+        displayedMarkKind = targetMarkKind;
+        updateMarkMetrics(targetMarkKind);
+        if (markKindChanged && visible) {
+            applyMarkState(false);
+        }
         selectionAnimation.getKeyFrames().setAll(new KeyFrame(
                 SELECTION_DURATION,
                 new KeyValue(mark.opacityProperty(), visible ? 1.0 : 0.0, M3Motion.STANDARD),
@@ -119,5 +129,19 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
                 new KeyValue(mark.scaleYProperty(), visible ? 1.0 : HIDDEN_MARK_SCALE, M3Motion.STANDARD)
         ));
         selectionAnimation.playFromStart();
+    }
+
+    /// Returns the mark shape that should be displayed for the current control state.
+    private MarkKind currentMarkKind() {
+        return getSkinnable().isIndeterminate() ? MarkKind.DASH : MarkKind.CHECK;
+    }
+
+    /// The rendered checkbox mark shape.
+    private enum MarkKind {
+        /// A check mark used by selected determinate checkboxes.
+        CHECK,
+
+        /// A horizontal dash used by indeterminate checkboxes.
+        DASH
     }
 }
