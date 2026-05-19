@@ -52,7 +52,7 @@
 - Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, floating action buttons, extended floating action buttons, and floating action button menus.
 - Inputs: filled and outlined text fields, password fields, text areas, shared error-state support, text input layouts with floating labels, validators, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, and optional hard character limits.
 - Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
-- Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, and inclusive min/max date range support.
+- Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, and inclusive min/max date range support; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, and inclusive min/max time range support.
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, and navigation drawer.
 - App bars: top app bar variants and bottom app bar with configurable floating action alignment.
 - Menus and search: menu, menu item, submenu item with hover and keyboard opening, menu section header, menu button with edge-aware popup placement, search bar, and search view with customizable result content and action slots.
@@ -66,7 +66,7 @@
 - Demo pages cover common variants, disabled states, selected states, error states, and animated progress examples.
 - Unit tests cover style classes, token CSS metadata, accessibility attributes, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
 - Snapshot-based visual tests render implemented control families into report images for manual and automated inspection.
-- Date picker visual tests render selected, today, adjacent-month, and disabled range states into a dedicated snapshot.
+- Date and time picker visual tests render selected, today, adjacent-month, 12-hour/24-hour, minute-step, and disabled range states into dedicated snapshots.
 - Demo packaging tests cover the executable shadow jar and verify that JavaFX classes are not bundled.
 
 ## Remaining Work

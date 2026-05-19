@@ -1,0 +1,140 @@
+.m3-time-picker {
+    -fx-background-color: transparent;
+}
+
+.m3-time-picker-container {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 28px;
+    -fx-padding: 18px;
+    -fx-spacing: 16px;
+}
+
+.m3-time-picker-display {
+    -fx-alignment: center-left;
+    -fx-spacing: 4px;
+}
+
+.m3-time-picker-hour-display,
+.m3-time-picker-minute-display {
+    -fx-background-color: -m3-color-primary-container;
+    -fx-background-radius: 16px;
+    -fx-min-width: 72px;
+    -fx-pref-width: 72px;
+    -fx-min-height: 64px;
+    -fx-pref-height: 64px;
+    -fx-alignment: center;
+    -fx-font-size: 28px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -m3-color-on-primary-container;
+}
+
+.m3-time-picker-display-separator {
+    -fx-font-size: 28px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-time-picker-period-display {
+    -fx-padding: 0 0 0 8px;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-time-picker-section {
+    -fx-spacing: 8px;
+}
+
+.m3-time-picker-section-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-time-picker-grid {
+    -fx-hgap: 6px;
+    -fx-vgap: 6px;
+}
+
+.m3-time-picker-cell,
+.m3-time-picker-cell:hover,
+.m3-time-picker-cell:focused,
+.m3-time-picker-cell:armed,
+.m3-time-picker-cell:pressed {
+    -fx-background-color: -m3-color-surface-container-high;
+    -fx-background-radius: 999px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 999px;
+    -fx-cursor: hand;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-padding: 0px;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-time-picker-cell .m3-state-layer,
+.m3-time-picker-cell .m3-ripple {
+    -fx-background-color: -m3-color-primary;
+}
+
+.m3-time-picker-cell:hover .m3-state-layer {
+    -fx-opacity: 0.08;
+}
+
+.m3-time-picker-cell:focus-visible .m3-state-layer {
+    -fx-opacity: 0.10;
+}
+
+.m3-time-picker-cell:pressed .m3-state-layer {
+    -fx-opacity: 0.10;
+}
+
+.m3-time-picker-cell.m3-time-picker-selected-cell,
+.m3-time-picker-cell.m3-time-picker-selected-cell:hover,
+.m3-time-picker-cell.m3-time-picker-selected-cell:focused,
+.m3-time-picker-cell.m3-time-picker-selected-cell:armed,
+.m3-time-picker-cell.m3-time-picker-selected-cell:pressed {
+    -fx-background-color: -m3-color-primary;
+    -fx-text-fill: -m3-color-on-primary;
+}
+
+.m3-time-picker-cell.m3-time-picker-selected-cell .m3-state-layer,
+.m3-time-picker-cell.m3-time-picker-selected-cell .m3-ripple {
+    -fx-background-color: -m3-color-on-primary;
+}
+
+.m3-time-picker-period-row {
+    -fx-spacing: 0;
+}
+
+.m3-time-picker-period-cell,
+.m3-time-picker-period-cell:hover,
+.m3-time-picker-period-cell:focused,
+.m3-time-picker-period-cell:armed,
+.m3-time-picker-period-cell:pressed {
+    -fx-background-color: transparent;
+    -fx-border-color: -m3-color-outline;
+    -fx-border-width: 1px;
+}
+
+.m3-time-picker-period-start,
+.m3-time-picker-period-start:hover,
+.m3-time-picker-period-start:focused,
+.m3-time-picker-period-start:armed,
+.m3-time-picker-period-start:pressed {
+    -fx-background-radius: 999px 0 0 999px;
+    -fx-border-radius: 999px 0 0 999px;
+}
+
+.m3-time-picker-period-end,
+.m3-time-picker-period-end:hover,
+.m3-time-picker-period-end:focused,
+.m3-time-picker-period-end:armed,
+.m3-time-picker-period-end:pressed {
+    -fx-background-radius: 0 999px 999px 0;
+    -fx-border-radius: 0 999px 999px 0;
+}
+
+.m3-time-picker-cell:disabled {
+    -fx-opacity: 0.38;
+}

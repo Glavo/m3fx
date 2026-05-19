@@ -106,6 +106,7 @@ import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
+import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
@@ -120,6 +121,7 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -305,6 +307,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Switches", "Switch", ALL_OTHER_COMPONENTS_GROUP, "On, off, and disabled switch states", this::createSwitchesPage),
                 new DemoPage("Tabs", "Tabs", ALL_OTHER_COMPONENTS_GROUP, "Primary tabs with animated active indicators", this::createTabsPage),
                 new DemoPage("Text Fields", "Text fields", ALL_OTHER_COMPONENTS_GROUP, "Filled, outlined, populated, error, and disabled fields", this::createTextFieldsPage),
+                new DemoPage("Time Pickers", "Time pickers", ALL_OTHER_COMPONENTS_GROUP, "12-hour, 24-hour, and bounded time selection", this::createTimePickersPage),
                 new DemoPage("Toolbars", "Toolbars", ALL_OTHER_COMPONENTS_GROUP, "Bottom app bars with actions and floating actions", this::createBottomAppBarsPage),
                 new DemoPage("Tooltips", "Tooltips", ALL_OTHER_COMPONENTS_GROUP, "Plain and longer contextual help", this::createTooltipsPage),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", this::createBannersPage),
@@ -803,6 +806,25 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup("Selected Date", selected),
                 createShowcaseGroup("Bounded Range", range),
                 createShowcaseGroup("Month Only", monthOnly)
+        );
+    }
+
+    /// Creates the time picker component page.
+    private Node createTimePickersPage() {
+        M3TimePicker twelveHour = new M3TimePicker(LocalTime.of(10, 30));
+
+        M3TimePicker twentyFourHour = new M3TimePicker(LocalTime.of(14, 45));
+        twentyFourHour.setUse24HourClock(true);
+        twentyFourHour.setMinuteStep(15);
+
+        M3TimePicker bounded = new M3TimePicker(LocalTime.of(9, 30));
+        bounded.setMinTime(LocalTime.of(9, 0));
+        bounded.setMaxTime(LocalTime.of(17, 30));
+
+        return createGallery(
+                createShowcaseGroup("12 Hour", twelveHour),
+                createShowcaseGroup("24 Hour", twentyFourHour),
+                createShowcaseGroup("Bounded Range", bounded)
         );
     }
 
