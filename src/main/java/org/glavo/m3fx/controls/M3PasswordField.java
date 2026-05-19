@@ -5,21 +5,16 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
-import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
-import javafx.geometry.Insets;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,53 +22,24 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 password field.
+///
+/// This control keeps JavaFX's `PasswordField` editing and masking implementation while exposing Material state and
+/// token APIs through [M3TextInput].
 @NotNullByDefault
 public class M3PasswordField extends PasswordField implements M3TextInput {
     /// The base style class for m3fx password fields.
     public static final String STYLE_CLASS = "m3-password-field";
 
-    /// The pseudo-class used while the field is in an error state.
-    private static final PseudoClass ERROR_PSEUDO_CLASS = PseudoClass.getPseudoClass("error");
-
-    /// The default field container height.
-    private static final double DEFAULT_CONTAINER_HEIGHT = 56.0;
-
-    /// The default field container shape radius.
-    private static final double DEFAULT_CONTAINER_SHAPE = 4.0;
-
-    /// The default horizontal content padding.
-    private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
-
-    /// The visual variant property.
-    private final ObjectProperty<M3TextInputVariant> variant = new SimpleObjectProperty<>(this, "variant", M3TextInputVariant.FILLED) {
-        /// Updates variant style classes when the property changes.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(M3TextInputVariant.FILLED);
-                return;
-            }
-            updateVariantStyle();
-        }
-            };
-
-    /// Whether this field should render its error state.
-    private final BooleanProperty error = new SimpleBooleanProperty(this, "error") {
-        /// Updates the error pseudo-class when the property changes.
-        @Override
-        protected void invalidated() {
-            pseudoClassStateChanged(ERROR_PSEUDO_CLASS, get());
-        }
-    };
-
-    /// The styleable container height token.
-    private @Nullable StyleableDoubleProperty containerHeight;
-
-    /// The styleable container shape token.
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The styleable horizontal padding token.
-    private @Nullable StyleableDoubleProperty horizontalPadding;
+    /// Shared Material text input state and token plumbing.
+    private final M3TextInputSupport<M3PasswordField> support = new M3TextInputSupport<>(
+            this,
+            M3TextInputSupport.DEFAULT_FIELD_CONTAINER_HEIGHT,
+            M3TextInputSupport.DEFAULT_FIELD_VERTICAL_PADDING,
+            StyleableProperties.CONTAINER_HEIGHT,
+            StyleableProperties.CONTAINER_SHAPE,
+            StyleableProperties.HORIZONTAL_PADDING,
+            null
+    );
 
     /// Creates an empty filled password field.
     public M3PasswordField() {
@@ -94,161 +60,93 @@ public class M3PasswordField extends PasswordField implements M3TextInput {
     }
 
     /// Returns the text input variant.
+    @Override
     public final M3TextInputVariant getVariant() {
-        return variant.get();
+        return support.getVariant();
     }
 
     /// Sets the text input variant.
+    @Override
     public final void setVariant(M3TextInputVariant variant) {
-        this.variant.set(Objects.requireNonNull(variant, "variant"));
+        support.setVariant(variant);
     }
 
     /// Returns the text input variant property.
+    @Override
     public final ObjectProperty<M3TextInputVariant> variantProperty() {
-        return variant;
+        return support.variantProperty();
     }
 
     /// Returns whether this field renders its error state.
+    @Override
     public final boolean isError() {
-        return error.get();
+        return support.isError();
     }
 
     /// Sets whether this field renders its error state.
+    @Override
     public final void setError(boolean error) {
-        this.error.set(error);
+        support.setError(error);
     }
 
     /// Returns the error state property.
+    @Override
     public final BooleanProperty errorProperty() {
-        return error;
+        return support.errorProperty();
     }
 
     /// Returns the preferred container height token.
+    @Override
     public final double getContainerHeight() {
-        return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
+        return support.getContainerHeight();
     }
 
     /// Sets the preferred container height token.
+    @Override
     public final void setContainerHeight(double containerHeight) {
-        containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
+        support.setContainerHeight(containerHeight);
     }
 
     /// Returns the preferred container height token property.
+    @Override
     public final StyleableDoubleProperty containerHeightProperty() {
-        if (containerHeight == null) {
-            containerHeight = new StyleableDoubleProperty(DEFAULT_CONTAINER_HEIGHT) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerHeight");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3PasswordField.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerHeight";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3PasswordField, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_HEIGHT;
-                }
-            };
-        }
-        return containerHeight;
+        return support.containerHeightProperty();
     }
 
     /// Returns the container shape radius token.
+    @Override
     public final double getContainerShape() {
-        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
+        return support.getContainerShape();
     }
 
     /// Sets the container shape radius token.
+    @Override
     public final void setContainerShape(double containerShape) {
-        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
+        support.setContainerShape(containerShape);
     }
 
     /// Returns the container shape radius token property.
+    @Override
     public final StyleableDoubleProperty containerShapeProperty() {
-        if (containerShape == null) {
-            containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerShape");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3PasswordField.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3PasswordField, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SHAPE;
-                }
-            };
-        }
-        return containerShape;
+        return support.containerShapeProperty();
     }
 
     /// Returns the horizontal content padding token.
+    @Override
     public final double getHorizontalPadding() {
-        return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
+        return support.getHorizontalPadding();
     }
 
     /// Sets the horizontal content padding token.
+    @Override
     public final void setHorizontalPadding(double horizontalPadding) {
-        horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
+        support.setHorizontalPadding(horizontalPadding);
     }
 
     /// Returns the horizontal content padding token property.
+    @Override
     public final StyleableDoubleProperty horizontalPaddingProperty() {
-        if (horizontalPadding == null) {
-            horizontalPadding = new StyleableDoubleProperty(DEFAULT_HORIZONTAL_PADDING) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "horizontalPadding");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3PasswordField.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "horizontalPadding";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3PasswordField, Number> getCssMetaData() {
-                    return StyleableProperties.HORIZONTAL_PADDING;
-                }
-            };
-        }
-        return horizontalPadding;
+        return support.horizontalPaddingProperty();
     }
 
     /// Returns the CSS metadata for this control class.
@@ -270,81 +168,33 @@ public class M3PasswordField extends PasswordField implements M3TextInput {
 
     /// Adds base style classes and applies the default variant.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        support.initialize(STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PASSWORD_FIELD);
-        updateVariantStyle();
-        updateMetrics();
-    }
-
-    /// Applies the current variant style class.
-    private void updateVariantStyle() {
-        M3ControlStyles.replaceVariant(
-                this,
-                getVariant().getStyleClass(),
-                M3TextInputVariant.FILLED.getStyleClass(),
-                M3TextInputVariant.OUTLINED.getStyleClass()
-        );
-    }
-
-    /// Applies size-related component tokens to JavaFX layout properties.
-    private void updateMetrics() {
-        double height = getContainerHeight();
-        double padding = getHorizontalPadding();
-        setMinHeight(height);
-        setPrefHeight(height);
-        setPadding(new Insets(8.0, padding, 8.0, padding));
     }
 
     /// CSS metadata for m3fx password field component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.
-        private static final CssMetaData<M3PasswordField, Number> CONTAINER_HEIGHT =
-                new CssMetaData<>("-m3-container-height", SizeConverter.getInstance(), DEFAULT_CONTAINER_HEIGHT) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3PasswordField control) {
-                        return M3Css.isSettable(control.containerHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3PasswordField control) {
-                        return control.containerHeightProperty();
-                    }
-                };
+        private static final CssMetaData<M3PasswordField, Number> CONTAINER_HEIGHT = createSizeCssMetaData(
+                "-m3-container-height",
+                M3TextInputSupport.DEFAULT_FIELD_CONTAINER_HEIGHT,
+                M3PasswordField::containerHeightProperty
+        );
 
         /// CSS metadata for the container shape token.
-        private static final CssMetaData<M3PasswordField, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3PasswordField control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3PasswordField control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+        private static final CssMetaData<M3PasswordField, Number> CONTAINER_SHAPE = createSizeCssMetaData(
+                "-m3-container-shape",
+                M3TextInputSupport.DEFAULT_CONTAINER_SHAPE,
+                M3PasswordField::containerShapeProperty
+        );
 
         /// CSS metadata for the horizontal padding token.
-        private static final CssMetaData<M3PasswordField, Number> HORIZONTAL_PADDING =
-                new CssMetaData<>("-m3-horizontal-padding", SizeConverter.getInstance(), DEFAULT_HORIZONTAL_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3PasswordField control) {
-                        return M3Css.isSettable(control.horizontalPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3PasswordField control) {
-                        return control.horizontalPaddingProperty();
-                    }
-                };
+        private static final CssMetaData<M3PasswordField, Number> HORIZONTAL_PADDING = createSizeCssMetaData(
+                "-m3-horizontal-padding",
+                M3TextInputSupport.DEFAULT_HORIZONTAL_PADDING,
+                M3PasswordField::horizontalPaddingProperty
+        );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
@@ -356,5 +206,38 @@ public class M3PasswordField extends PasswordField implements M3TextInput {
             styleables.add(HORIZONTAL_PADDING);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
+
+        /// Prevents utility class instantiation.
+        private StyleableProperties() {
+        }
+
+        /// Creates CSS metadata for a password field size token.
+        private static CssMetaData<M3PasswordField, Number> createSizeCssMetaData(
+                String property,
+                double initialValue,
+                StyleablePropertyProvider provider
+        ) {
+            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
+                /// Returns whether this property can be set by CSS.
+                @Override
+                public boolean isSettable(M3PasswordField control) {
+                    return M3Css.isSettable(provider.property(control));
+                }
+
+                /// Returns the styleable property for a control.
+                @Override
+                public StyleableProperty<Number> getStyleableProperty(M3PasswordField control) {
+                    return provider.property(control);
+                }
+            };
+        }
+    }
+
+    /// Provides a styleable double property for a password field.
+    @FunctionalInterface
+    @NotNullByDefault
+    private interface StyleablePropertyProvider {
+        /// Returns the styleable property for a password field.
+        StyleableDoubleProperty property(M3PasswordField control);
     }
 }

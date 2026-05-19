@@ -28,6 +28,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Skin;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -1677,6 +1678,33 @@ final class M3ControlStyleTest {
         assertFalse(textField.getPseudoClassStates().contains(error));
         assertFalse(passwordField.getPseudoClassStates().contains(error));
         assertFalse(textArea.getPseudoClassStates().contains(error));
+    }
+
+    /// Verifies that the shared text input API exposes common metric tokens.
+    @Test
+    void textInputInterfaceExposesSharedMetricTokens() {
+        M3TextInput[] inputs = {
+                new M3TextField(),
+                new M3PasswordField(),
+                new M3TextArea()
+        };
+
+        for (M3TextInput input : inputs) {
+            input.setContainerHeight(72.0);
+            input.setContainerShape(14.0);
+            input.setHorizontalPadding(24.0);
+
+            TextInputControl control = assertInstanceOf(TextInputControl.class, input);
+            assertEquals(72.0, input.getContainerHeight(), 0.0001);
+            assertEquals(14.0, input.getContainerShape(), 0.0001);
+            assertEquals(24.0, input.getHorizontalPadding(), 0.0001);
+            assertEquals(72.0, control.getPrefHeight(), 0.0001);
+            assertEquals(24.0, control.getPadding().getLeft(), 0.0001);
+            assertEquals(24.0, control.getPadding().getRight(), 0.0001);
+            assertThrows(IllegalArgumentException.class, () -> input.setContainerHeight(-1.0));
+            assertThrows(IllegalArgumentException.class, () -> input.setContainerShape(-1.0));
+            assertThrows(IllegalArgumentException.class, () -> input.setHorizontalPadding(-1.0));
+        }
     }
 
     /// Verifies that text input layouts expose supporting text, counters, and wrapped input state.

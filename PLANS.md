@@ -21,6 +21,7 @@
 - `org.glavo.m3fx.skins` contains skin implementations for controls that require custom layout, drawing, or interaction behavior.
 - Controls use split user-agent stylesheets through each node or control's `getUserAgentStylesheet()` where JavaFX supports it.
 - Popup-only styling remains in dedicated control CSS files loaded through the base stylesheet.
+- Text input controls retain JavaFX text editing implementations for caret, selection, clipboard, and IME behavior while sharing Material state and token plumbing through `M3TextInput`.
 - M3ThemeManager is a convenience installer, not the only way to use the library. Applications may install the base stylesheet and generated token stylesheet themselves when they need custom scene management.
 
 ## Implemented
@@ -50,7 +51,7 @@
 
 - Typography and icon primitives: `M3Text`, `M3Icon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
 - Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, floating action buttons, extended floating action buttons, and floating action button menus.
-- Inputs: filled and outlined text fields, password fields, text areas, shared error-state support, text input layouts with floating labels, validators, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, and optional hard character limits.
+- Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, text input layouts with floating labels, validators, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, and optional hard character limits.
 - Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
 - Checkbox, radio button, and switch disabled visuals use part-level state token opacity so selected indicators remain legible.
 - Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, and inclusive min/max date range support; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, and inclusive min/max time range support.

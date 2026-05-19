@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.css.StyleableDoubleProperty;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Common API shared by Material Design 3 single-line, password, and multiline text inputs.
@@ -27,4 +28,31 @@ public interface M3TextInput {
 
     /// Returns the error state property.
     BooleanProperty errorProperty();
+
+    /// Returns the preferred container height token.
+    double getContainerHeight();
+
+    /// Sets the preferred container height token.
+    void setContainerHeight(double containerHeight);
+
+    /// Returns the preferred container height token property.
+    StyleableDoubleProperty containerHeightProperty();
+
+    /// Returns the container shape radius token.
+    double getContainerShape();
+
+    /// Sets the container shape radius token.
+    void setContainerShape(double containerShape);
+
+    /// Returns the container shape radius token property.
+    StyleableDoubleProperty containerShapeProperty();
+
+    /// Returns the horizontal content padding token.
+    double getHorizontalPadding();
+
+    /// Sets the horizontal content padding token.
+    void setHorizontalPadding(double horizontalPadding);
+
+    /// Returns the horizontal content padding token property.
+    StyleableDoubleProperty horizontalPaddingProperty();
 }
