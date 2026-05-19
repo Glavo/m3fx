@@ -78,6 +78,14 @@ final class M3Accessible {
         return false;
     }
 
+    /// Requests focus for the item referenced by accessibility action parameters.
+    static void showItem(ObservableList<? extends Node> items, Object... parameters) {
+        @Nullable Node item = actionItem(items, parameters);
+        if (item != null && item.isVisible() && !item.isDisabled()) {
+            item.requestFocus();
+        }
+    }
+
     /// Returns the first child item referenced by accessibility selection parameters.
     static <T extends Node> @Nullable T firstSelectionTarget(
             ObservableList<? extends Node> items,
@@ -115,6 +123,51 @@ final class M3Accessible {
             }
         }
         return false;
+    }
+
+    /// Returns the child item referenced by accessibility action parameters.
+    private static @Nullable Node actionItem(ObservableList<? extends Node> items, Object... parameters) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return null;
+        }
+        @Nullable Object firstParameter = parameters[0];
+        if (firstParameter instanceof Number) {
+            return itemAt(items, parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = actionItem(items, parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the child item referenced by one accessibility action parameter.
+    private static @Nullable Node actionItem(ObservableList<? extends Node> items, @Nullable Object parameter) {
+        if (parameter instanceof Node node) {
+            return items.contains(node) ? node : null;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(items, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(items, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
     }
 
     /// Returns this node's index in its parent child list, or `-1` when it is detached.

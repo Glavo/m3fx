@@ -242,6 +242,7 @@ public class M3TabBar extends HBox {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            case SHOW_ITEM -> M3Accessible.showItem(getTabs(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

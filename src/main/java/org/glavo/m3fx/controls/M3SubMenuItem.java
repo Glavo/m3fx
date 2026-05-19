@@ -234,7 +234,7 @@ public class M3SubMenuItem extends M3MenuItem {
         switch (action) {
             case SHOW_MENU, EXPAND -> showSubMenu();
             case COLLAPSE -> hideSubMenu();
-            case SET_SELECTED_ITEMS -> subMenu.executeAccessibleAction(action, parameters);
+            case SET_SELECTED_ITEMS, SHOW_ITEM -> subMenu.executeAccessibleAction(action, parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

@@ -296,6 +296,7 @@ public class M3Menu extends VBox {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -310,11 +311,12 @@ public class M3Menu extends VBox {
 
     /// Applies keyboard navigation across enabled menu items.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (getSelectionMode() == M3MenuSelectionMode.NONE) {
+        if (getSelectionMode() == M3MenuSelectionMode.NONE
+                || getSelectionMode() == M3MenuSelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
                     getChildren(),
-                    M3SelectionNavigation.focused(getChildren(), M3MenuItem.class),
+                    M3SelectionNavigation.focusAnchor(getChildren(), getSelectedItem(), M3MenuItem.class),
                     M3MenuItem.class,
                     false,
                     true

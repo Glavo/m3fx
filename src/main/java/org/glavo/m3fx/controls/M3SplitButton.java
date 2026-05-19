@@ -319,6 +319,7 @@ public class M3SplitButton extends HBox {
             case FIRE -> fire();
             case SHOW_MENU, EXPAND -> showMenu();
             case COLLAPSE -> hideMenu();
+            case SHOW_ITEM -> M3Accessible.showItem(getChildren(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

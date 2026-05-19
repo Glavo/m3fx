@@ -294,7 +294,7 @@ public class M3MenuButton extends M3Button {
         switch (action) {
             case SHOW_MENU, EXPAND -> showMenu();
             case COLLAPSE -> hideMenu();
-            case SET_SELECTED_ITEMS -> menu.executeAccessibleAction(action, parameters);
+            case SET_SELECTED_ITEMS, SHOW_ITEM -> menu.executeAccessibleAction(action, parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

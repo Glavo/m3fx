@@ -295,6 +295,7 @@ public class M3SegmentedButtonGroup extends HBox {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -311,6 +312,22 @@ public class M3SegmentedButtonGroup extends HBox {
 
     /// Applies keyboard navigation across enabled segmented buttons.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (getSelectionMode() == M3SegmentedButtonSelectionMode.MULTIPLE) {
+            M3SelectionNavigation.handleKeyFocus(
+                    event,
+                    getChildren(),
+                    M3SelectionNavigation.focusAnchor(
+                            getChildren(),
+                            getSelectedButton(),
+                            M3SegmentedButton.class
+                    ),
+                    M3SegmentedButton.class,
+                    true,
+                    false
+            );
+            return;
+        }
+
         M3SelectionNavigation.handleKeySelection(
                 event,
                 getChildren(),

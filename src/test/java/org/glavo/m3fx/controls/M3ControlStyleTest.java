@@ -5658,6 +5658,97 @@ final class M3ControlStyleTest {
         assertNull(menuWithoutSelection.getSelectedItem());
     }
 
+    /// Verifies that multi-selection containers use arrow keys for focus movement without changing selection.
+    @Test
+    void multiSelectionContainersKeepSelectionDuringKeyboardFocusNavigation() {
+        M3Chip chipFirst = M3Chip.withVariant("Input", M3ChipVariant.INPUT, true);
+        M3Chip chipSecond = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, false);
+        M3ChipGroup chipGroup = new M3ChipGroup(chipFirst, chipSecond);
+        KeyEvent chipEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+
+        chipGroup.fireEvent(chipEvent);
+
+        assertEquals(java.util.List.of(chipFirst), chipGroup.getSelectedChips());
+        assertFalse(chipSecond.isSelected());
+
+        M3IconToggleButton iconFirst = M3IconToggleButton.withIcon(
+                "edit",
+                M3IconToggleButtonVariant.STANDARD,
+                true
+        );
+        M3IconToggleButton iconSecond = M3IconToggleButton.withIcon(
+                "done",
+                M3IconToggleButtonVariant.STANDARD,
+                false
+        );
+        M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond);
+        iconGroup.setSelectionMode(M3IconToggleButtonSelectionMode.MULTIPLE);
+        KeyEvent iconEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+
+        iconGroup.fireEvent(iconEvent);
+
+        assertEquals(java.util.List.of(iconFirst), iconGroup.getSelectedButtons());
+        assertFalse(iconSecond.isSelected());
+
+        M3SegmentedButton segmentFirst = M3SegmentedButton.withSelected("Day", true);
+        M3SegmentedButton segmentSecond = M3SegmentedButton.withSelected("Week", false);
+        M3SegmentedButtonGroup segmentGroup = new M3SegmentedButtonGroup(segmentFirst, segmentSecond);
+        segmentGroup.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);
+        KeyEvent segmentEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+
+        segmentGroup.fireEvent(segmentEvent);
+
+        assertEquals(java.util.List.of(segmentFirst), segmentGroup.getSelectedButtons());
+        assertFalse(segmentSecond.isSelected());
+
+        M3ListItem listFirst = new M3ListItem("One");
+        M3ListItem listSecond = new M3ListItem("Two");
+        M3List list = new M3List(listFirst, listSecond);
+        list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        listFirst.setSelected(true);
+        KeyEvent listEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
+
+        list.fireEvent(listEvent);
+
+        assertEquals(java.util.List.of(listFirst), list.getSelectedItems());
+        assertFalse(listSecond.isSelected());
+
+        M3MenuItem menuFirst = new M3MenuItem("Open");
+        M3MenuItem menuSecond = new M3MenuItem("Save");
+        M3Menu menu = new M3Menu(menuFirst, menuSecond);
+        menu.setSelectionMode(M3MenuSelectionMode.MULTIPLE);
+        menuFirst.setSelected(true);
+        KeyEvent menuEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
+
+        menu.fireEvent(menuEvent);
+
+        assertEquals(java.util.List.of(menuFirst), menu.getSelectedItems());
+        assertFalse(menuSecond.isSelected());
+    }
+
+    /// Verifies that composite controls can focus indexed children through accessibility show-item actions.
+    @Test
+    void compositeControlsSupportAccessibleShowItemActions() {
+        runOnFxThread(() -> {
+            M3Button first = new M3Button("First");
+            M3Button second = new M3Button("Second");
+            M3ButtonGroup group = new M3ButtonGroup(first, second);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(new Pane(group), 240.0, 80.0));
+                stage.show();
+
+                group.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                assertTrue(second.isFocused());
+
+                group.executeAccessibleAction(AccessibleAction.SHOW_ITEM, first);
+                assertTrue(first.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that navigation drawer token rules override list item metrics.
     @Test
     void navigationDrawerAppliesItemMetrics() {

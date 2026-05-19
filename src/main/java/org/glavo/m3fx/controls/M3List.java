@@ -286,10 +286,10 @@ public class M3List extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
-        if (action == AccessibleAction.SET_SELECTED_ITEMS) {
-            setAccessibleSelectedItems(parameters);
-        } else {
-            super.executeAccessibleAction(action, parameters);
+        switch (action) {
+            case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
+            default -> super.executeAccessibleAction(action, parameters);
         }
     }
 
@@ -303,11 +303,12 @@ public class M3List extends Control {
 
     /// Applies keyboard navigation across enabled list items.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (getSelectionMode() == M3ListSelectionMode.NONE) {
+        if (getSelectionMode() == M3ListSelectionMode.NONE
+                || getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
                     getItems(),
-                    M3SelectionNavigation.focused(getItems(), M3ListItem.class),
+                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
                     M3ListItem.class,
                     false,
                     true

@@ -247,6 +247,7 @@ public class M3NavigationDrawer extends VBox {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

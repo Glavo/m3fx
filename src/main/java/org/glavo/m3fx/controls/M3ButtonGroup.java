@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -107,6 +108,16 @@ public class M3ButtonGroup extends HBox {
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    /// Executes accessibility actions for grouped button content.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
     }
 
     /// Adds base style classes and child list listeners.

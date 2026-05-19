@@ -290,6 +290,7 @@ public class M3ChipGroup extends FlowPane {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
+            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -307,6 +308,18 @@ public class M3ChipGroup extends FlowPane {
 
     /// Applies keyboard navigation across enabled chips.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (getSelectionMode() == M3ChipSelectionMode.MULTIPLE) {
+            M3SelectionNavigation.handleKeyFocus(
+                    event,
+                    getChildren(),
+                    M3SelectionNavigation.focusAnchor(getChildren(), getSelectedChip(), M3Chip.class),
+                    M3Chip.class,
+                    true,
+                    true
+            );
+            return;
+        }
+
         M3SelectionNavigation.handleKeySelection(
                 event,
                 getChildren(),

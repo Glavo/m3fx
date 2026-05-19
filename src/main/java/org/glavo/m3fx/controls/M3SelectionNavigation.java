@@ -145,6 +145,25 @@ final class M3SelectionNavigation {
         return null;
     }
 
+    /// Returns the focused child when present, otherwise the current child when it is still navigable.
+    static <T extends Node> @Nullable T focusAnchor(
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type
+    ) {
+        Objects.requireNonNull(children, "children");
+        Objects.requireNonNull(type, "type");
+
+        @Nullable T focused = focused(children, type);
+        if (focused != null) {
+            return focused;
+        }
+        if (current != null && children.contains(current) && selectable(current, type) != null) {
+            return current;
+        }
+        return null;
+    }
+
     /// Returns the selection target implied by a navigation key.
     private static <T extends Node> @Nullable T targetFromKey(
             KeyCode keyCode,
