@@ -74,7 +74,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// Returns selectors for controls that expose hover state layer feedback.
     private static String hoverStateSelectors() {
         return ".m3-button:hover .m3-state-layer, .m3-chip:hover .m3-state-layer, "
-                + ".m3-icon-button:hover .m3-state-layer, .m3-fab:hover .m3-state-layer, "
+                + ".m3-icon-button:hover .m3-state-layer, .m3-icon-toggle-button:hover .m3-state-layer, "
+                + ".m3-fab:hover .m3-state-layer, "
                 + ".m3-segmented-button:hover .m3-state-layer, .m3-checkbox:hover .m3-state-layer, "
                 + ".m3-radio-button:hover .m3-state-layer, .m3-switch:hover .m3-state-layer, "
                 + ".m3-slider:hover .m3-state-layer, .m3-tab:hover .m3-state-layer, "
@@ -86,7 +87,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// Returns selectors for controls that expose focus state layer feedback.
     private static String focusStateSelectors() {
         return ".m3-button:focus-visible .m3-state-layer, .m3-chip:focus-visible .m3-state-layer, "
-                + ".m3-icon-button:focus-visible .m3-state-layer, .m3-fab:focus-visible .m3-state-layer, "
+                + ".m3-icon-button:focus-visible .m3-state-layer, "
+                + ".m3-icon-toggle-button:focus-visible .m3-state-layer, .m3-fab:focus-visible .m3-state-layer, "
                 + ".m3-segmented-button:focus-visible .m3-state-layer, .m3-checkbox:focus-visible .m3-state-layer, "
                 + ".m3-radio-button:focus-visible .m3-state-layer, .m3-switch:focus-visible .m3-state-layer, "
                 + ".m3-slider:focus-visible .m3-state-layer, .m3-tab:focus-visible .m3-state-layer, "
@@ -98,7 +100,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// Returns selectors for controls that expose pressed state layer feedback.
     private static String pressedStateSelectors() {
         return ".m3-button:pressed .m3-state-layer, .m3-chip:pressed .m3-state-layer, "
-                + ".m3-icon-button:pressed .m3-state-layer, .m3-fab:pressed .m3-state-layer, "
+                + ".m3-icon-button:pressed .m3-state-layer, .m3-icon-toggle-button:pressed .m3-state-layer, "
+                + ".m3-fab:pressed .m3-state-layer, "
                 + ".m3-segmented-button:pressed .m3-state-layer, .m3-checkbox:pressed .m3-state-layer, "
                 + ".m3-radio-button:pressed .m3-state-layer, .m3-switch:pressed .m3-state-layer, "
                 + ".m3-slider:pressed .m3-state-layer, .m3-tab:pressed .m3-state-layer, "
@@ -110,7 +113,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// Returns selectors for controls that expose disabled content opacity.
     private static String disabledStateSelectors() {
         return ".m3-button:disabled, .m3-chip:disabled, .m3-icon-button:disabled, "
-                + ".m3-fab:disabled, .m3-segmented-button:disabled, .m3-text-field:disabled, "
+                + ".m3-fab:disabled, .m3-icon-toggle-button:disabled, "
+                + ".m3-segmented-button:disabled, .m3-text-field:disabled, "
                 + ".m3-password-field:disabled, "
                 + ".m3-slider:disabled, .m3-tab:disabled, .m3-progress-bar:disabled, .m3-progress-indicator:disabled, "
                 + ".m3-navigation-item:disabled, .m3-list-item:disabled, .m3-card:disabled, "

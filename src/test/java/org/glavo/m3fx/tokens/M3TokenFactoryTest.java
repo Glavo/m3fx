@@ -74,6 +74,7 @@ final class M3TokenFactoryTest {
         assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-disabled-content-opacity: 0.42"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:focus-visible .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-tab:focus-visible .m3-state-layer"));
+        assertTrue(stateLayer.toControlStyleRules().contains(".m3-icon-toggle-button:focus-visible .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:pressed .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains("-fx-opacity: 0.13"));
         assertTrue(elevation.toControlStyleRules().contains(".m3-elevated-button:hover"));

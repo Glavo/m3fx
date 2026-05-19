@@ -30,6 +30,8 @@
 .m3-radio-button:hover .m3-state-layer,
 .m3-switch:hover .m3-state-layer,
 .m3-slider:hover .m3-state-layer,
+.m3-tab:hover .m3-state-layer,
+.m3-navigation-item:hover .m3-state-layer,
 .m3-list-item:hover .m3-state-layer,
 .m3-card:hover .m3-state-layer {
     -fx-opacity: 0.08;
@@ -45,6 +47,8 @@
 .m3-radio-button:focus-visible .m3-state-layer,
 .m3-switch:focus-visible .m3-state-layer,
 .m3-slider:focus-visible .m3-state-layer,
+.m3-tab:focus-visible .m3-state-layer,
+.m3-navigation-item:focus-visible .m3-state-layer,
 .m3-list-item:focus-visible .m3-state-layer,
 .m3-card:focus-visible .m3-state-layer {
     -fx-opacity: 0.10;
@@ -60,6 +64,8 @@
 .m3-radio-button:pressed .m3-state-layer,
 .m3-switch:pressed .m3-state-layer,
 .m3-slider:pressed .m3-state-layer,
+.m3-tab:pressed .m3-state-layer,
+.m3-navigation-item:pressed .m3-state-layer,
 .m3-list-item:pressed .m3-state-layer,
 .m3-card:pressed .m3-state-layer {
     -fx-opacity: 0.10;

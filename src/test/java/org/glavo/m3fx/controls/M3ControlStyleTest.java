@@ -6523,6 +6523,109 @@ final class M3ControlStyleTest {
         assertTrue(lookupRegion(item, ".m3-ripple").getOpacity() > 0.0);
     }
 
+    /// Verifies that navigation selection indicators animate both outgoing and incoming selected states.
+    @Test
+    void navigationIndicatorAnimationsRenderIntermediateAndFinalStates() {
+        runOnFxThread(() -> {
+            M3Tab overview = new M3Tab("Overview");
+            M3Tab details = new M3Tab("Details");
+            M3TabBar tabBar = new M3TabBar(overview, details);
+
+            M3NavigationItem home = new M3NavigationItem("Home", new M3Icon("H"));
+            M3NavigationItem search = new M3NavigationItem("Search", new M3Icon("S"));
+            M3NavigationBar navigationBar = new M3NavigationBar(home, search);
+
+            M3NavigationItem railHome = new M3NavigationItem("Home", new M3Icon("H"));
+            M3NavigationItem railSearch = new M3NavigationItem("Search", new M3Icon("S"));
+            M3NavigationRail navigationRail = new M3NavigationRail(railHome, railSearch);
+
+            VBox root = new VBox(18.0, tabBar, navigationBar, navigationRail);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 360.0, 320.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(360.0, 320.0);
+            root.layout();
+
+            tabBar.select(details);
+            navigationBar.select(search);
+            navigationRail.select(railSearch);
+
+            Timeline outgoingTabAnimation = skinTimeline(overview.getSkin(), "indicatorAnimation");
+            Timeline incomingTabAnimation = skinTimeline(details.getSkin(), "indicatorAnimation");
+            Timeline outgoingBarAnimation = skinTimeline(home.getSkin(), "indicatorAnimation");
+            Timeline incomingBarAnimation = skinTimeline(search.getSkin(), "indicatorAnimation");
+            Timeline outgoingRailAnimation = skinTimeline(railHome.getSkin(), "indicatorAnimation");
+            Timeline incomingRailAnimation = skinTimeline(railSearch.getSkin(), "indicatorAnimation");
+            jumpToNavigationIndicatorFrame(
+                    Duration.millis(80.0),
+                    outgoingTabAnimation,
+                    incomingTabAnimation,
+                    outgoingBarAnimation,
+                    incomingBarAnimation,
+                    outgoingRailAnimation,
+                    incomingRailAnimation
+            );
+            root.layout();
+
+            Region outgoingTabIndicator = lookupRegion(overview, ".m3-tab-active-indicator");
+            Region incomingTabIndicator = lookupRegion(details, ".m3-tab-active-indicator");
+            Region outgoingBarIndicator = lookupRegion(home, ".m3-navigation-item-indicator");
+            Region incomingBarIndicator = lookupRegion(search, ".m3-navigation-item-indicator");
+            Region outgoingRailIndicator = lookupRegion(railHome, ".m3-navigation-item-indicator");
+            Region incomingRailIndicator = lookupRegion(railSearch, ".m3-navigation-item-indicator");
+
+            assertBetween(outgoingTabIndicator.getOpacity(), 0.0, 1.0, "outgoing tab indicator opacity");
+            assertBetween(incomingTabIndicator.getOpacity(), 0.0, 1.0, "incoming tab indicator opacity");
+            assertBetween(outgoingBarIndicator.getOpacity(), 0.0, 1.0, "outgoing navigation bar indicator opacity");
+            assertBetween(incomingBarIndicator.getOpacity(), 0.0, 1.0, "incoming navigation bar indicator opacity");
+            assertBetween(outgoingRailIndicator.getOpacity(), 0.0, 1.0, "outgoing navigation rail indicator opacity");
+            assertBetween(incomingRailIndicator.getOpacity(), 0.0, 1.0, "incoming navigation rail indicator opacity");
+            assertBetween(outgoingTabIndicator.getScaleX(), 0.72, 1.0, "outgoing tab indicator scale");
+            assertBetween(incomingTabIndicator.getScaleX(), 0.72, 1.0, "incoming tab indicator scale");
+            assertBetween(outgoingBarIndicator.getScaleX(), 0.72, 1.0, "outgoing navigation bar indicator scale");
+            assertBetween(incomingBarIndicator.getScaleX(), 0.72, 1.0, "incoming navigation bar indicator scale");
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, incomingTabIndicator, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, incomingBarIndicator, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, incomingRailIndicator, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-navigation-indicator-animation-frame.png"
+            ));
+
+            jumpToNavigationIndicatorFrame(
+                    Duration.millis(200.0),
+                    outgoingTabAnimation,
+                    incomingTabAnimation,
+                    outgoingBarAnimation,
+                    incomingBarAnimation,
+                    outgoingRailAnimation,
+                    incomingRailAnimation
+            );
+            root.layout();
+
+            assertEquals(0.0, outgoingTabIndicator.getOpacity(), 0.0001);
+            assertEquals(1.0, incomingTabIndicator.getOpacity(), 0.0001);
+            assertEquals(0.0, outgoingBarIndicator.getOpacity(), 0.0001);
+            assertEquals(1.0, incomingBarIndicator.getOpacity(), 0.0001);
+            assertEquals(0.0, outgoingRailIndicator.getOpacity(), 0.0001);
+            assertEquals(1.0, incomingRailIndicator.getOpacity(), 0.0001);
+            stopTimelines(
+                    outgoingTabAnimation,
+                    incomingTabAnimation,
+                    outgoingBarAnimation,
+                    incomingBarAnimation,
+                    outgoingRailAnimation,
+                    incomingRailAnimation
+            );
+        });
+    }
+
     /// Verifies that generated state layer rules apply beyond button-like controls.
     @Test
     void generatedStateLayerRulesApplyToInteractiveControls() {
@@ -6530,10 +6633,20 @@ final class M3ControlStyleTest {
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
         M3Tab tab = new M3Tab("Overview");
         M3NavigationItem navigationItem = new M3NavigationItem("Home");
+        M3IconToggleButton iconToggleButton = new M3IconToggleButton("T");
         M3ListItem listItem = new M3ListItem("Headline");
         M3Card card = new M3Card();
         M3Card disabledCard = new M3Card();
-        Pane root = new Pane(checkBox, slider, tab, navigationItem, listItem, card, disabledCard);
+        Pane root = new Pane(
+                checkBox,
+                slider,
+                tab,
+                navigationItem,
+                iconToggleButton,
+                listItem,
+                card,
+                disabledCard
+        );
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
@@ -6541,6 +6654,7 @@ final class M3ControlStyleTest {
         slider.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         tab.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         navigationItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+        iconToggleButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         listItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         card.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         disabledCard.setDisable(true);
@@ -6554,6 +6668,8 @@ final class M3ControlStyleTest {
         assertEquals(0.1, lookupRegion(tab, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, navigationItem.getOpacity(), 0.0001);
         assertEquals(0.1, lookupRegion(navigationItem, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(1.0, iconToggleButton.getOpacity(), 0.0001);
+        assertEquals(0.1, lookupRegion(iconToggleButton, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, listItem.getOpacity(), 0.0001);
         assertEquals(0.1, lookupRegion(listItem, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, card.getOpacity(), 0.0001);
@@ -6565,15 +6681,24 @@ final class M3ControlStyleTest {
     @Test
     void baseStylesheetProvidesDefaultStateLayerOpacity() {
         M3Button button = new M3Button("Button");
-        Pane root = new Pane(button);
+        M3Tab tab = new M3Tab("Tab");
+        M3NavigationItem navigationItem = new M3NavigationItem("Home");
+        M3IconToggleButton iconToggleButton = new M3IconToggleButton("T");
+        Pane root = new Pane(button, tab, navigationItem, iconToggleButton);
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         M3ThemeManager.uninstallThemeStylesheet(scene);
         button.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        tab.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
+        navigationItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+        iconToggleButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         root.applyCss();
 
         assertEquals(0.08, lookupRegion(button, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(0.10, lookupRegion(tab, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(0.10, lookupRegion(navigationItem, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(0.08, lookupRegion(iconToggleButton, ".m3-state-layer").getOpacity(), 0.0001);
     }
 
     /// Verifies that state layer feedback changes rendered button pixels.
@@ -8710,6 +8835,20 @@ final class M3ControlStyleTest {
             return assertInstanceOf(Timeline.class, field.get(skin));
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
+        }
+    }
+
+    /// Moves all navigation indicator timelines to the same rendered frame.
+    private static void jumpToNavigationIndicatorFrame(Duration frameTime, Timeline... timelines) {
+        for (Timeline timeline : timelines) {
+            timeline.jumpTo(frameTime);
+        }
+    }
+
+    /// Stops all supplied timelines.
+    private static void stopTimelines(Timeline... timelines) {
+        for (Timeline timeline : timelines) {
+            timeline.stop();
         }
     }
 
