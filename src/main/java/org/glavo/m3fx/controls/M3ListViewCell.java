@@ -10,7 +10,9 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.IndexedCell;
+import javafx.scene.control.Skin;
 import javafx.util.Callback;
+import org.glavo.m3fx.skins.M3ListViewCellSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,6 +102,12 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
             case INDEX -> getIndex();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    /// Creates the default skin that lays out this virtualized cell's rendered list item.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3ListViewCellSkin<>(this);
     }
 
     /// Creates or delegates creation of the visual list item for one data item.

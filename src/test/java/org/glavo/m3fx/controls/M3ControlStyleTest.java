@@ -69,6 +69,7 @@ import org.glavo.m3fx.skins.M3IconToggleButtonGroupSkin;
 import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
+import org.glavo.m3fx.skins.M3ListViewCellSkin;
 import org.glavo.m3fx.skins.M3ListViewSkin;
 import org.glavo.m3fx.skins.M3MenuSkin;
 import org.glavo.m3fx.skins.M3NavigationBarSkin;
@@ -6122,6 +6123,58 @@ final class M3ControlStyleTest {
             } finally {
                 stage.close();
             }
+        });
+    }
+
+    /// Verifies that virtualized list view cells create skins that render row graphics.
+    @Test
+    void listViewCellCreatesMaterialSkin() {
+        M3ListViewCell<String> cell = new M3ListViewCell<>(new M3ListView<>());
+
+        applyCss(cell);
+
+        assertInstanceOf(M3ListViewCellSkin.class, cell.getSkin());
+    }
+
+    /// Verifies that virtualized list view rows are actually visible in rendered snapshots.
+    @Test
+    void listViewSnapshotRendersVisibleRows() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 24; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(320.0, 168.0);
+            listView.setCellFactory(value -> {
+                M3ListItem item = new M3ListItem("Visible row " + value);
+                item.setLeadingIcon(Integer.toString(value % 10));
+                return item;
+            });
+            StackPane root = new StackPane(listView);
+            Scene scene = new Scene(root, 360.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(listView);
+            assertSnapshotAreaContainsContrast(
+                    image,
+                    12,
+                    12,
+                    240,
+                    150,
+                    Color.WHITE,
+                    0.35,
+                    "visible virtualized list rows"
+            );
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-list-view-virtualized.png"
+            ));
         });
     }
 
