@@ -855,6 +855,7 @@ public final class M3FXDemoApp extends Application {
         rangeField.getEndEditor().setVariant(M3TextInputVariant.OUTLINED);
         rangeField.setMinDate(today.minusDays(7));
         rangeField.setMaxDate(today.plusDays(30));
+        rangeField.setCommonPresets(today);
         rangeField.setPrefWidth(680.0);
         rangeField.setMaxWidth(680.0);
 
@@ -1443,6 +1444,7 @@ public final class M3FXDemoApp extends Application {
                 new M3DateRangePickerField(LocalDate.now().plusDays(2), LocalDate.now().plusDays(6));
         availability.setStartLabelText("Start");
         availability.setEndLabelText("End");
+        availability.setCommonPresets(LocalDate.now());
         availability.setPrefWidth(420.0);
         availability.setMaxWidth(420.0);
 

@@ -22,3 +22,30 @@
     -fx-padding: 0;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 12, 0.16, 0, 4);
 }
+
+.m3-date-range-picker-field-preset-content {
+    -fx-alignment: top-left;
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 28px;
+    -fx-padding: 16px;
+    -fx-spacing: 16px;
+}
+
+.m3-date-range-picker-field-preset-content .m3-date-picker-container {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.m3-date-range-picker-field-preset-list {
+    -fx-alignment: top-left;
+    -fx-spacing: 6px;
+    -fx-padding: 4px 0 0 0;
+    -fx-pref-width: 132px;
+}
+
+.m3-date-range-picker-field-preset-button {
+    -m3-horizontal-padding: 12px;
+    -fx-alignment: center-left;
+    -fx-pref-width: 132px;
+    -fx-max-width: 132px;
+}

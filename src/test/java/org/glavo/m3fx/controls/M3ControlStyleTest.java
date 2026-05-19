@@ -8382,6 +8382,78 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that date range field presets render beside the popup picker.
+    @Test
+    void dateRangePickerFieldPresetPopupSnapshotRendersPresetColumn() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DateRangePickerField> fieldReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+                M3DateRangePickerField field = new M3DateRangePickerField(
+                        LocalDate.of(2026, 5, 19),
+                        LocalDate.of(2026, 5, 25)
+                );
+                field.setCommonPresets(LocalDate.of(2026, 5, 19));
+                field.setPrefWidth(680.0);
+
+                Pane root = new Pane(field);
+                Stage stage = new Stage();
+                Scene scene = new Scene(root, 760.0, 180.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
+                root.layout();
+
+                stageReference.set(stage);
+                fieldReference.set(field);
+                field.showPicker();
+            }, () -> {
+                M3DateRangePickerField field = Objects.requireNonNull(fieldReference.get());
+                assertTrue(field.isShowing());
+                Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+                Node popupRoot = assertInstanceOf(Node.class, presetContent.getParent());
+                popupRoot.applyCss();
+                if (popupRoot instanceof Region region) {
+                    region.layout();
+                }
+
+                WritableImage image = snapshotImageOnFxThread(popupRoot);
+                assertEquals(
+                        6,
+                        presetContent.lookupAll("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS).size()
+                );
+                assertSnapshotNodeContainsContrast(
+                        image,
+                        assertInstanceOf(Node.class, presetContent.lookup(
+                                "." + M3DateRangePickerField.PRESET_LIST_STYLE_CLASS
+                        )),
+                        Color.WHITE,
+                        0.04
+                );
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-date-range-field-presets.png"
+                ));
+            });
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3DateRangePickerField field = fieldReference.get();
+                if (field != null) {
+                    field.hidePicker();
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that date pickers expose rendered day cells to accessibility clients.
     @Test
     void datePickerExposesAccessibleDayCellsAndActions() {

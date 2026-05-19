@@ -15,7 +15,11 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -25,7 +29,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
@@ -53,6 +59,15 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// The style class applied to date range picker field popup surfaces.
     public static final String POPUP_STYLE_CLASS = "m3-date-range-picker-field-popup";
+
+    /// The style class applied to popup content when preset actions are visible.
+    public static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-range-picker-field-preset-content";
+
+    /// The style class applied to the popup preset action column.
+    public static final String PRESET_LIST_STYLE_CLASS = "m3-date-range-picker-field-preset-list";
+
+    /// The style class applied to each popup preset action button.
+    public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-range-picker-field-preset-button";
 
     /// The style class applied to the trailing picker open buttons.
     public static final String OPEN_BUTTON_STYLE_CLASS = M3PickerField.OPEN_BUTTON_STYLE_CLASS;
@@ -173,6 +188,18 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The popup date range picker.
     private final M3DateRangePicker picker = new M3DateRangePicker();
 
+    /// The mutable preset list rendered before the popup picker.
+    private final ObservableList<M3DateRangePreset> presets = FXCollections.observableArrayList();
+
+    /// The wrapper used when the popup renders preset actions next to the picker.
+    private final HBox presetContent = new HBox(16.0);
+
+    /// The vertical preset action container.
+    private final VBox presetList = new VBox(6.0);
+
+    /// Rebuilds preset action buttons when the public preset list changes.
+    private final ListChangeListener<M3DateRangePreset> presetsListener = change -> updatePresetContent();
+
     /// The trailing button that opens the popup from the start editor.
     private final M3IconButton startOpenButton = createOpenButton("Open start date range picker");
 
@@ -274,6 +301,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         handleFieldRangeChanged();
     }
 
+    /// Sets both range endpoints from the supplied inclusive range.
+    public void setRange(M3DateRange range) {
+        M3DateRange validatedRange = Objects.requireNonNull(range, "range");
+        setRange(validatedRange.startDate(), validatedRange.endDate());
+    }
+
     /// Clears both selected range endpoints.
     public void clearRange() {
         setRange(null, null);
@@ -282,6 +315,23 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Returns whether both range endpoints are selected.
     public boolean isRangeComplete() {
         return getStartDate() != null && getEndDate() != null;
+    }
+
+    /// Returns the selected range, or `null` when the range is incomplete.
+    public @Nullable M3DateRange getRange() {
+        @Nullable LocalDate start = getStartDate();
+        @Nullable LocalDate end = getEndDate();
+        return start == null || end == null ? null : new M3DateRange(start, end);
+    }
+
+    /// Applies a date range preset, updates the editors, and closes the popup when it is showing.
+    public void applyPreset(M3DateRangePreset preset) {
+        M3DateRange range = Objects.requireNonNull(preset, "preset").range();
+        setRange(range);
+        picker.showMonth(YearMonth.from(range.startDate()));
+        if (popup.isShowing()) {
+            hidePicker(true);
+        }
     }
 
     /// Returns the editable text field shown for the start date.
@@ -307,6 +357,38 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Returns the popup date range picker control.
     public M3DateRangePicker getPicker() {
         return picker;
+    }
+
+    /// Returns the mutable date range preset list rendered in the popup.
+    public ObservableList<M3DateRangePreset> getPresets() {
+        return presets;
+    }
+
+    /// Adds one date range preset to the popup.
+    public void addPreset(M3DateRangePreset preset) {
+        presets.add(Objects.requireNonNull(preset, "preset"));
+    }
+
+    /// Adds date range presets after validating the preset array.
+    public void addPresets(M3DateRangePreset... presets) {
+        validatePresets(presets);
+        this.presets.addAll(presets);
+    }
+
+    /// Replaces all date range presets.
+    public void setPresets(M3DateRangePreset... presets) {
+        validatePresets(presets);
+        this.presets.setAll(presets);
+    }
+
+    /// Replaces all date range presets with the default common range set.
+    public void setCommonPresets(LocalDate anchorDate) {
+        presets.setAll(M3DateRangePresets.common(anchorDate, getFirstDayOfWeek()));
+    }
+
+    /// Removes all date range presets from the popup.
+    public void clearPresets() {
+        presets.clear();
     }
 
     /// Returns the formatter used for editor text.
@@ -620,6 +702,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         popupContent.getStyleClass().add(M3PickerField.POPUP_STYLE_CLASS);
         popupContent.getStyleClass().add(POPUP_STYLE_CLASS);
         popupContent.getChildren().setAll(picker);
+        presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
+        presetContent.setAlignment(Pos.TOP_LEFT);
+        presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
+        presetList.setAlignment(Pos.TOP_LEFT);
         popup.setAutoHide(true);
         popup.getContent().add(popupContent);
         popup.setOnHidden(event -> handlePopupHidden());
@@ -637,6 +723,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         endEditor.textProperty().addListener((observable, oldValue, newValue) -> handleEditorTextChanged());
         picker.startDateProperty().addListener(observable -> schedulePickerRangeSync());
         picker.endDateProperty().addListener(observable -> schedulePickerRangeSync());
+        picker.minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        picker.maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        presets.addListener(presetsListener);
     }
 
     /// Creates one popup open button.
@@ -680,6 +769,43 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             hidePicker(true);
             event.consume();
         }
+    }
+
+    /// Rebuilds popup content from the current preset list.
+    private void updatePresetContent() {
+        popupContent.getChildren().clear();
+        presetContent.getChildren().clear();
+        presetList.getChildren().clear();
+
+        if (presets.isEmpty()) {
+            popupContent.getChildren().setAll(picker);
+            return;
+        }
+
+        for (M3DateRangePreset preset : presets) {
+            presetList.getChildren().add(createPresetButton(preset));
+        }
+        presetContent.getChildren().setAll(presetList, picker);
+        popupContent.getChildren().setAll(presetContent);
+    }
+
+    /// Creates one popup preset action button.
+    private M3Button createPresetButton(M3DateRangePreset preset) {
+        M3Button button = M3Button.withVariant(preset.text(), M3ButtonVariant.TEXT);
+        button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setDisable(isPresetDisabled(preset));
+        button.setOnAction(event -> {
+            applyPreset(preset);
+            event.consume();
+        });
+        return button;
+    }
+
+    /// Returns whether a preset cannot be selected with the current date bounds.
+    private boolean isPresetDisabled(M3DateRangePreset preset) {
+        M3DateRange range = preset.range();
+        return picker.isDateDisabled(range.startDate()) || picker.isDateDisabled(range.endDate());
     }
 
     /// Commits editor text after focus leaves both range editors.
@@ -946,5 +1072,13 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         popupContent.setScaleX(1.0);
         popupContent.setScaleY(1.0);
         popupContent.setTranslateY(0.0);
+    }
+
+    /// Validates a date range preset array.
+    private static void validatePresets(M3DateRangePreset... presets) {
+        Objects.requireNonNull(presets, "presets");
+        for (M3DateRangePreset preset : presets) {
+            Objects.requireNonNull(preset, "preset");
+        }
     }
 }
