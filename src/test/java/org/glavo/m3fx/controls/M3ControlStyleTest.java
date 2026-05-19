@@ -2056,6 +2056,50 @@ final class M3ControlStyleTest {
         assertEquals("Existing help", targetWithHelp.getAccessibleHelp());
     }
 
+    /// Verifies that installed tooltips open from keyboard focus and close from Escape.
+    @Test
+    void tooltipInstalledOnFocusSupportsKeyboardDismissal() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<Label> targetReference = new AtomicReference<>();
+        AtomicReference<M3Tooltip> tooltipReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(40.0),
+                () -> {
+                    Label target = new Label("Target");
+                    target.setFocusTraversable(true);
+                    M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+                    tooltip.setShowDelay(Duration.ZERO);
+                    tooltip.setHideDelay(Duration.ZERO);
+                    tooltip.setShowDuration(Duration.INDEFINITE);
+
+                    Stage stage = new Stage();
+                    stage.setScene(new Scene(new Pane(target), 240.0, 120.0));
+                    stage.show();
+                    target.requestFocus();
+
+                    stageReference.set(stage);
+                    targetReference.set(target);
+                    tooltipReference.set(tooltip);
+                },
+                () -> {
+                    Stage stage = stageReference.get();
+                    Label target = targetReference.get();
+                    M3Tooltip tooltip = tooltipReference.get();
+                    try {
+                        assertTrue(target.isFocused());
+                        assertTrue(tooltip.isShowing());
+
+                        target.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                        assertFalse(tooltip.isShowing());
+                    } finally {
+                        stage.close();
+                    }
+                }
+        );
+    }
+
     /// Verifies that rich tooltips expose graphic-only Material content.
     @Test
     void richTooltipUsesMaterialGraphicContent() {

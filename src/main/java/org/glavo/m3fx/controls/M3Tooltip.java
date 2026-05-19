@@ -19,6 +19,8 @@ import javafx.scene.Node;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.PopupControl;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.skins.M3TooltipSkin;
@@ -475,6 +477,12 @@ public class M3Tooltip extends PopupControl {
         /// Handles pointer presses.
         private final javafx.event.EventHandler<MouseEvent> pressedHandler = this::handlePressed;
 
+        /// Handles keyboard dismissal while the target owns focus.
+        private final javafx.event.EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
+
+        /// Handles focus changes on the target node.
+        private final ChangeListener<Boolean> focusListener = this::handleFocusedChanged;
+
         /// Creates a tooltip installation.
         private TooltipInstallation(Node node, M3Tooltip tooltip) {
             this.node = node;
@@ -489,6 +497,8 @@ public class M3Tooltip extends PopupControl {
             node.addEventHandler(MouseEvent.MOUSE_ENTERED, enteredHandler);
             node.addEventHandler(MouseEvent.MOUSE_EXITED, exitedHandler);
             node.addEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
+            node.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+            node.focusedProperty().addListener(focusListener);
         }
 
         /// Removes event handlers and stops pending timers.
@@ -496,6 +506,8 @@ public class M3Tooltip extends PopupControl {
             node.removeEventHandler(MouseEvent.MOUSE_ENTERED, enteredHandler);
             node.removeEventHandler(MouseEvent.MOUSE_EXITED, exitedHandler);
             node.removeEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
+            node.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+            node.focusedProperty().removeListener(focusListener);
             showTimer.stop();
             hideTimer.stop();
             durationTimer.stop();
@@ -506,13 +518,51 @@ public class M3Tooltip extends PopupControl {
 
         /// Schedules tooltip display after pointer entry.
         private void handleEntered(MouseEvent event) {
-            hideTimer.stop();
-            showTimer.setDuration(tooltip.getShowDelay());
-            showTimer.playFromStart();
+            scheduleShow();
         }
 
         /// Schedules tooltip hiding after pointer exit.
         private void handleExited(MouseEvent event) {
+            scheduleHide();
+        }
+
+        /// Hides the tooltip when the target is pressed.
+        private void handlePressed(MouseEvent event) {
+            hideImmediately();
+        }
+
+        /// Shows or hides the tooltip when keyboard focus enters or leaves the target.
+        private void handleFocusedChanged(
+                ObservableValue<? extends Boolean> observable,
+                Boolean oldValue,
+                Boolean newValue
+        ) {
+            if (newValue) {
+                scheduleShow();
+            } else {
+                scheduleHide();
+            }
+        }
+
+        /// Hides the tooltip from the Escape key.
+        private void handleKeyPressed(KeyEvent event) {
+            if (event.getCode() == KeyCode.ESCAPE && tooltip.isShowing()) {
+                hideImmediately();
+                event.consume();
+            }
+        }
+
+        /// Schedules tooltip display after the configured show delay.
+        private void scheduleShow() {
+            showTimer.stop();
+            hideTimer.stop();
+            durationTimer.stop();
+            showTimer.setDuration(tooltip.getShowDelay());
+            showTimer.playFromStart();
+        }
+
+        /// Schedules tooltip hiding after the configured hide delay.
+        private void scheduleHide() {
             showTimer.stop();
             durationTimer.stop();
             if (tooltip.isShowing()) {
@@ -521,8 +571,8 @@ public class M3Tooltip extends PopupControl {
             }
         }
 
-        /// Hides the tooltip when the target is pressed.
-        private void handlePressed(MouseEvent event) {
+        /// Hides the tooltip immediately and clears pending timers.
+        private void hideImmediately() {
             showTimer.stop();
             hideTimer.stop();
             durationTimer.stop();
