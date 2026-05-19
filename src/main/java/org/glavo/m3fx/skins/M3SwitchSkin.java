@@ -65,8 +65,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         box.getStyleClass().addAll("box", "m3-switch-track");
         thumb.getStyleClass().addAll("thumb", "m3-switch-thumb");
         thumb.setManaged(false);
-        box.getChildren().add(thumb);
-        indicatorSlot().getChildren().add(box);
+        indicatorSlot().getChildren().addAll(box, thumb);
         thumbPosition.set(control.isSelected() ? 1.0 : 0.0);
         thumbPosition.addListener(thumbPositionListener);
 
@@ -124,7 +123,8 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         double thumbHeight = thumb.prefHeight(-1.0);
         double thumbCenterX = OFF_THUMB_CENTER_X + (ON_THUMB_CENTER_X - OFF_THUMB_CENTER_X) * thumbPosition.get();
         double thumbX = thumbCenterX - thumbWidth / 2.0;
-        double thumbY = (TRACK_HEIGHT - thumbHeight) / 2.0;
+        double touchTargetHeight = Math.max(getSkinnable().getTouchTargetSize(), TRACK_HEIGHT);
+        double thumbY = (touchTargetHeight - thumbHeight) / 2.0;
         thumb.resizeRelocate(thumbX, thumbY, thumbWidth, thumbHeight);
     }
 

@@ -184,12 +184,9 @@
     -fx-max-height: 24px;
 }
 
-.m3-radio-button:disabled,
-.m3-switch:disabled {
-    -fx-opacity: 0.38;
-}
-
-.m3-checkbox:disabled .m3-selection-label {
+.m3-checkbox:disabled .m3-selection-label,
+.m3-radio-button:disabled .m3-selection-label,
+.m3-switch:disabled .m3-selection-label {
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
@@ -228,4 +225,54 @@
 .m3-checkbox:indeterminate:disabled:armed .mark,
 .m3-checkbox:indeterminate:disabled:pressed .mark {
     -fx-background-color: -m3-color-surface;
+}
+
+.m3-radio-button:disabled .radio,
+.m3-radio-button:disabled:hover .radio,
+.m3-radio-button:disabled:focused .radio,
+.m3-radio-button:disabled:armed .radio,
+.m3-radio-button:disabled:pressed .radio {
+    -fx-border-color: -m3-color-on-surface;
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-radio-button:selected:disabled .radio .dot,
+.m3-radio-button:selected:disabled:hover .radio .dot,
+.m3-radio-button:selected:disabled:focused .radio .dot,
+.m3-radio-button:selected:disabled:armed .radio .dot,
+.m3-radio-button:selected:disabled:pressed .radio .dot {
+    -fx-background-color: -m3-color-on-surface;
+}
+
+.m3-switch:disabled .box,
+.m3-switch:disabled:hover .box,
+.m3-switch:disabled:focused .box,
+.m3-switch:disabled:armed .box,
+.m3-switch:disabled:pressed .box {
+    -fx-background-color: -m3-color-on-surface;
+    -fx-border-color: -m3-color-on-surface;
+    -fx-opacity: -m3-state-disabled-container-opacity;
+}
+
+.m3-switch:selected:disabled .box,
+.m3-switch:selected:disabled:hover .box,
+.m3-switch:selected:disabled:focused .box,
+.m3-switch:selected:disabled:armed .box,
+.m3-switch:selected:disabled:pressed .box {
+    -fx-background-color: -m3-color-on-surface;
+    -fx-border-color: -m3-color-on-surface;
+}
+
+.m3-switch:disabled .thumb,
+.m3-switch:disabled:hover .thumb,
+.m3-switch:disabled:focused .thumb,
+.m3-switch:disabled:armed .thumb,
+.m3-switch:disabled:pressed .thumb,
+.m3-switch:selected:disabled .thumb,
+.m3-switch:selected:disabled:hover .thumb,
+.m3-switch:selected:disabled:focused .thumb,
+.m3-switch:selected:disabled:armed .thumb,
+.m3-switch:selected:disabled:pressed .thumb {
+    -fx-background-color: -m3-color-on-surface;
+    -fx-opacity: -m3-state-disabled-content-opacity;
 }
