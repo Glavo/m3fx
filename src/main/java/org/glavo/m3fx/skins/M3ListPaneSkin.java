@@ -7,20 +7,20 @@ import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.VBox;
-import org.glavo.m3fx.controls.M3List;
+import org.glavo.m3fx.controls.M3ListPane;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// The default skin for [M3List].
+/// The default non-virtualized skin for [M3ListPane].
 @NotNullByDefault
-public final class M3ListSkin extends SkinBase<M3List> {
+public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
     /// The internal vertical item container.
     private final VBox container = new VBox();
 
     /// Mirrors public list item changes into the skin container.
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
 
-    /// Creates a list skin.
-    public M3ListSkin(M3List control) {
+    /// Creates a static list pane skin.
+    public M3ListPaneSkin(M3ListPane control) {
         super(control);
         container.setManaged(false);
         getChildren().add(container);

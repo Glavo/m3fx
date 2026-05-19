@@ -5,7 +5,7 @@ package org.glavo.m3fx.controls;
 
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Defines how an [M3List] manages selected list items.
+/// Defines how [M3ListPane] and [M3ListView] manage selected list items.
 @NotNullByDefault
 public enum M3ListSelectionMode {
     /// Does not change item selection in response to list item actions.

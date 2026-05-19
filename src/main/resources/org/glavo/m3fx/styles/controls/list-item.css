@@ -1,5 +1,11 @@
-.m3-list {
+.m3-list-pane,
+.m3-list-view {
     -fx-background-color: transparent;
+}
+
+.m3-list-view-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0px;
 }
 
 .m3-list-section-header {

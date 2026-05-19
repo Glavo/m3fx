@@ -59,7 +59,8 @@ import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3IconSkin;
 import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
-import org.glavo.m3fx.skins.M3ListSkin;
+import org.glavo.m3fx.skins.M3ListPaneSkin;
+import org.glavo.m3fx.skins.M3ListViewSkin;
 import org.glavo.m3fx.skins.M3NavigationItemSkin;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
@@ -5429,7 +5430,7 @@ final class M3ControlStyleTest {
             wideThumbnailItem.setLeadingWideThumbnail(visualListMedia("W"));
             wideThumbnailItem.setTrailingIcon(">");
 
-            M3List list = new M3List(
+            M3ListPane list = new M3ListPane(
                     new M3ListSectionHeader("Media"),
                     iconItem,
                     avatarItem,
@@ -5537,11 +5538,11 @@ final class M3ControlStyleTest {
         M3ListItem first = new M3ListItem("First");
         M3ListItem second = new M3ListItem("Second");
         M3ListItem third = new M3ListItem("Third");
-        M3List list = new M3List(first, new M3Divider(), second, third);
+        M3ListPane list = new M3ListPane(first, new M3Divider(), second, third);
 
         applyCss(list);
 
-        assertInstanceOf(M3ListSkin.class, list.getSkin());
+        assertInstanceOf(M3ListPaneSkin.class, list.getSkin());
         assertEquals(M3ListSelectionMode.NONE, list.getSelectionMode());
         first.fire();
 
@@ -5601,7 +5602,7 @@ final class M3ControlStyleTest {
         M3ListSectionHeader secondaryHeader = new M3ListSectionHeader("Secondary");
         M3ListItem first = new M3ListItem("First");
         M3ListItem second = new M3ListItem("Second");
-        M3List list = new M3List(primaryHeader, first, new M3Divider(), secondaryHeader, second);
+        M3ListPane list = new M3ListPane(primaryHeader, first, new M3Divider(), secondaryHeader, second);
 
         list.setSelectionMode(M3ListSelectionMode.SINGLE);
         list.selectFirst();
@@ -5642,7 +5643,7 @@ final class M3ControlStyleTest {
         M3ListItem first = new M3ListItem("First");
         M3ListItem second = new M3ListItem("Second");
         M3ListItem third = new M3ListItem("Third");
-        M3List list = new M3List(first, second, third);
+        M3ListPane list = new M3ListPane(first, second, third);
 
         list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
         first.fire();
@@ -5672,7 +5673,7 @@ final class M3ControlStyleTest {
         M3ListItem first = new M3ListItem("First");
         M3ListItem second = new M3ListItem("Second");
         M3ListItem third = new M3ListItem("Third");
-        M3List list = new M3List(first, second, third);
+        M3ListPane list = new M3ListPane(first, second, third);
 
         list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
         first.setSelected(true);
@@ -5686,6 +5687,98 @@ final class M3ControlStyleTest {
         assertFalse(third.isSelected());
         assertEquals(first, list.getSelectedItem());
         assertEquals(java.util.List.of(first), list.getSelectedItems());
+    }
+
+    /// Verifies that virtualized list views expose data selection policies.
+    @Test
+    void listViewManagesDataSelectionPolicies() {
+        M3ListView<String> listView = new M3ListView<>("First", "Second", "Third");
+        listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+
+        listView.selectIndex(1);
+
+        assertEquals(1, listView.getSelectedIndex());
+        assertEquals("Second", listView.getSelectedItem());
+        assertEquals(java.util.List.of(1), listView.getSelectedIndices());
+        assertEquals(java.util.List.of("Second"), listView.getSelectedItems());
+        assertThrows(UnsupportedOperationException.class, () -> listView.getSelectedIndices().add(2));
+
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        listView.setIndexSelected(2, true);
+
+        assertEquals(java.util.List.of(1, 2), listView.getSelectedIndices());
+        assertEquals(java.util.List.of("Second", "Third"), listView.getSelectedItems());
+
+        listView.clearSelection(1);
+
+        assertEquals(java.util.List.of(2), listView.getSelectedIndices());
+        assertEquals("Third", listView.getSelectedItem());
+
+        listView.setAllowEmptySelection(false);
+        listView.clearSelection();
+
+        assertEquals(java.util.List.of(2), listView.getSelectedIndices());
+        assertEquals("Third", listView.getSelectedItem());
+
+        listView.getItems().remove("Third");
+
+        assertEquals(java.util.List.of(0), listView.getSelectedIndices());
+        assertEquals("First", listView.getSelectedItem());
+    }
+
+    /// Verifies that virtualized list views use VirtualFlow-backed cells instead of materializing every item.
+    @Test
+    void listViewVirtualizesRenderedItems() {
+        runOnFxThread(() -> {
+            AtomicInteger factoryCalls = new AtomicInteger();
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            listView.setCellFactory(value -> {
+                factoryCalls.incrementAndGet();
+                M3ListItem item = new M3ListItem("Row " + value);
+                item.setLeadingIcon(Integer.toString(value % 10));
+                return item;
+            });
+            listView.setPrefSize(260.0, 168.0);
+            Pane root = new Pane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
+                assertTrue(factoryCalls.get() < listView.getItems().size());
+                M3ListItem visibleSecond = assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1)
+                );
+                visibleSecond.fire();
+
+                assertEquals(1, listView.getSelectedIndex());
+                assertTrue(visibleSecond.isSelected());
+
+                listView.scrollTo(80);
+                root.layout();
+
+                M3ListItem visibleEightieth = assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 80)
+                );
+                assertEquals("Row 80", visibleEightieth.getHeadlineText());
+                assertTrue(factoryCalls.get() < listView.getItems().size());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that list item skins expose bounded ripple feedback.
@@ -5753,7 +5846,7 @@ final class M3ControlStyleTest {
         runOnFxThread(() -> {
             M3ListItem listFirst = new M3ListItem("Inbox");
             M3ListItem listSecond = new M3ListItem("Archive");
-            M3List list = new M3List(listFirst, listSecond);
+            M3ListPane list = new M3ListPane(listFirst, listSecond);
             list.setSelectionMode(M3ListSelectionMode.SINGLE);
             list.select(listFirst);
             list.setPrefWidth(280.0);
@@ -6315,7 +6408,7 @@ final class M3ControlStyleTest {
         M3ListItem listFirst = new M3ListItem("One");
         M3ListItem listSecond = new M3ListItem("Two");
         listFirst.setDisable(true);
-        M3List list = new M3List(listFirst, listSecond);
+        M3ListPane list = new M3ListPane(listFirst, listSecond);
         list.setSelectionMode(M3ListSelectionMode.SINGLE);
 
         list.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
@@ -6330,7 +6423,7 @@ final class M3ControlStyleTest {
         menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
         assertEquals(menuSecond, menu.getSelectedItem());
 
-        M3List listWithoutSelection = new M3List(new M3ListItem("Action"));
+        M3ListPane listWithoutSelection = new M3ListPane(new M3ListItem("Action"));
         KeyEvent listFocusEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
         assertTrue(M3SelectionNavigation.handleKeyFocus(
                 listFocusEvent,
@@ -6402,7 +6495,7 @@ final class M3ControlStyleTest {
 
         M3ListItem listFirst = new M3ListItem("One");
         M3ListItem listSecond = new M3ListItem("Two");
-        M3List list = new M3List(listFirst, listSecond);
+        M3ListPane list = new M3ListPane(listFirst, listSecond);
         list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
         listFirst.setSelected(true);
         KeyEvent listEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
@@ -7394,7 +7487,7 @@ final class M3ControlStyleTest {
             listItem.setSupportingText("Latest updates");
             listItem.setSelected(true);
             M3ListSectionHeader listHeader = new M3ListSectionHeader("Recent");
-            M3List list = new M3List(listHeader, listItem, new M3Divider(), new M3ListItem("Archive"));
+            M3ListPane list = new M3ListPane(listHeader, listItem, new M3Divider(), new M3ListItem("Archive"));
             list.setPrefWidth(280.0);
             M3Card card = new M3Card(new Label("Elevated card"));
             card.setVariant(M3CardVariant.ELEVATED);
@@ -7765,7 +7858,7 @@ final class M3ControlStyleTest {
             selectedListItem.setSupportingText("Supporting text");
             selectedListItem.setTrailingSupportingText("Now");
             selectedListItem.setSelected(true);
-            M3List list = new M3List(
+            M3ListPane list = new M3ListPane(
                     new M3ListSectionHeader("Inbox"),
                     selectedListItem,
                     new M3Divider(),
@@ -8297,7 +8390,9 @@ final class M3ControlStyleTest {
         assertTrue(new M3Divider().getStyleClass().contains(M3Divider.STYLE_CLASS));
         assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
         assertTrue(new M3NavigationItem("Home").getStyleClass().contains(M3NavigationItem.STYLE_CLASS));
-        assertTrue(new M3List().getStyleClass().contains(M3List.STYLE_CLASS));
+        assertTrue(new M3ListPane().getStyleClass().contains(M3ListPane.STYLE_CLASS));
+        assertTrue(new M3ListView<>().getStyleClass().contains(M3ListView.STYLE_CLASS));
+        assertTrue(new M3ListViewCell<>(new M3ListView<>()).getStyleClass().contains(M3ListViewCell.STYLE_CLASS));
         assertTrue(new M3ListItem("Item").getStyleClass().contains(M3ListItem.STYLE_CLASS));
         assertTrue(new M3ListSectionHeader("Section").getStyleClass().contains(M3ListSectionHeader.STYLE_CLASS));
     }
@@ -8326,7 +8421,8 @@ final class M3ControlStyleTest {
         assertFalse(StackPane.class.isAssignableFrom(M3Surface.class));
         assertFalse(StackPane.class.isAssignableFrom(M3SnackbarHost.class));
         assertFalse(ScrollPane.class.isAssignableFrom(M3Carousel.class));
-        assertFalse(VBox.class.isAssignableFrom(M3List.class));
+        assertFalse(VBox.class.isAssignableFrom(M3ListPane.class));
+        assertFalse(javafx.scene.control.ListView.class.isAssignableFrom(M3ListView.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
@@ -8374,7 +8470,7 @@ final class M3ControlStyleTest {
         listItem.setSelected(true);
         AtomicInteger listActions = new AtomicInteger();
         listItem.setOnAction(event -> listActions.incrementAndGet());
-        M3List list = new M3List(new M3Divider(), listItem);
+        M3ListPane list = new M3ListPane(new M3Divider(), listItem);
 
         applyCss(list);
 
@@ -8406,7 +8502,7 @@ final class M3ControlStyleTest {
     void selectionContainersExposeAccessibleCollections() {
         M3ListItem listFirst = new M3ListItem("One");
         M3ListItem listSecond = new M3ListItem("Two");
-        M3List list = new M3List(listFirst, new M3Divider(), listSecond);
+        M3ListPane list = new M3ListPane(listFirst, new M3Divider(), listSecond);
         list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
         listFirst.setSelected(true);
         listSecond.setSelected(true);
@@ -8494,7 +8590,7 @@ final class M3ControlStyleTest {
     void selectionContainersApplyAccessibleSelectionActions() {
         M3ListItem listFirst = new M3ListItem("One");
         M3ListItem listSecond = new M3ListItem("Two");
-        M3List list = new M3List(listFirst, listSecond);
+        M3ListPane list = new M3ListPane(listFirst, listSecond);
         list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
 
         list.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, java.util.List.of(listSecond));
@@ -8749,7 +8845,9 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.TEXT, new M3MenuSectionHeader().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3SearchBar().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3SearchView().getAccessibleRole());
-        assertEquals(AccessibleRole.LIST_VIEW, new M3List().getAccessibleRole());
+        assertEquals(AccessibleRole.LIST_VIEW, new M3ListPane().getAccessibleRole());
+        assertEquals(AccessibleRole.LIST_VIEW, new M3ListView<>().getAccessibleRole());
+        assertEquals(AccessibleRole.LIST_ITEM, new M3ListViewCell<>(new M3ListView<>()).getAccessibleRole());
         assertEquals(AccessibleRole.LIST_ITEM, new M3ListItem().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3ListSectionHeader().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3ChipGroup().getAccessibleRole());
@@ -8819,7 +8917,8 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3NavigationRail(), "/styles/controls/navigation-rail.css");
         assertUserAgentStylesheet(new M3NavigationDrawer(), "/styles/controls/navigation-drawer.css");
         assertUserAgentStylesheet(new M3NavigationItem(), "/styles/controls/navigation-bar.css");
-        assertUserAgentStylesheet(new M3List(), "/styles/controls/list-item.css");
+        assertUserAgentStylesheet(new M3ListPane(), "/styles/controls/list-item.css");
+        assertUserAgentStylesheet(new M3ListView<>(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3ListItem(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3ListSectionHeader(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");

@@ -63,11 +63,12 @@ import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
 import org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode;
 import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
 import org.glavo.m3fx.controls.M3IconVariant;
-import org.glavo.m3fx.controls.M3List;
+import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListSelectionMode;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
+import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
@@ -1077,10 +1078,10 @@ public final class M3FXDemoApp extends Application {
         selected.setLeadingIcon("S");
         selected.setTrailingSupportingText("Now");
 
-        M3List list = new M3List();
-        list.getStyleClass().add("demo-list");
-        list.setSelectionMode(M3ListSelectionMode.SINGLE);
-        list.getItems().addAll(
+        M3ListPane listPane = new M3ListPane();
+        listPane.getStyleClass().add("demo-list");
+        listPane.setSelectionMode(M3ListSelectionMode.SINGLE);
+        listPane.getItems().addAll(
                 new M3ListSectionHeader("Recent"),
                 oneLine,
                 new M3Divider(),
@@ -1095,9 +1096,27 @@ public final class M3FXDemoApp extends Application {
                 new M3ListSectionHeader("Pinned"),
                 selected
         );
-        list.select(selected);
+        listPane.select(selected);
 
-        return createGallery(createShowcaseGroup("Rows", list));
+        M3ListView<String> listView = new M3ListView<>();
+        for (int i = 1; i <= 100; i++) {
+            listView.addItem("Virtualized row " + i);
+        }
+        listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+        listView.setFixedCellSize(56.0);
+        listView.setPrefSize(360.0, 280.0);
+        listView.setCellFactory(text -> {
+            M3ListItem item = new M3ListItem(text);
+            item.setLeadingIcon("#");
+            item.setTrailingSupportingText(Integer.toString(text.length()));
+            return item;
+        });
+        listView.selectIndex(0);
+
+        return createGallery(
+                createShowcaseGroup("Static Pane", listPane),
+                createShowcaseGroup("Virtualized View", listView)
+        );
     }
 
     /// Creates a sample thumbnail used by list item media rows.

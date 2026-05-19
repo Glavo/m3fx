@@ -23,7 +23,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.skins.M3ListSkin;
+import org.glavo.m3fx.skins.M3ListPaneSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -33,11 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/// A Material Design 3 list container.
+/// A Material Design 3 static list container for a small number of already-created nodes.
 @NotNullByDefault
-public class M3List extends Control {
-    /// The base style class for M3FX lists.
-    public static final String STYLE_CLASS = "m3-list";
+public class M3ListPane extends Control {
+    /// The base style class for M3FX static list panes.
+    public static final String STYLE_CLASS = "m3-list-pane";
 
     /// The mutable list content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
@@ -108,12 +108,12 @@ public class M3List extends Control {
     private boolean updatingSelection;
 
     /// Creates an empty list.
-    public M3List() {
+    public M3ListPane() {
         initialize();
     }
 
     /// Creates a list containing the supplied nodes.
-    public M3List(Node... items) {
+    public M3ListPane(Node... items) {
         initialize();
         addItems(items);
     }
@@ -493,7 +493,7 @@ public class M3List extends Control {
     /// Creates the default Material Design 3 list skin.
     @Override
     protected Skin<?> createDefaultSkin() {
-        return new M3ListSkin(this);
+        return new M3ListPaneSkin(this);
     }
 
     /// Validates a list item array.
