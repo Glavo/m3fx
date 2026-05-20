@@ -5,6 +5,8 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ChangeListener;
@@ -44,8 +46,18 @@ public final class M3FormValidator {
     /// Whether all registered input layouts are valid.
     private final ReadOnlyBooleanWrapper valid = new ReadOnlyBooleanWrapper(this, "valid", true);
 
+    /// Whether at least one registered input layout has active validation.
+    private final ReadOnlyBooleanWrapper validationActive = new ReadOnlyBooleanWrapper(this, "validationActive");
+
+    /// The number of currently invalid input layouts.
+    private final ReadOnlyIntegerWrapper invalidInputCount = new ReadOnlyIntegerWrapper(this, "invalidInputCount");
+
     /// Updates group state when one registered layout changes its validator-produced error text.
     private final ChangeListener<String> validationErrorTextListener =
+            (observable, oldValue, newValue) -> refreshInvalidInputs();
+
+    /// Updates group state when one registered layout activates or clears validation.
+    private final ChangeListener<Boolean> validationActiveListener =
             (observable, oldValue, newValue) -> refreshInvalidInputs();
 
     /// Creates an empty form validator.
@@ -136,6 +148,26 @@ public final class M3FormValidator {
         return valid.getReadOnlyProperty();
     }
 
+    /// Returns whether at least one registered input layout has active validation.
+    public boolean isValidationActive() {
+        return validationActive.get();
+    }
+
+    /// Returns the group validation-active state property.
+    public ReadOnlyBooleanProperty validationActiveProperty() {
+        return validationActive.getReadOnlyProperty();
+    }
+
+    /// Returns the number of currently invalid input layouts.
+    public int getInvalidInputCount() {
+        return invalidInputCount.get();
+    }
+
+    /// Returns the invalid input count property.
+    public ReadOnlyIntegerProperty invalidInputCountProperty() {
+        return invalidInputCount.getReadOnlyProperty();
+    }
+
     /// Runs validation on all registered input layouts and returns whether all are valid.
     public boolean validate() {
         boolean valid = true;
@@ -146,11 +178,24 @@ public final class M3FormValidator {
         return valid;
     }
 
+    /// Runs validation on one registered input layout and returns whether it is valid.
+    public boolean validateInput(M3TextInputLayout input) {
+        boolean valid = registeredInput(input).validate();
+        refreshInvalidInputs();
+        return valid;
+    }
+
     /// Clears validator-produced error state on all registered input layouts.
     public void clearValidation() {
         for (M3TextInputLayout input : inputs) {
             input.clearValidation();
         }
+        refreshInvalidInputs();
+    }
+
+    /// Clears validator-produced error state on one registered input layout.
+    public void clearValidation(M3TextInputLayout input) {
+        registeredInput(input).clearValidation();
         refreshInvalidInputs();
     }
 
@@ -189,6 +234,7 @@ public final class M3FormValidator {
     /// Installs validation listeners on one input layout.
     private void installInput(M3TextInputLayout input) {
         input.validationErrorTextProperty().addListener(validationErrorTextListener);
+        input.validationActiveProperty().addListener(validationActiveListener);
     }
 
     /// Removes validation listeners from a group of input layouts.
@@ -201,12 +247,15 @@ public final class M3FormValidator {
     /// Removes validation listeners from one input layout.
     private void uninstallInput(M3TextInputLayout input) {
         input.validationErrorTextProperty().removeListener(validationErrorTextListener);
+        input.validationActiveProperty().removeListener(validationActiveListener);
     }
 
     /// Rebuilds the invalid input list and read-only state properties.
     private void refreshInvalidInputs() {
         ArrayList<M3TextInputLayout> invalidInputs = new ArrayList<>();
+        boolean validationActive = false;
         for (M3TextInputLayout input : inputs) {
+            validationActive |= input.isValidationActive();
             if (input.isValidationError()) {
                 invalidInputs.add(input);
             }
@@ -214,7 +263,18 @@ public final class M3FormValidator {
 
         this.invalidInputs.setAll(invalidInputs);
         firstInvalidInput.set(invalidInputs.isEmpty() ? null : invalidInputs.get(0));
+        this.validationActive.set(validationActive);
+        invalidInputCount.set(invalidInputs.size());
         valid.set(invalidInputs.isEmpty());
+    }
+
+    /// Returns a registered input layout or throws when the input is not managed by this validator.
+    private M3TextInputLayout registeredInput(M3TextInputLayout input) {
+        M3TextInputLayout validatedInput = Objects.requireNonNull(input, "input");
+        if (!inputs.contains(validatedInput)) {
+            throw new IllegalArgumentException("input is not registered");
+        }
+        return validatedInput;
     }
 
     /// Returns a validated copy of input layout varargs.

@@ -177,16 +177,30 @@ final class M3FormControlsTest {
             M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
 
             assertEquals(List.of(nameLayout, emailLayout), validator.getInputs());
+            assertTrue(validator.isValid());
+            assertTrue(validator.validProperty().get());
+            assertFalse(validator.isValidationActive());
+            assertFalse(validator.validationActiveProperty().get());
+            assertEquals(0, validator.getInvalidInputCount());
+            assertEquals(0, validator.invalidInputCountProperty().get());
             assertFalse(validator.validate());
             assertFalse(validator.isValid());
+            assertFalse(validator.validProperty().get());
+            assertTrue(validator.isValidationActive());
+            assertTrue(validator.validationActiveProperty().get());
+            assertEquals(1, validator.getInvalidInputCount());
+            assertEquals(1, validator.invalidInputCountProperty().get());
             assertEquals(List.of(nameLayout), validator.getInvalidInputs());
             assertSame(nameLayout, validator.getFirstInvalidInput());
+            assertSame(nameLayout, validator.firstInvalidInputProperty().get());
             assertTrue(validator.focusFirstInvalidInput());
 
             nameField.setText("M3FX Project");
 
             assertTrue(validator.validateAndFocusFirstInvalidInput());
             assertTrue(validator.isValid());
+            assertTrue(validator.isValidationActive());
+            assertEquals(0, validator.getInvalidInputCount());
             assertTrue(validator.getInvalidInputs().isEmpty());
             assertNull(validator.getFirstInvalidInput());
         });
@@ -202,15 +216,59 @@ final class M3FormControlsTest {
             M3FormValidator validator = new M3FormValidator(layout);
 
             assertTrue(validator.isValid());
+            assertFalse(validator.isValidationActive());
 
             assertFalse(layout.validate());
             assertFalse(validator.isValid());
+            assertTrue(validator.isValidationActive());
+            assertEquals(1, validator.getInvalidInputCount());
             assertEquals(List.of(layout), validator.getInvalidInputs());
 
             layout.clearValidation();
 
             assertTrue(validator.isValid());
+            assertFalse(validator.isValidationActive());
+            assertEquals(0, validator.getInvalidInputCount());
             assertTrue(validator.getInvalidInputs().isEmpty());
+        });
+    }
+
+    /// Verifies that form validators can validate and clear one registered input.
+    @Test
+    void formValidatorSupportsSingleInputValidationWorkflow() {
+        runOnFxThread(() -> {
+            M3TextField nameField = new M3TextField();
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
+            nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
+
+            M3TextField emailField = new M3TextField("support");
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Format");
+            emailLayout.setValidator(M3TextInputValidators.pattern(
+                    Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
+                    "Enter a valid email address"
+            ));
+
+            M3TextInputLayout unregisteredLayout = new M3TextInputLayout(new M3TextField());
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+
+            assertFalse(validator.validateInput(emailLayout));
+
+            assertTrue(validator.isValidationActive());
+            assertFalse(nameLayout.isValidationActive());
+            assertTrue(emailLayout.isValidationActive());
+            assertEquals(List.of(emailLayout), validator.getInvalidInputs());
+            assertEquals(1, validator.getInvalidInputCount());
+            assertSame(emailLayout, validator.getFirstInvalidInput());
+
+            validator.clearValidation(emailLayout);
+
+            assertFalse(validator.isValidationActive());
+            assertTrue(validator.isValid());
+            assertEquals(0, validator.getInvalidInputCount());
+            assertTrue(validator.getInvalidInputs().isEmpty());
+
+            assertThrows(IllegalArgumentException.class, () -> validator.validateInput(unregisteredLayout));
+            assertThrows(IllegalArgumentException.class, () -> validator.clearValidation(unregisteredLayout));
         });
     }
 
@@ -226,6 +284,10 @@ final class M3FormControlsTest {
             assertThrows(IllegalArgumentException.class, () -> validator.addInputs(second, second));
             assertTrue(validator.removeInput(first));
             assertFalse(validator.removeInput(first));
+            assertTrue(validator.getInputs().isEmpty());
+            validator.addInputs(first, second);
+            assertEquals(List.of(first, second), validator.getInputs());
+            validator.clearInputs();
             assertTrue(validator.getInputs().isEmpty());
             assertFalse(validator.focusFirstInvalidInput());
         });

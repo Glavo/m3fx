@@ -1488,15 +1488,20 @@ public final class M3FXDemoApp extends Application {
         M3Button validateButton = createButton("Validate form", M3ButtonVariant.FILLED);
         validateButton.setOnAction(event -> {
             if (validator.validateAndFocusFirstInvalidInput()) {
+                validationSummary.setShowWhenValid(true);
                 showSnackbar("Form is valid");
             } else {
-                showSnackbar("Fix highlighted fields");
+                validationSummary.setShowWhenValid(false);
+                int invalidCount = validator.getInvalidInputCount();
+                showSnackbar(invalidCount == 1 ? "Fix 1 field" : "Fix " + invalidCount + " fields");
             }
         });
 
         M3Button clearValidationButton = createButton("Clear validation", M3ButtonVariant.OUTLINED);
+        clearValidationButton.disableProperty().bind(validator.validationActiveProperty().not());
         clearValidationButton.setOnAction(event -> {
             validator.clearValidation();
+            validationSummary.setShowWhenValid(false);
             showSnackbar("Validation cleared");
         });
 

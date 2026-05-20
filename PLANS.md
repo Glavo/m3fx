@@ -51,7 +51,7 @@
 
 - Typography and icon primitives: `M3Text`, `M3Icon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
 - Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, floating action buttons, extended floating action buttons, and floating action button menus.
-- Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, animated text input layouts with floating labels, reusable validators, multi-validator pipelines, group-level form validation coordination, validation summaries, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, optional hard character limits, and form pane, section, and row helpers for structured input layouts.
+- Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, animated text input layouts with floating labels, reusable validators, multi-validator pipelines, group-level form validation coordination, validation summaries, observable validation-active and invalid-count state, per-field validation actions, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, optional hard character limits, and form pane, section, and row helpers for structured input layouts.
 - Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
 - Checkbox, radio button, and switch disabled visuals use part-level state token opacity so selected indicators remain legible.
 - Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, inclusive min/max date range support, reusable labeled date presets, and field/dialog preset actions; date range picker with start/end selection, in-range styling, normalized range endpoint selection, inclusive min/max date bounds, reusable labeled range presets, and field/dialog preset actions; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, inclusive min/max time range support, reusable labeled time presets, and field/dialog preset actions; date, date-range, and time picker fields with editable text, popup picker selection, formatter-based parsing, range validation, and shared popup motion; date, date-range, and time picker dialogs with Material dialog panes and accepted-result conversion.
@@ -81,7 +81,7 @@
 
 - Expand Material motion coverage so hover, press, release, selection, shape, indicator, and elevation transitions consistently use tokenized timing and easing.
 - Broaden visual checks beyond static contrast and color variety toward geometry, clipping, alignment, and animation-state assertions.
-- Continue filling component gaps such as advanced validation workflows and additional picker affordances.
+- Continue filling component gaps such as additional picker affordances and richer composite-control workflows.
 - Tighten accessibility behavior for composite controls, especially indexed children, role choice, and keyboard navigation parity across complex popups.
 - Add more focused demo pages for complex components whose behavior is hard to inspect in a single static gallery.
 - Document runtime packaging choices for applications that want regular jars, demo shadow jars, or jlink images.
