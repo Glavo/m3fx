@@ -93,6 +93,7 @@ public class M3FabMenu extends Control {
         }
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     };
 
     /// Creates a floating action button menu with a default toggle button.
@@ -198,6 +199,7 @@ public class M3FabMenu extends Control {
             case EXPANDED -> isExpanded();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
+            case FOCUS_NODE -> accessibleFocusNode();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -214,6 +216,7 @@ public class M3FabMenu extends Control {
                 M3Accessible.showItem(getItems(), parameters);
             }
             case COLLAPSE -> hide();
+            case REQUEST_FOCUS -> M3Accessible.showItem(accessibleFocusNode());
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -308,6 +311,18 @@ public class M3FabMenu extends Control {
             playCollapseAnimation();
         }
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+    }
+
+    /// Returns the current focusable menu target for accessibility clients.
+    private @Nullable Node accessibleFocusNode() {
+        List<Node> targets = focusTargets();
+        if (targets.isEmpty()) {
+            return null;
+        }
+
+        int currentIndex = focusedTargetIndex(targets);
+        return M3Accessible.focusTarget(targets.get(currentIndex));
     }
 
     /// Plays the action item expand animation.

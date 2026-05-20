@@ -229,6 +229,7 @@ public class M3Surface extends Control {
             case CONTENTS -> accessibleContents();
             case ITEM_COUNT -> getContent().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), parameters);
+            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getContent());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -238,6 +239,7 @@ public class M3Surface extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getContent()));
             case SHOW_ITEM -> M3Accessible.showItem(getContent(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -274,6 +276,7 @@ public class M3Surface extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Requests layout and notifies accessibility clients after content changes.

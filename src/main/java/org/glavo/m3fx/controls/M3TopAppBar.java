@@ -189,6 +189,7 @@ public class M3TopAppBar extends Control {
             case TEXT -> getTitle();
             case ITEM_COUNT -> M3Accessible.itemCount(getNavigation(), getActions());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getNavigation(), getActions(), parameters);
+            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getNavigation(), getActions());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -198,6 +199,7 @@ public class M3TopAppBar extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getNavigation(), getActions()));
             case SHOW_ITEM -> M3Accessible.showItem(M3Accessible.itemAt(getNavigation(), getActions(), parameters));
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -227,6 +229,7 @@ public class M3TopAppBar extends Control {
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Updates the active variant style class.

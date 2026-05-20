@@ -154,6 +154,7 @@ public class M3BottomAppBar extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> M3Accessible.itemCount(getActions(), getFloatingAction());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getActions(), getFloatingAction(), parameters);
+            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getActions(), getFloatingAction());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -163,6 +164,10 @@ public class M3BottomAppBar extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(
+                    getActions(),
+                    getFloatingAction()
+            ));
             case SHOW_ITEM -> M3Accessible.showItem(M3Accessible.itemAt(getActions(), getFloatingAction(), parameters));
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -186,6 +191,7 @@ public class M3BottomAppBar extends Control {
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Updates the active floating action alignment style class.

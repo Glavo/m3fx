@@ -14,6 +14,7 @@ import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextInputControl;
@@ -210,6 +211,7 @@ public class M3ValidationSummary extends Control {
             case TEXT -> accessibleText();
             case ITEM_COUNT -> getInvalidInputCount();
             case ITEM_AT_INDEX -> getInvalidInput(M3Accessible.indexParameter(parameters));
+            case FOCUS_NODE -> firstInvalidFocusNode();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -218,13 +220,15 @@ public class M3ValidationSummary extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
-        if (action == AccessibleAction.SHOW_ITEM) {
-            @Nullable M3TextInputLayout input = getInvalidInput(M3Accessible.indexParameter(parameters));
-            if (input != null) {
-                focusInput(input);
+        switch (action) {
+            case REQUEST_FOCUS -> focusFirstInvalidInput();
+            case SHOW_ITEM -> {
+                @Nullable M3TextInputLayout input = getInvalidInput(M3Accessible.indexParameter(parameters));
+                if (input != null) {
+                    focusInput(input);
+                }
             }
-        } else {
-            super.executeAccessibleAction(action, parameters);
+            default -> super.executeAccessibleAction(action, parameters);
         }
     }
 
@@ -258,7 +262,31 @@ public class M3ValidationSummary extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         requestLayout();
+    }
+
+    /// Returns the focus target for the first invalid input.
+    private @Nullable Node firstInvalidFocusNode() {
+        @Nullable M3FormValidator validator = getValidator();
+        if (validator == null) {
+            return null;
+        }
+
+        @Nullable M3TextInputLayout invalidInput = validator.getFirstInvalidInput();
+        if (invalidInput == null) {
+            return null;
+        }
+
+        @Nullable TextInputControl textInput = invalidInput.getInput();
+        @Nullable Node textInputFocusTarget = M3Accessible.focusTarget(textInput);
+        return textInputFocusTarget != null ? textInputFocusTarget : M3Accessible.focusTarget(invalidInput);
+    }
+
+    /// Requests focus for the first invalid input through the current validator.
+    private boolean focusFirstInvalidInput() {
+        @Nullable M3FormValidator validator = getValidator();
+        return validator != null && validator.focusFirstInvalidInput();
     }
 
     /// Returns the current accessibility summary text.

@@ -230,6 +230,7 @@ public class M3FormSection extends Control {
             case TEXT -> getTitleText();
             case ITEM_COUNT -> getContent().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), parameters);
+            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getContent());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -238,10 +239,10 @@ public class M3FormSection extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
-        if (action == AccessibleAction.SHOW_ITEM) {
-            M3Accessible.showItem(getContent(), parameters);
-        } else {
-            super.executeAccessibleAction(action, parameters);
+        switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getContent()));
+            case SHOW_ITEM -> M3Accessible.showItem(getContent(), parameters);
+            default -> super.executeAccessibleAction(action, parameters);
         }
     }
 
@@ -268,6 +269,7 @@ public class M3FormSection extends Control {
         requestLayout();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Validates a varargs content array before mutation.

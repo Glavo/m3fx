@@ -56,6 +56,7 @@ public class M3ButtonGroup extends Control {
         updateButtonStyles();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     };
 
     /// Creates an empty button group.
@@ -109,6 +110,7 @@ public class M3ButtonGroup extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
+            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getItems());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -118,6 +120,7 @@ public class M3ButtonGroup extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getItems()));
             case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }

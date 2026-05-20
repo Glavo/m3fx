@@ -7929,6 +7929,105 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that indexed structural containers expose default accessibility focus targets.
+    @Test
+    void structuralIndexedContainersExposeAccessibleFocusTargets() {
+        runOnFxThread(() -> {
+            M3Button groupFirst = new M3Button("First");
+            M3Button groupSecond = new M3Button("Second");
+            M3ButtonGroup buttonGroup = new M3ButtonGroup(groupFirst, groupSecond);
+
+            M3Button badgedContent = new M3Button("Inbox");
+            M3BadgedBox badgedBox = new M3BadgedBox(badgedContent, new M3Badge("4"));
+
+            M3Button bannerAction = new M3Button("Dismiss");
+            M3Banner banner = M3Banner.withIcon("Offline", new M3Icon("!"), bannerAction);
+
+            M3Button topNavigation = new M3Button("Menu");
+            M3Button topAction = new M3Button("Search");
+            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topAction);
+
+            M3Button bottomAction = new M3Button("Archive");
+            M3Button floatingAction = new M3Button("Create");
+            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                    M3BottomAppBarFloatingActionAlignment.END,
+                    floatingAction,
+                    bottomAction
+            );
+
+            M3Button surfaceAction = new M3Button("Surface action");
+            M3Surface surface = new M3Surface(surfaceAction);
+
+            M3SplitButton splitButton = new M3SplitButton("Create", new M3MenuItem("Draft"));
+
+            M3Button formItem = new M3Button("Form item");
+            M3FormPane formPane = new M3FormPane(formItem);
+
+            M3Button sectionItem = new M3Button("Section item");
+            M3FormSection formSection = new M3FormSection("Section", sectionItem);
+
+            M3Button rowContent = new M3Button("Row content");
+            M3Button rowTrailing = new M3Button("Row trailing");
+            M3FormRow formRow = new M3FormRow("Row", "Helper", rowContent, rowTrailing);
+
+            M3FabMenu fabMenu = new M3FabMenu(new M3FloatingActionButton(new M3Icon("+")));
+
+            M3Button carouselFirst = new M3Button("One");
+            M3Button carouselSecond = new M3Button("Two");
+            M3Carousel carousel = new M3Carousel(carouselFirst, carouselSecond);
+            carousel.select(carouselSecond);
+
+            M3TextField invalidField = new M3TextField();
+            M3TextInputLayout invalidLayout = new M3TextInputLayout(invalidField, "Name");
+            invalidLayout.setValidator(M3TextInputValidators.required("Required"));
+            M3FormValidator validator = new M3FormValidator(invalidLayout);
+            M3ValidationSummary validationSummary = new M3ValidationSummary(validator);
+            assertFalse(validator.validate());
+
+            VBox root = new VBox(
+                    buttonGroup,
+                    badgedBox,
+                    banner,
+                    topAppBar,
+                    bottomAppBar,
+                    surface,
+                    splitButton,
+                    formPane,
+                    formSection,
+                    formRow,
+                    fabMenu,
+                    carousel,
+                    invalidLayout,
+                    validationSummary
+            );
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 760.0, 860.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertAccessibleFocus(buttonGroup, groupFirst);
+                assertAccessibleFocus(badgedBox, badgedContent);
+                assertAccessibleFocus(banner, bannerAction);
+                assertAccessibleFocus(topAppBar, topNavigation);
+                assertAccessibleFocus(bottomAppBar, bottomAction);
+                assertAccessibleFocus(surface, surfaceAction);
+                assertAccessibleFocus(splitButton, splitButton.getActionButton());
+                assertAccessibleFocus(formPane, formItem);
+                assertAccessibleFocus(formSection, sectionItem);
+                assertAccessibleFocus(formRow, rowContent);
+                assertAccessibleFocus(fabMenu, fabMenu.getToggleButton());
+                assertAccessibleFocus(carousel, carouselSecond);
+                assertAccessibleFocus(validationSummary, invalidField);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that navigation drawer token rules override list item metrics.
     @Test
     void navigationDrawerAppliesItemMetrics() {

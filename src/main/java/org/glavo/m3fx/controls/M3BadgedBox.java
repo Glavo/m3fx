@@ -175,6 +175,7 @@ public class M3BadgedBox extends Control {
             case CONTENTS -> getContent();
             case ITEM_COUNT -> accessibleItemCount();
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
+            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getContent(), getBadge());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -184,6 +185,7 @@ public class M3BadgedBox extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getContent(), getBadge()));
             case SHOW_ITEM -> M3Accessible.showItem(accessibleItemAt(parameters));
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -202,6 +204,7 @@ public class M3BadgedBox extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Returns the number of indexed content and badge nodes exposed to accessibility clients.

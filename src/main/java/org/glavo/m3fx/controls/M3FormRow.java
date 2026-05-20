@@ -105,6 +105,8 @@ public class M3FormRow extends Control {
         @Override
         protected void invalidated() {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             requestLayout();
         }
     };
@@ -122,6 +124,8 @@ public class M3FormRow extends Control {
         @Override
         protected void invalidated() {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             requestLayout();
         }
     };
@@ -374,7 +378,7 @@ public class M3FormRow extends Control {
             case CONTENTS -> getContent();
             case ITEM_COUNT -> accessibleItemCount();
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
-            case FOCUS_NODE -> M3Accessible.focusTarget(getContent());
+            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getContent(), getTrailing());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -383,10 +387,10 @@ public class M3FormRow extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
-        if (action == AccessibleAction.SHOW_ITEM) {
-            M3Accessible.showItem(accessibleActionItem(parameters));
-        } else {
-            super.executeAccessibleAction(action, parameters);
+        switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getContent(), getTrailing()));
+            case SHOW_ITEM -> M3Accessible.showItem(accessibleActionItem(parameters));
+            default -> super.executeAccessibleAction(action, parameters);
         }
     }
 

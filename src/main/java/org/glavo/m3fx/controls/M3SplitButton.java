@@ -309,6 +309,7 @@ public class M3SplitButton extends Control {
             case EXPANDED -> isShowing();
             case ITEM_COUNT -> buttonParts.size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(buttonParts, parameters);
+            case FOCUS_NODE -> M3Accessible.firstFocusTarget(buttonParts);
             case SUBMENU -> getMenu();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -322,6 +323,7 @@ public class M3SplitButton extends Control {
             case FIRE -> fire();
             case SHOW_MENU, EXPAND -> showMenu();
             case COLLAPSE -> hideMenu();
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(buttonParts));
             case SHOW_ITEM -> M3Accessible.showItem(buttonParts, parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }

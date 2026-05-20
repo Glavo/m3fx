@@ -96,6 +96,7 @@ public class M3Carousel extends Control {
         applySelectedIndex(getSelectedIndex(), false);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     };
 
     /// Selects clicked items.
@@ -278,6 +279,7 @@ public class M3Carousel extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
+            case FOCUS_NODE -> accessibleFocusNode();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
             case MULTIPLE_SELECTION -> false;
@@ -291,6 +293,7 @@ public class M3Carousel extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> showAccessibleItem(parameters);
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -356,9 +359,24 @@ public class M3Carousel extends Control {
         @Nullable Node target = accessibleTarget(parameters);
         if (target != null) {
             select(target);
+            M3Accessible.showItem(target);
             return;
         }
         scrollSelectedItemIntoView();
+    }
+
+    /// Returns the selected carousel item focus target, or this carousel when no item can receive focus.
+    private @Nullable Node accessibleFocusNode() {
+        @Nullable Node selectedFocusTarget = M3Accessible.focusTarget(getSelectedItem());
+        return selectedFocusTarget != null ? selectedFocusTarget : M3Accessible.focusTarget(this);
+    }
+
+    /// Requests focus on the accessible carousel focus target.
+    private void focusAccessibleNode() {
+        @Nullable Node focusTarget = accessibleFocusNode();
+        if (focusTarget != null) {
+            focusTarget.requestFocus();
+        }
     }
 
     /// Applies accessible single selection parameters.
@@ -419,6 +437,7 @@ public class M3Carousel extends Control {
         selectedItems.setAll(nextItem == null ? java.util.List.of() : java.util.List.of(nextItem));
         if (previousItem != nextItem) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         }
         if (scroll && nextItem != null) {
             scrollSelectedItemIntoView();

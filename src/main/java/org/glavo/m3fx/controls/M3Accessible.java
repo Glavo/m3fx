@@ -119,6 +119,32 @@ final class M3Accessible {
         return null;
     }
 
+    /// Returns the first focusable item or descendant in the supplied item list.
+    static @Nullable Node firstFocusTarget(ObservableList<? extends Node> items) {
+        Objects.requireNonNull(items, "items");
+        return firstFocusableItem(items);
+    }
+
+    /// Returns the leading focus target, or the first focusable item in the supplied item list.
+    static @Nullable Node firstFocusTarget(@Nullable Node leading, ObservableList<? extends Node> items) {
+        Objects.requireNonNull(items, "items");
+        @Nullable Node leadingTarget = focusTarget(leading);
+        return leadingTarget != null ? leadingTarget : firstFocusableItem(items);
+    }
+
+    /// Returns the first focusable item in the supplied item list, or the trailing focus target.
+    static @Nullable Node firstFocusTarget(ObservableList<? extends Node> items, @Nullable Node trailing) {
+        Objects.requireNonNull(items, "items");
+        @Nullable Node itemTarget = firstFocusableItem(items);
+        return itemTarget != null ? itemTarget : focusTarget(trailing);
+    }
+
+    /// Returns the first focusable target among two optional child nodes.
+    static @Nullable Node firstFocusTarget(@Nullable Node first, @Nullable Node second) {
+        @Nullable Node firstTarget = focusTarget(first);
+        return firstTarget != null ? firstTarget : focusTarget(second);
+    }
+
     /// Returns whether a node can receive a direct or descendant focus request.
     static boolean canReach(@Nullable Node node) {
         return node != null && node.isVisible() && !node.isDisabled() && node.getScene() != null;
