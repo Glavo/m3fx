@@ -408,6 +408,9 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             case REQUEST_FOCUS -> editor.requestFocus();
             case SHOW_MENU, EXPAND -> showPicker();
             case COLLAPSE -> hidePicker(true);
+            case SHOW_ITEM -> showPickerAndForwardAccessibleAction(action, parameters);
+            case SET_SELECTED_ITEMS, INCREMENT, DECREMENT, BLOCK_INCREMENT, BLOCK_DECREMENT ->
+                    forwardPickerAccessibleAction(action, parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -594,6 +597,18 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
         @Nullable Object focusNode = picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         return focusNode instanceof Node node ? node : picker;
+    }
+
+    /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
+    private void showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
+        showPicker();
+        forwardPickerAccessibleAction(action, parameters);
+        focusPicker();
+    }
+
+    /// Forwards value-oriented accessibility actions to the concrete popup picker.
+    private void forwardPickerAccessibleAction(AccessibleAction action, Object... parameters) {
+        picker.executeAccessibleAction(action, parameters);
     }
 
     /// Focuses the preferred node inside the popup picker.

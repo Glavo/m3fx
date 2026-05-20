@@ -678,6 +678,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             case REQUEST_FOCUS -> startEditor.requestFocus();
             case SHOW_MENU, EXPAND -> showPicker();
             case COLLAPSE -> hidePicker(true);
+            case SHOW_ITEM -> showPickerAndForwardAccessibleAction(action, parameters);
+            case SET_SELECTED_ITEMS, INCREMENT, DECREMENT, BLOCK_INCREMENT, BLOCK_DECREMENT ->
+                    forwardPickerAccessibleAction(action, true, parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -984,6 +987,25 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             return focusNode instanceof Node node ? node : picker;
         }
         return endEditor.isFocused() ? endEditor : startEditor;
+    }
+
+    /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
+    private void showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
+        showPicker();
+        forwardPickerAccessibleAction(action, false, parameters);
+        focusPicker();
+    }
+
+    /// Forwards an accessibility action to the popup range picker and optionally syncs edited endpoints.
+    private void forwardPickerAccessibleAction(
+            AccessibleAction action,
+            boolean syncRange,
+            Object... parameters
+    ) {
+        picker.executeAccessibleAction(action, parameters);
+        if (syncRange && !synchronizingPicker) {
+            syncRangeFromPicker();
+        }
     }
 
     /// Focuses the preferred node inside the popup picker.

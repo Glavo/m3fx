@@ -55,6 +55,7 @@
 - Selection controls: checkbox, radio button, switch, slider with accessible value/range adjustment semantics, chips, chip groups, segmented buttons, and segmented button groups.
 - Checkbox, radio button, and switch disabled visuals use part-level state token opacity so selected indicators remain legible.
 - Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, inclusive min/max date range support, reusable labeled date presets, and field/dialog preset actions; date range picker with start/end selection, in-range styling, normalized range endpoint selection, inclusive min/max date bounds, reusable labeled range presets, and field/dialog preset actions; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, inclusive min/max time range support, reusable labeled time presets, and field/dialog preset actions; date, date-range, and time picker fields with editable text, popup picker selection, formatter-based parsing, range validation, and shared popup motion; date, date-range, and time picker dialogs with Material dialog panes and accepted-result conversion.
+- Date, date-range, and time pickers expose accessibility selection, focus routing, item navigation, and increment/decrement actions that mirror keyboard adjustment behavior; picker fields forward value-oriented accessibility actions to their popup pickers.
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, navigation drawer, and collapsible navigation drawer groups.
 - App bars: top app bar variants and bottom app bar with configurable floating action alignment.
 - Menus and search: menu, menu item, submenu item with hover and keyboard opening, menu section header, menu button with edge-aware popup placement, search bar, and search view with customizable result content and action slots.
@@ -81,6 +82,7 @@
 - Selection container accessibility tests cover focus-node routing and request-focus behavior for static list, chip, icon-toggle, segmented, tab, navigation bar, navigation rail, and navigation drawer containers.
 - Structural container accessibility tests cover focus-node routing and request-focus behavior for app bars, banners, badged boxes, button groups, split buttons, surfaces, form containers, FAB menus, carousels, and validation summaries.
 - Date and time picker visual tests render selected, today, adjacent-month, preset actions, 12-hour/24-hour, minute-step, and disabled range states into dedicated snapshots.
+- Date and time picker tests cover accessibility increment/decrement actions and picker-field forwarding of selected-value actions.
 - Demo packaging tests cover the executable shadow jar and verify that JavaFX classes are not bundled.
 
 ## Remaining Work

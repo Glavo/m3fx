@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
@@ -27,6 +29,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.time.LocalTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -146,6 +149,30 @@ final class M3TimePickerTest {
 
         picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
         assertEquals(LocalTime.of(10, 30), picker.getValue());
+    }
+
+    /// Verifies that accessibility adjustment actions mirror time picker keyboard navigation.
+    @Test
+    void timePickerAccessibleActionsAdjustTimeSelection() {
+        M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
+        picker.setMinuteStep(15);
+
+        picker.executeAccessibleAction(AccessibleAction.INCREMENT);
+        assertEquals(LocalTime.of(10, 45), picker.getValue());
+
+        picker.executeAccessibleAction(AccessibleAction.DECREMENT);
+        assertEquals(LocalTime.of(10, 30), picker.getValue());
+
+        picker.executeAccessibleAction(AccessibleAction.BLOCK_INCREMENT);
+        assertEquals(LocalTime.of(11, 30), picker.getValue());
+
+        picker.executeAccessibleAction(AccessibleAction.BLOCK_DECREMENT);
+        assertEquals(LocalTime.of(10, 30), picker.getValue());
+
+        picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, List.of(LocalTime.of(12, 45)));
+        assertEquals(LocalTime.of(12, 45), picker.getValue());
+        assertEquals(List.of(LocalTime.of(12, 45)),
+                picker.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
     }
 
     /// Verifies that time pickers render selected, 24-hour, and disabled range states.

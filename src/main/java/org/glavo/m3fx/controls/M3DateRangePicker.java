@@ -23,6 +23,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -423,8 +424,12 @@ public class M3DateRangePicker extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleNode(accessibleFocusNode());
+            case INCREMENT -> moveSelectionByDays(1);
+            case DECREMENT -> moveSelectionByDays(-1);
+            case BLOCK_INCREMENT -> moveSelectionByMonths(1);
+            case BLOCK_DECREMENT -> moveSelectionByMonths(-1);
             case SHOW_ITEM -> showAccessibleDay(parameters);
-            case SET_SELECTED_ITEMS -> selectAccessibleDay(parameters);
+            case SET_SELECTED_ITEMS -> selectAccessibleDays(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -631,14 +636,86 @@ public class M3DateRangePicker extends Control {
         focusAccessibleNode(accessibleFocusNode());
     }
 
-    /// Selects the day requested by accessibility parameters.
-    private void selectAccessibleDay(Object... parameters) {
-        @Nullable Object item = accessibleDayItem(parameters);
-        @Nullable LocalDate date = item instanceof LocalDate localDate ? localDate : dateFromNode(item);
-        if (date != null && !isDateDisabled(date)) {
-            selectDate(date);
-            focusAccessibleDate(date);
+    /// Selects one or two dates requested by accessibility parameters.
+    private void selectAccessibleDays(Object... parameters) {
+        ArrayList<LocalDate> dates = new ArrayList<>(2);
+        collectAccessibleDates(dates, parameters);
+        if (dates.isEmpty()) {
+            return;
         }
+
+        LocalDate firstDate = dates.get(0);
+        if (dates.size() == 1) {
+            if (!isDateDisabled(firstDate)) {
+                selectDate(firstDate);
+                focusAccessibleDate(firstDate);
+            }
+            return;
+        }
+
+        LocalDate secondDate = dates.get(1);
+        if (isDateDisabled(firstDate) || isDateDisabled(secondDate)) {
+            return;
+        }
+
+        if (secondDate.isBefore(firstDate)) {
+            setRange(secondDate, firstDate);
+        } else {
+            setRange(firstDate, secondDate);
+        }
+        focusAccessibleDate(secondDate);
+    }
+
+    /// Collects up to two dates from accessibility parameters.
+    private void collectAccessibleDates(List<LocalDate> dates, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            collectAccessibleDate(dates, parameter);
+            if (dates.size() >= 2) {
+                return;
+            }
+        }
+    }
+
+    /// Collects dates from one accessibility action parameter.
+    private void collectAccessibleDate(List<LocalDate> dates, @Nullable Object parameter) {
+        if (dates.size() >= 2) {
+            return;
+        }
+        if (parameter instanceof Number number) {
+            @Nullable LocalDate date = dateFromAccessibleItem(accessibleDayCellAt(number));
+            if (date != null) {
+                dates.add(date);
+            }
+            return;
+        }
+        @Nullable LocalDate date = dateFromAccessibleItem(parameter);
+        if (date != null) {
+            dates.add(date);
+            return;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                collectAccessibleDate(dates, value);
+                if (dates.size() >= 2) {
+                    return;
+                }
+            }
+            return;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                collectAccessibleDate(dates, value);
+                if (dates.size() >= 2) {
+                    return;
+                }
+            }
+        }
+    }
+
+    /// Returns the date represented by an accessibility item.
+    private static @Nullable LocalDate dateFromAccessibleItem(@Nullable Object item) {
+        return item instanceof LocalDate date ? date : dateFromNode(item);
     }
 
     /// Focuses the rendered day cell for a date when it is visible.

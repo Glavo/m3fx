@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -184,6 +187,25 @@ final class M3PickerFieldTest {
             assertTrue(findTimePresetButton(presetContent, "Midnight").isDisabled());
             assertFalse(findTimePresetButton(presetContent, "Morning").isDisabled());
         });
+    }
+
+    /// Verifies that picker fields forward accessibility value actions to their popup pickers.
+    @Test
+    void pickerFieldsForwardAccessibleValueActions() {
+        M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+        dateField.executeAccessibleAction(AccessibleAction.INCREMENT);
+        assertEquals(LocalDate.of(2026, 5, 20), dateField.getValue());
+        assertEquals("2026-05-20", dateField.getEditor().getText());
+        assertEquals(List.of(LocalDate.of(2026, 5, 20)),
+                dateField.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+
+        M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
+        timeField.setMinuteStep(15);
+        timeField.executeAccessibleAction(AccessibleAction.BLOCK_INCREMENT);
+        assertEquals(LocalTime.of(11, 30), timeField.getValue());
+        assertEquals("11:30", timeField.getEditor().getText());
+        assertEquals(List.of(LocalTime.of(11, 30)),
+                timeField.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
     }
 
     /// Verifies that picker fields install the shared picker field skin and render their input layouts.

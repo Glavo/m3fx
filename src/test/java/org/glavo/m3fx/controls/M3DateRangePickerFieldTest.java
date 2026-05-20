@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -168,6 +170,31 @@ final class M3DateRangePickerFieldTest {
             assertTrue(findPresetButton(presetContent, "Today").isDisabled());
             assertFalse(findPresetButton(presetContent, "Next 7 days").isDisabled());
         });
+    }
+
+    /// Verifies that the range field forwards accessibility value actions to its popup picker.
+    @Test
+    void dateRangePickerFieldForwardsAccessibleValueActions() {
+        M3DateRangePickerField field = new M3DateRangePickerField();
+        field.setDisplayedMonth(YearMonth.of(2026, 1));
+
+        field.executeAccessibleAction(
+                AccessibleAction.SET_SELECTED_ITEMS,
+                List.of(LocalDate.of(2026, 1, 12), LocalDate.of(2026, 1, 10))
+        );
+        assertEquals(LocalDate.of(2026, 1, 10), field.getStartDate());
+        assertEquals(LocalDate.of(2026, 1, 12), field.getEndDate());
+        assertEquals("2026-01-10", field.getStartEditor().getText());
+        assertEquals("2026-01-12", field.getEndEditor().getText());
+        assertEquals(List.of(LocalDate.of(2026, 1, 10), LocalDate.of(2026, 1, 12)),
+                field.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+
+        field.clearRange();
+        field.setDisplayedMonth(YearMonth.of(2026, 1));
+        field.executeAccessibleAction(AccessibleAction.INCREMENT);
+        assertEquals(LocalDate.of(2026, 1, 2), field.getStartDate());
+        assertNull(field.getEndDate());
+        assertEquals("2026-01-02", field.getStartEditor().getText());
     }
 
     /// Verifies that the range field installs its skin and lays out both input layouts.

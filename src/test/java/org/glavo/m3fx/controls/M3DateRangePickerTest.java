@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
@@ -27,6 +29,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -127,6 +130,33 @@ final class M3DateRangePickerTest {
             assertTrue(middleCell.getStyleClass().contains(M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS));
             assertTrue(endCell.getStyleClass().contains(M3DateRangePicker.RANGE_END_DAY_STYLE_CLASS));
         });
+    }
+
+    /// Verifies that accessibility actions can adjust and replace the selected date range.
+    @Test
+    void dateRangePickerAccessibleActionsAdjustRangeSelection() {
+        M3DateRangePicker picker = new M3DateRangePicker();
+        picker.setDisplayedMonth(YearMonth.of(2026, 1));
+
+        picker.executeAccessibleAction(AccessibleAction.INCREMENT);
+        assertEquals(LocalDate.of(2026, 1, 2), picker.getStartDate());
+        assertNull(picker.getEndDate());
+
+        picker.executeAccessibleAction(AccessibleAction.DECREMENT);
+        assertEquals(LocalDate.of(2026, 1, 1), picker.getStartDate());
+        assertEquals(LocalDate.of(2026, 1, 2), picker.getEndDate());
+
+        picker.executeAccessibleAction(
+                AccessibleAction.SET_SELECTED_ITEMS,
+                List.of(LocalDate.of(2026, 1, 12), LocalDate.of(2026, 1, 10))
+        );
+        assertEquals(LocalDate.of(2026, 1, 10), picker.getStartDate());
+        assertEquals(LocalDate.of(2026, 1, 12), picker.getEndDate());
+        assertEquals(List.of(LocalDate.of(2026, 1, 10), LocalDate.of(2026, 1, 12)),
+                picker.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+
+        picker.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 2, 5));
+        assertEquals(YearMonth.of(2026, 2), picker.getDisplayedMonth());
     }
 
     /// Verifies that the date range picker renders selected endpoint and in-range states.

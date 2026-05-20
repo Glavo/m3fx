@@ -305,6 +305,10 @@ public class M3TimePicker extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleNode(accessibleFocusNode());
+            case INCREMENT -> moveByMinutes(getMinuteStep());
+            case DECREMENT -> moveByMinutes(-getMinuteStep());
+            case BLOCK_INCREMENT -> moveByHours(1);
+            case BLOCK_DECREMENT -> moveByHours(-1);
             case SHOW_ITEM -> showAccessibleTime(parameters);
             case SET_SELECTED_ITEMS -> selectAccessibleTime(parameters);
             default -> super.executeAccessibleAction(action, parameters);

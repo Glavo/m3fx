@@ -324,6 +324,10 @@ public class M3DatePicker extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleNode(accessibleFocusNode());
+            case INCREMENT -> moveSelectionByDays(1);
+            case DECREMENT -> moveSelectionByDays(-1);
+            case BLOCK_INCREMENT -> moveSelectionByMonths(1);
+            case BLOCK_DECREMENT -> moveSelectionByMonths(-1);
             case SHOW_ITEM -> showAccessibleDay(parameters);
             case SET_SELECTED_ITEMS -> selectAccessibleDay(parameters);
             default -> super.executeAccessibleAction(action, parameters);

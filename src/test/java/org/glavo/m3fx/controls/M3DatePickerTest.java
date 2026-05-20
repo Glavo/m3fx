@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
@@ -26,6 +28,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -139,6 +142,32 @@ final class M3DatePickerTest {
 
             assertTrue(hiddenOutsideCells > 0);
         });
+    }
+
+    /// Verifies that accessibility adjustment actions mirror keyboard date navigation.
+    @Test
+    void datePickerAccessibleActionsAdjustDateSelection() {
+        M3DatePicker picker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+
+        picker.executeAccessibleAction(AccessibleAction.INCREMENT);
+        assertEquals(LocalDate.of(2026, 5, 19), picker.getValue());
+
+        picker.executeAccessibleAction(AccessibleAction.DECREMENT);
+        assertEquals(LocalDate.of(2026, 5, 18), picker.getValue());
+
+        picker.executeAccessibleAction(AccessibleAction.BLOCK_INCREMENT);
+        assertEquals(LocalDate.of(2026, 6, 18), picker.getValue());
+
+        picker.executeAccessibleAction(AccessibleAction.BLOCK_DECREMENT);
+        assertEquals(LocalDate.of(2026, 5, 18), picker.getValue());
+
+        picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, List.of(LocalDate.of(2026, 5, 25)));
+        assertEquals(LocalDate.of(2026, 5, 25), picker.getValue());
+        assertEquals(List.of(LocalDate.of(2026, 5, 25)),
+                picker.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+
+        picker.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 6, 2));
+        assertEquals(YearMonth.of(2026, 6), picker.getDisplayedMonth());
     }
 
     /// Verifies that the date picker renders a non-empty Material-colored calendar surface.
