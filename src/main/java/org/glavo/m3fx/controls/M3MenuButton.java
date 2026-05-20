@@ -235,6 +235,7 @@ public class M3MenuButton extends M3Button {
         popup.show(this, placement.x(), placement.y());
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         playShowAnimation();
     }
 
@@ -304,10 +305,12 @@ public class M3MenuButton extends M3Button {
         switch (action) {
             case SHOW_MENU, EXPAND -> showMenu();
             case COLLAPSE -> hideMenu(true);
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SET_SELECTED_ITEMS -> menu.executeAccessibleAction(action, parameters);
             case SHOW_ITEM -> {
                 showMenu();
                 menu.executeAccessibleAction(action, parameters);
+                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             }
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -323,6 +326,7 @@ public class M3MenuButton extends M3Button {
             menu.hideSubMenusExcept(null);
             showing.set(false);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             resetMenuAnimationState();
             if (focusOwnerOnHidden) {
                 focusOwnerOnHidden = false;
@@ -341,6 +345,29 @@ public class M3MenuButton extends M3Button {
         }
         @Nullable Object focusNode = menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         return focusNode instanceof Node node ? node : this;
+    }
+
+    /// Requests focus for this button or the currently reachable popup menu focus node.
+    private void focusAccessibleNode() {
+        if (!isShowing()) {
+            requestFocus();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            return;
+        }
+
+        @Nullable Object focusNode = menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        if (focusNode instanceof Node node && node != this) {
+            M3Accessible.showItem(node);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            return;
+        }
+
+        menu.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+        @Nullable Object nextFocusNode = menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        if (!(nextFocusNode instanceof Node node) || node == this) {
+            requestFocus();
+        }
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Handles keyboard opening and dismissal for the popup menu.
@@ -389,7 +416,9 @@ public class M3MenuButton extends M3Button {
             return false;
         }
 
-        return menu.focusFirstItem() || popup.isShowing();
+        boolean focused = menu.focusFirstItem();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        return focused || popup.isShowing();
     }
 
     /// Shows the popup menu and focuses the last enabled visible menu item.
@@ -400,7 +429,9 @@ public class M3MenuButton extends M3Button {
             return false;
         }
 
-        return menu.focusLastItem() || popup.isShowing();
+        boolean focused = menu.focusLastItem();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        return focused || popup.isShowing();
     }
 
     /// Applies initial visual state before the popup is shown.

@@ -320,7 +320,11 @@ public class M3Menu extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> focusFirstItem();
+            case REQUEST_FOCUS -> {
+                if (!focusFirstItem()) {
+                    requestFocus();
+                }
+            }
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
             case SHOW_ITEM -> focusAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -411,6 +415,7 @@ public class M3Menu extends Control {
         if (item.isFocusTraversable()) {
             item.requestFocus();
         }
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         return true;
     }
 
@@ -452,7 +457,51 @@ public class M3Menu extends Control {
         if (item instanceof M3MenuItem menuItem && focusMenuItem(menuItem)) {
             return;
         }
+        if (focusNestedAccessibleItem(parameters)) {
+            return;
+        }
         M3Accessible.showItem(item);
+    }
+
+    /// Opens a nested submenu branch and focuses the requested descendant item when possible.
+    private boolean focusNestedAccessibleItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length > 0 && parameters[0] instanceof Number) {
+            return false;
+        }
+
+        for (Node child : getItems()) {
+            if (child instanceof M3SubMenuItem subMenuItem
+                    && containsNestedAccessibleTarget(subMenuItem.getItems(), parameters)
+                    && focusMenuItem(subMenuItem)) {
+                subMenuItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether the supplied menu subtree contains an accessibility action target.
+    private static boolean containsNestedAccessibleTarget(
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length > 0 && parameters[0] instanceof Number) {
+            return false;
+        }
+        if (M3Accessible.actionItem(items, parameters) != null) {
+            return true;
+        }
+        for (Node item : items) {
+            if (item instanceof M3SubMenuItem subMenuItem
+                    && containsNestedAccessibleTarget(subMenuItem.getItems(), parameters)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Installs action and selected-state listeners on a menu item.

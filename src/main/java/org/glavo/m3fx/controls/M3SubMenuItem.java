@@ -193,6 +193,7 @@ public class M3SubMenuItem extends M3MenuItem {
         popup.show(this, placement.x(), placement.y());
         subMenuShowing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         playShowAnimation();
     }
 
@@ -243,10 +244,12 @@ public class M3SubMenuItem extends M3MenuItem {
         switch (action) {
             case SHOW_MENU, EXPAND -> showSubMenu();
             case COLLAPSE -> hideSubMenu();
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SET_SELECTED_ITEMS -> subMenu.executeAccessibleAction(action, parameters);
             case SHOW_ITEM -> {
                 showSubMenu();
                 subMenu.executeAccessibleAction(action, parameters);
+                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             }
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -290,6 +293,7 @@ public class M3SubMenuItem extends M3MenuItem {
             pointerInsideSubMenu = false;
             subMenuShowing.set(false);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             resetSubMenuAnimationState();
         });
         addEventFilter(ActionEvent.ACTION, this::handleOwnActionEvent);
@@ -309,6 +313,29 @@ public class M3SubMenuItem extends M3MenuItem {
         }
         @Nullable Object focusNode = subMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         return focusNode instanceof Node node ? node : this;
+    }
+
+    /// Requests focus for this item or the currently reachable submenu focus node.
+    private void focusAccessibleNode() {
+        if (!isSubMenuShowing()) {
+            requestFocus();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            return;
+        }
+
+        @Nullable Object focusNode = subMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        if (focusNode instanceof Node node && node != this) {
+            M3Accessible.showItem(node);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            return;
+        }
+
+        subMenu.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+        @Nullable Object nextFocusNode = subMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        if (!(nextFocusNode instanceof Node node) || node == this) {
+            requestFocus();
+        }
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Handles this item's own action event by opening the submenu.
@@ -411,6 +438,7 @@ public class M3SubMenuItem extends M3MenuItem {
         }
 
         subMenu.focusFirstItem();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         return true;
     }
 

@@ -3556,6 +3556,79 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that menu button accessibility focus requests follow the active popup focus branch.
+    @Test
+    void menuButtonRoutesAccessibleFocusAcrossPopupBranches() {
+        runOnFxThread(() -> {
+            M3MenuItem open = new M3MenuItem("Open");
+            M3MenuItem save = new M3MenuItem("Save");
+            M3MenuButton menuButton = new M3MenuButton("More", open, save);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(menuButton);
+                stage.setScene(new Scene(root, 260.0, 140.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(menuButton.isFocused());
+
+                menuButton.showMenu();
+                assertEquals(menuButton, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(open.isFocused());
+                assertEquals(open, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                save.requestFocus();
+                menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(save.isFocused());
+                assertEquals(save, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that accessibility item requests can open nested menu branches and focus descendants.
+    @Test
+    void popupMenusOpenNestedBranchesForAccessibleTargets() {
+        runOnFxThread(() -> {
+            M3MenuItem pdf = new M3MenuItem("PDF");
+            M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
+            M3MenuButton menuButton = new M3MenuButton("More", export);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(menuButton);
+                stage.setScene(new Scene(root, 280.0, 160.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, pdf);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(export.isSubMenuShowing());
+                assertTrue(pdf.isFocused());
+                assertEquals(pdf, export.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(pdf, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                export.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(pdf.isFocused());
+            } finally {
+                export.hideSubMenu();
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that menu keyboard focus can land on submenu items without corrupting menu selection.
     @Test
     void menuKeyboardNavigationFocusesSubMenuItemsWithoutChangingSelection() {
