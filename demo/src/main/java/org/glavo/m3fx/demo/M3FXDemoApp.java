@@ -59,7 +59,6 @@ import org.glavo.m3fx.controls.M3DateRangePresets;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
-import org.glavo.m3fx.controls.M3DisclosureIcon;
 import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
@@ -89,6 +88,7 @@ import org.glavo.m3fx.controls.M3MenuSectionHeader;
 import org.glavo.m3fx.controls.M3MenuSelectionMode;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
+import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3PasswordField;
@@ -198,9 +198,6 @@ public final class M3FXDemoApp extends Application {
 
     /// Animations owned by the active demo page.
     private final List<Animation> animations = new ArrayList<>();
-
-    /// Sidebar items used to switch component pages.
-    private final List<M3ListItem> sidebarItems = new ArrayList<>();
 
     /// Sidebar groups rendered by the navigation drawer.
     private final List<SidebarGroup> sidebarGroups = new ArrayList<>();
@@ -372,10 +369,9 @@ public final class M3FXDemoApp extends Application {
         sidebar.setAllowEmptySelection(true);
         sidebarDrawer = sidebar;
 
-        sidebarItems.clear();
         sidebarGroups.clear();
         sidebarGroups.addAll(createSidebarGroups(pages));
-        rebuildSidebarItems();
+        buildSidebarItems();
 
         ScrollPane scrollPane = new ScrollPane(sidebar);
         scrollPane.getStyleClass().add("demo-sidebar-scroll-pane");
@@ -417,42 +413,38 @@ public final class M3FXDemoApp extends Application {
         }
     }
 
-    /// Rebuilds sidebar drawer items from the current collapsed group state.
-    private void rebuildSidebarItems() {
+    /// Builds sidebar drawer items from the configured component groups.
+    private void buildSidebarItems() {
         M3NavigationDrawer sidebar = sidebarDrawer;
         if (sidebar == null) {
             return;
         }
 
-        sidebarItems.clear();
         sidebar.getItems().clear();
         for (SidebarGroup group : sidebarGroups) {
             if (group.isCollapsible()) {
-                sidebar.getItems().add(createSidebarGroupItem(group));
-                if (group.isExpanded()) {
-                    for (DemoPage page : group.pages()) {
-                        sidebar.getItems().add(createSidebarPageItem(page, true));
-                    }
-                }
+                M3NavigationDrawerGroup drawerGroup = createSidebarDrawerGroup(group);
+                group.setDrawerGroup(drawerGroup);
+                sidebar.getItems().add(drawerGroup);
             } else {
-                sidebar.getItems().add(createSidebarPageItem(group.firstPage(), false));
+                M3ListItem item = createSidebarPageItem(group.firstPage(), false);
+                group.setTopLevelItem(item);
+                sidebar.getItems().add(item);
             }
         }
         refreshSidebarSelection();
     }
 
-    /// Creates a top-level collapsible sidebar group item.
-    private M3ListItem createSidebarGroupItem(SidebarGroup group) {
-        M3ListItem item = new M3ListItem(group.title());
-        item.getStyleClass().add("demo-sidebar-group-item");
-        item.setUserData(group);
-        item.setTrailingMedia(createSidebarDisclosureIcon(group.isExpanded()), M3ListItemSlotSize.ICON);
-        item.setOnAction(event -> {
-            group.setExpanded(!group.isExpanded());
-            rebuildSidebarItems();
-        });
-        sidebarItems.add(item);
-        return item;
+    /// Creates a collapsible sidebar group control.
+    private M3NavigationDrawerGroup createSidebarDrawerGroup(SidebarGroup group) {
+        M3NavigationDrawerGroup drawerGroup = new M3NavigationDrawerGroup(group.title());
+        drawerGroup.getHeaderItem().getStyleClass().add("demo-sidebar-group-item");
+        drawerGroup.getHeaderItem().setUserData(group);
+        drawerGroup.expandedProperty().addListener((observable, oldValue, newValue) -> refreshSidebarSelection());
+        for (DemoPage page : group.pages()) {
+            drawerGroup.addItem(createSidebarPageItem(page, true));
+        }
+        return drawerGroup;
     }
 
     /// Creates one sidebar page destination item.
@@ -461,15 +453,7 @@ public final class M3FXDemoApp extends Application {
         item.getStyleClass().add(child ? "demo-sidebar-child-item" : "demo-sidebar-top-item");
         item.setUserData(page);
         item.setOnAction(event -> showPage(page));
-        sidebarItems.add(item);
         return item;
-    }
-
-    /// Creates the disclosure icon used by collapsible sidebar groups.
-    private static M3DisclosureIcon createSidebarDisclosureIcon(boolean expanded) {
-        M3DisclosureIcon icon = new M3DisclosureIcon(expanded);
-        icon.getStyleClass().add("demo-sidebar-disclosure-icon");
-        return icon;
     }
 
     /// Creates the scrollable page host.
@@ -494,11 +478,8 @@ public final class M3FXDemoApp extends Application {
         }
 
         currentPage = page;
-        if (expandSidebarGroupForPage(page)) {
-            rebuildSidebarItems();
-        } else {
-            refreshSidebarSelection();
-        }
+        expandSidebarGroupForPage(page);
+        refreshSidebarSelection();
 
         VBox pageNode = new VBox(24.0);
         pageNode.getStyleClass().add("demo-page");
@@ -514,26 +495,21 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Expands the collapsible sidebar group containing the requested page.
-    private boolean expandSidebarGroupForPage(DemoPage page) {
+    private void expandSidebarGroupForPage(DemoPage page) {
         for (SidebarGroup group : sidebarGroups) {
-            if (group.isCollapsible() && group.pages().contains(page) && !group.isExpanded()) {
-                group.setExpanded(true);
-                return true;
+            M3NavigationDrawerGroup drawerGroup = group.drawerGroup();
+            if (drawerGroup != null && group.pages().contains(page)) {
+                drawerGroup.setExpanded(true);
+                return;
             }
         }
-        return false;
     }
 
     /// Refreshes selected state on currently visible sidebar destination items.
     private void refreshSidebarSelection() {
         @Nullable DemoPage page = currentPage;
-        for (M3ListItem item : sidebarItems) {
-            @Nullable Object userData = item.getUserData();
-            boolean selected = userData == page;
-            if (!selected && page != null && userData instanceof SidebarGroup group) {
-                selected = !group.isExpanded() && group.pages().contains(page);
-            }
-            item.setSelected(selected);
+        for (SidebarGroup group : sidebarGroups) {
+            group.updateSelection(page);
         }
     }
 
@@ -2419,17 +2395,20 @@ public final class M3FXDemoApp extends Application {
         return hex.length() == 1 ? "0" + hex : hex;
     }
 
-    /// Describes one sidebar group and its collapsed state.
+    /// Describes one sidebar group and its drawer controls.
     @NotNullByDefault
     private static final class SidebarGroup {
         /// The group title displayed in the sidebar.
         private final String title;
 
         /// The pages that belong to the group.
-        private final List<DemoPage> pages;
+        private final @Unmodifiable List<DemoPage> pages;
 
-        /// Whether child pages are currently visible in the sidebar.
-        private boolean expanded;
+        /// The drawer group used for collapsible sidebar sections.
+        private @Nullable M3NavigationDrawerGroup drawerGroup = null;
+
+        /// The direct list item used for non-collapsible sidebar sections.
+        private @Nullable M3ListItem topLevelItem = null;
 
         /// Creates a sidebar group.
         private SidebarGroup(String title, List<DemoPage> pages) {
@@ -2460,14 +2439,40 @@ public final class M3FXDemoApp extends Application {
             return pages.size() > 1;
         }
 
-        /// Returns whether child pages are currently visible.
-        private boolean isExpanded() {
-            return expanded;
+        /// Returns the collapsible drawer group, or `null` for direct sidebar items.
+        private @Nullable M3NavigationDrawerGroup drawerGroup() {
+            return drawerGroup;
         }
 
-        /// Sets whether child pages are currently visible.
-        private void setExpanded(boolean expanded) {
-            this.expanded = expanded;
+        /// Sets the collapsible drawer group used to render this sidebar group.
+        private void setDrawerGroup(M3NavigationDrawerGroup drawerGroup) {
+            this.drawerGroup = Objects.requireNonNull(drawerGroup, "drawerGroup");
+            this.topLevelItem = null;
+        }
+
+        /// Sets the direct list item used to render this sidebar group.
+        private void setTopLevelItem(M3ListItem topLevelItem) {
+            this.topLevelItem = Objects.requireNonNull(topLevelItem, "topLevelItem");
+            this.drawerGroup = null;
+        }
+
+        /// Updates selected state for all rendered items in this sidebar group.
+        private void updateSelection(@Nullable DemoPage page) {
+            M3NavigationDrawerGroup drawerGroup = this.drawerGroup;
+            if (drawerGroup != null) {
+                boolean containsCurrentPage = page != null && pages.contains(page);
+                boolean expanded = drawerGroup.isExpanded();
+                drawerGroup.getHeaderItem().setSelected(containsCurrentPage && !expanded);
+                for (M3ListItem item : drawerGroup.getItems()) {
+                    item.setSelected(containsCurrentPage && expanded && item.getUserData() == page);
+                }
+                return;
+            }
+
+            M3ListItem topLevelItem = this.topLevelItem;
+            if (topLevelItem != null) {
+                topLevelItem.setSelected(topLevelItem.getUserData() == page);
+            }
         }
     }
 

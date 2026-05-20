@@ -76,6 +76,7 @@ import org.glavo.m3fx.skins.M3ListViewCellSkin;
 import org.glavo.m3fx.skins.M3ListViewSkin;
 import org.glavo.m3fx.skins.M3MenuSkin;
 import org.glavo.m3fx.skins.M3NavigationBarSkin;
+import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
 import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.glavo.m3fx.skins.M3NavigationItemSkin;
 import org.glavo.m3fx.skins.M3NavigationRailSkin;
@@ -7186,6 +7187,70 @@ final class M3ControlStyleTest {
         assertFalse(search.isSelected());
     }
 
+    /// Verifies that navigation drawers support collapsible destination groups.
+    @Test
+    void navigationDrawerSupportsCollapsibleGroups() {
+        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+        M3ListItem buttons = new M3ListItem("Buttons");
+        M3ListItem fabs = new M3ListItem("FABs");
+        group.addItems(buttons, fabs);
+        M3ListItem overview = new M3ListItem("Overview");
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(group, overview);
+
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+        assertEquals(0, navigationDrawer.getSelectedIndex());
+        assertEquals(2, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(group.getHeaderItem(), navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertEquals(overview, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertInstanceOf(M3DisclosureIcon.class, group.getHeaderItem().getTrailing());
+
+        group.getHeaderItem().fire();
+
+        assertTrue(group.isExpanded());
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+        assertEquals(4, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(buttons, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+        buttons.fire();
+
+        assertEquals(buttons, navigationDrawer.getSelectedItem());
+        assertEquals(1, navigationDrawer.getSelectedIndex());
+        assertTrue(buttons.isSelected());
+        assertFalse(group.getHeaderItem().isSelected());
+
+        group.setExpanded(false);
+        navigationDrawer.selectNext();
+
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+        assertEquals(0, navigationDrawer.getSelectedIndex());
+    }
+
+    /// Verifies that navigation drawer groups expose their skin and visible child structure.
+    @Test
+    void navigationDrawerGroupCreatesMaterialSkinAndTogglesChildren() {
+        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+        M3ListItem buttons = new M3ListItem("Buttons");
+        M3ListItem fabs = new M3ListItem("FABs");
+        group.addItems(buttons, fabs);
+        Pane root = new Pane(group);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertInstanceOf(M3NavigationDrawerGroupSkin.class, group.getSkin());
+        assertEquals(0, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+
+        group.setExpanded(true);
+        root.applyCss();
+        group.layout();
+
+        assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+        assertEquals(56.0, group.getHeaderItem().getOneLineHeight(), 0.0001);
+        assertEquals(40.0, buttons.getOneLineHeight(), 0.0001);
+        assertEquals(32.0, buttons.getHorizontalPadding(), 0.0001);
+    }
+
     /// Verifies that navigation containers delegate layout to Material Design 3 skins.
     @Test
     void navigationContainersCreateMaterialSkins() {
@@ -8550,6 +8615,46 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that expanded navigation drawer groups render header and child rows.
+    @Test
+    void navigationDrawerGroupSnapshotRendersExpandedRows() {
+        runOnFxThread(() -> {
+            M3ListItem overview = new M3ListItem("Components overview");
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+            M3ListItem buttons = new M3ListItem("Buttons");
+            M3ListItem iconButtons = new M3ListItem("Icon buttons");
+            group.addItems(buttons, iconButtons);
+            group.setExpanded(true);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(overview, group);
+            drawer.select(buttons);
+            drawer.setPrefWidth(320.0);
+
+            StackPane root = new StackPane(drawer);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 380.0, 240.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(380.0, 240.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+            assertEquals(40.0, buttons.getOneLineHeight(), 0.0001);
+            assertEquals(32.0, buttons.getHorizontalPadding(), 0.0001);
+            assertTrue(assertInstanceOf(M3DisclosureIcon.class, group.getHeaderItem().getTrailing()).isExpanded());
+            assertSnapshotNodeContainsContrast(image, drawer, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, listItemContainer(buttons), Color.WHITE, 0.05);
+            assertSnapshotHasColorVariety(image, 8);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-navigation-drawer-group.png"
+            ));
+        });
+    }
+
     /// Verifies that carousel snapshots render the viewport and selected item.
     @Test
     void carouselSnapshotRendersViewportAndSelectedItem() {
@@ -9532,6 +9637,9 @@ final class M3ControlStyleTest {
         M3NavigationBar navigationBar = new M3NavigationBar();
         M3NavigationRail navigationRail = new M3NavigationRail();
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
+        M3NavigationDrawerGroup navigationDrawerGroup = new M3NavigationDrawerGroup("Group");
+        M3ListItem navigationDrawerGroupChild = new M3ListItem("Child");
+        navigationDrawerGroup.addItem(navigationDrawerGroupChild);
 
         assertTrue(new M3ButtonGroup().getStyleClass().contains(M3ButtonGroup.STYLE_CLASS));
         assertTrue(new M3SplitButton("Create").getStyleClass().contains(M3SplitButton.STYLE_CLASS));
@@ -9554,6 +9662,13 @@ final class M3ControlStyleTest {
         assertTrue(navigationBar.getStyleClass().contains(M3NavigationBar.STYLE_CLASS));
         assertTrue(navigationRail.getStyleClass().contains(M3NavigationRail.STYLE_CLASS));
         assertTrue(navigationDrawer.getStyleClass().contains(M3NavigationDrawer.STYLE_CLASS));
+        assertTrue(navigationDrawerGroup.getStyleClass().contains(M3NavigationDrawerGroup.STYLE_CLASS));
+        assertTrue(navigationDrawerGroup.getHeaderItem().getStyleClass().contains(
+                M3NavigationDrawerGroup.HEADER_STYLE_CLASS
+        ));
+        assertTrue(navigationDrawerGroupChild.getStyleClass().contains(
+                M3NavigationDrawerGroup.CHILD_STYLE_CLASS
+        ));
     }
 
     /// Verifies style classes for input and selection controls.
@@ -9642,6 +9757,7 @@ final class M3ControlStyleTest {
         assertFalse(HBox.class.isAssignableFrom(M3NavigationBar.class));
         assertFalse(VBox.class.isAssignableFrom(M3NavigationRail.class));
         assertFalse(VBox.class.isAssignableFrom(M3NavigationDrawer.class));
+        assertFalse(VBox.class.isAssignableFrom(M3NavigationDrawerGroup.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
         assertFalse(FlowPane.class.isAssignableFrom(M3ChipGroup.class));
         assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
@@ -10151,6 +10267,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3NavigationBar(), "/styles/controls/navigation-bar.css");
         assertUserAgentStylesheet(new M3NavigationRail(), "/styles/controls/navigation-rail.css");
         assertUserAgentStylesheet(new M3NavigationDrawer(), "/styles/controls/navigation-drawer.css");
+        assertUserAgentStylesheet(new M3NavigationDrawerGroup(), "/styles/controls/navigation-drawer-group.css");
         assertUserAgentStylesheet(new M3NavigationItem(), "/styles/controls/navigation-bar.css");
         assertUserAgentStylesheet(new M3ListPane(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3ListView<>(), "/styles/controls/list-item.css");

@@ -3,30 +3,38 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import org.glavo.m3fx.controls.M3NavigationDrawer;
+import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// The default Material Design 3 skin for [M3NavigationDrawer].
+import java.util.ArrayList;
+import java.util.List;
+
+/// The default Material Design 3 skin for [M3NavigationDrawerGroup].
 @NotNullByDefault
-public final class M3NavigationDrawerSkin extends SkinBase<M3NavigationDrawer> {
-    /// The internal vertical drawer item container.
+public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDrawerGroup> {
+    /// The internal vertical item container.
     private final VBox container = new VBox();
 
-    /// Mirrors public item changes into the skin container.
-    private final ListChangeListener<Node> itemsListener = change -> updateItems();
+    /// Mirrors child destination item changes into the skin container.
+    private final ListChangeListener<M3ListItem> itemsListener = change -> updateItems();
 
-    /// Creates a navigation drawer skin.
-    public M3NavigationDrawerSkin(M3NavigationDrawer control) {
+    /// Mirrors expanded-state changes into the skin container.
+    private final ChangeListener<Boolean> expandedListener = (observable, oldValue, newValue) -> updateItems();
+
+    /// Creates a navigation drawer group skin.
+    public M3NavigationDrawerGroupSkin(M3NavigationDrawerGroup control) {
         super(control);
         container.setManaged(false);
         container.setSpacing(4.0);
         getChildren().add(container);
         control.getItems().addListener(itemsListener);
+        control.expandedProperty().addListener(expandedListener);
         updateItems();
     }
 
@@ -34,6 +42,7 @@ public final class M3NavigationDrawerSkin extends SkinBase<M3NavigationDrawer> {
     @Override
     public void dispose() {
         getSkinnable().getItems().removeListener(itemsListener);
+        getSkinnable().expandedProperty().removeListener(expandedListener);
         container.getChildren().clear();
         super.dispose();
     }
@@ -117,24 +126,33 @@ public final class M3NavigationDrawerSkin extends SkinBase<M3NavigationDrawer> {
         container.resizeRelocate(x, y, width, height);
     }
 
-    /// Mirrors the public item list into the internal container.
+    /// Mirrors the header and visible child item list into the internal container.
     private void updateItems() {
-        container.getChildren().setAll(getSkinnable().getItems());
+        List<Node> visibleItems = new ArrayList<>();
+        visibleItems.add(getSkinnable().getHeaderItem());
+        if (getSkinnable().isExpanded()) {
+            visibleItems.addAll(getSkinnable().getItems());
+        }
+        container.getChildren().setAll(visibleItems);
         getSkinnable().requestLayout();
     }
 
-    /// Keeps drawer list item containers inside the drawer content area.
+    /// Keeps header and child list item containers inside the group content area.
     private void updateListItemWidths(double width) {
         double itemWidth = Math.max(0.0, width);
-        for (Node child : getSkinnable().getItems()) {
-            if (child instanceof Region region) {
-                if (Double.compare(region.getMinWidth(), 0.0) != 0) {
-                    region.setMinWidth(0.0);
-                }
-                if (Double.compare(region.getMaxWidth(), itemWidth) != 0) {
-                    region.setMaxWidth(itemWidth);
-                }
-            }
+        updateListItemWidth(getSkinnable().getHeaderItem(), itemWidth);
+        for (M3ListItem item : getSkinnable().getItems()) {
+            updateListItemWidth(item, itemWidth);
+        }
+    }
+
+    /// Keeps one list item container inside the group content area.
+    private static void updateListItemWidth(M3ListItem item, double itemWidth) {
+        if (Double.compare(item.getMinWidth(), 0.0) != 0) {
+            item.setMinWidth(0.0);
+        }
+        if (Double.compare(item.getMaxWidth(), itemWidth) != 0) {
+            item.setMaxWidth(itemWidth);
         }
     }
 }

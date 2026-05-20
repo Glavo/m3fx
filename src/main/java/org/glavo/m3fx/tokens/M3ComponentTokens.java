@@ -295,7 +295,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         16.0,
                         0.0,
                         12.0,
-                        4.0
+                        4.0,
+                        density.apply(40.0),
+                        shapeTokens.full(),
+                        32.0
                 ),
                 new ListItemTokens(
                         listItemOneLineHeight,
@@ -440,6 +443,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendListSectionHeaderRule(builder, ".m3-list-section-header", listItem());
         appendNavigationDrawerRule(builder, ".m3-navigation-drawer", navigationDrawer());
         appendNavigationDrawerItemRule(builder, ".m3-navigation-drawer .m3-list-item", navigationDrawer());
+        appendNavigationDrawerGroupChildItemRule(
+                builder,
+                ".m3-navigation-drawer-group .m3-list-item.m3-navigation-drawer-group-child",
+                navigationDrawer()
+        );
+        appendNavigationDrawerGroupChildItemRule(
+                builder,
+                ".m3-navigation-drawer .m3-navigation-drawer-group .m3-list-item.m3-navigation-drawer-group-child",
+                navigationDrawer()
+        );
         return builder.toString().stripTrailing();
     }
 
@@ -647,6 +660,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-navigation-drawer-item-vertical-padding", M3TokenCss.pixels(tokens.itemVerticalPadding()));
         M3TokenCss.append(builder, "-m3-navigation-drawer-item-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
         M3TokenCss.append(builder, "-m3-navigation-drawer-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-drawer-group-child-item-height",
+                M3TokenCss.pixels(tokens.groupChildItemHeight())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-drawer-group-child-item-container-shape",
+                M3TokenCss.pixels(tokens.groupChildItemContainerShape())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-drawer-group-child-item-horizontal-padding",
+                M3TokenCss.pixels(tokens.groupChildItemHorizontalPadding())
+        );
     }
 
     /// Appends list item token declarations.
@@ -1272,6 +1300,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends a navigation drawer child group item token CSS rule.
+    private static void appendNavigationDrawerGroupChildItemRule(
+            StringBuilder builder,
+            String selector,
+            NavigationDrawerTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.groupChildItemHeight()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.groupChildItemContainerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.groupChildItemHorizontalPadding()));
+        appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(tokens.itemVerticalPadding()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
+        endRule(builder);
+    }
+
     /// Appends a list item token CSS rule.
     private static void appendListItemRule(StringBuilder builder, String selector, ListItemTokens tokens) {
         beginRule(builder, selector);
@@ -1851,6 +1894,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param itemVerticalPadding the vertical item content padding
     /// @param itemContentSpacing the spacing between item content regions
     /// @param itemSpacing the spacing between drawer items
+    /// @param groupChildItemHeight the preferred one-line child item height inside collapsible groups
+    /// @param groupChildItemContainerShape the child item container radius inside collapsible groups
+    /// @param groupChildItemHorizontalPadding the child item horizontal content padding inside collapsible groups
     @NotNullByDefault
     record NavigationDrawerTokens(
             double containerWidth,
@@ -1862,7 +1908,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double itemHorizontalPadding,
             double itemVerticalPadding,
             double itemContentSpacing,
-            double itemSpacing
+            double itemSpacing,
+            double groupChildItemHeight,
+            double groupChildItemContainerShape,
+            double groupChildItemHorizontalPadding
     ) {
         /// Creates navigation drawer tokens.
         public NavigationDrawerTokens {
@@ -1876,6 +1925,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(itemVerticalPadding, "itemVerticalPadding");
             validateNonNegative(itemContentSpacing, "itemContentSpacing");
             validateNonNegative(itemSpacing, "itemSpacing");
+            validateNonNegative(groupChildItemHeight, "groupChildItemHeight");
+            validateNonNegative(groupChildItemContainerShape, "groupChildItemContainerShape");
+            validateNonNegative(groupChildItemHorizontalPadding, "groupChildItemHorizontalPadding");
         }
     }
 

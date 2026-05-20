@@ -184,7 +184,21 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.BottomAppBarTokens(62.0, 12.0, 14.0, 7.0),
                 new M3ComponentTokens.NavigationBarTokens(67.0, 68.0, 69.0, 30.0, 15.0, 4.0, 9.0),
                 new M3ComponentTokens.NavigationRailTokens(72.0, 73.0, 74.0, 75.0, 31.0, 16.0, 5.0, 17.0, 10.0, 11.0),
-                new M3ComponentTokens.NavigationDrawerTokens(78.0, 79.0, 80.0, 81.0, 18.0, 12.0, 14.0, 2.0, 16.0, 5.0),
+                new M3ComponentTokens.NavigationDrawerTokens(
+                        78.0,
+                        79.0,
+                        80.0,
+                        81.0,
+                        18.0,
+                        12.0,
+                        14.0,
+                        2.0,
+                        16.0,
+                        5.0,
+                        44.0,
+                        20.0,
+                        24.0
+                ),
                 new M3ComponentTokens.ListItemTokens(58.0, 74.0, 90.0, 6.0, 18.0, 9.0, 15.0, 32.0, 19.0)
         );
     }

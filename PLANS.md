@@ -55,7 +55,7 @@
 - Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
 - Checkbox, radio button, and switch disabled visuals use part-level state token opacity so selected indicators remain legible.
 - Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, inclusive min/max date range support, reusable labeled date presets, and field/dialog preset actions; date range picker with start/end selection, in-range styling, normalized range endpoint selection, inclusive min/max date bounds, reusable labeled range presets, and field/dialog preset actions; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, inclusive min/max time range support, reusable labeled time presets, and field/dialog preset actions; date, date-range, and time picker fields with editable text, popup picker selection, formatter-based parsing, range validation, and shared popup motion; date, date-range, and time picker dialogs with Material dialog panes and accepted-result conversion.
-- Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, and navigation drawer.
+- Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, navigation drawer, and collapsible navigation drawer groups.
 - App bars: top app bar variants and bottom app bar with configurable floating action alignment.
 - Menus and search: menu, menu item, submenu item with hover and keyboard opening, menu section header, menu button with edge-aware popup placement, search bar, and search view with customizable result content and action slots.
 - Menu popups support focus-first keyboard navigation, submenu item focus without corrupting selection state, sibling submenu exclusivity, ESC focus return, nested action forwarding, and accessibility focus-node routing across open submenu branches.
@@ -66,11 +66,12 @@
 
 ### Demo And Verification
 
-- Demo app with a Material navigation drawer sidebar and one page per major control family.
+- Demo app with a Material navigation drawer sidebar, collapsible component groups, and one page per major control family.
 - Demo pages cover common variants, disabled states, selected states, error states, and animated progress examples.
 - Unit tests cover style classes, token CSS metadata, accessibility attributes, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
 - Snapshot-based visual tests render implemented control families into report images for manual and automated inspection.
 - Disclosure icon tests cover expanded-state rotation, fixed-slot layout, clipping bounds, and navigation drawer usage.
+- Navigation drawer group tests cover disclosure-backed expansion, flattened drawer selection, child visibility, style classes, skin creation, and user-agent stylesheet routing.
 - Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
 - Text input visual snapshots include outlined floating-label notch geometry checks.
 - Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.

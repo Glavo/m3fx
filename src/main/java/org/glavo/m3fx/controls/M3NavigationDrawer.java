@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,14 @@ public class M3NavigationDrawer extends Control {
     /// The selected-state listeners installed on drawer list items.
     private final Map<M3ListItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
+    /// The item-list listeners installed on nested drawer groups.
+    private final Map<M3NavigationDrawerGroup, ListChangeListener<M3ListItem>> groupItemsListeners =
+            new HashMap<>();
+
+    /// The expanded-state listeners installed on nested drawer groups.
+    private final Map<M3NavigationDrawerGroup, ChangeListener<Boolean>> groupExpandedListeners =
+            new HashMap<>();
+
     /// Handles item actions by selecting the fired item.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
@@ -72,20 +81,14 @@ public class M3NavigationDrawer extends Control {
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
             for (Node child : change.getRemoved()) {
-                if (child instanceof M3ListItem item) {
-                    uninstallItem(item);
-                    item.setSelected(false);
-                }
+                uninstallChild(child);
             }
             for (Node child : change.getAddedSubList()) {
-                if (child instanceof M3ListItem item) {
-                    installItem(item);
-                }
+                installChild(child);
             }
         }
         enforceSelectionPolicy();
-        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyDrawerContentChanged();
     };
 
     /// Whether the drawer is currently synchronizing selected states.
@@ -147,7 +150,7 @@ public class M3NavigationDrawer extends Control {
     /// Returns the child index of the selected drawer list item, or `-1` when no item is selected.
     public final int getSelectedIndex() {
         @Nullable M3ListItem item = getSelectedItem();
-        return item == null ? -1 : getItems().indexOf(item);
+        return item == null ? -1 : flattenedContent().indexOf(item);
     }
 
     /// Returns whether this drawer allows all list items to be unselected.
@@ -168,7 +171,7 @@ public class M3NavigationDrawer extends Control {
     /// Selects a drawer list item that belongs to this drawer.
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
-        if (!getItems().contains(item)) {
+        if (!containsListItem(item)) {
             throw new IllegalArgumentException("item must belong to this navigation drawer");
         }
         selectItem(item);
@@ -176,7 +179,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Selects the drawer list item at the given child index.
     public final void selectIndex(int index) {
-        Node child = getItems().get(index);
+        Node child = flattenedContent().get(index);
         if (child instanceof M3ListItem item) {
             select(item);
             return;
@@ -194,7 +197,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Selects the last drawer list item when one exists.
     public final void selectLast() {
-        @Nullable M3ListItem lastItem = M3SelectionNavigation.last(getItems(), M3ListItem.class);
+        @Nullable M3ListItem lastItem = M3SelectionNavigation.last(flattenedContent(), M3ListItem.class);
         if (lastItem != null) {
             selectItem(lastItem);
         }
@@ -203,7 +206,7 @@ public class M3NavigationDrawer extends Control {
     /// Selects the next drawer list item after the current selected item, wrapping at the end.
     public final void selectNext() {
         @Nullable M3ListItem nextItem =
-                M3SelectionNavigation.next(getItems(), getSelectedItem(), M3ListItem.class);
+                M3SelectionNavigation.next(flattenedContent(), getSelectedItem(), M3ListItem.class);
         if (nextItem != null) {
             selectItem(nextItem);
         }
@@ -212,7 +215,7 @@ public class M3NavigationDrawer extends Control {
     /// Selects the previous drawer list item before the current selected item, wrapping at the start.
     public final void selectPrevious() {
         @Nullable M3ListItem previousItem =
-                M3SelectionNavigation.previous(getItems(), getSelectedItem(), M3ListItem.class);
+                M3SelectionNavigation.previous(flattenedContent(), getSelectedItem(), M3ListItem.class);
         if (previousItem != null) {
             selectItem(previousItem);
         }
@@ -237,9 +240,10 @@ public class M3NavigationDrawer extends Control {
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
+        ObservableList<Node> content = flattenedContent();
         return switch (attribute) {
-            case ITEM_COUNT -> getItems().size();
-            case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
+            case ITEM_COUNT -> content.size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(content, parameters);
             case MULTIPLE_SELECTION -> false;
             case SELECTED_ITEMS -> selectedItemsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -252,7 +256,7 @@ public class M3NavigationDrawer extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
+            case SHOW_ITEM -> M3Accessible.showItem(flattenedContent(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -269,7 +273,7 @@ public class M3NavigationDrawer extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeySelection(
                 event,
-                getItems(),
+                flattenedContent(),
                 getSelectedItem(),
                 M3ListItem.class,
                 false,
@@ -280,7 +284,8 @@ public class M3NavigationDrawer extends Control {
 
     /// Applies the selected drawer item supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
-        @Nullable M3ListItem item = M3Accessible.firstSelectionTarget(getItems(), M3ListItem.class, parameters);
+        @Nullable M3ListItem item =
+                M3Accessible.firstSelectionTarget(flattenedContent(), M3ListItem.class, parameters);
         if (item == null) {
             clearSelection();
         } else {
@@ -288,13 +293,63 @@ public class M3NavigationDrawer extends Control {
         }
     }
 
+    /// Installs listeners on one drawer child node.
+    private void installChild(Node child) {
+        if (child instanceof M3ListItem item) {
+            installItem(item);
+        } else if (child instanceof M3NavigationDrawerGroup group) {
+            installGroup(group);
+        }
+    }
+
+    /// Removes listeners from one drawer child node.
+    private void uninstallChild(Node child) {
+        if (child instanceof M3ListItem item) {
+            uninstallItem(item);
+            item.setSelected(false);
+        } else if (child instanceof M3NavigationDrawerGroup group) {
+            uninstallGroup(group);
+        }
+    }
+
     /// Installs action and selected-state listeners on a drawer item.
     private void installItem(M3ListItem item) {
+        if (selectedListeners.containsKey(item)) {
+            return;
+        }
         item.addEventHandler(ActionEvent.ACTION, itemActionHandler);
         ChangeListener<Boolean> listener = (observable, oldValue, newValue) ->
                 handleItemSelectedChanged(item, newValue);
         selectedListeners.put(item, listener);
         item.selectedProperty().addListener(listener);
+    }
+
+    /// Installs action, selection, and content listeners on a nested drawer group.
+    private void installGroup(M3NavigationDrawerGroup group) {
+        installItem(group.getHeaderItem());
+        for (M3ListItem item : group.getItems()) {
+            installItem(item);
+        }
+
+        ListChangeListener<M3ListItem> itemsListener = change -> {
+            while (change.next()) {
+                for (M3ListItem item : change.getRemoved()) {
+                    uninstallItem(item);
+                    item.setSelected(false);
+                }
+                for (M3ListItem item : change.getAddedSubList()) {
+                    installItem(item);
+                }
+            }
+            enforceSelectionPolicy();
+            notifyDrawerContentChanged();
+        };
+        groupItemsListeners.put(group, itemsListener);
+        group.getItems().addListener(itemsListener);
+
+        ChangeListener<Boolean> expandedListener = (observable, oldValue, newValue) -> notifyDrawerContentChanged();
+        groupExpandedListeners.put(group, expandedListener);
+        group.expandedProperty().addListener(expandedListener);
     }
 
     /// Removes action and selected-state listeners from a drawer item.
@@ -306,9 +361,29 @@ public class M3NavigationDrawer extends Control {
         }
     }
 
+    /// Removes action, selection, and content listeners from a nested drawer group.
+    private void uninstallGroup(M3NavigationDrawerGroup group) {
+        ListChangeListener<M3ListItem> itemsListener = groupItemsListeners.remove(group);
+        if (itemsListener != null) {
+            group.getItems().removeListener(itemsListener);
+        }
+
+        ChangeListener<Boolean> expandedListener = groupExpandedListeners.remove(group);
+        if (expandedListener != null) {
+            group.expandedProperty().removeListener(expandedListener);
+        }
+
+        uninstallItem(group.getHeaderItem());
+        group.getHeaderItem().setSelected(false);
+        for (M3ListItem item : group.getItems()) {
+            uninstallItem(item);
+            item.setSelected(false);
+        }
+    }
+
     /// Selects the drawer item that fired an action event.
     private void handleItemAction(ActionEvent event) {
-        if (event.getSource() instanceof M3ListItem item && getItems().contains(item) && !item.isDisabled()) {
+        if (event.getSource() instanceof M3ListItem item && containsListItem(item) && !item.isDisabled()) {
             selectItem(item);
         }
     }
@@ -333,10 +408,8 @@ public class M3NavigationDrawer extends Control {
     private void selectItem(@Nullable M3ListItem item) {
         updatingSelection = true;
         try {
-            for (Node child : getItems()) {
-                if (child instanceof M3ListItem listItem) {
-                    listItem.setSelected(listItem == item);
-                }
+            for (M3ListItem listItem : allListItems()) {
+                listItem.setSelected(listItem == item);
             }
         } finally {
             updatingSelection = false;
@@ -360,8 +433,8 @@ public class M3NavigationDrawer extends Control {
     private void refreshSelectedItems() {
         List<M3ListItem> previousSelection = List.copyOf(selectedItems);
         selectedItems.clear();
-        for (Node child : getItems()) {
-            if (child instanceof M3ListItem item && item.isSelected()) {
+        for (M3ListItem item : allListItems()) {
+            if (item.isSelected()) {
                 selectedItems.add(item);
             }
         }
@@ -385,7 +458,48 @@ public class M3NavigationDrawer extends Control {
 
     /// Returns the first drawer list item child.
     private @Nullable M3ListItem firstListItem() {
-        return M3SelectionNavigation.first(getItems(), M3ListItem.class);
+        return M3SelectionNavigation.first(flattenedContent(), M3ListItem.class);
+    }
+
+    /// Returns whether a list item belongs to this drawer.
+    private boolean containsListItem(M3ListItem item) {
+        return allListItems().contains(item);
+    }
+
+    /// Returns direct drawer content with expanded groups flattened into visible rows.
+    private ObservableList<Node> flattenedContent() {
+        ObservableList<Node> content = FXCollections.observableArrayList();
+        for (Node child : getItems()) {
+            if (child instanceof M3NavigationDrawerGroup group) {
+                content.add(group.getHeaderItem());
+                if (group.isExpanded()) {
+                    content.addAll(group.getItems());
+                }
+            } else {
+                content.add(child);
+            }
+        }
+        return content;
+    }
+
+    /// Returns all drawer list items in content order, including collapsed group children.
+    private List<M3ListItem> allListItems() {
+        List<M3ListItem> listItems = new ArrayList<>();
+        for (Node child : getItems()) {
+            if (child instanceof M3ListItem item) {
+                listItems.add(item);
+            } else if (child instanceof M3NavigationDrawerGroup group) {
+                listItems.add(group.getHeaderItem());
+                listItems.addAll(group.getItems());
+            }
+        }
+        return listItems;
+    }
+
+    /// Notifies accessibility clients that drawer content geometry changed.
+    private void notifyDrawerContentChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 
     /// Creates the default Material Design 3 navigation drawer skin.
