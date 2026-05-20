@@ -71,6 +71,7 @@
 - Unit tests cover style classes, token CSS metadata, accessibility attributes, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
 - Snapshot-based visual tests render implemented control families into report images for manual and automated inspection.
 - Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
+- Text input visual snapshots include outlined floating-label notch geometry checks.
 - Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.
 - Selection control visual snapshots cover selected, unchecked, indeterminate, disabled, and disabled-selected states.
 - Date and time picker visual tests render selected, today, adjacent-month, preset actions, 12-hour/24-hour, minute-step, and disabled range states into dedicated snapshots.

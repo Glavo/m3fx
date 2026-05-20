@@ -8058,6 +8058,27 @@ final class M3ControlStyleTest {
             assertEquals("Too many", enforcedField.getText());
             assertTrue(counterLayout.isLabelFloating());
             assertEquals(counterLayout.getClearButton(), counterLayout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
+            Label floatingCounterLabel = assertInstanceOf(
+                    Label.class,
+                    counterLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+            );
+            var counterFieldBounds = counterField.localToScene(counterField.getBoundsInLocal());
+            var floatingCounterLabelBounds = floatingCounterLabel.localToScene(floatingCounterLabel.getBoundsInLocal());
+            assertTrue(
+                    floatingCounterLabelBounds.getMinX() > counterFieldBounds.getMinX() + 32.0,
+                    () -> "floating label background starts too far left: field="
+                            + counterFieldBounds + ", label=" + floatingCounterLabelBounds
+            );
+            assertSnapshotAreaContainsContrast(
+                    image,
+                    (int) Math.floor(counterFieldBounds.getMinX() + 4.0),
+                    (int) Math.floor(counterFieldBounds.getMinY()),
+                    (int) Math.floor(floatingCounterLabelBounds.getMinX() - 2.0),
+                    (int) Math.ceil(counterFieldBounds.getMinY() + 3.0),
+                    Color.WHITE,
+                    0.04,
+                    "outlined text field leading top outline before floating label notch"
+            );
             assertEquals("Too long", assertInstanceOf(
                     Label.class,
                     errorLayout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)

@@ -92,6 +92,15 @@ public class M3TextInputLayout extends Control {
     /// The horizontal input padding reserved for each active adornment slot.
     private static final double ADORNED_HORIZONTAL_PADDING = 48.0;
 
+    /// The default horizontal text inset when no adornment is active.
+    private static final double TEXT_HORIZONTAL_PADDING = 16.0;
+
+    /// The horizontal background padding used around floating labels.
+    private static final double FLOATING_LABEL_HORIZONTAL_PADDING = 4.0;
+
+    /// The top padding used to align floating label text with the outline notch.
+    private static final double FLOATING_LABEL_TOP_PADDING = 2.0;
+
     /// The top input padding used when a single-line field has a floating label.
     private static final double LABELED_SINGLE_LINE_TOP_PADDING = 20.0;
 
@@ -1029,12 +1038,27 @@ public class M3TextInputLayout extends Control {
         }
     }
 
-    /// Updates label padding so labels align with input text and avoid adornment slots.
+    /// Updates label placement and floating-label notch padding.
     private void updateLabelPadding() {
-        double left = getLeading() == null ? 16.0 : ADORNED_HORIZONTAL_PADDING;
-        double right = effectiveTrailing() == null ? 16.0 : ADORNED_HORIZONTAL_PADDING;
-        double top = isLabelFloating() ? 2.0 : 0.0;
-        label.setPadding(new Insets(top, right, 0.0, left));
+        double textLeft = getLeading() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING;
+        double textRight = effectiveTrailing() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING;
+        if (isLabelFloating()) {
+            label.setPadding(new Insets(
+                    FLOATING_LABEL_TOP_PADDING,
+                    FLOATING_LABEL_HORIZONTAL_PADDING,
+                    0.0,
+                    FLOATING_LABEL_HORIZONTAL_PADDING
+            ));
+            StackPane.setMargin(label, new Insets(
+                    0.0,
+                    Math.max(0.0, textRight - FLOATING_LABEL_HORIZONTAL_PADDING),
+                    0.0,
+                    Math.max(0.0, textLeft - FLOATING_LABEL_HORIZONTAL_PADDING)
+            ));
+        } else {
+            label.setPadding(Insets.EMPTY);
+            StackPane.setMargin(label, new Insets(0.0, textRight, 0.0, textLeft));
+        }
     }
 
     /// Returns the top padding required while a label is floating.
