@@ -102,6 +102,7 @@ public class M3ListPane extends Control {
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     };
 
     /// Whether the list is currently synchronizing selected states.
@@ -276,6 +277,11 @@ public class M3ListPane extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
+            case FOCUS_NODE -> M3Accessible.focusTarget(M3SelectionNavigation.focusTarget(
+                    getItems(),
+                    getSelectedItem(),
+                    M3ListItem.class
+            ));
             case MULTIPLE_SELECTION -> getSelectionMode() == M3ListSelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedItemsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -287,6 +293,11 @@ public class M3ListPane extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3SelectionNavigation.focusTarget(
+                    getItems(),
+                    getSelectedItem(),
+                    M3ListItem.class
+            ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
             case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -482,6 +493,7 @@ public class M3ListPane extends Control {
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
         if (!selectedItems.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         }
     }
 

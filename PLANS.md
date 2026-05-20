@@ -77,6 +77,7 @@
 - Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.
 - Selection control visual snapshots cover selected, unchecked, indeterminate, disabled, and disabled-selected states.
 - Selection container tests cover focus-anchored keyboard navigation for single-selection chip, icon-toggle, segmented, list, tab, navigation bar, and navigation rail containers.
+- Selection container accessibility tests cover focus-node routing and request-focus behavior for static list, chip, icon-toggle, segmented, tab, navigation bar, navigation rail, and navigation drawer containers.
 - Date and time picker visual tests render selected, today, adjacent-month, preset actions, 12-hour/24-hour, minute-step, and disabled range states into dedicated snapshots.
 - Demo packaging tests cover the executable shadow jar and verify that JavaFX classes are not bundled.
 

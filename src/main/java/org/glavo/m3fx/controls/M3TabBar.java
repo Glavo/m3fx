@@ -81,6 +81,7 @@ public class M3TabBar extends Control {
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     };
 
     /// Whether the tab bar is currently synchronizing selected states.
@@ -234,6 +235,11 @@ public class M3TabBar extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> getTabs().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getTabs(), parameters);
+            case FOCUS_NODE -> M3Accessible.focusTarget(M3SelectionNavigation.focusTarget(
+                    getTabs(),
+                    getSelectedTab(),
+                    M3Tab.class
+            ));
             case MULTIPLE_SELECTION -> false;
             case SELECTED_ITEMS -> selectedTabsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -245,6 +251,11 @@ public class M3TabBar extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3SelectionNavigation.focusTarget(
+                    getTabs(),
+                    getSelectedTab(),
+                    M3Tab.class
+            ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
             case SHOW_ITEM -> M3Accessible.showItem(getTabs(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -363,6 +374,7 @@ public class M3TabBar extends Control {
         selectedTab.set(selectedTabs.isEmpty() ? null : selectedTabs.get(0));
         if (!selectedTabs.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         }
     }
 

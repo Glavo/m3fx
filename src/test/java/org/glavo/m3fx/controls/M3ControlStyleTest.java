@@ -7657,6 +7657,94 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that selection containers expose a focusable child through accessibility focus routing.
+    @Test
+    void selectionContainersExposeAccessibleFocusTargets() {
+        runOnFxThread(() -> {
+            M3IconToggleButton iconFirst = new M3IconToggleButton("A");
+            M3IconToggleButton iconSecond = new M3IconToggleButton("B");
+            M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond);
+            iconGroup.select(iconSecond);
+
+            M3SegmentedButton segmentFirst = new M3SegmentedButton("Day");
+            M3SegmentedButton segmentSecond = new M3SegmentedButton("Week");
+            M3SegmentedButtonGroup segmentedGroup = new M3SegmentedButtonGroup(segmentFirst, segmentSecond);
+            segmentedGroup.select(segmentSecond);
+
+            M3Chip chipFirst = new M3Chip("Input");
+            M3Chip chipSecond = new M3Chip("Filter");
+            M3ChipGroup chipGroup = new M3ChipGroup(chipFirst, chipSecond);
+            chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
+            chipGroup.select(chipSecond);
+
+            M3ListItem listFirst = new M3ListItem("One");
+            M3ListItem listSecond = new M3ListItem("Two");
+            M3ListPane list = new M3ListPane(listFirst, listSecond);
+            list.setSelectionMode(M3ListSelectionMode.SINGLE);
+            list.select(listSecond);
+
+            M3ListItem passiveListFirst = new M3ListItem("Passive one");
+            M3ListItem passiveListSecond = new M3ListItem("Passive two");
+            M3ListPane passiveList = new M3ListPane(passiveListFirst, passiveListSecond);
+
+            M3Tab tabFirst = new M3Tab("Overview");
+            M3Tab tabSecond = new M3Tab("Details");
+            M3TabBar tabBar = new M3TabBar(tabFirst, tabSecond);
+            tabBar.select(tabSecond);
+
+            M3NavigationItem barFirst = new M3NavigationItem("Home");
+            M3NavigationItem barSecond = new M3NavigationItem("Search");
+            M3NavigationBar navigationBar = new M3NavigationBar(barFirst, barSecond);
+            navigationBar.select(barSecond);
+
+            M3NavigationItem railFirst = new M3NavigationItem("Home");
+            M3NavigationItem railSecond = new M3NavigationItem("Search");
+            M3NavigationRail navigationRail = new M3NavigationRail(railFirst, railSecond);
+            navigationRail.select(railSecond);
+
+            M3ListItem drawerFirst = new M3ListItem("Inbox");
+            M3ListItem drawerSecond = new M3ListItem("Archive");
+            M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(drawerFirst, drawerSecond);
+            navigationDrawer.select(drawerSecond);
+
+            Stage stage = new Stage();
+            try {
+                VBox root = new VBox(
+                        iconGroup,
+                        segmentedGroup,
+                        chipGroup,
+                        list,
+                        passiveList,
+                        tabBar,
+                        navigationBar,
+                        navigationRail,
+                        navigationDrawer
+                );
+                Scene scene = new Scene(root, 760.0, 640.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertAccessibleFocus(iconGroup, iconSecond);
+                assertAccessibleFocus(segmentedGroup, segmentSecond);
+                assertAccessibleFocus(chipGroup, chipSecond);
+                assertAccessibleFocus(list, listSecond);
+                assertAccessibleFocus(passiveList, passiveListFirst);
+                assertAccessibleFocus(tabBar, tabSecond);
+                assertAccessibleFocus(navigationBar, barSecond);
+                assertAccessibleFocus(navigationRail, railSecond);
+                assertAccessibleFocus(navigationDrawer, drawerSecond);
+
+                iconSecond.setDisable(true);
+                assertAccessibleFocus(iconGroup, iconFirst);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that multi-selection containers use arrow keys for focus movement without changing selection.
     @Test
     void multiSelectionContainersKeepSelectionDuringKeyboardFocusNavigation() {
@@ -10871,6 +10959,15 @@ final class M3ControlStyleTest {
             throw exception;
         }
         return color.get();
+    }
+
+    /// Verifies that a control reports and focuses the expected accessibility focus node.
+    private static void assertAccessibleFocus(Node control, Node expectedFocusNode) {
+        assertSame(expectedFocusNode, control.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+        control.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+        assertTrue(expectedFocusNode.isFocused());
     }
 
     /// Runs a task on the FX application thread and propagates failures.

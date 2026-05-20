@@ -164,6 +164,19 @@ final class M3SelectionNavigation {
         return null;
     }
 
+    /// Returns the focused child, the current child, or the first navigable child as an accessibility focus target.
+    static <T extends Node> @Nullable T focusTarget(
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type
+    ) {
+        Objects.requireNonNull(children, "children");
+        Objects.requireNonNull(type, "type");
+
+        @Nullable T anchor = focusAnchor(children, current, type);
+        return anchor == null ? first(children, type) : anchor;
+    }
+
     /// Returns the selection target implied by a navigation key.
     private static <T extends Node> @Nullable T targetFromKey(
             KeyCode keyCode,

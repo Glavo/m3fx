@@ -111,6 +111,7 @@ public class M3SegmentedButtonGroup extends Control {
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     };
 
     /// Whether the group is currently synchronizing selected states.
@@ -285,6 +286,11 @@ public class M3SegmentedButtonGroup extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
+            case FOCUS_NODE -> M3Accessible.focusTarget(M3SelectionNavigation.focusTarget(
+                    getItems(),
+                    getSelectedButton(),
+                    M3SegmentedButton.class
+            ));
             case MULTIPLE_SELECTION -> getSelectionMode() == M3SegmentedButtonSelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedButtonsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -296,6 +302,11 @@ public class M3SegmentedButtonGroup extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3SelectionNavigation.focusTarget(
+                    getItems(),
+                    getSelectedButton(),
+                    M3SegmentedButton.class
+            ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
             case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -468,6 +479,7 @@ public class M3SegmentedButtonGroup extends Control {
         selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
         if (!selectedButtons.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         }
     }
 

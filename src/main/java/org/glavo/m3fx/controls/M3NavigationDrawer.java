@@ -245,6 +245,11 @@ public class M3NavigationDrawer extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> content.size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(content, parameters);
+            case FOCUS_NODE -> M3Accessible.focusTarget(M3SelectionNavigation.focusTarget(
+                    content,
+                    getSelectedItem(),
+                    M3ListItem.class
+            ));
             case MULTIPLE_SELECTION -> false;
             case SELECTED_ITEMS -> selectedItemsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -256,6 +261,11 @@ public class M3NavigationDrawer extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3SelectionNavigation.focusTarget(
+                    flattenedContent(),
+                    getSelectedItem(),
+                    M3ListItem.class
+            ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -583,6 +593,7 @@ public class M3NavigationDrawer extends Control {
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
         if (!selectedItems.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         }
     }
 
@@ -664,6 +675,7 @@ public class M3NavigationDrawer extends Control {
     private void notifyDrawerContentChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Creates the default Material Design 3 navigation drawer skin.
