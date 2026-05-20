@@ -108,11 +108,11 @@ public class M3TextInputLayout extends Control {
     /// The default horizontal text inset when no adornment is active.
     private static final double TEXT_HORIZONTAL_PADDING = 16.0;
 
-    /// The horizontal background padding used around floating labels.
+    /// The horizontal notch padding used around floating labels.
     private static final double FLOATING_LABEL_HORIZONTAL_PADDING = 4.0;
 
-    /// The top padding used to align floating label text with the outline notch.
-    private static final double FLOATING_LABEL_TOP_PADDING = 2.0;
+    /// The top margin used to make outlined floating labels straddle the outline.
+    private static final double FLOATING_LABEL_TOP_MARGIN = -8.0;
 
     /// The minimum horizontal gap animated into an outlined field notch.
     private static final double MINIMUM_NOTCH_GAP = 0.5;
@@ -1107,13 +1107,13 @@ public class M3TextInputLayout extends Control {
         double textRight = effectiveTrailing() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING;
         if (isLabelFloating()) {
             label.setPadding(new Insets(
-                    FLOATING_LABEL_TOP_PADDING,
+                    0.0,
                     FLOATING_LABEL_HORIZONTAL_PADDING,
                     0.0,
                     FLOATING_LABEL_HORIZONTAL_PADDING
             ));
             StackPane.setMargin(label, new Insets(
-                    0.0,
+                    isOutlinedInput() ? FLOATING_LABEL_TOP_MARGIN : 0.0,
                     Math.max(0.0, textRight - FLOATING_LABEL_HORIZONTAL_PADDING),
                     0.0,
                     Math.max(0.0, textLeft - FLOATING_LABEL_HORIZONTAL_PADDING)

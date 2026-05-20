@@ -8140,6 +8140,15 @@ final class M3ControlStyleTest {
             assertTrue(outlineNotchGap(outline) >= labelBounds.getWidth() - 1.0,
                     () -> "outline gap is narrower than the floating label: gap="
                             + outlineNotchGap(outline) + ", label=" + labelBounds);
+            assertTrue(labelBounds.getMinY() < fieldBounds.getMinY(),
+                    () -> "floating label should start above the outline top: field="
+                            + fieldBounds + ", label=" + labelBounds);
+            assertTrue(labelBounds.getMaxY() > fieldBounds.getMinY(),
+                    () -> "floating label should straddle the outline top: field="
+                            + fieldBounds + ", label=" + labelBounds);
+            assertTrue(Math.abs(labelBounds.getCenterY() - fieldBounds.getMinY()) < 6.0,
+                    () -> "floating label should be centered around the outline top: field="
+                            + fieldBounds + ", label=" + labelBounds);
 
             Color labelPaddingPixel = image.getPixelReader().getColor(
                     (int) Math.floor(labelBounds.getMinX() + 1.0),
