@@ -3,47 +3,88 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
-import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
+import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.jetbrains.annotations.NotNullByDefault;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /// The default Material Design 3 skin for [M3NavigationDrawerGroup].
 @NotNullByDefault
 public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDrawerGroup> {
-    /// The internal vertical item container.
-    private final VBox container = new VBox();
+    /// The spacing between the header row and child row container.
+    private static final double ITEM_SPACING = 4.0;
+
+    /// The vertical offset applied to child rows while expanding or collapsing.
+    private static final double CHILD_TRANSITION_OFFSET = -6.0;
+
+    /// The duration used by child row expansion and collapse.
+    private static final Duration EXPANSION_DURATION = M3Motion.MEDIUM1;
+
+    /// The clipped viewport for child destination rows.
+    private final Pane childViewport = new Pane();
+
+    /// The vertical container holding child destination rows during expansion.
+    private final VBox childrenContainer = new VBox();
+
+    /// The clip that reveals child rows as the group expands.
+    private final Rectangle childrenClip = new Rectangle();
+
+    /// The current child row reveal progress from collapsed `0` to expanded `1`.
+    private final DoubleProperty expansionProgress = new SimpleDoubleProperty(this, "expansionProgress") {
+        /// Updates child row visibility and layout after reveal progress changes.
+        @Override
+        protected void invalidated() {
+            updateExpansionProgress();
+        }
+    };
+
+    /// The expansion and collapse animation for child rows.
+    private final Timeline expansionAnimation = new Timeline();
 
     /// Mirrors child destination item changes into the skin container.
-    private final ListChangeListener<M3ListItem> itemsListener = change -> updateItems();
+    private final ListChangeListener<M3ListItem> itemsListener = change -> updateChildItems();
 
-    /// Mirrors expanded-state changes into the skin container.
-    private final ChangeListener<Boolean> expandedListener = (observable, oldValue, newValue) -> updateItems();
+    /// Mirrors expanded-state changes into the child row viewport.
+    private final ChangeListener<Boolean> expandedListener =
+            (observable, oldValue, newValue) -> setExpandedState(newValue, shouldAnimateExpansion());
+
+    /// Whether child items are currently mounted in the viewport.
+    private boolean childItemsMounted;
 
     /// Creates a navigation drawer group skin.
     public M3NavigationDrawerGroupSkin(M3NavigationDrawerGroup control) {
         super(control);
-        container.setManaged(false);
-        container.setSpacing(4.0);
-        getChildren().add(container);
+        childViewport.setManaged(false);
+        childViewport.setClip(childrenClip);
+        childrenContainer.setManaged(false);
+        childrenContainer.setSpacing(ITEM_SPACING);
+        childViewport.getChildren().add(childrenContainer);
+        getChildren().addAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
         control.expandedProperty().addListener(expandedListener);
-        updateItems();
+        setExpandedState(control.isExpanded(), false);
     }
 
     /// Removes listeners and child references before disposal.
     @Override
     public void dispose() {
+        expansionAnimation.stop();
         getSkinnable().getItems().removeListener(itemsListener);
         getSkinnable().expandedProperty().removeListener(expandedListener);
-        container.getChildren().clear();
+        childrenContainer.getChildren().clear();
+        childViewport.getChildren().clear();
         super.dispose();
     }
 
@@ -56,7 +97,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + container.minWidth(height) + rightInset;
+        return leftInset + contentWidth(height, (region, dimension) -> region.minWidth(dimension)) + rightInset;
     }
 
     /// Computes the minimum height from the internal item container.
@@ -68,7 +109,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.minHeight(width) + bottomInset;
+        return topInset + contentHeight(width, (region, dimension) -> region.minHeight(dimension)) + bottomInset;
     }
 
     /// Computes the preferred width from the internal item container.
@@ -80,7 +121,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + container.prefWidth(height) + rightInset;
+        return leftInset + contentWidth(height, (region, dimension) -> region.prefWidth(dimension)) + rightInset;
     }
 
     /// Computes the preferred height from the internal item container.
@@ -92,7 +133,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.prefHeight(width) + bottomInset;
+        return topInset + contentHeight(width, (region, dimension) -> region.prefHeight(dimension)) + bottomInset;
     }
 
     /// Computes the maximum width from the internal item container.
@@ -104,7 +145,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + container.maxWidth(height) + rightInset;
+        return leftInset + contentWidth(height, (region, dimension) -> region.maxWidth(dimension)) + rightInset;
     }
 
     /// Computes the maximum height from the internal item container.
@@ -116,31 +157,144 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.maxHeight(width) + bottomInset;
+        return topInset + contentHeight(width, (region, dimension) -> region.maxHeight(dimension)) + bottomInset;
     }
 
-    /// Lays out the item container in the full control content bounds.
+    /// Lays out the header and clipped child row viewport.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        updateListItemWidths(width);
-        container.resizeRelocate(x, y, width, height);
+        M3ListItem headerItem = getSkinnable().getHeaderItem();
+        updateListItemWidth(headerItem, width);
+        double headerHeight = headerItem.prefHeight(width);
+        headerItem.resizeRelocate(x, y, width, headerHeight);
+
+        if (!childItemsMounted) {
+            childViewport.setVisible(false);
+            return;
+        }
+
+        double childrenHeight = childrenContainer.prefHeight(width);
+        double viewportHeight = childrenHeight * expansionProgress.get();
+        if (viewportHeight <= 0.0) {
+            childViewport.setVisible(false);
+            return;
+        }
+
+        updateChildItemWidths(width);
+        childViewport.setVisible(true);
+        childViewport.resizeRelocate(x, y + headerHeight + ITEM_SPACING, width, viewportHeight);
+        childrenClip.setWidth(width);
+        childrenClip.setHeight(viewportHeight);
+        childrenContainer.resizeRelocate(0.0, 0.0, width, childrenHeight);
+        childrenContainer.layout();
     }
 
-    /// Mirrors the header and visible child item list into the internal container.
-    private void updateItems() {
-        List<Node> visibleItems = new ArrayList<>();
-        visibleItems.add(getSkinnable().getHeaderItem());
-        if (getSkinnable().isExpanded()) {
-            visibleItems.addAll(getSkinnable().getItems());
+    /// Returns the combined content width from the header and mounted children.
+    private double contentWidth(double height, SizeFunction sizeFunction) {
+        double headerWidth = sizeFunction.size(getSkinnable().getHeaderItem(), height);
+        double childrenWidth = childItemsMounted ? sizeFunction.size(childrenContainer, height) : 0.0;
+        return Math.max(headerWidth, childrenWidth);
+    }
+
+    /// Returns the combined content height from the header and animated child viewport.
+    private double contentHeight(double width, SizeFunction sizeFunction) {
+        double headerHeight = sizeFunction.size(getSkinnable().getHeaderItem(), width);
+        if (!childItemsMounted) {
+            return headerHeight;
         }
-        container.getChildren().setAll(visibleItems);
+
+        double childrenHeight = sizeFunction.size(childrenContainer, width);
+        double progress = expansionProgress.get();
+        if (childrenHeight <= 0.0 || progress <= 0.0) {
+            return headerHeight;
+        }
+        return headerHeight + ITEM_SPACING + childrenHeight * progress;
+    }
+
+    /// Updates mounted child rows after the public child list changes.
+    private void updateChildItems() {
+        if (shouldMountChildItems()) {
+            mountChildItems();
+        } else {
+            unmountChildItems();
+        }
         getSkinnable().requestLayout();
     }
 
-    /// Keeps header and child list item containers inside the group content area.
-    private void updateListItemWidths(double width) {
+    /// Applies the expanded state, using animation when the group is attached to a scene.
+    private void setExpandedState(boolean expanded, boolean animate) {
+        expansionAnimation.stop();
+        expansionAnimation.setOnFinished(null);
+        if (expanded) {
+            mountChildItems();
+        }
+
+        double targetProgress = expanded ? 1.0 : 0.0;
+        if (!animate || Double.compare(expansionProgress.get(), targetProgress) == 0) {
+            expansionProgress.set(targetProgress);
+            if (!expanded) {
+                unmountChildItems();
+            }
+            return;
+        }
+
+        boolean targetExpanded = expanded;
+        expansionAnimation.getKeyFrames().setAll(new KeyFrame(
+                EXPANSION_DURATION,
+                new KeyValue(
+                        expansionProgress,
+                        targetProgress,
+                        targetExpanded ? M3Motion.STANDARD_DECELERATE : M3Motion.STANDARD_ACCELERATE
+                )
+        ));
+        expansionAnimation.setOnFinished(event -> {
+            if (!targetExpanded) {
+                unmountChildItems();
+            }
+            expansionAnimation.setOnFinished(null);
+        });
+        expansionAnimation.playFromStart();
+    }
+
+    /// Returns whether expanded-state changes should animate.
+    private boolean shouldAnimateExpansion() {
+        return getSkinnable().getScene() != null;
+    }
+
+    /// Returns whether child rows should be kept mounted in the viewport.
+    private boolean shouldMountChildItems() {
+        return getSkinnable().isExpanded()
+                || expansionProgress.get() > 0.0
+                || expansionAnimation.getStatus() == Timeline.Status.RUNNING;
+    }
+
+    /// Mounts current child rows into the child viewport.
+    private void mountChildItems() {
+        childItemsMounted = true;
+        childrenContainer.getChildren().setAll(getSkinnable().getItems());
+        updateExpansionProgress();
+    }
+
+    /// Unmounts hidden child rows from the child viewport.
+    private void unmountChildItems() {
+        childItemsMounted = false;
+        childrenContainer.getChildren().clear();
+        childViewport.setVisible(false);
+        getSkinnable().requestLayout();
+    }
+
+    /// Updates child viewport visual state from the current reveal progress.
+    private void updateExpansionProgress() {
+        double progress = expansionProgress.get();
+        childViewport.setVisible(childItemsMounted && progress > 0.0);
+        childrenContainer.setOpacity(progress);
+        childrenContainer.setTranslateY((1.0 - progress) * CHILD_TRANSITION_OFFSET);
+        getSkinnable().requestLayout();
+    }
+
+    /// Keeps child list item containers inside the group content area.
+    private void updateChildItemWidths(double width) {
         double itemWidth = Math.max(0.0, width);
-        updateListItemWidth(getSkinnable().getHeaderItem(), itemWidth);
         for (M3ListItem item : getSkinnable().getItems()) {
             updateListItemWidth(item, itemWidth);
         }
@@ -154,5 +308,13 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         if (Double.compare(item.getMaxWidth(), itemWidth) != 0) {
             item.setMaxWidth(itemWidth);
         }
+    }
+
+    /// Computes one dimension for a region.
+    @FunctionalInterface
+    @NotNullByDefault
+    private interface SizeFunction {
+        /// Returns the requested size for a region.
+        double size(javafx.scene.layout.Region region, double oppositeDimension);
     }
 }

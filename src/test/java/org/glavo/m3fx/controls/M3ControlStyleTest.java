@@ -7251,6 +7251,88 @@ final class M3ControlStyleTest {
         assertEquals(32.0, buttons.getHorizontalPadding(), 0.0001);
     }
 
+    /// Verifies that navigation drawer groups animate child row expansion and collapse.
+    @Test
+    void navigationDrawerGroupAnimatesExpansionAndCollapse() throws InterruptedException {
+        AtomicReference<M3NavigationDrawerGroup> groupReference = new AtomicReference<>();
+        AtomicReference<Double> collapsedHeightReference = new AtomicReference<>();
+        AtomicReference<Double> expandedHeightReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(90.0),
+                () -> {
+                    M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+                    M3ListItem buttons = new M3ListItem("Buttons");
+                    M3ListItem iconButtons = new M3ListItem("Icon buttons");
+                    group.addItems(buttons, iconButtons);
+                    Pane root = new Pane(group);
+                    Scene scene = new Scene(root, 280.0, 200.0);
+
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    root.applyCss();
+                    root.resize(280.0, 200.0);
+                    root.layout();
+
+                    double collapsedHeight = group.prefHeight(240.0);
+                    double expandedHeight = group.getHeaderItem().prefHeight(240.0)
+                            + 4.0
+                            + buttons.prefHeight(240.0)
+                            + 4.0
+                            + iconButtons.prefHeight(240.0);
+                    groupReference.set(group);
+                    collapsedHeightReference.set(collapsedHeight);
+                    expandedHeightReference.set(expandedHeight);
+                    group.setExpanded(true);
+                },
+                () -> {
+                    M3NavigationDrawerGroup group = Objects.requireNonNull(groupReference.get());
+                    double height = group.prefHeight(240.0);
+
+                    assertTrue(height > collapsedHeightReference.get());
+                    assertTrue(height < expandedHeightReference.get());
+                    assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+                }
+        );
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(300.0),
+                () -> {
+                },
+                () -> {
+                    M3NavigationDrawerGroup group = Objects.requireNonNull(groupReference.get());
+
+                    assertEquals(expandedHeightReference.get(), group.prefHeight(240.0), 0.5);
+                    group.setExpanded(false);
+                }
+        );
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(90.0),
+                () -> {
+                },
+                () -> {
+                    M3NavigationDrawerGroup group = Objects.requireNonNull(groupReference.get());
+                    double height = group.prefHeight(240.0);
+
+                    assertTrue(height > collapsedHeightReference.get());
+                    assertTrue(height < expandedHeightReference.get());
+                    assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+                }
+        );
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(300.0),
+                () -> {
+                },
+                () -> {
+                    M3NavigationDrawerGroup group = Objects.requireNonNull(groupReference.get());
+
+                    assertEquals(collapsedHeightReference.get(), group.prefHeight(240.0), 0.5);
+                    assertEquals(0, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+                }
+        );
+    }
+
     /// Verifies that navigation containers delegate layout to Material Design 3 skins.
     @Test
     void navigationContainersCreateMaterialSkins() {
