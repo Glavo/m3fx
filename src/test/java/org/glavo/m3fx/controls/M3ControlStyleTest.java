@@ -5589,6 +5589,49 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3ProgressIndicatorSkin.class, progressIndicator.getSkin());
     }
 
+    /// Verifies that progress controls expose accessible value, range, and indeterminate state.
+    @Test
+    void progressControlsExposeAccessibleValues() {
+        M3ProgressBar progressBar = new M3ProgressBar(0.42);
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.65);
+        @Nullable AccessibleAttribute valueStringAttribute = M3Accessible.attribute("VALUE_STRING");
+
+        assertEquals(false, progressBar.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
+        assertEquals(0.0, progressBar.queryAccessibleAttribute(AccessibleAttribute.MIN_VALUE));
+        assertEquals(1.0, progressBar.queryAccessibleAttribute(AccessibleAttribute.MAX_VALUE));
+        assertEquals(0.42, (Double) progressBar.queryAccessibleAttribute(AccessibleAttribute.VALUE), 0.0001);
+        if (valueStringAttribute != null) {
+            assertEquals("42%", progressBar.queryAccessibleAttribute(valueStringAttribute));
+        }
+        assertEquals(Orientation.HORIZONTAL, progressBar.queryAccessibleAttribute(AccessibleAttribute.ORIENTATION));
+
+        assertEquals(false, progressIndicator.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
+        assertEquals(0.0, progressIndicator.queryAccessibleAttribute(AccessibleAttribute.MIN_VALUE));
+        assertEquals(1.0, progressIndicator.queryAccessibleAttribute(AccessibleAttribute.MAX_VALUE));
+        assertEquals(0.65, (Double) progressIndicator.queryAccessibleAttribute(AccessibleAttribute.VALUE), 0.0001);
+        if (valueStringAttribute != null) {
+            assertEquals("65%", progressIndicator.queryAccessibleAttribute(valueStringAttribute));
+        }
+
+        progressBar.setProgress(-10.0);
+        progressIndicator.setProgress(Double.NaN);
+
+        assertEquals(true, progressBar.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
+        assertEquals(M3ProgressBar.INDETERMINATE_PROGRESS,
+                (Double) progressBar.queryAccessibleAttribute(AccessibleAttribute.VALUE),
+                0.0001);
+        if (valueStringAttribute != null) {
+            assertEquals("Indeterminate", progressBar.queryAccessibleAttribute(valueStringAttribute));
+        }
+        assertEquals(true, progressIndicator.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
+        assertEquals(M3ProgressIndicator.INDETERMINATE_PROGRESS,
+                (Double) progressIndicator.queryAccessibleAttribute(AccessibleAttribute.VALUE),
+                0.0001);
+        if (valueStringAttribute != null) {
+            assertEquals("Indeterminate", progressIndicator.queryAccessibleAttribute(valueStringAttribute));
+        }
+    }
+
     /// Verifies that the progress bar skin lays out determinate progress without Modena internals.
     @Test
     void progressBarSkinLaysOutDeterminateProgress() {
@@ -8672,6 +8715,45 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that circular progress snapshots show distinct track and indicator arc pixels.
+    @Test
+    void progressIndicatorSnapshotRendersTrackAndArcPixels() {
+        runOnFxThread(() -> {
+            M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+            progressIndicator.setPrefSize(72.0, 72.0);
+            progressIndicator.setStyle("-m3-track-thickness: 8px; -m3-indicator-size: 72px;");
+            FlowPane root = new FlowPane(progressIndicator);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 104.0, 96.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(104.0, 96.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            Arc arc = (Arc) lookupShape(progressIndicator, ".indicator");
+            javafx.scene.shape.Circle track = (javafx.scene.shape.Circle) lookupShape(progressIndicator, ".track");
+            var arcCenter = arc.localToScene(arc.getCenterX(), arc.getCenterY());
+            int centerX = (int) Math.round(arcCenter.getX());
+            int centerY = (int) Math.round(arcCenter.getY());
+            int radius = (int) Math.round(track.getRadius());
+            Color arcPixel = image.getPixelReader().getColor(centerX, centerY - radius);
+            Color trackPixel = image.getPixelReader().getColor(centerX - radius, centerY);
+
+            assertTrue(arcPixel.getOpacity() > 0.4, () -> "arcPixel=" + arcPixel);
+            assertTrue(trackPixel.getOpacity() > 0.4, () -> "trackPixel=" + trackPixel);
+            assertTrue(colorDistance(arcPixel, trackPixel) > 0.1,
+                    () -> "arcPixel=" + arcPixel + ", trackPixel=" + trackPixel);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-progress-indicator-arc.png"
+            ));
+        });
+    }
+
     /// Verifies that inputs render filled, outlined, password, and multiline visual variants.
     @Test
     void inputSnapshotRendersFilledOutlinedPasswordAndTextAreaControls() {
@@ -10010,6 +10092,35 @@ final class M3ControlStyleTest {
         applyCss(slider);
 
         assertInstanceOf(M3SliderSkin.class, slider.getSkin());
+    }
+
+    /// Verifies that sliders expose accessible value, range, orientation, and value adjustment actions.
+    @Test
+    void sliderExposesAccessibleValuesAndActions() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 40.0);
+        slider.setBlockIncrement(10.0);
+        @Nullable AccessibleAttribute valueStringAttribute = M3Accessible.attribute("VALUE_STRING");
+
+        assertEquals(0.0, slider.queryAccessibleAttribute(AccessibleAttribute.MIN_VALUE));
+        assertEquals(100.0, slider.queryAccessibleAttribute(AccessibleAttribute.MAX_VALUE));
+        assertEquals(40.0, (Double) slider.queryAccessibleAttribute(AccessibleAttribute.VALUE), 0.0001);
+        if (valueStringAttribute != null) {
+            assertEquals("40.0", slider.queryAccessibleAttribute(valueStringAttribute));
+        }
+        assertEquals(Orientation.HORIZONTAL, slider.queryAccessibleAttribute(AccessibleAttribute.ORIENTATION));
+
+        slider.executeAccessibleAction(AccessibleAction.SET_VALUE, 75.0);
+        assertEquals(75.0, slider.getValue(), 0.0001);
+        slider.executeAccessibleAction(AccessibleAction.INCREMENT);
+        assertEquals(85.0, slider.getValue(), 0.0001);
+        slider.executeAccessibleAction(AccessibleAction.BLOCK_DECREMENT);
+        assertEquals(75.0, slider.getValue(), 0.0001);
+        slider.executeAccessibleAction(AccessibleAction.SET_VALUE, 120.0);
+        assertEquals(100.0, slider.getValue(), 0.0001);
+
+        slider.setOrientation(Orientation.VERTICAL);
+
+        assertEquals(Orientation.VERTICAL, slider.queryAccessibleAttribute(AccessibleAttribute.ORIENTATION));
     }
 
     /// Verifies that slider track layout remains bounded by the slider control.

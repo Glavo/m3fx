@@ -6,11 +6,13 @@ package org.glavo.m3fx.controls;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.DoublePropertyBase;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
-import javafx.css.PseudoClass;
+import javafx.geometry.Orientation;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -22,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /// A Material Design 3 linear progress indicator.
 @NotNullByDefault
@@ -41,6 +44,16 @@ public class M3ProgressBar extends Control {
 
     /// The default progress track shape radius.
     private static final double DEFAULT_TRACK_SHAPE = 999.0;
+
+    /// The minimum accessible progress value.
+    private static final double ACCESSIBLE_MIN_VALUE = 0.0;
+
+    /// The maximum accessible progress value.
+    private static final double ACCESSIBLE_MAX_VALUE = 1.0;
+
+    /// The optional accessible value-string attribute available on newer JavaFX runtimes.
+    private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
+            M3Accessible.attribute("VALUE_STRING");
 
     /// The current progress value.
     private @Nullable DoubleProperty progress;
@@ -85,6 +98,9 @@ public class M3ProgressBar extends Control {
                         return;
                     }
                     pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, isIndeterminate());
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
+                    M3Accessible.notifyAttribute(M3ProgressBar.this, VALUE_STRING_ATTRIBUTE);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.INDETERMINATE);
                     requestLayout();
                 }
 
@@ -211,6 +227,23 @@ public class M3ProgressBar extends Control {
         return new M3ProgressBarSkin(this);
     }
 
+    /// Returns accessibility attributes for the progress value and orientation.
+    @Override
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        if (attribute == VALUE_STRING_ATTRIBUTE) {
+            return accessibleValueString();
+        }
+        return switch (attribute) {
+            case INDETERMINATE -> isIndeterminate();
+            case MIN_VALUE -> ACCESSIBLE_MIN_VALUE;
+            case MAX_VALUE -> ACCESSIBLE_MAX_VALUE;
+            case VALUE -> getProgress();
+            case ORIENTATION -> Orientation.HORIZONTAL;
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Returns the user-agent stylesheet for m3fx progress controls.
     @Override
     public String getUserAgentStylesheet() {
@@ -239,6 +272,11 @@ public class M3ProgressBar extends Control {
             return INDETERMINATE_PROGRESS;
         }
         return Math.min(1.0, progress);
+    }
+
+    /// Returns the accessible string representation of the current progress.
+    private String accessibleValueString() {
+        return isIndeterminate() ? "Indeterminate" : Math.round(getProgress() * 100.0) + "%";
     }
 
     /// CSS metadata for m3fx progress bar component tokens.

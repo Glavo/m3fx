@@ -11,6 +11,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -22,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /// A Material Design 3 circular progress indicator.
 @NotNullByDefault
@@ -41,6 +43,16 @@ public class M3ProgressIndicator extends Control {
 
     /// The default circular indicator size.
     private static final double DEFAULT_INDICATOR_SIZE = 48.0;
+
+    /// The minimum accessible progress value.
+    private static final double ACCESSIBLE_MIN_VALUE = 0.0;
+
+    /// The maximum accessible progress value.
+    private static final double ACCESSIBLE_MAX_VALUE = 1.0;
+
+    /// The optional accessible value-string attribute available on newer JavaFX runtimes.
+    private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
+            M3Accessible.attribute("VALUE_STRING");
 
     /// The current progress value.
     private @Nullable DoubleProperty progress;
@@ -85,6 +97,9 @@ public class M3ProgressIndicator extends Control {
                         return;
                     }
                     pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, isIndeterminate());
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
+                    M3Accessible.notifyAttribute(M3ProgressIndicator.this, VALUE_STRING_ATTRIBUTE);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.INDETERMINATE);
                     requestLayout();
                 }
 
@@ -212,6 +227,22 @@ public class M3ProgressIndicator extends Control {
         return new M3ProgressIndicatorSkin(this);
     }
 
+    /// Returns accessibility attributes for the progress value.
+    @Override
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        if (attribute == VALUE_STRING_ATTRIBUTE) {
+            return accessibleValueString();
+        }
+        return switch (attribute) {
+            case INDETERMINATE -> isIndeterminate();
+            case MIN_VALUE -> ACCESSIBLE_MIN_VALUE;
+            case MAX_VALUE -> ACCESSIBLE_MAX_VALUE;
+            case VALUE -> getProgress();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
     /// Returns the user-agent stylesheet for m3fx progress controls.
     @Override
     public String getUserAgentStylesheet() {
@@ -240,6 +271,11 @@ public class M3ProgressIndicator extends Control {
             return INDETERMINATE_PROGRESS;
         }
         return Math.min(1.0, progress);
+    }
+
+    /// Returns the accessible string representation of the current progress.
+    private String accessibleValueString() {
+        return isIndeterminate() ? "Indeterminate" : Math.round(getProgress() * 100.0) + "%";
     }
 
     /// CSS metadata for m3fx progress indicator component tokens.

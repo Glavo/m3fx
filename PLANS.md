@@ -52,14 +52,14 @@
 - Typography and icon primitives: `M3Text`, `M3Icon`, `M3DisclosureIcon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
 - Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, floating action buttons, extended floating action buttons, and floating action button menus.
 - Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, animated text input layouts with floating labels, reusable validators, multi-validator pipelines, group-level form validation coordination, validation summaries, observable validation-active and invalid-count state, per-field validation actions, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, optional hard character limits, and form pane, section, and row helpers for structured input layouts.
-- Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
+- Selection controls: checkbox, radio button, switch, slider with accessible value/range adjustment semantics, chips, chip groups, segmented buttons, and segmented button groups.
 - Checkbox, radio button, and switch disabled visuals use part-level state token opacity so selected indicators remain legible.
 - Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, inclusive min/max date range support, reusable labeled date presets, and field/dialog preset actions; date range picker with start/end selection, in-range styling, normalized range endpoint selection, inclusive min/max date bounds, reusable labeled range presets, and field/dialog preset actions; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, inclusive min/max time range support, reusable labeled time presets, and field/dialog preset actions; date, date-range, and time picker fields with editable text, popup picker selection, formatter-based parsing, range validation, and shared popup motion; date, date-range, and time picker dialogs with Material dialog panes and accepted-result conversion.
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, navigation drawer, and collapsible navigation drawer groups.
 - App bars: top app bar variants and bottom app bar with configurable floating action alignment.
 - Menus and search: menu, menu item, submenu item with hover and keyboard opening, menu section header, menu button with edge-aware popup placement, search bar, and search view with customizable result content and action slots.
 - Menu popups support focus-first keyboard navigation, submenu item focus without corrupting selection state, sibling submenu exclusivity, ESC focus return, nested action forwarding, accessibility focus-node routing across open submenu branches, request-focus forwarding, and recursive show-item requests for nested submenu descendants.
-- Feedback and progress: banner, snackbar, snackbar host with queued messages, plain tooltip, rich tooltip, linear progress, and circular progress.
+- Feedback and progress: banner, snackbar, snackbar host with queued messages, plain tooltip, rich tooltip, linear progress and circular progress with accessible value, range, and indeterminate state semantics.
 - Containment and utility: surface, card, carousel with selected-item snapping, dialog, dialog pane, side sheet, bottom sheet, scrim, divider, list, list item with media slot sizes and trailing supporting text, and tokenized list section header.
 - Composition-heavy controls expose mutable child lists and convenience constructors or factories where they simplify common usage without hiding node ownership.
 - Virtualized list views expose data selection, keyboard focus navigation, accessible focus routing, and `VirtualFlow`-backed row reuse.
@@ -68,12 +68,13 @@
 
 - Demo app with a Material navigation drawer sidebar, collapsible component groups, and one page per major control family.
 - Demo pages cover common variants, disabled states, selected states, error states, and animated progress examples.
-- Unit tests cover style classes, token CSS metadata, accessibility attributes, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
+- Unit tests cover style classes, token CSS metadata, accessibility attributes, numeric accessibility values and actions, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
 - Snapshot-based visual tests render implemented control families into report images for manual and automated inspection.
 - Disclosure icon tests cover expanded-state rotation, fixed-slot layout, clipping bounds, and navigation drawer usage.
 - Navigation drawer group tests cover disclosure-backed expansion, animated child row reveal, keyboard disclosure navigation, accessible expand/collapse actions, hidden child selection recovery, flattened drawer selection, child visibility, style classes, skin creation, and user-agent stylesheet routing.
 - Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
 - Text input visual snapshots include outlined floating-label notch geometry checks.
+- Progress visual snapshots include rendered linear track/fill separation and circular track/arc pixel checks.
 - Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.
 - Selection control visual snapshots cover selected, unchecked, indeterminate, disabled, and disabled-selected states.
 - Selection container tests cover focus-anchored keyboard navigation for single-selection chip, icon-toggle, segmented, list, tab, navigation bar, and navigation rail containers.

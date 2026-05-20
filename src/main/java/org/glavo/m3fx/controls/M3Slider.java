@@ -15,6 +15,8 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Orientation;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -26,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /// A Material Design 3 slider.
 @NotNullByDefault
@@ -56,6 +59,10 @@ public class M3Slider extends Control {
 
     /// The default slider touch target size.
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 48.0;
+
+    /// The optional accessible value-string attribute available on newer JavaFX runtimes.
+    private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
+            M3Accessible.attribute("VALUE_STRING");
 
     /// The minimum slider value.
     private @Nullable DoubleProperty min;
@@ -118,6 +125,9 @@ public class M3Slider extends Control {
                 @Override
                 protected void invalidated() {
                     clampCurrentValue();
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.MIN_VALUE);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
+                    M3Accessible.notifyAttribute(M3Slider.this, VALUE_STRING_ATTRIBUTE);
                     requestLayout();
                 }
 
@@ -155,6 +165,9 @@ public class M3Slider extends Control {
                 @Override
                 protected void invalidated() {
                     clampCurrentValue();
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.MAX_VALUE);
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
+                    M3Accessible.notifyAttribute(M3Slider.this, VALUE_STRING_ATTRIBUTE);
                     requestLayout();
                 }
 
@@ -196,6 +209,8 @@ public class M3Slider extends Control {
                         set(clampedValue);
                         return;
                     }
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
+                    M3Accessible.notifyAttribute(M3Slider.this, VALUE_STRING_ATTRIBUTE);
                     requestLayout();
                 }
 
@@ -236,6 +251,7 @@ public class M3Slider extends Control {
                         set(Orientation.HORIZONTAL);
                         return;
                     }
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.ORIENTATION);
                     requestLayout();
                 }
 
@@ -518,6 +534,35 @@ public class M3Slider extends Control {
         return new M3SliderSkin(this);
     }
 
+    /// Returns accessibility attributes for the current slider value.
+    @Override
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        if (attribute == VALUE_STRING_ATTRIBUTE) {
+            return accessibleValueString();
+        }
+        return switch (attribute) {
+            case MIN_VALUE -> getMin();
+            case MAX_VALUE -> getMax();
+            case VALUE -> getValue();
+            case ORIENTATION -> getOrientation();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Executes accessibility actions for value adjustment.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case REQUEST_FOCUS -> requestFocus();
+            case INCREMENT, BLOCK_INCREMENT -> increment();
+            case DECREMENT, BLOCK_DECREMENT -> decrement();
+            case SET_VALUE -> setAccessibleValue(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Returns the user-agent stylesheet for m3fx sliders.
     @Override
     public String getUserAgentStylesheet() {
@@ -555,6 +600,22 @@ public class M3Slider extends Control {
             return min;
         }
         return Math.max(min, Math.min(max, value));
+    }
+
+    /// Applies the first numeric value supplied by an accessibility client.
+    private void setAccessibleValue(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (parameter instanceof Number number) {
+                adjustValue(number.doubleValue());
+                return;
+            }
+        }
+    }
+
+    /// Returns the accessible string representation of the current value.
+    private String accessibleValueString() {
+        return Double.toString(getValue());
     }
 
     /// CSS metadata for m3fx slider component tokens.

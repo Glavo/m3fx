@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.collections.ObservableList;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -19,6 +20,24 @@ final class M3Accessible {
 
     /// Prevents utility class instantiation.
     private M3Accessible() {
+    }
+
+    /// Returns an accessibility attribute by name when the running JavaFX version provides it.
+    static @Nullable AccessibleAttribute attribute(String name) {
+        Objects.requireNonNull(name, "name");
+        try {
+            return AccessibleAttribute.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /// Notifies an optional accessibility attribute when the running JavaFX version provides it.
+    static void notifyAttribute(Node node, @Nullable AccessibleAttribute attribute) {
+        Objects.requireNonNull(node, "node");
+        if (attribute != null) {
+            node.notifyAccessibleAttributeChanged(attribute);
+        }
     }
 
     /// Returns the child requested by an accessibility index parameter.
