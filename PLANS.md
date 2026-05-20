@@ -77,6 +77,7 @@
 - Text input visual snapshots include outlined floating-label notch geometry checks.
 - Progress visual snapshots include rendered linear track/fill separation and circular track/arc pixel checks.
 - Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.
+- Segmented button selection tests cover selected-container motion, border preservation, and position-specific rounded geometry.
 - Selection control visual snapshots cover selected, unchecked, indeterminate, disabled, and disabled-selected states.
 - Selection container tests cover focus-anchored keyboard navigation for single-selection chip, icon-toggle, segmented, list, tab, navigation bar, and navigation rail containers.
 - Selection container accessibility tests cover focus-node routing and request-focus behavior for static list, chip, icon-toggle, segmented, tab, navigation bar, navigation rail, and navigation drawer containers.

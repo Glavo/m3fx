@@ -4890,10 +4890,12 @@ final class M3ControlStyleTest {
         month.setSelected(true);
         applyInteractivePseudoClasses(month);
         root.applyCss();
+        root.layout();
 
         assertLabeledColors(day, Color.TRANSPARENT, Color.rgb(34, 35, 36));
         assertBorderColor(day, Color.rgb(13, 14, 15));
-        assertLabeledColors(month, Color.rgb(7, 8, 9), Color.rgb(10, 11, 12));
+        assertLabeledColors(month, Color.TRANSPARENT, Color.rgb(10, 11, 12));
+        assertRegionFill(segmentedButtonSelectionContainer(month), Color.rgb(7, 8, 9));
         assertBorderColor(month, Color.rgb(13, 14, 15));
     }
 
@@ -4950,6 +4952,63 @@ final class M3ControlStyleTest {
             assertStateLayerRadii(day, 20.0, 0.0, 0.0, 20.0);
             assertStateLayerRadii(week, 0.0, 0.0, 0.0, 0.0);
             assertStateLayerRadii(month, 0.0, 20.0, 20.0, 0.0);
+        });
+    }
+
+    /// Verifies that segmented button selected containers animate between selected states.
+    @Test
+    void segmentedButtonSelectionContainersAnimateBetweenStates() {
+        runOnFxThread(() -> {
+            M3SegmentedButton day = M3SegmentedButton.withSelected("Day", true);
+            M3SegmentedButton week = new M3SegmentedButton("Week");
+            M3SegmentedButton month = new M3SegmentedButton("Month");
+            M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(day, week, month);
+            group.setPrefSize(240.0, 40.0);
+            FlowPane root = new FlowPane(group);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 280.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(280.0, 80.0);
+            root.layout();
+
+            group.select(month);
+            root.applyCss();
+
+            Timeline outgoingAnimation = skinTimeline(day.getSkin(), "selectionAnimation");
+            Timeline incomingAnimation = skinTimeline(month.getSkin(), "selectionAnimation");
+            outgoingAnimation.jumpTo(Duration.millis(80.0));
+            incomingAnimation.jumpTo(Duration.millis(80.0));
+            root.layout();
+
+            Region outgoingSelection = segmentedButtonSelectionContainer(day);
+            Region incomingSelection = segmentedButtonSelectionContainer(month);
+            assertBetween(outgoingSelection.getOpacity(), 0.0, 1.0, "outgoing segment selection opacity");
+            assertBetween(incomingSelection.getOpacity(), 0.0, 1.0, "incoming segment selection opacity");
+            assertBetween(incomingSelection.getScaleX(), 0.96, 1.0, "incoming segment selection scale");
+            assertRegionRadii(outgoingSelection, 19.0, 0.0, 0.0, 19.0);
+            assertRegionRadii(incomingSelection, 0.0, 19.0, 19.0, 0.0);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, incomingSelection, Color.WHITE, 0.03);
+            assertSnapshotNodeBorderContainsContrast(image, month, Color.WHITE, 0.08);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-segmented-selection-animation-frame.png"
+            ));
+
+            outgoingAnimation.jumpTo(Duration.millis(200.0));
+            incomingAnimation.jumpTo(Duration.millis(200.0));
+            root.layout();
+
+            assertEquals(0.0, outgoingSelection.getOpacity(), 0.0001);
+            assertEquals(1.0, incomingSelection.getOpacity(), 0.0001);
+            assertEquals(0.96, outgoingSelection.getScaleX(), 0.0001);
+            assertEquals(1.0, incomingSelection.getScaleX(), 0.0001);
+            stopTimelines(outgoingAnimation, incomingAnimation);
         });
     }
 
@@ -11185,6 +11244,13 @@ final class M3ControlStyleTest {
     /// Returns the list item selected container region.
     private static javafx.scene.layout.Region listItemSelectionContainer(M3ListItem listItem) {
         javafx.scene.Node container = listItem.lookup(".m3-list-item-selection-container");
+        assertInstanceOf(javafx.scene.layout.Region.class, container);
+        return (javafx.scene.layout.Region) container;
+    }
+
+    /// Returns the segmented button selected container region.
+    private static javafx.scene.layout.Region segmentedButtonSelectionContainer(M3SegmentedButton button) {
+        javafx.scene.Node container = button.lookup("." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS);
         assertInstanceOf(javafx.scene.layout.Region.class, container);
         return (javafx.scene.layout.Region) container;
     }

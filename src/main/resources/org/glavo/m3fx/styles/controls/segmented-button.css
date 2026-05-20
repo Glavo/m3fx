@@ -24,11 +24,16 @@
 .m3-segmented-button.m3-segmented-button:selected:focused,
 .m3-segmented-button.m3-segmented-button:selected:armed,
 .m3-segmented-button.m3-segmented-button:selected:pressed {
-    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-border-color: -m3-color-outline;
     -fx-border-insets: 0;
     -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-segmented-button-selection-container {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-insets: 0;
 }
 
 .m3-segmented-button .m3-state-layer,
