@@ -52,5 +52,7 @@ public class M3IconButton extends M3Button {
         double size = getContainerHeight();
         setMinWidth(size);
         setPrefWidth(size);
+        setMaxWidth(size);
+        setMaxHeight(size);
     }
 }

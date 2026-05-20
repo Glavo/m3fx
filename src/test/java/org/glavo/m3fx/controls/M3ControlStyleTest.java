@@ -440,6 +440,8 @@ final class M3ControlStyleTest {
         assertEquals(48.0, button.getContainerHeight(), 0.0001);
         assertEquals(48.0, button.getPrefWidth(), 0.0001);
         assertEquals(48.0, button.getPrefHeight(), 0.0001);
+        assertEquals(48.0, button.getMaxWidth(), 0.0001);
+        assertEquals(48.0, button.getMaxHeight(), 0.0001);
     }
 
     /// Verifies that button groups assign connected position style classes.
@@ -1887,6 +1889,53 @@ final class M3ControlStyleTest {
 
         assertEquals(64.0, widePaddingField.getPadding().getLeft(), 0.0001);
         assertEquals(64.0, widePaddingField.getPadding().getRight(), 0.0001);
+    }
+
+    /// Verifies that text input trailing icon buttons keep square state layers and visible ripples.
+    @Test
+    void textInputLayoutTrailingIconButtonKeepsSquareRipple() {
+        runOnFxThread(() -> {
+            M3PasswordField passwordField = M3PasswordField.withVariant("Hello", M3TextInputVariant.OUTLINED);
+            passwordField.setPrefWidth(320.0);
+            M3IconButton trailingButton = M3IconButton.withIcon("V");
+
+            M3TextInputLayout layout = new M3TextInputLayout(passwordField, "At least 8 characters");
+            layout.setTrailing(trailingButton);
+            layout.setPrefWidth(320.0);
+
+            StackPane root = new StackPane(layout);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 390.0, 140.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(390.0, 140.0);
+            root.layout();
+
+            Region stateLayer = lookupRegion(trailingButton, ".m3-state-layer-container");
+            assertEquals(40.0, trailingButton.getWidth(), 0.0001);
+            assertEquals(40.0, trailingButton.getHeight(), 0.0001);
+            assertEquals(40.0, stateLayer.getWidth(), 0.0001);
+            assertEquals(40.0, stateLayer.getHeight(), 0.0001);
+
+            trailingButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 20.0, 20.0, true));
+
+            Region ripple = lookupRegion(trailingButton, ".m3-ripple");
+            Timeline rippleAnimation = controlTimeline(stateLayer, "rippleAnimation");
+            rippleAnimation.jumpTo(Duration.millis(120.0));
+            assertTrue(ripple.getOpacity() > 0.0, () -> "ripple opacity=" + ripple.getOpacity());
+            assertTrue(ripple.getScaleX() > 0.0, () -> "ripple scaleX=" + ripple.getScaleX());
+            assertTrue(ripple.getScaleY() > 0.0, () -> "ripple scaleY=" + ripple.getScaleY());
+            writeVisualSnapshot(snapshotImageOnFxThread(root), java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-text-field-trailing-ripple.png"
+            ));
+
+            trailingButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 20.0, 20.0, false));
+        });
     }
 
     /// Verifies that text input layouts apply error state from error text and character overflow.
