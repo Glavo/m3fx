@@ -159,8 +159,17 @@ public final class M3FXDemoApp extends Application {
             Color.web("#7d5260")
     );
 
+    /// The sidebar destination for the components overview page.
+    private static final String COMPONENTS_OVERVIEW_GROUP = "Components overview";
+
+    /// The official components sidebar group for app bar components.
+    private static final String APP_BARS_GROUP = "App bars";
+
     /// The official components sidebar group for button-related components.
     private static final String BUTTONS_GROUP = "Buttons";
+
+    /// The official components sidebar group for date and time picker components.
+    private static final String DATE_TIME_PICKERS_GROUP = "Date & time pickers";
 
     /// The official components sidebar group for loading and progress components.
     private static final String LOADING_PROGRESS_GROUP = "Loading & progress";
@@ -170,9 +179,6 @@ public final class M3FXDemoApp extends Application {
 
     /// The official components sidebar group for sheet components.
     private static final String SHEETS_GROUP = "Sheets";
-
-    /// The official components sidebar group for uncategorized component demos.
-    private static final String ALL_OTHER_COMPONENTS_GROUP = "All other components";
 
     /// The sidebar section for demo pages absent from the Material components navigation drawer.
     private static final String ADDITIONAL_DEMOS_GROUP = "Additional demos";
@@ -195,8 +201,17 @@ public final class M3FXDemoApp extends Application {
     /// Sidebar items used to switch component pages.
     private final List<M3ListItem> sidebarItems = new ArrayList<>();
 
+    /// Sidebar groups rendered by the navigation drawer.
+    private final List<SidebarGroup> sidebarGroups = new ArrayList<>();
+
     /// The active JavaFX scene.
     private @Nullable Scene scene;
+
+    /// The navigation drawer used by the demo sidebar.
+    private @Nullable M3NavigationDrawer sidebarDrawer;
+
+    /// The currently shown demo page.
+    private @Nullable DemoPage currentPage;
 
     /// The page host replaced when sidebar selection changes.
     private @Nullable StackPane pageHost;
@@ -293,6 +308,9 @@ public final class M3FXDemoApp extends Application {
     /// Creates all component demo pages.
     private List<DemoPage> createPages() {
         return List.of(
+                new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse the implemented Material Design 3 component demos", this::createComponentsOverviewPage),
+                new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", this::createAppBarsPage),
+                new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", this::createBadgesPage),
                 new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", this::createButtonGroupsPage),
                 new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", this::createButtonsPage),
                 new DemoPage("Extended FABs", "Extended FABs", BUTTONS_GROUP, "Extended floating action button examples", this::createExtendedFabsPage),
@@ -301,34 +319,32 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Icon Buttons", "Icon buttons", BUTTONS_GROUP, "Icon button and toggle icon button states", this::createIconButtonsPage),
                 new DemoPage("Segmented Buttons", "Segmented buttons", BUTTONS_GROUP, "Single- and multi-select segmented control states", this::createSegmentedButtonsPage),
                 new DemoPage("Split Buttons", "Split buttons", BUTTONS_GROUP, "Primary actions with attached menus", this::createSplitButtonsPage),
+                new DemoPage("Cards", "Cards", "Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
+                new DemoPage("Carousel", "Carousel", "Carousel", "Horizontal content browsing with selected-item snapping", this::createCarouselPage),
+                new DemoPage("Checkboxes", "Checkbox", "Checkbox", "Checked, unchecked, indeterminate, and disabled states", this::createCheckboxesPage),
+                new DemoPage("Chips", "Chips", "Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
+                new DemoPage("Date Pickers", "Date pickers", DATE_TIME_PICKERS_GROUP, "Calendar date selection, ranges, and month visibility", this::createDatePickersPage),
+                new DemoPage("Time Pickers", "Time pickers", DATE_TIME_PICKERS_GROUP, "12-hour, 24-hour, and bounded time selection", this::createTimePickersPage),
+                new DemoPage("Dialogs", "Dialogs", "Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
+                new DemoPage("Dividers", "Divider", "Divider", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
+                new DemoPage("Lists", "Lists", "Lists", "One-line, two-line, three-line, and selected rows", this::createListPage),
                 new DemoPage("Loading Indicator", "Loading indicator", LOADING_PROGRESS_GROUP, "Indeterminate loading indicators", this::createLoadingIndicatorPage),
                 new DemoPage("Progress", "Progress indicators", LOADING_PROGRESS_GROUP, "Linear and circular progress indicators", this::createProgressPage),
+                new DemoPage("Menus", "Menus", "Menus", "Menu surfaces, actions, and menu buttons", this::createMenusPage),
                 new DemoPage("Navigation", "Navigation bar", NAVIGATION_GROUP, "Bottom navigation items and selected indicators", this::createNavigationPage),
                 new DemoPage("Navigation Drawer", "Navigation drawer", NAVIGATION_GROUP, "Drawer destinations with selected rows", this::createNavigationDrawerPage),
                 new DemoPage("Navigation Rail", "Navigation rail", NAVIGATION_GROUP, "Vertical destinations for wide layouts", this::createNavigationRailPage),
+                new DemoPage("Radio Buttons", "Radio button", "Radio button", "Grouped single selection states", this::createRadioButtonsPage),
+                new DemoPage("Search", "Search", "Search", "Search bars, actions, and result surfaces", this::createSearchPage),
                 new DemoPage("Bottom Sheets", "Bottom sheets", SHEETS_GROUP, "Bottom sheet containment surfaces", this::createBottomSheetsPage),
                 new DemoPage("Side Sheets", "Side sheets", SHEETS_GROUP, "Side sheet containment surfaces", this::createSideSheetsPage),
-                new DemoPage("App Bars", "App bars", ALL_OTHER_COMPONENTS_GROUP, "Top app bars with navigation and actions", this::createAppBarsPage),
-                new DemoPage("Badges", "Badges", ALL_OTHER_COMPONENTS_GROUP, "Dot, count, overflow, and attached badges", this::createBadgesPage),
-                new DemoPage("Cards", "Cards", ALL_OTHER_COMPONENTS_GROUP, "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
-                new DemoPage("Carousel", "Carousel", ALL_OTHER_COMPONENTS_GROUP, "Horizontal content browsing with selected-item snapping", this::createCarouselPage),
-                new DemoPage("Checkboxes", "Checkbox", ALL_OTHER_COMPONENTS_GROUP, "Checked, unchecked, indeterminate, and disabled states", this::createCheckboxesPage),
-                new DemoPage("Chips", "Chips", ALL_OTHER_COMPONENTS_GROUP, "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
-                new DemoPage("Date Pickers", "Date pickers", ALL_OTHER_COMPONENTS_GROUP, "Calendar date selection, ranges, and month visibility", this::createDatePickersPage),
-                new DemoPage("Dialogs", "Dialogs", ALL_OTHER_COMPONENTS_GROUP, "Dialog pane with themed actions", this::createDialogsPage),
-                new DemoPage("Dividers", "Divider", ALL_OTHER_COMPONENTS_GROUP, "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
-                new DemoPage("Lists", "Lists", ALL_OTHER_COMPONENTS_GROUP, "One-line, two-line, three-line, and selected rows", this::createListPage),
-                new DemoPage("Menus", "Menus", ALL_OTHER_COMPONENTS_GROUP, "Menu surfaces, actions, and menu buttons", this::createMenusPage),
-                new DemoPage("Radio Buttons", "Radio button", ALL_OTHER_COMPONENTS_GROUP, "Grouped single selection states", this::createRadioButtonsPage),
-                new DemoPage("Search", "Search", ALL_OTHER_COMPONENTS_GROUP, "Search bars, actions, and result surfaces", this::createSearchPage),
-                new DemoPage("Sliders", "Sliders", ALL_OTHER_COMPONENTS_GROUP, "Different values and disabled slider states", this::createSlidersPage),
-                new DemoPage("Snackbars", "Snackbar", ALL_OTHER_COMPONENTS_GROUP, "Snackbar host with action and queued messages", this::createSnackbarsPage),
-                new DemoPage("Switches", "Switch", ALL_OTHER_COMPONENTS_GROUP, "On, off, and disabled switch states", this::createSwitchesPage),
-                new DemoPage("Tabs", "Tabs", ALL_OTHER_COMPONENTS_GROUP, "Primary tabs with animated active indicators", this::createTabsPage),
-                new DemoPage("Text Fields", "Text fields", ALL_OTHER_COMPONENTS_GROUP, "Filled, outlined, populated, error, and disabled fields", this::createTextFieldsPage),
-                new DemoPage("Time Pickers", "Time pickers", ALL_OTHER_COMPONENTS_GROUP, "12-hour, 24-hour, and bounded time selection", this::createTimePickersPage),
-                new DemoPage("Toolbars", "Toolbars", ALL_OTHER_COMPONENTS_GROUP, "Bottom app bars with actions and floating actions", this::createBottomAppBarsPage),
-                new DemoPage("Tooltips", "Tooltips", ALL_OTHER_COMPONENTS_GROUP, "Plain and longer contextual help", this::createTooltipsPage),
+                new DemoPage("Sliders", "Sliders", "Sliders", "Different values and disabled slider states", this::createSlidersPage),
+                new DemoPage("Snackbars", "Snackbar", "Snackbar", "Snackbar host with action and queued messages", this::createSnackbarsPage),
+                new DemoPage("Switches", "Switch", "Switch", "On, off, and disabled switch states", this::createSwitchesPage),
+                new DemoPage("Tabs", "Tabs", "Tabs", "Primary tabs with animated active indicators", this::createTabsPage),
+                new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", this::createTextFieldsPage),
+                new DemoPage("Toolbars", "Toolbars", "Toolbars", "Bottom app bars with actions and floating actions", this::createBottomAppBarsPage),
+                new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", this::createTooltipsPage),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", this::createBannersPage),
                 new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", this::createFormsPage),
                 new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", this::createTypographyPage),
@@ -352,24 +368,13 @@ public final class M3FXDemoApp extends Application {
     private Node createSidebar(List<DemoPage> pages) {
         M3NavigationDrawer sidebar = new M3NavigationDrawer();
         sidebar.getStyleClass().add("demo-sidebar-drawer");
+        sidebar.setAllowEmptySelection(true);
+        sidebarDrawer = sidebar;
 
         sidebarItems.clear();
-        @Nullable String currentSection = null;
-        for (DemoPage page : pages) {
-            if (!page.sidebarSection().equals(currentSection)) {
-                Label heading = new Label(page.sidebarSection());
-                heading.getStyleClass().addAll("demo-drawer-section", "demo-sidebar-section");
-                sidebar.getItems().add(heading);
-                currentSection = page.sidebarSection();
-            }
-
-            M3ListItem item = new M3ListItem(page.navigationTitle());
-            item.getStyleClass().add("demo-sidebar-child-item");
-            item.setUserData(page);
-            item.setOnAction(event -> showPage(page));
-            sidebarItems.add(item);
-            sidebar.getItems().add(item);
-        }
+        sidebarGroups.clear();
+        sidebarGroups.addAll(createSidebarGroups(pages));
+        rebuildSidebarItems();
 
         ScrollPane scrollPane = new ScrollPane(sidebar);
         scrollPane.getStyleClass().add("demo-sidebar-scroll-pane");
@@ -377,6 +382,93 @@ public final class M3FXDemoApp extends Application {
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         return scrollPane;
+    }
+
+    /// Creates sidebar groups from ordered demo pages.
+    private static List<SidebarGroup> createSidebarGroups(List<DemoPage> pages) {
+        if (pages.isEmpty()) {
+            return List.of();
+        }
+
+        List<SidebarGroup> groups = new ArrayList<>();
+        String currentGroupTitle = pages.get(0).sidebarSection();
+        List<DemoPage> currentGroupPages = new ArrayList<>();
+        for (DemoPage page : pages) {
+            if (!page.sidebarSection().equals(currentGroupTitle)) {
+                addSidebarGroup(groups, currentGroupTitle, currentGroupPages);
+                currentGroupTitle = page.sidebarSection();
+                currentGroupPages = new ArrayList<>();
+            }
+            currentGroupPages.add(page);
+        }
+        addSidebarGroup(groups, currentGroupTitle, currentGroupPages);
+        return groups;
+    }
+
+    /// Adds one completed sidebar group when it contains pages.
+    private static void addSidebarGroup(
+            List<SidebarGroup> groups,
+            String title,
+            List<DemoPage> pages
+    ) {
+        if (!pages.isEmpty()) {
+            groups.add(new SidebarGroup(title, pages));
+        }
+    }
+
+    /// Rebuilds sidebar drawer items from the current collapsed group state.
+    private void rebuildSidebarItems() {
+        M3NavigationDrawer sidebar = sidebarDrawer;
+        if (sidebar == null) {
+            return;
+        }
+
+        sidebarItems.clear();
+        sidebar.getItems().clear();
+        for (SidebarGroup group : sidebarGroups) {
+            if (group.isCollapsible()) {
+                sidebar.getItems().add(createSidebarGroupItem(group));
+                if (group.isExpanded()) {
+                    for (DemoPage page : group.pages()) {
+                        sidebar.getItems().add(createSidebarPageItem(page, true));
+                    }
+                }
+            } else {
+                sidebar.getItems().add(createSidebarPageItem(group.firstPage(), false));
+            }
+        }
+        refreshSidebarSelection();
+    }
+
+    /// Creates a top-level collapsible sidebar group item.
+    private M3ListItem createSidebarGroupItem(SidebarGroup group) {
+        M3ListItem item = new M3ListItem(group.title());
+        item.getStyleClass().add("demo-sidebar-group-item");
+        item.setUserData(group);
+        item.setTrailing(createSidebarDisclosureIcon(group.isExpanded()));
+        item.setOnAction(event -> {
+            group.setExpanded(!group.isExpanded());
+            rebuildSidebarItems();
+        });
+        sidebarItems.add(item);
+        return item;
+    }
+
+    /// Creates one sidebar page destination item.
+    private M3ListItem createSidebarPageItem(DemoPage page, boolean child) {
+        M3ListItem item = new M3ListItem(page.navigationTitle());
+        item.getStyleClass().add(child ? "demo-sidebar-child-item" : "demo-sidebar-top-item");
+        item.setUserData(page);
+        item.setOnAction(event -> showPage(page));
+        sidebarItems.add(item);
+        return item;
+    }
+
+    /// Creates the disclosure icon used by collapsible sidebar groups.
+    private static M3Icon createSidebarDisclosureIcon(boolean expanded) {
+        M3Icon icon = new M3Icon(expanded ? "v" : ">");
+        icon.getStyleClass().add("demo-sidebar-disclosure-icon");
+        return icon;
     }
 
     /// Creates the scrollable page host.
@@ -400,8 +492,11 @@ public final class M3FXDemoApp extends Application {
             return;
         }
 
-        for (M3ListItem item : sidebarItems) {
-            item.setSelected(item.getUserData() == page);
+        currentPage = page;
+        if (expandSidebarGroupForPage(page)) {
+            rebuildSidebarItems();
+        } else {
+            refreshSidebarSelection();
         }
 
         VBox pageNode = new VBox(24.0);
@@ -417,12 +512,63 @@ public final class M3FXDemoApp extends Application {
         host.getChildren().setAll(pageNode);
     }
 
+    /// Expands the collapsible sidebar group containing the requested page.
+    private boolean expandSidebarGroupForPage(DemoPage page) {
+        for (SidebarGroup group : sidebarGroups) {
+            if (group.isCollapsible() && group.pages().contains(page) && !group.isExpanded()) {
+                group.setExpanded(true);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Refreshes selected state on currently visible sidebar destination items.
+    private void refreshSidebarSelection() {
+        @Nullable DemoPage page = currentPage;
+        for (M3ListItem item : sidebarItems) {
+            @Nullable Object userData = item.getUserData();
+            boolean selected = userData == page;
+            if (!selected && page != null && userData instanceof SidebarGroup group) {
+                selected = !group.isExpanded() && group.pages().contains(page);
+            }
+            item.setSelected(selected);
+        }
+    }
+
     /// Stops animations owned by the previous page.
     private void stopPageAnimations() {
         for (Animation animation : animations) {
             animation.stop();
         }
         animations.clear();
+    }
+
+    /// Creates the component overview page.
+    private Node createComponentsOverviewPage() {
+        M3ListPane primaryComponents = new M3ListPane(
+                createOverviewItem("App bars", "Top and bottom app bars for persistent actions."),
+                createOverviewItem("Buttons", "Common actions, icon buttons, split buttons, and FABs."),
+                createOverviewItem("Text fields", "Filled, outlined, validation, and supporting text patterns."),
+                createOverviewItem("Selection", "Checkbox, radio button, switch, chips, and segmented controls."),
+                createOverviewItem("Navigation", "Navigation bar, rail, drawer, and tabs.")
+        );
+        primaryComponents.getStyleClass().add("demo-overview-list");
+        primaryComponents.setMaxWidth(720.0);
+
+        M3ListPane feedbackComponents = new M3ListPane(
+                createOverviewItem("Loading & progress", "Linear and circular progress plus loading indicators."),
+                createOverviewItem("Date & time pickers", "Date, range, and time selection controls."),
+                createOverviewItem("Dialogs & sheets", "Dialogs, bottom sheets, side sheets, scrims, and snackbars."),
+                createOverviewItem("Lists & surfaces", "Lists, cards, carousel, badges, menus, and surfaces.")
+        );
+        feedbackComponents.getStyleClass().add("demo-overview-list");
+        feedbackComponents.setMaxWidth(720.0);
+
+        return createGallery(
+                createShowcaseGroup("Primary Components", primaryComponents),
+                createShowcaseGroup("Feedback And Containers", feedbackComponents)
+        );
     }
 
     /// Creates the button group component page.
@@ -1643,6 +1789,14 @@ public final class M3FXDemoApp extends Application {
         return layout;
     }
 
+    /// Creates one overview list item.
+    private static M3ListItem createOverviewItem(String title, String supportingText) {
+        M3ListItem item = new M3ListItem(title);
+        item.setSupportingText(supportingText);
+        item.setLeading(createNavigationIcon(title.substring(0, 1)));
+        return item;
+    }
+
     /// Creates a sample search result row.
     private static M3ListItem createSearchResult(String title, String supportingText) {
         M3ListItem item = new M3ListItem(title);
@@ -2262,6 +2416,58 @@ public final class M3FXDemoApp extends Application {
     private static String toHexChannel(double value) {
         String hex = Integer.toHexString((int) Math.round(value * 255.0));
         return hex.length() == 1 ? "0" + hex : hex;
+    }
+
+    /// Describes one sidebar group and its collapsed state.
+    @NotNullByDefault
+    private static final class SidebarGroup {
+        /// The group title displayed in the sidebar.
+        private final String title;
+
+        /// The pages that belong to the group.
+        private final List<DemoPage> pages;
+
+        /// Whether child pages are currently visible in the sidebar.
+        private boolean expanded;
+
+        /// Creates a sidebar group.
+        private SidebarGroup(String title, List<DemoPage> pages) {
+            this.title = Objects.requireNonNull(title, "title");
+            if (pages.isEmpty()) {
+                throw new IllegalArgumentException("pages must not be empty");
+            }
+            this.pages = List.copyOf(pages);
+        }
+
+        /// Returns the group title displayed in the sidebar.
+        private String title() {
+            return title;
+        }
+
+        /// Returns the pages that belong to this group.
+        private List<DemoPage> pages() {
+            return pages;
+        }
+
+        /// Returns the first page in this group.
+        private DemoPage firstPage() {
+            return pages.get(0);
+        }
+
+        /// Returns whether this group should render a disclosure item.
+        private boolean isCollapsible() {
+            return pages.size() > 1;
+        }
+
+        /// Returns whether child pages are currently visible.
+        private boolean isExpanded() {
+            return expanded;
+        }
+
+        /// Sets whether child pages are currently visible.
+        private void setExpanded(boolean expanded) {
+            this.expanded = expanded;
+        }
     }
 
     /// Describes one demo component page.
