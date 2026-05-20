@@ -83,9 +83,11 @@
 }
 
 .demo-sidebar-disclosure-icon {
-    -m3-icon-size: 18px;
-    -m3-icon-font-weight: 700;
-    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
+.m3-navigation-drawer .m3-list-item:selected .demo-sidebar-disclosure-icon {
+    -fx-fill: -m3-color-on-secondary-container;
 }
 
 .demo-scroll-pane {
