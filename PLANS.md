@@ -49,7 +49,7 @@
 
 ### Controls
 
-- Typography and icon primitives: `M3Text`, `M3Icon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
+- Typography and icon primitives: `M3Text`, `M3Icon`, `M3DisclosureIcon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
 - Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, floating action buttons, extended floating action buttons, and floating action button menus.
 - Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, animated text input layouts with floating labels, reusable validators, multi-validator pipelines, group-level form validation coordination, validation summaries, observable validation-active and invalid-count state, per-field validation actions, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, optional hard character limits, and form pane, section, and row helpers for structured input layouts.
 - Selection controls: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
@@ -70,6 +70,7 @@
 - Demo pages cover common variants, disabled states, selected states, error states, and animated progress examples.
 - Unit tests cover style classes, token CSS metadata, accessibility attributes, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
 - Snapshot-based visual tests render implemented control families into report images for manual and automated inspection.
+- Disclosure icon tests cover expanded-state rotation, fixed-slot layout, clipping bounds, and navigation drawer usage.
 - Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
 - Text input visual snapshots include outlined floating-label notch geometry checks.
 - Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.

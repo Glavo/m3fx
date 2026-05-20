@@ -26,7 +26,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.controls.M3Avatar;
@@ -60,6 +59,7 @@ import org.glavo.m3fx.controls.M3DateRangePresets;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
+import org.glavo.m3fx.controls.M3DisclosureIcon;
 import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
@@ -466,9 +466,8 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates the disclosure icon used by collapsible sidebar groups.
-    private static SVGPath createSidebarDisclosureIcon(boolean expanded) {
-        SVGPath icon = new SVGPath();
-        icon.setContent(expanded ? "M 0 0 L 10 0 L 5 6 Z" : "M 0 0 L 6 5 L 0 10 Z");
+    private static M3DisclosureIcon createSidebarDisclosureIcon(boolean expanded) {
+        M3DisclosureIcon icon = new M3DisclosureIcon(expanded);
         icon.getStyleClass().add("demo-sidebar-disclosure-icon");
         return icon;
     }

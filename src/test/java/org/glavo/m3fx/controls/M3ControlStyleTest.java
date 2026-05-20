@@ -10,6 +10,7 @@ import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventType;
+import javafx.geometry.Bounds;
 import javafx.geometry.BoundingBox;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -45,6 +46,7 @@ import javafx.scene.paint.Paint;
 import javafx.scene.shape.Arc;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.Shape;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -62,6 +64,7 @@ import org.glavo.m3fx.skins.M3CheckBoxSkin;
 import org.glavo.m3fx.skins.M3ChipGroupSkin;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.glavo.m3fx.skins.M3DividerSkin;
+import org.glavo.m3fx.skins.M3DisclosureIconSkin;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3IconSkin;
@@ -2584,6 +2587,93 @@ final class M3ControlStyleTest {
 
         assertEquals(32.0, icon.getIconSize(), 0.0001);
         assertEquals(32.0, icon.getFont().getSize(), 0.0001);
+    }
+
+    /// Verifies that disclosure icons expose expanded state and animate their arrow rotation.
+    @Test
+    void disclosureIconAnimatesExpandedState() throws InterruptedException {
+        AtomicReference<SVGPath> shape = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(220.0),
+                () -> {
+                    M3DisclosureIcon icon = new M3DisclosureIcon();
+                    Pane root = new Pane(icon);
+                    Scene scene = new Scene(root, 80.0, 80.0);
+
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    root.applyCss();
+                    icon.resize(24.0, 24.0);
+                    icon.layout();
+
+                    assertFalse(icon.isExpanded());
+                    assertTrue(icon.getStyleClass().contains(M3DisclosureIcon.STYLE_CLASS));
+                    assertInstanceOf(M3DisclosureIconSkin.class, icon.getSkin());
+                    assertEquals(24.0, icon.prefWidth(-1), 0.0001);
+                    assertEquals(24.0, icon.prefHeight(-1), 0.0001);
+
+                    SVGPath arrow = assertInstanceOf(SVGPath.class, icon.lookup(".m3-disclosure-icon-shape"));
+                    assertEquals(-90.0, arrow.getRotate(), 0.0001);
+                    shape.set(arrow);
+
+                    icon.setExpanded(true);
+                },
+                () -> assertEquals(0.0, shape.get().getRotate(), 0.01)
+        );
+    }
+
+    /// Verifies that disclosure icons render inside fixed list item icon slots without clipping.
+    @Test
+    void disclosureIconFitsNavigationDrawerSlot() {
+        runOnFxThread(() -> {
+            M3DisclosureIcon disclosure = new M3DisclosureIcon(true);
+            M3ListItem groupItem = new M3ListItem("Date & time pickers");
+            groupItem.setTrailingMedia(disclosure, M3ListItemSlotSize.ICON);
+            groupItem.setSelected(true);
+            groupItem.setStyle("-m3-one-line-height: 56px; -m3-container-shape: 28px; -m3-horizontal-padding: 24px;");
+
+            M3ListItem firstChild = new M3ListItem("Date pickers");
+            firstChild.setStyle("-m3-one-line-height: 40px; -m3-container-shape: 20px; -m3-horizontal-padding: 40px;");
+            M3ListItem secondChild = new M3ListItem("Time pickers");
+            secondChild.setStyle("-m3-one-line-height: 40px; -m3-container-shape: 20px; -m3-horizontal-padding: 40px;");
+
+            M3NavigationDrawer drawer = new M3NavigationDrawer(groupItem, firstChild, secondChild);
+            drawer.setAllowEmptySelection(true);
+            drawer.setPrefWidth(320.0);
+
+            Pane root = new Pane(drawer);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 380.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(380.0, 220.0);
+            root.layout();
+
+            StackPane trailingSlot = assertInstanceOf(
+                    StackPane.class,
+                    groupItem.lookup(".m3-list-item-trailing")
+            );
+            SVGPath arrow = assertInstanceOf(
+                    SVGPath.class,
+                    disclosure.lookup(".m3-disclosure-icon-shape")
+            );
+
+            assertEquals(24.0, trailingSlot.getLayoutBounds().getWidth(), 0.0001);
+            assertEquals(24.0, trailingSlot.getLayoutBounds().getHeight(), 0.0001);
+            assertEquals(0.0, arrow.getRotate(), 0.0001);
+            assertNodeInsideParent(trailingSlot, arrow);
+
+            Node groupHeadline = Objects.requireNonNull(groupItem.lookup(".m3-list-item-headline"));
+            Node childHeadline = Objects.requireNonNull(firstChild.lookup(".m3-list-item-headline"));
+            assertTrue(
+                    childHeadline.localToScene(childHeadline.getBoundsInLocal()).getMinX()
+                            > groupHeadline.localToScene(groupHeadline.getBoundsInLocal()).getMinX() + 10.0
+            );
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, disclosure, Color.WHITE, 0.05);
+        });
     }
 
     /// Verifies that icon button factories create configured M3FX icon graphics.
@@ -8786,6 +8876,7 @@ final class M3ControlStyleTest {
         runOnFxThread(() -> {
             M3Text titleText = new M3Text("M3FX", M3TextRole.DISPLAY_SMALL);
             M3Icon primaryIcon = new M3Icon("A", M3IconSize.LARGE, M3IconVariant.PRIMARY);
+            M3DisclosureIcon disclosureIcon = new M3DisclosureIcon(true);
             M3Avatar avatar = M3Avatar.withVariant("AB", M3AvatarVariant.PRIMARY);
             M3Badge badge = new M3Badge("9+");
             M3BadgedBox badgedBox = new M3BadgedBox(
@@ -9064,6 +9155,7 @@ final class M3ControlStyleTest {
                             "Text, Icons, Badges",
                             titleText,
                             primaryIcon,
+                            disclosureIcon,
                             avatar,
                             badge,
                             badgedBox,
@@ -9133,6 +9225,7 @@ final class M3ControlStyleTest {
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotHasColorVariety(image, 28);
             assertSnapshotNodeContainsContrast(image, titleText, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, disclosureIcon, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, avatar, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, badge, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, filledButton, Color.WHITE, 0.08);
@@ -9505,6 +9598,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3Tab("Overview").getStyleClass().contains(M3Tab.STYLE_CLASS));
         assertTrue(new M3TabBar().getStyleClass().contains(M3TabBar.STYLE_CLASS));
         assertTrue(new M3Divider().getStyleClass().contains(M3Divider.STYLE_CLASS));
+        assertTrue(new M3DisclosureIcon().getStyleClass().contains(M3DisclosureIcon.STYLE_CLASS));
         assertTrue(new M3Badge("1").getStyleClass().contains(M3Badge.STYLE_CLASS));
         assertTrue(new M3NavigationItem("Home").getStyleClass().contains(M3NavigationItem.STYLE_CLASS));
         assertTrue(new M3ListPane().getStyleClass().contains(M3ListPane.STYLE_CLASS));
@@ -9534,6 +9628,7 @@ final class M3ControlStyleTest {
         assertFalse(javafx.scene.control.ProgressIndicator.class.isAssignableFrom(M3ProgressIndicator.class));
         assertFalse(javafx.scene.control.Tooltip.class.isAssignableFrom(M3Tooltip.class));
         assertFalse(VBox.class.isAssignableFrom(M3Menu.class));
+        assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3DisclosureIcon.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Icon.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Text.class));
         assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3ListSectionHeader.class));
@@ -10019,6 +10114,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3TimePicker(), "/styles/controls/time-picker.css");
         assertUserAgentStylesheet(new M3TimePickerField(), "/styles/controls/picker-field.css");
         assertUserAgentStylesheet(new M3Avatar(), "/styles/controls/avatar.css");
+        assertUserAgentStylesheet(new M3DisclosureIcon(), "/styles/controls/disclosure-icon.css");
         assertUserAgentStylesheet(new M3Icon(), "/styles/controls/icon.css");
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
         assertUserAgentStylesheet(new M3Surface(), "/styles/controls/surface.css");
@@ -10342,6 +10438,19 @@ final class M3ControlStyleTest {
         javafx.scene.Node container = listItem.lookup(".m3-list-item-selection-container");
         assertInstanceOf(javafx.scene.layout.Region.class, container);
         return (javafx.scene.layout.Region) container;
+    }
+
+    /// Verifies that a rendered child stays inside a rendered parent.
+    private static void assertNodeInsideParent(Node parent, Node child) {
+        Bounds parentBounds = parent.localToScene(parent.getBoundsInLocal());
+        Bounds childBounds = child.localToScene(child.getBoundsInLocal());
+        assertTrue(
+                childBounds.getMinX() >= parentBounds.getMinX() - 0.0001
+                        && childBounds.getMaxX() <= parentBounds.getMaxX() + 0.0001
+                        && childBounds.getMinY() >= parentBounds.getMinY() - 0.0001
+                        && childBounds.getMaxY() <= parentBounds.getMaxY() + 0.0001,
+                () -> "childBounds=" + childBounds + ", parentBounds=" + parentBounds
+        );
     }
 
     /// Verifies that a node user-agent stylesheet has the expected bundled suffix.

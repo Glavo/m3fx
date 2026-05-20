@@ -82,14 +82,6 @@
     -m3-horizontal-padding: 40px;
 }
 
-.demo-sidebar-disclosure-icon {
-    -fx-fill: -m3-color-on-surface-variant;
-}
-
-.m3-navigation-drawer .m3-list-item:selected .demo-sidebar-disclosure-icon {
-    -fx-fill: -m3-color-on-secondary-container;
-}
-
 .demo-scroll-pane {
     -fx-background-color: transparent;
     -fx-background: transparent;
