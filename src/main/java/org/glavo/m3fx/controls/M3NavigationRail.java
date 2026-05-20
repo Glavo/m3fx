@@ -266,7 +266,7 @@ public class M3NavigationRail extends Control {
         M3SelectionNavigation.handleKeySelection(
                 event,
                 getItems(),
-                getSelectedItem(),
+                M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3NavigationItem.class),
                 M3NavigationItem.class,
                 false,
                 true,

@@ -344,7 +344,7 @@ public class M3ChipGroup extends Control {
         M3SelectionNavigation.handleKeySelection(
                 event,
                 getItems(),
-                getSelectedChip(),
+                M3SelectionNavigation.focusAnchor(getItems(), getSelectedChip(), M3Chip.class),
                 M3Chip.class,
                 true,
                 true,

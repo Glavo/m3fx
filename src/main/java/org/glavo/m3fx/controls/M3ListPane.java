@@ -319,7 +319,7 @@ public class M3ListPane extends Control {
         M3SelectionNavigation.handleKeySelection(
                 event,
                 getItems(),
-                getSelectedItem(),
+                M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
                 M3ListItem.class,
                 false,
                 true,

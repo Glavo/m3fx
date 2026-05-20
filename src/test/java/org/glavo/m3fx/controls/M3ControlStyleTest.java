@@ -7564,6 +7564,99 @@ final class M3ControlStyleTest {
         assertNull(menuWithoutSelection.getSelectedItem());
     }
 
+    /// Verifies that single-selection containers use the focused child as their keyboard navigation anchor.
+    @Test
+    void singleSelectionContainersUseFocusedChildAsKeyboardAnchor() {
+        runOnFxThread(() -> {
+            M3IconToggleButton iconFirst = new M3IconToggleButton("A");
+            M3IconToggleButton iconSecond = new M3IconToggleButton("B");
+            M3IconToggleButton iconThird = new M3IconToggleButton("C");
+            M3IconToggleButtonGroup iconGroup =
+                    new M3IconToggleButtonGroup(iconFirst, iconSecond, iconThird);
+            iconGroup.select(iconFirst);
+
+            M3SegmentedButton segmentFirst = new M3SegmentedButton("Day");
+            M3SegmentedButton segmentSecond = new M3SegmentedButton("Week");
+            M3SegmentedButton segmentThird = new M3SegmentedButton("Month");
+            M3SegmentedButtonGroup segmentedGroup =
+                    new M3SegmentedButtonGroup(segmentFirst, segmentSecond, segmentThird);
+            segmentedGroup.select(segmentFirst);
+
+            M3Chip chipFirst = new M3Chip("Input");
+            M3Chip chipSecond = new M3Chip("Filter");
+            M3Chip chipThird = new M3Chip("Assist");
+            M3ChipGroup chipGroup = new M3ChipGroup(chipFirst, chipSecond, chipThird);
+            chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
+            chipGroup.select(chipFirst);
+
+            M3ListItem listFirst = new M3ListItem("One");
+            M3ListItem listSecond = new M3ListItem("Two");
+            M3ListItem listThird = new M3ListItem("Three");
+            M3ListPane list = new M3ListPane(listFirst, listSecond, listThird);
+            list.setSelectionMode(M3ListSelectionMode.SINGLE);
+            list.select(listFirst);
+
+            M3Tab tabFirst = new M3Tab("Overview");
+            M3Tab tabSecond = new M3Tab("Details");
+            M3Tab tabThird = new M3Tab("Activity");
+            M3TabBar tabBar = new M3TabBar(tabFirst, tabSecond, tabThird);
+            tabBar.select(tabFirst);
+
+            M3NavigationItem barFirst = new M3NavigationItem("Home");
+            M3NavigationItem barSecond = new M3NavigationItem("Search");
+            M3NavigationItem barThird = new M3NavigationItem("Inbox");
+            M3NavigationBar navigationBar = new M3NavigationBar(barFirst, barSecond, barThird);
+            navigationBar.select(barFirst);
+
+            M3NavigationItem railFirst = new M3NavigationItem("Home");
+            M3NavigationItem railSecond = new M3NavigationItem("Search");
+            M3NavigationItem railThird = new M3NavigationItem("Inbox");
+            M3NavigationRail navigationRail = new M3NavigationRail(railFirst, railSecond, railThird);
+            navigationRail.select(railFirst);
+
+            Stage stage = new Stage();
+            try {
+                VBox root = new VBox(iconGroup, segmentedGroup, chipGroup, list, tabBar, navigationBar, navigationRail);
+                Scene scene = new Scene(root, 720.0, 520.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                iconSecond.requestFocus();
+                iconGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(iconThird, iconGroup.getSelectedButton());
+
+                segmentSecond.requestFocus();
+                segmentedGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(segmentThird, segmentedGroup.getSelectedButton());
+
+                chipSecond.requestFocus();
+                chipGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(chipThird, chipGroup.getSelectedChip());
+
+                listSecond.requestFocus();
+                list.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertEquals(listThird, list.getSelectedItem());
+
+                tabSecond.requestFocus();
+                tabBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(tabThird, tabBar.getSelectedTab());
+
+                barSecond.requestFocus();
+                navigationBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(barThird, navigationBar.getSelectedItem());
+
+                railSecond.requestFocus();
+                navigationRail.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertEquals(railThird, navigationRail.getSelectedItem());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that multi-selection containers use arrow keys for focus movement without changing selection.
     @Test
     void multiSelectionContainersKeepSelectionDuringKeyboardFocusNavigation() {

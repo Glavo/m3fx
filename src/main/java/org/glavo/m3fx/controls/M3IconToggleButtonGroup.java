@@ -317,7 +317,7 @@ public class M3IconToggleButtonGroup extends Control {
         M3SelectionNavigation.handleKeySelection(
                 event,
                 getItems(),
-                getSelectedButton(),
+                M3SelectionNavigation.focusAnchor(getItems(), getSelectedButton(), M3IconToggleButton.class),
                 M3IconToggleButton.class,
                 true,
                 false,

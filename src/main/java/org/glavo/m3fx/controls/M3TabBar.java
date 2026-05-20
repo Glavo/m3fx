@@ -264,7 +264,7 @@ public class M3TabBar extends Control {
         M3SelectionNavigation.handleKeySelection(
                 event,
                 getTabs(),
-                getSelectedTab(),
+                M3SelectionNavigation.focusAnchor(getTabs(), getSelectedTab(), M3Tab.class),
                 M3Tab.class,
                 true,
                 false,

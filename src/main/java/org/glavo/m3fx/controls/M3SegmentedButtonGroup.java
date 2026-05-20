@@ -332,7 +332,7 @@ public class M3SegmentedButtonGroup extends Control {
         M3SelectionNavigation.handleKeySelection(
                 event,
                 getItems(),
-                getSelectedButton(),
+                M3SelectionNavigation.focusAnchor(getItems(), getSelectedButton(), M3SegmentedButton.class),
                 M3SegmentedButton.class,
                 true,
                 false,
