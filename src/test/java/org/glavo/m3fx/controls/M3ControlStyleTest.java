@@ -7219,10 +7219,96 @@ final class M3ControlStyleTest {
         assertFalse(group.getHeaderItem().isSelected());
 
         group.setExpanded(false);
-        navigationDrawer.selectNext();
 
         assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
         assertEquals(0, navigationDrawer.getSelectedIndex());
+        assertTrue(group.getHeaderItem().isSelected());
+        assertFalse(buttons.isSelected());
+        navigationDrawer.selectNext();
+        assertEquals(overview, navigationDrawer.getSelectedItem());
+
+        group.setExpanded(false);
+        navigationDrawer.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, fabs);
+
+        assertTrue(group.isExpanded());
+        assertEquals(fabs, navigationDrawer.getSelectedItem());
+        assertEquals(2, navigationDrawer.getSelectedIndex());
+
+        group.setExpanded(false);
+        navigationDrawer.executeAccessibleAction(AccessibleAction.SHOW_ITEM, buttons);
+
+        assertTrue(group.isExpanded());
+    }
+
+    /// Verifies that navigation drawers expand and collapse destination groups from keyboard disclosure keys.
+    @Test
+    void navigationDrawerHandlesGroupDisclosureKeys() {
+        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+        M3ListItem commonButtons = new M3ListItem("Common buttons");
+        M3ListItem floatingActions = new M3ListItem("Floating actions");
+        group.addItems(commonButtons, floatingActions);
+        M3ListItem overview = new M3ListItem("Overview");
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(group, overview);
+
+        KeyEvent expandEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+        navigationDrawer.fireEvent(expandEvent);
+
+        assertTrue(group.isExpanded());
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+        assertEquals(4, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+        navigationDrawer.select(commonButtons);
+        KeyEvent collapseFromChildEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT);
+        navigationDrawer.fireEvent(collapseFromChildEvent);
+
+        assertFalse(group.isExpanded());
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+        assertEquals(2, navigationDrawer.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+        KeyEvent nextEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
+        navigationDrawer.fireEvent(nextEvent);
+
+        assertEquals(overview, navigationDrawer.getSelectedItem());
+    }
+
+    /// Verifies that navigation drawer groups expose disclosure accessibility state and actions.
+    @Test
+    void navigationDrawerGroupExposesAccessibleDisclosureStateAndActions() {
+        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+        M3ListItem commonButtons = new M3ListItem("Common buttons");
+        M3ListItem floatingActions = new M3ListItem("Floating actions");
+        group.addItems(commonButtons, floatingActions);
+
+        applyCss(group);
+
+        assertEquals("Buttons", group.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertEquals(false, group.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        assertEquals(group.getHeaderItem(), group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertEquals(1, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(group.getHeaderItem(), group.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+
+        group.executeAccessibleAction(AccessibleAction.FIRE);
+
+        assertTrue(group.isExpanded());
+        assertEquals(true, group.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        assertEquals(3, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertEquals(commonButtons, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertEquals(floatingActions, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
+
+        group.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+        assertFalse(group.isExpanded());
+        assertEquals(1, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+        group.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 2);
+
+        assertTrue(group.isExpanded());
+        assertEquals(floatingActions, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
+
+        group.executeAccessibleAction(AccessibleAction.COLLAPSE);
+        group.executeAccessibleAction(AccessibleAction.EXPAND);
+
+        assertTrue(group.isExpanded());
     }
 
     /// Verifies that navigation drawer groups expose their skin and visible child structure.

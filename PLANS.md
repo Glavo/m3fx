@@ -71,7 +71,7 @@
 - Unit tests cover style classes, token CSS metadata, accessibility attributes, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
 - Snapshot-based visual tests render implemented control families into report images for manual and automated inspection.
 - Disclosure icon tests cover expanded-state rotation, fixed-slot layout, clipping bounds, and navigation drawer usage.
-- Navigation drawer group tests cover disclosure-backed expansion, animated child row reveal, flattened drawer selection, child visibility, style classes, skin creation, and user-agent stylesheet routing.
+- Navigation drawer group tests cover disclosure-backed expansion, animated child row reveal, keyboard disclosure navigation, accessible expand/collapse actions, hidden child selection recovery, flattened drawer selection, child visibility, style classes, skin creation, and user-agent stylesheet routing.
 - Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
 - Text input visual snapshots include outlined floating-label notch geometry checks.
 - Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.

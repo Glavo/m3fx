@@ -11,12 +11,16 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -44,6 +48,9 @@ public final class M3NavigationDrawerGroup extends Control {
         @Override
         protected void invalidated() {
             pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, get());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             requestLayout();
         }
     };
@@ -143,6 +150,35 @@ public final class M3NavigationDrawerGroup extends Control {
         return headerItem;
     }
 
+    /// Returns accessibility attributes for the disclosure state and visible child rows.
+    @Override
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        ObservableList<Node> content = accessibleContent();
+        return switch (attribute) {
+            case EXPANDED -> isExpanded();
+            case FOCUS_NODE -> headerItem;
+            case ITEM_COUNT -> content.size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(content, parameters);
+            case TEXT -> getTitle();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Executes accessibility actions for toggling and focusing the disclosure group.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case FIRE -> setExpanded(!isExpanded());
+            case EXPAND -> setExpanded(true);
+            case COLLAPSE -> setExpanded(false);
+            case REQUEST_FOCUS -> headerItem.requestFocus();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
     /// Returns the user-agent stylesheet for M3FX navigation drawer groups.
     @Override
     public String getUserAgentStylesheet() {
@@ -164,8 +200,26 @@ public final class M3NavigationDrawerGroup extends Control {
         headerItem.setOnAction(event -> setExpanded(!isExpanded()));
         disclosureIcon.expandedProperty().bind(expanded);
         items.addListener(itemsListener);
+        title.addListener((observable, oldValue, newValue) -> setAccessibleText(newValue));
         setAccessibleRole(AccessibleRole.NODE);
+        setAccessibleText(getTitle());
         setFocusTraversable(false);
+    }
+
+    /// Returns the header row and currently visible child rows for accessibility indexing.
+    private ObservableList<Node> accessibleContent() {
+        ObservableList<Node> content = FXCollections.observableArrayList();
+        content.add(headerItem);
+        if (isExpanded()) {
+            content.addAll(items);
+        }
+        return content;
+    }
+
+    /// Expands the group when needed and focuses the requested accessible row.
+    private void showAccessibleItem(Object... parameters) {
+        setExpanded(true);
+        M3Accessible.showItem(accessibleContent(), parameters);
     }
 
     /// Validates a child destination item array.

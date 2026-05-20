@@ -19,6 +19,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
@@ -256,7 +257,7 @@ public class M3NavigationDrawer extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItem(flattenedContent(), parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -271,10 +272,16 @@ public class M3NavigationDrawer extends Control {
 
     /// Applies keyboard navigation across enabled drawer items.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (handleGroupDisclosureKey(event)) {
+            return;
+        }
+
+        ObservableList<Node> content = flattenedContent();
+        @Nullable M3ListItem anchor = M3SelectionNavigation.focusAnchor(content, getSelectedItem(), M3ListItem.class);
         M3SelectionNavigation.handleKeySelection(
                 event,
-                flattenedContent(),
-                getSelectedItem(),
+                content,
+                anchor,
                 M3ListItem.class,
                 false,
                 true,
@@ -282,15 +289,145 @@ public class M3NavigationDrawer extends Control {
         );
     }
 
+    /// Handles left and right arrow disclosure behavior for focused or selected drawer groups.
+    private boolean handleGroupDisclosureKey(KeyEvent event) {
+        KeyCode code = event.getCode();
+        if (code != KeyCode.LEFT && code != KeyCode.RIGHT) {
+            return false;
+        }
+
+        ObservableList<Node> content = flattenedContent();
+        @Nullable M3ListItem anchor = M3SelectionNavigation.focusAnchor(content, getSelectedItem(), M3ListItem.class);
+        if (anchor == null) {
+            return false;
+        }
+
+        if (code == KeyCode.RIGHT) {
+            @Nullable M3NavigationDrawerGroup headerGroup = groupForHeader(anchor);
+            if (headerGroup != null && !headerGroup.isExpanded()) {
+                headerGroup.setExpanded(true);
+                selectItem(headerGroup.getHeaderItem());
+                event.consume();
+                return true;
+            }
+            return false;
+        }
+
+        @Nullable M3NavigationDrawerGroup headerGroup = groupForHeader(anchor);
+        if (headerGroup != null && headerGroup.isExpanded()) {
+            headerGroup.setExpanded(false);
+            selectItem(headerGroup.getHeaderItem());
+            event.consume();
+            return true;
+        }
+
+        @Nullable M3NavigationDrawerGroup childGroup = groupForChild(anchor);
+        if (childGroup != null && childGroup.isExpanded()) {
+            childGroup.setExpanded(false);
+            selectItem(childGroup.getHeaderItem());
+            event.consume();
+            return true;
+        }
+
+        return false;
+    }
+
     /// Applies the selected drawer item supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
-        @Nullable M3ListItem item =
-                M3Accessible.firstSelectionTarget(flattenedContent(), M3ListItem.class, parameters);
+        @Nullable M3ListItem item = accessibleSelectionTarget(parameters);
         if (item == null) {
             clearSelection();
         } else {
             select(item);
         }
+    }
+
+    /// Focuses the drawer item supplied by an accessibility client, expanding a group when needed.
+    private void showAccessibleItem(Object... parameters) {
+        @Nullable Node item = accessibleActionItem(parameters);
+        if (item == null) {
+            M3Accessible.showItem(flattenedContent(), parameters);
+        } else {
+            M3Accessible.showItem(item);
+        }
+    }
+
+    /// Returns the list item referenced by accessibility selection parameters.
+    private @Nullable M3ListItem accessibleSelectionTarget(Object... parameters) {
+        @Nullable M3ListItem item =
+                M3Accessible.firstSelectionTarget(flattenedContent(), M3ListItem.class, parameters);
+        if (item != null) {
+            return item;
+        }
+
+        for (Node child : getItems()) {
+            if (child instanceof M3NavigationDrawerGroup group) {
+                @Nullable M3ListItem groupItem = accessibleGroupSelectionTarget(group, parameters);
+                if (groupItem != null) {
+                    return groupItem;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the group item referenced by accessibility selection parameters.
+    private @Nullable M3ListItem accessibleGroupSelectionTarget(
+            M3NavigationDrawerGroup group,
+            Object... parameters
+    ) {
+        M3ListItem headerItem = group.getHeaderItem();
+        if (M3Accessible.containsSelectionTarget(headerItem, parameters)) {
+            return headerItem;
+        }
+
+        for (M3ListItem item : group.getItems()) {
+            if (M3Accessible.containsSelectionTarget(item, parameters)) {
+                group.setExpanded(true);
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the drawer content node referenced by accessibility action parameters.
+    private @Nullable Node accessibleActionItem(Object... parameters) {
+        if (parameters.length == 0) {
+            return null;
+        }
+
+        if (parameters[0] instanceof Number) {
+            return M3Accessible.itemAt(flattenedContent(), parameters);
+        }
+
+        for (Node child : getItems()) {
+            if (M3Accessible.containsSelectionTarget(child, parameters)) {
+                return child;
+            }
+            if (child instanceof M3NavigationDrawerGroup group) {
+                @Nullable Node groupItem = accessibleGroupActionItem(group, parameters);
+                if (groupItem != null) {
+                    return groupItem;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the group content node referenced by accessibility action parameters.
+    private @Nullable Node accessibleGroupActionItem(M3NavigationDrawerGroup group, Object... parameters) {
+        M3ListItem headerItem = group.getHeaderItem();
+        if (M3Accessible.containsSelectionTarget(headerItem, parameters)) {
+            return headerItem;
+        }
+
+        for (M3ListItem item : group.getItems()) {
+            if (M3Accessible.containsSelectionTarget(item, parameters)) {
+                group.setExpanded(true);
+                return item;
+            }
+        }
+        return null;
     }
 
     /// Installs listeners on one drawer child node.
@@ -347,7 +484,12 @@ public class M3NavigationDrawer extends Control {
         groupItemsListeners.put(group, itemsListener);
         group.getItems().addListener(itemsListener);
 
-        ChangeListener<Boolean> expandedListener = (observable, oldValue, newValue) -> notifyDrawerContentChanged();
+        ChangeListener<Boolean> expandedListener = (observable, oldValue, newValue) -> {
+            if (!newValue && group.getItems().contains(selectedItem.get())) {
+                selectItem(group.getHeaderItem());
+            }
+            notifyDrawerContentChanged();
+        };
         groupExpandedListeners.put(group, expandedListener);
         group.expandedProperty().addListener(expandedListener);
     }
@@ -464,6 +606,28 @@ public class M3NavigationDrawer extends Control {
     /// Returns whether a list item belongs to this drawer.
     private boolean containsListItem(M3ListItem item) {
         return allListItems().contains(item);
+    }
+
+    /// Returns the drawer group that owns the supplied header item.
+    private @Nullable M3NavigationDrawerGroup groupForHeader(M3ListItem item) {
+        for (Node child : getItems()) {
+            if (child instanceof M3NavigationDrawerGroup group && group.getHeaderItem() == item) {
+                return group;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the expanded drawer group that owns the supplied child item.
+    private @Nullable M3NavigationDrawerGroup groupForChild(M3ListItem item) {
+        for (Node child : getItems()) {
+            if (child instanceof M3NavigationDrawerGroup group
+                    && group.isExpanded()
+                    && group.getItems().contains(item)) {
+                return group;
+            }
+        }
+        return null;
     }
 
     /// Returns direct drawer content with expanded groups flattened into visible rows.
