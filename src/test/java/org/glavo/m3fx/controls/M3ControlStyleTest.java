@@ -1787,14 +1787,23 @@ final class M3ControlStyleTest {
     @Test
     void textInputLayoutAnimatesLabelClearButtonAndSupportingRow() {
         runOnFxThread(() -> {
-            M3TextField textField = new M3TextField();
+            M3TextField textField = M3TextField.withVariant("", M3TextInputVariant.OUTLINED);
+            textField.setPrefWidth(260.0);
             M3TextInputLayout layout = new M3TextInputLayout(textField);
             layout.setLabelText("Email");
             layout.setClearButtonEnabled(true);
+            layout.setPrefWidth(260.0);
 
-            applyCss(layout);
+            Pane root = new Pane(layout);
+            layout.resizeRelocate(20.0, 20.0, 260.0, 96.0);
+            Scene scene = new Scene(root, 320.0, 140.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
 
             Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+            Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+            assertEquals(0.0, outlineNotchGap(outline), 0.0001);
 
             textField.setText("alpha");
 
@@ -1806,6 +1815,7 @@ final class M3ControlStyleTest {
 
             assertBetween(label.getOpacity(), 0.72, 1.0, "floating label opacity");
             assertBetween(Math.abs(label.getTranslateY()), 0.0, 4.0, "floating label translateY");
+            assertTrue(outlineNotchGap(outline) > 0.5, () -> "outlineNotchGap=" + outlineNotchGap(outline));
             assertBetween(clearButton.getOpacity(), 0.0, 1.0, "clear button opacity");
             assertBetween(clearButton.getScaleX(), 0.86, 1.0, "clear button scaleX");
             assertBetween(clearButton.getScaleY(), 0.86, 1.0, "clear button scaleY");
@@ -8096,6 +8106,70 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that outlined text input layouts cut a real outline notch instead of painting a label mask.
+    @Test
+    void outlinedInputLayoutSnapshotRendersNotchedOutlineWithoutLabelMask() {
+        runOnFxThread(() -> {
+            M3TextField textField = M3TextField.withVariant("M3FX", M3TextInputVariant.OUTLINED);
+            textField.setPrefWidth(360.0);
+
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
+            layout.setLabelText("Outlined with text");
+            layout.setLeading(new M3Icon("T"));
+            layout.setCharacterCounterVisible(true);
+            layout.setCharacterLimit(24);
+            layout.setPrefWidth(360.0);
+
+            Color surface = Color.rgb(248, 240, 249);
+            StackPane root = new StackPane(layout);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 430.0, 140.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(430.0, 140.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+            Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+            var labelBounds = label.localToScene(label.getBoundsInLocal());
+            var fieldBounds = textField.localToScene(textField.getBoundsInLocal());
+            assertTrue(label.getBackground() == null || label.getBackground().getFills().isEmpty());
+            assertTrue(outlineNotchGap(outline) >= labelBounds.getWidth() - 1.0,
+                    () -> "outline gap is narrower than the floating label: gap="
+                            + outlineNotchGap(outline) + ", label=" + labelBounds);
+
+            Color labelPaddingPixel = image.getPixelReader().getColor(
+                    (int) Math.floor(labelBounds.getMinX() + 1.0),
+                    (int) Math.floor(labelBounds.getMinY() + labelBounds.getHeight() / 2.0)
+            );
+            Color notchPixel = image.getPixelReader().getColor(
+                    (int) Math.floor(labelBounds.getMinX() + 1.0),
+                    (int) Math.floor(fieldBounds.getMinY() + 1.0)
+            );
+            assertColorNear(labelPaddingPixel, surface, 0.015, "floating label padding pixel");
+            assertColorNear(notchPixel, surface, 0.015, "outlined notch pixel");
+            assertSnapshotAreaContainsContrast(
+                    image,
+                    (int) Math.floor(fieldBounds.getMinX() + 4.0),
+                    (int) Math.floor(fieldBounds.getMinY()),
+                    (int) Math.floor(labelBounds.getMinX() - 2.0),
+                    (int) Math.ceil(fieldBounds.getMinY() + 3.0),
+                    surface,
+                    0.04,
+                    "outlined text field top outline before floating label notch"
+            );
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-outlined-input-notch.png"
+            ));
+        });
+    }
+
     /// Verifies that validation summaries render invalid input rows in snapshots.
     @Test
     void validationSummarySnapshotRendersInvalidInputRows() {
@@ -10039,6 +10113,16 @@ final class M3ControlStyleTest {
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
+    }
+
+    /// Returns the current top outline gap generated for a floating text input label.
+    private static double outlineNotchGap(Path outline) {
+        if (outline.getElements().size() < 3) {
+            return 0.0;
+        }
+        var notchStart = assertInstanceOf(javafx.scene.shape.LineTo.class, outline.getElements().get(1));
+        var notchEnd = assertInstanceOf(javafx.scene.shape.MoveTo.class, outline.getElements().get(2));
+        return notchEnd.getX() - notchStart.getX();
     }
 
     /// Moves all navigation indicator timelines to the same rendered frame.

@@ -6,7 +6,9 @@ package org.glavo.m3fx.controls;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -14,6 +16,7 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -37,6 +40,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Path;
+import javafx.scene.shape.QuadCurveTo;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -58,6 +65,9 @@ public class M3TextInputLayout extends Control {
 
     /// The style class applied to the input and adornment container.
     public static final String INPUT_CONTAINER_STYLE_CLASS = "m3-text-input-container";
+
+    /// The style class applied to the outlined input border path.
+    public static final String OUTLINE_STYLE_CLASS = "m3-text-input-outline";
 
     /// The style class applied to the floating or resting label.
     public static final String LABEL_STYLE_CLASS = "m3-text-input-label";
@@ -83,6 +93,9 @@ public class M3TextInputLayout extends Control {
     /// The pseudo-class used while the supporting row renders an error state.
     private static final PseudoClass ERROR_PSEUDO_CLASS = PseudoClass.getPseudoClass("error");
 
+    /// The pseudo-class used while the wrapped input is focused.
+    private static final PseudoClass FOCUSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("focused");
+
     /// The pseudo-class used while the label is floating above entered text.
     private static final PseudoClass FLOATING_PSEUDO_CLASS = PseudoClass.getPseudoClass("floating");
 
@@ -100,6 +113,9 @@ public class M3TextInputLayout extends Control {
 
     /// The top padding used to align floating label text with the outline notch.
     private static final double FLOATING_LABEL_TOP_PADDING = 2.0;
+
+    /// The minimum horizontal gap animated into an outlined field notch.
+    private static final double MINIMUM_NOTCH_GAP = 0.5;
 
     /// The top input padding used when a single-line field has a floating label.
     private static final double LABELED_SINGLE_LINE_TOP_PADDING = 20.0;
@@ -322,6 +338,17 @@ public class M3TextInputLayout extends Control {
     private final ChangeListener<M3TextInputVariant> variantListener =
             (observable, oldValue, newValue) -> updateInputVariantStyle();
 
+    /// The listener used to update outline presentation when a wrapped input error state changes.
+    private final ChangeListener<Boolean> errorListener =
+            (observable, oldValue, newValue) -> {
+                updateLabelErrorState();
+                updateOutlineState();
+            };
+
+    /// The listener used to update outline geometry when wrapped input metrics change.
+    private final ChangeListener<Number> inputMetricListener =
+            (observable, oldValue, newValue) -> updateOutlinePath();
+
     /// The listener used to track input padding changes from CSS or application code.
     private final ChangeListener<Insets> paddingListener =
             (observable, oldValue, newValue) -> {
@@ -339,8 +366,24 @@ public class M3TextInputLayout extends Control {
         }
     };
 
+    /// The listener used to rebuild the outlined border path when layout geometry changes.
+    private final InvalidationListener outlineGeometryListener = observable -> updateOutlinePath();
+
     /// The container that overlays leading and trailing adornments over the input.
     private final StackPane inputContainer = new StackPane();
+
+    /// The animated outline path rendered by outlined input layouts.
+    private final Path outlinePath = new Path();
+
+    /// The progress of the floating-label outline notch opening animation.
+    private final DoubleProperty outlineNotchProgress =
+            new SimpleDoubleProperty(this, "outlineNotchProgress") {
+                /// Rebuilds the outlined border when the animated notch progress changes.
+                @Override
+                protected void invalidated() {
+                    updateOutlinePath();
+                }
+            };
 
     /// The label rendered over the wrapped input.
     private final Label label = new Label();
@@ -797,6 +840,10 @@ public class M3TextInputLayout extends Control {
         setAccessibleRole(AccessibleRole.PARENT);
 
         inputContainer.getStyleClass().add(INPUT_CONTAINER_STYLE_CLASS);
+        outlinePath.getStyleClass().add(OUTLINE_STYLE_CLASS);
+        outlinePath.setFill(null);
+        outlinePath.setManaged(false);
+        outlinePath.setMouseTransparent(true);
         label.getStyleClass().add(LABEL_STYLE_CLASS);
         label.setMouseTransparent(true);
         leadingSlot.getStyleClass().add(LEADING_STYLE_CLASS);
@@ -806,7 +853,11 @@ public class M3TextInputLayout extends Control {
         StackPane.setAlignment(label, Pos.CENTER_LEFT);
         StackPane.setAlignment(leadingSlot, Pos.CENTER_LEFT);
         StackPane.setAlignment(trailingSlot, Pos.CENTER_RIGHT);
-        inputContainer.getChildren().setAll(label, leadingSlot, trailingSlot);
+        inputContainer.widthProperty().addListener(outlineGeometryListener);
+        inputContainer.heightProperty().addListener(outlineGeometryListener);
+        label.boundsInParentProperty().addListener(outlineGeometryListener);
+        outlinePath.strokeWidthProperty().addListener(outlineGeometryListener);
+        inputContainer.getChildren().setAll(outlinePath, label, leadingSlot, trailingSlot);
 
         supportingRow.getStyleClass().add(SUPPORTING_ROW_STYLE_CLASS);
         supportingLabel.getStyleClass().add(SUPPORTING_TEXT_STYLE_CLASS);
@@ -837,10 +888,12 @@ public class M3TextInputLayout extends Control {
     private void updateInput() {
         TextInputControl oldInput = installedInput;
         supportingRow.disableProperty().unbind();
+        outlinePath.disableProperty().unbind();
         label.disableProperty().unbind();
         leadingSlot.disableProperty().unbind();
         trailingSlot.disableProperty().unbind();
         supportingRow.setDisable(false);
+        outlinePath.setDisable(false);
         label.setDisable(false);
         leadingSlot.setDisable(false);
         trailingSlot.setDisable(false);
@@ -848,8 +901,11 @@ public class M3TextInputLayout extends Control {
             oldInput.textProperty().removeListener(textListener);
             oldInput.focusedProperty().removeListener(focusListener);
             oldInput.paddingProperty().removeListener(paddingListener);
+            oldInput.boundsInParentProperty().removeListener(outlineGeometryListener);
             if (oldInput instanceof M3TextInput textInput) {
                 textInput.variantProperty().removeListener(variantListener);
+                textInput.errorProperty().removeListener(errorListener);
+                textInput.containerShapeProperty().removeListener(inputMetricListener);
             }
             oldInput.getStyleClass().remove(INPUT_STYLE_CLASS);
             restoreInputPadding(oldInput);
@@ -872,17 +928,21 @@ public class M3TextInputLayout extends Control {
             M3ControlStyles.add(newInput, INPUT_STYLE_CLASS);
             newInput.textProperty().addListener(textListener);
             newInput.focusedProperty().addListener(focusListener);
+            newInput.boundsInParentProperty().addListener(outlineGeometryListener);
             if (newInput instanceof M3TextInput textInput) {
                 textInput.variantProperty().addListener(variantListener);
+                textInput.errorProperty().addListener(errorListener);
+                textInput.containerShapeProperty().addListener(inputMetricListener);
             }
             supportingRow.disableProperty().bind(newInput.disabledProperty());
+            outlinePath.disableProperty().bind(newInput.disabledProperty());
             label.disableProperty().bind(newInput.disabledProperty());
             leadingSlot.disableProperty().bind(newInput.disabledProperty());
             trailingSlot.disableProperty().bind(newInput.disabledProperty());
             installedInput = newInput;
             installedInputBasePadding = newInput.getPadding();
             newInput.paddingProperty().addListener(paddingListener);
-            inputContainer.getChildren().add(0, newInput);
+            inputContainer.getChildren().add(1, newInput);
         }
 
         updateInputContainer();
@@ -908,6 +968,7 @@ public class M3TextInputLayout extends Control {
         boolean visible = getInput() != null;
         inputContainer.setVisible(visible);
         inputContainer.setManaged(visible);
+        updateOutlineState();
     }
 
     /// Mirrors the wrapped input variant onto this layout for label styling.
@@ -920,6 +981,7 @@ public class M3TextInputLayout extends Control {
                 M3TextInputVariant.FILLED.getStyleClass(),
                 M3TextInputVariant.OUTLINED.getStyleClass()
         );
+        updateOutlineState();
     }
 
     /// Updates label content, floating state, and placement.
@@ -934,12 +996,13 @@ public class M3TextInputLayout extends Control {
         label.setManaged(visible);
         StackPane.setAlignment(label, floating ? Pos.TOP_LEFT : Pos.CENTER_LEFT);
         label.pseudoClassStateChanged(FLOATING_PSEUDO_CLASS, floating);
-        label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, hasErrorState());
+        updateLabelErrorState();
         updateLabelMotion(visible, floating);
         labelFloating = floating;
         labelVisible = visible;
         updateLabelPadding();
         updateInputPadding();
+        updateOutlineState();
     }
 
     /// Returns whether the label should float above input content.
@@ -1114,6 +1177,8 @@ public class M3TextInputLayout extends Control {
         supportingRow.setVisible(showRow);
         supportingRow.setManaged(showRow);
         supportingRow.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
+        updateLabelErrorState();
+        updateOutlineState();
         updateSupportingRowMotion(showRow, contentChanged);
         supportingRowVisible = showRow;
         displayedSupportingRowText = message;
@@ -1128,6 +1193,7 @@ public class M3TextInputLayout extends Control {
             labelAnimation.stop();
             label.setOpacity(0.0);
             label.setTranslateY(0.0);
+            outlineNotchProgress.set(0.0);
             labelMotionInitialized = false;
             return;
         }
@@ -1135,11 +1201,13 @@ public class M3TextInputLayout extends Control {
         if (!labelMotionInitialized || getScene() == null) {
             label.setOpacity(1.0);
             label.setTranslateY(0.0);
+            outlineNotchProgress.set(floating ? 1.0 : 0.0);
             labelMotionInitialized = true;
             return;
         }
 
         if (!changed) {
+            outlineNotchProgress.set(floating ? 1.0 : 0.0);
             return;
         }
 
@@ -1149,9 +1217,123 @@ public class M3TextInputLayout extends Control {
         labelAnimation.getKeyFrames().setAll(new KeyFrame(
                 LABEL_TRANSITION_DURATION,
                 new KeyValue(label.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(label.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+                new KeyValue(label.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE),
+                new KeyValue(outlineNotchProgress, floating ? 1.0 : 0.0, M3Motion.STANDARD_DECELERATE)
         ));
         labelAnimation.playFromStart();
+    }
+
+    /// Updates the label error pseudo-class from both layout-owned and wrapped input error state.
+    private void updateLabelErrorState() {
+        label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, hasVisualErrorState());
+    }
+
+    /// Updates outline visibility, pseudo-classes, and geometry.
+    private void updateOutlineState() {
+        boolean visible = isOutlinedInput();
+        outlinePath.setVisible(visible);
+        outlinePath.setManaged(false);
+        outlinePath.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, isInputFocused());
+        outlinePath.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, hasVisualErrorState());
+        updateOutlinePath();
+    }
+
+    /// Rebuilds the animated outlined border path and floating-label notch.
+    private void updateOutlinePath() {
+        if (!outlinePath.isVisible()) {
+            outlinePath.getElements().clear();
+            return;
+        }
+
+        TextInputControl input = installedInput;
+        if (input == null) {
+            outlinePath.getElements().clear();
+            return;
+        }
+
+        var inputBounds = input.getBoundsInParent();
+        double width = inputBounds.getWidth();
+        double height = inputBounds.getHeight();
+        if (width <= 0.0 || height <= 0.0) {
+            outlinePath.getElements().clear();
+            return;
+        }
+
+        double strokeWidth = Math.max(1.0, outlinePath.getStrokeWidth());
+        double strokeInset = strokeWidth / 2.0;
+        double left = inputBounds.getMinX() + strokeInset;
+        double top = inputBounds.getMinY() + strokeInset;
+        double right = inputBounds.getMaxX() - strokeInset;
+        double bottom = inputBounds.getMaxY() - strokeInset;
+        double radius = outlineRadius(right - left, bottom - top);
+        double topStartX = left + radius;
+        double topEndX = right - radius;
+        double notchStart = topEndX;
+        double notchEnd = topEndX;
+
+        if (isLabelFloating() && label.isVisible()) {
+            var labelBounds = label.getBoundsInParent();
+            double targetStart = clamp(labelBounds.getMinX(), topStartX, topEndX);
+            double targetEnd = clamp(labelBounds.getMaxX(), targetStart, topEndX);
+            double targetCenter = (targetStart + targetEnd) / 2.0;
+            double progress = clamp(outlineNotchProgress.get(), 0.0, 1.0);
+            notchStart = interpolate(targetCenter, targetStart, progress);
+            notchEnd = interpolate(targetCenter, targetEnd, progress);
+            if (notchEnd - notchStart < MINIMUM_NOTCH_GAP) {
+                double center = (notchStart + notchEnd) / 2.0;
+                notchStart = clamp(center - MINIMUM_NOTCH_GAP / 2.0, topStartX, topEndX);
+                notchEnd = clamp(center + MINIMUM_NOTCH_GAP / 2.0, notchStart, topEndX);
+            }
+        }
+
+        outlinePath.getElements().setAll(
+                new MoveTo(topStartX, top),
+                new LineTo(notchStart, top),
+                new MoveTo(notchEnd, top),
+                new LineTo(topEndX, top),
+                new QuadCurveTo(right, top, right, top + radius),
+                new LineTo(right, bottom - radius),
+                new QuadCurveTo(right, bottom, right - radius, bottom),
+                new LineTo(left + radius, bottom),
+                new QuadCurveTo(left, bottom, left, bottom - radius),
+                new LineTo(left, top + radius),
+                new QuadCurveTo(left, top, topStartX, top)
+        );
+    }
+
+    /// Returns whether the wrapped input should be outlined by the layout.
+    private boolean isOutlinedInput() {
+        M3TextInput textInput = getTextInput();
+        return textInput != null && textInput.getVariant() == M3TextInputVariant.OUTLINED;
+    }
+
+    /// Returns whether the wrapped input is focused.
+    private boolean isInputFocused() {
+        TextInputControl input = getInput();
+        return input != null && input.isFocused();
+    }
+
+    /// Returns whether either the layout or wrapped input contributes an error visual state.
+    private boolean hasVisualErrorState() {
+        M3TextInput textInput = getTextInput();
+        return hasErrorState() || textInput != null && textInput.isError();
+    }
+
+    /// Returns the outline corner radius clamped to the current input size.
+    private double outlineRadius(double width, double height) {
+        M3TextInput textInput = getTextInput();
+        double radius = textInput == null ? M3TextInputSupport.DEFAULT_CONTAINER_SHAPE : textInput.getContainerShape();
+        return clamp(radius, 0.0, Math.min(width, height) / 2.0);
+    }
+
+    /// Returns a value clamped to the supplied inclusive range.
+    private static double clamp(double value, double minimum, double maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
+    }
+
+    /// Interpolates linearly between two values.
+    private static double interpolate(double start, double end, double fraction) {
+        return start + (end - start) * fraction;
     }
 
     /// Updates the built-in clear-button entry transition when it occupies the trailing slot.

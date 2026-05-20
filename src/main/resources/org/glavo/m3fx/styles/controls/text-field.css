@@ -127,6 +127,16 @@
     -fx-border-width: 2px;
 }
 
+.m3-text-input-layout-input.m3-outlined-field,
+.m3-text-input-layout-input.m3-outlined-field:hover,
+.m3-text-input-layout-input.m3-outlined-field:focused,
+.m3-text-input-layout-input.m3-outlined-field:error,
+.m3-text-input-layout-input.m3-outlined-field:error:hover,
+.m3-text-input-layout-input.m3-outlined-field:error:focused {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
 .m3-text-field:disabled,
 .m3-password-field:disabled,
 .m3-text-area:disabled {
@@ -137,6 +147,38 @@
     -fx-alignment: center;
 }
 
+.m3-text-input-outline {
+    -fx-fill: transparent;
+    -fx-stroke: transparent;
+    -fx-stroke-line-cap: butt;
+    -fx-stroke-line-join: round;
+    -fx-stroke-width: 1px;
+}
+
+.m3-text-input-layout.m3-outlined-field .m3-text-input-outline {
+    -fx-stroke: -m3-color-outline;
+    -fx-stroke-width: 1px;
+}
+
+.m3-text-input-layout.m3-outlined-field .m3-text-input-outline:focused {
+    -fx-stroke: -m3-color-primary;
+    -fx-stroke-width: 2px;
+}
+
+.m3-text-input-layout.m3-outlined-field .m3-text-input-outline:error {
+    -fx-stroke: -m3-color-error;
+    -fx-stroke-width: 1px;
+}
+
+.m3-text-input-layout.m3-outlined-field .m3-text-input-outline:error:focused {
+    -fx-stroke: -m3-color-error;
+    -fx-stroke-width: 2px;
+}
+
+.m3-text-input-outline:disabled {
+    -fx-opacity: 0.38;
+}
+
 .m3-text-input-label {
     -fx-font-size: 16px;
     -fx-text-fill: -m3-color-on-surface-variant;
@@ -144,10 +186,6 @@
 
 .m3-text-input-label:floating {
     -fx-font-size: 12px;
-}
-
-.m3-text-input-layout.m3-outlined-field .m3-text-input-label:floating {
-    -fx-background-color: -m3-color-surface;
 }
 
 .m3-text-input-label:error {
