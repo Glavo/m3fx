@@ -10,6 +10,7 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Insets;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -28,6 +29,9 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
 
     /// The vertical offset applied to child rows while expanding or collapsing.
     private static final double CHILD_TRANSITION_OFFSET = -6.0;
+
+    /// The empty padding applied to the child row container before child indentation is resolved.
+    private static final Insets EMPTY_CHILD_PADDING = Insets.EMPTY;
 
     /// The clipped viewport for child destination rows.
     private final Pane childViewport = new Pane();
@@ -170,6 +174,9 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             return;
         }
 
+        double childLeftInset = childLeftInset();
+        updateChildrenContainerPadding(childLeftInset);
+        updateChildItemWidths(width, childLeftInset);
         double childrenHeight = childrenContainer.prefHeight(width);
         double viewportHeight = childrenHeight * expansionProgress.get();
         if (viewportHeight <= 0.0) {
@@ -177,7 +184,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             return;
         }
 
-        updateChildItemWidths(width);
         childViewport.setVisible(true);
         childViewport.resizeRelocate(x, y + headerHeight + ITEM_SPACING, width, viewportHeight);
         childrenClip.setWidth(width);
@@ -293,10 +299,30 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     }
 
     /// Keeps child list item containers inside the group content area.
-    private void updateChildItemWidths(double width) {
-        double itemWidth = Math.max(0.0, width);
+    private void updateChildItemWidths(double width, double childLeftInset) {
+        double itemWidth = Math.max(0.0, width - childLeftInset);
         for (M3ListItem item : getSkinnable().getItems()) {
             updateListItemWidth(item, itemWidth);
+        }
+    }
+
+    /// Returns the child row left inset derived from child and header content padding.
+    private double childLeftInset() {
+        double headerPadding = getSkinnable().getHeaderItem().getHorizontalPadding();
+        double childPadding = 0.0;
+        for (M3ListItem item : getSkinnable().getItems()) {
+            childPadding = Math.max(childPadding, item.getHorizontalPadding());
+        }
+        return Math.max(0.0, childPadding - headerPadding);
+    }
+
+    /// Updates the child container padding that creates indented selected row geometry.
+    private void updateChildrenContainerPadding(double childLeftInset) {
+        Insets padding = childLeftInset == 0.0
+                ? EMPTY_CHILD_PADDING
+                : new Insets(0.0, 0.0, 0.0, childLeftInset);
+        if (!padding.equals(childrenContainer.getPadding())) {
+            childrenContainer.setPadding(padding);
         }
     }
 

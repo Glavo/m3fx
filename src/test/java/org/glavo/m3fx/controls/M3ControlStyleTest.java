@@ -2825,9 +2825,9 @@ final class M3ControlStyleTest {
             groupItem.setStyle("-m3-one-line-height: 56px; -m3-container-shape: 28px; -m3-horizontal-padding: 24px;");
 
             M3ListItem firstChild = new M3ListItem("Date pickers");
-            firstChild.setStyle("-m3-one-line-height: 40px; -m3-container-shape: 20px; -m3-horizontal-padding: 40px;");
+            firstChild.setStyle("-m3-one-line-height: 56px; -m3-container-shape: 28px; -m3-horizontal-padding: 32px;");
             M3ListItem secondChild = new M3ListItem("Time pickers");
-            secondChild.setStyle("-m3-one-line-height: 40px; -m3-container-shape: 20px; -m3-horizontal-padding: 40px;");
+            secondChild.setStyle("-m3-one-line-height: 56px; -m3-container-shape: 28px; -m3-horizontal-padding: 32px;");
 
             M3NavigationDrawer drawer = new M3NavigationDrawer(groupItem, firstChild, secondChild);
             drawer.setAllowEmptySelection(true);
@@ -2860,7 +2860,7 @@ final class M3ControlStyleTest {
             Node childHeadline = Objects.requireNonNull(firstChild.lookup(".m3-list-item-headline"));
             assertTrue(
                     childHeadline.localToScene(childHeadline.getBoundsInLocal()).getMinX()
-                            > groupHeadline.localToScene(groupHeadline.getBoundsInLocal()).getMinX() + 10.0
+                            > groupHeadline.localToScene(groupHeadline.getBoundsInLocal()).getMinX() + 6.0
             );
 
             WritableImage image = snapshotImageOnFxThread(root);
@@ -7611,6 +7611,8 @@ final class M3ControlStyleTest {
             assertBetween(incomingDrawerSelection.getOpacity(), 0.0, 1.0, "incoming drawer selection opacity");
             assertBetween(incomingListSelection.getScaleX(), 0.96, 1.0, "incoming list selection scale");
             assertBetween(incomingDrawerSelection.getScaleX(), 0.96, 1.0, "incoming drawer selection scale");
+            assertBetween(incomingListSelection.getScaleY(), 0.96, 1.0, "incoming list selection vertical scale");
+            assertBetween(incomingDrawerSelection.getScaleY(), 0.96, 1.0, "incoming drawer selection vertical scale");
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, incomingListSelection, Color.WHITE, 0.03);
@@ -7636,12 +7638,77 @@ final class M3ControlStyleTest {
             assertEquals(1.0, incomingListSelection.getScaleX(), 0.0001);
             assertEquals(0.96, outgoingDrawerSelection.getScaleX(), 0.0001);
             assertEquals(1.0, incomingDrawerSelection.getScaleX(), 0.0001);
+            assertEquals(0.96, outgoingListSelection.getScaleY(), 0.0001);
+            assertEquals(1.0, incomingListSelection.getScaleY(), 0.0001);
+            assertEquals(0.96, outgoingDrawerSelection.getScaleY(), 0.0001);
+            assertEquals(1.0, incomingDrawerSelection.getScaleY(), 0.0001);
             stopTimelines(
                     outgoingListAnimation,
                     incomingListAnimation,
                     outgoingDrawerAnimation,
                     incomingDrawerAnimation
             );
+        });
+    }
+
+    /// Verifies that mouse selection keeps ripple feedback while the selected container transitions.
+    @Test
+    void navigationDrawerMouseSelectionKeepsRippleAndAnimatesSelection() {
+        runOnFxThread(() -> {
+            M3ListItem first = new M3ListItem("Sheets");
+            M3ListItem second = new M3ListItem("Bottom sheets");
+            M3NavigationDrawer drawer = new M3NavigationDrawer(first, second);
+            drawer.select(first);
+            drawer.setPrefWidth(320.0);
+
+            StackPane root = new StackPane(drawer);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 380.0, 180.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(380.0, 180.0);
+            root.layout();
+            drawer.applyCss();
+            first.applyCss();
+            second.applyCss();
+            drawer.resize(320.0, 116.0);
+            drawer.layout();
+            first.layout();
+            second.layout();
+
+            double clickX = second.getWidth() / 2.0;
+            double clickY = second.getHeight() / 2.0;
+            second.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, clickX, clickY, true));
+            Region ripple = lookupRegion(second, ".m3-ripple");
+            assertTrue(ripple.getOpacity() > 0.0);
+            second.fire();
+            root.applyCss();
+
+            Region selection = listItemSelectionContainer(second);
+            Timeline selectionAnimation = skinTimeline(second.getSkin(), "selectionAnimation");
+
+            assertTrue(second.isSelected());
+            assertEquals(javafx.animation.Animation.Status.RUNNING, selectionAnimation.getStatus());
+            second.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, clickX, clickY, false));
+            assertTrue(ripple.getOpacity() > 0.0);
+
+            selectionAnimation.jumpTo(Duration.millis(80.0));
+            root.layout();
+
+            assertBetween(selection.getOpacity(), 0.0, 1.0, "mouse-selected drawer item opacity");
+            assertBetween(selection.getScaleX(), 0.96, 1.0, "mouse-selected drawer item horizontal scale");
+            assertBetween(selection.getScaleY(), 0.96, 1.0, "mouse-selected drawer item vertical scale");
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, selection, Color.WHITE, 0.03);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-navigation-drawer-click-selection-frame.png"
+            ));
+            selectionAnimation.stop();
         });
     }
 
@@ -8251,8 +8318,56 @@ final class M3ControlStyleTest {
 
         assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
         assertEquals(56.0, group.getHeaderItem().getOneLineHeight(), 0.0001);
-        assertEquals(40.0, buttons.getOneLineHeight(), 0.0001);
+        assertEquals(56.0, buttons.getOneLineHeight(), 0.0001);
         assertEquals(32.0, buttons.getHorizontalPadding(), 0.0001);
+    }
+
+    /// Verifies that selected child rows indent from the parent while aligning their right edge.
+    @Test
+    void navigationDrawerGroupChildSelectionPillIndentsAndAlignsRight() {
+        runOnFxThread(() -> {
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
+            M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
+            M3ListItem sideSheets = new M3ListItem("Side sheets");
+            group.addItems(bottomSheets, sideSheets);
+            group.setExpanded(true);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            drawer.select(bottomSheets);
+            drawer.setPrefWidth(320.0);
+
+            StackPane root = new StackPane(drawer);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 380.0, 260.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(380.0, 260.0);
+            root.layout();
+            group.layout();
+            bottomSheets.layout();
+
+            Bounds headerBounds = group.getHeaderItem().localToScene(group.getHeaderItem().getBoundsInLocal());
+            Bounds childBounds = bottomSheets.localToScene(bottomSheets.getBoundsInLocal());
+            Region childSelection = listItemSelectionContainer(bottomSheets);
+
+            assertEquals(headerBounds.getMaxX(), childBounds.getMaxX(), 0.0001);
+            assertTrue(childBounds.getMinX() > headerBounds.getMinX() + 6.0);
+            assertEquals(headerBounds.getHeight(), childBounds.getHeight(), 0.0001);
+            assertEquals(childBounds.getWidth(), childSelection.getWidth(), 0.0001);
+            assertEquals(56.0, bottomSheets.getOneLineHeight(), 0.0001);
+            assertRegionRadii(childSelection, 28.0, 28.0, 28.0, 28.0);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            Color beforeChildPill = snapshotNodePixel(image, bottomSheets, -4.0, bottomSheets.getHeight() / 2.0);
+            Color insideChildPill = snapshotNodePixel(image, bottomSheets, 12.0, bottomSheets.getHeight() / 2.0);
+            assertTrue(colorDistance(beforeChildPill, insideChildPill) > 0.01);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-navigation-drawer-child-selection.png"
+            ));
+        });
     }
 
     /// Verifies that navigation drawer groups animate child row expansion and collapse.
@@ -10092,16 +10207,16 @@ final class M3ControlStyleTest {
 
             StackPane root = new StackPane(drawer);
             root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(root, 380.0, 240.0);
+            Scene scene = new Scene(root, 380.0, 300.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
-            root.resize(380.0, 240.0);
+            root.resize(380.0, 300.0);
             root.layout();
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
-            assertEquals(40.0, buttons.getOneLineHeight(), 0.0001);
+            assertEquals(56.0, buttons.getOneLineHeight(), 0.0001);
             assertEquals(32.0, buttons.getHorizontalPadding(), 0.0001);
             assertTrue(assertInstanceOf(M3DisclosureIcon.class, group.getHeaderItem().getTrailing()).isExpanded());
             assertSnapshotNodeContainsContrast(image, drawer, Color.WHITE, 0.04);

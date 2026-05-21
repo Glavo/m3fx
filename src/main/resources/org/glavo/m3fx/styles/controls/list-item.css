@@ -40,8 +40,8 @@
 
 .m3-list-item.m3-navigation-drawer-group-child,
 .m3-navigation-drawer-group .m3-list-item.m3-navigation-drawer-group-child {
-    -m3-one-line-height: 40px;
-    -m3-container-shape: 20px;
+    -m3-one-line-height: 56px;
+    -m3-container-shape: 28px;
     -m3-horizontal-padding: 32px;
     -m3-vertical-padding: 0px;
 }
@@ -68,10 +68,7 @@
     -fx-spacing: 2px;
 }
 
-.m3-list-item:hover .m3-list-item-container {
-    -fx-background-color: -m3-color-surface-container-highest;
-}
-
+.m3-list-item:hover .m3-list-item-container,
 .m3-list-item:selected:hover .m3-list-item-container {
     -fx-background-color: transparent;
 }

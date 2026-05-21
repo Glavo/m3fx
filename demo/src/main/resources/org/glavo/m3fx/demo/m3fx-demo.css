@@ -77,9 +77,9 @@
 }
 
 .m3-navigation-drawer.demo-sidebar-drawer .demo-sidebar-child-item {
-    -m3-one-line-height: 40px;
-    -m3-container-shape: 20px;
-    -m3-horizontal-padding: 40px;
+    -m3-one-line-height: 56px;
+    -m3-container-shape: 28px;
+    -m3-horizontal-padding: 32px;
 }
 
 .demo-scroll-pane {

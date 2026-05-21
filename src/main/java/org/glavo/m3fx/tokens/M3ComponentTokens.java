@@ -309,7 +309,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         0.0,
                         12.0,
                         4.0,
-                        density.apply(40.0),
+                        navigationDrawerOneLineItemHeight,
                         shapeTokens.full(),
                         32.0
                 ),

@@ -347,7 +347,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         selectionAnimation.getKeyFrames().setAll(new KeyFrame(
                 spec.duration(),
                 new KeyValue(selectionContainer.opacityProperty(), targetOpacity, spec.interpolator()),
-                new KeyValue(selectionContainer.scaleXProperty(), targetScale, spec.interpolator())
+                new KeyValue(selectionContainer.scaleXProperty(), targetScale, spec.interpolator()),
+                new KeyValue(selectionContainer.scaleYProperty(), targetScale, spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
@@ -356,6 +357,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     private void updateSelectionContainerImmediate(boolean selected) {
         selectionContainer.setOpacity(selected ? 1.0 : 0.0);
         selectionContainer.setScaleX(selected ? 1.0 : HIDDEN_SELECTION_SCALE);
+        selectionContainer.setScaleY(selected ? 1.0 : HIDDEN_SELECTION_SCALE);
     }
 
     /// Resolves a shape token to a radius that can be represented within the current bounds.
