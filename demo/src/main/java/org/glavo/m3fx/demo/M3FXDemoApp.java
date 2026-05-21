@@ -1236,15 +1236,36 @@ public final class M3FXDemoApp extends Application {
     private Node createLoadingIndicatorPage() {
         M3ProgressIndicator compactIndicator = new M3ProgressIndicator();
         compactIndicator.setPrefSize(48.0, 48.0);
+        applyBaselineProgress(compactIndicator);
 
         M3ProgressIndicator regularIndicator = new M3ProgressIndicator();
         regularIndicator.setPrefSize(64.0, 64.0);
+        applyBaselineProgress(regularIndicator);
 
         M3ProgressBar indeterminateBar = new M3ProgressBar();
         indeterminateBar.setPrefWidth(380.0);
+        applyBaselineProgress(indeterminateBar);
+
+        M3ProgressIndicator expressiveCompactIndicator = new M3ProgressIndicator();
+        expressiveCompactIndicator.setPrefSize(48.0, 48.0);
+        applyExpressiveCircularProgress(expressiveCompactIndicator);
+
+        M3ProgressIndicator expressiveRegularIndicator = new M3ProgressIndicator();
+        expressiveRegularIndicator.setPrefSize(64.0, 64.0);
+        applyExpressiveCircularProgress(expressiveRegularIndicator);
+
+        M3ProgressBar expressiveIndeterminateBar = new M3ProgressBar();
+        expressiveIndeterminateBar.setPrefWidth(380.0);
+        applyExpressiveLinearProgress(expressiveIndeterminateBar);
 
         return createGallery(
-                createShowcaseGroup("Indeterminate", compactIndicator, regularIndicator, indeterminateBar)
+                createShowcaseGroup("Standard", compactIndicator, regularIndicator, indeterminateBar),
+                createShowcaseGroup(
+                        "Expressive Wavy",
+                        expressiveCompactIndicator,
+                        expressiveRegularIndicator,
+                        expressiveIndeterminateBar
+                )
         );
     }
 
@@ -1252,18 +1273,42 @@ public final class M3FXDemoApp extends Application {
     private Node createProgressPage() {
         M3ProgressBar determinateBar = new M3ProgressBar(0.32);
         determinateBar.setPrefWidth(380.0);
+        applyBaselineProgress(determinateBar);
         M3ProgressBar indeterminateBar = new M3ProgressBar();
         indeterminateBar.setPrefWidth(380.0);
+        applyBaselineProgress(indeterminateBar);
         M3ProgressIndicator determinateIndicator = new M3ProgressIndicator(0.32);
         determinateIndicator.setPrefSize(64.0, 64.0);
+        applyBaselineProgress(determinateIndicator);
         M3ProgressIndicator indeterminateIndicator = new M3ProgressIndicator();
         indeterminateIndicator.setPrefSize(64.0, 64.0);
+        applyBaselineProgress(indeterminateIndicator);
+
+        M3ProgressBar expressiveDeterminateBar = new M3ProgressBar(0.32);
+        expressiveDeterminateBar.setPrefWidth(380.0);
+        applyExpressiveLinearProgress(expressiveDeterminateBar);
+        M3ProgressBar expressiveIndeterminateBar = new M3ProgressBar();
+        expressiveIndeterminateBar.setPrefWidth(380.0);
+        applyExpressiveLinearProgress(expressiveIndeterminateBar);
+        M3ProgressIndicator expressiveDeterminateIndicator = new M3ProgressIndicator(0.32);
+        expressiveDeterminateIndicator.setPrefSize(64.0, 64.0);
+        applyExpressiveCircularProgress(expressiveDeterminateIndicator);
+        M3ProgressIndicator expressiveIndeterminateIndicator = new M3ProgressIndicator();
+        expressiveIndeterminateIndicator.setPrefSize(64.0, 64.0);
+        applyExpressiveCircularProgress(expressiveIndeterminateIndicator);
 
         playProgressShowcaseAnimation(determinateBar, determinateIndicator);
+        playProgressShowcaseAnimation(expressiveDeterminateBar, expressiveDeterminateIndicator);
 
         return createGallery(
-                createShowcaseGroup("Linear", determinateBar, indeterminateBar),
-                createShowcaseGroup("Circular", determinateIndicator, indeterminateIndicator)
+                createShowcaseGroup("Standard Linear", determinateBar, indeterminateBar),
+                createShowcaseGroup("Standard Circular", determinateIndicator, indeterminateIndicator),
+                createShowcaseGroup("Expressive Wavy Linear", expressiveDeterminateBar, expressiveIndeterminateBar),
+                createShowcaseGroup(
+                        "Expressive Wavy Circular",
+                        expressiveDeterminateIndicator,
+                        expressiveIndeterminateIndicator
+                )
         );
     }
 
@@ -1705,6 +1750,31 @@ public final class M3FXDemoApp extends Application {
         group.getStyleClass().add("demo-showcase-group");
         group.setMaxWidth(Double.MAX_VALUE);
         return group;
+    }
+
+    /// Applies baseline linear progress geometry to a single demo progress bar.
+    private static void applyBaselineProgress(M3ProgressBar progressBar) {
+        progressBar.setStyle("-m3-wave-amplitude: 0px;");
+    }
+
+    /// Applies baseline circular progress geometry to a single demo progress indicator.
+    private static void applyBaselineProgress(M3ProgressIndicator progressIndicator) {
+        progressIndicator.setStyle("-m3-wave-amplitude: 0px;");
+    }
+
+    /// Applies expressive wavy linear progress geometry to a single demo progress bar.
+    private static void applyExpressiveLinearProgress(M3ProgressBar progressBar) {
+        progressBar.setStyle("-m3-wave-amplitude: 3px; "
+                + "-m3-wavelength: 40px; "
+                + "-m3-track-gap: 4px; "
+                + "-m3-stop-size: 4px;");
+    }
+
+    /// Applies expressive wavy circular progress geometry to a single demo progress indicator.
+    private static void applyExpressiveCircularProgress(M3ProgressIndicator progressIndicator) {
+        progressIndicator.setStyle("-m3-wave-amplitude: 2px; "
+                + "-m3-wavelength: 15px; "
+                + "-m3-track-gap: 4px;");
     }
 
     /// Creates a button configured with the requested variant.

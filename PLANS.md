@@ -78,6 +78,7 @@ This file tracks product status and planning only. Repository rules, code style,
 
 - The demo app uses a Material navigation drawer sidebar with collapsible component groups aligned with the Material component organization.
 - Demo pages cover major control families, common variants, disabled states, selected states, error states, composite workflows, and animated progress examples.
+- Progress and loading indicator demo pages explicitly show standard geometry alongside expressive wavy geometry using per-control CSS token overrides.
 - Unit tests cover style classes, token CSS metadata, skin creation, interaction events, state-layer/ripple behavior, accessibility attributes/actions, selection behavior, and packaging assumptions.
 - Snapshot-based visual tests render representative control families into report images and include automated checks for contrast, geometry, clipping, borders, and animation-state frames.
 - Recent visual regressions covered by tests include icon fallback glyph clipping, outlined text input notch geometry, segmented button selected borders, progress geometry, selection states, snackbar sizing, and trailing icon ripple behavior.
