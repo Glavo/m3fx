@@ -110,7 +110,7 @@ public final class M3ThemeManager {
         moveOrAdd(stylesheets, stylesheet, 0);
     }
 
-    /// Adds the generated component token stylesheet to a scene.
+    /// Adds the generated theme stylesheet to a scene.
     public static void installThemeStylesheet(Scene scene, M3Theme theme) {
         Objects.requireNonNull(scene, "scene");
         Objects.requireNonNull(theme, "theme");
@@ -196,7 +196,7 @@ public final class M3ThemeManager {
         removeThemeModeStyleClasses(root);
     }
 
-    /// Removes the generated component token stylesheet tracked for a scene.
+    /// Removes the generated theme stylesheet tracked for a scene.
     public static void uninstallThemeStylesheet(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -216,11 +216,11 @@ public final class M3ThemeManager {
         return M3Stylesheets.baseStylesheet();
     }
 
-    /// Returns a file URL for a generated component token stylesheet.
+    /// Returns a file URL for a generated theme stylesheet.
     public static String themeStylesheetUrl(M3Theme theme) {
         Objects.requireNonNull(theme, "theme");
 
-        String stylesheet = theme.toControlStyleRules();
+        String stylesheet = themeStylesheet(theme);
         String digest = sha256(stylesheet);
         Path directory = Path.of(System.getProperty("java.io.tmpdir"), THEME_STYLESHEET_DIRECTORY);
         Path file = directory.resolve("m3fx-theme-" + digest + ".css");
@@ -236,6 +236,14 @@ public final class M3ThemeManager {
         }
 
         return file.toUri().toString();
+    }
+
+    /// Creates the complete generated stylesheet for a theme.
+    private static String themeStylesheet(M3Theme theme) {
+        return "." + ROOT_STYLE_CLASS + " { "
+                + theme.toRootStyleDeclarations()
+                + " }\n\n"
+                + theme.toControlStyleRules();
     }
 
     /// Computes the SHA-256 digest for generated stylesheet content.

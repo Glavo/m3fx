@@ -476,16 +476,32 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Copies scene styles and theme declarations into the popup-hosted submenu.
     private void prepareSubMenuForPopup(Scene scene) {
-        subMenu.getStylesheets().setAll(scene.getStylesheets());
+        copyPopupStylesheets(scene);
         String menuStylesheet = M3Stylesheets.controlStylesheet("menu.css");
         if (!subMenu.getStylesheets().contains(menuStylesheet)) {
             subMenu.getStylesheets().add(menuStylesheet);
         }
 
-        Parent root = scene.getRoot();
-        M3ThemeManager.copyThemeContext(root, subMenu);
+        M3ThemeManager.copyThemeContext(popupThemeSource(scene), subMenu);
         M3Animation.copyResolvedMotionSettings(this, subMenu);
         subMenu.applyCss();
+    }
+
+    /// Copies stylesheets from the owning popup menu when this item is already inside a popup branch.
+    private void copyPopupStylesheets(Scene scene) {
+        if (ownerMenu != null && !ownerMenu.getStylesheets().isEmpty()) {
+            subMenu.getStylesheets().setAll(ownerMenu.getStylesheets());
+        } else {
+            subMenu.getStylesheets().setAll(scene.getStylesheets());
+        }
+    }
+
+    /// Returns the root that should supply looked-up theme tokens for the submenu popup.
+    private Parent popupThemeSource(Scene scene) {
+        if (ownerMenu != null && M3ThemeManager.getTheme(ownerMenu) != null) {
+            return ownerMenu;
+        }
+        return scene.getRoot();
     }
 
     /// Hides sibling submenu popups owned by the same parent menu.

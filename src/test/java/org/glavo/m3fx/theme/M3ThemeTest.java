@@ -355,7 +355,7 @@ final class M3ThemeTest {
         assertNull(M3ThemeManager.getTheme(scene));
     }
 
-    /// Verifies that generated component stylesheets can be addressed directly.
+    /// Verifies that generated theme stylesheets can be addressed directly.
     @Test
     void exposesGeneratedThemeStylesheetUrl() throws Exception {
         M3Theme theme = M3Theme.defaultTheme();
@@ -367,11 +367,13 @@ final class M3ThemeTest {
         assertEquals(stylesheet, repeatedStylesheet);
         assertTrue(stylesheet.startsWith("file:"));
         assertTrue(stylesheet.endsWith(".css"));
+        assertTrue(stylesheetContent.contains(".m3-root"));
+        assertTrue(stylesheetContent.contains("-m3-color-primary"));
         assertTrue(stylesheetContent.contains(".m3-filled-button"));
         assertTrue(stylesheetContent.contains(".m3-elevated-card .m3-card-container"));
     }
 
-    /// Verifies that generated component stylesheets can be installed independently.
+    /// Verifies that generated theme stylesheets can be installed independently.
     @Test
     void installsGeneratedThemeStylesheetIndependently() {
         Pane root = new Pane();

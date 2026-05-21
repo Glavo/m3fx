@@ -150,7 +150,7 @@ public class M3Dialog<R> extends Dialog<R> {
         pane.setStyle(mergeStyles(baseStyle, theme.toRootStyleDeclarations()));
     }
 
-    /// Adds the generated component token stylesheet for the supplied theme.
+    /// Adds the generated theme stylesheet for the supplied theme.
     private static void installThemeStylesheet(M3DialogPane pane, M3Theme theme) {
         String stylesheet = M3ThemeManager.themeStylesheetUrl(theme);
         Object previousStylesheet = pane.getProperties().put(THEME_STYLESHEET_PROPERTY_KEY, stylesheet);
@@ -160,7 +160,7 @@ public class M3Dialog<R> extends Dialog<R> {
         moveOrAdd(pane.getStylesheets(), stylesheet, themeStylesheetIndex(pane.getStylesheets()));
     }
 
-    /// Removes the generated component token stylesheet from the dialog pane.
+    /// Removes the generated theme stylesheet from the dialog pane.
     private static void uninstallThemeStylesheet(M3DialogPane pane) {
         Object previousStylesheet = pane.getProperties().remove(THEME_STYLESHEET_PROPERTY_KEY);
         if (previousStylesheet instanceof String previous) {
@@ -184,7 +184,7 @@ public class M3Dialog<R> extends Dialog<R> {
         stylesheets.add(Math.min(targetIndex, stylesheets.size()), stylesheet);
     }
 
-    /// Returns the insertion index for the generated component token stylesheet.
+    /// Returns the insertion index for the generated theme stylesheet.
     private static int themeStylesheetIndex(List<String> stylesheets) {
         int baseStylesheetIndex = stylesheets.indexOf(M3ThemeManager.stylesheetUrl());
         return baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : 0;

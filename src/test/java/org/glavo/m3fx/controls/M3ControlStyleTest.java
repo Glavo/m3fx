@@ -130,7 +130,9 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -138,7 +140,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -3856,6 +3863,87 @@ final class M3ControlStyleTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies that popup menu branches inherit theme color lookups without CSS conversion warnings.
+    @Test
+    void popupMenuBranchesResolveThemeColorLookups() {
+        Logger logger = Logger.getLogger("javafx.scene.CssStyleHelper");
+        List<LogRecord> cssWarnings = new ArrayList<>();
+        Handler handler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                if (record.getLevel().intValue() >= Level.WARNING.intValue()) {
+                    cssWarnings.add(record);
+                }
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+
+        logger.addHandler(handler);
+        try {
+            runOnFxThread(() -> {
+                M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"));
+                M3MenuItem archive = new M3MenuItem("Archive");
+                M3MenuItem inbox = new M3MenuItem("Inbox");
+                M3SubMenuItem moveTo = new M3SubMenuItem("Move to", archive, inbox);
+                M3MenuButton menuButton = new M3MenuButton(
+                        "Open menu",
+                        new M3MenuSectionHeader("Document"),
+                        new M3MenuItem("Duplicate"),
+                        moveTo
+                );
+                menuButton.setVariant(M3ButtonVariant.OUTLINED);
+                Pane root = new Pane(menuButton);
+                Scene scene = new Scene(root, 420.0, 260.0);
+                Stage stage = new Stage();
+
+                try {
+                    M3ThemeManager.install(scene, theme);
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+
+                    menuButton.showMenu();
+                    moveTo.showSubMenu();
+
+                    M3Menu menu = menuButton.getMenu();
+                    M3Menu subMenu = moveTo.getSubMenu();
+                    menu.applyCss();
+                    menu.layout();
+                    subMenu.applyCss();
+                    subMenu.layout();
+
+                    assertTrue(menuButton.isShowing());
+                    assertTrue(moveTo.isSubMenuShowing());
+                    assertTrue(subMenu.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                    assertTrue(subMenu.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
+                    assertResolvedBackgroundFill(menu, "menu");
+                    assertResolvedBackgroundFill(subMenu, "submenu");
+                    assertResolvedListItemTextFill(moveTo);
+                    assertResolvedListItemTextFill(archive);
+                    assertResolvedListItemTextFill(inbox);
+                } finally {
+                    moveTo.hideSubMenu();
+                    menuButton.hideMenu();
+                    stage.close();
+                }
+            });
+        } finally {
+            logger.removeHandler(handler);
+        }
+
+        assertTrue(cssWarnings.isEmpty(), () -> cssWarnings.stream()
+                .map(record -> record.getLevel() + ": " + record.getMessage())
+                .collect(Collectors.joining("\n")));
     }
 
     /// Verifies that menu keyboard focus can land on submenu items without corrupting menu selection.
@@ -12738,6 +12826,24 @@ final class M3ControlStyleTest {
     private static void assertRegionFill(Region region, Color expectedFill) {
         assertEquals(1, region.getBackground().getFills().size());
         assertEquals(expectedFill, region.getBackground().getFills().get(0).getFill());
+    }
+
+    /// Verifies that a region background resolved to a concrete color.
+    private static void assertResolvedBackgroundFill(Region region, String description) {
+        assertTrue(region.getBackground() != null, () -> description + " has no background");
+        assertFalse(region.getBackground().getFills().isEmpty(), () -> description + " has no background fills");
+        assertInstanceOf(
+                Color.class,
+                region.getBackground().getFills().get(0).getFill(),
+                () -> description + " background fill did not resolve to a color"
+        );
+    }
+
+    /// Verifies that a list item headline resolved to a concrete color.
+    private static void assertResolvedListItemTextFill(M3ListItem item) {
+        Node headline = item.lookup(".m3-list-item-headline");
+        Label label = assertInstanceOf(Label.class, headline);
+        assertInstanceOf(Color.class, label.getTextFill());
     }
 
     /// Verifies that a region has no visible border strokes.
