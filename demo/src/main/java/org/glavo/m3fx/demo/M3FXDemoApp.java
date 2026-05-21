@@ -1862,6 +1862,7 @@ public final class M3FXDemoApp extends Application {
         }
 
         Label heightLabel = new Label((int) trackHeight + " px");
+        heightLabel.getStyleClass().add("demo-progress-track-height-label");
         VBox sample = new VBox(6.0, heightLabel, indicator);
         sample.setAlignment(Pos.CENTER_LEFT);
         sample.setMinWidth(sampleWidth);

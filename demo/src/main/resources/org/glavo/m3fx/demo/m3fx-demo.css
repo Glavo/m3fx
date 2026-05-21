@@ -131,6 +131,11 @@
     -fx-background-radius: 12px;
 }
 
+.demo-progress-track-height-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
 .demo-icon-label {
     -m3-icon-size: 18px;
     -m3-icon-font-weight: 700;
