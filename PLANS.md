@@ -19,6 +19,8 @@
 - `org.glavo.m3fx.animation` exposes reusable Material motion curves and duration constants.
 - `org.glavo.m3fx.controls` exposes Material-style JavaFX controls and composition containers.
 - `org.glavo.m3fx.skins` contains skin implementations for controls that require custom layout, drawing, or interaction behavior.
+- Foundation primitives such as `M3Icon` and `M3Text` support Material components but are not treated as standalone Material component pages.
+- `M3Icon` is an icon glyph primitive for Material Symbols or fallback text; standard component mappings belong to icon buttons, navigation items, app bars, menus, lists, and other controls that use icon slots.
 - Controls use split user-agent stylesheets through each node or control's `getUserAgentStylesheet()` where JavaFX supports it.
 - Popup-only styling remains in dedicated control CSS files loaded through the base stylesheet.
 - Text input controls retain JavaFX text editing implementations for caret, selection, clipboard, and IME behavior while sharing Material state and token plumbing through `M3TextInput`.
@@ -49,7 +51,7 @@
 
 ### Controls
 
-- Typography and icon primitives: `M3Text`, `M3Icon`, `M3DisclosureIcon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
+- Foundation primitives and small utility visuals: `M3Text`, `M3Icon`, `M3DisclosureIcon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
 - Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, floating action buttons, extended floating action buttons, and floating action button menus.
 - Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, animated text input layouts with floating labels, reusable validators, multi-validator pipelines, group-level form validation coordination, validation summaries, observable validation-active and invalid-count state, per-field validation actions, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, optional hard character limits, and form pane, section, and row helpers for structured input layouts.
 - Selection controls: checkbox, radio button, switch, slider with accessible value/range adjustment semantics, chips, chip groups, segmented buttons, and segmented button groups.
@@ -67,11 +69,11 @@
 
 ### Demo And Verification
 
-- Demo app with a Material navigation drawer sidebar, collapsible component groups, and one page per major control family.
-- Demo pages cover common variants, disabled states, selected states, error states, and animated progress examples.
+- Demo app with a Material navigation drawer sidebar, collapsible component groups aligned with the Material component organization, and one page per major control family.
+- Demo pages cover common variants, disabled states, selected states, error states, composite workflows, and animated progress examples.
 - Unit tests cover style classes, token CSS metadata, accessibility attributes, numeric accessibility values and actions, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
-- Snapshot-based visual tests render implemented control families into report images for manual and automated inspection.
-- Icon visual tests cover fallback glyph line boxes and App Bar icon-button snapshots so text fallback glyphs do not get clipped in fixed slots.
+- Snapshot-based visual tests render implemented control families into report images for manual inspection and automated geometry, contrast, clipping, and state assertions.
+- Icon visual tests cover fallback glyph line boxes and app bar icon-button snapshots so text fallback glyphs do not get clipped in fixed slots.
 - Disclosure icon tests cover expanded-state rotation, fixed-slot layout, clipping bounds, and navigation drawer usage.
 - Navigation drawer group tests cover disclosure-backed expansion, animated child row reveal, keyboard disclosure navigation, accessible expand/collapse actions, hidden child selection recovery, flattened drawer selection, child visibility, style classes, skin creation, and user-agent stylesheet routing.
 - Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
@@ -91,7 +93,7 @@
 ## Remaining Work
 
 - Expand Material motion coverage so hover, press, release, selection, shape, indicator, and elevation transitions consistently use tokenized timing and easing.
-- Broaden visual checks beyond static contrast and color variety toward geometry, clipping, alignment, and animation-state assertions.
+- Broaden visual checks from representative snapshots toward more page-level coverage, animation-state assertions, and regression checks for alignment and clipping.
 - Continue filling component gaps such as additional picker affordances and richer composite-control workflows.
 - Continue tightening accessibility behavior for composite controls, especially role choice and keyboard navigation parity across complex popups.
 - Add more focused demo pages for complex components whose behavior is hard to inspect in a single static gallery.
@@ -113,5 +115,4 @@
 - Full M3 Expressive visual parity for every component.
 - A web deployment target for the JavaFX demo.
 - SASS or another CSS preprocessor layer.
-- Large data components such as data tables.
 - High-complexity data components such as data tables.
