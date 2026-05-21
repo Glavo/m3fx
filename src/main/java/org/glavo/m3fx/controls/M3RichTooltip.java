@@ -273,4 +273,12 @@ public class M3RichTooltip extends M3Tooltip {
     protected Duration defaultShowDuration(M3MotionBehavior behavior) {
         return behavior.richTooltipShowDuration();
     }
+
+    /// Returns whether popup hover participates in rich tooltip lifetime management.
+    ///
+    /// @return `true` because rich tooltips may contain interactive action nodes
+    @Override
+    protected boolean isInteractive() {
+        return true;
+    }
 }

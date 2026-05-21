@@ -2638,6 +2638,54 @@ final class M3ControlStyleTest {
         assertNull(target.getAccessibleHelp());
     }
 
+    /// Verifies that rich tooltip popup hover keeps action content reachable.
+    @Test
+    void richTooltipStaysOpenWhilePopupIsHovered() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<M3RichTooltip> tooltipReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(260.0),
+                () -> {
+                    Stage stage = new Stage();
+                    Label target = new Label("Target");
+                    M3RichTooltip tooltip = M3RichTooltip.install(
+                            target,
+                            "Title",
+                            "Supporting text",
+                            M3Button.withVariant("Action", M3ButtonVariant.TEXT)
+                    );
+                    tooltip.setShowDelay(Duration.ZERO);
+                    tooltip.setHideDelay(Duration.ZERO);
+                    tooltip.setShowDuration(Duration.INDEFINITE);
+
+                    Pane root = new Pane(target);
+                    stage.setScene(new Scene(root, 240.0, 120.0));
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+
+                    tooltip.show(target, stage.getX() + 32.0, stage.getY() + 72.0);
+                    Node tooltipRoot = tooltip.getScene().getRoot();
+                    target.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 4.0, 4.0, false));
+                    tooltipRoot.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_ENTERED, 4.0, 4.0, false));
+
+                    stageReference.set(stage);
+                    tooltipReference.set(tooltip);
+                },
+                () -> {
+                    Stage stage = stageReference.get();
+                    M3RichTooltip tooltip = tooltipReference.get();
+                    try {
+                        assertTrue(tooltip.isShowing());
+                    } finally {
+                        tooltip.hide();
+                        stage.close();
+                    }
+                }
+        );
+    }
+
     /// Verifies that tooltips can apply and clear inline theme declarations.
     @Test
     void tooltipAppliesAndClearsTheme() {
