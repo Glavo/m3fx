@@ -74,6 +74,7 @@
 - Disclosure icon tests cover expanded-state rotation, fixed-slot layout, clipping bounds, and navigation drawer usage.
 - Navigation drawer group tests cover disclosure-backed expansion, animated child row reveal, keyboard disclosure navigation, accessible expand/collapse actions, hidden child selection recovery, flattened drawer selection, child visibility, style classes, skin creation, and user-agent stylesheet routing.
 - Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
+- Button tests cover elevation ownership so filled, tonal, outlined, text, and snackbar action buttons do not retain elevated-button shadows across interactive states or variant changes.
 - Text input visual snapshots include outlined floating-label notch geometry checks.
 - Progress visual snapshots include rendered linear track/fill separation and circular track/arc pixel checks.
 - Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.

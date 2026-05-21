@@ -30,6 +30,7 @@ import javafx.scene.control.Labeled;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -347,6 +348,43 @@ final class M3ControlStyleTest {
         button.setVariant(M3ButtonVariant.ELEVATED);
         root.applyCss();
         assertLabeledColors(button, Color.rgb(16, 17, 18), Color.rgb(1, 2, 3));
+    }
+
+    /// Verifies that only the elevated button variant owns button elevation.
+    @Test
+    void buttonElevationDoesNotLeakIntoNonElevatedVariants() {
+        runOnFxThread(() -> {
+            M3Button button = M3Button.withVariant("Button", M3ButtonVariant.ELEVATED);
+            Pane root = new Pane(button);
+            Scene scene = new Scene(root, 200.0, 100.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+
+            assertDropShadow(button);
+            applyInteractivePseudoClasses(button);
+
+            for (M3ButtonVariant variant : java.util.List.of(
+                    M3ButtonVariant.FILLED,
+                    M3ButtonVariant.TONAL,
+                    M3ButtonVariant.OUTLINED,
+                    M3ButtonVariant.TEXT
+            )) {
+                button.setVariant(M3ButtonVariant.ELEVATED);
+                root.applyCss();
+                assertDropShadow(button);
+
+                button.setVariant(variant);
+                root.applyCss();
+
+                assertNull(button.getEffect(), () -> variant + " button should not keep elevation");
+            }
+
+            button.getStyleClass().add("m3-snackbar-action");
+            root.applyCss();
+
+            assertNull(button.getEffect(), "snackbar action button should not keep elevation");
+        });
     }
 
     /// Verifies that m3fx floating action buttons create the animated floating action button skin.
@@ -11047,6 +11085,11 @@ final class M3ControlStyleTest {
         assertEquals(1, control.getBackground().getFills().size());
         assertEquals(expectedBackground, control.getBackground().getFills().get(0).getFill());
         assertEquals(expectedText, control.getTextFill());
+    }
+
+    /// Verifies that a node currently has a drop shadow effect.
+    private static DropShadow assertDropShadow(Node node) {
+        return assertInstanceOf(DropShadow.class, node.getEffect());
     }
 
     /// Returns a region looked up below a node.
