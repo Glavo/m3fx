@@ -21,10 +21,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 password field.
+/// A Material Design 3 single-line password field.
 ///
-/// This control keeps JavaFX's `PasswordField` editing and masking implementation while exposing Material state and
-/// token APIs through [M3TextInput].
+/// This control keeps JavaFX's [PasswordField] editing and masking implementation while exposing Material state
+/// and token APIs through [M3TextInput]. Use it directly for compact password entry, or wrap it in
+/// [M3TextInputLayout] to add a label, supporting text, validation messages, or a trailing visibility action.
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public class M3PasswordField extends PasswordField implements M3TextInput {
     /// The base style class for m3fx password fields.

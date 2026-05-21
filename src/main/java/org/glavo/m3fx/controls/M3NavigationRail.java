@@ -29,7 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/// A Material Design 3 navigation rail.
+/// A Material Design 3 navigation rail for primary destinations in medium-width layouts.
+///
+/// `M3NavigationRail` arranges [M3NavigationItem] children vertically and manages their selected state. It
+/// supports empty-selection control, read-only selected-item views, keyboard navigation, and JavaFX accessibility
+/// selection attributes. Use a rail when there is enough horizontal space for persistent navigation but a full
+/// drawer would be too wide.
+///
+/// See [Material Design navigation rails](https://m3.material.io/components/navigation-rail/overview).
 @NotNullByDefault
 public class M3NavigationRail extends Control {
     /// The base style class for M3FX navigation rails.

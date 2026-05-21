@@ -32,7 +32,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// A Material Design 3 search bar.
+/// A Material Design 3 search bar for entering or activating search.
+///
+/// `M3SearchBar` contains a text editor, leading slot, trailing action list, prompt text, and active state. It
+/// can be used as a standalone search field or as the primary input inside [M3SearchView]. The control exposes
+/// action events, input forwarding methods, and accessibility text while the skin renders Material container,
+/// state-layer, focus, and motion feedback.
+///
+/// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
 public class M3SearchBar extends Control {
     /// The base style class for M3FX search bars.

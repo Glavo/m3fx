@@ -19,10 +19,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/// A Material Design 3 text field.
+/// A Material Design 3 single-line text field.
 ///
-/// This control keeps JavaFX's `TextField` editing implementation for caret movement, selection, clipboard, and IME
-/// behavior while exposing Material state and token APIs through [M3TextInput].
+/// This control keeps JavaFX's [TextField] editing implementation for caret movement, selection, clipboard,
+/// undo, redo, and IME behavior while exposing Material state and token APIs through [M3TextInput].
+/// Use it directly when a plain single-line field is enough, or place it inside [M3TextInputLayout] when the
+/// field needs a floating label, supporting text, character counter, clear button, or adornment slots.
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public class M3TextField extends TextField implements M3TextInput {
     /// The base style class for m3fx text fields.

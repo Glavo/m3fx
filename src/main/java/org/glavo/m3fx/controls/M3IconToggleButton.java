@@ -31,6 +31,12 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 toggle icon button.
+///
+/// `M3IconToggleButton` is a selectable [ButtonBase] for icon-only choices such as favorite, visibility, or
+/// formatting states. It supports standard, filled, tonal, and outlined variants, token-backed size and shape,
+/// JavaFX accessibility toggle attributes, and Material state-layer and ripple feedback.
+///
+/// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
 public class M3IconToggleButton extends ButtonBase {
     /// The base style class for M3FX toggle icon buttons.

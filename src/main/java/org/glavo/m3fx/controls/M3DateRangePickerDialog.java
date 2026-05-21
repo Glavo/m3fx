@@ -22,6 +22,11 @@ import java.time.YearMonth;
 import java.util.Objects;
 
 /// A Material Design 3 dialog preset for selecting an inclusive date range.
+///
+/// The dialog installs an [M3DateRangePicker] as its content, wires OK and cancel actions, and keeps the
+/// selected [M3DateRange] as the dialog result when the user accepts the range.
+///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     /// The default title and header text for date range picker dialogs.

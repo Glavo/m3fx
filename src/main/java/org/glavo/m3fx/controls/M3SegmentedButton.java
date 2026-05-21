@@ -28,7 +28,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 segmented button.
+/// A Material Design 3 segmented button used as one segment in a related choice group.
+///
+/// `M3SegmentedButton` is a selectable [ButtonBase] with token-backed height, outline shape, and horizontal
+/// padding. It can be used directly for custom layouts, but [M3SegmentedButtonGroup] should be used when
+/// adjacent segments need shared borders, single or multiple selection policy, and keyboard navigation.
+///
+/// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
 public class M3SegmentedButton extends ButtonBase {
     /// The base style class for m3fx segmented buttons.

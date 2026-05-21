@@ -27,6 +27,14 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 linear progress indicator.
+///
+/// `M3ProgressBar` displays determinate progress for values from `0.0` to `1.0` and indeterminate progress
+/// when the value is [INDETERMINATE_PROGRESS]. The control exposes token-backed track thickness, shape, active
+/// gap, stop indicator, and optional wave properties so the same API can render baseline and expressive
+/// progress styles.
+///
+/// Use this control for horizontal loading feedback in a bounded area. See
+/// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).
 @NotNullByDefault
 public class M3ProgressBar extends Control {
     /// The base style class for m3fx progress bars.

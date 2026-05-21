@@ -29,6 +29,13 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 dialog pane.
+///
+/// `M3DialogPane` is the content container used by [M3Dialog]. It keeps JavaFX [DialogPane] button management,
+/// content, header, and expandable-content behavior while applying Material container shape, content padding,
+/// button styling, and accessibility defaults. The pane can also be installed on a standard JavaFX dialog when
+/// the application needs to preserve a custom dialog subclass.
+///
+/// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
 public class M3DialogPane extends DialogPane {
     /// The base style class for m3fx dialog panes.

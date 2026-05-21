@@ -25,7 +25,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 badge.
+/// A Material Design 3 badge for small status, count, or attention indicators.
+///
+/// `M3Badge` displays either a small dot or a text badge depending on whether the text property is empty. It
+/// exposes token-backed size, shape, minimum width, and horizontal padding properties and can be positioned over
+/// another node with [M3BadgedBox].
+///
+/// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
 public class M3Badge extends Control {
     /// The base style class for m3fx badges.

@@ -37,6 +37,16 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 data-driven virtualized list view.
+///
+/// `M3ListView` displays an observable item list through a cell factory that creates [M3ListItem] nodes for
+/// visible rows. Unlike [M3ListPane], it is intended for large or dynamic data sets and uses virtualization so
+/// the number of scene graph nodes is bounded by the viewport. The control exposes selection mode,
+/// selected-index views, fixed-cell-size hints, animated scrolling, and keyboard navigation.
+///
+/// Use this control for application data lists and feeds. See
+/// [Material Design lists](https://m3.material.io/components/lists/overview).
+///
+/// @param <T> the item type rendered by this list view
 @NotNullByDefault
 public class M3ListView<T> extends Control {
     /// The base style class for M3FX virtualized list views.

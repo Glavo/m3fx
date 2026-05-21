@@ -25,6 +25,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A Material Design 3 top app bar.
+///
+/// `M3TopAppBar` provides navigation, title, and trailing action slots for the top edge of an application view.
+/// The variant property selects the small, medium, large, or centered layout metrics, while the action list
+/// allows arbitrary JavaFX nodes such as [M3IconButton] instances.
+///
+/// See [Material Design top app bars](https://m3.material.io/components/top-app-bar/overview).
 @NotNullByDefault
 public class M3TopAppBar extends Control {
     /// The base style class for M3FX top app bars.

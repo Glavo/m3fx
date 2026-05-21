@@ -31,7 +31,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 snackbar.
+/// A Material Design 3 snackbar message.
+///
+/// `M3Snackbar` displays a short message with an optional action. It is normally shown through
+/// [M3SnackbarHost], which handles queueing, timing, entrance motion, and dismissal. The snackbar exposes
+/// token-backed container shape and padding properties for theme and density integration.
+///
+/// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
 public class M3Snackbar extends Control {
     /// The base style class for m3fx snackbars.

@@ -20,6 +20,15 @@ import java.util.List;
 import java.util.Objects;
 
 /// A JavaFX dialog that uses an [M3DialogPane] by default.
+///
+/// `M3Dialog` keeps the standard JavaFX [Dialog] lifecycle, result conversion, modality, ownership, and button
+/// handling while installing a Material Design 3 dialog pane. It can inherit the theme from an owner window or
+/// accept an explicit [org.glavo.m3fx.theme.M3Theme] so dialogs opened from popups or secondary windows retain
+/// the same color and typography context.
+///
+/// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
+///
+/// @param <R> the dialog result type
 @NotNullByDefault
 public class M3Dialog<R> extends Dialog<R> {
     /// The property key that stores the dialog pane style before theme declarations were added.

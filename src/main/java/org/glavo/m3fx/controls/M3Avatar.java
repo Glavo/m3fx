@@ -28,6 +28,13 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 avatar for initials, icons, or small images.
+///
+/// `M3Avatar` displays compact identity or entity imagery using text, a graphic node, or generated initials.
+/// The control exposes color variants and token-backed container size so it can be used in lists, app bars,
+/// cards, and menus without hard-coded dimensions.
+///
+/// See [Material Design](https://m3.material.io/) for the visual system that defines the color, shape, and
+/// typography roles used by avatars.
 @NotNullByDefault
 public class M3Avatar extends Control {
     /// The base style class for M3FX avatars.

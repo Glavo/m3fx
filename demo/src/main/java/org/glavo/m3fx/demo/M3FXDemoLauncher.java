@@ -14,6 +14,8 @@ public final class M3FXDemoLauncher {
     }
 
     /// Starts the JavaFX demo application.
+    ///
+    /// @param args command-line arguments forwarded to JavaFX
     public static void main(String[] args) {
         Application.launch(M3FXDemoApp.class, args);
     }

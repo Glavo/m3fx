@@ -29,6 +29,12 @@ import org.jetbrains.annotations.UnmodifiableView;
 import java.util.Objects;
 
 /// A Material Design 3 split button with a primary action and an attached menu action.
+///
+/// `M3SplitButton` combines an [M3Button] for the primary command with an [M3MenuButton] that reveals related
+/// secondary commands. The control keeps both parts visually joined, forwards the configured button variant, and
+/// exposes the menu items through the embedded menu button.
+///
+/// See [Material Design buttons](https://m3.material.io/components/buttons/overview).
 @NotNullByDefault
 public class M3SplitButton extends Control {
     /// The base style class for M3FX split buttons.

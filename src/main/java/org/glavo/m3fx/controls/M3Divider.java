@@ -25,6 +25,11 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 divider.
+///
+/// `M3Divider` renders a horizontal or vertical separator with token-backed thickness and start or end insets.
+/// Use it to separate related sections, list groups, or panel regions without adding interactive semantics.
+///
+/// See [Material Design dividers](https://m3.material.io/components/divider/overview).
 @NotNullByDefault
 public class M3Divider extends Control {
     /// The base style class for m3fx dividers.

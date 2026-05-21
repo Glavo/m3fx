@@ -34,6 +34,12 @@ import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 chip group that lays chips out as a wrapping set.
+///
+/// The group manages [M3Chip] selection according to [M3ChipSelectionMode], wraps chips across rows, and exposes
+/// read-only selected-chip views. Use it when chips form one interactive set rather than unrelated standalone
+/// actions.
+///
+/// See [Material Design chips](https://m3.material.io/components/chips/overview).
 @NotNullByDefault
 public class M3ChipGroup extends Control {
     /// The base style class for M3FX chip groups.

@@ -8,7 +8,14 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Holds component-level Material Design 3 tokens used by m3fx controls.
+/// Holds component-level Material Design 3 tokens used by M3FX controls.
+///
+/// Component tokens collect the shape, size, padding, and metric defaults that individual controls consume.
+/// They keep component geometry separate from hard-coded CSS values and allow a theme profile, such as baseline
+/// or expressive, to change component behavior consistently.
+///
+/// See [Material Design components](https://m3.material.io/components) and
+/// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by filled buttons.

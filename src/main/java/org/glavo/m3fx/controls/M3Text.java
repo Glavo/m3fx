@@ -28,7 +28,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 text label driven by typography tokens.
+/// A token-aware text label driven by the Material Design 3 type scale.
+///
+/// `M3Text` is an M3FX utility control rather than a standalone Material component. It renders text with an
+/// [M3TextRole], token-backed font family, size, line height, and weight so custom layouts can use the same
+/// typography model as built-in controls.
+///
+/// See [Material Design typography](https://m3.material.io/styles/typography/overview) and
+/// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public class M3Text extends Labeled {
     /// The base style class for M3FX text labels.

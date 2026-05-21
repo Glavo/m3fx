@@ -7,6 +7,12 @@ import org.glavo.m3fx.internal.tokens.M3ShapeTokensImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 shape system tokens.
+///
+/// Shape tokens define the corner radius scale used by surfaces, cards, buttons, text fields, sheets, and other
+/// controls. Baseline and expressive profiles can supply different radii while component code consumes the same
+/// semantic shape roles.
+///
+/// See [Material Design shape](https://m3.material.io/styles/shape/overview).
 @NotNullByDefault
 public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     /// Returns the extra-small corner radius.

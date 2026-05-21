@@ -19,6 +19,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A reusable virtualized cell used by [M3ListView].
+///
+/// @param <T> the item type rendered by this cell
 @NotNullByDefault
 public class M3ListViewCell<T> extends IndexedCell<T> {
     /// The base style class for M3FX list view cells.

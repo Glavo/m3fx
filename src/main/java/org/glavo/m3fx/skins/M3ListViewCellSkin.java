@@ -13,6 +13,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3ListViewCell].
+///
+/// @param <T> the item type rendered by the skinned cell
 @NotNullByDefault
 public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     /// The currently installed rendered row node.

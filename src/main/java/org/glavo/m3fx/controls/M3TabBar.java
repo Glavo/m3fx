@@ -30,6 +30,12 @@ import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 tab bar.
+///
+/// `M3TabBar` manages a list of [M3Tab] nodes, keeps selected tabs synchronized, exposes read-only selected-tab
+/// views, and supports keyboard traversal. It is intended for navigation between peer pages or views at the same
+/// hierarchy level.
+///
+/// See [Material Design tabs](https://m3.material.io/components/tabs/overview).
 @NotNullByDefault
 public class M3TabBar extends Control {
     /// The base style class for M3FX tab bars.

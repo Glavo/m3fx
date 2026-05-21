@@ -7,7 +7,13 @@ import javafx.scene.Node;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// A Material Design 3 icon button.
+/// A Material Design 3 icon button for compact icon-only actions.
+///
+/// `M3IconButton` is a square specialization of [M3Button] that keeps the Material button action behavior while
+/// sizing its container around a graphic, usually an [M3Icon]. It uses the text button variant by default and
+/// participates in the same state-layer, ripple, focus, and accessibility behavior as other buttons.
+///
+/// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
 public class M3IconButton extends M3Button {
     /// The base style class for m3fx icon buttons.

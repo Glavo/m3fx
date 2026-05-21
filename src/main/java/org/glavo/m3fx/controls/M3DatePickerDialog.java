@@ -22,6 +22,11 @@ import java.time.YearMonth;
 import java.util.Objects;
 
 /// A Material Design 3 dialog preset for selecting one date.
+///
+/// The dialog installs an [M3DatePicker] as its content, wires OK and cancel actions, and keeps the selected
+/// [LocalDate] as the dialog result when the user accepts the choice.
+///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public class M3DatePickerDialog extends M3Dialog<LocalDate> {
     /// The default title and header text for date picker dialogs.

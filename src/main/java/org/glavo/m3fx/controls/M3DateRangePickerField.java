@@ -50,6 +50,12 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 date range picker field with editable start and end date inputs.
+///
+/// `M3DateRangePickerField` pairs two text inputs with an [M3DateRangePicker] popup so users can type or choose
+/// an inclusive range. It exposes nullable range state, parsing and formatting behavior, popup visibility, and
+/// optional preset actions for inline form use.
+///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The base style class for M3FX date range picker fields.

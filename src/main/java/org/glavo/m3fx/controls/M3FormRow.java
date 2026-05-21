@@ -29,6 +29,13 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 form row with label text, supporting text, content, and optional trailing content.
+///
+/// `M3FormRow` is an M3FX layout helper for aligning one form control with its label, explanatory text, and
+/// trailing affordance. It is designed for use inside [M3FormPane] and can host any JavaFX node as the main
+/// content.
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) and
+/// [Material Design](https://m3.material.io/) for related form guidance.
 @NotNullByDefault
 public class M3FormRow extends Control {
     /// The base style class for M3FX form rows.

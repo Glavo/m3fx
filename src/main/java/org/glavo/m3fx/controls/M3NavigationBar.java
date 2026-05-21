@@ -29,7 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/// A Material Design 3 bottom navigation bar.
+/// A Material Design 3 navigation bar for top-level destinations in compact layouts.
+///
+/// `M3NavigationBar` arranges [M3NavigationItem] children horizontally and manages their selected state. It
+/// supports empty-selection control, read-only selected-item views, keyboard navigation, and JavaFX accessibility
+/// selection attributes. The bar is intended for three to five primary destinations at the bottom edge of an
+/// application window or region.
+///
+/// See [Material Design navigation bars](https://m3.material.io/components/navigation-bar/overview).
 @NotNullByDefault
 public class M3NavigationBar extends Control {
     /// The base style class for M3FX navigation bars.

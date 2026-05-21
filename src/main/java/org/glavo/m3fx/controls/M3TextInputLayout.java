@@ -54,7 +54,16 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.Objects;
 
-/// A Material Design 3 text input container with supporting text, validation, error text, and a character counter.
+/// A Material Design 3 text input container with label, adornment, supporting text, validation, and counter slots.
+///
+/// `M3TextInputLayout` wraps a JavaFX [TextInputControl] and supplies the component structure that Material
+/// text fields require: filled or outlined container, floating label, leading and trailing content, error state,
+/// supporting text, character limit, and optional clear button. The wrapped input remains responsible for text
+/// editing, selection, clipboard, IME, and accessibility behavior.
+///
+/// The outlined variant draws its outline notch as part of the control geometry instead of covering the border
+/// with a label background, allowing the floating-label transition to match the
+/// [Material Design text fields](https://m3.material.io/components/text-fields/overview) model.
 @NotNullByDefault
 public class M3TextInputLayout extends Control {
     /// The base style class for M3FX text input layouts.

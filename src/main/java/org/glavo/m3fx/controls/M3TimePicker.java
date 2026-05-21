@@ -26,6 +26,12 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 time picker control.
+///
+/// `M3TimePicker` displays hour and minute selection grids, optional 12-hour period selection, disabled-time
+/// predicates, and a nullable selected [LocalTime] value. The control is the picker body used by
+/// [M3TimePickerDialog] and [M3TimePickerField].
+///
+/// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public class M3TimePicker extends Control {
     /// The base style class for M3FX time pickers.

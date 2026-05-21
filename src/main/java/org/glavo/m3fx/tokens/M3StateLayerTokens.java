@@ -7,6 +7,12 @@ import org.glavo.m3fx.internal.tokens.M3StateLayerTokensImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 state layer opacity tokens.
+///
+/// State layer tokens define the opacity used when controls render hover, focus, pressed, dragged, and disabled
+/// feedback. Skins combine these opacities with the active color roles so interaction feedback remains
+/// theme-aware.
+///
+/// See [Material Design interaction states](https://m3.material.io/foundations/interaction/states/overview).
 @NotNullByDefault
 public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// Returns the hover state layer opacity.

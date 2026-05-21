@@ -7,6 +7,12 @@ import org.glavo.m3fx.internal.tokens.M3TypographyTokensImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 typography system tokens.
+///
+/// Typography tokens describe the Material type scale roles used by controls and by
+/// [M3Text][org.glavo.m3fx.controls.M3Text]. Each role maps to an immutable [M3TextStyle] containing font
+/// family, size, line height, weight, and tracking values that are converted into JavaFX CSS declarations.
+///
+/// See [Material Design typography](https://m3.material.io/styles/typography/overview).
 @NotNullByDefault
 public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     /// Returns the display large text style.

@@ -34,6 +34,13 @@ import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 static list container for a small number of already-created nodes.
+///
+/// `M3ListPane` is useful when the application already owns the exact [M3ListItem] nodes that should be shown
+/// and the list is small enough that virtualization is unnecessary. It manages selection across child list
+/// items, supports keyboard traversal, and exposes read-only selected-item views. For large data sets, prefer
+/// [M3ListView].
+///
+/// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public class M3ListPane extends Control {
     /// The base style class for M3FX static list panes.

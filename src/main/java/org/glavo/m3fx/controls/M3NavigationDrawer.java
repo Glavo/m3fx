@@ -33,7 +33,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/// A Material Design 3 navigation drawer.
+/// A Material Design 3 navigation drawer for persistent or modal destination lists.
+///
+/// `M3NavigationDrawer` hosts [M3ListItem] entries and [M3NavigationDrawerGroup] sections, tracks selected
+/// items, and applies a drawer-specific selection policy across nested groups. It supports keyboard traversal,
+/// empty-selection control, and JavaFX accessibility selection attributes while leaving application layout to the
+/// surrounding container.
+///
+/// Use a drawer for larger destination sets or grouped navigation. See
+/// [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
 @NotNullByDefault
 public class M3NavigationDrawer extends Control {
     /// The base style class for M3FX navigation drawers.

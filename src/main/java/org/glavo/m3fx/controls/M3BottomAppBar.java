@@ -22,6 +22,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A Material Design 3 bottom app bar.
+///
+/// `M3BottomAppBar` hosts horizontal action nodes and an optional floating action slot aligned according to
+/// [M3BottomAppBarFloatingActionAlignment]. Use it for screen-level actions at the bottom edge of an
+/// application, especially when paired with a [M3FloatingActionButton].
+///
+/// See [Material Design bottom app bars](https://m3.material.io/components/bottom-app-bar/overview).
 @NotNullByDefault
 public class M3BottomAppBar extends Control {
     /// The base style class for M3FX bottom app bars.

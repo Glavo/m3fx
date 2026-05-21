@@ -28,6 +28,12 @@ import java.util.Locale;
 import java.util.Objects;
 
 /// A Material Design 3 calendar date picker control.
+///
+/// `M3DatePicker` displays a month grid, weekday labels, previous and next month navigation, locale-aware first
+/// day of week, disabled-day predicates, and a nullable selected [LocalDate] value. The control is the calendar
+/// body used by [M3DatePickerDialog] and [M3DatePickerField].
+///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public class M3DatePicker extends Control {
     /// The base style class for M3FX date pickers.

@@ -19,10 +19,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/// A Material Design 3 text area.
+/// A Material Design 3 multi-line text area.
 ///
-/// This control keeps JavaFX's `TextArea` editing, scrolling, selection, and IME behavior while exposing Material state
-/// and token APIs through [M3TextInput].
+/// This control keeps JavaFX's [TextArea] editing, wrapping, scrolling, selection, clipboard, and IME behavior
+/// while exposing Material state and token APIs through [M3TextInput]. Use it directly for a Material-styled
+/// multi-line editor, or place it inside [M3TextInputLayout] to add a label, supporting text, error text,
+/// character counter, and adornment slots.
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public class M3TextArea extends TextArea implements M3TextInput {
     /// The base style class for m3fx text areas.

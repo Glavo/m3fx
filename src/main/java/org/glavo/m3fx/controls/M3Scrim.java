@@ -30,6 +30,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A Material Design 3 scrim used behind modal content.
+///
+/// `M3Scrim` is a non-content overlay that dims the scene behind modal sheets, dialogs, and other blocking
+/// surfaces. It exposes shown state, visible opacity, action events for outside-click dismissal, keyboard
+/// dismissal, and Material fade motion.
+///
+/// See [Material Design](https://m3.material.io/) for modal surface and overlay behavior.
 @NotNullByDefault
 public class M3Scrim extends Region {
     /// The base style class for M3FX scrims.

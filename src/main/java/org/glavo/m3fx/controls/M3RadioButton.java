@@ -31,7 +31,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 radio button.
+/// A Material Design 3 radio button for selecting one option from a set.
+///
+/// `M3RadioButton` implements JavaFX [Toggle] so it can be grouped with a standard [ToggleGroup] while keeping
+/// an M3FX skin and API surface. Activating a selected radio button keeps it selected, matching the usual radio
+/// group behavior. The control updates JavaFX accessibility toggle attributes and renders Material state layers,
+/// focus indication, and ripple feedback.
+///
+/// Use radio buttons when all available options should remain visible. See
+/// [Material Design radio buttons](https://m3.material.io/components/radio-button/overview).
 @NotNullByDefault
 public class M3RadioButton extends ButtonBase implements Toggle {
     /// The base style class for m3fx radio buttons.

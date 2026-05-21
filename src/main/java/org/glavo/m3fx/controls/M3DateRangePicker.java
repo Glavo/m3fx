@@ -29,6 +29,12 @@ import java.util.Locale;
 import java.util.Objects;
 
 /// A Material Design 3 calendar date range picker control.
+///
+/// `M3DateRangePicker` displays calendar month navigation and allows users to choose an inclusive start and end
+/// date. The value is a nullable [M3DateRange], and the picker enforces disabled-day predicates and range
+/// selection feedback for form and dialog use.
+///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public class M3DateRangePicker extends Control {
     /// The base style class for M3FX date range pickers.

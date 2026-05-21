@@ -33,6 +33,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A Material Design 3 bottom sheet container.
+///
+/// `M3BottomSheet` presents supporting content from the bottom edge of a view. It supports standard and modal
+/// sheet variants, headline text, action nodes, drag-handle visibility, scrim handling, keyboard dismissal, and
+/// Material entrance and exit motion.
+///
+/// See [Material Design bottom sheets](https://m3.material.io/components/bottom-sheets/overview).
 @NotNullByDefault
 public class M3BottomSheet extends Control {
     /// The base style class for M3FX bottom sheets.

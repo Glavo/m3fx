@@ -28,7 +28,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 tab.
+/// A Material Design 3 tab used to switch between peer content views.
+///
+/// `M3Tab` is a selectable [ButtonBase] with token-backed height, minimum width, padding, and active-indicator
+/// metrics. Use [M3TabBar] to manage a set of tabs, selected state, keyboard navigation, and accessibility
+/// selection attributes.
+///
+/// See [Material Design tabs](https://m3.material.io/components/tabs/overview).
 @NotNullByDefault
 public class M3Tab extends ButtonBase {
     /// The base style class for M3FX tabs.

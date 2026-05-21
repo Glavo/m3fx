@@ -21,6 +21,11 @@ import java.time.LocalTime;
 import java.util.Objects;
 
 /// A Material Design 3 dialog preset for selecting one time.
+///
+/// The dialog installs an [M3TimePicker] as its content, wires OK and cancel actions, and keeps the selected
+/// [LocalTime] as the dialog result when the user accepts the choice.
+///
+/// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// The default title and header text for time picker dialogs.

@@ -28,6 +28,13 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 form container that stacks form rows, sections, and other content nodes.
+///
+/// `M3FormPane` is an M3FX composition control for building forms from [M3FormRow], [M3FormSection],
+/// [M3TextInputLayout], and arbitrary JavaFX nodes. It exposes token-backed content padding and row spacing and
+/// updates accessibility child information as form content changes.
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) and
+/// [Material Design](https://m3.material.io/) for the form controls commonly used inside this pane.
 @NotNullByDefault
 public class M3FormPane extends Control {
     /// The base style class for M3FX form panes.

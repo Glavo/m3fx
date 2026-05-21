@@ -15,8 +15,14 @@ import java.util.Objects;
 
 /// Runtime settings for Material Design 3 motion in M3FX controls.
 ///
-/// The global setting is used when no node-specific override is present. Node overrides inherit through the JavaFX
-/// parent chain, so an application can disable motion for a whole subtree or re-enable it for one control.
+/// The global settings are used when no node-specific override is present. Node overrides inherit through the
+/// JavaFX parent chain, so an application can disable motion for a whole subtree, re-enable it for one control,
+/// or replace the motion scheme used by one feature area without rewriting control skins.
+///
+/// Controls use these settings for state-layer fades, ripple release, popup entrance and exit, smooth scrolling,
+/// and determinate or indeterminate progress motion. The defaults follow the Material Design 3 motion guidance;
+/// see [Material motion](https://m3.material.io/styles/motion/overview) and
+/// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public final class M3MotionSettings {
     /// The key used to store nullable node-local animation overrides.

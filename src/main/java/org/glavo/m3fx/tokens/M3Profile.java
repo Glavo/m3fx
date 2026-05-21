@@ -7,7 +7,14 @@ import org.glavo.monetfx.ColorSpecVersion;
 import org.glavo.monetfx.ColorStyle;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Identifies a Material Design 3 token profile used by m3fx.
+/// Identifies a Material Design 3 token profile used by M3FX.
+///
+/// A profile selects a compatible group of color-generation settings and token defaults. M3FX currently exposes
+/// the original baseline Material Design 3 profile and a Material Design 3 Expressive profile that uses newer
+/// dynamic color and component token defaults.
+///
+/// See [Material Design](https://m3.material.io/) and
+/// [Material color](https://m3.material.io/styles/color/overview).
 @NotNullByDefault
 public enum M3Profile {
     /// Uses the baseline Material Design 3 token defaults.

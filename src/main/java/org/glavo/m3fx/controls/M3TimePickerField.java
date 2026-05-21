@@ -22,6 +22,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /// A Material Design 3 time picker field that combines an editable text field with a popup time picker.
+///
+/// `M3TimePickerField` lets users type a time or choose one from an embedded [M3TimePicker]. It exposes
+/// nullable selected-time state, parsing and formatting behavior, popup visibility, and optional preset actions
+/// for inline form use.
+///
+/// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePicker> {
     /// The style class applied to time picker field controls.

@@ -31,6 +31,13 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 surface container for arbitrary content.
+///
+/// `M3Surface` is a general-purpose themed container that applies Material surface color roles, elevation, shape,
+/// and padding to a list of child nodes. It is useful for composing custom controls or demo content that should
+/// still align with the active M3FX token set.
+///
+/// See [Material Design](https://m3.material.io/) and
+/// [Material color roles](https://m3.material.io/styles/color/roles).
 @NotNullByDefault
 public class M3Surface extends Control {
     /// The base style class for M3FX surfaces.

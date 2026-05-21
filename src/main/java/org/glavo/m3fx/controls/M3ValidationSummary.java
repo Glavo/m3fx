@@ -26,6 +26,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// Displays the invalid fields reported by an [M3FormValidator].
+///
+/// `M3ValidationSummary` observes an [M3FormValidator] and renders a compact list of invalid
+/// [M3TextInputLayout] controls. It can show an empty valid state, include field labels and error text, and move
+/// focus to the related field when an invalid entry is activated.
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) for the error and
+/// supporting-text model that this summary complements.
 @NotNullByDefault
 public class M3ValidationSummary extends Control {
     /// The base style class for M3FX validation summaries.

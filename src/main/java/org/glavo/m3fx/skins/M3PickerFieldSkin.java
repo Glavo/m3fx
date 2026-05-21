@@ -10,6 +10,9 @@ import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3PickerField].
+///
+/// @param <T> the value type edited by the picker field
+/// @param <P> the popup picker control type
 @NotNullByDefault
 public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3PickerField<T, P>> {
     /// Creates a picker field skin.

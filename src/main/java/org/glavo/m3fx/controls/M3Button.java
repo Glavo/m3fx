@@ -31,7 +31,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 button.
+/// A Material Design 3 button used to invoke a command.
+///
+/// `M3Button` is built on JavaFX [ButtonBase] so it participates in the standard action-event, mnemonic,
+/// focus, accessibility, and default/cancel button mechanisms. The control adds Material variants through
+/// [M3ButtonVariant] and exposes token-backed sizing properties for the container height, shape, and horizontal
+/// padding.
+///
+/// The default skin renders Material state layers, ripple feedback, focus indication, and variant-specific
+/// elevation. Use filled, tonal, outlined, text, or elevated variants according to the action emphasis described
+/// in the [Material Design buttons](https://m3.material.io/components/buttons/overview) guidance.
 @NotNullByDefault
 public class M3Button extends ButtonBase {
     /// The base style class for all m3fx buttons.

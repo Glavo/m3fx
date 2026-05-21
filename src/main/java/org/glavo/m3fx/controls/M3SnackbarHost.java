@@ -37,6 +37,13 @@ import org.jetbrains.annotations.UnmodifiableView;
 import java.util.Objects;
 
 /// Hosts transient Material Design 3 snackbar messages.
+///
+/// `M3SnackbarHost` owns the visible snackbar slot and a FIFO queue of pending [M3Snackbar] instances. It
+/// coordinates display duration, action dismissal, automatic timeout, and Material entrance and exit motion. Add
+/// one host near the root of an application scene and call its show methods from feature code that needs
+/// non-modal feedback.
+///
+/// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
 public class M3SnackbarHost extends Control {
     /// The base style class for m3fx snackbar hosts.

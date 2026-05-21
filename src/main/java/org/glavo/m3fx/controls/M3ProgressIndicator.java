@@ -26,6 +26,14 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 circular progress indicator.
+///
+/// `M3ProgressIndicator` displays determinate progress for values from `0.0` to `1.0` and indeterminate
+/// progress when the value is [INDETERMINATE_PROGRESS]. The control exposes token-backed indicator size, track
+/// thickness, active gap, and optional wave properties so the same API can render baseline and expressive
+/// circular progress styles.
+///
+/// Use this control when loading feedback needs a compact circular affordance. See
+/// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).
 @NotNullByDefault
 public class M3ProgressIndicator extends Control {
     /// The base style class for m3fx progress indicators.

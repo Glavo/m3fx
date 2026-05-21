@@ -22,6 +22,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A container that overlays a Material Design 3 badge on content.
+///
+/// `M3BadgedBox` positions an optional [M3Badge] relative to an optional content node. It is intended for
+/// navigation icons, buttons, avatars, and other compact affordances that need a count or attention marker.
+///
+/// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
 public class M3BadgedBox extends Control {
     /// The base style class for M3FX badged boxes.

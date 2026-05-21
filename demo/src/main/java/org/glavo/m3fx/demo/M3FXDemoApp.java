@@ -152,6 +152,10 @@ import java.util.regex.Pattern;
 /// A demo application that showcases M3FX controls.
 @NotNullByDefault
 public final class M3FXDemoApp extends Application {
+    /// Creates the demo application.
+    public M3FXDemoApp() {
+    }
+
     /// Seed colors shown in the demo header.
     private static final @Unmodifiable List<Color> SEED_COLORS = List.of(
             Color.web("#6750a4"),

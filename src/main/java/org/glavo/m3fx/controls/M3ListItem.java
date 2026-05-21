@@ -37,6 +37,13 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 list item.
+///
+/// `M3ListItem` represents one row in a Material list, menu-like list, or navigation drawer. It supports
+/// overline, headline, supporting, and trailing supporting text, leading and trailing slots, one-line through
+/// three-line metrics, selection state, action events, and keyboard activation. Container controls such as
+/// [M3ListPane], [M3ListView], and [M3NavigationDrawer] can manage the selected state for groups of items.
+///
+/// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public class M3ListItem extends Control {
     /// The base style class for m3fx list items.

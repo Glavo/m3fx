@@ -28,6 +28,12 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 form section with a heading, supporting text, and stacked content.
+///
+/// `M3FormSection` groups related form rows or controls under a heading. It provides a section-level title,
+/// optional supporting text, configurable spacing, and an observable item list for composing larger forms.
+///
+/// See [Material Design](https://m3.material.io/) for the layout and hierarchy principles reflected by this
+/// helper control.
 @NotNullByDefault
 public class M3FormSection extends Control {
     /// The base style class for M3FX form sections.

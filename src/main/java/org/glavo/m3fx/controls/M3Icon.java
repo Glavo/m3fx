@@ -29,7 +29,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 icon label driven by size and color tokens.
+/// A token-aware icon label for Material Design 3 controls.
+///
+/// `M3Icon` is an M3FX utility control rather than a standalone Material component. It renders text glyphs
+/// through a configurable icon font family, size role, font weight, and color variant so buttons, navigation
+/// items, list items, and other controls can share the same icon metrics and color tokens.
+///
+/// See [Material Design icons](https://m3.material.io/styles/icons/overview) and
+/// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public class M3Icon extends Labeled {
     /// The base style class for M3FX icon labels.

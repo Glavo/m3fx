@@ -35,6 +35,13 @@ import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 menu surface.
+///
+/// `M3Menu` hosts [M3MenuItem], [M3SubMenuItem], section headers, dividers, and other menu content. It manages
+/// optional single or multiple selection, selected-item views, keyboard traversal, submenu disclosure, and action
+/// dispatch for selectable menu items. The control itself is the menu surface; [M3MenuButton] and popup helpers
+/// decide where and when the surface is shown.
+///
+/// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public class M3Menu extends Control {
     /// The base style class for M3FX menus.

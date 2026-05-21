@@ -29,7 +29,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 navigation bar item.
+/// A Material Design 3 navigation item used by bars, rails, and related navigation containers.
+///
+/// `M3NavigationItem` is a selectable [ButtonBase] with optional graphic content and badge support. Navigation
+/// containers manage the selected state across their child items, while the item skin renders the selected
+/// indicator, state layer, ripple, label, icon, and badge placement from Material component tokens.
+///
+/// See [Material Design navigation](https://m3.material.io/components/navigation-bar/overview).
 @NotNullByDefault
 public class M3NavigationItem extends ButtonBase {
     /// The base style class for M3FX navigation items.

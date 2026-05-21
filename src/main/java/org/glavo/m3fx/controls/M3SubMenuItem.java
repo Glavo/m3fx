@@ -31,6 +31,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A Material Design 3 menu item that opens a nested menu.
+///
+/// `M3SubMenuItem` extends [M3MenuItem] with a child [M3Menu] and popup positioning behavior. It can open its
+/// submenu from pointer hover, keyboard navigation, or explicit API calls, and it inherits theme context for the
+/// nested popup surface.
+///
+/// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public class M3SubMenuItem extends M3MenuItem {
     /// The base style class for M3FX submenu items.

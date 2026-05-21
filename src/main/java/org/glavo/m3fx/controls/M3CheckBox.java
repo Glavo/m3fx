@@ -28,7 +28,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 checkbox.
+/// A Material Design 3 checkbox for selecting one or more independent options.
+///
+/// `M3CheckBox` is built on JavaFX [ButtonBase] and exposes selected and indeterminate properties instead of
+/// extending the JavaFX concrete `CheckBox` class. It supports two-state and three-state selection depending on
+/// [allowIndeterminateProperty], updates JavaFX accessibility toggle attributes, and renders Material state
+/// layers and ripple feedback around the selection indicator.
+///
+/// Use checkboxes for independent choices or bulk-selection affordances. See
+/// [Material Design checkboxes](https://m3.material.io/components/checkbox/overview).
 @NotNullByDefault
 public class M3CheckBox extends ButtonBase {
     /// The base style class for m3fx checkboxes.

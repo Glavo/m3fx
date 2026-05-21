@@ -14,7 +14,17 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Describes a complete m3fx theme.
+/// Describes a complete M3FX theme.
+///
+/// A theme is an immutable description of the Material Design 3 values that should be applied to a JavaFX
+/// scene: dynamic color roles, component tokens, density, typography, shape, elevation, and motion. Themes do
+/// not modify controls by themselves; install one with [M3ThemeManager] to add the base stylesheet, root style
+/// classes, and generated JavaFX CSS declarations required by M3FX controls.
+///
+/// `M3Theme` can be created from a seed color, from an existing MonetFX [ColorScheme], or from an explicit
+/// [M3TokenSet]. The seed-color factories follow the Material dynamic color model used by
+/// [Material Design](https://m3.material.io/) and the
+/// [Material color system](https://m3.material.io/styles/color/overview).
 @NotNullByDefault
 public sealed interface M3Theme permits M3ThemeImpl {
     /// The default seed color used by m3fx.

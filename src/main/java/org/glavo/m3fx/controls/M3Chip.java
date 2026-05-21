@@ -30,7 +30,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 chip.
+/// A Material Design 3 chip for compact actions, filters, inputs, or suggestions.
+///
+/// `M3Chip` is a selectable [ButtonBase] with Material chip variants, leading and trailing graphic slots,
+/// token-backed height, shape, padding, and action dispatch. Selection state is available for filter and input
+/// chips, while assist and suggestion chips can be used as command surfaces.
+///
+/// See [Material Design chips](https://m3.material.io/components/chips/overview).
 @NotNullByDefault
 public class M3Chip extends ButtonBase {
     /// The base style class for m3fx chips.

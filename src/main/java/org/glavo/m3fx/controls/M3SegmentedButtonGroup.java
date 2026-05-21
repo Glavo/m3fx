@@ -32,6 +32,13 @@ import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 segmented button group that lays out adjacent segments.
+///
+/// The group manages the selected state of child [M3SegmentedButton] instances, applies the configured
+/// [M3SegmentedButtonSelectionMode], and renders the shared outline geometry expected by Material segmented
+/// buttons. It also provides keyboard traversal and empty-selection control for groups that require at least one
+/// selected segment.
+///
+/// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
 public class M3SegmentedButtonGroup extends Control {
     /// The base style class for m3fx segmented button groups.

@@ -32,6 +32,12 @@ import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 toggle icon button group.
+///
+/// The group manages selected state for child [M3IconToggleButton] controls, applies
+/// [M3IconToggleButtonSelectionMode], exposes selected-button views, and supports keyboard traversal. Use it
+/// when a row or cluster of icon buttons represents one logical choice set.
+///
+/// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
 public class M3IconToggleButtonGroup extends Control {
     /// The base style class for M3FX toggle icon button groups.

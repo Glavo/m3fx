@@ -24,6 +24,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A Material Design 3 banner for persistent contextual messages and actions.
+///
+/// `M3Banner` displays a message, optional leading icon, and trailing action nodes inside the current layout
+/// instead of in an overlay. Use it for important contextual information that should remain visible until the
+/// user acts or the application state changes.
+///
+/// See [Material Design](https://m3.material.io/) for the component and interaction principles used by M3FX.
 @NotNullByDefault
 public class M3Banner extends Control {
     /// The base style class for M3FX banners.

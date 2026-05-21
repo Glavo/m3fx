@@ -20,6 +20,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// A Material Design 3 rich tooltip with title, supporting text, and optional actions.
+///
+/// `M3RichTooltip` builds on [M3Tooltip] and supplies the structured content used by rich Material tooltips:
+/// title text, supporting text, and an optional row of action nodes. It inherits popup timing, accessibility,
+/// owner-window tracking, theme propagation, and motion from the base tooltip.
+///
+/// See [Material Design tooltips](https://m3.material.io/components/tooltips/overview).
 @NotNullByDefault
 public class M3RichTooltip extends M3Tooltip {
     /// The base style class for M3FX rich tooltips.

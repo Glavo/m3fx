@@ -10,6 +10,16 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Aggregates all Material Design 3 tokens used by a theme.
+///
+/// A token set is the structured source of truth that M3FX turns into JavaFX CSS declarations. It contains the
+/// color roles, type scale, shape scale, elevation shadows, motion values, state layer opacities, and
+/// component-specific metrics used by controls. Applications usually obtain a token set through
+/// [M3Theme][org.glavo.m3fx.theme.M3Theme], but custom integrations can create one explicitly when they need to
+/// bridge another design-token pipeline.
+///
+/// The model mirrors the token-based approach documented by [Material Design](https://m3.material.io/) and is
+/// intentionally independent from any single stylesheet so themes can switch between baseline and expressive
+/// profiles.
 @NotNullByDefault
 public sealed interface M3TokenSet permits M3TokenSetImpl {
     /// Returns the profile that produced this token set.

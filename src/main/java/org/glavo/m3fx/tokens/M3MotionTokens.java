@@ -12,6 +12,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Holds Material Design 3 motion duration tokens in milliseconds.
+///
+/// Motion tokens provide the duration ladder, semantic [M3MotionScheme], and [M3MotionBehavior] used by M3FX
+/// controls for state feedback, popup transitions, smooth scrolling, and progress animation. Baseline and
+/// expressive profiles can provide different durations and curves while sharing the same public API.
+///
+/// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     /// Returns the short1 duration token.

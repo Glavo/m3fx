@@ -27,7 +27,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 switch.
+/// A Material Design 3 switch for turning a single setting on or off.
+///
+/// `M3Switch` is built on JavaFX [ButtonBase] and exposes a selected property rather than extending JavaFX's
+/// concrete toggle controls. The skin renders the Material track, handle, selected state, hover and focus state
+/// layers, ripple feedback, and token-backed touch target.
+///
+/// Use a switch for a setting whose change takes effect immediately. For selection from multiple choices, use
+/// radio buttons or segmented buttons. See [Material Design switches](https://m3.material.io/components/switch/overview).
 @NotNullByDefault
 public class M3Switch extends ButtonBase {
     /// The base style class for m3fx switches.

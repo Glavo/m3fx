@@ -7,6 +7,13 @@ import org.glavo.m3fx.internal.tokens.M3DensityImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Describes the density scale applied to layout-sensitive component tokens.
+///
+/// Density adjusts component metrics that are safe to compact or expand, such as heights, padding, and touch
+/// targets. A scale of `0.0` represents the baseline Material Design 3 density, and each step changes
+/// applicable dimensions by four device-independent pixels.
+///
+/// See [Material Design layout](https://m3.material.io/foundations/layout/overview) and
+/// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public sealed interface M3Density permits M3DensityImpl {
     /// Returns the density scale where zero is the baseline Material density.

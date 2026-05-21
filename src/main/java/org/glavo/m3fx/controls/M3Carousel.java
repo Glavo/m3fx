@@ -31,6 +31,12 @@ import org.jetbrains.annotations.UnmodifiableView;
 import java.util.Objects;
 
 /// A Material Design 3 carousel for horizontally browsing arbitrary item nodes.
+///
+/// `M3Carousel` manages an ordered item list, selected index, keyboard navigation, wrap-around behavior, pointer
+/// selection, and animated movement through the visible item track. It can host any JavaFX node, allowing cards,
+/// media previews, or custom content to use Material carousel selection behavior.
+///
+/// See [Material Design carousel](https://m3.material.io/components/carousel/overview).
 @NotNullByDefault
 public class M3Carousel extends Control {
     /// The base style class for M3FX carousels.

@@ -41,6 +41,13 @@ import java.util.Objects;
 ///
 /// Subclasses provide value parsing, formatting, range checks, and the concrete picker control while this base class
 /// owns the shared text field, popup placement, popup motion, accessibility state, and validation handoff.
+///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview),
+/// [Material Design time pickers](https://m3.material.io/components/time-pickers/overview), and
+/// [Material Design text fields](https://m3.material.io/components/text-fields/overview).
+///
+/// @param <T> the value type edited by the field
+/// @param <P> the popup picker control type
 @NotNullByDefault
 public abstract class M3PickerField<T, P extends Control> extends Control {
     /// The base style class for M3FX picker fields.

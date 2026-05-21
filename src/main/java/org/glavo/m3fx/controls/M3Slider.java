@@ -30,7 +30,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 slider.
+/// A Material Design 3 slider for selecting a numeric value from a continuous range.
+///
+/// `M3Slider` exposes JavaFX-style `min`, `max`, `value`, orientation, and block-increment properties while
+/// rendering a Material track, active range, thumb, focus state, and keyboard-accessible value changes. The
+/// `valueChanging` property is set during direct pointer interaction so applications can distinguish committed
+/// changes from in-progress drags.
+///
+/// Use sliders for approximate or relative numeric choices. See
+/// [Material Design sliders](https://m3.material.io/components/sliders/overview).
 @NotNullByDefault
 public class M3Slider extends Control {
     /// The base style class for m3fx sliders.

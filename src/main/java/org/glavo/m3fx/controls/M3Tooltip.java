@@ -34,6 +34,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A Material Design 3 tooltip.
+///
+/// `M3Tooltip` is a [PopupControl] that can be installed on any JavaFX node. It manages show and hide delays,
+/// pointer and keyboard triggers, owner-window tracking, theme inheritance for popup content, accessible help
+/// text, and Material entrance and exit motion.
+///
+/// Use [M3RichTooltip] when the popup needs a title, supporting text, or action row. See
+/// [Material Design tooltips](https://m3.material.io/components/tooltips/overview).
 @NotNullByDefault
 public class M3Tooltip extends PopupControl {
     /// The base style class for M3FX tooltips.

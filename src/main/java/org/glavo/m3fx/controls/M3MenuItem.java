@@ -11,6 +11,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// A Material Design 3 menu item.
+///
+/// `M3MenuItem` specializes [M3ListItem] for use inside [M3Menu]. It provides menu-item accessibility semantics,
+/// optional leading and trailing slots, action dispatch, and selection state when the containing menu uses a
+/// selectable mode.
+///
+/// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public class M3MenuItem extends M3ListItem {
     /// The base style class for m3fx menu items.

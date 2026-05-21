@@ -31,7 +31,13 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.Objects;
 
-/// A Material Design 3 menu button backed by an m3fx menu popup.
+/// A Material Design 3 menu button backed by an M3FX menu popup.
+///
+/// `M3MenuButton` behaves like an [M3Button] that owns an [M3Menu] and a popup window. It manages menu show and
+/// hide state, theme propagation for popup content, focus return, keyboard dismissal, and Material popup motion.
+/// Add menu content through [getItems] or operate directly on [getMenu].
+///
+/// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public class M3MenuButton extends M3Button {
     /// The base style class for m3fx menu buttons.

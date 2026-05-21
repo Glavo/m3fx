@@ -33,6 +33,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A Material Design 3 side sheet container.
+///
+/// `M3SideSheet` presents supporting content from a side edge of a view. It supports standard and modal sheet
+/// variants, headline text, action nodes, scrim handling, keyboard dismissal, and Material entrance and exit
+/// motion.
+///
+/// See [Material Design side sheets](https://m3.material.io/components/side-sheets/overview).
 @NotNullByDefault
 public class M3SideSheet extends Control {
     /// The base style class for M3FX side sheets.

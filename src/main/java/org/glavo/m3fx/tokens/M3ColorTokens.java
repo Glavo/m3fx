@@ -12,7 +12,14 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 
-/// Wraps MonetFX color scheme output as m3fx color tokens.
+/// Wraps MonetFX color scheme output as M3FX color tokens.
+///
+/// Color tokens expose the Material Design 3 color roles generated from a MonetFX [ColorScheme]. They are
+/// converted into both `-monet-*` and `-m3-color-*` JavaFX CSS variables so controls and application styles can
+/// address the same dynamic color system.
+///
+/// See [Material Design color](https://m3.material.io/styles/color/overview) and
+/// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public sealed interface M3ColorTokens permits M3ColorTokensImpl {
     /// The default CSS prefix used for Monet color roles.

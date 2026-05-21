@@ -33,6 +33,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A Material Design 3 search view with a search bar and result content.
+///
+/// `M3SearchView` combines an embedded [M3SearchBar] with a result container that can animate into and out of
+/// view as search becomes active. Applications add arbitrary JavaFX nodes to the results list and can listen to
+/// the search bar action to submit or update search queries.
+///
+/// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
 public class M3SearchView extends Control {
     /// The base style class for M3FX search views.

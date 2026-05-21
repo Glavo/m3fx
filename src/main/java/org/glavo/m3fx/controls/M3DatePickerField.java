@@ -23,6 +23,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /// A Material Design 3 date picker field that combines an editable text field with a popup calendar.
+///
+/// `M3DatePickerField` lets users type a date or choose one from an embedded [M3DatePicker]. It exposes
+/// nullable selected-date state, parsing and formatting behavior, popup visibility, and optional preset actions
+/// so date entry can be used inline in forms.
+///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePicker> {
     /// The style class applied to date picker field controls.

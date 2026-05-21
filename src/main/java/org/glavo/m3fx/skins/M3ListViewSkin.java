@@ -26,6 +26,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default virtualized skin for [M3ListView].
+///
+/// @param <T> the item type rendered by the skinned list view
 @NotNullByDefault
 public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// The fallback row height used before the virtual flow has measured a visible cell.

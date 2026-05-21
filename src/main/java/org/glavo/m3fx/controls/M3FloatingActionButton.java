@@ -28,7 +28,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 floating action button.
+/// A Material Design 3 floating action button for a prominent primary action.
+///
+/// `M3FloatingActionButton` is built on JavaFX [ButtonBase] and exposes Material color variants, size variants,
+/// container shape, container size, and extended-label padding. The skin renders the elevated container, icon or
+/// text content, state layers, ripple feedback, focus indication, and expressive shape tokens.
+///
+/// Use one floating action button for the most important screen-level action. See
+/// [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
 @NotNullByDefault
 public class M3FloatingActionButton extends ButtonBase {
     /// The base style class for m3fx floating action buttons.

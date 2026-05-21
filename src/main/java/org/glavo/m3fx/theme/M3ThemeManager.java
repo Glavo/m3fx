@@ -25,7 +25,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
 
-/// Installs m3fx themes and stylesheets into JavaFX scenes.
+/// Installs M3FX themes and stylesheets into JavaFX scenes.
+///
+/// The manager is the central integration point between a JavaFX application and the Material Design 3 token
+/// system. Installing a theme on a [Scene] adds the M3FX user-agent stylesheet, writes generated token CSS to a
+/// scene stylesheet, and applies root style classes such as light or dark brightness and baseline or expressive
+/// profile. Installing on a [Parent] only writes inline root declarations, which is useful for detached popup
+/// content or embedded controls that already share the scene stylesheet.
+///
+/// Theme installation is reversible. `uninstall` restores the root style captured before installation and
+/// removes generated stylesheets tracked by the manager. Use [copyThemeContext] for popup roots whose scene is
+/// created outside the main window so they keep the same [Material Design](https://m3.material.io/) color and
+/// typography context as their owner.
 @NotNullByDefault
 public final class M3ThemeManager {
     /// The style class applied to themed roots.

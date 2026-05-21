@@ -29,6 +29,13 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 card container.
+///
+/// `M3Card` groups related content in a filled, elevated, or outlined container. It can be passive content or an
+/// actionable surface when an action handler is installed. The control exposes token-backed container shape,
+/// content padding, outline width, and variant state so cards can participate in the same theme and density
+/// system as other M3FX controls.
+///
+/// See [Material Design cards](https://m3.material.io/components/cards/overview).
 @NotNullByDefault
 public class M3Card extends Control {
     /// The base style class for m3fx cards.

@@ -34,6 +34,12 @@ import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 floating action button menu.
+///
+/// `M3FabMenu` expands a primary [M3FloatingActionButton] into a vertical set of related action nodes. It
+/// manages expanded state, keyboard dismissal, accessible child traversal, and Material expand and collapse
+/// motion for the action items.
+///
+/// See [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
 @NotNullByDefault
 public class M3FabMenu extends Control {
     /// The base style class for M3FX floating action button menus.
