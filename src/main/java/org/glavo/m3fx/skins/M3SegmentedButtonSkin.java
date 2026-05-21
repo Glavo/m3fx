@@ -41,6 +41,8 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     private final ListChangeListener<String> styleClassListener = change -> getSkinnable().requestLayout();
 
     /// Creates a segmented button skin.
+    ///
+    /// @param control the segmented button controlled by this skin
     public M3SegmentedButtonSkin(M3SegmentedButton control) {
         super(control);
         selectionContainer.getStyleClass().add(SELECTION_CONTAINER_STYLE_CLASS);

@@ -20,6 +20,8 @@ public final class M3SurfaceSkin extends SkinBase<M3Surface> {
     private final ListChangeListener<Node> contentListener = change -> updateContent();
 
     /// Creates a surface skin.
+    ///
+    /// @param control the surface controlled by this skin
     public M3SurfaceSkin(M3Surface control) {
         super(control);
         container.setManaged(false);

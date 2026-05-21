@@ -74,6 +74,8 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
 
     /// Creates a progress indicator skin.
+    ///
+    /// @param control the skinned progress indicator
     public M3ProgressIndicatorSkin(M3ProgressIndicator control) {
         super(control);
         track.getStyleClass().add("track");

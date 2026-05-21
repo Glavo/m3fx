@@ -63,7 +63,7 @@ public class M3SearchBar extends Control {
     /// The default horizontal padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
-    /// The leading content node property.
+    // Backing property for the public leading slot API.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
         /// Updates accessibility state when the leading slot changes.
         @Override
@@ -72,7 +72,7 @@ public class M3SearchBar extends Control {
         }
     };
 
-    /// The action handler property.
+    // Backing property for the public action handler API.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -82,7 +82,7 @@ public class M3SearchBar extends Control {
                 }
             };
 
-    /// Whether this search bar is in its active input state.
+    // Backing property for the public active state API.
     private final BooleanProperty active = new SimpleBooleanProperty(this, "active") {
         /// Updates active pseudo-class state and input focus.
         @Override
@@ -109,94 +109,130 @@ public class M3SearchBar extends Control {
     }
 
     /// Creates a search bar with prompt text.
+    ///
+    /// @param promptText the prompt text displayed when the search text is empty
     public M3SearchBar(String promptText) {
         initialize();
         setPromptText(promptText);
     }
 
     /// Returns the text entered in this search bar.
+    ///
+    /// @return the text entered in this search bar
     public final String getText() {
         return editor.getText();
     }
 
     /// Sets the text entered in this search bar.
+    ///
+    /// @param text the text entered in this search bar
     public final void setText(String text) {
         editor.setText(Objects.requireNonNull(text, "text"));
     }
 
     /// Returns the text property.
+    ///
+    /// @return the embedded editor text property
     public final StringProperty textProperty() {
         return editor.textProperty();
     }
 
     /// Returns the prompt text displayed when the search text is empty.
+    ///
+    /// @return the prompt text displayed when the search text is empty
     public final String getPromptText() {
         @Nullable String promptText = editor.getPromptText();
         return promptText == null ? "" : promptText;
     }
 
     /// Sets the prompt text displayed when the search text is empty.
+    ///
+    /// @param promptText the prompt text displayed when the search text is empty
     public final void setPromptText(String promptText) {
         editor.setPromptText(Objects.requireNonNull(promptText, "promptText"));
     }
 
     /// Returns the prompt text property.
+    ///
+    /// @return the embedded editor prompt text property
     public final StringProperty promptTextProperty() {
         return editor.promptTextProperty();
     }
 
     /// Returns whether this search bar is in its active input state.
+    ///
+    /// @return `true` if this search bar is in its active input state
     public final boolean isActive() {
         return active.get();
     }
 
     /// Sets whether this search bar is in its active input state.
+    ///
+    /// @param active whether this search bar is in its active input state
     public final void setActive(boolean active) {
         this.active.set(active);
     }
 
     /// Returns the active input state property.
+    ///
+    /// @return the active input state property
     public final BooleanProperty activeProperty() {
         return active;
     }
 
     /// Returns the editable search input used by this search bar.
+    ///
+    /// @return the embedded editable search input
     public final TextField getEditor() {
         return editor;
     }
 
     /// Returns the leading content node.
+    ///
+    /// @return the leading content node, or `null` if none is set
     public final @Nullable Node getLeading() {
         return leading.get();
     }
 
     /// Sets the leading content node.
+    ///
+    /// @param leading the leading content node, or `null` to clear it
     public final void setLeading(@Nullable Node leading) {
         this.leading.set(leading);
     }
 
     /// Returns the leading content node property.
+    ///
+    /// @return the leading content node property
     public final ObjectProperty<@Nullable Node> leadingProperty() {
         return leading;
     }
 
     /// Returns the mutable trailing action list.
+    ///
+    /// @return the mutable trailing action list
     public final ObservableList<Node> getTrailingActions() {
         return trailingActions;
     }
 
     /// Adds one trailing action node.
+    ///
+    /// @param action the trailing action node to add
     public final void addTrailingAction(Node action) {
         getTrailingActions().add(Objects.requireNonNull(action, "action"));
     }
 
     /// Adds trailing action nodes.
+    ///
+    /// @param actions the trailing action nodes to add
     public final void addTrailingActions(Node... actions) {
         validateActions(actions);
         getTrailingActions().addAll(actions);
     }
 
     /// Replaces all trailing action nodes.
+    ///
+    /// @param actions the replacement trailing action nodes
     public final void setTrailingActions(Node... actions) {
         validateActions(actions);
         getTrailingActions().setAll(actions);
@@ -208,21 +244,29 @@ public class M3SearchBar extends Control {
     }
 
     /// Returns the action handler.
+    ///
+    /// @return the action handler, or `null` if none is set
     public final @Nullable EventHandler<ActionEvent> getOnAction() {
         return onAction.get();
     }
 
     /// Sets the action handler.
+    ///
+    /// @param onAction the action handler, or `null` to clear it
     public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
         this.onAction.set(onAction);
     }
 
     /// Returns the action handler property.
+    ///
+    /// @return the action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
 
     /// Returns the user-agent stylesheet for M3FX search bars.
+    ///
+    /// @return the search user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("search.css");
@@ -257,6 +301,10 @@ public class M3SearchBar extends Control {
     }
 
     /// Returns accessibility attributes for the embedded search editor.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -272,6 +320,9 @@ public class M3SearchBar extends Control {
     }
 
     /// Executes accessibility actions supported by the search bar.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -291,6 +342,8 @@ public class M3SearchBar extends Control {
     }
 
     /// Creates the default Material Design 3 search bar skin.
+    ///
+    /// @return the default Material Design 3 search bar skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SearchBarSkin(this);

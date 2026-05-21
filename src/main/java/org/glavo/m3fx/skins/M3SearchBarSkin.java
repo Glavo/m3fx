@@ -41,6 +41,8 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
     private final ListChangeListener<Node> trailingActionsListener = change -> updateTrailingActions();
 
     /// Creates a search bar skin.
+    ///
+    /// @param control the search bar controlled by this skin
     public M3SearchBarSkin(M3SearchBar control) {
         super(control);
         container.setManaged(false);

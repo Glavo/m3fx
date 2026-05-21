@@ -47,6 +47,8 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
     /// Creates a side sheet skin.
+    ///
+    /// @param control the side sheet controlled by this skin
     public M3SideSheetSkin(M3SideSheet control) {
         super(control);
         container.setManaged(false);

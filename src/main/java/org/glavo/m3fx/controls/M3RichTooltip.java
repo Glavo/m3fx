@@ -46,10 +46,10 @@ public class M3RichTooltip extends M3Tooltip {
     /// The minimum rich tooltip height when actions are visible.
     private static final double ACTION_CONTENT_MIN_HEIGHT = 136.0;
 
-    /// The rich tooltip title property.
+    // Backing property for the public rich tooltip title API.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
-    /// The rich tooltip supporting text property.
+    // Backing property for the public supporting text API.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
 
     /// The root graphic node rendered by the tooltip skin.
@@ -70,6 +70,9 @@ public class M3RichTooltip extends M3Tooltip {
     }
 
     /// Creates a rich tooltip with title and supporting text.
+    ///
+    /// @param title the title displayed at the top of the tooltip
+    /// @param supportingText the supporting text displayed below the title
     public M3RichTooltip(String title, String supportingText) {
         initializeRichTooltip();
         setTitle(title);
@@ -77,12 +80,21 @@ public class M3RichTooltip extends M3Tooltip {
     }
 
     /// Creates a rich tooltip with title, supporting text, and action nodes.
+    ///
+    /// @param title the title displayed at the top of the tooltip
+    /// @param supportingText the supporting text displayed below the title
+    /// @param actions the action nodes displayed in the tooltip action row
     public M3RichTooltip(String title, String supportingText, Node... actions) {
         this(title, supportingText);
         addActions(actions);
     }
 
     /// Installs a rich tooltip with title and supporting text on a node.
+    ///
+    /// @param node the node that owns the tooltip
+    /// @param title the title displayed at the top of the tooltip
+    /// @param supportingText the supporting text displayed below the title
+    /// @return the installed rich tooltip
     public static M3RichTooltip install(Node node, String title, String supportingText) {
         M3RichTooltip tooltip = new M3RichTooltip(title, supportingText);
         M3Tooltip.install(node, tooltip);
@@ -90,6 +102,12 @@ public class M3RichTooltip extends M3Tooltip {
     }
 
     /// Installs a rich tooltip with title, supporting text, and action nodes on a node.
+    ///
+    /// @param node the node that owns the tooltip
+    /// @param title the title displayed at the top of the tooltip
+    /// @param supportingText the supporting text displayed below the title
+    /// @param actions the action nodes displayed in the tooltip action row
+    /// @return the installed rich tooltip
     public static M3RichTooltip install(Node node, String title, String supportingText, Node... actions) {
         M3RichTooltip tooltip = new M3RichTooltip(title, supportingText, actions);
         M3Tooltip.install(node, tooltip);
@@ -97,57 +115,80 @@ public class M3RichTooltip extends M3Tooltip {
     }
 
     /// Uninstalls a Material Design 3 rich tooltip from a node.
+    ///
+    /// @param node the node that owns the tooltip
+    /// @param tooltip the rich tooltip to uninstall
     public static void uninstall(Node node, M3RichTooltip tooltip) {
         M3Tooltip.uninstall(node, tooltip);
     }
 
     /// Returns the rich tooltip title.
+    ///
+    /// @return the title displayed at the top of the tooltip
     public final String getTitle() {
         return title.get();
     }
 
     /// Sets the rich tooltip title.
+    ///
+    /// @param title the title displayed at the top of the tooltip
     public final void setTitle(String title) {
         this.title.set(Objects.requireNonNull(title, "title"));
     }
 
     /// Returns the rich tooltip title property.
+    ///
+    /// @return the rich tooltip title property
     public final StringProperty titleProperty() {
         return title;
     }
 
     /// Returns the rich tooltip supporting text.
+    ///
+    /// @return the supporting text displayed below the title
     public final String getSupportingText() {
         return supportingText.get();
     }
 
     /// Sets the rich tooltip supporting text.
+    ///
+    /// @param supportingText the supporting text displayed below the title
     public final void setSupportingText(String supportingText) {
         this.supportingText.set(Objects.requireNonNull(supportingText, "supportingText"));
     }
 
     /// Returns the rich tooltip supporting text property.
+    ///
+    /// @return the rich tooltip supporting text property
     public final StringProperty supportingTextProperty() {
         return supportingText;
     }
 
     /// Returns the mutable action node list.
+    ///
+    /// @return the mutable action node list displayed in the tooltip action row
     public final ObservableList<Node> getActions() {
         return actions.getChildren();
     }
 
     /// Adds one action node.
+    ///
+    /// @param action the action node to add
     public final void addAction(Node action) {
         getActions().add(Objects.requireNonNull(action, "action"));
     }
 
     /// Adds action nodes after validating the action array.
+    ///
+    /// @param actions the action nodes to add
     public final void addActions(Node... actions) {
         validateActions(actions);
         getActions().addAll(actions);
     }
 
     /// Replaces all action nodes.
+    ///
+    /// @param actions the replacement action nodes
     public final void setActions(Node... actions) {
         validateActions(actions);
         getActions().setAll(actions);
@@ -225,6 +266,9 @@ public class M3RichTooltip extends M3Tooltip {
     }
 
     /// Returns the default visible duration for rich tooltip behavior profiles.
+    ///
+    /// @param behavior the motion behavior profile used by this tooltip
+    /// @return the visible duration for rich tooltips
     @Override
     protected Duration defaultShowDuration(M3MotionBehavior behavior) {
         return behavior.richTooltipShowDuration();

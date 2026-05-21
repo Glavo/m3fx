@@ -55,7 +55,7 @@ public class M3SnackbarHost extends Control {
     /// The initial vertical offset used by snackbar entrance and exit motion.
     private static final double TRANSITION_OFFSET_Y = 16.0;
 
-    /// The currently hosted snackbar.
+    // Backing property for the public read-only current snackbar API.
     private final ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbar =
             new ReadOnlyObjectWrapper<>(this, "snackbar");
 
@@ -66,7 +66,7 @@ public class M3SnackbarHost extends Control {
     private final @UnmodifiableView ObservableList<M3Snackbar> queueView =
             FXCollections.unmodifiableObservableList(queue);
 
-    /// The display duration before automatic dismissal.
+    // Backing property for the public display duration API.
     private final ObjectProperty<@Nullable Duration> displayDuration =
             new SimpleObjectProperty<>(this, "displayDuration", DEFAULT_DISPLAY_DURATION) {
                 /// Restores the default duration when the property is set to null.
@@ -78,7 +78,7 @@ public class M3SnackbarHost extends Control {
                 }
             };
 
-    /// Whether the current snackbar is in its visible display phase.
+    // Backing property for the public read-only showing state API.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The automatic dismissal timer.
@@ -103,26 +103,36 @@ public class M3SnackbarHost extends Control {
     }
 
     /// Returns the currently hosted snackbar.
+    ///
+    /// @return the currently hosted snackbar, or `null` when the host is idle
     public final @Nullable M3Snackbar getSnackbar() {
         return snackbar.get();
     }
 
     /// Returns the currently hosted snackbar property.
+    ///
+    /// @return the read-only currently hosted snackbar property
     public final ReadOnlyObjectProperty<@Nullable M3Snackbar> snackbarProperty() {
         return snackbar.getReadOnlyProperty();
     }
 
     /// Returns whether the current snackbar is in its visible display phase.
+    ///
+    /// @return `true` if the current snackbar is in its visible display phase
     public final boolean isShowing() {
         return showing.get();
     }
 
     /// Returns the read-only showing state property.
+    ///
+    /// @return the read-only showing state property
     public final ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
 
     /// Returns the pending snackbars waiting to be shown.
+    ///
+    /// @return the pending snackbars waiting to be shown
     public final @UnmodifiableView ObservableList<M3Snackbar> getQueue() {
         return queueView;
     }
@@ -130,6 +140,8 @@ public class M3SnackbarHost extends Control {
     /// Returns the display duration before automatic dismissal.
     ///
     /// A zero, unknown, or indefinite duration disables automatic dismissal.
+    ///
+    /// @return the display duration before automatic dismissal
     public final Duration getDisplayDuration() {
         return Objects.requireNonNull(displayDuration.get(), "displayDuration");
     }
@@ -137,6 +149,8 @@ public class M3SnackbarHost extends Control {
     /// Sets the display duration before automatic dismissal.
     ///
     /// A zero, unknown, or indefinite duration disables automatic dismissal.
+    ///
+    /// @param displayDuration the display duration before automatic dismissal
     public final void setDisplayDuration(Duration displayDuration) {
         this.displayDuration.set(Objects.requireNonNull(displayDuration, "displayDuration"));
     }
@@ -144,17 +158,25 @@ public class M3SnackbarHost extends Control {
     /// Returns the display duration property.
     ///
     /// A zero, unknown, or indefinite duration disables automatic dismissal.
+    ///
+    /// @return the display duration property
     public final ObjectProperty<@Nullable Duration> displayDurationProperty() {
         return displayDuration;
     }
 
     /// Shows a snackbar with message text.
+    ///
+    /// @param text the snackbar message text
     public final void show(String text) {
         M3Snackbar snackbar = new M3Snackbar(text);
         show(snackbar);
     }
 
     /// Shows a snackbar with message text, action text, and an optional action handler.
+    ///
+    /// @param text the snackbar message text
+    /// @param actionText the action button text
+    /// @param actionHandler the action handler, or `null` for none
     public final void show(
             String text,
             String actionText,
@@ -170,11 +192,17 @@ public class M3SnackbarHost extends Control {
     }
 
     /// Adds a snackbar with message text to the end of the display queue.
+    ///
+    /// @param text the snackbar message text
     public final void enqueue(String text) {
         enqueue(new M3Snackbar(text));
     }
 
     /// Adds a snackbar with message text, action text, and an optional action handler to the display queue.
+    ///
+    /// @param text the snackbar message text
+    /// @param actionText the action button text
+    /// @param actionHandler the action handler, or `null` for none
     public final void enqueue(
             String text,
             String actionText,
@@ -190,6 +218,8 @@ public class M3SnackbarHost extends Control {
     }
 
     /// Adds the supplied snackbar to the end of the display queue.
+    ///
+    /// @param snackbar the snackbar to enqueue
     public final void enqueue(M3Snackbar snackbar) {
         Objects.requireNonNull(snackbar, "snackbar");
         if (getSnackbar() == null && !showing.get()) {
@@ -205,6 +235,8 @@ public class M3SnackbarHost extends Control {
     }
 
     /// Shows the supplied snackbar.
+    ///
+    /// @param snackbar the snackbar to show
     public final void show(M3Snackbar snackbar) {
         Objects.requireNonNull(snackbar, "snackbar");
 
@@ -249,18 +281,26 @@ public class M3SnackbarHost extends Control {
     }
 
     /// Returns the user-agent stylesheet for m3fx snackbar hosts.
+    ///
+    /// @return the snackbar user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("snackbar.css");
     }
 
     /// Creates the default Material Design 3 snackbar host skin.
+    ///
+    /// @return the default Material Design 3 snackbar host skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SnackbarHostSkin(this);
     }
 
     /// Returns accessibility attributes for the current snackbar and queue state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -276,6 +316,9 @@ public class M3SnackbarHost extends Control {
     }
 
     /// Executes accessibility actions supported by the snackbar host.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

@@ -36,11 +36,15 @@ public enum M3Profile {
     }
 
     /// Returns the MonetFX color specification version for this profile.
+    ///
+    /// @return the MonetFX color specification version for this profile
     public ColorSpecVersion getColorSpecVersion() {
         return colorSpecVersion;
     }
 
     /// Returns the MonetFX color style for this profile.
+    ///
+    /// @return the MonetFX color style for this profile
     public ColorStyle getColorStyle() {
         return colorStyle;
     }

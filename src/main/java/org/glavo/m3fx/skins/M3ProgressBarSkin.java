@@ -79,6 +79,8 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
 
     /// Creates a progress bar skin.
+    ///
+    /// @param control the skinned progress bar
     public M3ProgressBarSkin(M3ProgressBar control) {
         super(control);
         container.getStyleClass().add("m3-progress-bar-container");

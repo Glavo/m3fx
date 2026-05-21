@@ -52,7 +52,7 @@ public class M3Surface extends Control {
     /// The mutable content nodes displayed inside the surface.
     private final ObservableList<Node> content = FXCollections.observableArrayList();
 
-    /// The surface color variant property.
+    // Backing property for the public surface color variant API.
     private final ObjectProperty<M3SurfaceVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SurfaceVariant.CONTAINER) {
                 /// Updates variant style classes when the property changes.
@@ -66,7 +66,7 @@ public class M3Surface extends Control {
                 }
             };
 
-    /// The surface elevation property.
+    // Backing property for the public surface elevation API.
     private final ObjectProperty<M3SurfaceElevation> elevation =
             new SimpleObjectProperty<>(this, "elevation", M3SurfaceElevation.LEVEL0) {
                 /// Updates elevation style classes when the property changes.
@@ -80,10 +80,10 @@ public class M3Surface extends Control {
                 }
             };
 
-    /// The styleable container shape token.
+    // Backing property for the public container shape token API.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable content padding token.
+    // Backing property for the public content padding token API.
     private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Creates an empty surface.
@@ -92,57 +92,79 @@ public class M3Surface extends Control {
     }
 
     /// Creates a surface with content nodes.
+    ///
+    /// @param children the initial content nodes
     public M3Surface(Node... children) {
         initialize();
         getContent().addAll(children);
     }
 
     /// Returns the mutable content nodes displayed inside the surface.
+    ///
+    /// @return the mutable content nodes displayed inside the surface
     public final ObservableList<Node> getContent() {
         return content;
     }
 
     /// Returns the surface color variant.
+    ///
+    /// @return the surface color variant
     public final M3SurfaceVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the surface color variant.
+    ///
+    /// @param variant the surface color variant
     public final void setVariant(M3SurfaceVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the surface color variant property.
+    ///
+    /// @return the surface color variant property
     public final ObjectProperty<M3SurfaceVariant> variantProperty() {
         return variant;
     }
 
     /// Returns the surface elevation level.
+    ///
+    /// @return the surface elevation level
     public final M3SurfaceElevation getElevation() {
         return elevation.get();
     }
 
     /// Sets the surface elevation level.
+    ///
+    /// @param elevation the surface elevation level
     public final void setElevation(M3SurfaceElevation elevation) {
         this.elevation.set(Objects.requireNonNull(elevation, "elevation"));
     }
 
     /// Returns the surface elevation property.
+    ///
+    /// @return the surface elevation property
     public final ObjectProperty<M3SurfaceElevation> elevationProperty() {
         return elevation;
     }
 
     /// Returns the surface container shape token.
+    ///
+    /// @return the surface container shape token in pixels
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the surface container shape token.
+    ///
+    /// @param containerShape the surface container shape token in pixels
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
     /// Returns the surface container shape token property.
+    ///
+    /// @return the surface container shape token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
@@ -175,16 +197,22 @@ public class M3Surface extends Control {
     }
 
     /// Returns the surface content padding token.
+    ///
+    /// @return the surface content padding token in pixels
     public final double getContentPadding() {
         return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
     }
 
     /// Sets the surface content padding token.
+    ///
+    /// @param contentPadding the surface content padding token in pixels
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
     /// Returns the surface content padding token property.
+    ///
+    /// @return the surface content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
@@ -218,18 +246,26 @@ public class M3Surface extends Control {
     }
 
     /// Returns the user-agent stylesheet for M3FX surfaces.
+    ///
+    /// @return the surface user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("surface.css");
     }
 
     /// Creates the default Material Design 3 surface skin.
+    ///
+    /// @return the default Material Design 3 surface skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SurfaceSkin(this);
     }
 
     /// Returns accessibility attributes for the surface content collection.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
@@ -242,6 +278,9 @@ public class M3Surface extends Control {
     }
 
     /// Executes accessibility actions for indexed surface content children.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -253,11 +292,15 @@ public class M3Surface extends Control {
     }
 
     /// Returns the CSS metadata for this node class.
+    ///
+    /// @return the CSS metadata for this node class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this node.
+    ///
+    /// @return the CSS metadata for this node
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();

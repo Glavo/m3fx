@@ -44,7 +44,7 @@ public class M3Scrim extends Region {
     /// The default visible scrim opacity.
     private static final double DEFAULT_VISIBLE_OPACITY = 0.32;
 
-    /// The action handler property.
+    // Backing property for the public action handler API.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -54,7 +54,7 @@ public class M3Scrim extends Region {
                 }
             };
 
-    /// Whether this scrim is shown.
+    // Backing property for the public shown state API.
     private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
         /// Updates the scrim visibility when the property changes.
         @Override
@@ -64,7 +64,7 @@ public class M3Scrim extends Region {
         }
     };
 
-    /// The opacity used while this scrim is shown.
+    // Backing property for the public visible opacity API.
     private final DoubleProperty visibleOpacity =
             new SimpleDoubleProperty(this, "visibleOpacity", DEFAULT_VISIBLE_OPACITY) {
                 /// Applies the updated visible opacity when the scrim is shown.
@@ -77,7 +77,7 @@ public class M3Scrim extends Region {
                 }
             };
 
-    /// Whether primary mouse clicks fire this scrim's action event.
+    // Backing property for the public dismiss-on-click API.
     private final BooleanProperty dismissOnClick = new SimpleBooleanProperty(this, "dismissOnClick", true);
 
     /// The scrim show and hide animation.
@@ -101,61 +101,86 @@ public class M3Scrim extends Region {
     }
 
     /// Returns whether this scrim is shown.
+    ///
+    /// @return `true` if the scrim is visible and managed
     public final boolean isShown() {
         return shown.get();
     }
 
     /// Sets whether this scrim is shown.
+    ///
+    /// @param shown whether the scrim should be visible and managed
     public final void setShown(boolean shown) {
         this.shown.set(shown);
     }
 
     /// Returns the shown property.
+    ///
+    /// @return the shown property
     public final BooleanProperty shownProperty() {
         return shown;
     }
 
     /// Returns the opacity used while this scrim is shown.
+    ///
+    /// @return the opacity used while this scrim is shown
     public final double getVisibleOpacity() {
         return visibleOpacity.get();
     }
 
     /// Sets the opacity used while this scrim is shown.
+    ///
+    /// @param visibleOpacity the normalized opacity used while this scrim is shown
+    /// @throws IllegalArgumentException if the value is outside `0.0..1.0`
     public final void setVisibleOpacity(double visibleOpacity) {
         this.visibleOpacity.set(validateOpacity(visibleOpacity));
     }
 
     /// Returns the visible opacity property.
+    ///
+    /// @return the visible opacity property
     public final DoubleProperty visibleOpacityProperty() {
         return visibleOpacity;
     }
 
     /// Returns whether primary mouse clicks fire this scrim's action event.
+    ///
+    /// @return `true` if primary mouse clicks fire this scrim's action event
     public final boolean isDismissOnClick() {
         return dismissOnClick.get();
     }
 
     /// Sets whether primary mouse clicks fire this scrim's action event.
+    ///
+    /// @param dismissOnClick whether primary mouse clicks fire this scrim's action event
     public final void setDismissOnClick(boolean dismissOnClick) {
         this.dismissOnClick.set(dismissOnClick);
     }
 
     /// Returns the dismiss-on-click property.
+    ///
+    /// @return the dismiss-on-click property
     public final BooleanProperty dismissOnClickProperty() {
         return dismissOnClick;
     }
 
     /// Returns the action handler.
+    ///
+    /// @return the action handler, or `null` if none is set
     public final @Nullable EventHandler<ActionEvent> getOnAction() {
         return onAction.get();
     }
 
     /// Sets the action handler.
+    ///
+    /// @param onAction the action handler, or `null` to clear it
     public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
         this.onAction.set(onAction);
     }
 
     /// Returns the action handler property.
+    ///
+    /// @return the action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
@@ -178,12 +203,18 @@ public class M3Scrim extends Region {
     }
 
     /// Returns the user-agent stylesheet for M3FX scrims.
+    ///
+    /// @return the scrim user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("scrim.css");
     }
 
     /// Returns accessibility attributes for scrim visibility state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -195,6 +226,9 @@ public class M3Scrim extends Region {
     }
 
     /// Executes assistive-technology actions supported by this scrim.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

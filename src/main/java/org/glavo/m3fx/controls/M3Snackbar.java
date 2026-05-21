@@ -49,20 +49,20 @@ public class M3Snackbar extends Control {
     /// The default snackbar content padding.
     private static final double DEFAULT_CONTENT_PADDING = 16.0;
 
-    /// The snackbar message text property.
+    // Backing property for the public snackbar message text API.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    /// The action button text property.
+    // Backing property for the public action button text API.
     private final StringProperty actionText = new SimpleStringProperty(this, "actionText", "");
 
-    /// The action event handler property.
+    // Backing property for the public action handler API.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction");
 
-    /// The styleable container shape token.
+    // Backing property for the public container shape token API.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable content padding token.
+    // Backing property for the public content padding token API.
     private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Creates an empty snackbar.
@@ -71,6 +71,8 @@ public class M3Snackbar extends Control {
     }
 
     /// Creates a snackbar with message text.
+    ///
+    /// @param text the snackbar message text
     public M3Snackbar(String text) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
@@ -88,11 +90,18 @@ public class M3Snackbar extends Control {
     }
 
     /// Creates a snackbar with message text and action button text.
+    ///
+    /// @param text the snackbar message text
+    /// @param actionText the action button text
     public M3Snackbar(String text, String actionText) {
         this(text, actionText, null);
     }
 
     /// Creates a snackbar with message text, action button text, and an action handler.
+    ///
+    /// @param text the snackbar message text
+    /// @param actionText the action button text
+    /// @param onAction the action handler, or `null` for none
     public M3Snackbar(
             String text,
             String actionText,
@@ -104,51 +113,71 @@ public class M3Snackbar extends Control {
     }
 
     /// Returns the snackbar message text.
+    ///
+    /// @return the snackbar message text
     public final String getText() {
         return text.get();
     }
 
     /// Sets the snackbar message text.
+    ///
+    /// @param text the snackbar message text
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
     /// Returns the snackbar message text property.
+    ///
+    /// @return the snackbar message text property
     public final StringProperty textProperty() {
         return text;
     }
 
     /// Returns the action button text.
+    ///
+    /// @return the action button text
     public final String getActionText() {
         return actionText.get();
     }
 
     /// Sets the action button text.
+    ///
+    /// @param actionText the action button text
     public final void setActionText(String actionText) {
         this.actionText.set(Objects.requireNonNull(actionText, "actionText"));
     }
 
     /// Returns the action button text property.
+    ///
+    /// @return the action button text property
     public final StringProperty actionTextProperty() {
         return actionText;
     }
 
     /// Returns the action event handler.
+    ///
+    /// @return the action event handler, or `null` if none is set
     public final @Nullable EventHandler<ActionEvent> getOnAction() {
         return onAction.get();
     }
 
     /// Sets the action event handler.
+    ///
+    /// @param onAction the action event handler, or `null` to clear it
     public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
         this.onAction.set(onAction);
     }
 
     /// Returns the action event handler property.
+    ///
+    /// @return the action event handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
 
     /// Returns whether this snackbar currently exposes an action button.
+    ///
+    /// @return `true` if this snackbar currently exposes an action button
     public final boolean hasAction() {
         return !getActionText().isBlank();
     }
@@ -175,6 +204,10 @@ public class M3Snackbar extends Control {
     }
 
     /// Returns accessibility attributes for snackbar text and action content.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -188,6 +221,9 @@ public class M3Snackbar extends Control {
     }
 
     /// Executes accessibility actions supported by snackbars with action text.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -200,16 +236,22 @@ public class M3Snackbar extends Control {
     }
 
     /// Returns the snackbar container shape radius token.
+    ///
+    /// @return the snackbar container shape radius token in pixels
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the snackbar container shape radius token.
+    ///
+    /// @param containerShape the snackbar container shape radius token in pixels
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
     /// Returns the snackbar container shape radius token property.
+    ///
+    /// @return the snackbar container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
@@ -242,16 +284,22 @@ public class M3Snackbar extends Control {
     }
 
     /// Returns the snackbar content padding token.
+    ///
+    /// @return the snackbar content padding token in pixels
     public final double getContentPadding() {
         return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
     }
 
     /// Sets the snackbar content padding token.
+    ///
+    /// @param contentPadding the snackbar content padding token in pixels
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
     /// Returns the snackbar content padding token property.
+    ///
+    /// @return the snackbar content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
@@ -284,23 +332,31 @@ public class M3Snackbar extends Control {
     }
 
     /// Creates the default snackbar skin.
+    ///
+    /// @return the default snackbar skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SnackbarSkin(this);
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
+    ///
+    /// @return the CSS metadata for this control
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
     /// Returns the user-agent stylesheet for m3fx snackbars.
+    ///
+    /// @return the snackbar user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("snackbar.css");

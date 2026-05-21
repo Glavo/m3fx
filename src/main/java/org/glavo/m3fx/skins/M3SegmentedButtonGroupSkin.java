@@ -15,6 +15,8 @@ public final class M3SegmentedButtonGroupSkin extends M3ItemContainerSkinBase<M3
     private static final double SEGMENT_SPACING = -1.0;
 
     /// Creates a segmented button group skin.
+    ///
+    /// @param control the segmented button group controlled by this skin
     public M3SegmentedButtonGroupSkin(M3SegmentedButtonGroup control) {
         super(control, control.getItems(), new HBox());
         getContainer().setAlignment(Pos.CENTER_LEFT);

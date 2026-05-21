@@ -63,7 +63,7 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The popup window used to host the submenu.
     private final Popup popup = new Popup();
 
-    /// Whether this submenu item popup is currently showing.
+    // Backing property for the public read-only submenu showing state API.
     private final ReadOnlyBooleanWrapper subMenuShowing = new ReadOnlyBooleanWrapper(this, "subMenuShowing");
 
     /// The submenu popup enter animation.
@@ -96,39 +96,54 @@ public class M3SubMenuItem extends M3MenuItem {
     }
 
     /// Creates a submenu item with text.
+    ///
+    /// @param text the submenu item text
     public M3SubMenuItem(String text) {
         super(text);
         initialize();
     }
 
     /// Creates a submenu item with text and submenu content.
+    ///
+    /// @param text the submenu item text
+    /// @param items the submenu item nodes
     public M3SubMenuItem(String text, Node... items) {
         this(text);
         addItems(items);
     }
 
     /// Returns the submenu displayed by this item.
+    ///
+    /// @return the submenu displayed by this item
     public final M3Menu getSubMenu() {
         return subMenu;
     }
 
     /// Returns the mutable item list shown by this item's submenu.
+    ///
+    /// @return the mutable item list shown by this item's submenu
     public final ObservableList<Node> getItems() {
         return subMenu.getItems();
     }
 
     /// Adds one submenu item node.
+    ///
+    /// @param item the submenu item node to add
     public final void addItem(Node item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds submenu item nodes.
+    ///
+    /// @param items the submenu item nodes to add
     public final void addItems(Node... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all submenu item nodes.
+    ///
+    /// @param items the replacement submenu item nodes
     public final void setItems(Node... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -145,11 +160,15 @@ public class M3SubMenuItem extends M3MenuItem {
     }
 
     /// Returns whether the submenu popup is currently showing.
+    ///
+    /// @return `true` if the submenu popup is currently showing
     public final boolean isSubMenuShowing() {
         return subMenuShowing.get();
     }
 
     /// Returns the read-only submenu showing state property.
+    ///
+    /// @return the read-only submenu showing state property
     public final ReadOnlyBooleanProperty subMenuShowingProperty() {
         return subMenuShowing.getReadOnlyProperty();
     }
@@ -218,6 +237,10 @@ public class M3SubMenuItem extends M3MenuItem {
     }
 
     /// Returns accessibility attributes for submenu content and expanded state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -234,6 +257,9 @@ public class M3SubMenuItem extends M3MenuItem {
     }
 
     /// Executes submenu-related accessibility actions.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

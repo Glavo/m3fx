@@ -59,7 +59,7 @@ public class M3SegmentedButtonGroup extends Control {
     /// The mutable segmented button group content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
-    /// The segmented button selection mode.
+    // Backing property for the public segmented button selection mode API.
     private final ObjectProperty<M3SegmentedButtonSelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SegmentedButtonSelectionMode.SINGLE) {
                 /// Enforces selection invariants when the mode changes.
@@ -80,11 +80,11 @@ public class M3SegmentedButtonGroup extends Control {
     private final @UnmodifiableView ObservableList<M3SegmentedButton> selectedButtonsView =
             FXCollections.unmodifiableObservableList(selectedButtons);
 
-    /// The currently selected segmented button.
+    // Backing property for the public read-only selected segmented button API.
     private final ReadOnlyObjectWrapper<@Nullable M3SegmentedButton> selectedButton =
             new ReadOnlyObjectWrapper<>(this, "selectedButton");
 
-    /// Whether the group allows all segmented buttons to be unselected.
+    // Backing property for the public empty-selection policy API.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected button when empty selection is disabled.
         @Override
@@ -130,28 +130,38 @@ public class M3SegmentedButtonGroup extends Control {
     }
 
     /// Creates a segmented button group with the supplied buttons.
+    ///
+    /// @param buttons the initial segmented buttons
     public M3SegmentedButtonGroup(M3SegmentedButton... buttons) {
         initialize();
         addButtons(buttons);
     }
 
     /// Returns the mutable child list used as segmented button group content.
+    ///
+    /// @return the mutable child list used as segmented button group content
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one segmented button.
+    ///
+    /// @param button the segmented button to add
     public final void addButton(M3SegmentedButton button) {
         getItems().add(Objects.requireNonNull(button, "button"));
     }
 
     /// Adds segmented buttons.
+    ///
+    /// @param buttons the segmented buttons to add
     public final void addButtons(M3SegmentedButton... buttons) {
         validateButtons(buttons);
         getItems().addAll(buttons);
     }
 
     /// Replaces all segmented buttons.
+    ///
+    /// @param buttons the replacement segmented buttons
     public final void setButtons(M3SegmentedButton... buttons) {
         validateButtons(buttons);
         getItems().setAll(buttons);
@@ -163,57 +173,80 @@ public class M3SegmentedButtonGroup extends Control {
     }
 
     /// Returns the segmented button selection mode.
+    ///
+    /// @return the segmented button selection mode
     public final M3SegmentedButtonSelectionMode getSelectionMode() {
         return selectionMode.get();
     }
 
     /// Sets the segmented button selection mode.
+    ///
+    /// @param selectionMode the segmented button selection mode
     public final void setSelectionMode(M3SegmentedButtonSelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the segmented button selection mode property.
+    ///
+    /// @return the segmented button selection mode property
     public final ObjectProperty<M3SegmentedButtonSelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
     /// Returns the selected segmented buttons in child order.
+    ///
+    /// @return the selected segmented buttons in child order
     public final @UnmodifiableView ObservableList<M3SegmentedButton> getSelectedButtons() {
         return selectedButtonsView;
     }
 
     /// Returns the selected segmented button.
+    ///
+    /// @return the first selected segmented button, or `null` when selection is empty
     public final @Nullable M3SegmentedButton getSelectedButton() {
         return selectedButton.get();
     }
 
     /// Returns the selected segmented button property.
+    ///
+    /// @return the read-only selected segmented button property
     public final ReadOnlyObjectProperty<@Nullable M3SegmentedButton> selectedButtonProperty() {
         return selectedButton.getReadOnlyProperty();
     }
 
     /// Returns the child index of the first selected segmented button, or `-1` when none is selected.
+    ///
+    /// @return the child index of the first selected segmented button, or `-1` when none is selected
     public final int getSelectedIndex() {
         @Nullable M3SegmentedButton button = getSelectedButton();
         return button == null ? -1 : getItems().indexOf(button);
     }
 
     /// Returns whether this group allows all segmented buttons to be unselected.
+    ///
+    /// @return `true` if this group allows all segmented buttons to be unselected
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
     }
 
     /// Sets whether this group allows all segmented buttons to be unselected.
+    ///
+    /// @param allowEmptySelection whether this group allows all segmented buttons to be unselected
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property.
+    ///
+    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
 
     /// Selects a segmented button that belongs to this group.
+    ///
+    /// @param button the segmented button to select
+    /// @throws IllegalArgumentException if the button does not belong to this group
     public final void select(M3SegmentedButton button) {
         Objects.requireNonNull(button, "button");
         if (!getItems().contains(button)) {
@@ -227,6 +260,9 @@ public class M3SegmentedButtonGroup extends Control {
     }
 
     /// Selects the segmented button at the given child index.
+    ///
+    /// @param index the child index to select
+    /// @throws IllegalArgumentException if the child at the index is not a segmented button
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3SegmentedButton button) {
@@ -281,12 +317,18 @@ public class M3SegmentedButtonGroup extends Control {
     }
 
     /// Returns the user-agent stylesheet for m3fx segmented button groups.
+    ///
+    /// @return the segmented button user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("segmented-button.css");
     }
 
     /// Returns accessibility attributes for segmented button group content and selection state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -305,6 +347,9 @@ public class M3SegmentedButtonGroup extends Control {
     }
 
     /// Executes accessibility selection actions for segmented buttons.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -543,6 +588,8 @@ public class M3SegmentedButtonGroup extends Control {
     }
 
     /// Creates the default Material Design 3 segmented button group skin.
+    ///
+    /// @return the default Material Design 3 segmented button group skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SegmentedButtonGroupSkin(this);

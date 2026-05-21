@@ -48,6 +48,8 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
             (observable, oldValue, newValue) -> animateSelectedState(newValue);
 
     /// Creates a radio button skin.
+    ///
+    /// @param control the skinned radio button
     public M3RadioButtonSkin(M3RadioButton control) {
         super(control);
         radio.getStyleClass().addAll("radio", "m3-radio");

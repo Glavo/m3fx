@@ -56,13 +56,13 @@ public class M3SideSheet extends Control {
     /// The shared sheet content slot style class.
     public static final String CONTENT_STYLE_CLASS = "m3-sheet-content";
 
-    /// The sheet headline text property.
+    // Backing property for the public sheet headline API.
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
 
-    /// The sheet content node property.
+    // Backing property for the public sheet content API.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    /// The sheet variant property.
+    // Backing property for the public sheet variant API.
     private final ObjectProperty<M3SheetVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SheetVariant.STANDARD) {
                 /// Updates variant style classes when the property changes.
@@ -76,7 +76,7 @@ public class M3SideSheet extends Control {
                 }
             };
 
-    /// Whether this sheet is shown.
+    // Backing property for the public shown state API.
     private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
         /// Updates the sheet visibility when the property changes.
         @Override
@@ -86,7 +86,7 @@ public class M3SideSheet extends Control {
         }
     };
 
-    /// Whether focus returns to the previously focused node when a modal sheet hides.
+    // Backing property for the public focus restoration API.
     private final BooleanProperty restoreFocusOnHide =
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
 
@@ -108,11 +108,16 @@ public class M3SideSheet extends Control {
     }
 
     /// Creates a side sheet with headline text.
+    ///
+    /// @param headline the sheet headline text
     public M3SideSheet(String headline) {
         this(headline, null);
     }
 
     /// Creates a side sheet with headline text and content.
+    ///
+    /// @param headline the sheet headline text
+    /// @param content the sheet content node, or `null` for none
     public M3SideSheet(String headline, @Nullable Node content) {
         initialize();
         setHeadline(headline);
@@ -120,6 +125,10 @@ public class M3SideSheet extends Control {
     }
 
     /// Creates a side sheet with headline text, content, and trailing actions.
+    ///
+    /// @param headline the sheet headline text
+    /// @param content the sheet content node, or `null` for none
+    /// @param actions the trailing action nodes displayed in the sheet header
     public M3SideSheet(String headline, @Nullable Node content, Node... actions) {
         this(headline, content);
         validateActions(actions);
@@ -127,81 +136,113 @@ public class M3SideSheet extends Control {
     }
 
     /// Returns the sheet headline.
+    ///
+    /// @return the sheet headline text
     public final String getHeadline() {
         return headline.get();
     }
 
     /// Sets the sheet headline.
+    ///
+    /// @param headline the sheet headline text
     public final void setHeadline(String headline) {
         this.headline.set(Objects.requireNonNull(headline, "headline"));
     }
 
     /// Returns the sheet headline property.
+    ///
+    /// @return the sheet headline property
     public final StringProperty headlineProperty() {
         return headline;
     }
 
     /// Returns the sheet content node.
+    ///
+    /// @return the sheet content node, or `null` if none is set
     public final @Nullable Node getContent() {
         return content.get();
     }
 
     /// Sets the sheet content node.
+    ///
+    /// @param content the sheet content node, or `null` to clear it
     public final void setContent(@Nullable Node content) {
         this.content.set(content);
     }
 
     /// Returns the sheet content node property.
+    ///
+    /// @return the sheet content node property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
 
     /// Returns the sheet variant.
+    ///
+    /// @return the sheet variant
     public final M3SheetVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the sheet variant.
+    ///
+    /// @param variant the sheet variant
     public final void setVariant(M3SheetVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the sheet variant property.
+    ///
+    /// @return the sheet variant property
     public final ObjectProperty<M3SheetVariant> variantProperty() {
         return variant;
     }
 
     /// Returns whether this sheet is shown.
+    ///
+    /// @return `true` if this sheet is shown
     public final boolean isShown() {
         return shown.get();
     }
 
     /// Sets whether this sheet is shown.
+    ///
+    /// @param shown whether this sheet is shown
     public final void setShown(boolean shown) {
         this.shown.set(shown);
     }
 
     /// Returns the shown property.
+    ///
+    /// @return the shown property
     public final BooleanProperty shownProperty() {
         return shown;
     }
 
     /// Returns whether modal sheet hiding restores focus to the previous focus owner.
+    ///
+    /// @return `true` if modal sheet hiding restores focus to the previous focus owner
     public final boolean isRestoreFocusOnHide() {
         return restoreFocusOnHide.get();
     }
 
     /// Sets whether modal sheet hiding restores focus to the previous focus owner.
+    ///
+    /// @param restoreFocusOnHide whether modal sheet hiding restores focus to the previous focus owner
     public final void setRestoreFocusOnHide(boolean restoreFocusOnHide) {
         this.restoreFocusOnHide.set(restoreFocusOnHide);
     }
 
     /// Returns the focus restoration property.
+    ///
+    /// @return the focus restoration property
     public final BooleanProperty restoreFocusOnHideProperty() {
         return restoreFocusOnHide;
     }
 
     /// Returns the mutable trailing action node list.
+    ///
+    /// @return the mutable trailing action node list
     public final ObservableList<Node> getActions() {
         return actions;
     }
@@ -217,12 +258,18 @@ public class M3SideSheet extends Control {
     }
 
     /// Returns the user-agent stylesheet for M3FX sheets.
+    ///
+    /// @return the sheet user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("sheet.css");
     }
 
     /// Returns accessibility attributes for the sheet state and content.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -238,6 +285,9 @@ public class M3SideSheet extends Control {
     }
 
     /// Executes accessibility actions supported by side sheets.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -254,6 +304,8 @@ public class M3SideSheet extends Control {
     }
 
     /// Creates the default Material Design 3 side sheet skin.
+    ///
+    /// @return the default Material Design 3 side sheet skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SideSheetSkin(this);

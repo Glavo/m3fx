@@ -72,34 +72,34 @@ public class M3Slider extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    /// The minimum slider value.
+    // Backing property for the public minimum value API.
     private @Nullable DoubleProperty min;
 
-    /// The maximum slider value.
+    // Backing property for the public maximum value API.
     private @Nullable DoubleProperty max;
 
-    /// The current slider value.
+    // Backing property for the public current value API.
     private @Nullable DoubleProperty value;
 
-    /// The slider orientation.
+    // Backing property for the public orientation API.
     private @Nullable ObjectProperty<Orientation> orientation;
 
-    /// Whether the value is currently being changed through direct interaction.
+    // Backing property for the public value-changing API.
     private @Nullable BooleanProperty valueChanging;
 
-    /// The amount changed by page and arrow navigation.
+    // Backing property for the public block increment API.
     private @Nullable DoubleProperty blockIncrement;
 
-    /// The styleable track thickness token.
+    // Backing property for the public track thickness token API.
     private @Nullable StyleableDoubleProperty trackThickness;
 
-    /// The styleable track shape token.
+    // Backing property for the public track shape token API.
     private @Nullable StyleableDoubleProperty trackShape;
 
-    /// The styleable thumb size token.
+    // Backing property for the public thumb size token API.
     private @Nullable StyleableDoubleProperty thumbSize;
 
-    /// The styleable touch target size token.
+    // Backing property for the public touch target size token API.
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
     /// Creates a slider with the JavaFX default range.
@@ -108,6 +108,10 @@ public class M3Slider extends Control {
     }
 
     /// Creates a slider with a range and initial value.
+    ///
+    /// @param min the minimum slider value
+    /// @param max the maximum slider value
+    /// @param value the initial slider value
     public M3Slider(double min, double max, double value) {
         initialize();
         setMin(min);
@@ -116,16 +120,22 @@ public class M3Slider extends Control {
     }
 
     /// Returns the minimum slider value.
+    ///
+    /// @return the minimum slider value
     public final double getMin() {
         return min == null ? DEFAULT_MIN : min.get();
     }
 
     /// Sets the minimum slider value.
+    ///
+    /// @param min the minimum slider value
     public final void setMin(double min) {
         minProperty().set(min);
     }
 
     /// Returns the minimum slider value property.
+    ///
+    /// @return the minimum slider value property
     public final DoubleProperty minProperty() {
         if (min == null) {
             min = new DoublePropertyBase(DEFAULT_MIN) {
@@ -156,16 +166,22 @@ public class M3Slider extends Control {
     }
 
     /// Returns the maximum slider value.
+    ///
+    /// @return the maximum slider value
     public final double getMax() {
         return max == null ? DEFAULT_MAX : max.get();
     }
 
     /// Sets the maximum slider value.
+    ///
+    /// @param max the maximum slider value
     public final void setMax(double max) {
         maxProperty().set(max);
     }
 
     /// Returns the maximum slider value property.
+    ///
+    /// @return the maximum slider value property
     public final DoubleProperty maxProperty() {
         if (max == null) {
             max = new DoublePropertyBase(DEFAULT_MAX) {
@@ -196,16 +212,22 @@ public class M3Slider extends Control {
     }
 
     /// Returns the current slider value.
+    ///
+    /// @return the current slider value
     public final double getValue() {
         return value == null ? DEFAULT_VALUE : value.get();
     }
 
     /// Sets the current slider value.
+    ///
+    /// @param value the current slider value
     public final void setValue(double value) {
         valueProperty().set(value);
     }
 
     /// Returns the current slider value property.
+    ///
+    /// @return the current slider value property
     public final DoubleProperty valueProperty() {
         if (value == null) {
             value = new DoublePropertyBase(DEFAULT_VALUE) {
@@ -239,16 +261,22 @@ public class M3Slider extends Control {
     }
 
     /// Returns the slider orientation.
+    ///
+    /// @return the slider orientation
     public final Orientation getOrientation() {
         return orientation == null ? Orientation.HORIZONTAL : orientation.get();
     }
 
     /// Sets the slider orientation.
+    ///
+    /// @param orientation the slider orientation
     public final void setOrientation(Orientation orientation) {
         orientationProperty().set(orientation);
     }
 
     /// Returns the slider orientation property.
+    ///
+    /// @return the slider orientation property
     public final ObjectProperty<Orientation> orientationProperty() {
         if (orientation == null) {
             orientation = new ObjectPropertyBase<>(Orientation.HORIZONTAL) {
@@ -280,16 +308,22 @@ public class M3Slider extends Control {
     }
 
     /// Returns whether the value is being changed by a direct interaction.
+    ///
+    /// @return `true` while the value is being changed by direct interaction
     public final boolean isValueChanging() {
         return valueChanging != null && valueChanging.get();
     }
 
     /// Sets whether the value is being changed by a direct interaction.
+    ///
+    /// @param valueChanging whether the value is being changed by direct interaction
     public final void setValueChanging(boolean valueChanging) {
         valueChangingProperty().set(valueChanging);
     }
 
     /// Returns the value-changing property.
+    ///
+    /// @return the value-changing property
     public final BooleanProperty valueChangingProperty() {
         if (valueChanging == null) {
             valueChanging = new BooleanPropertyBase(false) {
@@ -310,16 +344,22 @@ public class M3Slider extends Control {
     }
 
     /// Returns the amount changed by page and arrow navigation.
+    ///
+    /// @return the amount changed by page and arrow navigation
     public final double getBlockIncrement() {
         return blockIncrement == null ? DEFAULT_BLOCK_INCREMENT : blockIncrement.get();
     }
 
     /// Sets the amount changed by page and arrow navigation.
+    ///
+    /// @param blockIncrement the amount changed by page and arrow navigation
     public final void setBlockIncrement(double blockIncrement) {
         blockIncrementProperty().set(blockIncrement);
     }
 
     /// Returns the block increment property.
+    ///
+    /// @return the block increment property
     public final DoubleProperty blockIncrementProperty() {
         if (blockIncrement == null) {
             blockIncrement = new DoublePropertyBase(DEFAULT_BLOCK_INCREMENT) {
@@ -350,21 +390,29 @@ public class M3Slider extends Control {
     }
 
     /// Sets the value after clamping it to the current slider range.
+    ///
+    /// @param value the value to clamp and apply
     public final void adjustValue(double value) {
         setValue(clampToRange(value));
     }
 
     /// Returns the slider track thickness token.
+    ///
+    /// @return the slider track thickness token in pixels
     public final double getTrackThickness() {
         return trackThickness == null ? DEFAULT_TRACK_THICKNESS : trackThickness.get();
     }
 
     /// Sets the slider track thickness token.
+    ///
+    /// @param trackThickness the slider track thickness token in pixels
     public final void setTrackThickness(double trackThickness) {
         trackThicknessProperty().set(M3Css.nonNegative(trackThickness, "trackThickness"));
     }
 
     /// Returns the slider track thickness token property.
+    ///
+    /// @return the slider track thickness token property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
             trackThickness = new StyleableDoubleProperty(DEFAULT_TRACK_THICKNESS) {
@@ -398,16 +446,22 @@ public class M3Slider extends Control {
     }
 
     /// Returns the slider track shape radius token.
+    ///
+    /// @return the slider track shape radius token in pixels
     public final double getTrackShape() {
         return trackShape == null ? DEFAULT_TRACK_SHAPE : trackShape.get();
     }
 
     /// Sets the slider track shape radius token.
+    ///
+    /// @param trackShape the slider track shape radius token in pixels
     public final void setTrackShape(double trackShape) {
         trackShapeProperty().set(M3Css.nonNegative(trackShape, "trackShape"));
     }
 
     /// Returns the slider track shape radius token property.
+    ///
+    /// @return the slider track shape radius token property
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
             trackShape = new StyleableDoubleProperty(DEFAULT_TRACK_SHAPE) {
@@ -440,16 +494,22 @@ public class M3Slider extends Control {
     }
 
     /// Returns the slider thumb size token.
+    ///
+    /// @return the slider thumb size token in pixels
     public final double getThumbSize() {
         return thumbSize == null ? DEFAULT_THUMB_SIZE : thumbSize.get();
     }
 
     /// Sets the slider thumb size token.
+    ///
+    /// @param thumbSize the slider thumb size token in pixels
     public final void setThumbSize(double thumbSize) {
         thumbSizeProperty().set(M3Css.nonNegative(thumbSize, "thumbSize"));
     }
 
     /// Returns the slider thumb size token property.
+    ///
+    /// @return the slider thumb size token property
     public final StyleableDoubleProperty thumbSizeProperty() {
         if (thumbSize == null) {
             thumbSize = new StyleableDoubleProperty(DEFAULT_THUMB_SIZE) {
@@ -483,16 +543,22 @@ public class M3Slider extends Control {
     }
 
     /// Returns the preferred touch target size token.
+    ///
+    /// @return the preferred touch target size token in pixels
     public final double getTouchTargetSize() {
         return touchTargetSize == null ? DEFAULT_TOUCH_TARGET_SIZE : touchTargetSize.get();
     }
 
     /// Sets the preferred touch target size token.
+    ///
+    /// @param touchTargetSize the preferred touch target size token in pixels
     public final void setTouchTargetSize(double touchTargetSize) {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
     }
 
     /// Returns the preferred touch target size token property.
+    ///
+    /// @return the preferred touch target size token property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
             touchTargetSize = new StyleableDoubleProperty(DEFAULT_TOUCH_TARGET_SIZE) {
@@ -526,23 +592,33 @@ public class M3Slider extends Control {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
+    ///
+    /// @return the CSS metadata for this control
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
     /// Creates the default Material Design 3 slider skin.
+    ///
+    /// @return the default Material Design 3 slider skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SliderSkin(this);
     }
 
     /// Returns accessibility attributes for the current slider value.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -559,6 +635,9 @@ public class M3Slider extends Control {
     }
 
     /// Executes accessibility actions for value adjustment.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -572,6 +651,8 @@ public class M3Slider extends Control {
     }
 
     /// Returns the user-agent stylesheet for m3fx sliders.
+    ///
+    /// @return the slider user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("slider.css");

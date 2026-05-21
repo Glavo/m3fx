@@ -24,11 +24,16 @@ public final class M3Stylesheets {
     }
 
     /// Returns the base m3fx stylesheet URL.
+    ///
+    /// @return the base m3fx stylesheet URL
     public static String baseStylesheet() {
         return stylesheet("base.css");
     }
 
     /// Returns a control-specific m3fx stylesheet URL.
+    ///
+    /// @param name the stylesheet file name under the bundled `controls` stylesheet directory
+    /// @return the control-specific m3fx stylesheet URL
     public static String controlStylesheet(String name) {
         Objects.requireNonNull(name, "name");
         return stylesheet("controls/" + name);

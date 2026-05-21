@@ -61,7 +61,7 @@ public class M3SplitButton extends Control {
     /// The focusable button parts exposed to accessibility and keyboard navigation.
     private final ObservableList<Node> buttonParts = FXCollections.observableArrayList();
 
-    /// The visual variant applied to both split button parts.
+    // Backing property for the public shared button variant API.
     private final ObjectProperty<M3ButtonVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3ButtonVariant.TONAL) {
                 /// Updates both child buttons when the variant changes.
@@ -81,18 +81,28 @@ public class M3SplitButton extends Control {
     }
 
     /// Creates a split button with primary action text.
+    ///
+    /// @param text the primary action text
     public M3SplitButton(String text) {
         initialize();
         setText(text);
     }
 
     /// Creates a split button with primary action text and menu items.
+    ///
+    /// @param text the primary action text
+    /// @param items the menu item nodes shown by the menu side
     public M3SplitButton(String text, Node... items) {
         this(text);
         addItems(items);
     }
 
     /// Creates a split button with text, variant, and menu items.
+    ///
+    /// @param text the primary action text
+    /// @param variant the button variant shared by both split button parts
+    /// @param items the menu item nodes shown by the menu side
+    /// @return the created split button
     public static M3SplitButton withVariant(String text, M3ButtonVariant variant, Node... items) {
         M3SplitButton button = new M3SplitButton(text, items);
         button.setVariant(variant);
@@ -100,6 +110,12 @@ public class M3SplitButton extends Control {
     }
 
     /// Creates a split button with text, variant, action handler, and menu items.
+    ///
+    /// @param text the primary action text
+    /// @param variant the button variant shared by both split button parts
+    /// @param onAction the primary action handler, or `null` for none
+    /// @param items the menu item nodes shown by the menu side
+    /// @return the created split button
     public static M3SplitButton withVariant(
             String text,
             M3ButtonVariant variant,
@@ -112,56 +128,78 @@ public class M3SplitButton extends Control {
     }
 
     /// Returns the primary action button.
+    ///
+    /// @return the primary action button
     public final M3Button getActionButton() {
         return actionButton;
     }
 
     /// Returns the attached menu button.
+    ///
+    /// @return the attached menu button
     public final M3MenuButton getMenuButton() {
         return menuButton;
     }
 
     /// Returns the primary action text.
+    ///
+    /// @return the primary action text
     public final String getText() {
         return actionButton.getText();
     }
 
     /// Sets the primary action text.
+    ///
+    /// @param text the primary action text
     public final void setText(String text) {
         actionButton.setText(Objects.requireNonNull(text, "text"));
     }
 
     /// Returns the primary action text property.
+    ///
+    /// @return the primary action text property
     public final StringProperty textProperty() {
         return actionButton.textProperty();
     }
 
     /// Returns the primary action graphic.
+    ///
+    /// @return the primary action graphic, or `null` if none is set
     public final @Nullable Node getGraphic() {
         return actionButton.getGraphic();
     }
 
     /// Sets the primary action graphic.
+    ///
+    /// @param graphic the primary action graphic, or `null` to clear it
     public final void setGraphic(@Nullable Node graphic) {
         actionButton.setGraphic(graphic);
     }
 
     /// Returns the primary action graphic property.
+    ///
+    /// @return the primary action graphic property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
         return actionButton.graphicProperty();
     }
 
     /// Returns the primary action handler.
+    ///
+    /// @return the primary action handler, or `null` if none is set
     public final @Nullable EventHandler<ActionEvent> getOnAction() {
         return actionButton.getOnAction();
     }
 
     /// Sets the primary action handler.
+    ///
+    /// @param onAction the primary action handler, or `null` to clear it
     public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
         actionButton.setOnAction(onAction);
     }
 
     /// Returns the primary action handler property.
+    ///
+    /// @return the primary action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return actionButton.onActionProperty();
     }
@@ -172,41 +210,57 @@ public class M3SplitButton extends Control {
     }
 
     /// Returns the button variant shared by both split button parts.
+    ///
+    /// @return the button variant shared by both split button parts
     public final M3ButtonVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the button variant shared by both split button parts.
+    ///
+    /// @param variant the button variant shared by both split button parts
     public final void setVariant(M3ButtonVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the shared button variant property.
+    ///
+    /// @return the shared button variant property
     public final ObjectProperty<M3ButtonVariant> variantProperty() {
         return variant;
     }
 
     /// Returns the menu displayed by the menu side.
+    ///
+    /// @return the menu displayed by the menu side
     public final M3Menu getMenu() {
         return menuButton.getMenu();
     }
 
     /// Returns the mutable item list shown by the menu side.
+    ///
+    /// @return the mutable item list shown by the menu side
     public final ObservableList<Node> getItems() {
         return menuButton.getItems();
     }
 
     /// Adds one menu item node.
+    ///
+    /// @param item the menu item node to add
     public final void addItem(Node item) {
         menuButton.addItem(item);
     }
 
     /// Adds menu item nodes.
+    ///
+    /// @param items the menu item nodes to add
     public final void addItems(Node... items) {
         menuButton.addItems(items);
     }
 
     /// Replaces all menu item nodes.
+    ///
+    /// @param items the replacement menu item nodes
     public final void setItems(Node... items) {
         menuButton.setItems(items);
     }
@@ -217,61 +271,85 @@ public class M3SplitButton extends Control {
     }
 
     /// Returns the menu item selection mode.
+    ///
+    /// @return the menu item selection mode
     public final M3MenuSelectionMode getSelectionMode() {
         return menuButton.getSelectionMode();
     }
 
     /// Sets the menu item selection mode.
+    ///
+    /// @param selectionMode the menu item selection mode
     public final void setSelectionMode(M3MenuSelectionMode selectionMode) {
         menuButton.setSelectionMode(selectionMode);
     }
 
     /// Returns the menu item selection mode property.
+    ///
+    /// @return the menu item selection mode property
     public final ObjectProperty<M3MenuSelectionMode> selectionModeProperty() {
         return menuButton.selectionModeProperty();
     }
 
     /// Returns whether the menu allows all selectable items to be unselected.
+    ///
+    /// @return `true` if the menu allows all selectable items to be unselected
     public final boolean isAllowEmptySelection() {
         return menuButton.isAllowEmptySelection();
     }
 
     /// Sets whether the menu allows all selectable items to be unselected.
+    ///
+    /// @param allowEmptySelection whether the menu allows all selectable items to be unselected
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         menuButton.setAllowEmptySelection(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property for the menu.
+    ///
+    /// @return the empty-selection policy property for the menu
     public final BooleanProperty allowEmptySelectionProperty() {
         return menuButton.allowEmptySelectionProperty();
     }
 
     /// Returns the selected menu items in child order.
+    ///
+    /// @return the selected menu items in child order
     public final @UnmodifiableView ObservableList<M3MenuItem> getSelectedItems() {
         return menuButton.getSelectedItems();
     }
 
     /// Returns the first selected menu item in child order.
+    ///
+    /// @return the first selected menu item in child order, or `null` when selection is empty
     public final @Nullable M3MenuItem getSelectedItem() {
         return menuButton.getSelectedItem();
     }
 
     /// Returns the first selected menu item property.
+    ///
+    /// @return the read-only first selected menu item property
     public final ReadOnlyObjectProperty<@Nullable M3MenuItem> selectedItemProperty() {
         return menuButton.selectedItemProperty();
     }
 
     /// Returns the child index of the first selected menu item, or `-1` when no item is selected.
+    ///
+    /// @return the child index of the first selected menu item, or `-1` when no item is selected
     public final int getSelectedIndex() {
         return menuButton.getSelectedIndex();
     }
 
     /// Selects a menu item that belongs to this split button's menu.
+    ///
+    /// @param item the menu item to select
     public final void select(M3MenuItem item) {
         menuButton.select(item);
     }
 
     /// Selects the menu item at the given child index.
+    ///
+    /// @param index the child index to select
     public final void selectIndex(int index) {
         menuButton.selectIndex(index);
     }
@@ -292,22 +370,32 @@ public class M3SplitButton extends Control {
     }
 
     /// Returns whether the attached menu is currently showing.
+    ///
+    /// @return `true` if the attached menu is currently showing
     public final boolean isShowing() {
         return menuButton.isShowing();
     }
 
     /// Returns the read-only showing state property.
+    ///
+    /// @return the read-only showing state property
     public final ReadOnlyBooleanProperty showingProperty() {
         return menuButton.showingProperty();
     }
 
     /// Returns the user-agent stylesheet for M3FX split buttons.
+    ///
+    /// @return the split button user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("split-button.css");
     }
 
     /// Returns accessibility attributes for the split button and its attached menu.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -322,6 +410,9 @@ public class M3SplitButton extends Control {
     }
 
     /// Executes accessibility actions for the primary action and attached menu.
+    ///
+    /// @param action the requested accessibility action
+    /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -372,6 +463,8 @@ public class M3SplitButton extends Control {
     }
 
     /// Creates the default Material Design 3 split button skin.
+    ///
+    /// @return the default Material Design 3 split button skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SplitButtonSkin(this);

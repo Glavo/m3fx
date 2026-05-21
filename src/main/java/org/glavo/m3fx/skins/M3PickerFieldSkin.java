@@ -16,6 +16,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3PickerField<T, P>> {
     /// Creates a picker field skin.
+    ///
+    /// @param control the skinned picker field
     public M3PickerFieldSkin(M3PickerField<T, P> control) {
         super(control);
         getChildren().add(control.getInputLayout());

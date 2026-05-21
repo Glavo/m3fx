@@ -68,14 +68,14 @@ public class M3Tooltip extends PopupControl {
     /// The sentinel used when a target node had no previous accessible help value.
     private static final Object ACCESSIBLE_HELP_NULL_VALUE = new Object();
 
-    /// The text displayed by the tooltip.
+    // The text displayed by the tooltip.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    /// The graphic displayed by the tooltip.
+    // The graphic displayed by the tooltip.
     private final ObjectProperty<@Nullable Node> graphic =
             new SimpleObjectProperty<>(this, "graphic");
 
-    /// The text and graphic placement mode.
+    // The text and graphic placement mode.
     private final ObjectProperty<ContentDisplay> contentDisplay =
             new ObjectPropertyBase<>(ContentDisplay.LEFT) {
                 /// Keeps the content display mode non-null.
@@ -99,7 +99,7 @@ public class M3Tooltip extends PopupControl {
                 }
             };
 
-    /// Whether tooltip text wraps inside its preferred width.
+    // Whether tooltip text wraps inside its preferred width.
     private final BooleanProperty wrapText = new BooleanPropertyBase(false) {
         /// Returns the owning bean.
         @Override
@@ -114,19 +114,19 @@ public class M3Tooltip extends PopupControl {
         }
     };
 
-    /// The delay before the tooltip opens after pointer entry.
+    // The delay before the tooltip opens after pointer entry.
     private final ObjectProperty<Duration> showDelay =
             new DurationProperty("showDelay", M3MotionBehavior.standard().tooltipShowDelay());
 
-    /// The delay before the tooltip closes after pointer exit.
+    // The delay before the tooltip closes after pointer exit.
     private final ObjectProperty<Duration> hideDelay =
             new DurationProperty("hideDelay", M3MotionBehavior.standard().tooltipHideDelay());
 
-    /// The maximum duration the tooltip remains visible after pointer-triggered opening.
+    // The maximum duration the tooltip remains visible after pointer-triggered opening.
     private final ObjectProperty<Duration> showDuration =
             new DurationProperty("showDuration", M3MotionBehavior.standard().tooltipShowDuration());
 
-    /// The explicit theme applied directly to this tooltip.
+    // The explicit theme applied directly to this tooltip.
     private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
         /// Applies theme declarations to the tooltip style.
         @Override
@@ -160,12 +160,18 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Creates a tooltip with text.
+    ///
+    /// @param text the tooltip text
     public M3Tooltip(String text) {
         initialize();
         setText(text);
     }
 
     /// Installs a Material Design 3 tooltip with the supplied text on a node.
+    ///
+    /// @param node the node that should own the tooltip
+    /// @param text the tooltip text
+    /// @return the installed tooltip
     public static M3Tooltip install(Node node, String text) {
         M3Tooltip tooltip = new M3Tooltip(text);
         install(node, tooltip);
@@ -173,6 +179,9 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Installs a Material Design 3 tooltip on a node.
+    ///
+    /// @param node the node that should own the tooltip
+    /// @param tooltip the tooltip to install
     public static void install(Node node, M3Tooltip tooltip) {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(tooltip, "tooltip");
@@ -184,6 +193,9 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Uninstalls a Material Design 3 tooltip from a node.
+    ///
+    /// @param node the node that owns the tooltip
+    /// @param tooltip the tooltip to uninstall
     public static void uninstall(Node node, M3Tooltip tooltip) {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(tooltip, "tooltip");
@@ -194,130 +206,180 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Returns the displayed text.
+    ///
+    /// @return the displayed text, or `null`
     public final @Nullable String getText() {
         return text.get();
     }
 
     /// Sets the displayed text.
+    ///
+    /// @param text the displayed text, or `null`
     public final void setText(@Nullable String text) {
         this.text.set(text);
     }
 
     /// Returns the displayed text property.
+    ///
+    /// @return the writable displayed text property
     public final StringProperty textProperty() {
         return text;
     }
 
     /// Returns the displayed graphic.
+    ///
+    /// @return the displayed graphic, or `null`
     public final @Nullable Node getGraphic() {
         return graphic.get();
     }
 
     /// Sets the displayed graphic.
+    ///
+    /// @param graphic the displayed graphic, or `null`
     public final void setGraphic(@Nullable Node graphic) {
         this.graphic.set(graphic);
     }
 
     /// Returns the displayed graphic property.
+    ///
+    /// @return the writable displayed graphic property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
         return graphic;
     }
 
     /// Returns the text and graphic placement mode.
+    ///
+    /// @return the text and graphic placement mode
     public final ContentDisplay getContentDisplay() {
         return contentDisplay.get();
     }
 
     /// Sets the text and graphic placement mode.
+    ///
+    /// @param contentDisplay the text and graphic placement mode
     public final void setContentDisplay(ContentDisplay contentDisplay) {
         this.contentDisplay.set(Objects.requireNonNull(contentDisplay, "contentDisplay"));
     }
 
     /// Returns the content display property.
+    ///
+    /// @return the writable content display property
     public final ObjectProperty<ContentDisplay> contentDisplayProperty() {
         return contentDisplay;
     }
 
     /// Returns whether tooltip text wraps inside its preferred width.
+    ///
+    /// @return `true` when tooltip text wraps inside its preferred width
     public final boolean isWrapText() {
         return wrapText.get();
     }
 
     /// Sets whether tooltip text wraps inside its preferred width.
+    ///
+    /// @param wrapText whether tooltip text wraps inside its preferred width
     public final void setWrapText(boolean wrapText) {
         this.wrapText.set(wrapText);
     }
 
     /// Returns the wrap text property.
+    ///
+    /// @return the writable wrap text property
     public final BooleanProperty wrapTextProperty() {
         return wrapText;
     }
 
     /// Returns the delay before the tooltip opens after pointer entry.
+    ///
+    /// @return the delay before the tooltip opens after pointer entry
     public final Duration getShowDelay() {
         return showDelay.get();
     }
 
     /// Sets the delay before the tooltip opens after pointer entry.
+    ///
+    /// @param showDelay the delay before the tooltip opens after pointer entry
     public final void setShowDelay(Duration showDelay) {
         showDelayExplicit = true;
         this.showDelay.set(Objects.requireNonNull(showDelay, "showDelay"));
     }
 
     /// Returns the show delay property.
+    ///
+    /// @return the writable show delay property
     public final ObjectProperty<Duration> showDelayProperty() {
         return showDelay;
     }
 
     /// Returns the delay before the tooltip closes after pointer exit.
+    ///
+    /// @return the delay before the tooltip closes after pointer exit
     public final Duration getHideDelay() {
         return hideDelay.get();
     }
 
     /// Sets the delay before the tooltip closes after pointer exit.
+    ///
+    /// @param hideDelay the delay before the tooltip closes after pointer exit
     public final void setHideDelay(Duration hideDelay) {
         hideDelayExplicit = true;
         this.hideDelay.set(Objects.requireNonNull(hideDelay, "hideDelay"));
     }
 
     /// Returns the hide delay property.
+    ///
+    /// @return the writable hide delay property
     public final ObjectProperty<Duration> hideDelayProperty() {
         return hideDelay;
     }
 
     /// Returns the maximum duration the tooltip remains visible after pointer-triggered opening.
+    ///
+    /// @return the maximum visible duration after pointer-triggered opening
     public final Duration getShowDuration() {
         return showDuration.get();
     }
 
     /// Sets the maximum duration the tooltip remains visible after pointer-triggered opening.
+    ///
+    /// @param showDuration the maximum visible duration after pointer-triggered opening
     public final void setShowDuration(Duration showDuration) {
         showDurationExplicit = true;
         this.showDuration.set(Objects.requireNonNull(showDuration, "showDuration"));
     }
 
     /// Returns the show duration property.
+    ///
+    /// @return the writable show duration property
     public final ObjectProperty<Duration> showDurationProperty() {
         return showDuration;
     }
 
     /// Returns the explicit theme applied directly to this tooltip.
+    ///
+    /// @return the explicit theme applied directly to this tooltip, or `null`
     public final @Nullable M3Theme getTheme() {
         return theme.get();
     }
 
     /// Sets the explicit theme applied directly to this tooltip.
+    ///
+    /// @param theme the explicit theme, or `null` to inherit or use defaults
     public final void setTheme(@Nullable M3Theme theme) {
         applyingInheritedTheme = false;
         this.theme.set(theme);
     }
 
     /// Returns the explicit theme property.
+    ///
+    /// @return the writable explicit theme property
     public final ObjectProperty<@Nullable M3Theme> themeProperty() {
         return theme;
     }
 
     /// Creates the default Material Design 3 tooltip skin.
+    ///
+    /// @return the default Material Design 3 tooltip skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3TooltipSkin(this);
@@ -333,12 +395,17 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Sets the default visible duration without marking it as an application override.
+    ///
+    /// @param showDuration the default visible duration
     protected final void setDefaultShowDuration(Duration showDuration) {
         showDurationExplicit = false;
         this.showDuration.set(Objects.requireNonNull(showDuration, "showDuration"));
     }
 
     /// Returns the default visible duration for this tooltip kind from a behavior profile.
+    ///
+    /// @param behavior the motion behavior profile
+    /// @return the default visible duration for this tooltip kind
     protected Duration defaultShowDuration(M3MotionBehavior behavior) {
         return behavior.tooltipShowDuration();
     }

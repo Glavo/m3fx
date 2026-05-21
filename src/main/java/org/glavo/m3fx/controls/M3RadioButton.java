@@ -51,13 +51,13 @@ public class M3RadioButton extends ButtonBase implements Toggle {
     /// The default radio button touch target size.
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 40.0;
 
-    /// The styleable touch target size token.
+    // The styleable touch target size token.
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
-    /// The selected state property.
+    // The selected state property.
     private @Nullable BooleanProperty selected;
 
-    /// The toggle group this radio button belongs to.
+    // The toggle group this radio button belongs to.
     private @Nullable ObjectProperty<@Nullable ToggleGroup> toggleGroup;
 
     /// Creates an empty radio button.
@@ -66,12 +66,18 @@ public class M3RadioButton extends ButtonBase implements Toggle {
     }
 
     /// Creates a radio button with text.
+    ///
+    /// @param text the radio button text
     public M3RadioButton(String text) {
         super(text);
         initialize();
     }
 
     /// Creates a radio button with text and the requested selected state.
+    ///
+    /// @param text the radio button text
+    /// @param selected the initial selected state
+    /// @return a radio button with the requested selected state
     public static M3RadioButton withSelected(String text, boolean selected) {
         M3RadioButton radioButton = new M3RadioButton(text);
         radioButton.setSelected(selected);
@@ -79,18 +85,24 @@ public class M3RadioButton extends ButtonBase implements Toggle {
     }
 
     /// Sets whether this radio button is selected.
+    ///
+    /// @param selected whether this radio button is selected
     @Override
     public final void setSelected(boolean selected) {
         selectedProperty().set(selected);
     }
 
     /// Returns whether this radio button is selected.
+    ///
+    /// @return `true` when this radio button is selected
     @Override
     public final boolean isSelected() {
         return selected != null && selected.get();
     }
 
     /// Returns the selected state property.
+    ///
+    /// @return the writable selected state property
     @Override
     public final BooleanProperty selectedProperty() {
         if (selected == null) {
@@ -130,18 +142,24 @@ public class M3RadioButton extends ButtonBase implements Toggle {
     }
 
     /// Sets the toggle group that manages this radio button.
+    ///
+    /// @param toggleGroup the toggle group that manages this radio button, or `null`
     @Override
     public final void setToggleGroup(@Nullable ToggleGroup toggleGroup) {
         toggleGroupProperty().set(toggleGroup);
     }
 
     /// Returns the toggle group that manages this radio button.
+    ///
+    /// @return the toggle group that manages this radio button, or `null`
     @Override
     public final @Nullable ToggleGroup getToggleGroup() {
         return toggleGroup == null ? null : toggleGroup.get();
     }
 
     /// Returns the toggle group property.
+    ///
+    /// @return the writable toggle group property
     @Override
     public final ObjectProperty<@Nullable ToggleGroup> toggleGroupProperty() {
         if (toggleGroup == null) {
@@ -193,16 +211,22 @@ public class M3RadioButton extends ButtonBase implements Toggle {
     }
 
     /// Returns the preferred touch target size token.
+    ///
+    /// @return the preferred touch target size in pixels
     public final double getTouchTargetSize() {
         return touchTargetSize == null ? DEFAULT_TOUCH_TARGET_SIZE : touchTargetSize.get();
     }
 
     /// Sets the preferred touch target size token.
+    ///
+    /// @param touchTargetSize the preferred touch target size in pixels
     public final void setTouchTargetSize(double touchTargetSize) {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
     }
 
     /// Returns the preferred touch target size token property.
+    ///
+    /// @return the styleable preferred touch target size property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
             touchTargetSize = new StyleableDoubleProperty(DEFAULT_TOUCH_TARGET_SIZE) {
@@ -236,6 +260,8 @@ public class M3RadioButton extends ButtonBase implements Toggle {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for `M3RadioButton`
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
@@ -260,6 +286,8 @@ public class M3RadioButton extends ButtonBase implements Toggle {
     }
 
     /// Creates the default Material Design 3 radio button skin.
+    ///
+    /// @return the default Material Design 3 radio button skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3RadioButtonSkin(this);
@@ -272,6 +300,10 @@ public class M3RadioButton extends ButtonBase implements Toggle {
     }
 
     /// Returns accessibility attributes for radio button selection state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

@@ -52,16 +52,16 @@ public class M3SegmentedButton extends ButtonBase {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 12.0;
 
-    /// The styleable container height token.
+    // Backing property for the public container height token API.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The styleable container shape token.
+    // Backing property for the public container shape token API.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable horizontal padding token.
+    // Backing property for the public horizontal padding token API.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The selected state property.
+    // Backing property for the public selected state API.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -78,23 +78,37 @@ public class M3SegmentedButton extends ButtonBase {
     }
 
     /// Creates a segmented button with text.
+    ///
+    /// @param text the text displayed by the segmented button
     public M3SegmentedButton(String text) {
         super(text);
         initialize();
     }
 
     /// Creates a segmented button with text and graphic content.
+    ///
+    /// @param text the text displayed by the segmented button
+    /// @param graphic the graphic displayed by the segmented button, or `null` for none
     public M3SegmentedButton(String text, @Nullable Node graphic) {
         super(text, graphic);
         initialize();
     }
 
     /// Creates a segmented button with text and the requested selected state.
+    ///
+    /// @param text the text displayed by the segmented button
+    /// @param selected whether the segmented button should initially be selected
+    /// @return the created segmented button
     public static M3SegmentedButton withSelected(String text, boolean selected) {
         return withSelected(text, null, selected);
     }
 
     /// Creates a segmented button with text, graphic content, and the requested selected state.
+    ///
+    /// @param text the text displayed by the segmented button
+    /// @param graphic the graphic displayed by the segmented button, or `null` for none
+    /// @param selected whether the segmented button should initially be selected
+    /// @return the created segmented button
     public static M3SegmentedButton withSelected(String text, @Nullable Node graphic, boolean selected) {
         M3SegmentedButton button = new M3SegmentedButton(text, graphic);
         button.setSelected(selected);
@@ -102,31 +116,43 @@ public class M3SegmentedButton extends ButtonBase {
     }
 
     /// Returns whether this segmented button is selected.
+    ///
+    /// @return `true` if this segmented button is selected
     public final boolean isSelected() {
         return selected.get();
     }
 
     /// Sets whether this segmented button is selected.
+    ///
+    /// @param selected whether this segmented button is selected
     public final void setSelected(boolean selected) {
         this.selected.set(selected);
     }
 
     /// Returns the selected state property.
+    ///
+    /// @return the selected state property
     public final BooleanProperty selectedProperty() {
         return selected;
     }
 
     /// Returns the preferred container height token.
+    ///
+    /// @return the preferred container height token in pixels
     public final double getContainerHeight() {
         return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
     }
 
     /// Sets the preferred container height token.
+    ///
+    /// @param containerHeight the preferred container height token in pixels
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
     /// Returns the preferred container height token property.
+    ///
+    /// @return the preferred container height token property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = new StyleableDoubleProperty(DEFAULT_CONTAINER_HEIGHT) {
@@ -160,16 +186,22 @@ public class M3SegmentedButton extends ButtonBase {
     }
 
     /// Returns the container shape radius token.
+    ///
+    /// @return the container shape radius token in pixels
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the container shape radius token.
+    ///
+    /// @param containerShape the container shape radius token in pixels
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
     /// Returns the container shape radius token property.
+    ///
+    /// @return the container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
@@ -202,16 +234,22 @@ public class M3SegmentedButton extends ButtonBase {
     }
 
     /// Returns the horizontal content padding token.
+    ///
+    /// @return the horizontal content padding token in pixels
     public final double getHorizontalPadding() {
         return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
     }
 
     /// Sets the horizontal content padding token.
+    ///
+    /// @param horizontalPadding the horizontal content padding token in pixels
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
     /// Returns the horizontal content padding token property.
+    ///
+    /// @return the horizontal content padding token property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = new StyleableDoubleProperty(DEFAULT_HORIZONTAL_PADDING) {
@@ -245,17 +283,25 @@ public class M3SegmentedButton extends ButtonBase {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
 
     /// Returns the CSS metadata for this control.
+    ///
+    /// @return the CSS metadata for this control
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
     /// Returns accessibility attributes for the segment selection state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters the optional attribute parameters
+    /// @return the attribute value, or `null` when unavailable
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -278,12 +324,16 @@ public class M3SegmentedButton extends ButtonBase {
     }
 
     /// Creates the default Material Design 3 segmented button skin.
+    ///
+    /// @return the default Material Design 3 segmented button skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SegmentedButtonSkin(this);
     }
 
     /// Returns the user-agent stylesheet for m3fx segmented buttons.
+    ///
+    /// @return the segmented button user-agent stylesheet URL
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("segmented-button.css");

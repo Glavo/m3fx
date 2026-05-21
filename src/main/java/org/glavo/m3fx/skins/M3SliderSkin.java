@@ -72,6 +72,8 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     private final InvalidationListener disabledInvalidation = observable -> resetDisabledInteractionState();
 
     /// Creates a slider skin.
+    ///
+    /// @param control the slider controlled by this skin
     public M3SliderSkin(M3Slider control) {
         super(control);
         track.getStyleClass().add("track");

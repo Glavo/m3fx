@@ -19,6 +19,8 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     private final HBox container = new HBox(SPLIT_BUTTON_SPACING);
 
     /// Creates a split button skin.
+    ///
+    /// @param control the split button controlled by this skin
     public M3SplitButtonSkin(M3SplitButton control) {
         super(control);
         container.setManaged(false);

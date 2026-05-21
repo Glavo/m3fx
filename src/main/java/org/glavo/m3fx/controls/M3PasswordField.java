@@ -50,12 +50,18 @@ public class M3PasswordField extends PasswordField implements M3TextInput {
     }
 
     /// Creates a filled password field with initial text.
+    ///
+    /// @param text the initial field text
     public M3PasswordField(String text) {
         setText(Objects.requireNonNull(text, "text"));
         initialize();
     }
 
     /// Creates a password field with initial text and the requested variant.
+    ///
+    /// @param text the initial field text
+    /// @param variant the text input variant
+    /// @return a password field using the requested variant
     public static M3PasswordField withVariant(String text, M3TextInputVariant variant) {
         M3PasswordField passwordField = new M3PasswordField(text);
         passwordField.setVariant(variant);
@@ -153,6 +159,8 @@ public class M3PasswordField extends PasswordField implements M3TextInput {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for `M3PasswordField`
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

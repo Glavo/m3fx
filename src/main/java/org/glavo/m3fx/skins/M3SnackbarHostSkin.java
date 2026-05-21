@@ -18,6 +18,8 @@ public final class M3SnackbarHostSkin extends SkinBase<M3SnackbarHost> {
             (observable, oldValue, newValue) -> updateSnackbar(newValue);
 
     /// Creates a snackbar host skin.
+    ///
+    /// @param control the snackbar host controlled by this skin
     public M3SnackbarHostSkin(M3SnackbarHost control) {
         super(control);
         control.snackbarProperty().addListener(snackbarListener);

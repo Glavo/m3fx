@@ -35,6 +35,8 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
 
     /// Creates a snackbar skin.
+    ///
+    /// @param control the snackbar controlled by this skin
     public M3SnackbarSkin(M3Snackbar control) {
         super(control);
 
@@ -57,6 +59,8 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     }
 
     /// Returns the action button when the snackbar currently exposes an action.
+    ///
+    /// @return the rendered action button, or `null` when no action is visible
     public final @Nullable M3Button getActionButton() {
         return actionButton.isManaged() ? actionButton : null;
     }

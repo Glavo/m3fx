@@ -22,7 +22,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// Applies M3FX Material scroll styling to JavaFX scroll controls.
+/// Applies M3FX Material scroll styling and wheel motion to JavaFX scroll controls.
+///
+/// This utility class styles standard JavaFX [ScrollPane] and [ScrollBar] instances instead of replacing them,
+/// keeping application layout and virtualization behavior compatible with the JavaFX controls. Smooth scrolling
+/// can be installed per scroll pane and uses the current M3FX motion behavior.
+///
+/// See [Material Design scrolling behavior](https://m3.material.io/).
 @NotNullByDefault
 public final class M3ScrollPanes {
     /// The node property key used to store the installed smooth scroll state.
@@ -45,11 +51,15 @@ public final class M3ScrollPanes {
     }
 
     /// Adds the Material scroll style class to a JavaFX scroll pane.
+    ///
+    /// @param scrollPane the scroll pane to style
     public static void style(ScrollPane scrollPane) {
         M3ControlStyles.add(Objects.requireNonNull(scrollPane, "scrollPane"), STYLE_CLASS);
     }
 
     /// Enables Material smooth wheel scrolling for a JavaFX scroll pane.
+    ///
+    /// @param scrollPane the scroll pane that should receive smooth wheel scrolling
     public static void enableSmoothScrolling(ScrollPane scrollPane) {
         Objects.requireNonNull(scrollPane, "scrollPane");
         if (!isSmoothScrollingEnabled(scrollPane)) {
@@ -58,6 +68,8 @@ public final class M3ScrollPanes {
     }
 
     /// Disables Material smooth wheel scrolling for a JavaFX scroll pane.
+    ///
+    /// @param scrollPane the scroll pane whose smooth wheel scrolling should be removed
     public static void disableSmoothScrolling(ScrollPane scrollPane) {
         Objects.requireNonNull(scrollPane, "scrollPane");
         @Nullable Object state = scrollPane.getProperties().remove(SMOOTH_SCROLL_STATE_KEY);
@@ -67,12 +79,17 @@ public final class M3ScrollPanes {
     }
 
     /// Returns whether Material smooth wheel scrolling is enabled for a JavaFX scroll pane.
+    ///
+    /// @param scrollPane the scroll pane to inspect
+    /// @return `true` if smooth wheel scrolling is installed on the scroll pane
     public static boolean isSmoothScrollingEnabled(ScrollPane scrollPane) {
         Objects.requireNonNull(scrollPane, "scrollPane");
         return scrollPane.getProperties().get(SMOOTH_SCROLL_STATE_KEY) instanceof SmoothScrollState;
     }
 
     /// Adds the Material scroll style class to a standalone JavaFX scroll bar.
+    ///
+    /// @param scrollBar the scroll bar to style
     public static void style(ScrollBar scrollBar) {
         M3ControlStyles.add(Objects.requireNonNull(scrollBar, "scrollBar"), SCROLL_BAR_STYLE_CLASS);
     }

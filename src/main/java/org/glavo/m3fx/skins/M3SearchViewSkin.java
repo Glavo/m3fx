@@ -15,6 +15,8 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
     private final VBox container = new VBox();
 
     /// Creates a search view skin.
+    ///
+    /// @param control the search view controlled by this skin
     public M3SearchViewSkin(M3SearchView control) {
         super(control);
         container.setManaged(false);

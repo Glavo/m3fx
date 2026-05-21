@@ -16,24 +16,44 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// Returns the hover state layer opacity.
+    ///
+    /// @return the hover state layer opacity
     double hoverOpacity();
 
     /// Returns the focus state layer opacity.
+    ///
+    /// @return the focus state layer opacity
     double focusOpacity();
 
     /// Returns the pressed state layer opacity.
+    ///
+    /// @return the pressed state layer opacity
     double pressedOpacity();
 
     /// Returns the dragged state layer opacity.
+    ///
+    /// @return the dragged state layer opacity
     double draggedOpacity();
 
     /// Returns the disabled container opacity.
+    ///
+    /// @return the disabled container opacity
     double disabledContainerOpacity();
 
     /// Returns the disabled content opacity.
+    ///
+    /// @return the disabled content opacity
     double disabledContentOpacity();
 
     /// Creates state layer opacity tokens.
+    ///
+    /// @param hoverOpacity the hover state layer opacity
+    /// @param focusOpacity the focus state layer opacity
+    /// @param pressedOpacity the pressed state layer opacity
+    /// @param draggedOpacity the dragged state layer opacity
+    /// @param disabledContainerOpacity the disabled container opacity
+    /// @param disabledContentOpacity the disabled content opacity
+    /// @return the created state layer token set
     static M3StateLayerTokens create(
             double hoverOpacity,
             double focusOpacity,
@@ -53,11 +73,15 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     }
 
     /// Returns baseline Material Design 3 state layer tokens.
+    ///
+    /// @return baseline Material Design 3 state layer tokens
     static M3StateLayerTokens baseline() {
         return create(0.08, 0.10, 0.10, 0.16, 0.12, 0.38);
     }
 
     /// Converts the state tokens into root-level JavaFX CSS declarations.
+    ///
+    /// @return root-level JavaFX CSS declarations for this state layer token set
     default String toStyleDeclarations() {
         return "-m3-state-hover-opacity: " + M3TokenCss.format(hoverOpacity()) + "; "
                 + "-m3-state-focus-opacity: " + M3TokenCss.format(focusOpacity()) + "; "
@@ -68,6 +92,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     }
 
     /// Converts state layer tokens into JavaFX CSS rules for m3fx controls.
+    ///
+    /// @return JavaFX CSS rules for controls that render state layers or disabled opacity
     default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
         appendStateLayerOpacityRule(builder, hoverStateSelectors(), hoverOpacity());

@@ -71,22 +71,22 @@ public class M3ProgressIndicator extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    /// The current progress value.
+    // The current progress value.
     private @Nullable DoubleProperty progress;
 
-    /// The styleable circular indicator stroke thickness token.
+    // The styleable circular indicator stroke thickness token.
     private @Nullable StyleableDoubleProperty trackThickness;
 
-    /// The styleable indicator size token.
+    // The styleable indicator size token.
     private @Nullable StyleableDoubleProperty indicatorSize;
 
-    /// The styleable wave amplitude token.
+    // The styleable wave amplitude token.
     private @Nullable StyleableDoubleProperty waveAmplitude;
 
-    /// The styleable wavelength token.
+    // The styleable wavelength token.
     private @Nullable StyleableDoubleProperty wavelength;
 
-    /// The styleable active-to-track gap token.
+    // The styleable active-to-track gap token.
     private @Nullable StyleableDoubleProperty trackGap;
 
     /// Creates an indeterminate progress indicator.
@@ -95,22 +95,30 @@ public class M3ProgressIndicator extends Control {
     }
 
     /// Creates a progress indicator with an initial progress value.
+    ///
+    /// @param progress the initial progress value, from `0.0` to `1.0`, or [INDETERMINATE_PROGRESS]
     public M3ProgressIndicator(double progress) {
         initialize();
         setProgress(progress);
     }
 
     /// Returns the current progress value.
+    ///
+    /// @return the current progress value, or [INDETERMINATE_PROGRESS]
     public final double getProgress() {
         return progress == null ? INDETERMINATE_PROGRESS : progress.get();
     }
 
     /// Sets the current progress value.
+    ///
+    /// @param progress the progress value, from `0.0` to `1.0`, or [INDETERMINATE_PROGRESS]
     public final void setProgress(double progress) {
         progressProperty().set(progress);
     }
 
     /// Returns the current progress value property.
+    ///
+    /// @return the writable progress value property
     public final DoubleProperty progressProperty() {
         if (progress == null) {
             progress = new DoublePropertyBase(INDETERMINATE_PROGRESS) {
@@ -146,21 +154,29 @@ public class M3ProgressIndicator extends Control {
     }
 
     /// Returns whether the current progress value is indeterminate.
+    ///
+    /// @return `true` when the current progress value is indeterminate
     public final boolean isIndeterminate() {
         return getProgress() == INDETERMINATE_PROGRESS;
     }
 
     /// Returns the circular indicator stroke thickness token.
+    ///
+    /// @return the circular indicator stroke thickness in pixels
     public final double getTrackThickness() {
         return trackThickness == null ? DEFAULT_TRACK_THICKNESS : trackThickness.get();
     }
 
     /// Sets the circular indicator stroke thickness token.
+    ///
+    /// @param trackThickness the circular indicator stroke thickness in pixels
     public final void setTrackThickness(double trackThickness) {
         trackThicknessProperty().set(M3Css.nonNegative(trackThickness, "trackThickness"));
     }
 
     /// Returns the circular indicator stroke thickness token property.
+    ///
+    /// @return the styleable circular indicator stroke thickness property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
             trackThickness = new StyleableDoubleProperty(DEFAULT_TRACK_THICKNESS) {
@@ -194,16 +210,22 @@ public class M3ProgressIndicator extends Control {
     }
 
     /// Returns the circular indicator size token.
+    ///
+    /// @return the circular indicator size in pixels
     public final double getIndicatorSize() {
         return indicatorSize == null ? DEFAULT_INDICATOR_SIZE : indicatorSize.get();
     }
 
     /// Sets the circular indicator size token.
+    ///
+    /// @param indicatorSize the circular indicator size in pixels
     public final void setIndicatorSize(double indicatorSize) {
         indicatorSizeProperty().set(M3Css.nonNegative(indicatorSize, "indicatorSize"));
     }
 
     /// Returns the circular indicator size token property.
+    ///
+    /// @return the styleable circular indicator size property
     public final StyleableDoubleProperty indicatorSizeProperty() {
         if (indicatorSize == null) {
             indicatorSize = new StyleableDoubleProperty(DEFAULT_INDICATOR_SIZE) {
@@ -237,16 +259,22 @@ public class M3ProgressIndicator extends Control {
     }
 
     /// Returns the wavy progress amplitude token.
+    ///
+    /// @return the wavy progress amplitude in pixels
     public final double getWaveAmplitude() {
         return waveAmplitude == null ? DEFAULT_WAVE_AMPLITUDE : waveAmplitude.get();
     }
 
     /// Sets the wavy progress amplitude token.
+    ///
+    /// @param waveAmplitude the wavy progress amplitude in pixels
     public final void setWaveAmplitude(double waveAmplitude) {
         waveAmplitudeProperty().set(M3Css.nonNegative(waveAmplitude, "waveAmplitude"));
     }
 
     /// Returns the wavy progress amplitude token property.
+    ///
+    /// @return the styleable wavy progress amplitude property
     public final StyleableDoubleProperty waveAmplitudeProperty() {
         if (waveAmplitude == null) {
             waveAmplitude = new StyleableDoubleProperty(DEFAULT_WAVE_AMPLITUDE) {
@@ -280,16 +308,22 @@ public class M3ProgressIndicator extends Control {
     }
 
     /// Returns the wavy progress wavelength token.
+    ///
+    /// @return the wavy progress wavelength in pixels
     public final double getWavelength() {
         return wavelength == null ? DEFAULT_WAVELENGTH : wavelength.get();
     }
 
     /// Sets the wavy progress wavelength token.
+    ///
+    /// @param wavelength the wavy progress wavelength in pixels
     public final void setWavelength(double wavelength) {
         wavelengthProperty().set(M3Css.nonNegative(wavelength, "wavelength"));
     }
 
     /// Returns the wavy progress wavelength token property.
+    ///
+    /// @return the styleable wavy progress wavelength property
     public final StyleableDoubleProperty wavelengthProperty() {
         if (wavelength == null) {
             wavelength = new StyleableDoubleProperty(DEFAULT_WAVELENGTH) {
@@ -323,16 +357,22 @@ public class M3ProgressIndicator extends Control {
     }
 
     /// Returns the gap token between active progress and track.
+    ///
+    /// @return the gap between active progress and track in pixels
     public final double getTrackGap() {
         return trackGap == null ? DEFAULT_TRACK_GAP : trackGap.get();
     }
 
     /// Sets the gap token between active progress and track.
+    ///
+    /// @param trackGap the gap between active progress and track in pixels
     public final void setTrackGap(double trackGap) {
         trackGapProperty().set(M3Css.nonNegative(trackGap, "trackGap"));
     }
 
     /// Returns the gap token property between active progress and track.
+    ///
+    /// @return the styleable active-to-track gap property
     public final StyleableDoubleProperty trackGapProperty() {
         if (trackGap == null) {
             trackGap = new StyleableDoubleProperty(DEFAULT_TRACK_GAP) {
@@ -366,6 +406,8 @@ public class M3ProgressIndicator extends Control {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for `M3ProgressIndicator`
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
@@ -377,12 +419,18 @@ public class M3ProgressIndicator extends Control {
     }
 
     /// Creates the default progress indicator skin.
+    ///
+    /// @return the default progress indicator skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3ProgressIndicatorSkin(this);
     }
 
     /// Returns accessibility attributes for the progress value.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
