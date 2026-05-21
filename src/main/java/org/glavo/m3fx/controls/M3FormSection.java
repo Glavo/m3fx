@@ -54,7 +54,7 @@ public class M3FormSection extends Control {
     /// The default vertical spacing between section content nodes.
     private static final double DEFAULT_CONTENT_SPACING = 12.0;
 
-    /// The section title text.
+    // The section title text.
     private final javafx.beans.property.StringProperty titleText =
             new javafx.beans.property.SimpleStringProperty(this, "titleText", "") {
                 /// Rejects null titles and notifies accessibility clients.
@@ -71,7 +71,7 @@ public class M3FormSection extends Control {
                 }
             };
 
-    /// The section supporting text.
+    // The section supporting text.
     private final javafx.beans.property.StringProperty supportingText =
             new javafx.beans.property.SimpleStringProperty(this, "supportingText", "") {
                 /// Rejects null supporting text values.
@@ -93,7 +93,7 @@ public class M3FormSection extends Control {
     /// The listener used to refresh accessibility state when section content changes.
     private final ListChangeListener<Node> contentListener = change -> handleContentChanged();
 
-    /// The styleable content spacing token.
+    // The styleable content spacing token.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
     /// Creates an empty form section.
@@ -102,6 +102,9 @@ public class M3FormSection extends Control {
     }
 
     /// Creates a form section with a title and content.
+    ///
+    /// @param titleText the section title text
+    /// @param content the initial section content nodes
     public M3FormSection(String titleText, Node... content) {
         initialize();
         setTitleText(titleText);
@@ -109,6 +112,10 @@ public class M3FormSection extends Control {
     }
 
     /// Creates a form section with a title, supporting text, and content.
+    ///
+    /// @param titleText the section title text
+    /// @param supportingText the supporting text displayed below the title
+    /// @param content the initial section content nodes
     public M3FormSection(String titleText, String supportingText, Node... content) {
         initialize();
         setTitleText(titleText);
@@ -117,52 +124,72 @@ public class M3FormSection extends Control {
     }
 
     /// Returns the section title.
+    ///
+    /// @return the section title
     public final String getTitleText() {
         return titleText.get();
     }
 
     /// Sets the section title.
+    ///
+    /// @param titleText the section title
     public final void setTitleText(String titleText) {
         this.titleText.set(titleText);
     }
 
     /// Returns the section title property.
+    ///
+    /// @return the section title property
     public final javafx.beans.property.StringProperty titleTextProperty() {
         return titleText;
     }
 
     /// Returns the section supporting text.
+    ///
+    /// @return the section supporting text
     public final String getSupportingText() {
         return supportingText.get();
     }
 
     /// Sets the section supporting text.
+    ///
+    /// @param supportingText the section supporting text
     public final void setSupportingText(String supportingText) {
         this.supportingText.set(supportingText);
     }
 
     /// Returns the section supporting text property.
+    ///
+    /// @return the section supporting text property
     public final javafx.beans.property.StringProperty supportingTextProperty() {
         return supportingText;
     }
 
     /// Returns the mutable section content list.
+    ///
+    /// @return the mutable section content list
     public final ObservableList<Node> getContent() {
         return content;
     }
 
     /// Adds one section content node.
+    ///
+    /// @param content the section content node to add
     public final void addContent(Node content) {
         getContent().add(Objects.requireNonNull(content, "content"));
     }
 
     /// Adds section content nodes.
+    ///
+    /// @param content the section content nodes to add
     public final void addContent(Node... content) {
         validateContent(content);
         getContent().addAll(content);
     }
 
     /// Replaces all section content nodes.
+    ///
+    /// @param content the replacement section content nodes
     public final void setContent(Node... content) {
         validateContent(content);
         getContent().setAll(content);
@@ -174,16 +201,22 @@ public class M3FormSection extends Control {
     }
 
     /// Returns the vertical spacing between section content nodes.
+    ///
+    /// @return the vertical spacing between section content nodes
     public final double getContentSpacing() {
         return contentSpacing == null ? DEFAULT_CONTENT_SPACING : contentSpacing.get();
     }
 
     /// Sets the vertical spacing between section content nodes.
+    ///
+    /// @param contentSpacing the vertical spacing between section content nodes
     public final void setContentSpacing(double contentSpacing) {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
     /// Returns the content spacing token property.
+    ///
+    /// @return the content spacing token property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = new StyleableDoubleProperty(DEFAULT_CONTENT_SPACING) {
@@ -253,6 +286,8 @@ public class M3FormSection extends Control {
     }
 
     /// Returns the CSS metadata for this node class.
+    ///
+    /// @return the CSS metadata for this node class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

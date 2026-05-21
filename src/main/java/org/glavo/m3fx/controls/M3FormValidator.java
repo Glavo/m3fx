@@ -23,6 +23,11 @@ import java.util.List;
 import java.util.Objects;
 
 /// Coordinates validation across multiple [M3TextInputLayout] controls.
+///
+/// `M3FormValidator` keeps a validation-ordered list of text input layouts, runs each layout's validator,
+/// tracks invalid layouts, and exposes read-only aggregate state for submit buttons and error summaries.
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3FormValidator {
     /// The registered text input layouts.
@@ -39,17 +44,17 @@ public final class M3FormValidator {
     private final @UnmodifiableView ObservableList<M3TextInputLayout> invalidInputsView =
             FXCollections.unmodifiableObservableList(invalidInputs);
 
-    /// The first invalid input layout in registration order.
+    // The first invalid input layout in registration order.
     private final ReadOnlyObjectWrapper<@Nullable M3TextInputLayout> firstInvalidInput =
             new ReadOnlyObjectWrapper<>(this, "firstInvalidInput");
 
-    /// Whether all registered input layouts are valid.
+    // Whether all registered input layouts are valid.
     private final ReadOnlyBooleanWrapper valid = new ReadOnlyBooleanWrapper(this, "valid", true);
 
-    /// Whether at least one registered input layout has active validation.
+    // Whether at least one registered input layout has active validation.
     private final ReadOnlyBooleanWrapper validationActive = new ReadOnlyBooleanWrapper(this, "validationActive");
 
-    /// The number of currently invalid input layouts.
+    // The number of currently invalid input layouts.
     private final ReadOnlyIntegerWrapper invalidInputCount = new ReadOnlyIntegerWrapper(this, "invalidInputCount");
 
     /// Updates group state when one registered layout changes its validator-produced error text.
@@ -65,16 +70,22 @@ public final class M3FormValidator {
     }
 
     /// Creates a form validator with the supplied input layouts.
+    ///
+    /// @param inputs the input layouts to validate in order
     public M3FormValidator(M3TextInputLayout... inputs) {
         addInputs(inputs);
     }
 
     /// Returns the registered input layouts in validation order.
+    ///
+    /// @return the registered input layouts in validation order
     public @UnmodifiableView ObservableList<M3TextInputLayout> getInputs() {
         return inputsView;
     }
 
     /// Adds one input layout to the end of the validation order.
+    ///
+    /// @param input the input layout to add
     public void addInput(M3TextInputLayout input) {
         M3TextInputLayout validatedInput = Objects.requireNonNull(input, "input");
         validateNewInput(validatedInput);
@@ -84,6 +95,8 @@ public final class M3FormValidator {
     }
 
     /// Adds input layouts to the end of the validation order.
+    ///
+    /// @param inputs the input layouts to add
     public void addInputs(M3TextInputLayout... inputs) {
         List<M3TextInputLayout> validatedInputs = validatedNewInputs(inputs);
         installInputs(validatedInputs);
@@ -92,11 +105,15 @@ public final class M3FormValidator {
     }
 
     /// Replaces the registered input layouts with the supplied layouts.
+    ///
+    /// @param inputs the replacement input layouts
     public void setInputs(M3TextInputLayout... inputs) {
         setInputs(validatedInputs(inputs));
     }
 
     /// Replaces the registered input layouts with the supplied layouts.
+    ///
+    /// @param inputs the replacement input layouts
     public void setInputs(Collection<? extends M3TextInputLayout> inputs) {
         List<M3TextInputLayout> validatedInputs = validatedInputs(inputs);
         uninstallInputs(this.inputs);
@@ -106,6 +123,9 @@ public final class M3FormValidator {
     }
 
     /// Removes one input layout from the validation order.
+    ///
+    /// @param input the input layout to remove
+    /// @return `true` when the input layout was registered and removed
     public boolean removeInput(M3TextInputLayout input) {
         M3TextInputLayout validatedInput = Objects.requireNonNull(input, "input");
         boolean removed = inputs.remove(validatedInput);
@@ -124,51 +144,71 @@ public final class M3FormValidator {
     }
 
     /// Returns the currently invalid input layouts in validation order.
+    ///
+    /// @return the currently invalid input layouts in validation order
     public @UnmodifiableView ObservableList<M3TextInputLayout> getInvalidInputs() {
         return invalidInputsView;
     }
 
     /// Returns the first invalid input layout in validation order.
+    ///
+    /// @return the first invalid input layout in validation order, or `null` when all inputs are valid
     public @Nullable M3TextInputLayout getFirstInvalidInput() {
         return firstInvalidInput.get();
     }
 
     /// Returns the first invalid input layout property.
+    ///
+    /// @return the first invalid input layout property
     public ReadOnlyObjectProperty<@Nullable M3TextInputLayout> firstInvalidInputProperty() {
         return firstInvalidInput.getReadOnlyProperty();
     }
 
     /// Returns whether all registered input layouts are currently valid.
+    ///
+    /// @return `true` when all registered input layouts are currently valid
     public boolean isValid() {
         return valid.get();
     }
 
     /// Returns the valid state property.
+    ///
+    /// @return the valid state property
     public ReadOnlyBooleanProperty validProperty() {
         return valid.getReadOnlyProperty();
     }
 
     /// Returns whether at least one registered input layout has active validation.
+    ///
+    /// @return `true` when at least one registered input layout has active validation
     public boolean isValidationActive() {
         return validationActive.get();
     }
 
     /// Returns the group validation-active state property.
+    ///
+    /// @return the group validation-active state property
     public ReadOnlyBooleanProperty validationActiveProperty() {
         return validationActive.getReadOnlyProperty();
     }
 
     /// Returns the number of currently invalid input layouts.
+    ///
+    /// @return the number of currently invalid input layouts
     public int getInvalidInputCount() {
         return invalidInputCount.get();
     }
 
     /// Returns the invalid input count property.
+    ///
+    /// @return the invalid input count property
     public ReadOnlyIntegerProperty invalidInputCountProperty() {
         return invalidInputCount.getReadOnlyProperty();
     }
 
     /// Runs validation on all registered input layouts and returns whether all are valid.
+    ///
+    /// @return `true` when all registered input layouts validate successfully
     public boolean validate() {
         boolean valid = true;
         for (M3TextInputLayout input : inputs) {
@@ -179,6 +219,9 @@ public final class M3FormValidator {
     }
 
     /// Runs validation on one registered input layout and returns whether it is valid.
+    ///
+    /// @param input the registered input layout to validate
+    /// @return `true` when the input layout validates successfully
     public boolean validateInput(M3TextInputLayout input) {
         boolean valid = registeredInput(input).validate();
         refreshInvalidInputs();
@@ -194,12 +237,16 @@ public final class M3FormValidator {
     }
 
     /// Clears validator-produced error state on one registered input layout.
+    ///
+    /// @param input the registered input layout whose validation state is cleared
     public void clearValidation(M3TextInputLayout input) {
         registeredInput(input).clearValidation();
         refreshInvalidInputs();
     }
 
     /// Requests focus on the first invalid input layout and returns whether one existed.
+    ///
+    /// @return `true` when an invalid input existed and focus was requested
     public boolean focusFirstInvalidInput() {
         @Nullable M3TextInputLayout invalidInput = getFirstInvalidInput();
         if (invalidInput == null) {
@@ -216,6 +263,8 @@ public final class M3FormValidator {
     }
 
     /// Runs validation, focuses the first invalid input layout, and returns whether all inputs are valid.
+    ///
+    /// @return `true` when all registered input layouts validate successfully
     public boolean validateAndFocusFirstInvalidInput() {
         boolean valid = validate();
         if (!valid) {

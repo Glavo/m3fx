@@ -55,10 +55,10 @@ public class M3FormPane extends Control {
     /// The listener used to refresh accessibility state when form items change.
     private final ListChangeListener<Node> itemsListener = change -> handleItemsChanged();
 
-    /// The styleable content padding token.
+    // The styleable content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// The styleable row spacing token.
+    // The styleable row spacing token.
     private @Nullable StyleableDoubleProperty rowSpacing;
 
     /// Creates an empty form pane.
@@ -67,28 +67,38 @@ public class M3FormPane extends Control {
     }
 
     /// Creates a form pane containing the supplied items.
+    ///
+    /// @param items the initial top-level form items
     public M3FormPane(Node... items) {
         initialize();
         addItems(items);
     }
 
     /// Returns the mutable top-level form item list.
+    ///
+    /// @return the mutable top-level form item list
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one form item.
+    ///
+    /// @param item the form item to add
     public final void addItem(Node item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds form items in order.
+    ///
+    /// @param items the form items to add
     public final void addItems(Node... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all form items.
+    ///
+    /// @param items the replacement form items
     public final void setItems(Node... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -100,16 +110,22 @@ public class M3FormPane extends Control {
     }
 
     /// Returns the uniform content padding used by the default skin.
+    ///
+    /// @return the uniform content padding used by the default skin
     public final double getContentPadding() {
         return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
     }
 
     /// Sets the uniform content padding used by the default skin.
+    ///
+    /// @param contentPadding the uniform content padding used by the default skin
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
     /// Returns the content padding token property.
+    ///
+    /// @return the content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
@@ -143,16 +159,22 @@ public class M3FormPane extends Control {
     }
 
     /// Returns the vertical spacing between top-level form items.
+    ///
+    /// @return the vertical spacing between top-level form items
     public final double getRowSpacing() {
         return rowSpacing == null ? DEFAULT_ROW_SPACING : rowSpacing.get();
     }
 
     /// Sets the vertical spacing between top-level form items.
+    ///
+    /// @param rowSpacing the vertical spacing between top-level form items
     public final void setRowSpacing(double rowSpacing) {
         rowSpacingProperty().set(M3Css.nonNegative(rowSpacing, "rowSpacing"));
     }
 
     /// Returns the row spacing token property.
+    ///
+    /// @return the row spacing token property
     public final StyleableDoubleProperty rowSpacingProperty() {
         if (rowSpacing == null) {
             rowSpacing = new StyleableDoubleProperty(DEFAULT_ROW_SPACING) {
@@ -221,6 +243,8 @@ public class M3FormPane extends Control {
     }
 
     /// Returns the CSS metadata for this node class.
+    ///
+    /// @return the CSS metadata for this node class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

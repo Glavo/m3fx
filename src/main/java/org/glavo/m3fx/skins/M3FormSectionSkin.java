@@ -37,6 +37,8 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
     private final InvalidationListener updateListener = observable -> updateView();
 
     /// Creates a form section skin.
+    ///
+    /// @param control the form section controlled by this skin
     public M3FormSectionSkin(M3FormSection control) {
         super(control);
         root.setManaged(false);

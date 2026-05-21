@@ -46,7 +46,7 @@ public class M3IconToggleButtonGroup extends Control {
     /// The mutable toggle icon button group content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
-    /// The icon toggle button selection mode.
+    // The icon toggle button selection mode.
     private final ObjectProperty<M3IconToggleButtonSelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3IconToggleButtonSelectionMode.SINGLE) {
                 /// Enforces selection invariants when the mode changes.
@@ -67,11 +67,11 @@ public class M3IconToggleButtonGroup extends Control {
     private final @UnmodifiableView ObservableList<M3IconToggleButton> selectedButtonsView =
             FXCollections.unmodifiableObservableList(selectedButtons);
 
-    /// The currently selected toggle icon button.
+    // The currently selected toggle icon button.
     private final ReadOnlyObjectWrapper<@Nullable M3IconToggleButton> selectedButton =
             new ReadOnlyObjectWrapper<>(this, "selectedButton");
 
-    /// Whether the group allows all buttons to be unselected.
+    // Whether the group allows all buttons to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected button when empty selection is disabled.
         @Override
@@ -115,28 +115,38 @@ public class M3IconToggleButtonGroup extends Control {
     }
 
     /// Creates a toggle icon button group containing the supplied buttons.
+    ///
+    /// @param buttons the initial toggle icon buttons
     public M3IconToggleButtonGroup(M3IconToggleButton... buttons) {
         initialize();
         addButtons(buttons);
     }
 
     /// Returns the mutable child list used as toggle icon button group content.
+    ///
+    /// @return the mutable child list used as toggle icon button group content
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one toggle icon button.
+    ///
+    /// @param button the toggle icon button to add
     public final void addButton(M3IconToggleButton button) {
         getItems().add(Objects.requireNonNull(button, "button"));
     }
 
     /// Adds toggle icon buttons.
+    ///
+    /// @param buttons the toggle icon buttons to add
     public final void addButtons(M3IconToggleButton... buttons) {
         validateButtons(buttons);
         getItems().addAll(buttons);
     }
 
     /// Replaces all toggle icon buttons.
+    ///
+    /// @param buttons the replacement toggle icon buttons
     public final void setButtons(M3IconToggleButton... buttons) {
         validateButtons(buttons);
         getItems().setAll(buttons);
@@ -148,57 +158,79 @@ public class M3IconToggleButtonGroup extends Control {
     }
 
     /// Returns the icon toggle button selection mode.
+    ///
+    /// @return the icon toggle button selection mode
     public final M3IconToggleButtonSelectionMode getSelectionMode() {
         return selectionMode.get();
     }
 
     /// Sets the icon toggle button selection mode.
+    ///
+    /// @param selectionMode the icon toggle button selection mode
     public final void setSelectionMode(M3IconToggleButtonSelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the icon toggle button selection mode property.
+    ///
+    /// @return the icon toggle button selection mode property
     public final ObjectProperty<M3IconToggleButtonSelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
     /// Returns the selected icon toggle buttons in child order.
+    ///
+    /// @return the selected icon toggle buttons in child order
     public final @UnmodifiableView ObservableList<M3IconToggleButton> getSelectedButtons() {
         return selectedButtonsView;
     }
 
     /// Returns the selected toggle icon button.
+    ///
+    /// @return the selected toggle icon button, or `null` when there is no selected button
     public final @Nullable M3IconToggleButton getSelectedButton() {
         return selectedButton.get();
     }
 
     /// Returns the selected toggle icon button property.
+    ///
+    /// @return the selected toggle icon button property
     public final ReadOnlyObjectProperty<@Nullable M3IconToggleButton> selectedButtonProperty() {
         return selectedButton.getReadOnlyProperty();
     }
 
     /// Returns the child index of the first selected toggle icon button, or `-1` when none is selected.
+    ///
+    /// @return the child index of the first selected toggle icon button, or `-1` when none is selected
     public final int getSelectedIndex() {
         @Nullable M3IconToggleButton button = getSelectedButton();
         return button == null ? -1 : getItems().indexOf(button);
     }
 
     /// Returns whether this group allows all buttons to be unselected.
+    ///
+    /// @return `true` when this group allows all buttons to be unselected
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
     }
 
     /// Sets whether this group allows all buttons to be unselected.
+    ///
+    /// @param allowEmptySelection whether this group allows all buttons to be unselected
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property.
+    ///
+    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
 
     /// Selects a toggle icon button that belongs to this group.
+    ///
+    /// @param button the toggle icon button to select
     public final void select(M3IconToggleButton button) {
         Objects.requireNonNull(button, "button");
         if (!getItems().contains(button)) {
@@ -212,6 +244,8 @@ public class M3IconToggleButtonGroup extends Control {
     }
 
     /// Selects the toggle icon button at the given child index.
+    ///
+    /// @param index the child index to select
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3IconToggleButton button) {

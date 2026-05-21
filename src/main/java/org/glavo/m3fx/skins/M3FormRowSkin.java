@@ -41,6 +41,8 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
     private final InvalidationListener updateListener = observable -> updateView();
 
     /// Creates a form row skin.
+    ///
+    /// @param control the form row controlled by this skin
     public M3FormRowSkin(M3FormRow control) {
         super(control);
         container.setManaged(false);

@@ -10,6 +10,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public class M3IconToggleButtonSkin extends M3LabeledButtonSkinBase<M3IconToggleButton> {
     /// Creates a toggle icon button skin.
+    ///
+    /// @param control the toggle icon button controlled by this skin
     public M3IconToggleButtonSkin(M3IconToggleButton control) {
         super(control);
     }

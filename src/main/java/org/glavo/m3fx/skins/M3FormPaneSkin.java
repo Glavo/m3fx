@@ -24,6 +24,8 @@ public final class M3FormPaneSkin extends SkinBase<M3FormPane> {
     private final InvalidationListener metricsListener = observable -> updateMetrics();
 
     /// Creates a form pane skin.
+    ///
+    /// @param control the form pane controlled by this skin
     public M3FormPaneSkin(M3FormPane control) {
         super(control);
         content.setManaged(false);

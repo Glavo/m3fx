@@ -19,6 +19,8 @@ public final class M3IconSkin extends SkinBase<M3Icon> {
     private final Text glyph = new Text();
 
     /// Creates an icon skin.
+    ///
+    /// @param control the icon controlled by this skin
     public M3IconSkin(M3Icon control) {
         super(control);
         initializeGlyph(control);

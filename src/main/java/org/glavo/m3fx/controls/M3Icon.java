@@ -54,7 +54,7 @@ public class M3Icon extends Labeled {
     /// The layout line box multiplier used to keep fallback font glyphs from being clipped.
     private static final double ICON_LINE_BOX_SCALE = 1.25;
 
-    /// The icon size role property.
+    // The icon size role property.
     private final ObjectProperty<M3IconSize> size =
             new SimpleObjectProperty<>(this, "size", M3IconSize.MEDIUM) {
                 /// Updates icon size style classes when the property changes.
@@ -68,7 +68,7 @@ public class M3Icon extends Labeled {
                 }
             };
 
-    /// The icon color variant property.
+    // The icon color variant property.
     private final ObjectProperty<M3IconVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3IconVariant.ON_SURFACE_VARIANT) {
                 /// Updates icon color style classes when the property changes.
@@ -82,13 +82,13 @@ public class M3Icon extends Labeled {
                 }
             };
 
-    /// The styleable icon font family token.
+    // The styleable icon font family token.
     private @Nullable StyleableObjectProperty<@Nullable String> iconFontFamily;
 
-    /// The styleable icon size token.
+    // The styleable icon size token.
     private @Nullable StyleableDoubleProperty iconSize;
 
-    /// The styleable icon font weight token.
+    // The styleable icon font weight token.
     private @Nullable StyleableObjectProperty<@Nullable FontWeight> iconFontWeight;
 
     /// Creates an empty medium icon.
@@ -97,12 +97,18 @@ public class M3Icon extends Labeled {
     }
 
     /// Creates a medium icon with text content.
+    ///
+    /// @param text the glyph text rendered by this icon
     public M3Icon(String text) {
         initialize();
         setText(Objects.requireNonNull(text, "text"));
     }
 
     /// Creates an icon with text content, size, and color variant.
+    ///
+    /// @param text the glyph text rendered by this icon
+    /// @param size the icon size role
+    /// @param variant the icon color variant
     public M3Icon(String text, M3IconSize size, M3IconVariant variant) {
         initialize();
         setText(Objects.requireNonNull(text, "text"));
@@ -111,36 +117,50 @@ public class M3Icon extends Labeled {
     }
 
     /// Returns the icon size role.
+    ///
+    /// @return the icon size role
     public final M3IconSize getSize() {
         return size.get();
     }
 
     /// Sets the icon size role.
+    ///
+    /// @param size the icon size role
     public final void setSize(M3IconSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
     /// Returns the icon size role property.
+    ///
+    /// @return the icon size role property
     public final ObjectProperty<M3IconSize> sizeProperty() {
         return size;
     }
 
     /// Returns the icon color variant.
+    ///
+    /// @return the icon color variant
     public final M3IconVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the icon color variant.
+    ///
+    /// @param variant the icon color variant
     public final void setVariant(M3IconVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the icon color variant property.
+    ///
+    /// @return the icon color variant property
     public final ObjectProperty<M3IconVariant> variantProperty() {
         return variant;
     }
 
     /// Returns the icon font family token.
+    ///
+    /// @return the icon font family token
     public final String getIconFontFamily() {
         return iconFontFamily == null
                 ? DEFAULT_ICON_FONT_FAMILY
@@ -148,11 +168,15 @@ public class M3Icon extends Labeled {
     }
 
     /// Sets the icon font family token.
+    ///
+    /// @param iconFontFamily the icon font family token
     public final void setIconFontFamily(String iconFontFamily) {
         iconFontFamilyProperty().set(Objects.requireNonNull(iconFontFamily, "iconFontFamily"));
     }
 
     /// Returns the icon font family token property.
+    ///
+    /// @return the icon font family token property
     public final StyleableObjectProperty<@Nullable String> iconFontFamilyProperty() {
         if (iconFontFamily == null) {
             iconFontFamily = new StyleableObjectProperty<>(DEFAULT_ICON_FONT_FAMILY) {
@@ -189,16 +213,22 @@ public class M3Icon extends Labeled {
     }
 
     /// Returns the icon size token.
+    ///
+    /// @return the icon size token
     public final double getIconSize() {
         return iconSize == null ? getSize().getDefaultSize() : iconSize.get();
     }
 
     /// Sets the icon size token.
+    ///
+    /// @param iconSize the icon size token
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
     /// Returns the icon size token property.
+    ///
+    /// @return the icon size token property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = new StyleableDoubleProperty(DEFAULT_ICON_SIZE) {
@@ -233,16 +263,22 @@ public class M3Icon extends Labeled {
     }
 
     /// Returns the icon font weight token.
+    ///
+    /// @return the icon font weight token
     public final double getIconFontWeight() {
         return getIconFontWeightValue().getWeight();
     }
 
     /// Sets the icon font weight token.
+    ///
+    /// @param iconFontWeight the icon font weight token
     public final void setIconFontWeight(double iconFontWeight) {
         iconFontWeightProperty().set(validateFontWeight(iconFontWeight));
     }
 
     /// Returns the icon font weight token property.
+    ///
+    /// @return the icon font weight token property
     public final StyleableObjectProperty<@Nullable FontWeight> iconFontWeightProperty() {
         if (iconFontWeight == null) {
             iconFontWeight = new StyleableObjectProperty<>(DEFAULT_ICON_FONT_WEIGHT) {
@@ -285,6 +321,8 @@ public class M3Icon extends Labeled {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

@@ -25,6 +25,8 @@ public class M3IconButton extends M3Button {
     }
 
     /// Creates an icon button with a graphic.
+    ///
+    /// @param graphic the graphic displayed by the icon button, or `null`
     public M3IconButton(@Nullable Node graphic) {
         super("", graphic);
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -33,11 +35,19 @@ public class M3IconButton extends M3Button {
     }
 
     /// Creates an icon button with an M3FX icon label.
+    ///
+    /// @param iconText the glyph text rendered by the icon
+    /// @return an icon button containing an M3FX icon label
     public static M3IconButton withIcon(String iconText) {
         return new M3IconButton(new M3Icon(iconText));
     }
 
     /// Creates an icon button with an M3FX icon label, size, and color variant.
+    ///
+    /// @param iconText the glyph text rendered by the icon
+    /// @param iconSize the icon size role
+    /// @param iconVariant the icon color variant
+    /// @return an icon button containing an M3FX icon label
     public static M3IconButton withIcon(String iconText, M3IconSize iconSize, M3IconVariant iconVariant) {
         return new M3IconButton(new M3Icon(iconText, iconSize, iconVariant));
     }
