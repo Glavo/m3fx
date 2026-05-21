@@ -94,21 +94,25 @@
 .m3-radio-button:pressed .radio {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
-    -fx-background-radius: 999px;
-    -fx-border-color: -m3-color-on-surface-variant;
-    -fx-border-insets: 0;
-    -fx-border-radius: 999px;
-    -fx-border-width: 2px;
     -fx-padding: 0px;
 }
 
-.m3-radio-button:selected .radio,
-.m3-radio-button:selected:hover .radio,
-.m3-radio-button:selected:focused .radio,
-.m3-radio-button:selected:armed .radio,
-.m3-radio-button:selected:pressed .radio {
-    -fx-background-color: transparent;
-    -fx-border-color: -m3-color-primary;
+.m3-radio-button .radio .ring,
+.m3-radio-button:hover .radio .ring,
+.m3-radio-button:focused .radio .ring,
+.m3-radio-button:armed .radio .ring,
+.m3-radio-button:pressed .radio .ring {
+    -fx-fill: transparent;
+    -fx-stroke: -m3-color-on-surface-variant;
+    -fx-stroke-width: 2px;
+}
+
+.m3-radio-button:selected .radio .ring,
+.m3-radio-button:selected:hover .radio .ring,
+.m3-radio-button:selected:focused .radio .ring,
+.m3-radio-button:selected:armed .radio .ring,
+.m3-radio-button:selected:pressed .radio .ring {
+    -fx-stroke: -m3-color-primary;
 }
 
 .m3-radio-button .radio .dot,
@@ -116,10 +120,9 @@
 .m3-radio-button:focused .radio .dot,
 .m3-radio-button:armed .radio .dot,
 .m3-radio-button:pressed .radio .dot {
-    -fx-background-color: transparent;
-    -fx-background-insets: 0;
-    -fx-background-radius: 999px;
-    -fx-padding: 0px;
+    -fx-fill: transparent;
+    -fx-stroke: transparent;
+    -fx-stroke-width: 0px;
 }
 
 .m3-radio-button:selected .radio .dot,
@@ -127,7 +130,7 @@
 .m3-radio-button:selected:focused .radio .dot,
 .m3-radio-button:selected:armed .radio .dot,
 .m3-radio-button:selected:pressed .radio .dot {
-    -fx-background-color: -m3-color-primary;
+    -fx-fill: -m3-color-primary;
 }
 
 .m3-switch .box,
@@ -215,12 +218,12 @@
     -fx-background-color: -m3-color-surface;
 }
 
-.m3-radio-button:disabled .radio,
-.m3-radio-button:disabled:hover .radio,
-.m3-radio-button:disabled:focused .radio,
-.m3-radio-button:disabled:armed .radio,
-.m3-radio-button:disabled:pressed .radio {
-    -fx-border-color: -m3-color-on-surface;
+.m3-radio-button:disabled .radio .ring,
+.m3-radio-button:disabled:hover .radio .ring,
+.m3-radio-button:disabled:focused .radio .ring,
+.m3-radio-button:disabled:armed .radio .ring,
+.m3-radio-button:disabled:pressed .radio .ring {
+    -fx-stroke: -m3-color-on-surface;
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
@@ -229,7 +232,8 @@
 .m3-radio-button:selected:disabled:focused .radio .dot,
 .m3-radio-button:selected:disabled:armed .radio .dot,
 .m3-radio-button:selected:disabled:pressed .radio .dot {
-    -fx-background-color: -m3-color-on-surface;
+    -fx-fill: -m3-color-on-surface;
+    -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
 .m3-switch:disabled .box,

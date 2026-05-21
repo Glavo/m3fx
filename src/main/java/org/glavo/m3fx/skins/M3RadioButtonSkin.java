@@ -8,9 +8,9 @@ import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.StrokeType;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.internal.M3Animation;
@@ -28,11 +28,14 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     /// The selected radio dot size.
     private static final double DOT_SIZE = 10.0;
 
-    /// The visual radio indicator.
-    private final StackPane radio = new StackPane();
+    /// The visual radio indicator container.
+    private final Pane radio = new Pane();
+
+    /// The selected and unselected radio ring.
+    private final Circle ring = new Circle();
 
     /// The selected radio dot.
-    private final Region dot = new Region();
+    private final Circle dot = new Circle();
 
     /// The selected dot appearance animation.
     private final Timeline selectionAnimation = new Timeline();
@@ -48,10 +51,12 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     public M3RadioButtonSkin(M3RadioButton control) {
         super(control);
         radio.getStyleClass().addAll("radio", "m3-radio");
+        ring.getStyleClass().addAll("ring", "m3-radio-ring");
         dot.getStyleClass().addAll("dot", "m3-radio-dot");
-        configureCircleShape(radio, RADIO_SIZE);
-        configureCircleShape(dot, DOT_SIZE);
-        radio.getChildren().add(dot);
+        configureCircle(ring);
+        configureCircle(dot);
+        ring.setStrokeType(StrokeType.INSIDE);
+        radio.getChildren().addAll(ring, dot);
         indicatorSlot().getChildren().add(radio);
 
         applySelectedState(control.isSelected());
@@ -74,7 +79,8 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         double touchTargetSize = getSkinnable().getTouchTargetSize();
         setIndicatorSlotSize(touchTargetSize, touchTargetSize);
         setFixedSize(radio, RADIO_SIZE, RADIO_SIZE);
-        setFixedSize(dot, DOT_SIZE, DOT_SIZE);
+        layoutCircle(ring, RADIO_SIZE / 2.0, RADIO_SIZE / 2.0, RADIO_SIZE / 2.0);
+        layoutCircle(dot, RADIO_SIZE / 2.0, RADIO_SIZE / 2.0, DOT_SIZE / 2.0);
     }
 
     /// Applies the selected dot state without animation.
@@ -97,12 +103,17 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 
-    /// Configures a region to paint as an exact circle instead of a rounded rectangle.
-    private static void configureCircleShape(Region region, double size) {
-        double radius = size / 2.0;
-        region.setShape(new Circle(radius, radius, radius));
-        region.setScaleShape(false);
-        region.setCenterShape(false);
-        region.setCacheShape(false);
+    /// Configures a circle for unmanaged indicator painting.
+    private static void configureCircle(Circle circle) {
+        circle.setManaged(false);
+        circle.setMouseTransparent(true);
+        circle.setSmooth(true);
+    }
+
+    /// Positions a circle at the requested center.
+    private static void layoutCircle(Circle circle, double centerX, double centerY, double radius) {
+        circle.setCenterX(centerX);
+        circle.setCenterY(centerY);
+        circle.setRadius(radius);
     }
 }

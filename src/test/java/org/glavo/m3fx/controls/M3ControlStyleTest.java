@@ -5521,8 +5521,8 @@ final class M3ControlStyleTest {
 
         Region uncheckedMark = lookupRegion(uncheckedCheckBox, ".mark");
         Region checkedMark = lookupRegion(checkedCheckBox, ".mark");
-        Region uncheckedDot = lookupRegion(uncheckedRadioButton, ".dot");
-        Region checkedDot = lookupRegion(checkedRadioButton, ".dot");
+        Shape uncheckedDot = lookupShape(uncheckedRadioButton, ".dot");
+        Shape checkedDot = lookupShape(checkedRadioButton, ".dot");
         assertEquals(0.0, uncheckedMark.getOpacity(), 0.0001);
         assertTrue(uncheckedMark.getScaleX() < 1.0);
         assertEquals(1.0, checkedMark.getOpacity(), 0.0001);
@@ -5593,7 +5593,7 @@ final class M3ControlStyleTest {
             row.layout();
 
             Region mark = lookupRegion(checkBox, ".mark");
-            Region dot = lookupRegion(radioButton, ".dot");
+            Shape dot = lookupShape(radioButton, ".dot");
             Region thumb = lookupRegion(switchControl, ".thumb");
             assertBetween(mark.getOpacity(), 0.0, 1.0, "checkbox mark opacity");
             assertBetween(mark.getScaleX(), 0.72, 1.0, "checkbox mark scale");
@@ -5966,22 +5966,27 @@ final class M3ControlStyleTest {
                 + " -m3-color-on-surface-variant: rgb(4,5,6);");
         applyInteractivePseudoClasses(radioButton);
         root.applyCss();
+        root.resize(160.0, 80.0);
+        radioButton.resizeRelocate(20.0, 20.0, 120.0, 40.0);
+        radioButton.layout();
+        root.layout();
 
         Region radio = radioIndicator(radioButton);
-        Region dot = radioDot(radioButton);
-        assertRegionFill(radio, Color.TRANSPARENT);
-        assertBorderColor(radio, Color.rgb(4, 5, 6));
-        assertEquals(2.0, radio.getBorder().getStrokes().get(0).getWidths().getTop(), 0.0001);
-        assertTrue(radio.getBorder().getStrokes().get(0).getRadii().getTopLeftHorizontalRadius() > 20.0);
-        assertRegionFill(dot, Color.TRANSPARENT);
+        Shape ring = radioRing(radioButton);
+        Shape dot = radioDot(radioButton);
+        assertEquals(20.0, radio.getWidth(), 0.0001);
+        assertEquals(20.0, radio.getHeight(), 0.0001);
+        assertShapeFill(ring, Color.TRANSPARENT);
+        assertEquals(Color.rgb(4, 5, 6), ring.getStroke());
+        assertEquals(2.0, ring.getStrokeWidth(), 0.0001);
+        assertShapeFill(dot, Color.TRANSPARENT);
 
         radioButton.setSelected(true);
         root.applyCss();
 
-        assertRegionFill(radio, Color.TRANSPARENT);
-        assertBorderColor(radio, Color.rgb(1, 2, 3));
-        assertRegionFill(dot, Color.rgb(1, 2, 3));
-        assertTrue(dot.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius() > 20.0);
+        assertShapeFill(ring, Color.TRANSPARENT);
+        assertEquals(Color.rgb(1, 2, 3), ring.getStroke());
+        assertShapeFill(dot, Color.rgb(1, 2, 3));
     }
 
     /// Verifies that a selected radio button paints its dot at the visual center of the outer indicator.
@@ -5992,31 +5997,41 @@ final class M3ControlStyleTest {
             Pane root = new Pane(radioButton);
             root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
             Scene scene = new Scene(root, 180.0, 80.0);
+            Stage stage = new Stage();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.resize(180.0, 80.0);
-            radioButton.resizeRelocate(20.0, 20.0, 120.0, 40.0);
-            radioButton.layout();
-            root.layout();
+            try {
+                stage.setScene(scene);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.resize(180.0, 80.0);
+                radioButton.resizeRelocate(20.0, 20.0, 120.0, 40.0);
+                radioButton.layout();
+                root.layout();
 
-            Region radio = radioIndicator(radioButton);
-            Region dot = radioDot(radioButton);
-            Point2D radioCenter = radio.localToScene(radio.getWidth() / 2.0, radio.getHeight() / 2.0);
-            Point2D dotCenter = dot.localToScene(dot.getWidth() / 2.0, dot.getHeight() / 2.0);
-            assertEquals(radioCenter.getX(), dotCenter.getX(), 0.0001);
-            assertEquals(radioCenter.getY(), dotCenter.getY(), 0.0001);
+                Region radio = radioIndicator(radioButton);
+                Shape dot = radioDot(radioButton);
+                Point2D radioCenter = radio.localToScene(radio.getWidth() / 2.0, radio.getHeight() / 2.0);
+                Point2D dotCenter = dot.localToScene(
+                        dot.getBoundsInLocal().getCenterX(),
+                        dot.getBoundsInLocal().getCenterY()
+                );
+                assertEquals(radioCenter.getX(), dotCenter.getX(), 0.0001);
+                assertEquals(radioCenter.getY(), dotCenter.getY(), 0.0001);
 
-            WritableImage image = snapshotImageOnFxThread(root);
-            Point2D renderedDotCenter = contrastingPixelCentroid(image, dot, Color.WHITE, 0.08);
-            assertEquals(radioCenter.getX(), renderedDotCenter.getX(), 0.8);
-            assertEquals(radioCenter.getY(), renderedDotCenter.getY(), 0.8);
-            writeVisualSnapshot(image, java.nio.file.Path.of(
-                    "build",
-                    "reports",
-                    "m3fx-visual",
-                    "visual-radio-dot-centering.png"
-            ));
+                WritableImage image = snapshotImageOnFxThread(root);
+                Point2D renderedDotCenter = contrastingPixelCentroid(image, dot, Color.WHITE, 0.08);
+                assertEquals(radioCenter.getX(), renderedDotCenter.getX(), 0.8);
+                assertEquals(radioCenter.getY(), renderedDotCenter.getY(), 0.8);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-radio-dot-centering.png"
+                ));
+            } finally {
+                stage.close();
+            }
         });
     }
 
@@ -10248,10 +10263,10 @@ final class M3ControlStyleTest {
                     Color.rgb(30, 28, 32),
                     0.1
             );
-            assertSnapshotNodeBorderContainsContrast(image, lookupRegion(uncheckedRadioButton, ".radio"), Color.WHITE, 0.08);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(selectedRadioButton, ".dot"), Color.WHITE, 0.1);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(disabledUncheckedRadioButton, ".radio"), Color.WHITE, 0.03);
-            assertSnapshotNodeContainsContrast(image, lookupRegion(disabledSelectedRadioButton, ".dot"), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, lookupShape(uncheckedRadioButton, ".ring"), Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, lookupShape(selectedRadioButton, ".dot"), Color.WHITE, 0.1);
+            assertSnapshotNodeContainsContrast(image, lookupShape(disabledUncheckedRadioButton, ".ring"), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, lookupShape(disabledSelectedRadioButton, ".dot"), Color.WHITE, 0.03);
             assertSnapshotNodeBorderContainsContrast(image, lookupRegion(offSwitch, ".box"), Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, lookupRegion(onSwitch, ".box"), Color.WHITE, 0.1);
             assertSnapshotNodeContainsContrast(image, lookupRegion(onSwitch, ".thumb"), Color.rgb(84, 50, 185), 0.1);
@@ -12851,17 +12866,25 @@ final class M3ControlStyleTest {
         return (Region) radio;
     }
 
-    /// Returns the radio indicator dot region.
-    private static Region radioDot(M3RadioButton radioButton) {
-        Node dot = radioButton.lookup(".dot");
-        assertInstanceOf(Region.class, dot);
-        return (Region) dot;
+    /// Returns the radio indicator ring shape.
+    private static Shape radioRing(M3RadioButton radioButton) {
+        return lookupShape(radioButton, ".ring");
+    }
+
+    /// Returns the radio indicator dot shape.
+    private static Shape radioDot(M3RadioButton radioButton) {
+        return lookupShape(radioButton, ".dot");
     }
 
     /// Verifies the first background fill for a region.
     private static void assertRegionFill(Region region, Color expectedFill) {
         assertEquals(1, region.getBackground().getFills().size());
         assertEquals(expectedFill, region.getBackground().getFills().get(0).getFill());
+    }
+
+    /// Verifies the fill color for a shape.
+    private static void assertShapeFill(Shape shape, Color expectedFill) {
+        assertEquals(expectedFill, shape.getFill());
     }
 
     /// Verifies that a region background resolved to a concrete color.
