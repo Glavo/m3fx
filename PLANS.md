@@ -39,6 +39,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Demo shadow jar excludes JavaFX artifacts.
 - jlink support uses BellSoft LibericaJDK Full jmods.
 - Platform and architecture-specific jlink tasks cover Windows, Linux, and macOS on x64 and AArch64.
+- Runtime packaging choices for library usage, demo shadow jars, and jlink images are documented in `docs/PACKAGING.md`.
 - GitHub Actions builds the demo shadow jar and uploads it as an artifact.
 
 ### Theme, Tokens, And Motion
@@ -77,7 +78,6 @@ This file tracks product status and planning only. Repository rules, code style,
 - Continue filling component gaps and richer composite workflows where existing controls are still shallow.
 - Tighten accessibility behavior for composite controls, especially keyboard parity and focus routing across popups.
 - Improve M3 Expressive parity with profile-specific component tokens and visual verification as target values become stable.
-- Document runtime packaging choices for normal jars, demo shadow jars, and jlink images.
 
 ## Validation Entry Points
 
