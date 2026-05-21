@@ -10,6 +10,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public class M3FloatingActionButtonSkin extends M3LabeledButtonSkinBase<M3FloatingActionButton> {
     /// Creates a floating action button skin.
+    ///
+    /// @param control the floating action button controlled by this skin
     public M3FloatingActionButtonSkin(M3FloatingActionButton control) {
         super(control);
     }

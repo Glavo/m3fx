@@ -38,7 +38,7 @@ public class M3Dialog<R> extends Dialog<R> {
     private static final String THEME_STYLESHEET_PROPERTY_KEY =
             M3Dialog.class.getName() + ".themeStylesheet";
 
-    /// The explicit theme applied directly to the dialog pane.
+    // The explicit theme applied directly to the dialog pane.
     private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
         /// Applies theme declarations to the Material dialog pane.
         @Override
@@ -54,12 +54,19 @@ public class M3Dialog<R> extends Dialog<R> {
     }
 
     /// Creates a Material Design 3 dialog with a title.
+    ///
+    /// @param title the dialog window title
     public M3Dialog(String title) {
         this();
         setTitle(Objects.requireNonNull(title, "title"));
     }
 
     /// Creates a Material Design 3 dialog with title, header text, content text, and button types.
+    ///
+    /// @param title the dialog window title
+    /// @param headerText the dialog pane header text
+    /// @param contentText the dialog pane content text
+    /// @param buttonTypes the button types installed in the dialog pane
     public M3Dialog(
             String title,
             String headerText,
@@ -79,6 +86,8 @@ public class M3Dialog<R> extends Dialog<R> {
     }
 
     /// Returns the Material Design 3 dialog pane.
+    ///
+    /// @return the Material Design 3 dialog pane
     public final M3DialogPane getM3DialogPane() {
         DialogPane pane = getDialogPane();
         if (pane instanceof M3DialogPane materialPane) {
@@ -90,6 +99,8 @@ public class M3Dialog<R> extends Dialog<R> {
     /// Returns the explicit theme applied directly to this dialog.
     ///
     /// When this value is null, the dialog inherits the owner scene theme when it is shown.
+    ///
+    /// @return the explicit theme applied to this dialog, or `null` to inherit from the owner scene
     public final @Nullable M3Theme getTheme() {
         return theme.get();
     }
@@ -97,11 +108,15 @@ public class M3Dialog<R> extends Dialog<R> {
     /// Sets the explicit theme applied directly to this dialog.
     ///
     /// Passing null clears the explicit override and allows owner scene theme inheritance.
+    ///
+    /// @param theme the explicit theme to apply, or `null` to inherit from the owner scene
     public final void setTheme(@Nullable M3Theme theme) {
         this.theme.set(theme);
     }
 
     /// Returns the explicit theme property.
+    ///
+    /// @return the explicit theme property
     public final ObjectProperty<@Nullable M3Theme> themeProperty() {
         return theme;
     }

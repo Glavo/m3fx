@@ -66,7 +66,7 @@ public class M3FabMenu extends Control {
     /// The toggle floating action button.
     private final M3FloatingActionButton toggleButton;
 
-    /// Whether the action items are currently expanded.
+    // Whether the action items are currently expanded.
     private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
         /// Applies expanded state when changed.
         @Override
@@ -102,11 +102,17 @@ public class M3FabMenu extends Control {
     }
 
     /// Creates a floating action button menu with default toggle button and action items.
+    ///
+    /// @param items the action items shown when the menu is expanded
     public M3FabMenu(Node... items) {
         this(createDefaultToggleButton(), items);
     }
 
     /// Creates a floating action button menu with a custom toggle button and action items.
+    ///
+    /// @param toggleButton the floating action button used to expand or collapse the menu
+    /// @param items the action items shown when the menu is expanded
+    /// @return a floating action button menu with the supplied toggle button
     public static M3FabMenu withToggleButton(M3FloatingActionButton toggleButton, Node... items) {
         return new M3FabMenu(toggleButton, items);
     }
@@ -119,32 +125,44 @@ public class M3FabMenu extends Control {
     }
 
     /// Returns the toggle floating action button.
+    ///
+    /// @return the toggle floating action button
     public final M3FloatingActionButton getToggleButton() {
         return toggleButton;
     }
 
     /// Returns the action item container used by the default skin.
+    ///
+    /// @return the action item container used by the default skin
     public final VBox getActionsContainer() {
         return actions;
     }
 
     /// Returns the mutable action item list.
+    ///
+    /// @return the mutable action item list
     public final ObservableList<Node> getItems() {
         return actions.getChildren();
     }
 
     /// Adds one action item.
+    ///
+    /// @param item the action item to add
     public final void addItem(Node item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds action items.
+    ///
+    /// @param items the action items to add
     public final void addItems(Node... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all action items.
+    ///
+    /// @param items the replacement action items
     public final void setItems(Node... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -156,16 +174,22 @@ public class M3FabMenu extends Control {
     }
 
     /// Returns whether action items are currently expanded.
+    ///
+    /// @return `true` when action items are currently expanded
     public final boolean isExpanded() {
         return expanded.get();
     }
 
     /// Sets whether action items are currently expanded.
+    ///
+    /// @param expanded whether action items are currently expanded
     public final void setExpanded(boolean expanded) {
         this.expanded.set(expanded);
     }
 
     /// Returns the expanded state property.
+    ///
+    /// @return the expanded state property
     public final BooleanProperty expandedProperty() {
         return expanded;
     }

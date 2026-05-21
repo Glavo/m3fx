@@ -21,23 +21,33 @@ public record M3DateRangePreset(String text, M3DateRange range) {
     }
 
     /// Creates a date range preset from two inclusive endpoints.
+    ///
+    /// @param text the text shown for the preset action
+    /// @param startDate the first date included in the range
+    /// @param endDate the last date included in the range
     public M3DateRangePreset(String text, LocalDate startDate, LocalDate endDate) {
         this(text, new M3DateRange(startDate, endDate));
     }
 
     /// Returns the text shown for the preset action.
+    ///
+    /// @return the text shown for the preset action
     @Override
     public String text() {
         return text;
     }
 
     /// Returns the inclusive range selected by the preset.
+    ///
+    /// @return the inclusive range selected by the preset
     @Override
     public M3DateRange range() {
         return range;
     }
 
     /// Applies this preset to the supplied date range picker.
+    ///
+    /// @param picker the date range picker that receives this preset
     public void applyTo(M3DateRangePicker picker) {
         Objects.requireNonNull(picker, "picker").applyPreset(this);
     }

@@ -29,18 +29,25 @@ public record M3DateRange(LocalDate startDate, LocalDate endDate) {
     }
 
     /// Returns the first date in the range.
+    ///
+    /// @return the first date in the range
     @Override
     public LocalDate startDate() {
         return startDate;
     }
 
     /// Returns the last date in the range.
+    ///
+    /// @return the last date in the range
     @Override
     public LocalDate endDate() {
         return endDate;
     }
 
     /// Returns whether the supplied date is inside this inclusive range.
+    ///
+    /// @param date the date to test
+    /// @return `true` when the supplied date is inside this inclusive range
     public boolean contains(LocalDate date) {
         Objects.requireNonNull(date, "date");
         return !date.isBefore(startDate) && !date.isAfter(endDate);

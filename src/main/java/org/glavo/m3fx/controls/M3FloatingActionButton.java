@@ -50,7 +50,7 @@ public class M3FloatingActionButton extends ButtonBase {
     /// The default horizontal content padding for extended floating action buttons.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
-    /// The floating action button color variant property.
+    // The floating action button color variant property.
     private final ObjectProperty<M3FloatingActionButtonVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3FloatingActionButtonVariant.PRIMARY) {
                 /// Updates variant style classes when the property changes.
@@ -64,7 +64,7 @@ public class M3FloatingActionButton extends ButtonBase {
                 }
             };
 
-    /// The floating action button size property.
+    // The floating action button size property.
     private final ObjectProperty<M3FloatingActionButtonSize> size =
             new SimpleObjectProperty<>(this, "size", M3FloatingActionButtonSize.REGULAR) {
                 /// Updates size style classes when the property changes.
@@ -78,13 +78,13 @@ public class M3FloatingActionButton extends ButtonBase {
                 }
             };
 
-    /// The styleable container size token.
+    // The styleable container size token.
     private @Nullable StyleableDoubleProperty containerSize;
 
-    /// The styleable container shape token.
+    // The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable horizontal padding token.
+    // The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Creates an empty primary floating action button.
@@ -93,24 +93,36 @@ public class M3FloatingActionButton extends ButtonBase {
     }
 
     /// Creates a primary floating action button with text.
+    ///
+    /// @param text the text displayed by the floating action button
     public M3FloatingActionButton(String text) {
         super(text);
         initialize();
     }
 
     /// Creates a primary floating action button with graphic content.
+    ///
+    /// @param graphic the graphic displayed by the floating action button, or `null`
     public M3FloatingActionButton(@Nullable Node graphic) {
         super("", graphic);
         initialize();
     }
 
     /// Creates a primary floating action button with text and graphic content.
+    ///
+    /// @param text the text displayed by the floating action button
+    /// @param graphic the graphic displayed by the floating action button, or `null`
     public M3FloatingActionButton(String text, @Nullable Node graphic) {
         super(text, graphic);
         initialize();
     }
 
     /// Creates a floating action button with text, variant, and size.
+    ///
+    /// @param text the text displayed by the floating action button
+    /// @param variant the color variant applied to the floating action button
+    /// @param size the size variant applied to the floating action button
+    /// @return a floating action button configured with the supplied text, variant, and size
     public static M3FloatingActionButton withVariant(
             String text,
             M3FloatingActionButtonVariant variant,
@@ -120,6 +132,11 @@ public class M3FloatingActionButton extends ButtonBase {
     }
 
     /// Creates a floating action button with graphic content, variant, and size.
+    ///
+    /// @param graphic the graphic displayed by the floating action button, or `null`
+    /// @param variant the color variant applied to the floating action button
+    /// @param size the size variant applied to the floating action button
+    /// @return a floating action button configured with the supplied graphic, variant, and size
     public static M3FloatingActionButton withGraphic(
             @Nullable Node graphic,
             M3FloatingActionButtonVariant variant,
@@ -129,6 +146,12 @@ public class M3FloatingActionButton extends ButtonBase {
     }
 
     /// Creates a floating action button with text, graphic content, variant, and size.
+    ///
+    /// @param text the text displayed by the floating action button
+    /// @param graphic the graphic displayed by the floating action button, or `null`
+    /// @param variant the color variant applied to the floating action button
+    /// @param size the size variant applied to the floating action button
+    /// @return a floating action button configured with the supplied text, graphic, variant, and size
     public static M3FloatingActionButton withVariant(
             String text,
             @Nullable Node graphic,
@@ -142,46 +165,64 @@ public class M3FloatingActionButton extends ButtonBase {
     }
 
     /// Returns the floating action button color variant.
+    ///
+    /// @return the floating action button color variant
     public final M3FloatingActionButtonVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the floating action button color variant.
+    ///
+    /// @param variant the floating action button color variant
     public final void setVariant(M3FloatingActionButtonVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the floating action button color variant property.
+    ///
+    /// @return the floating action button color variant property
     public final ObjectProperty<M3FloatingActionButtonVariant> variantProperty() {
         return variant;
     }
 
     /// Returns the floating action button size.
+    ///
+    /// @return the floating action button size
     public final M3FloatingActionButtonSize getSize() {
         return size.get();
     }
 
     /// Sets the floating action button size.
+    ///
+    /// @param size the floating action button size
     public final void setSize(M3FloatingActionButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
     /// Returns the floating action button size property.
+    ///
+    /// @return the floating action button size property
     public final ObjectProperty<M3FloatingActionButtonSize> sizeProperty() {
         return size;
     }
 
     /// Returns the preferred square container size token.
+    ///
+    /// @return the preferred square container size token
     public final double getContainerSize() {
         return containerSize == null ? DEFAULT_CONTAINER_SIZE : containerSize.get();
     }
 
     /// Sets the preferred square container size token.
+    ///
+    /// @param containerSize the preferred square container size token
     public final void setContainerSize(double containerSize) {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
 
     /// Returns the preferred square container size token property.
+    ///
+    /// @return the preferred square container size token property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = new StyleableDoubleProperty(DEFAULT_CONTAINER_SIZE) {
@@ -215,16 +256,22 @@ public class M3FloatingActionButton extends ButtonBase {
     }
 
     /// Returns the container shape radius token.
+    ///
+    /// @return the container shape radius token
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the container shape radius token.
+    ///
+    /// @param containerShape the container shape radius token
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
     /// Returns the container shape radius token property.
+    ///
+    /// @return the container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
@@ -257,16 +304,22 @@ public class M3FloatingActionButton extends ButtonBase {
     }
 
     /// Returns the horizontal content padding token.
+    ///
+    /// @return the horizontal content padding token
     public final double getHorizontalPadding() {
         return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
     }
 
     /// Sets the horizontal content padding token.
+    ///
+    /// @param horizontalPadding the horizontal content padding token
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
     /// Returns the horizontal content padding token property.
+    ///
+    /// @return the horizontal content padding token property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = new StyleableDoubleProperty(DEFAULT_HORIZONTAL_PADDING) {
@@ -320,6 +373,8 @@ public class M3FloatingActionButton extends ButtonBase {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

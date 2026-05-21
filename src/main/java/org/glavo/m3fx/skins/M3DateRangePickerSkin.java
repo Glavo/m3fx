@@ -83,6 +83,8 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
     private final InvalidationListener refreshListener = observable -> refresh();
 
     /// Creates a date range picker skin.
+    ///
+    /// @param control the date range picker controlled by this skin
     public M3DateRangePickerSkin(M3DateRangePicker control) {
         super(control);
         initializeNodes();
@@ -106,6 +108,8 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
     }
 
     /// Returns the number of visible day cells currently exposed by the skin.
+    ///
+    /// @return the number of visible day cells currently exposed by the skin
     public final int getVisibleDayCellCount() {
         int count = 0;
         for (DateCellButton dayCell : dayCells) {
@@ -117,6 +121,9 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
     }
 
     /// Returns a visible day cell by visible index.
+    ///
+    /// @param visibleIndex the zero-based index among visible day cells
+    /// @return the visible day cell at the requested index, or `null` when the index is out of range
     public final @Nullable Node getVisibleDayCell(int visibleIndex) {
         if (visibleIndex < 0) {
             return null;
@@ -136,6 +143,9 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
     }
 
     /// Returns the visible day cell for a date.
+    ///
+    /// @param date the date represented by the requested day cell
+    /// @return the visible day cell for the date, or `null` when the date is not currently visible
     public final @Nullable Node getDayCell(LocalDate date) {
         for (DateCellButton dayCell : dayCells) {
             if (isAccessibleDayCell(dayCell) && date.equals(dayCell.getUserData())) {
@@ -146,6 +156,8 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
     }
 
     /// Returns the first visible enabled day cell.
+    ///
+    /// @return the first visible enabled day cell, or `null` when none is available
     public final @Nullable Node getFirstEnabledDayCell() {
         for (DateCellButton dayCell : dayCells) {
             if (isAccessibleDayCell(dayCell) && !dayCell.isDisabled()) {

@@ -40,6 +40,8 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
             (observable, oldValue, newValue) -> animateExpandedState(newValue);
 
     /// Creates a disclosure icon skin.
+    ///
+    /// @param control the disclosure icon controlled by this skin
     public M3DisclosureIconSkin(M3DisclosureIcon control) {
         super(control);
         arrow.setContent(TRIANGLE_PATH);

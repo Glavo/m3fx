@@ -25,6 +25,8 @@ public class M3DividerSkin extends SkinBase<M3Divider> {
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
     /// Creates a divider skin.
+    ///
+    /// @param control the divider controlled by this skin
     public M3DividerSkin(M3Divider control) {
         super(control);
         container.getStyleClass().add("m3-divider-container");

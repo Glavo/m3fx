@@ -19,6 +19,8 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
     private final VBox container = new VBox(BUTTON_SPACING);
 
     /// Creates a floating action button menu skin.
+    ///
+    /// @param control the floating action button menu controlled by this skin
     public M3FabMenuSkin(M3FabMenu control) {
         super(control);
         container.setManaged(false);

@@ -53,10 +53,10 @@ public class M3DialogPane extends DialogPane {
     /// The default dialog content padding.
     private static final double DEFAULT_CONTENT_PADDING = 24.0;
 
-    /// The styleable dialog container shape token.
+    // The styleable dialog container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable dialog content padding token.
+    // The styleable dialog content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Creates a dialog pane.
@@ -72,16 +72,22 @@ public class M3DialogPane extends DialogPane {
     }
 
     /// Returns the dialog container shape radius token.
+    ///
+    /// @return the dialog container shape radius token
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the dialog container shape radius token.
+    ///
+    /// @param containerShape the dialog container shape radius token
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
     /// Returns the dialog container shape radius token property.
+    ///
+    /// @return the dialog container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
@@ -114,16 +120,22 @@ public class M3DialogPane extends DialogPane {
     }
 
     /// Returns the dialog content padding token.
+    ///
+    /// @return the dialog content padding token
     public final double getContentPadding() {
         return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
     }
 
     /// Sets the dialog content padding token.
+    ///
+    /// @param contentPadding the dialog content padding token
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
     /// Returns the dialog content padding token property.
+    ///
+    /// @return the dialog content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
@@ -157,6 +169,8 @@ public class M3DialogPane extends DialogPane {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

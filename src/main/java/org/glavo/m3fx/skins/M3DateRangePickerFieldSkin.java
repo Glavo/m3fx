@@ -19,6 +19,8 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
     private final HBox container = new HBox(FIELD_SPACING);
 
     /// Creates a date range picker field skin.
+    ///
+    /// @param control the date range picker field controlled by this skin
     public M3DateRangePickerFieldSkin(M3DateRangePickerField control) {
         super(control);
         container.setManaged(false);

@@ -62,44 +62,61 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     }
 
     /// Creates a date range picker dialog initialized with the supplied range.
+    ///
+    /// @param range the initial selected date range
     public M3DateRangePickerDialog(M3DateRange range) {
         this(range.startDate(), range.endDate());
     }
 
     /// Creates a date range picker dialog initialized with the supplied endpoints.
+    ///
+    /// @param startDate the first selected date, or `null` for no selected range
+    /// @param endDate the last selected date, or `null` for an incomplete range
     public M3DateRangePickerDialog(@Nullable LocalDate startDate, @Nullable LocalDate endDate) {
         initialize();
         setRange(startDate, endDate);
     }
 
     /// Returns the date range picker displayed by this dialog.
+    ///
+    /// @return the date range picker displayed by this dialog
     public final M3DateRangePicker getPicker() {
         return picker;
     }
 
     /// Returns the mutable date range preset list.
+    ///
+    /// @return the mutable date range preset list
     public final ObservableList<M3DateRangePreset> getPresets() {
         return presets;
     }
 
     /// Adds one date range preset.
+    ///
+    /// @param preset the date range preset to add
     public final void addPreset(M3DateRangePreset preset) {
         presets.add(Objects.requireNonNull(preset, "preset"));
     }
 
     /// Adds date range presets after validating the preset array.
+    ///
+    /// @param presets the date range presets to add
     public final void addPresets(M3DateRangePreset... presets) {
         validatePresets(presets);
         this.presets.addAll(presets);
     }
 
     /// Replaces all date range presets.
+    ///
+    /// @param presets the replacement date range presets
     public final void setPresets(M3DateRangePreset... presets) {
         validatePresets(presets);
         this.presets.setAll(presets);
     }
 
     /// Replaces all date range presets with the default common range set.
+    ///
+    /// @param anchorDate the date used to derive relative common presets
     public final void setCommonPresets(LocalDate anchorDate) {
         presets.setAll(M3DateRangePresets.common(anchorDate, getFirstDayOfWeek()));
     }
@@ -110,36 +127,51 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     }
 
     /// Returns the first selected date, or `null` when no range start is selected.
+    ///
+    /// @return the first selected date, or `null` when no range start is selected
     public final @Nullable LocalDate getStartDate() {
         return picker.getStartDate();
     }
 
     /// Sets the first selected date, or clears the range start when `null` is supplied.
+    ///
+    /// @param startDate the first selected date, or `null` to clear the range
     public final void setStartDate(@Nullable LocalDate startDate) {
         picker.setStartDate(startDate);
     }
 
     /// Returns the range start property.
+    ///
+    /// @return the range start property
     public final ObjectProperty<@Nullable LocalDate> startDateProperty() {
         return picker.startDateProperty();
     }
 
     /// Returns the last selected date, or `null` while only a range start is selected.
+    ///
+    /// @return the last selected date, or `null` while only a range start is selected
     public final @Nullable LocalDate getEndDate() {
         return picker.getEndDate();
     }
 
     /// Sets the last selected date, or clears the range end when `null` is supplied.
+    ///
+    /// @param endDate the last selected date, or `null` to clear the range end
     public final void setEndDate(@Nullable LocalDate endDate) {
         picker.setEndDate(endDate);
     }
 
     /// Returns the range end property.
+    ///
+    /// @return the range end property
     public final ObjectProperty<@Nullable LocalDate> endDateProperty() {
         return picker.endDateProperty();
     }
 
     /// Sets both range endpoints atomically after validating ordering and selectable bounds.
+    ///
+    /// @param startDate the first selected date, or `null` to clear the range
+    /// @param endDate the last selected date, or `null` for an incomplete range
     public final void setRange(@Nullable LocalDate startDate, @Nullable LocalDate endDate) {
         picker.setRange(startDate, endDate);
     }
@@ -150,96 +182,135 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     }
 
     /// Returns whether both range endpoints are selected.
+    ///
+    /// @return `true` when both range endpoints are selected
     public final boolean isRangeComplete() {
         return picker.isRangeComplete();
     }
 
     /// Returns the selected range, or `null` when the range is incomplete.
+    ///
+    /// @return the selected range, or `null` when the range is incomplete
     public final @Nullable M3DateRange getRange() {
         return picker.getRange();
     }
 
     /// Returns whether the supplied date is inside the selected inclusive range.
+    ///
+    /// @param date the date to test
+    /// @return `true` when the supplied date is inside the selected inclusive range
     public final boolean isDateInSelectedRange(LocalDate date) {
         return picker.isDateInSelectedRange(date);
     }
 
     /// Returns the month currently displayed by the picker.
+    ///
+    /// @return the month currently displayed by the picker
     public final YearMonth getDisplayedMonth() {
         return picker.getDisplayedMonth();
     }
 
     /// Sets the month displayed by the picker.
+    ///
+    /// @param displayedMonth the month displayed by the picker
     public final void setDisplayedMonth(YearMonth displayedMonth) {
         picker.setDisplayedMonth(displayedMonth);
     }
 
     /// Returns the displayed month property from the picker.
+    ///
+    /// @return the displayed month property from the picker
     public final ObjectProperty<YearMonth> displayedMonthProperty() {
         return picker.displayedMonthProperty();
     }
 
     /// Returns the weekday shown in the first picker column.
+    ///
+    /// @return the weekday shown in the first picker column
     public final DayOfWeek getFirstDayOfWeek() {
         return picker.getFirstDayOfWeek();
     }
 
     /// Sets the weekday shown in the first picker column.
+    ///
+    /// @param firstDayOfWeek the weekday shown in the first picker column
     public final void setFirstDayOfWeek(DayOfWeek firstDayOfWeek) {
         picker.setFirstDayOfWeek(firstDayOfWeek);
     }
 
     /// Returns the first day of week property from the picker.
+    ///
+    /// @return the first day of week property from the picker
     public final ObjectProperty<DayOfWeek> firstDayOfWeekProperty() {
         return picker.firstDayOfWeekProperty();
     }
 
     /// Returns the earliest selectable date, or `null` when there is no lower bound.
+    ///
+    /// @return the earliest selectable date, or `null` when there is no lower bound
     public final @Nullable LocalDate getMinDate() {
         return picker.getMinDate();
     }
 
     /// Sets the earliest selectable date, or clears the lower bound when `null` is supplied.
+    ///
+    /// @param minDate the earliest selectable date, or `null` to clear the lower bound
     public final void setMinDate(@Nullable LocalDate minDate) {
         picker.setMinDate(minDate);
     }
 
     /// Returns the minimum date property from the picker.
+    ///
+    /// @return the minimum date property from the picker
     public final ObjectProperty<@Nullable LocalDate> minDateProperty() {
         return picker.minDateProperty();
     }
 
     /// Returns the latest selectable date, or `null` when there is no upper bound.
+    ///
+    /// @return the latest selectable date, or `null` when there is no upper bound
     public final @Nullable LocalDate getMaxDate() {
         return picker.getMaxDate();
     }
 
     /// Sets the latest selectable date, or clears the upper bound when `null` is supplied.
+    ///
+    /// @param maxDate the latest selectable date, or `null` to clear the upper bound
     public final void setMaxDate(@Nullable LocalDate maxDate) {
         picker.setMaxDate(maxDate);
     }
 
     /// Returns the maximum date property from the picker.
+    ///
+    /// @return the maximum date property from the picker
     public final ObjectProperty<@Nullable LocalDate> maxDateProperty() {
         return picker.maxDateProperty();
     }
 
     /// Returns whether adjacent-month days are visible in leading and trailing picker cells.
+    ///
+    /// @return `true` when adjacent-month days are visible
     public final boolean isShowAdjacentMonthDays() {
         return picker.isShowAdjacentMonthDays();
     }
 
     /// Sets whether adjacent-month days are visible in leading and trailing picker cells.
+    ///
+    /// @param showAdjacentMonthDays whether adjacent-month days should be visible
     public final void setShowAdjacentMonthDays(boolean showAdjacentMonthDays) {
         picker.setShowAdjacentMonthDays(showAdjacentMonthDays);
     }
 
     /// Returns the adjacent-month visibility property from the picker.
+    ///
+    /// @return the adjacent-month visibility property from the picker
     public final BooleanProperty showAdjacentMonthDaysProperty() {
         return picker.showAdjacentMonthDaysProperty();
     }
 
     /// Selects a date as the next range endpoint.
+    ///
+    /// @param date the date to select as the next range endpoint
     public final void selectDate(LocalDate date) {
         picker.selectDate(Objects.requireNonNull(date, "date"));
     }
@@ -250,6 +321,8 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     }
 
     /// Applies a date range preset and leaves the dialog open for confirmation.
+    ///
+    /// @param preset the date range preset to apply
     public final void applyPreset(M3DateRangePreset preset) {
         picker.applyPreset(Objects.requireNonNull(preset, "preset"));
         updateOkButtonState();
@@ -266,6 +339,8 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     }
 
     /// Shows the supplied month without changing the selected range.
+    ///
+    /// @param month the month to display
     public final void showMonth(YearMonth month) {
         picker.showMonth(month);
     }
@@ -276,6 +351,9 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     }
 
     /// Returns whether the supplied date is outside the configured selectable range.
+    ///
+    /// @param date the date to test
+    /// @return `true` when the date is outside the configured selectable range
     public final boolean isDateDisabled(LocalDate date) {
         return picker.isDateDisabled(date);
     }

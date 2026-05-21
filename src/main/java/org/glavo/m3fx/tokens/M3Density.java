@@ -17,19 +17,29 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public sealed interface M3Density permits M3DensityImpl {
     /// Returns the density scale where zero is the baseline Material density.
+    ///
+    /// @return the density scale where zero is the baseline Material density
     double scale();
 
     /// Returns the baseline density.
+    ///
+    /// @return the baseline density
     static M3Density standard() {
         return new M3DensityImpl(0.0);
     }
 
     /// Creates a density value after validating its supported range.
+    ///
+    /// @param scale the density scale where zero is the baseline Material density
+    /// @return a density value for the supplied scale
     static M3Density of(double scale) {
         return new M3DensityImpl(scale);
     }
 
     /// Applies this density to a baseline size.
+    ///
+    /// @param value the baseline size to adjust
+    /// @return the density-adjusted size, never less than zero
     default double apply(double value) {
         return Math.max(0.0, value + scale() * 4.0);
     }

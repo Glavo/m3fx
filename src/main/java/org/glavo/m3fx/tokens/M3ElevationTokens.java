@@ -10,24 +10,44 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
     /// Returns elevation level zero.
+    ///
+    /// @return elevation level zero
     double level0();
 
     /// Returns elevation level one.
+    ///
+    /// @return elevation level one
     double level1();
 
     /// Returns elevation level two.
+    ///
+    /// @return elevation level two
     double level2();
 
     /// Returns elevation level three.
+    ///
+    /// @return elevation level three
     double level3();
 
     /// Returns elevation level four.
+    ///
+    /// @return elevation level four
     double level4();
 
     /// Returns elevation level five.
+    ///
+    /// @return elevation level five
     double level5();
 
     /// Creates elevation tokens.
+    ///
+    /// @param level0 the elevation value for level zero
+    /// @param level1 the elevation value for level one
+    /// @param level2 the elevation value for level two
+    /// @param level3 the elevation value for level three
+    /// @param level4 the elevation value for level four
+    /// @param level5 the elevation value for level five
+    /// @return elevation tokens containing the supplied levels
     static M3ElevationTokens create(
             double level0,
             double level1,
@@ -40,11 +60,15 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
     }
 
     /// Returns baseline elevation tokens.
+    ///
+    /// @return baseline elevation tokens
     static M3ElevationTokens baseline() {
         return create(0.0, 1.0, 3.0, 6.0, 8.0, 12.0);
     }
 
     /// Converts elevation tokens into inline JavaFX CSS declarations.
+    ///
+    /// @return inline JavaFX CSS declarations for these elevation tokens
     default String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
         M3TokenCss.append(builder, "-m3-elevation-level0", M3TokenCss.pixels(level0()));
@@ -57,6 +81,8 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
     }
 
     /// Converts elevation tokens into JavaFX CSS rules for m3fx controls.
+    ///
+    /// @return JavaFX CSS rules for m3fx controls using these elevation tokens
     default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
         appendShadowRule(builder, ".m3-elevated-button", level3(), level1());

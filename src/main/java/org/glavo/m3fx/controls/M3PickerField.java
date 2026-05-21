@@ -68,7 +68,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    /// The selected value, or `null` when the field is empty.
+    // The selected value, or `null` when the field is empty.
     private final ObjectProperty<@Nullable T> value =
             new SimpleObjectProperty<>(this, "value") {
                 /// Normalizes and validates values assigned through the property.
@@ -86,7 +86,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 }
             };
 
-    /// The formatter used to convert between editor text and picker values.
+    // The formatter used to convert between editor text and picker values.
     private final ObjectProperty<DateTimeFormatter> formatter =
             new SimpleObjectProperty<>(this, "formatter") {
                 /// Keeps formatter values non-null.
@@ -102,7 +102,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 }
             };
 
-    /// The error message shown when editor text cannot be parsed.
+    // The error message shown when editor text cannot be parsed.
     private final StringProperty invalidTextErrorText =
             new SimpleStringProperty(this, "invalidTextErrorText") {
                 /// Keeps parse error text non-null.
@@ -112,7 +112,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 }
             };
 
-    /// The error message shown when editor text parses outside the selectable range.
+    // The error message shown when editor text parses outside the selectable range.
     private final StringProperty rangeErrorText =
             new SimpleStringProperty(this, "rangeErrorText") {
                 /// Keeps range error text non-null.
@@ -143,7 +143,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// The popup window used for picker display.
     private final Popup popup = new Popup();
 
-    /// Whether the popup picker is currently showing.
+    // Whether the popup picker is currently showing.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The picker popup enter animation.
@@ -165,6 +165,16 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     private double popupTransitionOffsetY = -POPUP_TRANSITION_OFFSET_Y;
 
     /// Creates a picker field around the supplied popup picker.
+    ///
+    /// @param picker the concrete popup picker control
+    /// @param pickerValue the picker value property synchronized with this field value
+    /// @param formatter the formatter used to convert between editor text and picker values
+    /// @param styleClass the concrete picker field style class
+    /// @param popupStyleClass the concrete picker popup style class
+    /// @param pickerIconText the icon text displayed by the trailing open button
+    /// @param openButtonAccessibleText the accessible text for the trailing open button
+    /// @param invalidTextErrorText the error text shown when editor text cannot be parsed
+    /// @param rangeErrorText the error text shown when editor text parses outside the selectable range
     protected M3PickerField(
             P picker,
             ObjectProperty<@Nullable T> pickerValue,
@@ -194,136 +204,190 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     }
 
     /// Returns the selected value, or `null` when the field is empty.
+    ///
+    /// @return the selected value, or `null` when the field is empty
     public final @Nullable T getValue() {
         return value.get();
     }
 
     /// Sets the selected value, or clears the field when `null` is supplied.
+    ///
+    /// @param value the selected value, or `null` to clear the field
     public final void setValue(@Nullable T value) {
         this.value.set(value);
     }
 
     /// Returns the selected value property.
+    ///
+    /// @return the selected value property
     public final ObjectProperty<@Nullable T> valueProperty() {
         return value;
     }
 
     /// Returns the editable text field shown inside the Material input layout.
+    ///
+    /// @return the editable text field shown inside the Material input layout
     public final M3TextField getEditor() {
         return editor;
     }
 
     /// Returns the Material text input layout used by this picker field.
+    ///
+    /// @return the Material text input layout used by this picker field
     public final M3TextInputLayout getInputLayout() {
         return inputLayout;
     }
 
     /// Returns the concrete popup picker control.
+    ///
+    /// @return the concrete popup picker control
     public final P getPicker() {
         return picker;
     }
 
     /// Returns the formatter used for editor text.
+    ///
+    /// @return the formatter used for editor text
     public final DateTimeFormatter getFormatter() {
         return formatter.get();
     }
 
     /// Sets the formatter used for editor text.
+    ///
+    /// @param formatter the formatter used for editor text
     public final void setFormatter(DateTimeFormatter formatter) {
         this.formatter.set(formatter);
     }
 
     /// Returns the editor text formatter property.
+    ///
+    /// @return the editor text formatter property
     public final ObjectProperty<DateTimeFormatter> formatterProperty() {
         return formatter;
     }
 
     /// Returns the label text displayed by the wrapped input layout.
+    ///
+    /// @return the label text displayed by the wrapped input layout
     public final String getLabelText() {
         return inputLayout.getLabelText();
     }
 
     /// Sets the label text displayed by the wrapped input layout.
+    ///
+    /// @param labelText the label text displayed by the wrapped input layout
     public final void setLabelText(String labelText) {
         inputLayout.setLabelText(labelText);
     }
 
     /// Returns the label text property from the wrapped input layout.
+    ///
+    /// @return the label text property from the wrapped input layout
     public final StringProperty labelTextProperty() {
         return inputLayout.labelTextProperty();
     }
 
     /// Returns the supporting text shown when no error is active.
+    ///
+    /// @return the supporting text shown when no error is active
     public final String getSupportingText() {
         return inputLayout.getSupportingText();
     }
 
     /// Sets the supporting text shown when no error is active.
+    ///
+    /// @param supportingText the supporting text shown when no error is active
     public final void setSupportingText(String supportingText) {
         inputLayout.setSupportingText(supportingText);
     }
 
     /// Returns the supporting text property from the wrapped input layout.
+    ///
+    /// @return the supporting text property from the wrapped input layout
     public final StringProperty supportingTextProperty() {
         return inputLayout.supportingTextProperty();
     }
 
     /// Returns the current error text shown by the wrapped input layout.
+    ///
+    /// @return the current error text shown by the wrapped input layout
     public final String getErrorText() {
         return inputLayout.getErrorText();
     }
 
     /// Sets the current error text shown by the wrapped input layout.
+    ///
+    /// @param errorText the current error text shown by the wrapped input layout
     public final void setErrorText(String errorText) {
         inputLayout.setErrorText(errorText);
     }
 
     /// Returns the error text property from the wrapped input layout.
+    ///
+    /// @return the error text property from the wrapped input layout
     public final StringProperty errorTextProperty() {
         return inputLayout.errorTextProperty();
     }
 
     /// Returns the parse error message used when editor text is invalid.
+    ///
+    /// @return the parse error message used when editor text is invalid
     public final String getInvalidTextErrorText() {
         return invalidTextErrorText.get();
     }
 
     /// Sets the parse error message used when editor text is invalid.
+    ///
+    /// @param invalidTextErrorText the parse error message used when editor text is invalid
     public final void setInvalidTextErrorText(String invalidTextErrorText) {
         this.invalidTextErrorText.set(invalidTextErrorText);
     }
 
     /// Returns the parse error message property.
+    ///
+    /// @return the parse error message property
     public final StringProperty invalidTextErrorTextProperty() {
         return invalidTextErrorText;
     }
 
     /// Returns the range error message used when editor text is outside the selectable range.
+    ///
+    /// @return the range error message used when editor text is outside the selectable range
     public final String getRangeErrorText() {
         return rangeErrorText.get();
     }
 
     /// Sets the range error message used when editor text is outside the selectable range.
+    ///
+    /// @param rangeErrorText the range error message used when editor text is outside the selectable range
     public final void setRangeErrorText(String rangeErrorText) {
         this.rangeErrorText.set(rangeErrorText);
     }
 
     /// Returns the range error message property.
+    ///
+    /// @return the range error message property
     public final StringProperty rangeErrorTextProperty() {
         return rangeErrorText;
     }
 
     /// Returns whether the picker popup is currently showing.
+    ///
+    /// @return `true` when the picker popup is showing
     public final boolean isShowing() {
         return showing.get();
     }
 
     /// Returns the read-only popup showing property.
+    ///
+    /// @return the read-only popup showing property
     public final ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
 
     /// Parses the current editor text, updates the selected value, and returns whether the text is valid.
+    ///
+    /// @return `true` when the editor text was committed as a valid value
     public final boolean commitEditorText() {
         String text = editor.getText() == null ? "" : editor.getText().trim();
         if (text.isEmpty()) {
@@ -418,21 +482,39 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     }
 
     /// Parses one non-empty editor text value.
+    ///
+    /// @param text the non-empty editor text to parse
+    /// @param formatter the formatter used by this field
+    /// @return the parsed value
     protected abstract T parseValue(String text, DateTimeFormatter formatter);
 
     /// Formats one selected value for editor display.
+    ///
+    /// @param value the selected value to format
+    /// @param formatter the formatter used by this field
+    /// @return the editor text representation of the value
     protected abstract String formatValue(T value, DateTimeFormatter formatter);
 
     /// Normalizes one selected value to the precision used by the picker.
+    ///
+    /// @param value the selected value to normalize
+    /// @return the normalized value
     protected abstract T normalizeValue(T value);
 
     /// Returns whether one normalized value is outside the concrete picker's selectable range.
+    ///
+    /// @param value the normalized value to test
+    /// @return `true` when the value is outside the selectable range
     protected abstract boolean isPickerValueDisabled(T value);
 
     /// Applies a field value to the concrete picker without changing field-specific state.
+    ///
+    /// @param value the field value to apply to the picker, or `null` to clear picker selection
     protected abstract void setPickerValue(@Nullable T value);
 
     /// Replaces the node hosted by the popup surface.
+    ///
+    /// @param content the popup content node
     protected final void setPopupContent(Node content) {
         popupContent.getChildren().setAll(Objects.requireNonNull(content, "content"));
     }

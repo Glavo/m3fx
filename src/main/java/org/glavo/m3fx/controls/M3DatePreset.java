@@ -21,18 +21,24 @@ public record M3DatePreset(String text, LocalDate date) {
     }
 
     /// Returns the text shown for the preset action.
+    ///
+    /// @return the text shown for the preset action
     @Override
     public String text() {
         return text;
     }
 
     /// Returns the date selected by the preset.
+    ///
+    /// @return the date selected by the preset
     @Override
     public LocalDate date() {
         return date;
     }
 
     /// Applies this preset to the supplied date picker.
+    ///
+    /// @param picker the date picker that should receive this preset
     public void applyTo(M3DatePicker picker) {
         Objects.requireNonNull(picker, "picker").applyPreset(this);
     }

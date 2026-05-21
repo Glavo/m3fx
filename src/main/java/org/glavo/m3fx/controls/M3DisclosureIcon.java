@@ -21,7 +21,7 @@ public final class M3DisclosureIcon extends Control {
     /// The expanded pseudo-class used by disclosure icons.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
 
-    /// Whether the disclosure target is expanded.
+    // Whether the disclosure target is expanded.
     private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
         /// Updates expanded pseudo-class state.
         @Override
@@ -36,6 +36,8 @@ public final class M3DisclosureIcon extends Control {
     }
 
     /// Creates a disclosure icon with the supplied expanded state.
+    ///
+    /// @param expanded whether the disclosure target starts expanded
     public M3DisclosureIcon(boolean expanded) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setFocusTraversable(false);
@@ -43,16 +45,22 @@ public final class M3DisclosureIcon extends Control {
     }
 
     /// Returns whether the disclosure target is expanded.
+    ///
+    /// @return `true` when the disclosure target is expanded
     public final boolean isExpanded() {
         return expanded.get();
     }
 
     /// Sets whether the disclosure target is expanded.
+    ///
+    /// @param expanded whether the disclosure target is expanded
     public final void setExpanded(boolean expanded) {
         this.expanded.set(expanded);
     }
 
     /// Returns the expanded state property.
+    ///
+    /// @return the expanded state property
     public final BooleanProperty expandedProperty() {
         return expanded;
     }
