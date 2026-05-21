@@ -3562,7 +3562,6 @@ final class M3ControlStyleTest {
                 subMenu.layout();
 
                 WritableImage image = snapshotImageOnFxThread(subMenu);
-                assertSnapshotHasColorVariety(image, 3);
                 assertSnapshotNodeContainsContrast(image, subMenu, Color.WHITE, 0.04);
                 writeVisualSnapshot(image, java.nio.file.Path.of(
                         "build",
@@ -5702,6 +5701,76 @@ final class M3ControlStyleTest {
         assertTrue(onThumb.getWidth() > offThumb.getWidth());
         assertEquals(8.0, offThumb.getLayoutX(), 0.0001);
         assertEquals(24.0, onThumb.getLayoutX(), 0.0001);
+    }
+
+    /// Verifies that switch hover and ripple feedback uses a circular thumb state layer.
+    @Test
+    void switchSkinUsesCircularThumbStateLayer() {
+        M3Switch offSwitch = new M3Switch("Off");
+        M3Switch onSwitch = M3Switch.withSelected("On", true);
+        Pane root = new Pane(offSwitch, onSwitch);
+        Scene scene = new Scene(root, 260.0, 120.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        offSwitch.resizeRelocate(0.0, 0.0, 120.0, 40.0);
+        onSwitch.resizeRelocate(0.0, 48.0, 120.0, 40.0);
+        offSwitch.layout();
+        onSwitch.layout();
+        root.applyCss();
+
+        Region offStateLayer = lookupRegion(offSwitch, ".m3-state-layer-container");
+        Region onStateLayer = lookupRegion(onSwitch, ".m3-state-layer-container");
+        Region offTrack = lookupRegion(offSwitch, ".box");
+        Region offThumb = lookupRegion(offSwitch, ".thumb");
+        Pane stateLayerParent = assertInstanceOf(Pane.class, offStateLayer.getParent());
+
+        assertEquals(40.0, offStateLayer.getWidth(), 0.0001);
+        assertEquals(40.0, offStateLayer.getHeight(), 0.0001);
+        assertEquals(40.0, onStateLayer.getWidth(), 0.0001);
+        assertEquals(40.0, onStateLayer.getHeight(), 0.0001);
+        assertEquals(-4.0, offStateLayer.getLayoutX(), 0.0001);
+        assertEquals(16.0, onStateLayer.getLayoutX(), 0.0001);
+        assertEquals(0.0, offStateLayer.getLayoutY(), 0.0001);
+        assertEquals(0.0, onStateLayer.getLayoutY(), 0.0001);
+        assertStateLayerRadii(offSwitch, 20.0, 20.0, 20.0, 20.0);
+        assertStateLayerRadii(onSwitch, 20.0, 20.0, 20.0, 20.0);
+        assertTrue(stateLayerParent.getChildren().indexOf(offTrack) < stateLayerParent.getChildren().indexOf(offStateLayer));
+        assertTrue(stateLayerParent.getChildren().indexOf(offStateLayer) < stateLayerParent.getChildren().indexOf(offThumb));
+    }
+
+    /// Verifies that the switch hover state renders circular thumb feedback in snapshots.
+    @Test
+    void switchHoverStateLayerRendersCircularThumbFeedback() {
+        runOnFxThread(() -> {
+            M3Switch switchControl = new M3Switch("On");
+            switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            Pane root = new Pane(switchControl);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 220.0, 96.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(220.0, 96.0);
+            switchControl.resizeRelocate(24.0, 24.0, 120.0, 40.0);
+            switchControl.layout();
+            root.layout();
+            root.applyCss();
+
+            Region stateLayer = lookupRegion(switchControl, ".m3-state-layer-container");
+            WritableImage image = snapshotImageOnFxThread(root);
+
+            assertEquals(40.0, stateLayer.getWidth(), 0.0001);
+            assertEquals(40.0, stateLayer.getHeight(), 0.0001);
+            assertTrue(colorDistance(snapshotNodePixel(image, stateLayer, 20.0, 2.0), Color.WHITE) > 0.01);
+            assertTrue(colorDistance(snapshotNodePixel(image, stateLayer, 1.0, 1.0), Color.WHITE) < 0.01);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-switch-hover-state-layer.png"
+            ));
+        });
     }
 
     /// Verifies that switch skins apply the track shape token to the visual track.

@@ -25,6 +25,9 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// The switch track height.
     private static final double TRACK_HEIGHT = 32.0;
 
+    /// The minimum circular state layer size around the thumb.
+    private static final double STATE_LAYER_SIZE = 40.0;
+
     /// The off-state thumb center within the track.
     private static final double OFF_THUMB_CENTER_X = 16.0;
 
@@ -69,6 +72,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         thumb.getStyleClass().addAll("thumb", "m3-switch-thumb");
         thumb.setManaged(false);
         indicatorSlot().getChildren().addAll(box, thumb);
+        box.toBack();
         thumbPosition.set(control.isSelected() ? 1.0 : 0.0);
         thumbPosition.addListener(thumbPositionListener);
 
@@ -129,14 +133,24 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         double thumbX = thumbCenterX - thumbSize / 2.0;
         double touchTargetHeight = Math.max(getSkinnable().getTouchTargetSize(), TRACK_HEIGHT);
         double thumbY = (touchTargetHeight - thumbSize) / 2.0;
+        double stateLayerSize = Math.max(STATE_LAYER_SIZE, getSkinnable().getTouchTargetSize());
+        double stateLayerX = thumbCenterX - stateLayerSize / 2.0;
+        double stateLayerY = (touchTargetHeight - stateLayerSize) / 2.0;
+        layoutIndicatorStateLayer(
+                stateLayerX,
+                stateLayerY,
+                stateLayerSize,
+                stateLayerSize,
+                stateLayerSize / 2.0
+        );
         thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbSize);
     }
 
     /// Formats a CSS pixel value.
     private static String formatPixels(double value) {
         if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
+            return (long) value + "px";
         }
-        return Double.toString(value) + "px";
+        return value + "px";
     }
 }

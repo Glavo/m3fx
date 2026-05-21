@@ -7,7 +7,6 @@ import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -185,6 +184,17 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         stateLayer.layoutLayer(0.0, 0.0, width, height, Math.max(width, height) / 2.0);
     }
 
+    /// Lays out the indicator state layer within the indicator slot.
+    protected final void layoutIndicatorStateLayer(
+            double x,
+            double y,
+            double width,
+            double height,
+            double shapeRadius
+    ) {
+        stateLayer.layoutLayer(x, y, width, height, shapeRadius);
+    }
+
     /// Binds label content and presentation properties to the skinnable control.
     private void bindLabel(C control) {
         label.textProperty().bind(control.textProperty());
@@ -321,7 +331,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
 
     /// Plays an indicator-bounded ripple from a mouse event.
     private void playRipple(MouseEvent event) {
-        Point2D point = indicatorSlot.sceneToLocal(event.getSceneX(), event.getSceneY());
+        Point2D point = stateLayer.sceneToLocal(event.getSceneX(), event.getSceneY());
         stateLayer.playRipple(point.getX(), point.getY());
     }
 }
