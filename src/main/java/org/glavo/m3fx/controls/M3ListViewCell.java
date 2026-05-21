@@ -32,13 +32,15 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     /// The owning virtualized list view.
     private final M3ListView<T> listView;
 
-    /// The rendered list item currently owned by this cell.
+    // The rendered list item currently owned by this cell.
     private @Nullable M3ListItem listItem;
 
     /// Routes list item actions back into the list view selection policy.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
     /// Creates a reusable list view cell.
+    ///
+    /// @param listView the owning virtualized list view
     public M3ListViewCell(M3ListView<T> listView) {
         this.listView = Objects.requireNonNull(listView, "listView");
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -48,16 +50,22 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     }
 
     /// Returns the owning virtualized list view.
+    ///
+    /// @return the owning virtualized list view
     public final M3ListView<T> getListView() {
         return listView;
     }
 
     /// Returns the rendered list item currently owned by this cell.
+    ///
+    /// @return the rendered list item, or `null` when this cell is empty
     public final @Nullable M3ListItem getListItem() {
         return listItem;
     }
 
     /// Updates this cell's index and selected state.
+    ///
+    /// @param index the virtualized row index
     @Override
     public void updateIndex(int index) {
         super.updateIndex(index);
@@ -70,6 +78,9 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     }
 
     /// Updates the rendered list item for the current virtualized item.
+    ///
+    /// @param item the data item assigned to this cell, or `null` for an empty cell
+    /// @param empty whether this cell is empty
     @Override
     protected void updateItem(@Nullable T item, boolean empty) {
         super.updateItem(item, empty);
@@ -96,6 +107,10 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     }
 
     /// Returns accessibility attributes for this virtualized cell.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -107,6 +122,8 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     }
 
     /// Creates the default skin that lays out this virtualized cell's rendered list item.
+    ///
+    /// @return the default virtualized cell skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3ListViewCellSkin<>(this);
@@ -145,6 +162,8 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     }
 
     /// Requests list focus when this cell owns logical row focus.
+    ///
+    /// @return `true` when the owning list view accepted focus
     public final boolean focusCell() {
         if (listItem == null || isEmpty() || !getListView().isIndexFocused(getIndex())) {
             return false;

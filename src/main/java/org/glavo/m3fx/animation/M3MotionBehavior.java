@@ -20,27 +20,43 @@ import java.util.Objects;
 @NotNullByDefault
 public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     /// Returns the delay before a tooltip opens after pointer entry or keyboard focus.
+    ///
+    /// @return the delay before a tooltip opens
     Duration tooltipShowDelay();
 
     /// Returns the delay before a tooltip closes after pointer exit or keyboard focus loss.
+    ///
+    /// @return the delay before a tooltip closes
     Duration tooltipHideDelay();
 
     /// Returns the default visible duration for plain tooltips.
+    ///
+    /// @return the visible duration for plain tooltips
     Duration tooltipShowDuration();
 
     /// Returns the default visible duration for rich tooltips.
+    ///
+    /// @return the visible duration for rich tooltips
     Duration richTooltipShowDuration();
 
     /// Returns the delay before pointer hover opens a submenu.
+    ///
+    /// @return the delay before pointer hover opens a submenu
     Duration subMenuHoverOpenDelay();
 
     /// Returns the delay before pointer exit closes a submenu.
+    ///
+    /// @return the delay before pointer exit closes a submenu
     Duration subMenuHoverCloseDelay();
 
     /// Returns the cycle duration for indeterminate linear progress.
+    ///
+    /// @return the cycle duration for indeterminate linear progress
     Duration linearProgressIndeterminateCycleDuration();
 
     /// Returns the cycle duration for indeterminate circular progress.
+    ///
+    /// @return the cycle duration for indeterminate circular progress
     Duration circularProgressIndeterminateCycleDuration();
 
     /// Creates finite non-negative motion behavior timings.

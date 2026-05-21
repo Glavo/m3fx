@@ -20,6 +20,8 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
 
     /// Creates a static list pane skin.
+    ///
+    /// @param control the list pane controlled by this skin
     public M3ListPaneSkin(M3ListPane control) {
         super(control);
         container.setManaged(false);

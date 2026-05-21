@@ -57,7 +57,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Handles wheel and trackpad scrolling through Material motion.
     private final EventHandler<ScrollEvent> smoothScrollHandler = this::handleSmoothScroll;
 
-    /// The currently running virtual flow scroll animation.
+    // The currently running virtual flow scroll animation.
     private @Nullable Timeline smoothScrollAnimation;
 
     /// The accumulated target virtual flow position.
@@ -70,6 +70,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     private boolean focusRetryScheduled;
 
     /// Creates a virtualized list view skin.
+    ///
+    /// @param control the skinned virtualized list view
     public M3ListViewSkin(M3ListView<T> control) {
         super(control);
         flow.getStyleClass().add("m3-list-view-flow");
@@ -103,6 +105,11 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     }
 
     /// Lays out the virtual flow in the available bounds.
+    ///
+    /// @param x the layout area's x coordinate
+    /// @param y the layout area's y coordinate
+    /// @param width the layout area's width
+    /// @param height the layout area's height
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         flow.resizeRelocate(x, y, width, height);
@@ -115,6 +122,13 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     }
 
     /// Computes the preferred width from the virtual flow.
+    ///
+    /// @param height the height that should be used if width depends on it
+    /// @param topInset the snapped top inset
+    /// @param rightInset the snapped right inset
+    /// @param bottomInset the snapped bottom inset
+    /// @param leftInset the snapped left inset
+    /// @return the preferred width
     @Override
     protected double computePrefWidth(
             double height,
@@ -127,6 +141,13 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     }
 
     /// Computes the preferred height from visible row metrics.
+    ///
+    /// @param width the width that should be used if height depends on it
+    /// @param topInset the snapped top inset
+    /// @param rightInset the snapped right inset
+    /// @param bottomInset the snapped bottom inset
+    /// @param leftInset the snapped left inset
+    /// @return the preferred height
     @Override
     protected double computePrefHeight(
             double width,
@@ -153,6 +174,9 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     }
 
     /// Requests visible cell focus updates, optionally animating the scroll into view.
+    ///
+    /// @param requestNodeFocus whether the focused cell should request keyboard focus
+    /// @param animated whether scrolling the focused cell into view should animate
     public void refreshFocus(boolean requestNodeFocus, boolean animated) {
         focusRequestPending |= requestNodeFocus;
         flow.refreshCells();
@@ -173,16 +197,24 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     }
 
     /// Scrolls the virtual flow to the supplied index.
+    ///
+    /// @param index the data item index to reveal
     public void scrollTo(int index) {
         scrollTo(index, true);
     }
 
     /// Scrolls the virtual flow to the supplied index, optionally animating the position change.
+    ///
+    /// @param index the data item index to reveal
+    /// @param animated whether the scroll should animate when animations are enabled
     public void scrollTo(int index, boolean animated) {
         scrollToIndex(index, animated);
     }
 
     /// Returns the rendered list item for a visible or reusable cell index.
+    ///
+    /// @param index the data item index to query
+    /// @return the rendered list item node, or `null` when the index is outside the data list
     public @Nullable Node getVisibleItem(int index) {
         if (index < 0 || index >= getSkinnable().getItems().size()) {
             return null;

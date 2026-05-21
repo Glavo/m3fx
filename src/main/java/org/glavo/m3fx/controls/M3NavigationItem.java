@@ -62,25 +62,25 @@ public class M3NavigationItem extends ButtonBase {
     /// The default content spacing.
     private static final double DEFAULT_CONTENT_SPACING = 4.0;
 
-    /// The styleable container height token.
+    // The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The styleable item width token.
+    // The styleable item width token.
     private @Nullable StyleableDoubleProperty itemWidth;
 
-    /// The styleable selected indicator width token.
+    // The styleable selected indicator width token.
     private @Nullable StyleableDoubleProperty indicatorWidth;
 
-    /// The styleable selected indicator height token.
+    // The styleable selected indicator height token.
     private @Nullable StyleableDoubleProperty indicatorHeight;
 
-    /// The styleable selected indicator shape token.
+    // The styleable selected indicator shape token.
     private @Nullable StyleableDoubleProperty indicatorShape;
 
-    /// The styleable content spacing token.
+    // The styleable content spacing token.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    /// The selected state property.
+    // The selected state property.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -90,7 +90,7 @@ public class M3NavigationItem extends ButtonBase {
         }
     };
 
-    /// The badge displayed over the navigation item graphic.
+    // The badge displayed over the navigation item graphic.
     private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
 
     /// Creates an empty navigation item.
@@ -99,16 +99,25 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Creates a navigation item with text.
+    ///
+    /// @param text the navigation item label
     public M3NavigationItem(String text) {
         this(text, null);
     }
 
     /// Creates a navigation item with text and graphic content.
+    ///
+    /// @param text the navigation item label
+    /// @param graphic the graphic node, or `null` for no graphic
     public M3NavigationItem(String text, @Nullable Node graphic) {
         this(text, graphic, null);
     }
 
     /// Creates a navigation item with text, graphic content, and a badge.
+    ///
+    /// @param text the navigation item label
+    /// @param graphic the graphic node, or `null` for no graphic
+    /// @param badge the badge shown over the graphic, or `null` for no badge
     public M3NavigationItem(String text, @Nullable Node graphic, @Nullable M3Badge badge) {
         super(Objects.requireNonNull(text, "text"), graphic);
         initialize();
@@ -116,16 +125,31 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Creates a navigation item with text and the requested selected state.
+    ///
+    /// @param text the navigation item label
+    /// @param selected the initial selected state
+    /// @return a navigation item with the requested selected state
     public static M3NavigationItem withSelected(String text, boolean selected) {
         return withSelected(text, null, null, selected);
     }
 
     /// Creates a navigation item with text, graphic content, and the requested selected state.
+    ///
+    /// @param text the navigation item label
+    /// @param graphic the graphic node, or `null` for no graphic
+    /// @param selected the initial selected state
+    /// @return a navigation item with the requested selected state
     public static M3NavigationItem withSelected(String text, @Nullable Node graphic, boolean selected) {
         return withSelected(text, graphic, null, selected);
     }
 
     /// Creates a navigation item with text, graphic content, badge content, and the requested selected state.
+    ///
+    /// @param text the navigation item label
+    /// @param graphic the graphic node, or `null` for no graphic
+    /// @param badge the badge shown over the graphic, or `null` for no badge
+    /// @param selected the initial selected state
+    /// @return a navigation item with the requested selected state
     public static M3NavigationItem withSelected(
             String text,
             @Nullable Node graphic,
@@ -138,46 +162,64 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Returns whether this navigation item is selected.
+    ///
+    /// @return `true` when this navigation item is selected
     public final boolean isSelected() {
         return selected.get();
     }
 
     /// Sets whether this navigation item is selected.
+    ///
+    /// @param selected whether this navigation item is selected
     public final void setSelected(boolean selected) {
         this.selected.set(selected);
     }
 
     /// Returns the selected state property.
+    ///
+    /// @return the writable selected state property
     public final BooleanProperty selectedProperty() {
         return selected;
     }
 
     /// Returns the badge displayed over this item's graphic.
+    ///
+    /// @return the badge shown over the graphic, or `null` when no badge is set
     public final @Nullable M3Badge getBadge() {
         return badge.get();
     }
 
     /// Sets the badge displayed over this item's graphic.
+    ///
+    /// @param badge the badge shown over the graphic, or `null` for no badge
     public final void setBadge(@Nullable M3Badge badge) {
         this.badge.set(badge);
     }
 
     /// Returns the badge property.
+    ///
+    /// @return the writable badge property
     public final ObjectProperty<@Nullable M3Badge> badgeProperty() {
         return badge;
     }
 
     /// Returns the navigation item container height token.
+    ///
+    /// @return the navigation item container height in pixels
     public final double getContainerHeight() {
         return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
     }
 
     /// Sets the navigation item container height token.
+    ///
+    /// @param containerHeight the navigation item container height in pixels
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
     /// Returns the navigation item container height token property.
+    ///
+    /// @return the styleable navigation item container height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = new StyleableDoubleProperty(DEFAULT_CONTAINER_HEIGHT) {
@@ -211,16 +253,22 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Returns the navigation item width token.
+    ///
+    /// @return the navigation item width in pixels
     public final double getItemWidth() {
         return itemWidth == null ? DEFAULT_ITEM_WIDTH : itemWidth.get();
     }
 
     /// Sets the navigation item width token.
+    ///
+    /// @param itemWidth the navigation item width in pixels
     public final void setItemWidth(double itemWidth) {
         itemWidthProperty().set(M3Css.nonNegative(itemWidth, "itemWidth"));
     }
 
     /// Returns the navigation item width token property.
+    ///
+    /// @return the styleable navigation item width property
     public final StyleableDoubleProperty itemWidthProperty() {
         if (itemWidth == null) {
             itemWidth = new StyleableDoubleProperty(DEFAULT_ITEM_WIDTH) {
@@ -254,16 +302,22 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Returns the selected indicator width token.
+    ///
+    /// @return the selected indicator width in pixels
     public final double getIndicatorWidth() {
         return indicatorWidth == null ? DEFAULT_INDICATOR_WIDTH : indicatorWidth.get();
     }
 
     /// Sets the selected indicator width token.
+    ///
+    /// @param indicatorWidth the selected indicator width in pixels
     public final void setIndicatorWidth(double indicatorWidth) {
         indicatorWidthProperty().set(M3Css.nonNegative(indicatorWidth, "indicatorWidth"));
     }
 
     /// Returns the selected indicator width token property.
+    ///
+    /// @return the styleable selected indicator width property
     public final StyleableDoubleProperty indicatorWidthProperty() {
         if (indicatorWidth == null) {
             indicatorWidth = new StyleableDoubleProperty(DEFAULT_INDICATOR_WIDTH) {
@@ -297,16 +351,22 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Returns the selected indicator height token.
+    ///
+    /// @return the selected indicator height in pixels
     public final double getIndicatorHeight() {
         return indicatorHeight == null ? DEFAULT_INDICATOR_HEIGHT : indicatorHeight.get();
     }
 
     /// Sets the selected indicator height token.
+    ///
+    /// @param indicatorHeight the selected indicator height in pixels
     public final void setIndicatorHeight(double indicatorHeight) {
         indicatorHeightProperty().set(M3Css.nonNegative(indicatorHeight, "indicatorHeight"));
     }
 
     /// Returns the selected indicator height token property.
+    ///
+    /// @return the styleable selected indicator height property
     public final StyleableDoubleProperty indicatorHeightProperty() {
         if (indicatorHeight == null) {
             indicatorHeight = new StyleableDoubleProperty(DEFAULT_INDICATOR_HEIGHT) {
@@ -340,16 +400,22 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Returns the selected indicator shape token.
+    ///
+    /// @return the selected indicator corner radius in pixels
     public final double getIndicatorShape() {
         return indicatorShape == null ? DEFAULT_INDICATOR_SHAPE : indicatorShape.get();
     }
 
     /// Sets the selected indicator shape token.
+    ///
+    /// @param indicatorShape the selected indicator corner radius in pixels
     public final void setIndicatorShape(double indicatorShape) {
         indicatorShapeProperty().set(M3Css.nonNegative(indicatorShape, "indicatorShape"));
     }
 
     /// Returns the selected indicator shape token property.
+    ///
+    /// @return the styleable selected indicator shape property
     public final StyleableDoubleProperty indicatorShapeProperty() {
         if (indicatorShape == null) {
             indicatorShape = new StyleableDoubleProperty(DEFAULT_INDICATOR_SHAPE) {
@@ -383,16 +449,22 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Returns the content spacing token.
+    ///
+    /// @return the spacing between item content nodes in pixels
     public final double getContentSpacing() {
         return contentSpacing == null ? DEFAULT_CONTENT_SPACING : contentSpacing.get();
     }
 
     /// Sets the content spacing token.
+    ///
+    /// @param contentSpacing the spacing between item content nodes in pixels
     public final void setContentSpacing(double contentSpacing) {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
     /// Returns the content spacing token property.
+    ///
+    /// @return the styleable content spacing property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = new StyleableDoubleProperty(DEFAULT_CONTENT_SPACING) {
@@ -426,6 +498,8 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for `M3NavigationItem`
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
@@ -437,6 +511,10 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Returns accessibility attributes for the navigation item selection state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -456,6 +534,8 @@ public class M3NavigationItem extends ButtonBase {
     }
 
     /// Creates the default Material Design 3 navigation item skin.
+    ///
+    /// @return the default Material Design 3 navigation item skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3NavigationItemSkin(this);

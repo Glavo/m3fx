@@ -50,11 +50,15 @@ public enum M3MotionEasing {
     }
 
     /// Returns the stable CSS token name for this easing curve.
+    ///
+    /// @return the stable CSS token name
     public String tokenName() {
         return tokenName;
     }
 
     /// Returns the JavaFX interpolator used by this easing curve.
+    ///
+    /// @return the JavaFX interpolator used by this easing curve
     public Interpolator interpolator() {
         return interpolator;
     }

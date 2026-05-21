@@ -58,7 +58,7 @@ public class M3MenuButton extends M3Button {
     /// The popup window used to host the menu.
     private final Popup popup = new Popup();
 
-    /// Whether this menu button popup is currently showing.
+    // Whether this menu button popup is currently showing.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The menu popup enter animation.
@@ -76,39 +76,54 @@ public class M3MenuButton extends M3Button {
     }
 
     /// Creates a menu button with text.
+    ///
+    /// @param text the button text
     public M3MenuButton(String text) {
         super(text);
         initialize();
     }
 
     /// Creates a menu button with text and menu items.
+    ///
+    /// @param text the button text
+    /// @param items the initial non-null menu content nodes
     public M3MenuButton(String text, Node... items) {
         this(text);
         addItems(items);
     }
 
     /// Returns the menu displayed by this button.
+    ///
+    /// @return the menu displayed in this button's popup
     public final M3Menu getMenu() {
         return menu;
     }
 
     /// Returns the mutable item list shown by this button's menu.
+    ///
+    /// @return the mutable menu content list
     public final ObservableList<Node> getItems() {
         return menu.getItems();
     }
 
     /// Adds one menu item node.
+    ///
+    /// @param item the non-null node to append to the menu
     public final void addItem(Node item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds menu item nodes.
+    ///
+    /// @param items the non-null nodes to append to the menu
     public final void addItems(Node... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all menu item nodes.
+    ///
+    /// @param items the non-null nodes that replace the current menu content
     public final void setItems(Node... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -120,61 +135,85 @@ public class M3MenuButton extends M3Button {
     }
 
     /// Returns the menu item selection mode used by this button's menu.
+    ///
+    /// @return the active menu selection mode
     public final M3MenuSelectionMode getSelectionMode() {
         return menu.getSelectionMode();
     }
 
     /// Sets the menu item selection mode used by this button's menu.
+    ///
+    /// @param selectionMode the active menu selection mode
     public final void setSelectionMode(M3MenuSelectionMode selectionMode) {
         menu.setSelectionMode(selectionMode);
     }
 
     /// Returns the menu item selection mode property.
+    ///
+    /// @return the writable menu selection mode property
     public final ObjectProperty<M3MenuSelectionMode> selectionModeProperty() {
         return menu.selectionModeProperty();
     }
 
     /// Returns whether this button's menu allows all selectable items to be unselected.
+    ///
+    /// @return `true` when all selectable menu items may be unselected
     public final boolean isAllowEmptySelection() {
         return menu.isAllowEmptySelection();
     }
 
     /// Sets whether this button's menu allows all selectable items to be unselected.
+    ///
+    /// @param allowEmptySelection whether all selectable menu items may be unselected
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         menu.setAllowEmptySelection(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property for this button's menu.
+    ///
+    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return menu.allowEmptySelectionProperty();
     }
 
     /// Returns the selected menu items in child order.
+    ///
+    /// @return an unmodifiable observable view of selected menu items
     public final @UnmodifiableView ObservableList<M3MenuItem> getSelectedItems() {
         return menu.getSelectedItems();
     }
 
     /// Returns the first selected menu item in child order.
+    ///
+    /// @return the first selected menu item, or `null` when selection is empty
     public final @Nullable M3MenuItem getSelectedItem() {
         return menu.getSelectedItem();
     }
 
     /// Returns the first selected menu item property.
+    ///
+    /// @return the read-only first selected menu item property
     public final ReadOnlyObjectProperty<@Nullable M3MenuItem> selectedItemProperty() {
         return menu.selectedItemProperty();
     }
 
     /// Returns the child index of the first selected menu item, or `-1` when no item is selected.
+    ///
+    /// @return the child index of the first selected menu item, or `-1` when no item is selected
     public final int getSelectedIndex() {
         return menu.getSelectedIndex();
     }
 
     /// Selects a menu item that belongs to this button's menu.
+    ///
+    /// @param item the selectable menu item to select
     public final void select(M3MenuItem item) {
         menu.select(item);
     }
 
     /// Selects the menu item at the given child index.
+    ///
+    /// @param index the child index of the selectable menu item
     public final void selectIndex(int index) {
         menu.selectIndex(index);
     }
@@ -205,11 +244,15 @@ public class M3MenuButton extends M3Button {
     }
 
     /// Returns whether the menu popup is currently showing.
+    ///
+    /// @return `true` when the menu popup is showing
     public final boolean isShowing() {
         return showing.get();
     }
 
     /// Returns the read-only showing state property.
+    ///
+    /// @return the read-only showing state property
     public final ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
@@ -285,6 +328,10 @@ public class M3MenuButton extends M3Button {
     }
 
     /// Returns accessibility attributes for the menu popup.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -301,6 +348,9 @@ public class M3MenuButton extends M3Button {
     }
 
     /// Executes menu-related accessibility actions.
+    ///
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

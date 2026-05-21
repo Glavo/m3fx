@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 /// @param <T> the item type rendered by the skinned cell
 @NotNullByDefault
 public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
-    /// The currently installed rendered row node.
+    // The currently installed rendered row node.
     private @Nullable Node graphic;
 
     /// Updates the rendered row when the cell graphic changes.
@@ -25,6 +25,8 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
             (observable, oldValue, newValue) -> updateGraphic(newValue);
 
     /// Creates a virtualized list view cell skin.
+    ///
+    /// @param control the skinned virtualized list cell
     public M3ListViewCellSkin(M3ListViewCell<T> control) {
         super(control);
         control.graphicProperty().addListener(graphicListener);
@@ -41,6 +43,13 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     }
 
     /// Computes the minimum width from the rendered row.
+    ///
+    /// @param height the height that should be used if width depends on it
+    /// @param topInset the snapped top inset
+    /// @param rightInset the snapped right inset
+    /// @param bottomInset the snapped bottom inset
+    /// @param leftInset the snapped left inset
+    /// @return the minimum width
     @Override
     protected double computeMinWidth(
             double height,
@@ -54,6 +63,13 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     }
 
     /// Computes the minimum height from the rendered row.
+    ///
+    /// @param width the width that should be used if height depends on it
+    /// @param topInset the snapped top inset
+    /// @param rightInset the snapped right inset
+    /// @param bottomInset the snapped bottom inset
+    /// @param leftInset the snapped left inset
+    /// @return the minimum height
     @Override
     protected double computeMinHeight(
             double width,
@@ -67,6 +83,13 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     }
 
     /// Computes the preferred width from the rendered row.
+    ///
+    /// @param height the height that should be used if width depends on it
+    /// @param topInset the snapped top inset
+    /// @param rightInset the snapped right inset
+    /// @param bottomInset the snapped bottom inset
+    /// @param leftInset the snapped left inset
+    /// @return the preferred width
     @Override
     protected double computePrefWidth(
             double height,
@@ -80,6 +103,13 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     }
 
     /// Computes the preferred height from the rendered row.
+    ///
+    /// @param width the width that should be used if height depends on it
+    /// @param topInset the snapped top inset
+    /// @param rightInset the snapped right inset
+    /// @param bottomInset the snapped bottom inset
+    /// @param leftInset the snapped left inset
+    /// @return the preferred height
     @Override
     protected double computePrefHeight(
             double width,
@@ -93,6 +123,11 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     }
 
     /// Lays out the rendered row in the full cell content area.
+    ///
+    /// @param x the layout area's x coordinate
+    /// @param y the layout area's y coordinate
+    /// @param width the layout area's width
+    /// @param height the layout area's height
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         Node row = graphic;

@@ -16,21 +16,33 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     /// Returns the fast effects motion spec.
+    ///
+    /// @return the fast effects motion spec
     M3MotionSpec fastEffects();
 
     /// Returns the default effects motion spec.
+    ///
+    /// @return the default effects motion spec
     M3MotionSpec defaultEffects();
 
     /// Returns the slow effects motion spec.
+    ///
+    /// @return the slow effects motion spec
     M3MotionSpec slowEffects();
 
     /// Returns the fast spatial motion spec.
+    ///
+    /// @return the fast spatial motion spec
     M3MotionSpec fastSpatial();
 
     /// Returns the default spatial motion spec.
+    ///
+    /// @return the default spatial motion spec
     M3MotionSpec defaultSpatial();
 
     /// Returns the slow spatial motion spec.
+    ///
+    /// @return the slow spatial motion spec
     M3MotionSpec slowSpatial();
 
     /// Creates a motion scheme from explicit specs.

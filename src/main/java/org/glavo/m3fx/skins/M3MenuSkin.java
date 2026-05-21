@@ -11,6 +11,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox> {
     /// Creates a menu skin.
+    ///
+    /// @param control the skinned menu
     public M3MenuSkin(M3Menu control) {
         super(control, control.getItems(), new VBox());
         getContainer().setSpacing(0.0);

@@ -124,6 +124,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     private boolean spaceKeyPressed;
 
     /// Creates a list item skin.
+    ///
+    /// @param control the list item controlled by this skin
     public M3ListItemSkin(M3ListItem control) {
         super(control);
         selectionContainer.getStyleClass().add("m3-list-item-selection-container");

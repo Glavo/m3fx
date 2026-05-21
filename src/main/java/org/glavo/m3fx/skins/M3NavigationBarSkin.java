@@ -21,6 +21,8 @@ public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
 
     /// Creates a navigation bar skin.
+    ///
+    /// @param control the skinned navigation bar
     public M3NavigationBarSkin(M3NavigationBar control) {
         super(control);
         container.setManaged(false);

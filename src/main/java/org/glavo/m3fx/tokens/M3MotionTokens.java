@@ -21,105 +21,164 @@ import java.util.Objects;
 @NotNullByDefault
 public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     /// Returns the short1 duration token.
+    ///
+    /// @return the short1 duration token in milliseconds
     int short1();
 
     /// Returns the short2 duration token.
+    ///
+    /// @return the short2 duration token in milliseconds
     int short2();
 
     /// Returns the short3 duration token.
+    ///
+    /// @return the short3 duration token in milliseconds
     int short3();
 
     /// Returns the short4 duration token.
+    ///
+    /// @return the short4 duration token in milliseconds
     int short4();
 
     /// Returns the medium1 duration token.
+    ///
+    /// @return the medium1 duration token in milliseconds
     int medium1();
 
     /// Returns the medium2 duration token.
+    ///
+    /// @return the medium2 duration token in milliseconds
     int medium2();
 
     /// Returns the medium3 duration token.
+    ///
+    /// @return the medium3 duration token in milliseconds
     int medium3();
 
     /// Returns the medium4 duration token.
+    ///
+    /// @return the medium4 duration token in milliseconds
     int medium4();
 
     /// Returns the long1 duration token.
+    ///
+    /// @return the long1 duration token in milliseconds
     int long1();
 
     /// Returns the long2 duration token.
+    ///
+    /// @return the long2 duration token in milliseconds
     int long2();
 
     /// Returns the long3 duration token.
+    ///
+    /// @return the long3 duration token in milliseconds
     int long3();
 
     /// Returns the long4 duration token.
+    ///
+    /// @return the long4 duration token in milliseconds
     int long4();
 
     /// Returns the extraLong1 duration token.
+    ///
+    /// @return the extraLong1 duration token in milliseconds
     int extraLong1();
 
     /// Returns the extraLong2 duration token.
+    ///
+    /// @return the extraLong2 duration token in milliseconds
     int extraLong2();
 
     /// Returns the extraLong3 duration token.
+    ///
+    /// @return the extraLong3 duration token in milliseconds
     int extraLong3();
 
     /// Returns the extraLong4 duration token.
+    ///
+    /// @return the extraLong4 duration token in milliseconds
     int extraLong4();
 
     /// Returns the semantic motion scheme used by this profile.
+    ///
+    /// @return the semantic motion scheme used by this profile
     M3MotionScheme scheme();
 
     /// Returns the motion-adjacent interaction timings used by this profile.
+    ///
+    /// @return the motion-adjacent interaction timings used by this profile
     M3MotionBehavior behavior();
 
     /// Returns the fast effects motion spec.
+    ///
+    /// @return the fast effects motion spec
     default M3MotionSpec fastEffects() {
         return scheme().fastEffects();
     }
 
     /// Returns the default effects motion spec.
+    ///
+    /// @return the default effects motion spec
     default M3MotionSpec defaultEffects() {
         return scheme().defaultEffects();
     }
 
     /// Returns the slow effects motion spec.
+    ///
+    /// @return the slow effects motion spec
     default M3MotionSpec slowEffects() {
         return scheme().slowEffects();
     }
 
     /// Returns the fast spatial motion spec.
+    ///
+    /// @return the fast spatial motion spec
     default M3MotionSpec fastSpatial() {
         return scheme().fastSpatial();
     }
 
     /// Returns the default spatial motion spec.
+    ///
+    /// @return the default spatial motion spec
     default M3MotionSpec defaultSpatial() {
         return scheme().defaultSpatial();
     }
 
     /// Returns the slow spatial motion spec.
+    ///
+    /// @return the slow spatial motion spec
     default M3MotionSpec slowSpatial() {
         return scheme().slowSpatial();
     }
 
     /// Returns the legacy short duration alias.
+    ///
+    /// @return the legacy short duration alias in milliseconds
     default int shortDuration() {
         return short2();
     }
 
     /// Returns the legacy medium duration alias.
+    ///
+    /// @return the legacy medium duration alias in milliseconds
     default int mediumDuration() {
         return medium1();
     }
 
     /// Returns the legacy long duration alias.
+    ///
+    /// @return the legacy long duration alias in milliseconds
     default int longDuration() {
         return long2();
     }
 
     /// Creates motion duration tokens from legacy coarse duration values.
+    ///
+    /// @param shortDuration the duration applied to all short duration tokens
+    /// @param mediumDuration the duration applied to all medium duration tokens
+    /// @param longDuration the duration applied to all long and extra-long duration tokens
+    /// @return immutable motion duration tokens
     static M3MotionTokens create(int shortDuration, int mediumDuration, int longDuration) {
         return create(
                 shortDuration,
@@ -144,6 +203,24 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     }
 
     /// Creates motion duration tokens.
+    ///
+    /// @param short1 the short1 duration token in milliseconds
+    /// @param short2 the short2 duration token in milliseconds
+    /// @param short3 the short3 duration token in milliseconds
+    /// @param short4 the short4 duration token in milliseconds
+    /// @param medium1 the medium1 duration token in milliseconds
+    /// @param medium2 the medium2 duration token in milliseconds
+    /// @param medium3 the medium3 duration token in milliseconds
+    /// @param medium4 the medium4 duration token in milliseconds
+    /// @param long1 the long1 duration token in milliseconds
+    /// @param long2 the long2 duration token in milliseconds
+    /// @param long3 the long3 duration token in milliseconds
+    /// @param long4 the long4 duration token in milliseconds
+    /// @param extraLong1 the extraLong1 duration token in milliseconds
+    /// @param extraLong2 the extraLong2 duration token in milliseconds
+    /// @param extraLong3 the extraLong3 duration token in milliseconds
+    /// @param extraLong4 the extraLong4 duration token in milliseconds
+    /// @return immutable motion duration tokens
     static M3MotionTokens create(
             int short1,
             int short2,
@@ -185,6 +262,25 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     }
 
     /// Creates motion duration tokens with a semantic motion scheme.
+    ///
+    /// @param short1 the short1 duration token in milliseconds
+    /// @param short2 the short2 duration token in milliseconds
+    /// @param short3 the short3 duration token in milliseconds
+    /// @param short4 the short4 duration token in milliseconds
+    /// @param medium1 the medium1 duration token in milliseconds
+    /// @param medium2 the medium2 duration token in milliseconds
+    /// @param medium3 the medium3 duration token in milliseconds
+    /// @param medium4 the medium4 duration token in milliseconds
+    /// @param long1 the long1 duration token in milliseconds
+    /// @param long2 the long2 duration token in milliseconds
+    /// @param long3 the long3 duration token in milliseconds
+    /// @param long4 the long4 duration token in milliseconds
+    /// @param extraLong1 the extraLong1 duration token in milliseconds
+    /// @param extraLong2 the extraLong2 duration token in milliseconds
+    /// @param extraLong3 the extraLong3 duration token in milliseconds
+    /// @param extraLong4 the extraLong4 duration token in milliseconds
+    /// @param scheme the semantic motion scheme
+    /// @return immutable motion duration tokens
     static M3MotionTokens create(
             int short1,
             int short2,
@@ -227,6 +323,26 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     }
 
     /// Creates motion duration tokens with semantic motion and behavior timings.
+    ///
+    /// @param short1 the short1 duration token in milliseconds
+    /// @param short2 the short2 duration token in milliseconds
+    /// @param short3 the short3 duration token in milliseconds
+    /// @param short4 the short4 duration token in milliseconds
+    /// @param medium1 the medium1 duration token in milliseconds
+    /// @param medium2 the medium2 duration token in milliseconds
+    /// @param medium3 the medium3 duration token in milliseconds
+    /// @param medium4 the medium4 duration token in milliseconds
+    /// @param long1 the long1 duration token in milliseconds
+    /// @param long2 the long2 duration token in milliseconds
+    /// @param long3 the long3 duration token in milliseconds
+    /// @param long4 the long4 duration token in milliseconds
+    /// @param extraLong1 the extraLong1 duration token in milliseconds
+    /// @param extraLong2 the extraLong2 duration token in milliseconds
+    /// @param extraLong3 the extraLong3 duration token in milliseconds
+    /// @param extraLong4 the extraLong4 duration token in milliseconds
+    /// @param scheme the semantic motion scheme
+    /// @param behavior the motion-adjacent interaction timings
+    /// @return immutable motion duration tokens
     static M3MotionTokens create(
             int short1,
             int short2,
@@ -272,6 +388,8 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     }
 
     /// Returns baseline Material Design 3 motion tokens.
+    ///
+    /// @return baseline Material Design 3 motion tokens
     static M3MotionTokens baseline() {
         return create(
                 50,
@@ -294,6 +412,8 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     }
 
     /// Returns expressive Material Design 3 motion tokens.
+    ///
+    /// @return expressive Material Design 3 motion tokens
     static M3MotionTokens expressive() {
         return create(
                 50,
@@ -318,6 +438,8 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     }
 
     /// Converts motion tokens into inline JavaFX CSS declarations.
+    ///
+    /// @return inline JavaFX CSS declarations for these motion tokens
     default String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
         appendLegacyStyleDeclarations(builder);

@@ -18,12 +18,18 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public sealed interface M3MotionSpec permits M3MotionSpecImpl {
     /// Returns the animation duration.
+    ///
+    /// @return the animation duration
     Duration duration();
 
     /// Returns the named easing curve.
+    ///
+    /// @return the named easing curve
     M3MotionEasing easing();
 
     /// Returns the JavaFX interpolator for the easing curve.
+    ///
+    /// @return the JavaFX interpolator for the easing curve
     default Interpolator interpolator() {
         return easing().interpolator();
     }

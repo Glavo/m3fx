@@ -50,7 +50,7 @@ public class M3NavigationDrawer extends Control {
     /// The mutable navigation drawer content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
-    /// The currently selected navigation drawer item.
+    // The currently selected navigation drawer item.
     private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -61,7 +61,7 @@ public class M3NavigationDrawer extends Control {
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    /// Whether the drawer allows all list items to be unselected.
+    // Whether the drawer allows all list items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -109,28 +109,38 @@ public class M3NavigationDrawer extends Control {
     }
 
     /// Creates a navigation drawer containing the supplied nodes.
+    ///
+    /// @param items the initial non-null drawer content nodes
     public M3NavigationDrawer(Node... items) {
         initialize();
         addItems(items);
     }
 
     /// Returns the mutable child list used as drawer content.
+    ///
+    /// @return the mutable drawer content list
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one drawer content node.
+    ///
+    /// @param item the non-null drawer content node to append
     public final void addItem(Node item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds drawer content nodes.
+    ///
+    /// @param items the non-null drawer content nodes to append
     public final void addItems(Node... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all drawer content nodes.
+    ///
+    /// @param items the non-null drawer content nodes that replace the current content
     public final void setItems(Node... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -142,42 +152,58 @@ public class M3NavigationDrawer extends Control {
     }
 
     /// Returns the selected drawer list items in child order.
+    ///
+    /// @return an unmodifiable observable view of selected drawer list items
     public final @UnmodifiableView ObservableList<M3ListItem> getSelectedItems() {
         return selectedItemsView;
     }
 
     /// Returns the selected drawer list item.
+    ///
+    /// @return the selected drawer list item, or `null` when no item is selected
     public final @Nullable M3ListItem getSelectedItem() {
         return selectedItem.get();
     }
 
     /// Returns the selected drawer list item property.
+    ///
+    /// @return the read-only selected drawer list item property
     public final ReadOnlyObjectProperty<@Nullable M3ListItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
 
     /// Returns the child index of the selected drawer list item, or `-1` when no item is selected.
+    ///
+    /// @return the flattened child index of the selected drawer list item, or `-1` when no item is selected
     public final int getSelectedIndex() {
         @Nullable M3ListItem item = getSelectedItem();
         return item == null ? -1 : flattenedContent().indexOf(item);
     }
 
     /// Returns whether this drawer allows all list items to be unselected.
+    ///
+    /// @return `true` when all drawer list items may be unselected
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
     }
 
     /// Sets whether this drawer allows all list items to be unselected.
+    ///
+    /// @param allowEmptySelection whether all drawer list items may be unselected
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property.
+    ///
+    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
 
     /// Selects a drawer list item that belongs to this drawer.
+    ///
+    /// @param item the drawer list item to select
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
         if (!containsListItem(item)) {
@@ -187,6 +213,8 @@ public class M3NavigationDrawer extends Control {
     }
 
     /// Selects the drawer list item at the given child index.
+    ///
+    /// @param index the flattened child index of the drawer list item
     public final void selectIndex(int index) {
         Node child = flattenedContent().get(index);
         if (child instanceof M3ListItem item) {
@@ -246,6 +274,10 @@ public class M3NavigationDrawer extends Control {
     }
 
     /// Returns accessibility attributes for navigation drawer content and selection state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -265,6 +297,9 @@ public class M3NavigationDrawer extends Control {
     }
 
     /// Executes accessibility selection actions for drawer list items.
+    ///
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -687,6 +722,8 @@ public class M3NavigationDrawer extends Control {
     }
 
     /// Creates the default Material Design 3 navigation drawer skin.
+    ///
+    /// @return the default Material Design 3 navigation drawer skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3NavigationDrawerSkin(this);

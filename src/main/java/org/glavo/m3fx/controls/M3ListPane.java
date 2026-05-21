@@ -49,7 +49,7 @@ public class M3ListPane extends Control {
     /// The mutable list content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
-    /// The list item selection mode.
+    // The list item selection mode.
     private final ObjectProperty<@Nullable M3ListSelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3ListSelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
@@ -63,7 +63,7 @@ public class M3ListPane extends Control {
                 }
             };
 
-    /// Whether this list allows all selectable items to be unselected.
+    // Whether this list allows all selectable items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -81,7 +81,7 @@ public class M3ListPane extends Control {
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    /// The first selected list item in child order.
+    // The first selected list item in child order.
     private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -121,28 +121,38 @@ public class M3ListPane extends Control {
     }
 
     /// Creates a list containing the supplied nodes.
+    ///
+    /// @param items the initial list content nodes
     public M3ListPane(Node... items) {
         initialize();
         addItems(items);
     }
 
     /// Returns the mutable child list used as list content.
+    ///
+    /// @return the mutable child list used as list content
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one list content node.
+    ///
+    /// @param item the list content node to add
     public final void addItem(Node item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds list content nodes.
+    ///
+    /// @param items the list content nodes to add
     public final void addItems(Node... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all list content nodes.
+    ///
+    /// @param items the replacement list content nodes
     public final void setItems(Node... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -154,57 +164,79 @@ public class M3ListPane extends Control {
     }
 
     /// Returns the list item selection mode.
+    ///
+    /// @return the list item selection mode
     public final M3ListSelectionMode getSelectionMode() {
         return Objects.requireNonNull(selectionMode.get(), "selectionMode");
     }
 
     /// Sets the list item selection mode.
+    ///
+    /// @param selectionMode the list item selection mode
     public final void setSelectionMode(M3ListSelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the list item selection mode property.
+    ///
+    /// @return the list item selection mode property
     public final ObjectProperty<@Nullable M3ListSelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
     /// Returns whether this list allows all selectable items to be unselected.
+    ///
+    /// @return `true` when this list allows all selectable items to be unselected
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
     }
 
     /// Sets whether this list allows all selectable items to be unselected.
+    ///
+    /// @param allowEmptySelection whether this list allows all selectable items to be unselected
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property.
+    ///
+    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
 
     /// Returns the selected list items in child order.
+    ///
+    /// @return the selected list items in child order
     public final @UnmodifiableView ObservableList<M3ListItem> getSelectedItems() {
         return selectedItemsView;
     }
 
     /// Returns the first selected list item in child order.
+    ///
+    /// @return the first selected list item in child order, or `null` when no item is selected
     public final @Nullable M3ListItem getSelectedItem() {
         return selectedItem.get();
     }
 
     /// Returns the first selected list item property.
+    ///
+    /// @return the first selected list item property
     public final ReadOnlyObjectProperty<@Nullable M3ListItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
 
     /// Returns the child index of the first selected list item, or `-1` when no item is selected.
+    ///
+    /// @return the child index of the first selected list item, or `-1` when no item is selected
     public final int getSelectedIndex() {
         @Nullable M3ListItem item = getSelectedItem();
         return item == null ? -1 : getItems().indexOf(item);
     }
 
     /// Selects a list item that belongs to this list.
+    ///
+    /// @param item the list item to select
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -219,6 +251,8 @@ public class M3ListPane extends Control {
     }
 
     /// Selects the list item at the given child index.
+    ///
+    /// @param index the child index to select
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3ListItem item) {

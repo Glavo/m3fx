@@ -58,7 +58,7 @@ public class M3ListView<T> extends Control {
     /// The backing data items rendered by this view.
     private final ObservableList<T> items = FXCollections.observableArrayList();
 
-    /// The list item factory used by virtualized cells.
+    // The list item factory used by virtualized cells.
     private final ObjectProperty<@Nullable Callback<? super T, ? extends M3ListItem>> cellFactory =
             new SimpleObjectProperty<>(this, "cellFactory") {
                 /// Rebuilds visible cells when the factory changes.
@@ -68,7 +68,7 @@ public class M3ListView<T> extends Control {
                 }
             };
 
-    /// The selection mode used by this virtualized list.
+    // The selection mode used by this virtualized list.
     private final ObjectProperty<@Nullable M3ListSelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3ListSelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
@@ -82,7 +82,7 @@ public class M3ListView<T> extends Control {
                 }
             };
 
-    /// Whether this list view allows all selectable items to be unselected.
+    // Whether this list view allows all selectable items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -93,7 +93,7 @@ public class M3ListView<T> extends Control {
         }
     };
 
-    /// The fixed cell size hint forwarded to the virtual flow.
+    // The fixed cell size hint forwarded to the virtual flow.
     private final DoubleProperty fixedCellSize =
             new SimpleDoubleProperty(this, "fixedCellSize", DEFAULT_FIXED_CELL_SIZE) {
                 /// Validates updated fixed cell size values.
@@ -103,7 +103,7 @@ public class M3ListView<T> extends Control {
                 }
             };
 
-    /// Whether focus and programmatic scrolling animate the virtual flow position.
+    // Whether focus and programmatic scrolling animate the virtual flow position.
     private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
 
     /// The selected indices in ascending order.
@@ -120,17 +120,17 @@ public class M3ListView<T> extends Control {
     private final @UnmodifiableView ObservableList<T> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    /// The first selected index, or `-1` when selection is empty.
+    // The first selected index, or `-1` when selection is empty.
     private final ReadOnlyIntegerWrapper selectedIndex = new ReadOnlyIntegerWrapper(this, "selectedIndex", -1);
 
-    /// The first selected item, or `null` when selection is empty.
+    // The first selected item, or `null` when selection is empty.
     private final ReadOnlyObjectWrapper<@Nullable T> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
-    /// The keyboard-focused data index, or `-1` when no row has list focus.
+    // The keyboard-focused data index, or `-1` when no row has list focus.
     private final ReadOnlyIntegerWrapper focusedIndex = new ReadOnlyIntegerWrapper(this, "focusedIndex", -1);
 
-    /// The keyboard-focused data item, or `null` when no row has list focus.
+    // The keyboard-focused data item, or `null` when no row has list focus.
     private final ReadOnlyObjectWrapper<@Nullable T> focusedItem =
             new ReadOnlyObjectWrapper<>(this, "focusedItem");
 
@@ -154,6 +154,8 @@ public class M3ListView<T> extends Control {
     }
 
     /// Creates a virtualized list view containing the supplied data items.
+    ///
+    /// @param items the initial non-null data items
     @SafeVarargs
     public M3ListView(T... items) {
         initialize();
@@ -161,16 +163,22 @@ public class M3ListView<T> extends Control {
     }
 
     /// Returns the mutable backing data list.
+    ///
+    /// @return the mutable observable data list rendered by this view
     public final ObservableList<T> getItems() {
         return items;
     }
 
     /// Adds one data item.
+    ///
+    /// @param item the non-null data item to append
     public final void addItem(T item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds data items.
+    ///
+    /// @param items the non-null data items to append
     @SafeVarargs
     public final void addItems(T... items) {
         Objects.requireNonNull(items, "items");
@@ -179,6 +187,8 @@ public class M3ListView<T> extends Control {
     }
 
     /// Replaces all data items.
+    ///
+    /// @param items the non-null data items that replace the current list content
     @SafeVarargs
     public final void setItems(T... items) {
         Objects.requireNonNull(items, "items");
@@ -192,141 +202,199 @@ public class M3ListView<T> extends Control {
     }
 
     /// Returns the factory used to create a list item for one data item.
+    ///
+    /// @return the cell factory, or `null` to use the default string-based item
     public final @Nullable Callback<? super T, ? extends M3ListItem> getCellFactory() {
         return cellFactory.get();
     }
 
     /// Sets the factory used to create a list item for one data item.
+    ///
+    /// @param cellFactory the cell factory, or `null` to use the default string-based item
     public final void setCellFactory(@Nullable Callback<? super T, ? extends M3ListItem> cellFactory) {
         this.cellFactory.set(cellFactory);
     }
 
     /// Returns the list item factory property.
+    ///
+    /// @return the writable cell factory property
     public final ObjectProperty<@Nullable Callback<? super T, ? extends M3ListItem>> cellFactoryProperty() {
         return cellFactory;
     }
 
     /// Returns the list item selection mode.
+    ///
+    /// @return the active selection mode
     public final M3ListSelectionMode getSelectionMode() {
         return Objects.requireNonNull(selectionMode.get(), "selectionMode");
     }
 
     /// Sets the list item selection mode.
+    ///
+    /// @param selectionMode the active selection mode
     public final void setSelectionMode(M3ListSelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the list item selection mode property.
+    ///
+    /// @return the writable selection mode property
     public final ObjectProperty<@Nullable M3ListSelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
     /// Returns whether this list view allows all selectable items to be unselected.
+    ///
+    /// @return `true` when empty selection is allowed
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
     }
 
     /// Sets whether this list view allows all selectable items to be unselected.
+    ///
+    /// @param allowEmptySelection whether empty selection is allowed
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property.
+    ///
+    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
 
     /// Returns the fixed cell size hint used by the virtual flow.
+    ///
+    /// @return the fixed cell size hint in pixels, or `0` when variable cell heights are allowed
     public final double getFixedCellSize() {
         return fixedCellSize.get();
     }
 
     /// Sets the fixed cell size hint used by the virtual flow.
+    ///
+    /// @param fixedCellSize the fixed cell size in pixels, or `0` to allow variable cell heights
     public final void setFixedCellSize(double fixedCellSize) {
         this.fixedCellSize.set(M3Css.nonNegative(fixedCellSize, "fixedCellSize"));
     }
 
     /// Returns the fixed cell size property.
+    ///
+    /// @return the writable fixed cell size property
     public final DoubleProperty fixedCellSizeProperty() {
         return fixedCellSize;
     }
 
     /// Returns whether focus and programmatic scrolling animate the virtual flow position.
+    ///
+    /// @return `true` when focus and programmatic scrolling should animate
     public final boolean isAnimatedScroll() {
         return animatedScroll.get();
     }
 
     /// Sets whether focus and programmatic scrolling animate the virtual flow position.
+    ///
+    /// @param animatedScroll whether focus and programmatic scrolling should animate
     public final void setAnimatedScroll(boolean animatedScroll) {
         this.animatedScroll.set(animatedScroll);
     }
 
     /// Returns the animated virtual flow scrolling property.
+    ///
+    /// @return the writable animated scrolling property
     public final BooleanProperty animatedScrollProperty() {
         return animatedScroll;
     }
 
     /// Returns the selected indices in ascending order.
+    ///
+    /// @return an unmodifiable observable view of selected item indices
     public final @UnmodifiableView ObservableList<Integer> getSelectedIndices() {
         return selectedIndicesView;
     }
 
     /// Returns the selected item values in ascending index order.
+    ///
+    /// @return an unmodifiable observable view of selected item values
     public final @UnmodifiableView ObservableList<T> getSelectedItems() {
         return selectedItemsView;
     }
 
     /// Returns the first selected index, or `-1` when selection is empty.
+    ///
+    /// @return the first selected index, or `-1` when selection is empty
     public final int getSelectedIndex() {
         return selectedIndex.get();
     }
 
     /// Returns the first selected index property.
+    ///
+    /// @return the read-only first selected index property
     public final ReadOnlyIntegerProperty selectedIndexProperty() {
         return selectedIndex.getReadOnlyProperty();
     }
 
     /// Returns the first selected item, or `null` when selection is empty.
+    ///
+    /// @return the first selected item, or `null` when selection is empty
     public final @Nullable T getSelectedItem() {
         return selectedItem.get();
     }
 
     /// Returns the first selected item property.
+    ///
+    /// @return the read-only first selected item property
     public final ReadOnlyObjectProperty<@Nullable T> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
 
     /// Returns the keyboard-focused data index, or `-1` when no row has list focus.
+    ///
+    /// @return the keyboard-focused data index, or `-1` when no row has list focus
     public final int getFocusedIndex() {
         return focusedIndex.get();
     }
 
     /// Returns the keyboard-focused data index property.
+    ///
+    /// @return the read-only keyboard-focused data index property
     public final ReadOnlyIntegerProperty focusedIndexProperty() {
         return focusedIndex.getReadOnlyProperty();
     }
 
     /// Returns the keyboard-focused data item, or `null` when no row has list focus.
+    ///
+    /// @return the keyboard-focused data item, or `null` when no row has list focus
     public final @Nullable T getFocusedItem() {
         return focusedItem.get();
     }
 
     /// Returns the keyboard-focused data item property.
+    ///
+    /// @return the read-only keyboard-focused data item property
     public final ReadOnlyObjectProperty<@Nullable T> focusedItemProperty() {
         return focusedItem.getReadOnlyProperty();
     }
 
     /// Returns whether the supplied item index is selected.
+    ///
+    /// @param index the data item index to query
+    /// @return `true` when the item index is selected
     public final boolean isIndexSelected(int index) {
         return selectedIndices.contains(index);
     }
 
     /// Returns whether the supplied item index owns list keyboard focus.
+    ///
+    /// @param index the data item index to query
+    /// @return `true` when the item index owns list keyboard focus
     public final boolean isIndexFocused(int index) {
         return focusedIndex.get() == index;
     }
 
     /// Selects the item at the supplied index.
+    ///
+    /// @param index the data item index to select
     public final void selectIndex(int index) {
         checkItemIndex(index);
         if (getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
@@ -337,6 +405,8 @@ public class M3ListView<T> extends Control {
     }
 
     /// Selects the first item equal to the supplied value.
+    ///
+    /// @param item the non-null data item to select
     public final void selectItem(T item) {
         Objects.requireNonNull(item, "item");
         int index = getItems().indexOf(item);
@@ -347,6 +417,9 @@ public class M3ListView<T> extends Control {
     }
 
     /// Sets one index's selected state.
+    ///
+    /// @param index the data item index to update
+    /// @param selected whether the index should be selected
     public final void setIndexSelected(int index, boolean selected) {
         checkItemIndex(index);
         if (getSelectionMode() == M3ListSelectionMode.NONE) {
@@ -375,6 +448,8 @@ public class M3ListView<T> extends Control {
     }
 
     /// Toggles the selected state for one item index.
+    ///
+    /// @param index the data item index to toggle
     public final void toggleIndex(int index) {
         setIndexSelected(index, !isIndexSelected(index));
     }
@@ -389,6 +464,8 @@ public class M3ListView<T> extends Control {
     }
 
     /// Clears one selected index when empty selection is allowed.
+    ///
+    /// @param index the data item index to clear from selection
     public final void clearSelection(int index) {
         checkItemIndex(index);
         setIndexSelected(index, false);
@@ -430,6 +507,8 @@ public class M3ListView<T> extends Control {
     }
 
     /// Moves list keyboard focus to the supplied item index and scrolls it into view.
+    ///
+    /// @param index the data item index to focus
     public final void focusIndex(int index) {
         checkItemIndex(index);
         updateFocusedIndex(index, true);
@@ -472,11 +551,16 @@ public class M3ListView<T> extends Control {
     }
 
     /// Scrolls the virtual flow to the supplied item index using the configured animation policy.
+    ///
+    /// @param index the data item index to reveal
     public final void scrollTo(int index) {
         scrollTo(index, isAnimatedScroll());
     }
 
     /// Scrolls the virtual flow to the supplied item index.
+    ///
+    /// @param index the data item index to reveal
+    /// @param animated whether the scroll should animate when animations are enabled
     public final void scrollTo(int index, boolean animated) {
         checkItemIndex(index);
         if (getSkin() instanceof M3ListViewSkin<?> skin) {
@@ -491,6 +575,10 @@ public class M3ListView<T> extends Control {
     }
 
     /// Returns accessibility attributes for list data and rendered cells.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -505,6 +593,9 @@ public class M3ListView<T> extends Control {
     }
 
     /// Executes accessibility selection and scrolling actions for list items.
+    ///
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -517,6 +608,8 @@ public class M3ListView<T> extends Control {
     }
 
     /// Creates the default virtualized list skin.
+    ///
+    /// @return the default virtualized list skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3ListViewSkin<>(this);

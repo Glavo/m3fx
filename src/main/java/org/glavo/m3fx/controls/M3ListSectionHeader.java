@@ -18,6 +18,8 @@ public class M3ListSectionHeader extends M3Text {
     }
 
     /// Creates a list section header with text.
+    ///
+    /// @param text the header text
     public M3ListSectionHeader(String text) {
         super(text, M3TextRole.LABEL_LARGE);
         initialize();

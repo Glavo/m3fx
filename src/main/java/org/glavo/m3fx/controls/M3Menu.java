@@ -50,7 +50,7 @@ public class M3Menu extends Control {
     /// The mutable menu content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
-    /// The menu selection mode.
+    // The menu selection mode.
     private final ObjectProperty<M3MenuSelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3MenuSelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
@@ -64,7 +64,7 @@ public class M3Menu extends Control {
                 }
             };
 
-    /// Whether the menu allows all selectable menu items to be unselected.
+    // Whether the menu allows all selectable menu items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -82,7 +82,7 @@ public class M3Menu extends Control {
     private final @UnmodifiableView ObservableList<M3MenuItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    /// The first selected menu item in child order.
+    // The first selected menu item in child order.
     private final ReadOnlyObjectWrapper<@Nullable M3MenuItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -124,28 +124,38 @@ public class M3Menu extends Control {
     }
 
     /// Creates a menu containing the supplied items.
+    ///
+    /// @param items the initial non-null menu content nodes
     public M3Menu(Node... items) {
         initialize();
         addItems(items);
     }
 
     /// Returns the mutable child list used as menu content.
+    ///
+    /// @return the mutable menu content list
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one menu content node.
+    ///
+    /// @param item the non-null node to append to the menu
     public final void addItem(Node item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds menu content nodes.
+    ///
+    /// @param items the non-null nodes to append to the menu
     public final void addItems(Node... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all menu content nodes.
+    ///
+    /// @param items the non-null nodes that replace the current menu content
     public final void setItems(Node... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -184,57 +194,79 @@ public class M3Menu extends Control {
     }
 
     /// Returns the menu selection mode.
+    ///
+    /// @return the active menu selection mode
     public final M3MenuSelectionMode getSelectionMode() {
         return selectionMode.get();
     }
 
     /// Sets the menu selection mode.
+    ///
+    /// @param selectionMode the active menu selection mode
     public final void setSelectionMode(M3MenuSelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the menu selection mode property.
+    ///
+    /// @return the writable menu selection mode property
     public final ObjectProperty<M3MenuSelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
     /// Returns whether this menu allows all selectable items to be unselected.
+    ///
+    /// @return `true` when all selectable menu items may be unselected
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
     }
 
     /// Sets whether this menu allows all selectable items to be unselected.
+    ///
+    /// @param allowEmptySelection whether all selectable menu items may be unselected
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property.
+    ///
+    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
 
     /// Returns the selected menu items in child order.
+    ///
+    /// @return an unmodifiable observable view of selected menu items
     public final @UnmodifiableView ObservableList<M3MenuItem> getSelectedItems() {
         return selectedItemsView;
     }
 
     /// Returns the first selected menu item in child order.
+    ///
+    /// @return the first selected menu item, or `null` when selection is empty
     public final @Nullable M3MenuItem getSelectedItem() {
         return selectedItem.get();
     }
 
     /// Returns the first selected menu item property.
+    ///
+    /// @return the read-only first selected menu item property
     public final ReadOnlyObjectProperty<@Nullable M3MenuItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
 
     /// Returns the child index of the first selected menu item, or `-1` when no item is selected.
+    ///
+    /// @return the child index of the first selected menu item, or `-1` when no item is selected
     public final int getSelectedIndex() {
         @Nullable M3MenuItem item = getSelectedItem();
         return item == null ? -1 : getItems().indexOf(item);
     }
 
     /// Selects a menu item that belongs to this menu.
+    ///
+    /// @param item the selectable menu item to select
     public final void select(M3MenuItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -252,6 +284,8 @@ public class M3Menu extends Control {
     }
 
     /// Selects the selectable menu item at the given child index.
+    ///
+    /// @param index the child index of the selectable menu item
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3MenuItem item && isSelectableMenuItem(item)) {
@@ -309,6 +343,10 @@ public class M3Menu extends Control {
     }
 
     /// Returns accessibility attributes for menu content and selection state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -323,6 +361,9 @@ public class M3Menu extends Control {
     }
 
     /// Executes accessibility selection actions for menu items.
+    ///
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -810,6 +851,8 @@ public class M3Menu extends Control {
     }
 
     /// Creates the default Material Design 3 menu skin.
+    ///
+    /// @return the default Material Design 3 menu skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3MenuSkin(this);

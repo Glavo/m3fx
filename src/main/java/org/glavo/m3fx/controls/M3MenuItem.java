@@ -28,24 +28,38 @@ public class M3MenuItem extends M3ListItem {
     }
 
     /// Creates a menu item with text.
+    ///
+    /// @param text the item text
     public M3MenuItem(String text) {
         super(text);
         initialize();
     }
 
     /// Creates a menu item with text and leading content.
+    ///
+    /// @param text the item text
+    /// @param leading the leading slot node, or `null` for no leading content
     public M3MenuItem(String text, @Nullable Node leading) {
         this(text);
         setLeading(leading);
     }
 
     /// Creates a menu item with text, leading content, and trailing content.
+    ///
+    /// @param text the item text
+    /// @param leading the leading slot node, or `null` for no leading content
+    /// @param trailing the trailing slot node, or `null` for no trailing content
     public M3MenuItem(String text, @Nullable Node leading, @Nullable Node trailing) {
         this(text, leading);
         setTrailing(trailing);
     }
 
     /// Creates a menu item with text, leading content, trailing content, and an action handler.
+    ///
+    /// @param text the item text
+    /// @param leading the leading slot node, or `null` for no leading content
+    /// @param trailing the trailing slot node, or `null` for no trailing content
+    /// @param onAction the action handler, or `null` for no handler
     public M3MenuItem(
             String text,
             @Nullable Node leading,

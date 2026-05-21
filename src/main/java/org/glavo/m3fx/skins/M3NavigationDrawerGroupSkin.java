@@ -65,6 +65,8 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private boolean childItemsMounted;
 
     /// Creates a navigation drawer group skin.
+    ///
+    /// @param control the skinned navigation drawer group
     public M3NavigationDrawerGroupSkin(M3NavigationDrawerGroup control) {
         super(control);
         childViewport.setManaged(false);

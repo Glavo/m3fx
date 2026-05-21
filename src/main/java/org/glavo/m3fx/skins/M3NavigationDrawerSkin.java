@@ -21,6 +21,8 @@ public final class M3NavigationDrawerSkin extends SkinBase<M3NavigationDrawer> {
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
 
     /// Creates a navigation drawer skin.
+    ///
+    /// @param control the skinned navigation drawer
     public M3NavigationDrawerSkin(M3NavigationDrawer control) {
         super(control);
         container.setManaged(false);

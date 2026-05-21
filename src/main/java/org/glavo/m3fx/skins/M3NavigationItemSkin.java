@@ -108,6 +108,8 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     private boolean spaceKeyPressed;
 
     /// Creates a navigation item skin.
+    ///
+    /// @param control the skinned navigation item
     public M3NavigationItemSkin(M3NavigationItem control) {
         super(control);
         content.getStyleClass().add("m3-navigation-item-content");

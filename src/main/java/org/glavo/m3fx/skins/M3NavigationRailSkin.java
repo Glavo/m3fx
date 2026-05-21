@@ -21,6 +21,8 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
 
     /// Creates a navigation rail skin.
+    ///
+    /// @param control the skinned navigation rail
     public M3NavigationRailSkin(M3NavigationRail control) {
         super(control);
         container.setManaged(false);

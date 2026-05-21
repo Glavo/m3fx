@@ -39,10 +39,10 @@ public final class M3NavigationDrawerGroup extends Control {
     /// The expanded pseudo-class used by navigation drawer groups.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
 
-    /// The group title displayed by the header list item.
+    // The group title displayed by the header list item.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
-    /// Whether child destination items are visible.
+    // Whether child destination items are visible.
     private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
         /// Updates expanded pseudo-class state.
         @Override
@@ -83,58 +83,80 @@ public final class M3NavigationDrawerGroup extends Control {
     }
 
     /// Creates a navigation drawer group with the supplied title.
+    ///
+    /// @param title the group title displayed by the header row
     public M3NavigationDrawerGroup(String title) {
         initialize();
         setTitle(title);
     }
 
     /// Returns the group title displayed by the header list item.
+    ///
+    /// @return the group title displayed by the header row
     public String getTitle() {
         return title.get();
     }
 
     /// Sets the group title displayed by the header list item.
+    ///
+    /// @param title the group title displayed by the header row
     public void setTitle(String title) {
         this.title.set(Objects.requireNonNull(title, "title"));
     }
 
     /// Returns the group title property.
+    ///
+    /// @return the writable group title property
     public StringProperty titleProperty() {
         return title;
     }
 
     /// Returns whether child destination items are visible.
+    ///
+    /// @return `true` when child destination items are visible
     public boolean isExpanded() {
         return expanded.get();
     }
 
     /// Sets whether child destination items are visible.
+    ///
+    /// @param expanded whether child destination items should be visible
     public void setExpanded(boolean expanded) {
         this.expanded.set(expanded);
     }
 
     /// Returns the expanded-state property.
+    ///
+    /// @return the writable expanded-state property
     public BooleanProperty expandedProperty() {
         return expanded;
     }
 
     /// Returns the mutable child destination list.
+    ///
+    /// @return the mutable child destination list
     public ObservableList<M3ListItem> getItems() {
         return items;
     }
 
     /// Adds one child destination item.
+    ///
+    /// @param item the non-null child destination item to append
     public void addItem(M3ListItem item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds child destination items.
+    ///
+    /// @param items the non-null child destination items to append
     public void addItems(M3ListItem... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all child destination items.
+    ///
+    /// @param items the non-null child destination items that replace the current content
     public void setItems(M3ListItem... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -146,11 +168,17 @@ public final class M3NavigationDrawerGroup extends Control {
     }
 
     /// Returns the header list item owned by this group.
+    ///
+    /// @return the header list item owned by this group
     public M3ListItem getHeaderItem() {
         return headerItem;
     }
 
     /// Returns accessibility attributes for the disclosure state and visible child rows.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -166,6 +194,9 @@ public final class M3NavigationDrawerGroup extends Control {
     }
 
     /// Executes accessibility actions for toggling and focusing the disclosure group.
+    ///
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -186,6 +217,8 @@ public final class M3NavigationDrawerGroup extends Control {
     }
 
     /// Creates the default Material Design 3 navigation drawer group skin.
+    ///
+    /// @return the default Material Design 3 navigation drawer group skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3NavigationDrawerGroupSkin(this);

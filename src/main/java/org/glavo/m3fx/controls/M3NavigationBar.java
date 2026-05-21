@@ -45,7 +45,7 @@ public class M3NavigationBar extends Control {
     /// The mutable navigation bar content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
-    /// The currently selected navigation item.
+    // The currently selected navigation item.
     private final ReadOnlyObjectWrapper<@Nullable M3NavigationItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -56,7 +56,7 @@ public class M3NavigationBar extends Control {
     private final @UnmodifiableView ObservableList<M3NavigationItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    /// Whether the bar allows all navigation items to be unselected.
+    // Whether the bar allows all navigation items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -100,28 +100,38 @@ public class M3NavigationBar extends Control {
     }
 
     /// Creates a navigation bar containing the supplied items.
+    ///
+    /// @param items the initial non-null navigation items
     public M3NavigationBar(M3NavigationItem... items) {
         initialize();
         addItems(items);
     }
 
     /// Returns the mutable child list used as navigation bar items.
+    ///
+    /// @return the mutable navigation bar content list
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one navigation item.
+    ///
+    /// @param item the non-null navigation item to append
     public final void addItem(M3NavigationItem item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds navigation items.
+    ///
+    /// @param items the non-null navigation items to append
     public final void addItems(M3NavigationItem... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all navigation items.
+    ///
+    /// @param items the non-null navigation items that replace the current content
     public final void setItems(M3NavigationItem... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -133,42 +143,58 @@ public class M3NavigationBar extends Control {
     }
 
     /// Returns the selected navigation items in child order.
+    ///
+    /// @return an unmodifiable observable view of selected navigation items
     public final @UnmodifiableView ObservableList<M3NavigationItem> getSelectedItems() {
         return selectedItemsView;
     }
 
     /// Returns the selected navigation item.
+    ///
+    /// @return the selected navigation item, or `null` when no item is selected
     public final @Nullable M3NavigationItem getSelectedItem() {
         return selectedItem.get();
     }
 
     /// Returns the selected navigation item property.
+    ///
+    /// @return the read-only selected navigation item property
     public final ReadOnlyObjectProperty<@Nullable M3NavigationItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
 
     /// Returns the child index of the selected navigation item, or `-1` when no item is selected.
+    ///
+    /// @return the child index of the selected navigation item, or `-1` when no item is selected
     public final int getSelectedIndex() {
         @Nullable M3NavigationItem item = getSelectedItem();
         return item == null ? -1 : getItems().indexOf(item);
     }
 
     /// Returns whether this bar allows all navigation items to be unselected.
+    ///
+    /// @return `true` when all navigation items may be unselected
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
     }
 
     /// Sets whether this bar allows all navigation items to be unselected.
+    ///
+    /// @param allowEmptySelection whether all navigation items may be unselected
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property.
+    ///
+    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
 
     /// Selects a navigation item that belongs to this bar.
+    ///
+    /// @param item the navigation item to select
     public final void select(M3NavigationItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -178,6 +204,8 @@ public class M3NavigationBar extends Control {
     }
 
     /// Selects the navigation item at the given child index.
+    ///
+    /// @param index the child index of the navigation item
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3NavigationItem item) {
@@ -238,6 +266,10 @@ public class M3NavigationBar extends Control {
     }
 
     /// Returns accessibility attributes for navigation bar content and selection state.
+    ///
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -256,6 +288,9 @@ public class M3NavigationBar extends Control {
     }
 
     /// Executes accessibility selection actions for navigation items.
+    ///
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -394,6 +429,8 @@ public class M3NavigationBar extends Control {
     }
 
     /// Creates the default Material Design 3 navigation bar skin.
+    ///
+    /// @return the default Material Design 3 navigation bar skin
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3NavigationBarSkin(this);

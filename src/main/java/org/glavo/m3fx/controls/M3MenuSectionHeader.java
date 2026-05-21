@@ -18,6 +18,8 @@ public class M3MenuSectionHeader extends M3Text {
     }
 
     /// Creates a menu section header with text.
+    ///
+    /// @param text the header text
     public M3MenuSectionHeader(String text) {
         super(text, M3TextRole.LABEL_LARGE);
         initialize();
