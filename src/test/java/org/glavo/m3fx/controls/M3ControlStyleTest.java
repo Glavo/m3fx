@@ -11873,10 +11873,7 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root, 180.0, 140.0);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        root.setStyle(root.getStyle()
-                + " -m3-color-outline: rgb(51,52,53);"
-                + " -m3-color-on-surface-variant: rgb(61,62,63);"
-                + " -m3-color-on-surface: rgb(71,72,73);");
+        root.setStyle(root.getStyle() + " -monet-surface-tint: rgb(51,52,53);");
         root.applyCss();
         root.resize(180.0, 140.0);
         root.layout();
@@ -11889,14 +11886,17 @@ final class M3ControlStyleTest {
         assertEquals(16.0, scrollBar.prefWidth(-1.0), 0.0001);
         assertRegionFill(track, Color.TRANSPARENT);
         assertRegionFill(thumb, Color.rgb(51, 52, 53));
+        assertEquals(0.48, thumb.getOpacity(), 0.0001);
 
         scrollBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         root.applyCss();
-        assertRegionFill(thumb, Color.rgb(61, 62, 63));
+        assertRegionFill(thumb, Color.rgb(51, 52, 53));
+        assertEquals(0.64, thumb.getOpacity(), 0.0001);
 
         scrollBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         root.applyCss();
-        assertRegionFill(thumb, Color.rgb(71, 72, 73));
+        assertRegionFill(thumb, Color.rgb(51, 52, 53));
+        assertEquals(0.78, thumb.getOpacity(), 0.0001);
     }
 
     /// Verifies that Material scroll styling can be applied to standalone JavaFX scroll bars.
@@ -11909,7 +11909,7 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root, 80.0, 160.0);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        root.setStyle(root.getStyle() + " -m3-color-outline: rgb(51,52,53);");
+        root.setStyle(root.getStyle() + " -monet-surface-tint: rgb(51,52,53);");
         root.applyCss();
         root.resize(80.0, 160.0);
         root.layout();
@@ -11919,6 +11919,7 @@ final class M3ControlStyleTest {
         assertTrue(scrollBar.getStyleClass().contains(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS));
         assertEquals(16.0, scrollBar.prefWidth(-1.0), 0.0001);
         assertRegionFill(thumb, Color.rgb(51, 52, 53));
+        assertEquals(0.48, thumb.getOpacity(), 0.0001);
     }
 
     /// Applies the m3fx stylesheet to a control in a scene.

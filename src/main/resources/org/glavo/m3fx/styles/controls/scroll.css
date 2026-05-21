@@ -43,23 +43,24 @@
 
 .scroll-pane.m3-scroll-pane > .scroll-bar > .thumb,
 .scroll-bar.m3-scroll-bar > .thumb {
-    -fx-background-color: -m3-color-outline;
+    -fx-background-color: -monet-surface-tint;
     -fx-background-insets: 0;
     -fx-background-radius: 999px;
+    -fx-opacity: 0.48;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar:hover > .thumb,
 .scroll-pane.m3-scroll-pane > .scroll-bar > .thumb:hover,
 .scroll-bar.m3-scroll-bar > .thumb:hover,
 .scroll-bar.m3-scroll-bar:hover > .thumb {
-    -fx-background-color: -m3-color-on-surface-variant;
+    -fx-opacity: 0.64;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar:pressed > .thumb,
 .scroll-pane.m3-scroll-pane > .scroll-bar > .thumb:pressed,
 .scroll-bar.m3-scroll-bar > .thumb:pressed,
 .scroll-bar.m3-scroll-bar:pressed > .thumb {
-    -fx-background-color: -m3-color-on-surface;
+    -fx-opacity: 0.78;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar > .increment-button,
