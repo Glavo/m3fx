@@ -93,6 +93,9 @@ public class M3ListView<T> extends Control {
                 }
             };
 
+    /// Whether focus and programmatic scrolling animate the virtual flow position.
+    private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
+
     /// The selected indices in ascending order.
     private final ObservableList<Integer> selectedIndices = FXCollections.observableArrayList();
 
@@ -236,6 +239,21 @@ public class M3ListView<T> extends Control {
     /// Returns the fixed cell size property.
     public final DoubleProperty fixedCellSizeProperty() {
         return fixedCellSize;
+    }
+
+    /// Returns whether focus and programmatic scrolling animate the virtual flow position.
+    public final boolean isAnimatedScroll() {
+        return animatedScroll.get();
+    }
+
+    /// Sets whether focus and programmatic scrolling animate the virtual flow position.
+    public final void setAnimatedScroll(boolean animatedScroll) {
+        this.animatedScroll.set(animatedScroll);
+    }
+
+    /// Returns the animated virtual flow scrolling property.
+    public final BooleanProperty animatedScrollProperty() {
+        return animatedScroll;
     }
 
     /// Returns the selected indices in ascending order.
@@ -443,11 +461,16 @@ public class M3ListView<T> extends Control {
         }
     }
 
-    /// Scrolls the virtual flow to the supplied item index.
+    /// Scrolls the virtual flow to the supplied item index using the configured animation policy.
     public final void scrollTo(int index) {
+        scrollTo(index, isAnimatedScroll());
+    }
+
+    /// Scrolls the virtual flow to the supplied item index.
+    public final void scrollTo(int index, boolean animated) {
         checkItemIndex(index);
         if (getSkin() instanceof M3ListViewSkin<?> skin) {
-            skin.scrollTo(index);
+            skin.scrollTo(index, animated);
         }
     }
 
@@ -791,7 +814,7 @@ public class M3ListView<T> extends Control {
             requestFocus();
         }
         if (getSkin() instanceof M3ListViewSkin<?> skin) {
-            skin.refreshFocus(requestNodeFocus);
+            skin.refreshFocus(requestNodeFocus, isAnimatedScroll());
         }
     }
 

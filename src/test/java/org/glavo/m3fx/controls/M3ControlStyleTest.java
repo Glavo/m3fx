@@ -7029,6 +7029,143 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that programmatic virtualized list scrolling uses the animated scroll policy.
+    @Test
+    void listViewProgrammaticScrollUsesAnimatedPolicy() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+
+                assertTrue(listView.isAnimatedScroll());
+                M3MotionSettings.setAnimationsEnabled(listView, true);
+                listView.scrollTo(80);
+
+                assertEquals(0.0, flow.getPosition(), 0.0001);
+
+                listView.setAnimatedScroll(false);
+                assertFalse(listView.isAnimatedScroll());
+                listView.scrollTo(80);
+
+                assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that disabled animations make programmatic virtualized list scrolling finish synchronously.
+    @Test
+    void listViewProgrammaticScrollHonorsDisabledAnimations() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                M3MotionSettings.setAnimationsEnabled(listView, false);
+
+                listView.scrollTo(80);
+
+                assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that keyboard focus scrolling also follows the animated scroll policy.
+    @Test
+    void listViewKeyboardFocusUsesAnimatedScrollPolicy() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                M3MotionSettings.setAnimationsEnabled(listView, true);
+
+                listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertEquals(99, listView.getFocusedIndex());
+                assertEquals(99, listView.getSelectedIndex());
+                assertEquals(0.0, flow.getPosition(), 0.0001);
+
+                listView.setAnimatedScroll(false);
+                listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+
+                assertEquals(0, listView.getFocusedIndex());
+                assertEquals(0, listView.getSelectedIndex());
+                assertEquals(0.0, flow.getPosition(), 0.0001);
+
+                listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertEquals(99, listView.getFocusedIndex());
+                assertEquals(99, listView.getSelectedIndex());
+                assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that virtualized list views expose keyboard focus and selection navigation.
     @Test
     void listViewSupportsKeyboardFocusAndSelectionNavigation() {
