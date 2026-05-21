@@ -19,17 +19,17 @@
 .scroll-bar.m3-scroll-bar:focused {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
-    -fx-padding: 4px;
+    -fx-padding: 3px;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar:vertical,
 .scroll-bar.m3-scroll-bar:vertical {
-    -fx-pref-width: 12px;
+    -fx-pref-width: 16px;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar:horizontal,
 .scroll-bar.m3-scroll-bar:horizontal {
-    -fx-pref-height: 12px;
+    -fx-pref-height: 16px;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar > .track,
@@ -43,7 +43,7 @@
 
 .scroll-pane.m3-scroll-pane > .scroll-bar > .thumb,
 .scroll-bar.m3-scroll-bar > .thumb {
-    -fx-background-color: -m3-color-outline-variant;
+    -fx-background-color: -m3-color-outline;
     -fx-background-insets: 0;
     -fx-background-radius: 999px;
 }
@@ -52,14 +52,14 @@
 .scroll-pane.m3-scroll-pane > .scroll-bar > .thumb:hover,
 .scroll-bar.m3-scroll-bar > .thumb:hover,
 .scroll-bar.m3-scroll-bar:hover > .thumb {
-    -fx-background-color: -m3-color-outline;
+    -fx-background-color: -m3-color-on-surface-variant;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar:pressed > .thumb,
 .scroll-pane.m3-scroll-pane > .scroll-bar > .thumb:pressed,
 .scroll-bar.m3-scroll-bar > .thumb:pressed,
 .scroll-bar.m3-scroll-bar:pressed > .thumb {
-    -fx-background-color: -m3-color-primary;
+    -fx-background-color: -m3-color-on-surface;
 }
 
 .scroll-pane.m3-scroll-pane > .scroll-bar > .increment-button,

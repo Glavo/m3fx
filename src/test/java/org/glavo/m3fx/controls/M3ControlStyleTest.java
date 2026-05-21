@@ -11874,9 +11874,9 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.setStyle(root.getStyle()
-                + " -m3-color-outline-variant: rgb(51,52,53);"
-                + " -m3-color-outline: rgb(61,62,63);"
-                + " -m3-color-primary: rgb(71,72,73);");
+                + " -m3-color-outline: rgb(51,52,53);"
+                + " -m3-color-on-surface-variant: rgb(61,62,63);"
+                + " -m3-color-on-surface: rgb(71,72,73);");
         root.applyCss();
         root.resize(180.0, 140.0);
         root.layout();
@@ -11886,7 +11886,7 @@ final class M3ControlStyleTest {
         Region track = lookupRegion(scrollBar, ".track");
 
         assertTrue(scrollPane.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
-        assertEquals(12.0, scrollBar.prefWidth(-1.0), 0.0001);
+        assertEquals(16.0, scrollBar.prefWidth(-1.0), 0.0001);
         assertRegionFill(track, Color.TRANSPARENT);
         assertRegionFill(thumb, Color.rgb(51, 52, 53));
 
@@ -11909,7 +11909,7 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root, 80.0, 160.0);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        root.setStyle(root.getStyle() + " -m3-color-outline-variant: rgb(51,52,53);");
+        root.setStyle(root.getStyle() + " -m3-color-outline: rgb(51,52,53);");
         root.applyCss();
         root.resize(80.0, 160.0);
         root.layout();
@@ -11917,7 +11917,7 @@ final class M3ControlStyleTest {
         Region thumb = lookupRegion(scrollBar, ".thumb");
 
         assertTrue(scrollBar.getStyleClass().contains(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS));
-        assertEquals(12.0, scrollBar.prefWidth(-1.0), 0.0001);
+        assertEquals(16.0, scrollBar.prefWidth(-1.0), 0.0001);
         assertRegionFill(thumb, Color.rgb(51, 52, 53));
     }
 
