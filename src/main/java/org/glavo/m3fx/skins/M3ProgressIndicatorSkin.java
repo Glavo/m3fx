@@ -167,7 +167,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             double sweepFraction = indeterminateSweep(indeterminatePhase.get()) / 360.0;
             double start = indeterminatePhase.get();
-            layoutCircularTrackPath(waveTrack, centerX, centerY, radius, start, start + sweepFraction);
+            layoutCircularTrackPath(waveTrack, centerX, centerY, radius, strokeWidth, start, start + sweepFraction);
             layoutCircularWavePath(
                     waveIndicator,
                     centerX,
@@ -183,7 +183,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         }
 
         double displayed = displayedProgress.get();
-        layoutCircularTrackPath(waveTrack, centerX, centerY, radius, 0.0, displayed);
+        layoutCircularTrackPath(waveTrack, centerX, centerY, radius, strokeWidth, 0.0, displayed);
         layoutCircularWavePath(
                 waveIndicator,
                 centerX,
@@ -291,10 +291,11 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             double centerX,
             double centerY,
             double radius,
+            double strokeWidth,
             double activeStart,
             double activeEnd
     ) {
-        double gapFraction = circularGapFraction(radius, getSkinnable().getTrackGap());
+        double gapFraction = circularGapFraction(radius, getSkinnable().getTrackGap(), strokeWidth);
         double start = activeEnd + gapFraction;
         double end = activeStart + 1.0 - gapFraction;
         path.getElements().clear();
@@ -360,11 +361,12 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     }
 
     /// Converts a circular gap in pixels to a normalized circumference fraction.
-    private static double circularGapFraction(double radius, double gap) {
+    private static double circularGapFraction(double radius, double gap, double strokeWidth) {
         if (radius <= 0.0 || gap <= 0.0) {
             return 0.0;
         }
-        return Math.min(0.20, gap / (Math.PI * 2.0 * radius));
+        double capCompensatedGap = gap + Math.max(0.0, strokeWidth);
+        return Math.min(0.20, capCompensatedGap / (Math.PI * 2.0 * radius));
     }
 
     /// Clamps a progress value to the visible range.

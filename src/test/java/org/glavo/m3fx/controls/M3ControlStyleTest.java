@@ -6,6 +6,7 @@ package org.glavo.m3fx.controls;
 import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -13,6 +14,7 @@ import javafx.event.EventType;
 import javafx.geometry.Bounds;
 import javafx.geometry.BoundingBox;
 import javafx.geometry.Orientation;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.AccessibleAction;
@@ -48,7 +50,10 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Arc;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
+import javafx.scene.shape.PathElement;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.Shape;
@@ -6115,6 +6120,39 @@ final class M3ControlStyleTest {
         assertEquals(2.0, stop.getRadius(), 0.0001);
     }
 
+    /// Verifies that expressive indeterminate progress bars keep the track outside the moving wave.
+    @Test
+    void expressiveProgressBarSkinSeparatesIndeterminateWaveFromTrack() {
+        M3ProgressBar progressBar = new M3ProgressBar();
+        Pane root = new Pane(progressBar);
+        Scene scene = new Scene(root, 280.0, 60.0);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+        skinTimeline(progressBar.getSkin(), "indeterminateAnimation").stop();
+        reflectedDoubleProperty(progressBar.getSkin(), "indeterminatePosition").set(0.5);
+        progressBar.resize(240.0, 16.0);
+        progressBar.layout();
+
+        Path wave = assertInstanceOf(Path.class, lookupShape(progressBar, ".m3-progress-bar-wave"));
+        Rectangle leadingTrack = (Rectangle) lookupShape(progressBar, ".track");
+        Rectangle trailingTrack = (Rectangle) lookupShape(progressBar, ".m3-progress-bar-secondary-track");
+        Point2D waveStart = firstPathPoint(wave);
+        Point2D waveEnd = lastPathPoint(wave);
+
+        assertTrue(wave.isVisible());
+        assertTrue(leadingTrack.isVisible());
+        assertTrue(trailingTrack.isVisible());
+        assertTrue(leadingTrack.getX() + leadingTrack.getWidth() <= waveStart.getX() - progressBar.getTrackGap(),
+                () -> "leadingTrack=" + leadingTrack.getBoundsInParent() + ", waveStart=" + waveStart);
+        assertTrue(trailingTrack.getX() >= waveEnd.getX() + progressBar.getTrackGap(),
+                () -> "trailingTrack=" + trailingTrack.getBoundsInParent() + ", waveEnd=" + waveEnd);
+    }
+
     /// Verifies that progress bar subnodes keep Material colors.
     @Test
     void progressBarStateStylesPreserveMaterialColors() {
@@ -6316,6 +6354,17 @@ final class M3ControlStyleTest {
         assertTrue(waveTrack.getElements().size() > 8);
         assertTrue(waveIndicator.getElements().size() > 8);
         assertTrue(waveIndicator.getBoundsInLocal().getHeight() > 0.0);
+
+        Point2D activeStart = firstPathPoint(waveIndicator);
+        Point2D activeEnd = lastPathPoint(waveIndicator);
+        Point2D trackStart = firstPathPoint(waveTrack);
+        Point2D trackEnd = lastPathPoint(waveTrack);
+        double minimumCenterlineGap = progressIndicator.getTrackGap()
+                + progressIndicator.getTrackThickness() / 2.0;
+        assertTrue(activeEnd.distance(trackStart) > minimumCenterlineGap,
+                () -> "activeEnd=" + activeEnd + ", trackStart=" + trackStart);
+        assertTrue(activeStart.distance(trackEnd) > minimumCenterlineGap,
+                () -> "activeStart=" + activeStart + ", trackEnd=" + trackEnd);
     }
 
     /// Verifies that divider component token properties are styleable from CSS.
@@ -11910,6 +11959,17 @@ final class M3ControlStyleTest {
         return reflectedTimeline(control, fieldName);
     }
 
+    /// Returns a private double property from a test target.
+    private static DoubleProperty reflectedDoubleProperty(Object target, String fieldName) {
+        try {
+            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
+            field.setAccessible(true);
+            return assertInstanceOf(DoubleProperty.class, field.get(target));
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     /// Returns a private timeline field from a test target.
     private static Timeline reflectedTimeline(Object target, String fieldName) {
         try {
@@ -12036,6 +12096,29 @@ final class M3ControlStyleTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Shape.class, child);
         return (Shape) child;
+    }
+
+    /// Returns the first point in a path made from move and line elements.
+    private static Point2D firstPathPoint(Path path) {
+        assertFalse(path.getElements().isEmpty());
+        return pathElementPoint(path.getElements().get(0));
+    }
+
+    /// Returns the last point in a path made from move and line elements.
+    private static Point2D lastPathPoint(Path path) {
+        assertFalse(path.getElements().isEmpty());
+        return pathElementPoint(path.getElements().get(path.getElements().size() - 1));
+    }
+
+    /// Returns the point coordinates carried by a sampled path element.
+    private static Point2D pathElementPoint(PathElement element) {
+        if (element instanceof MoveTo moveTo) {
+            return new Point2D(moveTo.getX(), moveTo.getY());
+        }
+        if (element instanceof LineTo lineTo) {
+            return new Point2D(lineTo.getX(), lineTo.getY());
+        }
+        throw new AssertionError("Unsupported path element: " + element);
     }
 
     /// Returns the radio indicator region.

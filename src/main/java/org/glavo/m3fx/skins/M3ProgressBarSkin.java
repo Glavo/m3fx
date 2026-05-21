@@ -43,6 +43,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The track rectangle.
     private final Rectangle track = new Rectangle();
 
+    /// The second track rectangle used when a moving wavy segment splits the track.
+    private final Rectangle secondaryTrack = new Rectangle();
+
     /// The progress bar rectangle.
     private final Rectangle bar = new Rectangle();
 
@@ -82,16 +85,18 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         container.setManaged(false);
         container.setClip(clip);
         track.getStyleClass().add("track");
+        secondaryTrack.getStyleClass().addAll("track", "m3-progress-bar-secondary-track");
         bar.getStyleClass().add("bar");
         waveBar.getStyleClass().add("m3-progress-bar-wave");
         stop.getStyleClass().add("m3-progress-stop");
         track.setManaged(false);
+        secondaryTrack.setManaged(false);
         bar.setManaged(false);
         waveBar.setManaged(false);
         stop.setManaged(false);
         waveBar.setFill(null);
         waveBar.setStrokeLineCap(StrokeLineCap.ROUND);
-        container.getChildren().addAll(track, bar, waveBar, stop);
+        container.getChildren().addAll(track, secondaryTrack, bar, waveBar, stop);
         getChildren().add(container);
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
@@ -155,6 +160,8 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
         waveBar.setVisible(false);
         stop.setVisible(false);
+        secondaryTrack.setVisible(false);
+        track.setVisible(true);
         layoutRectangle(track, 0.0, 0.0, width, thickness, radius);
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
@@ -182,32 +189,36 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         bar.setVisible(false);
         waveBar.setVisible(true);
         waveBar.setStrokeWidth(thickness);
+        double effectiveGap = effectiveTrackGap(getSkinnable().getTrackGap(), thickness);
 
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             stop.setVisible(false);
-            layoutRectangle(track, 0.0, centerY - thickness / 2.0, width, thickness, radius);
             double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
             double segmentX = -segmentWidth + (width + segmentWidth) * indeterminatePosition.get();
-            layoutWavePath(waveBar, segmentX, segmentX + segmentWidth, centerY, amplitude,
+            double segmentEnd = segmentX + segmentWidth;
+            layoutTrackSegment(track, 0.0, Math.min(width, segmentX - effectiveGap),
+                    centerY, thickness, radius);
+            layoutTrackSegment(secondaryTrack, Math.max(0.0, segmentEnd + effectiveGap),
+                    width - Math.max(0.0, segmentEnd + effectiveGap), centerY, thickness, radius);
+            layoutWavePath(waveBar, segmentX, segmentEnd, centerY, amplitude,
                     getSkinnable().getWavelength(), indeterminatePosition.get());
             return;
         }
 
+        secondaryTrack.setVisible(false);
         double displayed = displayedProgress.get();
         double progressWidth = width * displayed;
         double activeAmplitude = amplitudeForProgress(displayed) * amplitude;
         layoutWavePath(waveBar, 0.0, progressWidth, centerY, activeAmplitude, getSkinnable().getWavelength(), 0.0);
 
         double stopDiameter = Math.min(thickness, getSkinnable().getStopSize());
-        double gap = getSkinnable().getTrackGap();
         double stopLeft = Math.max(0.0, width - stopDiameter);
-        double trackStart = Math.min(stopLeft, progressWidth + gap);
-        double trackWidth = Math.max(0.0, stopLeft - gap - trackStart);
-        track.setVisible(trackWidth > 0.0);
-        layoutRectangle(track, trackStart, centerY - thickness / 2.0, trackWidth, thickness, radius);
+        double trackStart = Math.min(stopLeft, progressWidth + effectiveGap);
+        double trackWidth = Math.max(0.0, stopLeft - effectiveGap - trackStart);
+        layoutTrackSegment(track, trackStart, trackWidth, centerY, thickness, radius);
 
         double remaining = width - progressWidth;
-        double visibleStopDiameter = Math.max(0.0, Math.min(stopDiameter, remaining - gap));
+        double visibleStopDiameter = Math.max(0.0, Math.min(stopDiameter, remaining - effectiveGap));
         stop.setVisible(visibleStopDiameter > 0.0);
         stop.setRadius(visibleStopDiameter / 2.0);
         stop.setCenterX(width - visibleStopDiameter / 2.0);
@@ -249,6 +260,26 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
                 path.getElements().add(new LineTo(x, y));
             }
         }
+    }
+
+    /// Returns the centerline gap that preserves the requested visible gap around round caps.
+    private static double effectiveTrackGap(double gap, double thickness) {
+        return Math.max(0.0, gap) + Math.max(0.0, thickness) / 2.0;
+    }
+
+    /// Lays out a track segment and hides it when its visible width is empty.
+    private static void layoutTrackSegment(
+            Rectangle rectangle,
+            double x,
+            double width,
+            double centerY,
+            double thickness,
+            double radius
+    ) {
+        double visibleWidth = Math.max(0.0, width);
+        rectangle.setVisible(visibleWidth > 0.0);
+        layoutRectangle(rectangle, x, centerY - thickness / 2.0, visibleWidth, thickness,
+                Math.min(radius, visibleWidth / 2.0));
     }
 
     /// Updates determinate or indeterminate animation state for the current progress value.
