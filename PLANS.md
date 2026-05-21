@@ -1,105 +1,83 @@
 # M3FX Project Plan
 
-## Current Snapshot
+## Purpose
 
-- M3FX is a modular Material Design 3 component library for JavaFX.
-- The library targets Java 17 source and bytecode output.
-- JavaFX 21 is the default dependency version for local builds and the demo app.
-- Public implementation code must stay compatible with JavaFX 14 APIs unless newer APIs are guarded reflectively.
+M3FX is a modular Material Design 3 component library for JavaFX. The project is still early enough to favor clean API and implementation shape over compatibility with earlier internal versions.
+
+This file tracks product status and planning only. Repository rules, code style, nullability, documentation, Gradle invocation, and commit-message requirements belong in `AGENTS.md`.
+
+## Current Baseline
+
+- Java source and bytecode target: Java 17.
+- Default JavaFX dependency for local builds and the demo app: JavaFX 21.
+- Public implementation should stay compatible with JavaFX 14 APIs unless newer APIs are guarded by runtime checks or reflection.
+- JavaFX is an application-owned dependency and is not published as an API dependency of the library.
 - Material colors are generated through `org.glavo:MonetFX:0.4.0`.
-- Theme and token APIs are token-first and profile-aware, with `M3Profile.BASELINE_2021` as the default and `M3Profile.EXPRESSIVE_2025` available for evolving M3 Expressive values.
-- Public theme and token abstractions use sealed interfaces with implementation classes in internal packages.
-- JavaFX is an application-owned dependency in Gradle metadata; the library does not publish JavaFX artifacts as API dependencies.
 - The demo app is a separate Gradle subproject.
+- Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
 
 ## Architecture
 
-- `org.glavo.m3fx.theme` exposes theme creation, scene installation, stylesheet installation, and token stylesheet generation.
-- `org.glavo.m3fx.tokens` exposes color, typography, shape, elevation, motion, state-layer, density, profile, and component token groups.
-- `org.glavo.m3fx.animation` exposes reusable Material motion curves and duration constants.
-- `org.glavo.m3fx.controls` exposes Material-style JavaFX controls and composition containers.
-- `org.glavo.m3fx.skins` contains skin implementations for controls that require custom layout, drawing, or interaction behavior.
-- Foundation primitives such as `M3Icon` and `M3Text` support Material components but are not treated as standalone Material component pages.
+- `org.glavo.m3fx.theme` owns theme creation, scene installation helpers, stylesheet installation, and token stylesheet generation.
+- `org.glavo.m3fx.tokens` owns color, typography, shape, elevation, motion, state-layer, density, profile, and component token groups.
+- Public theme and token abstractions use sealed interfaces; implementations live in internal packages.
+- `org.glavo.m3fx.animation` owns reusable Material motion durations and easing curves.
+- `org.glavo.m3fx.controls` owns public controls, foundation primitives, and composition containers.
+- `org.glavo.m3fx.skins` owns custom skins for layout, drawing, interaction, state layers, ripple, and animation behavior.
+- Foundation primitives such as `M3Icon` and `M3Text` support components but are not standalone Material component pages.
 - `M3Icon` is an icon glyph primitive for Material Symbols or fallback text; standard component mappings belong to icon buttons, navigation items, app bars, menus, lists, and other controls that use icon slots.
-- Controls use split user-agent stylesheets through each node or control's `getUserAgentStylesheet()` where JavaFX supports it.
-- Popup-only styling remains in dedicated control CSS files loaded through the base stylesheet.
-- Text input controls retain JavaFX text editing implementations for caret, selection, clipboard, and IME behavior while sharing Material state and token plumbing through `M3TextInput`.
-- M3ThemeManager is a convenience installer, not the only way to use the library. Applications may install the base stylesheet and generated token stylesheet themselves when they need custom scene management.
+- Controls use per-control user-agent stylesheets where JavaFX supports them. Popup-only styling remains in dedicated control CSS files loaded through the base stylesheet.
+- `M3ThemeManager` is a convenience installer, not a required runtime dependency for applications.
 
-## Implemented
+## Implemented Areas
 
 ### Build And Distribution
 
-- Multi-project Gradle build with a root library project and a separate demo application project.
-- Java module descriptor for `org.glavo.m3fx`.
-- Root tasks for running the demo, building the demo shadow jar, and creating demo runtime images.
-- Demo shadow jar task that packages the demo and non-JavaFX runtime dependencies without bundling JavaFX.
-- jlink support for the demo application using BellSoft LibericaJDK Full jmods.
-- Independent jlink targets for Windows, Linux, and macOS.
-- Fixed architecture jlink targets for x64 and AArch64 on each supported platform.
-- GitHub Actions workflow that builds the demo shadow jar and uploads it as an artifact.
+- Multi-project Gradle build for the library and demo app.
+- Java module descriptors for the library and demo app.
+- Demo run, shadow jar, and jlink runtime-image tasks.
+- Demo shadow jar excludes JavaFX artifacts.
+- jlink support uses BellSoft LibericaJDK Full jmods.
+- Platform and architecture-specific jlink tasks cover Windows, Linux, and macOS on x64 and AArch64.
+- GitHub Actions builds the demo shadow jar and uploads it as an artifact.
 
 ### Theme, Tokens, And Motion
 
-- MonetFX-backed color token mapping.
-- Complete root CSS token generation for colors, typography, shape, elevation, motion, state layers, and component defaults.
-- Generated component token stylesheets with stable content hashing.
-- Baseline typography scale and line-height tokens.
-- Baseline and expressive shape token profiles.
-- Density-aware component tokens.
-- Material motion constants and easing curves for reusable JavaFX animations.
+- MonetFX-backed Material color mapping.
+- Root CSS token generation for color, typography, shape, elevation, motion, state layers, density, and component defaults.
+- Generated token stylesheets use stable content hashing.
+- Baseline and expressive profile hooks exist for shape and component token evolution.
+- Reusable Material motion constants and easing curves exist for JavaFX animations.
 
-### Controls
+### Component Coverage
 
-- Foundation primitives and small utility visuals: `M3Text`, `M3Icon`, `M3DisclosureIcon`, `M3Avatar`, `M3Badge`, and `M3BadgedBox`.
-- Buttons: filled, tonal, outlined, text, elevated, button groups, split buttons, icon button, icon toggle button, icon toggle groups, floating action buttons, extended floating action buttons, and floating action button menus.
-- Inputs: filled and outlined text fields, password fields, text areas, shared variant/error/metric-token support, animated text input layouts with floating labels, reusable validators, multi-validator pipelines, group-level form validation coordination, validation summaries, observable validation-active and invalid-count state, per-field validation actions, focus-loss validation, leading/trailing adornments, supporting text, error text, character counters, clear buttons, optional hard character limits, and form pane, section, and row helpers for structured input layouts.
-- Selection controls: checkbox, radio button, switch, slider with accessible value/range adjustment semantics, chips, chip groups, segmented buttons, and segmented button groups.
-- Checkbox, radio button, and switch disabled visuals use part-level state token opacity so selected indicators remain legible.
-- Pickers: calendar date picker with selected date, displayed month, first-day-of-week, optional adjacent-month days, inclusive min/max date range support, reusable labeled date presets, and field/dialog preset actions; date range picker with start/end selection, in-range styling, normalized range endpoint selection, inclusive min/max date bounds, reusable labeled range presets, and field/dialog preset actions; time picker with 12-hour/24-hour display, minute steps, keyboard adjustment, inclusive min/max time range support, reusable labeled time presets, and field/dialog preset actions; date, date-range, and time picker fields with editable text, popup picker selection, formatter-based parsing, range validation, and shared popup motion; date, date-range, and time picker dialogs with Material dialog panes and accepted-result conversion.
-- Date, date-range, and time pickers expose accessibility selection, focus routing, item navigation, and increment/decrement actions that mirror keyboard adjustment behavior; picker fields forward value-oriented accessibility actions to their popup pickers.
+- Foundation and utility visuals: text, icon, disclosure icon, avatar, badge, badged box, divider, surface, card, scrim, and sheets.
+- Buttons and actions: button variants, icon button, icon toggle button, button groups, split buttons, FABs, extended FABs, and FAB menus.
+- Inputs and forms: text fields, password fields, text areas, text input layouts, validation helpers, validation summaries, form containers, supporting text, errors, counters, leading and trailing adornments, and clear buttons.
+- Selection: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
+- Pickers: date picker, date range picker, time picker, picker fields, preset actions, dialogs, range constraints, keyboard adjustment, and accessibility actions.
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, navigation drawer, and collapsible navigation drawer groups.
-- App bars: top app bar variants and bottom app bar with configurable floating action alignment.
-- Menus and search: menu, menu item, submenu item with hover and keyboard opening, menu section header, menu button with edge-aware popup placement, search bar, and search view with customizable result content and action slots.
-- Menu popups support focus-first keyboard navigation, submenu item focus without corrupting selection state, sibling submenu exclusivity, ESC focus return, nested action forwarding, accessibility focus-node routing across open submenu branches, request-focus forwarding, and recursive show-item requests for nested submenu descendants.
-- Feedback and progress: banner, snackbar, snackbar host with queued messages, plain tooltip, rich tooltip, linear progress and circular progress with accessible value, range, and indeterminate state semantics.
-- Containment and utility: surface, card, carousel with selected-item snapping, dialog, dialog pane, side sheet, bottom sheet, scrim, divider, list, list item with media slot sizes and trailing supporting text, and tokenized list section header.
-- Composition-heavy controls expose mutable child lists and convenience constructors or factories where they simplify common usage without hiding node ownership.
-- Virtualized list views expose data selection, keyboard focus navigation, accessible focus routing, and `VirtualFlow`-backed row reuse.
+- App bars: top app bar variants and bottom app bar with configurable FAB alignment.
+- Menus and search: menu, menu item, submenu item, menu sections, menu button, search bar, and search view.
+- Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, linear progress, and circular progress.
+- Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, and accessibility routing.
 
-### Demo And Verification
+## Demo And Verification
 
-- Demo app with a Material navigation drawer sidebar, collapsible component groups aligned with the Material component organization, and one page per major control family.
-- Demo pages cover common variants, disabled states, selected states, error states, composite workflows, and animated progress examples.
-- Unit tests cover style classes, token CSS metadata, accessibility attributes, numeric accessibility values and actions, interaction events, skin creation, state-layer/ripple presence, and packaging assumptions.
-- Snapshot-based visual tests render implemented control families into report images for manual inspection and automated geometry, contrast, clipping, and state assertions.
-- Icon visual tests cover fallback glyph line boxes and app bar icon-button snapshots so text fallback glyphs do not get clipped in fixed slots.
-- Disclosure icon tests cover expanded-state rotation, fixed-slot layout, clipping bounds, and navigation drawer usage.
-- Navigation drawer group tests cover disclosure-backed expansion, animated child row reveal, keyboard disclosure navigation, accessible expand/collapse actions, hidden child selection recovery, flattened drawer selection, child visibility, style classes, skin creation, and user-agent stylesheet routing.
-- Interactive-state visual snapshots cover representative hover, focus-visible, and pressed feedback across buttons, selection controls, navigation, lists, and cards.
-- Button tests cover elevation ownership so filled, tonal, outlined, text, snackbar action, chip, segmented, tab, and icon toggle controls do not retain elevated-button shadows or pressed container scaling across interactive states or variant changes.
-- Text input visual snapshots include outlined floating-label notch geometry checks.
-- Progress visual snapshots include rendered linear track/fill separation and circular track/arc pixel checks.
-- Animation tests verify ripple release behavior on both the shared state layer and real controls, plus representative text input layout presentation transitions.
-- Segmented button selection tests cover selected-container motion, border preservation, and position-specific rounded geometry.
-- Selection control visual snapshots cover selected, unchecked, indeterminate, disabled, and disabled-selected states.
-- Selection container tests cover focus-anchored keyboard navigation for single-selection chip, icon-toggle, segmented, list, tab, navigation bar, and navigation rail containers.
-- Selection container accessibility tests cover focus-node routing and request-focus behavior for static list, chip, icon-toggle, segmented, tab, navigation bar, navigation rail, and navigation drawer containers.
-- Structural container accessibility tests cover focus-node routing and request-focus behavior for app bars, banners, badged boxes, button groups, split buttons, surfaces, form containers, FAB menus, carousels, and validation summaries.
-- Date and time picker visual tests render selected, today, adjacent-month, preset actions, 12-hour/24-hour, minute-step, and disabled range states into dedicated snapshots.
-- Date and time picker tests cover accessibility increment/decrement actions and picker-field forwarding of selected-value actions.
-- Demo packaging tests cover the executable shadow jar and verify that JavaFX classes are not bundled.
+- The demo app uses a Material navigation drawer sidebar with collapsible component groups aligned with the Material component organization.
+- Demo pages cover major control families, common variants, disabled states, selected states, error states, composite workflows, and animated progress examples.
+- Unit tests cover style classes, token CSS metadata, skin creation, interaction events, state-layer/ripple behavior, accessibility attributes/actions, selection behavior, and packaging assumptions.
+- Snapshot-based visual tests render representative control families into report images and include automated checks for contrast, geometry, clipping, borders, and animation-state frames.
+- Recent visual regressions covered by tests include icon fallback glyph clipping, outlined text input notch geometry, segmented button selected borders, progress geometry, selection states, snackbar sizing, and trailing icon ripple behavior.
 
-## Remaining Work
+## Next Goals
 
 - Expand Material motion coverage so hover, press, release, selection, shape, indicator, and elevation transitions consistently use tokenized timing and easing.
-- Broaden visual checks from representative snapshots toward more page-level coverage, animation-state assertions, and regression checks for alignment and clipping.
-- Continue filling component gaps such as additional picker affordances and richer composite-control workflows.
-- Continue tightening accessibility behavior for composite controls, especially role choice and keyboard navigation parity across complex popups.
-- Add more focused demo pages for complex components whose behavior is hard to inspect in a single static gallery.
-- Document runtime packaging choices for applications that want regular jars, demo shadow jars, or jlink images.
-- Keep JavaFX 14 API compatibility checked during implementation while continuing to build by default against JavaFX 21.
-- Improve M3 Expressive parity by adding profile-specific component tokens and visual verification once the target token values are finalized.
+- Increase page-level visual coverage for the demo, especially for alignment, clipping, and animated intermediate states.
+- Continue filling component gaps and richer composite workflows where existing controls are still shallow.
+- Tighten accessibility behavior for composite controls, especially keyboard parity and focus routing across popups.
+- Improve M3 Expressive parity with profile-specific component tokens and visual verification as target values become stable.
+- Document runtime packaging choices for normal jars, demo shadow jars, and jlink images.
 
 ## Validation Entry Points
 
@@ -107,12 +85,12 @@
 - `test` validates unit, behavior, snapshot, and packaging tests.
 - `shadowDemoJar` validates executable demo jar packaging without bundled JavaFX.
 - `jlinkDemoRuntime` validates the default demo runtime image.
-- `jlinkDemoWindowsRuntime`, `jlinkDemoLinuxRuntime`, and `jlinkDemoMacosRuntime` validate platform runtime-image targets for the configured architecture.
-- `jlinkDemoWindowsX64Runtime`, `jlinkDemoWindowsAarch64Runtime`, `jlinkDemoLinuxX64Runtime`, `jlinkDemoLinuxAarch64Runtime`, `jlinkDemoMacosX64Runtime`, and `jlinkDemoMacosAarch64Runtime` validate fixed platform and architecture runtime-image targets.
+- Platform jlink tasks validate runtime images for Windows, Linux, and macOS.
+- Architecture jlink tasks validate fixed x64 and AArch64 runtime images for each supported platform.
 
-## Out Of Scope For The Current Pass
+## Out Of Scope For Now
 
 - Full M3 Expressive visual parity for every component.
-- A web deployment target for the JavaFX demo.
+- Web deployment for the JavaFX demo.
 - SASS or another CSS preprocessor layer.
 - High-complexity data components such as data tables.
