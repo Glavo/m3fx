@@ -208,12 +208,16 @@ final class M3ThemeTest {
         M3Theme expressiveColorSchemeTheme = M3Theme.fromColorScheme(M3Profile.EXPRESSIVE_2025, colorScheme);
 
         assertEquals(M3Profile.BASELINE_2021, darkBaselineTheme.profile());
+        assertEquals(Brightness.DARK, darkBaselineTheme.brightness());
         assertEquals(0.0, darkBaselineTheme.density().scale(), 0.0001);
         assertEquals(M3Profile.EXPRESSIVE_2025, expressiveTheme.profile());
+        assertEquals(Brightness.LIGHT, expressiveTheme.brightness());
         assertEquals(0.0, expressiveTheme.density().scale(), 0.0001);
         assertEquals(M3Profile.BASELINE_2021, colorSchemeTheme.profile());
+        assertEquals(Brightness.LIGHT, colorSchemeTheme.brightness());
         assertSame(colorScheme, colorSchemeTheme.colorScheme());
         assertEquals(M3Profile.EXPRESSIVE_2025, expressiveColorSchemeTheme.profile());
+        assertEquals(Brightness.LIGHT, expressiveColorSchemeTheme.brightness());
         assertSame(colorScheme, expressiveColorSchemeTheme.colorScheme());
     }
 
@@ -243,11 +247,89 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, theme);
 
         assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
         assertSame(theme, root.getProperties().get(M3ThemeManager.THEME_PROPERTY_KEY));
         assertTrue(root.getStyle().contains("-m3-color-primary"));
         assertEquals(2, scene.getStylesheets().size());
         assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
         assertTrue(M3ThemeManager.stylesheetUrl().endsWith("/styles/base.css"));
+    }
+
+    /// Verifies that root profile and brightness style classes track theme reinstallations.
+    @Test
+    void updatesRootThemeStyleClassesOnReinstall() {
+        Pane root = new Pane();
+        Scene scene = new Scene(root);
+        M3Theme baselineTheme = M3Theme.defaultTheme();
+        M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.DARK
+        );
+
+        M3ThemeManager.install(scene, baselineTheme);
+
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+
+        M3ThemeManager.install(scene, expressiveDarkTheme);
+
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+
+        M3ThemeManager.uninstall(scene);
+
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+    }
+
+    /// Verifies that detached popup roots can inherit the installed theme context.
+    @Test
+    void copiesThemeContextToDetachedRoots() {
+        Pane root = new Pane();
+        Pane popupRoot = new Pane();
+        popupRoot.getStyleClass().add("popup-root");
+        Scene scene = new Scene(root);
+        M3Theme theme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.DARK
+        );
+
+        M3ThemeManager.install(scene, theme);
+        M3ThemeManager.copyThemeContext(root, popupRoot);
+
+        assertTrue(popupRoot.getStyleClass().contains("popup-root"));
+        assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+        assertEquals(root.getStyle(), popupRoot.getStyle());
+        assertSame(theme, popupRoot.getProperties().get(M3ThemeManager.THEME_PROPERTY_KEY));
+
+        M3Theme baselineTheme = M3Theme.defaultTheme();
+        M3ThemeManager.install(scene, baselineTheme);
+        M3ThemeManager.copyThemeContext(root, popupRoot);
+
+        assertTrue(popupRoot.getStyleClass().contains("popup-root"));
+        assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+        assertSame(baselineTheme, popupRoot.getProperties().get(M3ThemeManager.THEME_PROPERTY_KEY));
     }
 
     /// Verifies that installed themes can be queried from scenes and roots.

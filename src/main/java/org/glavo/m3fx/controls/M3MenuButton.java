@@ -24,6 +24,7 @@ import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -479,8 +480,7 @@ public class M3MenuButton extends M3Button {
         }
 
         Parent root = scene.getRoot();
-        @Nullable String rootStyle = root == null ? null : root.getStyle();
-        menu.setStyle(rootStyle == null ? "" : rootStyle);
+        M3ThemeManager.copyThemeContext(root, menu);
         M3Animation.copyResolvedMotionSettings(this, menu);
         menu.applyCss();
     }

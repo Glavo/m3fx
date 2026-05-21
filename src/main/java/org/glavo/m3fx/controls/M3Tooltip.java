@@ -393,6 +393,7 @@ public class M3Tooltip extends PopupControl {
     /// Applies or clears inline theme declarations on the tooltip.
     private void applyTheme(@Nullable M3Theme theme) {
         if (theme == null) {
+            M3ThemeManager.clearThemeStyleClasses(this);
             String currentBaseStyle = baseStyle;
             if (currentBaseStyle != null) {
                 setStyle(currentBaseStyle);
@@ -404,6 +405,7 @@ public class M3Tooltip extends PopupControl {
         if (baseStyle == null) {
             baseStyle = getStyle();
         }
+        M3ThemeManager.applyThemeStyleClasses(this, theme);
         setStyle(mergeStyles(baseStyle, theme.toRootStyleDeclarations()));
     }
 

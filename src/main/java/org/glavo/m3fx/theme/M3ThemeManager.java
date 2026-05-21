@@ -4,9 +4,12 @@
 package org.glavo.m3fx.theme;
 
 import javafx.application.Application;
+import javafx.css.Styleable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +30,18 @@ import java.util.WeakHashMap;
 public final class M3ThemeManager {
     /// The style class applied to themed roots.
     public static final String ROOT_STYLE_CLASS = "m3-root";
+
+    /// The style class applied to roots using the baseline Material Design 3 profile.
+    public static final String BASELINE_PROFILE_STYLE_CLASS = "m3-profile-baseline";
+
+    /// The style class applied to roots using the Material Design 3 Expressive profile.
+    public static final String EXPRESSIVE_PROFILE_STYLE_CLASS = "m3-profile-expressive";
+
+    /// The style class applied to roots using a light color scheme.
+    public static final String LIGHT_BRIGHTNESS_STYLE_CLASS = "m3-light";
+
+    /// The style class applied to roots using a dark color scheme.
+    public static final String DARK_BRIGHTNESS_STYLE_CLASS = "m3-dark";
 
     /// The property key that stores the applied theme.
     public static final String THEME_PROPERTY_KEY = M3ThemeManager.class.getName() + ".theme";
@@ -66,9 +81,7 @@ public final class M3ThemeManager {
         Objects.requireNonNull(root, "root");
         Objects.requireNonNull(theme, "theme");
 
-        if (!root.getStyleClass().contains(ROOT_STYLE_CLASS)) {
-            root.getStyleClass().add(ROOT_STYLE_CLASS);
-        }
+        applyThemeStyleClasses(root, theme);
 
         if (!root.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {
             root.getProperties().put(BASE_STYLE_PROPERTY_KEY, root.getStyle());
@@ -124,7 +137,7 @@ public final class M3ThemeManager {
     public static void uninstall(Parent root) {
         Objects.requireNonNull(root, "root");
 
-        root.getStyleClass().remove(ROOT_STYLE_CLASS);
+        clearThemeStyleClasses(root);
         Object baseStyleValue = root.getProperties().remove(BASE_STYLE_PROPERTY_KEY);
         if (baseStyleValue instanceof String baseStyle) {
             root.setStyle(baseStyle);
@@ -139,6 +152,48 @@ public final class M3ThemeManager {
         Objects.requireNonNull(scene, "scene");
 
         scene.getStylesheets().remove(stylesheetUrl());
+    }
+
+    /// Copies the installed theme context from a scene root to a detached root such as popup content.
+    public static void copyThemeContext(Parent sourceRoot, Parent targetRoot) {
+        Objects.requireNonNull(sourceRoot, "sourceRoot");
+        Objects.requireNonNull(targetRoot, "targetRoot");
+
+        clearThemeStyleClasses(targetRoot);
+
+        Object themeValue = sourceRoot.getProperties().get(THEME_PROPERTY_KEY);
+        if (themeValue instanceof M3Theme theme) {
+            applyThemeStyleClasses(targetRoot, theme);
+            targetRoot.getProperties().put(THEME_PROPERTY_KEY, theme);
+        } else {
+            copyStyleClassIfPresent(sourceRoot, targetRoot, ROOT_STYLE_CLASS);
+            copyStyleClassIfPresent(sourceRoot, targetRoot, BASELINE_PROFILE_STYLE_CLASS);
+            copyStyleClassIfPresent(sourceRoot, targetRoot, EXPRESSIVE_PROFILE_STYLE_CLASS);
+            copyStyleClassIfPresent(sourceRoot, targetRoot, LIGHT_BRIGHTNESS_STYLE_CLASS);
+            copyStyleClassIfPresent(sourceRoot, targetRoot, DARK_BRIGHTNESS_STYLE_CLASS);
+            targetRoot.getProperties().remove(THEME_PROPERTY_KEY);
+        }
+
+        targetRoot.setStyle(sourceRoot.getStyle());
+    }
+
+    /// Applies root, profile, and brightness style classes for a theme without mutating inline token styles.
+    public static void applyThemeStyleClasses(Styleable root, M3Theme theme) {
+        Objects.requireNonNull(root, "root");
+        Objects.requireNonNull(theme, "theme");
+
+        if (!root.getStyleClass().contains(ROOT_STYLE_CLASS)) {
+            root.getStyleClass().add(ROOT_STYLE_CLASS);
+        }
+        updateThemeModeStyleClasses(root, theme);
+    }
+
+    /// Removes root, profile, and brightness style classes managed by M3FX.
+    public static void clearThemeStyleClasses(Styleable root) {
+        Objects.requireNonNull(root, "root");
+
+        root.getStyleClass().remove(ROOT_STYLE_CLASS);
+        removeThemeModeStyleClasses(root);
     }
 
     /// Removes the generated component token stylesheet tracked for a scene.
@@ -227,5 +282,43 @@ public final class M3ThemeManager {
             return themeStyle;
         }
         return baseStyle.stripTrailing() + " " + themeStyle;
+    }
+
+    /// Updates profile and brightness classes on the themed root.
+    private static void updateThemeModeStyleClasses(Styleable root, M3Theme theme) {
+        removeThemeModeStyleClasses(root);
+        root.getStyleClass().add(profileStyleClass(theme.profile()));
+        root.getStyleClass().add(brightnessStyleClass(theme.brightness()));
+    }
+
+    /// Removes profile and brightness classes from the root.
+    private static void removeThemeModeStyleClasses(Styleable root) {
+        root.getStyleClass().remove(BASELINE_PROFILE_STYLE_CLASS);
+        root.getStyleClass().remove(EXPRESSIVE_PROFILE_STYLE_CLASS);
+        root.getStyleClass().remove(LIGHT_BRIGHTNESS_STYLE_CLASS);
+        root.getStyleClass().remove(DARK_BRIGHTNESS_STYLE_CLASS);
+    }
+
+    /// Returns the root style class for a profile.
+    private static String profileStyleClass(M3Profile profile) {
+        return switch (profile) {
+            case BASELINE_2021 -> BASELINE_PROFILE_STYLE_CLASS;
+            case EXPRESSIVE_2025 -> EXPRESSIVE_PROFILE_STYLE_CLASS;
+        };
+    }
+
+    /// Returns the root style class for a brightness mode.
+    private static String brightnessStyleClass(Brightness brightness) {
+        return switch (brightness) {
+            case LIGHT -> LIGHT_BRIGHTNESS_STYLE_CLASS;
+            case DARK -> DARK_BRIGHTNESS_STYLE_CLASS;
+        };
+    }
+
+    /// Copies a style class from one root to another when it is present.
+    private static void copyStyleClassIfPresent(Parent sourceRoot, Parent targetRoot, String styleClass) {
+        if (sourceRoot.getStyleClass().contains(styleClass)) {
+            targetRoot.getStyleClass().add(styleClass);
+        }
     }
 }

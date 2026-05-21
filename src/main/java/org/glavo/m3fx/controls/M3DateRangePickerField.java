@@ -37,6 +37,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
+import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -1018,8 +1019,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
 
         Parent root = scene.getRoot();
-        @Nullable String rootStyle = root == null ? null : root.getStyle();
-        popupContent.setStyle(rootStyle == null ? "" : rootStyle);
+        M3ThemeManager.copyThemeContext(root, popupContent);
         M3Animation.copyResolvedMotionSettings(this, popupContent);
         double fieldWidth = Math.max(0.0, getWidth());
         popupContent.setMinWidth(Math.max(fieldWidth, popupContent.minWidth(-1.0)));

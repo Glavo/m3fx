@@ -26,6 +26,11 @@ public sealed interface M3Theme permits M3ThemeImpl {
     /// Returns the MonetFX color scheme.
     ColorScheme colorScheme();
 
+    /// Returns the brightness mode used by the color scheme.
+    default Brightness brightness() {
+        return colorScheme().getBrightness();
+    }
+
     /// Returns the density applied to layout-sensitive component tokens.
     M3Density density();
 

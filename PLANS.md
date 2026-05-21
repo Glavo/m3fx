@@ -16,6 +16,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - The demo app is a separate Gradle subproject.
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
 - M3 Expressive currently has profile-specific color, typography, shape, component sizing, semantic motion scheme tokens, and motion behavior timings.
+- Theme installation marks roots with profile and brightness style classes so applications and demo pages can branch CSS for baseline, expressive, light, and dark modes without replacing the theme API.
 
 ## Architecture
 
@@ -29,6 +30,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - `M3Icon` is an icon glyph primitive for Material Symbols or fallback text; standard component mappings belong to icon buttons, navigation items, app bars, menus, lists, and other controls that use icon slots.
 - Controls use per-control user-agent stylesheets where JavaFX supports them. Popup-only styling remains in dedicated control CSS files loaded through the base stylesheet.
 - `M3ThemeManager` is a convenience installer, not a required runtime dependency for applications.
+- The root style classes `m3-profile-baseline`, `m3-profile-expressive`, `m3-light`, and `m3-dark` describe the installed theme mode for application-level CSS.
 
 ## Implemented Areas
 
@@ -53,7 +55,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Reusable Material motion constants, easing curves, semantic specs, standard/expressive motion schemes, and motion behavior timings exist for JavaFX animations and motion-adjacent interaction delays.
 - State layers, ripples, and CSS-resolved elevation transitions resolve the installed theme motion scheme when available.
 - Selection controls, indicators, text input details, popup surfaces, sheets, snackbars, search results, FAB menus, carousel scrolling, and determinate progress transitions now resolve semantic motion specs from the active motion scheme.
-- Popup-hosted menus and pickers propagate animation settings, the active motion scheme, and motion behavior timings into their popup content roots.
+- Popup-hosted menus and pickers propagate theme context, profile and brightness style classes, animation settings, the active motion scheme, and motion behavior timings into their popup content roots.
 - Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.
 
 ### Component Coverage

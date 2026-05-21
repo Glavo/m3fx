@@ -24,6 +24,7 @@ import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -482,8 +483,7 @@ public class M3SubMenuItem extends M3MenuItem {
         }
 
         Parent root = scene.getRoot();
-        @Nullable String rootStyle = root == null ? null : root.getStyle();
-        subMenu.setStyle(rootStyle == null ? "" : rootStyle);
+        M3ThemeManager.copyThemeContext(root, subMenu);
         M3Animation.copyResolvedMotionSettings(this, subMenu);
         subMenu.applyCss();
     }

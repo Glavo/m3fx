@@ -2561,11 +2561,17 @@ final class M3ControlStyleTest {
         assertEquals(theme, tooltip.getTheme());
         assertTrue(tooltip.getStyle().contains("-fx-opacity: 0.9;"));
         assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
+        assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
 
         tooltip.setTheme(null);
 
         assertNull(tooltip.getTheme());
         assertEquals("-fx-opacity: 0.9;", tooltip.getStyle());
+        assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
     }
 
     /// Verifies that installed tooltips inherit the target node scene theme.
@@ -2587,6 +2593,8 @@ final class M3ControlStyleTest {
 
         assertEquals(theme, attachedTooltip.getTheme());
         assertTrue(attachedTooltip.getStyle().contains("-m3-color-primary"));
+        assertTrue(attachedTooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(attachedTooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
         assertNull(delayedTooltip.getTheme());
 
         root.getChildren().add(delayedTarget);
@@ -2594,6 +2602,8 @@ final class M3ControlStyleTest {
 
         assertEquals(theme, delayedTooltip.getTheme());
         assertTrue(delayedTooltip.getStyle().contains("-m3-color-primary"));
+        assertTrue(delayedTooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(delayedTooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
         assertNull(uninstalledTooltip.getTheme());
     }
 
