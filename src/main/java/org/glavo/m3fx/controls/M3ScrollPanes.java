@@ -123,29 +123,47 @@ public final class M3ScrollPanes {
             double viewportHeight = scrollPane.getViewportBounds().getHeight();
             double horizontalDelta = scrollDeltaX(event);
             double verticalDelta = scrollDeltaY(event, viewportHeight);
+            double horizontalScrollablePixels = contentWidth() - viewportWidth;
+            double verticalScrollablePixels = contentHeight() - viewportHeight;
+            boolean canScrollHorizontally = canScroll(
+                    scrollPane.getHmin(),
+                    scrollPane.getHmax(),
+                    horizontalScrollablePixels
+            );
+            boolean canScrollVertically = canScroll(
+                    scrollPane.getVmin(),
+                    scrollPane.getVmax(),
+                    verticalScrollablePixels
+            );
             if (event.isShiftDown() && Math.abs(horizontalDelta) <= EPSILON) {
+                horizontalDelta = verticalDelta;
+                verticalDelta = 0.0;
+            } else if (!canScrollVertically
+                    && canScrollHorizontally
+                    && Math.abs(horizontalDelta) <= EPSILON
+                    && Math.abs(verticalDelta) > EPSILON) {
                 horizontalDelta = verticalDelta;
                 verticalDelta = 0.0;
             }
 
             double nextHValue = targetHValue;
             double nextVValue = targetVValue;
-            if (Math.abs(horizontalDelta) > EPSILON) {
+            if (canScrollHorizontally && Math.abs(horizontalDelta) > EPSILON) {
                 nextHValue = scrollTargetValue(
                         targetHValue,
                         horizontalDelta,
                         scrollPane.getHmin(),
                         scrollPane.getHmax(),
-                        contentWidth() - viewportWidth
+                        horizontalScrollablePixels
                 );
             }
-            if (Math.abs(verticalDelta) > EPSILON) {
+            if (canScrollVertically && Math.abs(verticalDelta) > EPSILON) {
                 nextVValue = scrollTargetValue(
                         targetVValue,
                         verticalDelta,
                         scrollPane.getVmin(),
                         scrollPane.getVmax(),
-                        contentHeight() - viewportHeight
+                        verticalScrollablePixels
                 );
             }
 
@@ -259,6 +277,11 @@ public final class M3ScrollPanes {
         double currentPixels = pixelsForValue(currentValue, minValue, maxValue, scrollablePixels);
         double targetPixels = clamp(currentPixels - scrollDelta, 0.0, scrollablePixels);
         return valueForPixels(targetPixels, minValue, maxValue, scrollablePixels);
+    }
+
+    /// Returns whether an axis has a meaningful scroll range.
+    private static boolean canScroll(double minValue, double maxValue, double scrollablePixels) {
+        return scrollablePixels > EPSILON && !close(minValue, maxValue);
     }
 
     /// Converts a normalized scroll value to content pixels.

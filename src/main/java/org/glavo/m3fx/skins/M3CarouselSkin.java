@@ -16,6 +16,7 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Carousel;
+import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -65,6 +66,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     @Override
     public void dispose() {
         stopScrollAnimation();
+        M3ScrollPanes.disableSmoothScrolling(viewport);
         getSkinnable().getItems().removeListener(itemsListener);
         getSkinnable().selectedIndexProperty().removeListener(selectedIndexListener);
         track.getChildren().clear();
@@ -144,6 +146,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Initializes viewport style classes and scrolling policies.
     private void installViewport() {
         viewport.getStyleClass().add(M3Carousel.VIEWPORT_STYLE_CLASS);
+        M3ScrollPanes.enableSmoothScrolling(viewport);
         track.getStyleClass().add(M3Carousel.TRACK_STYLE_CLASS);
         viewport.setManaged(false);
         viewport.setFitToHeight(true);

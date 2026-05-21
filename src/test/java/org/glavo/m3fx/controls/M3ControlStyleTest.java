@@ -996,6 +996,17 @@ final class M3ControlStyleTest {
 
             ScrollPane viewport = assertInstanceOf(ScrollPane.class, carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS));
             assertTrue(viewport.getHvalue() > 0.5, () -> "hvalue=" + viewport.getHvalue());
+            assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
+
+            viewport.setHvalue(0.0);
+            M3MotionSettings.setAnimationsEnabled(viewport, false);
+            ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
+            viewport.fireEvent(event);
+
+            assertTrue(event.isConsumed());
+            assertTrue(viewport.getHvalue() > 0.0, () -> "hvalue=" + viewport.getHvalue());
+
+            M3MotionSettings.clearAnimationsEnabled(viewport);
         });
     }
 
@@ -11975,6 +11986,34 @@ final class M3ControlStyleTest {
 
         assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
         assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+
+        M3ScrollPanes.disableSmoothScrolling(scrollPane);
+        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+    }
+
+    /// Verifies that vertical wheel input scrolls horizontally when only the horizontal axis can scroll.
+    @Test
+    void scrollPaneSmoothScrollingMapsWheelToHorizontalOnlyContent() {
+        Region content = new Region();
+        content.setPrefSize(480.0, 80.0);
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
+        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+
+        ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
+        scrollPane.fireEvent(event);
+
+        assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+        assertTrue(scrollPane.getHvalue() > 0.0, () -> "hvalue=" + scrollPane.getHvalue());
+        assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
         M3MotionSettings.clearAnimationsEnabled(scrollPane);
