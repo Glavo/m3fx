@@ -9,23 +9,30 @@ import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
+import javafx.geometry.Bounds;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.ButtonBase;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.skin.LabeledSkinBase;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.text.Text;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
 import org.glavo.m3fx.controls.M3Chip;
+import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// A base animated skin for m3fx labeled button controls.
 @NotNullByDefault
@@ -123,6 +130,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         super.layoutChildren(x, y, width, height);
+        centerFixedTargetContent(x, y, width, height);
         layoutStateLayer();
     }
 
@@ -265,6 +273,62 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// Returns the skinnable scale for controls that opt into depth-style pressed motion.
     protected final double depthPressedScale(boolean pressed) {
         return pressed ? PRESSED_SCALE : 1.0;
+    }
+
+    /// Centers content whose touch target is fixed and square.
+    private void centerFixedTargetContent(double x, double y, double width, double height) {
+        C button = getSkinnable();
+        @Nullable Node graphic = button.getGraphic();
+        @Nullable String text = button.getText();
+        if (graphic != null
+                && (button.getContentDisplay() == ContentDisplay.GRAPHIC_ONLY
+                || text == null
+                || text.isEmpty())) {
+            centerNodeInArea(graphic, x, y, width, height);
+            return;
+        }
+
+        if (graphic == null && button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)) {
+            @Nullable Node textNode = firstTextNode();
+            if (textNode != null) {
+                centerNodeInArea(textNode, x, y, width, height);
+            }
+        }
+    }
+
+    /// Centers a child node inside the supplied skin layout area.
+    private void centerNodeInArea(Node node, double x, double y, double width, double height) {
+        Bounds bounds = node.getLayoutBounds();
+        double targetX = x + (width - bounds.getWidth()) / 2.0;
+        double targetY = y + (height - bounds.getHeight()) / 2.0;
+        node.relocate(snapPositionX(targetX), snapPositionY(targetY));
+    }
+
+    /// Returns the first direct or nested text node owned by this skin.
+    private @Nullable Node firstTextNode() {
+        for (Node child : getChildren()) {
+            @Nullable Node textNode = firstTextNode(child);
+            if (textNode != null) {
+                return textNode;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first text node inside a child hierarchy.
+    private static @Nullable Node firstTextNode(Node node) {
+        if (node instanceof Text) {
+            return node;
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable Node textNode = firstTextNode(child);
+                if (textNode != null) {
+                    return textNode;
+                }
+            }
+        }
+        return null;
     }
 
     /// Clears armed state, scale animation, and transient feedback.

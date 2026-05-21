@@ -10,6 +10,7 @@
     -fx-background-radius: 999px;
     -fx-border-insets: 0;
     -fx-border-radius: 999px;
+    -fx-alignment: center;
     -fx-padding: 0;
     -fx-content-display: graphic-only;
     -fx-cursor: hand;

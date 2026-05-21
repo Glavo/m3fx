@@ -370,6 +370,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
             super("");
             getStyleClass().add(M3DatePicker.DAY_CELL_STYLE_CLASS);
             setAccessibleRole(AccessibleRole.BUTTON);
+            setAlignment(Pos.CENTER);
             setFocusTraversable(true);
             setMnemonicParsing(false);
             setTextOverrun(OverrunStyle.CLIP);

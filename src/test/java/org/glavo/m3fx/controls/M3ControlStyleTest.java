@@ -2911,6 +2911,41 @@ final class M3ControlStyleTest {
         assertEquals(48.0, button.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that toggle icon button graphics stay centered in their fixed touch target.
+    @Test
+    void iconToggleButtonCentersGraphicContent() {
+        runOnFxThread(() -> {
+            M3IconToggleButton standard = new M3IconToggleButton("S");
+            M3IconToggleButton tonal = M3IconToggleButton.withIcon("B", M3IconToggleButtonVariant.TONAL, true);
+            M3IconToggleButton outlined = M3IconToggleButton.withIcon("O", M3IconToggleButtonVariant.OUTLINED, false);
+            FlowPane row = new FlowPane(12.0, 12.0, standard, tonal, outlined);
+            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(row, 220.0, 96.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            row.applyCss();
+            row.resize(220.0, 96.0);
+            row.layout();
+
+            for (M3IconToggleButton button : java.util.List.of(standard, tonal, outlined)) {
+                assertEquals(Pos.CENTER, button.getAlignment());
+                assertEquals(ContentDisplay.GRAPHIC_ONLY, button.getContentDisplay());
+                assertNodeCentersAligned(button, Objects.requireNonNull(button.getGraphic()), 0.75);
+            }
+
+            WritableImage image = snapshotImageOnFxThread(row);
+            assertSnapshotNodeContainsContrast(image, standard, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, tonal, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, outlined, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-icon-toggle-centering.png"
+            ));
+        });
+    }
+
     /// Verifies that toggle icon button groups keep selection mutually exclusive.
     @Test
     void iconToggleButtonGroupKeepsSelectionExclusive() {
@@ -9781,6 +9816,53 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that date picker day labels stay centered inside fixed day cells.
+    @Test
+    void datePickerCentersDayCellContent() {
+        runOnFxThread(() -> {
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            datePicker.setDisplayedMonth(YearMonth.of(2026, 5));
+            datePicker.setFirstDayOfWeek(DayOfWeek.MONDAY);
+            Pane root = new Pane(datePicker);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 420.0, 360.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(420.0, 360.0);
+            datePicker.resize(360.0, 320.0);
+            root.layout();
+            datePicker.layout();
+
+            for (LocalDate date : java.util.List.of(
+                    LocalDate.of(2026, 5, 8),
+                    LocalDate.of(2026, 5, 18),
+                    LocalDate.of(2026, 5, 21)
+            )) {
+                ButtonBase dayCell = dateCellForDate(datePicker, date);
+                Node textNode = Objects.requireNonNull(dayCell.lookup(".text"));
+
+                assertEquals(Pos.CENTER, dayCell.getAlignment());
+                assertNodeCentersAligned(dayCell, textNode, 0.75);
+            }
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(
+                    image,
+                    dateCellForDate(datePicker, LocalDate.of(2026, 5, 18)),
+                    Color.WHITE,
+                    0.08
+            );
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-date-picker-centering.png"
+            ));
+        });
+    }
+
     /// Verifies that time pickers expose rendered selectable cells to accessibility clients.
     @Test
     void timePickerExposesAccessibleCellsAndActions() {
@@ -11472,6 +11554,31 @@ final class M3ControlStyleTest {
         javafx.scene.Node container = button.lookup("." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS);
         assertInstanceOf(javafx.scene.layout.Region.class, container);
         return (javafx.scene.layout.Region) container;
+    }
+
+    /// Returns a date picker day cell for the supplied date.
+    private static ButtonBase dateCellForDate(M3DatePicker picker, LocalDate date) {
+        for (Node node : picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)) {
+            if (node instanceof ButtonBase button && date.equals(button.getUserData())) {
+                return button;
+            }
+        }
+        throw new AssertionError("No date cell found for " + date);
+    }
+
+    /// Verifies that a child node's visual center matches its container center.
+    private static void assertNodeCentersAligned(Node container, Node child, double tolerance) {
+        Bounds containerBounds = container.localToScene(container.getLayoutBounds());
+        Bounds childBounds = child.localToScene(child.getLayoutBounds());
+        double containerCenterX = (containerBounds.getMinX() + containerBounds.getMaxX()) / 2.0;
+        double containerCenterY = (containerBounds.getMinY() + containerBounds.getMaxY()) / 2.0;
+        double childCenterX = (childBounds.getMinX() + childBounds.getMaxX()) / 2.0;
+        double childCenterY = (childBounds.getMinY() + childBounds.getMaxY()) / 2.0;
+
+        assertEquals(containerCenterX, childCenterX, tolerance,
+                () -> "containerBounds=" + containerBounds + ", childBounds=" + childBounds);
+        assertEquals(containerCenterY, childCenterY, tolerance,
+                () -> "containerBounds=" + containerBounds + ", childBounds=" + childBounds);
     }
 
     /// Verifies that a rendered child stays inside a rendered parent.

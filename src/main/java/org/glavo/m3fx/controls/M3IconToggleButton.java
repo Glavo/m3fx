@@ -14,6 +14,7 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -298,6 +299,7 @@ public class M3IconToggleButton extends ButtonBase {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
+        setAlignment(Pos.CENTER);
         setFocusTraversable(true);
         updateVariantStyle();
         updateMetrics();
