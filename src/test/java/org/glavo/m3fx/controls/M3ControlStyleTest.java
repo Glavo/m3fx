@@ -42,6 +42,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -61,6 +62,7 @@ import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
@@ -11865,7 +11867,7 @@ final class M3ControlStyleTest {
     @Test
     void scrollPaneMaterialStyleAppliesScrollbarColors() {
         Region content = new Region();
-        content.setMinSize(160.0, 480.0);
+        content.setPrefSize(160.0, 480.0);
         ScrollPane scrollPane = new ScrollPane(content);
         M3ScrollPanes.style(scrollPane);
         scrollPane.setPrefSize(160.0, 120.0);
@@ -11920,6 +11922,86 @@ final class M3ControlStyleTest {
         assertEquals(16.0, scrollBar.prefWidth(-1.0), 0.0001);
         assertRegionFill(thumb, Color.rgb(51, 52, 53));
         assertEquals(0.48, thumb.getOpacity(), 0.0001);
+    }
+
+    /// Verifies that Material smooth scrolling can be enabled for JavaFX scroll panes.
+    @Test
+    void scrollPaneSmoothScrollingAnimatesWheelScroll() {
+        Region content = new Region();
+        content.setPrefSize(160.0, 480.0);
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
+        M3MotionSettings.setAnimationsEnabled(scrollPane, true);
+
+        ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
+        scrollPane.fireEvent(event);
+
+        assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(scrollPane));
+        assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+        assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
+
+        M3ScrollPanes.disableSmoothScrolling(scrollPane);
+        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        assertFalse(M3ScrollPanes.isSmoothScrollingEnabled(scrollPane));
+    }
+
+    /// Verifies that disabled animation settings make smooth scrolling finish synchronously.
+    @Test
+    void scrollPaneSmoothScrollingHonorsDisabledAnimations() {
+        Region content = new Region();
+        content.setPrefSize(160.0, 480.0);
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
+        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+
+        ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
+        scrollPane.fireEvent(event);
+
+        assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+        assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+
+        M3ScrollPanes.disableSmoothScrolling(scrollPane);
+        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+    }
+
+    /// Verifies that direct touch scroll events are left to JavaFX's native panning behavior.
+    @Test
+    void scrollPaneSmoothScrollingIgnoresDirectScrollEvents() {
+        Region content = new Region();
+        content.setPrefSize(160.0, 480.0);
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
+
+        ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0, true);
+        scrollPane.fireEvent(event);
+
+        assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
+
+        M3ScrollPanes.disableSmoothScrolling(scrollPane);
     }
 
     /// Applies the m3fx stylesheet to a control in a scene.
@@ -12857,6 +12939,53 @@ final class M3ControlStyleTest {
                 false,
                 null
         );
+    }
+
+    /// Creates an indirect scroll event for scroll behavior tests.
+    private static ScrollEvent scrollEvent(Node target, double deltaX, double deltaY) {
+        return scrollEvent(target, deltaX, deltaY, false);
+    }
+
+    /// Creates a scroll event for scroll behavior tests.
+    private static ScrollEvent scrollEvent(Node target, double deltaX, double deltaY, boolean direct) {
+        return new ScrollEvent(
+                target,
+                target,
+                ScrollEvent.SCROLL,
+                40.0,
+                40.0,
+                40.0,
+                40.0,
+                false,
+                false,
+                false,
+                false,
+                direct,
+                false,
+                deltaX,
+                deltaY,
+                deltaX,
+                deltaY,
+                ScrollEvent.HorizontalTextScrollUnits.NONE,
+                0.0,
+                ScrollEvent.VerticalTextScrollUnits.NONE,
+                0.0,
+                0,
+                null
+        );
+    }
+
+    /// Returns diagnostic geometry for scroll behavior assertions.
+    private static String scrollPaneDebug(ScrollPane scrollPane, Region content, ScrollEvent event) {
+        return "viewport=" + scrollPane.getViewportBounds()
+                + ", contentBounds=" + content.getBoundsInLocal()
+                + ", prefHeight=" + content.prefHeight(-1.0)
+                + ", vmin=" + scrollPane.getVmin()
+                + ", vmax=" + scrollPane.getVmax()
+                + ", vvalue=" + scrollPane.getVvalue()
+                + ", deltaY=" + event.getDeltaY()
+                + ", textDeltaY=" + event.getTextDeltaY()
+                + ", textDeltaYUnits=" + event.getTextDeltaYUnits();
     }
 
     /// Creates a key event for control behavior tests.

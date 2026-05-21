@@ -380,6 +380,7 @@ public final class M3FXDemoApp extends Application {
         ScrollPane scrollPane = new ScrollPane(sidebar);
         scrollPane.getStyleClass().add("demo-sidebar-scroll-pane");
         M3ScrollPanes.style(scrollPane);
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -470,6 +471,7 @@ public final class M3FXDemoApp extends Application {
         ScrollPane scrollPane = new ScrollPane(host);
         scrollPane.getStyleClass().add("demo-scroll-pane");
         M3ScrollPanes.style(scrollPane);
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         return scrollPane;

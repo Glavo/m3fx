@@ -58,6 +58,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Selection controls, indicators, text input details, popup surfaces, sheets, snackbars, search results, FAB menus, carousel scrolling, and determinate progress transitions now resolve semantic motion specs from the active motion scheme.
 - Popup-hosted menus and pickers propagate theme context, profile and brightness style classes, animation settings, the active motion scheme, and motion behavior timings into their popup content roots.
 - Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.
+- JavaFX scroll panes styled through `M3ScrollPanes` can opt into smooth wheel scrolling that resolves the active motion scheme and animation settings.
 - Progress component tokens include wavy linear and circular amplitude, wavelength, track gap, and linear stop indicator metrics; applications can override them per control through CSS.
 
 ### Component Coverage
