@@ -19,11 +19,13 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Control;
 import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
@@ -50,6 +52,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.Shape;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.skins.M3AvatarSkin;
@@ -123,6 +126,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 
@@ -8820,6 +8824,8 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-interactive-states.png"
             ));
+            assertRenderedTextNodesStayInsideLayout(root);
+            assertFixedTargetControlsKeepCenteredContent(root);
         });
     }
 
@@ -8890,6 +8896,8 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-smoke.png"
             ));
+            assertRenderedTextNodesStayInsideLayout(root);
+            assertFixedTargetControlsKeepCenteredContent(root);
         });
     }
 
@@ -9082,6 +9090,8 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-inputs.png"
             ));
+            assertRenderedTextNodesStayInsideLayout(row);
+            assertFixedTargetControlsKeepCenteredContent(row);
         });
     }
 
@@ -9197,6 +9207,8 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-input-layouts.png"
             ));
+            assertRenderedTextNodesStayInsideLayout(row);
+            assertFixedTargetControlsKeepCenteredContent(row);
         });
     }
 
@@ -9453,6 +9465,8 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-selection-states.png"
             ));
+            assertRenderedTextNodesStayInsideLayout(row);
+            assertFixedTargetControlsKeepCenteredContent(row);
         });
     }
 
@@ -9502,6 +9516,8 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-containment-feedback-navigation.png"
             ));
+            assertRenderedTextNodesStayInsideLayout(root);
+            assertFixedTargetControlsKeepCenteredContent(root);
         });
     }
 
@@ -9542,6 +9558,8 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-navigation-drawer-group.png"
             ));
+            assertRenderedTextNodesStayInsideLayout(root);
+            assertFixedTargetControlsKeepCenteredContent(root);
         });
     }
 
@@ -10024,6 +10042,10 @@ final class M3ControlStyleTest {
             M3TextArea textArea = M3TextArea.withVariant("Multiline\ntext area", M3TextInputVariant.FILLED);
             textArea.setPrefSize(260.0, 96.0);
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            M3DateRangePicker dateRangePicker = new M3DateRangePicker(
+                    LocalDate.of(2026, 5, 12),
+                    LocalDate.of(2026, 5, 16)
+            );
             M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
 
             M3CheckBox selectedCheckBox = M3CheckBox.withSelected("Checkbox", true);
@@ -10230,6 +10252,7 @@ final class M3ControlStyleTest {
                             errorField,
                             textArea,
                             datePicker,
+                            dateRangePicker,
                             timePicker
                     ),
                     visualSection(
@@ -10280,6 +10303,7 @@ final class M3ControlStyleTest {
             assertSnapshotNodeBorderContainsContrast(image, outlinedField, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, errorField, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, dateRangePicker, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, timePicker, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, selectedCheckBox, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, indeterminateCheckBox, Color.WHITE, 0.08);
@@ -10329,6 +10353,8 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-all-controls.png"
             ));
+            assertRenderedTextNodesStayInsideLayout(root);
+            assertFixedTargetControlsKeepCenteredContent(root);
         });
     }
 
@@ -11556,6 +11582,83 @@ final class M3ControlStyleTest {
         return (javafx.scene.layout.Region) container;
     }
 
+    /// Verifies that rendered text nodes do not escape their nearest visual layout boundary.
+    private static void assertRenderedTextNodesStayInsideLayout(Node root) {
+        visitVisibleNodes(root, node -> {
+            if (!(node instanceof Text text) || text.getText().isBlank() || !hasRenderableBounds(text)) {
+                return;
+            }
+
+            @Nullable Node boundary = nearestVisualBoundary(text, root);
+            if (boundary != null) {
+                assertNodeInsideAncestor(boundary, text, 1.0);
+            }
+        });
+    }
+
+    /// Verifies that fixed Material touch targets keep their rendered content centered.
+    private static void assertFixedTargetControlsKeepCenteredContent(Node root) {
+        visitVisibleNodes(root, node -> {
+            if (node instanceof M3IconButton button) {
+                @Nullable Node graphic = button.getGraphic();
+                if (graphic != null && (button.getText() == null || button.getText().isEmpty())) {
+                    assertNodeCentersAligned(button, graphic, 1.0);
+                }
+            } else if (node instanceof M3IconToggleButton button) {
+                @Nullable Node graphic = button.getGraphic();
+                if (graphic != null) {
+                    assertNodeCentersAligned(button, graphic, 1.0);
+                }
+            } else if (node instanceof ButtonBase button && isFixedTextCell(button)) {
+                @Nullable Node textNode = button.lookup(".text");
+                if (textNode != null && hasRenderableBounds(textNode)) {
+                    assertNodeCentersAligned(button, textNode, 1.0);
+                }
+            }
+        });
+    }
+
+    /// Visits visible nodes in a rendered hierarchy.
+    private static void visitVisibleNodes(Node node, Consumer<Node> visitor) {
+        if (!node.isVisible()) {
+            return;
+        }
+
+        visitor.accept(node);
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                visitVisibleNodes(child, visitor);
+            }
+        }
+    }
+
+    /// Returns whether a node has non-empty rendered layout bounds.
+    private static boolean hasRenderableBounds(Node node) {
+        Bounds bounds = node.getLayoutBounds();
+        return bounds.getWidth() > 0.5 && bounds.getHeight() > 0.5;
+    }
+
+    /// Returns the nearest ancestor that should constrain visible text.
+    private static @Nullable Node nearestVisualBoundary(Node node, Node root) {
+        @Nullable Parent parent = node.getParent();
+        while (parent != null) {
+            if (parent == root
+                    || parent instanceof Control
+                    || parent instanceof Region
+                    || parent.getClip() != null) {
+                return parent;
+            }
+            parent = parent.getParent();
+        }
+        return root;
+    }
+
+    /// Returns whether a button is a fixed-size date or time grid cell.
+    private static boolean isFixedTextCell(ButtonBase button) {
+        return button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)
+                || button.getStyleClass().contains(M3TimePicker.CELL_STYLE_CLASS);
+    }
+
     /// Returns a date picker day cell for the supplied date.
     private static ButtonBase dateCellForDate(M3DatePicker picker, LocalDate date) {
         for (Node node : picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)) {
@@ -11564,6 +11667,22 @@ final class M3ControlStyleTest {
             }
         }
         throw new AssertionError("No date cell found for " + date);
+    }
+
+    /// Verifies that a child node stays inside an ancestor boundary.
+    private static void assertNodeInsideAncestor(Node ancestor, Node child, double tolerance) {
+        Bounds ancestorBounds = ancestor.localToScene(ancestor.getLayoutBounds());
+        Bounds childBounds = child.localToScene(child.getLayoutBounds());
+        assertTrue(
+                childBounds.getMinX() >= ancestorBounds.getMinX() - tolerance
+                        && childBounds.getMaxX() <= ancestorBounds.getMaxX() + tolerance
+                        && childBounds.getMinY() >= ancestorBounds.getMinY() - tolerance
+                        && childBounds.getMaxY() <= ancestorBounds.getMaxY() + tolerance,
+                () -> "child escaped visual boundary: child=" + child
+                        + ", ancestor=" + ancestor
+                        + ", childBounds=" + childBounds
+                        + ", ancestorBounds=" + ancestorBounds
+        );
     }
 
     /// Verifies that a child node's visual center matches its container center.
