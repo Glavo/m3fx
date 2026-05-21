@@ -1122,8 +1122,8 @@ public final class M3FXDemoApp extends Application {
                 createMenuItem("Badges", "B", "")
         );
         multiSelectMenu.setSelectionMode(M3MenuSelectionMode.MULTIPLE);
-        multiSelectMenu.selectIndex(0);
-        multiSelectMenu.selectIndex(2);
+        multiSelectMenu.selectIndex(1);
+        multiSelectMenu.selectIndex(3);
 
         return createGallery(
                 createShowcaseGroup("Menu Button", menuButton),

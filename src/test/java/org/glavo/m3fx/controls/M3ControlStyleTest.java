@@ -3271,14 +3271,18 @@ final class M3ControlStyleTest {
         assertEquals(open, menu.getSelectedItem());
         assertThrows(IllegalArgumentException.class, () -> menu.selectIndex(0));
         assertThrows(IllegalArgumentException.class, () -> menu.selectIndex(2));
+        menu.selectIndex(1);
+        assertEquals(open, menu.getSelectedItem());
+        menu.selectIndex(3);
+        assertEquals(save, menu.getSelectedItem());
 
         menu.selectNext();
 
-        assertEquals(save, menu.getSelectedItem());
+        assertEquals(open, menu.getSelectedItem());
 
         menu.selectPrevious();
 
-        assertEquals(open, menu.getSelectedItem());
+        assertEquals(save, menu.getSelectedItem());
     }
 
     /// Verifies that menu section headers receive menu-specific metrics.
