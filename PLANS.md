@@ -78,6 +78,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Unit tests cover style classes, token CSS metadata, skin creation, interaction events, state-layer/ripple behavior, accessibility attributes/actions, selection behavior, and packaging assumptions.
 - Snapshot-based visual tests render representative control families into report images and include automated checks for contrast, geometry, clipping, borders, and animation-state frames.
 - Recent visual regressions covered by tests include icon fallback glyph clipping, outlined text input notch geometry, segmented button selected borders, progress geometry, selection states, snackbar sizing, and trailing icon ripple behavior.
+- Expressive profile visual coverage checks real rendered component sizes, profile root classes, fixed-target centering, date-cell alignment, and search bar height constraints in mixed-height layouts.
 
 ## Next Goals
 

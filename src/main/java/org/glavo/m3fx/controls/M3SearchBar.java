@@ -297,6 +297,7 @@ public class M3SearchBar extends Control {
         setFocusTraversable(true);
         setMinHeight(DEFAULT_HEIGHT);
         setPrefHeight(DEFAULT_HEIGHT);
+        setMaxHeight(USE_PREF_SIZE);
         setPadding(new Insets(0.0, DEFAULT_HORIZONTAL_PADDING, 0.0, DEFAULT_HORIZONTAL_PADDING));
 
         setLeading(defaultLeadingNode());

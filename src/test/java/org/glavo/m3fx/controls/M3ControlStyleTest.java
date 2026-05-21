@@ -106,6 +106,8 @@ import org.glavo.m3fx.skins.M3TextSkin;
 import org.glavo.m3fx.skins.M3TopAppBarSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -4170,6 +4172,31 @@ final class M3ControlStyleTest {
         assertFalse(HBox.class.isAssignableFrom(M3SearchBar.class));
         assertFalse(VBox.class.isAssignableFrom(M3SearchView.class));
         assertEquals(56.0, result.getOneLineHeight(), 0.0001);
+    }
+
+    /// Verifies that search bars keep their token height when a flow row contains taller controls.
+    @Test
+    void searchBarKeepsPreferredHeightInTallFlowRows() {
+        runOnFxThread(() -> {
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setPrefWidth(260.0);
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            FlowPane root = new FlowPane(16.0, 16.0, searchBar, datePicker);
+            Scene scene = new Scene(root, 760.0, 420.0);
+
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            ));
+            root.applyCss();
+            root.resize(760.0, 420.0);
+            root.layout();
+
+            assertTrue(datePicker.getHeight() > searchBar.getPrefHeight() * 2.0);
+            assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
+            assertEquals(64.0, searchBar.getHeight(), 0.0001);
+        });
     }
 
     /// Verifies that search views own a search bar and mutable result list.
@@ -10362,6 +10389,149 @@ final class M3ControlStyleTest {
                     "reports",
                     "m3fx-visual",
                     "visual-all-controls.png"
+            ));
+            assertRenderedTextNodesStayInsideLayout(root);
+            assertFixedTargetControlsKeepCenteredContent(root);
+        });
+    }
+
+    /// Verifies that the expressive profile affects real rendered controls, not only generated token text.
+    @Test
+    void expressiveProfileVisualSnapshotRendersProfileSizedControls() {
+        runOnFxThread(() -> {
+            M3Button filledButton = M3Button.withVariant("Filled", M3ButtonVariant.FILLED);
+            M3IconButton iconButton = new M3IconButton(new M3Icon("S"));
+            M3IconToggleButton standardToggle = M3IconToggleButton.withIcon(
+                    "B",
+                    M3IconToggleButtonVariant.STANDARD,
+                    false
+            );
+            M3IconToggleButton tonalToggle = M3IconToggleButton.withIcon(
+                    "I",
+                    M3IconToggleButtonVariant.TONAL,
+                    true
+            );
+            M3IconToggleButton outlinedToggle = M3IconToggleButton.withIcon(
+                    "U",
+                    M3IconToggleButtonVariant.OUTLINED,
+                    false
+            );
+            M3IconToggleButtonGroup toggleGroup =
+                    new M3IconToggleButtonGroup(standardToggle, tonalToggle, outlinedToggle);
+            M3FloatingActionButton regularFab = M3FloatingActionButton.withGraphic(
+                    new M3Icon("+"),
+                    M3FloatingActionButtonVariant.PRIMARY,
+                    M3FloatingActionButtonSize.REGULAR
+            );
+            M3SegmentedButton day = new M3SegmentedButton("Day");
+            M3SegmentedButton week = M3SegmentedButton.withSelected("Week", true);
+            M3SegmentedButton month = new M3SegmentedButton("Month");
+            M3SegmentedButtonGroup segments = new M3SegmentedButtonGroup(day, week, month);
+            M3Tab selectedTab = M3Tab.withSelected("Overview", true);
+            M3TabBar tabBar = new M3TabBar(selectedTab, new M3Tab("Details"));
+            M3TextField textField = M3TextField.withVariant("Outlined text", M3TextInputVariant.OUTLINED);
+            textField.setPrefWidth(260.0);
+            M3TextArea textArea = M3TextArea.withVariant("Multiline\ntext", M3TextInputVariant.FILLED);
+            textArea.setPrefSize(300.0, 128.0);
+            M3Chip filterChip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setPrefWidth(300.0);
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            M3ListItem listItem = new M3ListItem("Expressive list item");
+            M3Avatar avatar = new M3Avatar("EX");
+            M3NavigationItem navigationBarItem = M3NavigationItem.withSelected("Home", new M3Icon("H"), true);
+            M3NavigationBar navigationBar = new M3NavigationBar(
+                    navigationBarItem,
+                    new M3NavigationItem("Search", new M3Icon("S"))
+            );
+            M3NavigationItem navigationRailItem = M3NavigationItem.withSelected("Home", new M3Icon("H"), true);
+            M3NavigationRail navigationRail = new M3NavigationRail(
+                    navigationRailItem,
+                    new M3NavigationItem("Search", new M3Icon("S"))
+            );
+            M3TopAppBar topAppBar = new M3TopAppBar(
+                    "Expressive app bar",
+                    new M3IconButton(new M3Icon("<")),
+                    new M3IconButton(new M3Icon("A"))
+            );
+            topAppBar.setPrefWidth(560.0);
+
+            VBox root = new VBox(
+                    18.0,
+                    visualSection(
+                            "Actions",
+                            filledButton,
+                            iconButton,
+                            toggleGroup,
+                            regularFab,
+                            segments,
+                            tabBar
+                    ),
+                    visualSection(
+                            "Inputs",
+                            textField,
+                            textArea,
+                            filterChip,
+                            searchBar,
+                            datePicker
+                    ),
+                    visualSection(
+                            "Navigation",
+                            listItem,
+                            avatar,
+                            navigationBar,
+                            navigationRail,
+                            topAppBar
+                    )
+            );
+            root.setStyle("-fx-background-color: white; -fx-padding: 24px; " + visualTestColors());
+            Scene scene = new Scene(root, 960.0, 920.0);
+            M3Theme expressiveTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            );
+
+            M3ThemeManager.install(scene, expressiveTheme);
+            root.applyCss();
+            root.resize(960.0, Math.ceil(root.prefHeight(960.0)));
+            root.layout();
+
+            assertTrue(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+            assertTrue(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+            assertEquals(48.0, filledButton.getContainerHeight(), 0.0001);
+            assertEquals(48.0, iconButton.getContainerHeight(), 0.0001);
+            assertEquals(48.0, standardToggle.getContainerHeight(), 0.0001);
+            assertEquals(64.0, regularFab.getContainerSize(), 0.0001);
+            assertEquals(48.0, day.getContainerHeight(), 0.0001);
+            assertEquals(56.0, selectedTab.getContainerHeight(), 0.0001);
+            assertEquals(64.0, textField.getContainerHeight(), 0.0001);
+            assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
+            assertEquals(36.0, filterChip.getContainerHeight(), 0.0001);
+            assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
+            assertEquals(64.0, searchBar.getHeight(), 0.0001);
+            assertEquals(64.0, listItem.getOneLineHeight(), 0.0001);
+            assertEquals(44.0, avatar.getContainerSize(), 0.0001);
+            assertEquals(88.0, navigationBar.getPrefHeight(), 0.0001);
+            assertEquals(96.0, navigationBarItem.getItemWidth(), 0.0001);
+            assertEquals(72.0, navigationBarItem.getIndicatorWidth(), 0.0001);
+            assertEquals(112.0, navigationRail.getPrefWidth(), 0.0001);
+            assertEquals(96.0, navigationRailItem.getItemWidth(), 0.0001);
+            assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotHasColorVariety(image, 18);
+            assertSnapshotNodeContainsContrast(image, filledButton, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, toggleGroup, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, navigationBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, navigationRail, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, topAppBar, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-expressive-profile.png"
             ));
             assertRenderedTextNodesStayInsideLayout(root);
             assertFixedTargetControlsKeepCenteredContent(root);
