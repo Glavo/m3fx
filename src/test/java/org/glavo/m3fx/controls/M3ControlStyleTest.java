@@ -5984,6 +5984,42 @@ final class M3ControlStyleTest {
         assertTrue(dot.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius() > 20.0);
     }
 
+    /// Verifies that a selected radio button paints its dot at the visual center of the outer indicator.
+    @Test
+    void selectedRadioButtonDotRendersCenteredInIndicator() {
+        runOnFxThread(() -> {
+            M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
+            Pane root = new Pane(radioButton);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 180.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(180.0, 80.0);
+            radioButton.resizeRelocate(20.0, 20.0, 120.0, 40.0);
+            radioButton.layout();
+            root.layout();
+
+            Region radio = radioIndicator(radioButton);
+            Region dot = radioDot(radioButton);
+            Point2D radioCenter = radio.localToScene(radio.getWidth() / 2.0, radio.getHeight() / 2.0);
+            Point2D dotCenter = dot.localToScene(dot.getWidth() / 2.0, dot.getHeight() / 2.0);
+            assertEquals(radioCenter.getX(), dotCenter.getX(), 0.0001);
+            assertEquals(radioCenter.getY(), dotCenter.getY(), 0.0001);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            Point2D renderedDotCenter = contrastingPixelCentroid(image, dot, Color.WHITE, 0.08);
+            assertEquals(radioCenter.getX(), renderedDotCenter.getX(), 0.8);
+            assertEquals(radioCenter.getY(), renderedDotCenter.getY(), 0.8);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-radio-dot-centering.png"
+            ));
+        });
+    }
+
     /// Verifies that slider component token properties are styleable from CSS.
     @Test
     void sliderTokensAreStyleable() {
@@ -13417,6 +13453,39 @@ final class M3ControlStyleTest {
             }
         }
         return false;
+    }
+
+    /// Returns the centroid of rendered pixels inside a node that contrast with the reference color.
+    private static Point2D contrastingPixelCentroid(
+            WritableImage image,
+            Node node,
+            Color reference,
+            double minimumDistance
+    ) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
+        int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
+        int endX = Math.min((int) image.getWidth(), (int) Math.ceil(bounds.getMaxX()));
+        int endY = Math.min((int) image.getHeight(), (int) Math.ceil(bounds.getMaxY()));
+        double totalWeight = 0.0;
+        double weightedX = 0.0;
+        double weightedY = 0.0;
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                double distance = colorDistance(color, reference);
+                if (color.getOpacity() > 0.1 && distance >= minimumDistance) {
+                    double weight = color.getOpacity() * Math.min(1.0, distance);
+                    totalWeight += weight;
+                    weightedX += (x + 0.5) * weight;
+                    weightedY += (y + 0.5) * weight;
+                }
+            }
+        }
+
+        assertTrue(totalWeight > 0.0, () -> "No contrasting pixels found for " + node);
+        return new Point2D(weightedX / totalWeight, weightedY / totalWeight);
     }
 
     /// Writes a rendered snapshot to a build report path for manual visual inspection.

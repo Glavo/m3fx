@@ -10,6 +10,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Circle;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.internal.M3Animation;
@@ -48,6 +49,8 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         super(control);
         radio.getStyleClass().addAll("radio", "m3-radio");
         dot.getStyleClass().addAll("dot", "m3-radio-dot");
+        configureCircleShape(radio, RADIO_SIZE);
+        configureCircleShape(dot, DOT_SIZE);
         radio.getChildren().add(dot);
         indicatorSlot().getChildren().add(radio);
 
@@ -92,5 +95,14 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
                 new KeyValue(dot.scaleYProperty(), selected ? 1.0 : HIDDEN_DOT_SCALE, spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
+    }
+
+    /// Configures a region to paint as an exact circle instead of a rounded rectangle.
+    private static void configureCircleShape(Region region, double size) {
+        double radius = size / 2.0;
+        region.setShape(new Circle(radius, radius, radius));
+        region.setScaleShape(false);
+        region.setCenterShape(false);
+        region.setCacheShape(false);
     }
 }
