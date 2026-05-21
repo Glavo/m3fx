@@ -246,7 +246,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             return;
         }
 
-        double scale = pressed ? PRESSED_SCALE : 1.0;
+        double scale = pressedScale(pressed);
         Duration duration = pressed ? PRESS_DURATION : RELEASE_DURATION;
         animation.stop();
         animation.getKeyFrames().setAll(new KeyFrame(
@@ -255,6 +255,11 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                 new KeyValue(button.scaleYProperty(), scale, M3Motion.STANDARD)
         ));
         animation.playFromStart();
+    }
+
+    /// Returns the skinnable scale used for the requested pressed state.
+    protected double pressedScale(boolean pressed) {
+        return pressed ? PRESSED_SCALE : 1.0;
     }
 
     /// Clears armed state, scale animation, and transient feedback.

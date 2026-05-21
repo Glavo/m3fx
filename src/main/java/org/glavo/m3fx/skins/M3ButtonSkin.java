@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default animated skin for [M3Button].
@@ -12,5 +13,14 @@ public class M3ButtonSkin extends M3LabeledButtonSkinBase<M3Button> {
     /// Creates a button skin.
     public M3ButtonSkin(M3Button control) {
         super(control);
+    }
+
+    /// Returns a pressed scale only for elevated buttons that already own elevation.
+    @Override
+    protected double pressedScale(boolean pressed) {
+        if (!pressed || getSkinnable().getVariant() == M3ButtonVariant.ELEVATED) {
+            return super.pressedScale(pressed);
+        }
+        return 1.0;
     }
 }

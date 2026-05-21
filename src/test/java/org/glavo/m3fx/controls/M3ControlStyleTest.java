@@ -387,6 +387,43 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that non-elevated button variants do not use pressed container scaling.
+    @Test
+    void nonElevatedButtonVariantsDoNotScaleWhenPressed() {
+        runOnFxThread(() -> {
+            M3Button button = new M3Button("Button");
+            Pane root = new Pane(button);
+            Scene scene = new Scene(root, 200.0, 100.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            button.resize(120.0, 40.0);
+            button.layout();
+
+            for (M3ButtonVariant variant : java.util.List.of(
+                    M3ButtonVariant.FILLED,
+                    M3ButtonVariant.TONAL,
+                    M3ButtonVariant.OUTLINED,
+                    M3ButtonVariant.TEXT
+            )) {
+                button.setVariant(variant);
+                root.applyCss();
+                pressButtonAndJumpToPressedFrame(button);
+
+                assertEquals(1.0, button.getScaleX(), 0.0001, () -> variant + " button scaleX");
+                assertEquals(1.0, button.getScaleY(), 0.0001, () -> variant + " button scaleY");
+                button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
+            }
+
+            button.setVariant(M3ButtonVariant.ELEVATED);
+            root.applyCss();
+            pressButtonAndJumpToPressedFrame(button);
+
+            assertEquals(0.98, button.getScaleX(), 0.0001);
+            assertEquals(0.98, button.getScaleY(), 0.0001);
+        });
+    }
+
     /// Verifies that m3fx floating action buttons create the animated floating action button skin.
     @Test
     void floatingActionButtonCreatesAnimatedSkin() {
@@ -11112,12 +11149,33 @@ final class M3ControlStyleTest {
     /// Returns a private timeline field from a test target.
     private static Timeline reflectedTimeline(Object target, String fieldName) {
         try {
-            java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
+            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
             field.setAccessible(true);
             return assertInstanceOf(Timeline.class, field.get(target));
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
+    }
+
+    /// Returns a declared field from a class or one of its superclasses.
+    private static java.lang.reflect.Field reflectedField(Class<?> type, String fieldName) throws NoSuchFieldException {
+        @Nullable Class<?> current = type;
+        while (current != null) {
+            try {
+                return current.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException(fieldName);
+    }
+
+    /// Presses a button and advances the shared pressed-state animation to its pressed frame.
+    private static void pressButtonAndJumpToPressedFrame(M3Button button) {
+        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
+        Timeline animation = skinTimeline(button.getSkin(), "animation");
+        animation.jumpTo(Duration.millis(50.0));
+        animation.stop();
     }
 
     /// Returns the current top outline gap generated for a floating text input label.
