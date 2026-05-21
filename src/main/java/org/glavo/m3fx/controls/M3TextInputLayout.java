@@ -46,6 +46,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.QuadCurveTo;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -1220,7 +1221,7 @@ public class M3TextInputLayout extends Control {
                 new KeyValue(label.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE),
                 new KeyValue(outlineNotchProgress, floating ? 1.0 : 0.0, M3Motion.STANDARD_DECELERATE)
         ));
-        labelAnimation.playFromStart();
+        M3Animation.playFromStart(this, labelAnimation);
     }
 
     /// Updates the label error pseudo-class from both layout-owned and wrapped input error state.
@@ -1359,7 +1360,7 @@ public class M3TextInputLayout extends Control {
                 new KeyValue(clearButton.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
                 new KeyValue(clearButton.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE)
         ));
-        trailingAnimation.playFromStart();
+        M3Animation.playFromStart(this, trailingAnimation);
     }
 
     /// Updates supporting row transition state when text, counter, or error presentation changes.
@@ -1390,7 +1391,7 @@ public class M3TextInputLayout extends Control {
                 new KeyValue(supportingRow.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
                 new KeyValue(supportingRow.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
         ));
-        supportingRowAnimation.playFromStart();
+        M3Animation.playFromStart(this, supportingRowAnimation);
     }
 
     /// Returns the supporting row text that should be visible.

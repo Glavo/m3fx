@@ -27,6 +27,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SnackbarHostSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -311,7 +312,7 @@ public class M3SnackbarHost extends Control {
                 )
         );
         showAnimation.setOnFinished(event -> scheduleAutoDismiss(target));
-        showAnimation.playFromStart();
+        M3Animation.playFromStart(this, showAnimation);
     }
 
     /// Plays the snackbar exit animation.
@@ -325,7 +326,7 @@ public class M3SnackbarHost extends Control {
                 )
         );
         hideAnimation.setOnFinished(event -> removeSnackbar(target));
-        hideAnimation.playFromStart();
+        M3Animation.playFromStart(this, hideAnimation);
     }
 
     /// Schedules automatic dismissal for the target snackbar.

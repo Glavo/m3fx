@@ -16,6 +16,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3SegmentedButton].
@@ -132,7 +133,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
                 new KeyValue(selectionContainer.opacityProperty(), targetOpacity, M3Motion.STANDARD),
                 new KeyValue(selectionContainer.scaleXProperty(), targetScale, M3Motion.STANDARD)
         ));
-        selectionAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 
     /// Updates the selected container without animation.

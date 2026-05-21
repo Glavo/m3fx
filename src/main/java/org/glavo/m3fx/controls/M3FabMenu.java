@@ -24,6 +24,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -346,7 +347,7 @@ public class M3FabMenu extends Control {
             index++;
         }
         animation = transition;
-        transition.playFromStart();
+        M3Animation.playFromStart(this, transition);
     }
 
     /// Plays the action item collapse animation.
@@ -374,7 +375,7 @@ public class M3FabMenu extends Control {
             }
         });
         animation = transition;
-        transition.playFromStart();
+        M3Animation.playFromStart(this, transition);
     }
 
     /// Stops the current expand or collapse animation.

@@ -13,6 +13,7 @@ import javafx.scene.control.SkinBase;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Badge;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Badge].
@@ -126,7 +127,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
                 new KeyValue(label.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
                 new KeyValue(label.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE)
         ));
-        contentAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), contentAnimation);
     }
 
     /// Applies the settled badge content animation state.

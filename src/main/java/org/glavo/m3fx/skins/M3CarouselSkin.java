@@ -16,6 +16,7 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Carousel;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -202,7 +203,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
                 new KeyValue(viewport.hvalueProperty(), targetHValue, M3Motion.STANDARD)
         ));
         scrollAnimation = timeline;
-        timeline.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), timeline);
     }
 
     /// Stops the current scroll animation.

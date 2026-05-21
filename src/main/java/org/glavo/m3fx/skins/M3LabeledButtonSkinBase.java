@@ -31,6 +31,7 @@ import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SplitButton;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -262,7 +263,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                 new KeyValue(button.scaleXProperty(), scale, M3Motion.STANDARD),
                 new KeyValue(button.scaleYProperty(), scale, M3Motion.STANDARD)
         ));
-        animation.playFromStart();
+        M3Animation.playFromStart(button, animation);
     }
 
     /// Returns the skinnable scale used for the requested pressed state.

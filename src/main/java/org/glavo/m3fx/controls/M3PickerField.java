@@ -27,6 +27,8 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Popup;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -529,7 +531,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 new KeyValue(popupContent.scaleYProperty(), POPUP_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
                 new KeyValue(popupContent.translateYProperty(), popupTransitionOffsetY, M3Motion.STANDARD_ACCELERATE)
         ));
-        hideAnimation.playFromStart();
+        M3Animation.playFromStart(this, hideAnimation);
     }
 
     /// Handles a selected value coming from the popup picker.
@@ -639,6 +641,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         Parent root = scene.getRoot();
         @Nullable String rootStyle = root == null ? null : root.getStyle();
         popupContent.setStyle(rootStyle == null ? "" : rootStyle);
+        M3MotionSettings.setAnimationsEnabled(popupContent, M3MotionSettings.areAnimationsEnabled(this));
         double fieldWidth = Math.max(0.0, inputLayout.getWidth());
         popupContent.setMinWidth(Math.max(fieldWidth, popupContent.minWidth(-1.0)));
         popupContent.applyCss();
@@ -663,7 +666,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 new KeyValue(popupContent.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
                 new KeyValue(popupContent.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
         ));
-        showAnimation.playFromStart();
+        M3Animation.playFromStart(this, showAnimation);
     }
 
     /// Resets transient popup picker animation transforms.

@@ -14,6 +14,7 @@ import javafx.scene.effect.Effect;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -88,6 +89,11 @@ final class M3CssEffectTransition {
             return;
         }
 
+        if (!M3Animation.areAnimationsEnabled(owner)) {
+            target.setEffect(end);
+            return;
+        }
+
         DropShadow animated = start == null ? emptyShadow(end) : start;
         DropShadow targetShadow = end == null ? emptyShadow(start) : end;
         target.setEffect(animated);
@@ -96,7 +102,7 @@ final class M3CssEffectTransition {
                 keyFrame(transitionDuration(start, end), animated, targetShadow)
         );
         animation.setOnFinished(event -> target.setEffect(end));
-        animation.playFromStart();
+        M3Animation.playFromStart(owner, animation);
     }
 
     /// Creates a key frame for the supplied shadow state.

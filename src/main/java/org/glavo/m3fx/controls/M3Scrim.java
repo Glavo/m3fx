@@ -23,6 +23,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Region;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -238,7 +239,7 @@ public class M3Scrim extends Region {
                     SHOW_DURATION,
                     new KeyValue(opacityProperty(), getVisibleOpacity(), M3Motion.STANDARD_DECELERATE)
             ));
-            visibilityAnimation.playFromStart();
+            M3Animation.playFromStart(this, visibilityAnimation);
         } else {
             if (getScene() == null || !isVisible()) {
                 applyShownStateImmediately(false);
@@ -254,7 +255,7 @@ public class M3Scrim extends Region {
                     },
                     new KeyValue(opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE)
             ));
-            visibilityAnimation.playFromStart();
+            M3Animation.playFromStart(this, visibilityAnimation);
         }
     }
 

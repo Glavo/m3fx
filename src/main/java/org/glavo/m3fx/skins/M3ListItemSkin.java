@@ -28,6 +28,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -351,7 +352,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
                 new KeyValue(selectionContainer.opacityProperty(), targetOpacity, M3Motion.STANDARD),
                 new KeyValue(selectionContainer.scaleXProperty(), targetScale, M3Motion.STANDARD)
         ));
-        selectionAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 
     /// Updates the selected container without animation.

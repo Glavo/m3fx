@@ -25,6 +25,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -492,7 +493,7 @@ public class M3SearchView extends Control {
             applyResultsVisibilityImmediately(false);
             return;
         }
-        resultsVisibilityAnimation.playFromStart();
+        M3Animation.playFromStart(this, resultsVisibilityAnimation);
     }
 
     /// Applies result container visibility without animation.

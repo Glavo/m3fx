@@ -13,6 +13,7 @@ import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3CheckBox;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3CheckBox].
@@ -128,7 +129,7 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
                 new KeyValue(mark.scaleXProperty(), visible ? 1.0 : HIDDEN_MARK_SCALE, M3Motion.STANDARD),
                 new KeyValue(mark.scaleYProperty(), visible ? 1.0 : HIDDEN_MARK_SCALE, M3Motion.STANDARD)
         ));
-        selectionAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 
     /// Returns the mark shape that should be displayed for the current control state.

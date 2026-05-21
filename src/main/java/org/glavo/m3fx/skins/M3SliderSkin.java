@@ -21,6 +21,7 @@ import javafx.scene.layout.Region;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Slider;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Slider].
@@ -412,7 +413,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                 VALUE_TRANSITION_DURATION,
                 new KeyValue(displayedPosition, targetPosition, M3Motion.STANDARD)
         ));
-        valueAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), valueAnimation);
     }
 
     /// Snaps the displayed position to the current value without animation.

@@ -18,6 +18,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3NavigationDrawerGroup].
@@ -253,7 +254,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             }
             expansionAnimation.setOnFinished(null);
         });
-        expansionAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), expansionAnimation);
     }
 
     /// Returns whether expanded-state changes should animate.

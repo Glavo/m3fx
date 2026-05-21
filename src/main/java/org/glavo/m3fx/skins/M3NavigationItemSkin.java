@@ -24,6 +24,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3NavigationItem;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -344,7 +345,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
                         new KeyValue(indicator.scaleXProperty(), targetScale, M3Motion.STANDARD)
                 )
         );
-        indicatorAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), indicatorAnimation);
     }
 
     /// Updates the selected indicator without animation.

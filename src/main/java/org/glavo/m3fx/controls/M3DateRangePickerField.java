@@ -35,6 +35,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -1026,6 +1028,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         Parent root = scene.getRoot();
         @Nullable String rootStyle = root == null ? null : root.getStyle();
         popupContent.setStyle(rootStyle == null ? "" : rootStyle);
+        M3MotionSettings.setAnimationsEnabled(popupContent, M3MotionSettings.areAnimationsEnabled(this));
         double fieldWidth = Math.max(0.0, getWidth());
         popupContent.setMinWidth(Math.max(fieldWidth, popupContent.minWidth(-1.0)));
         popupContent.applyCss();
@@ -1050,7 +1053,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 new KeyValue(popupContent.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
                 new KeyValue(popupContent.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
         ));
-        showAnimation.playFromStart();
+        M3Animation.playFromStart(this, showAnimation);
     }
 
     /// Hides the popup picker and optionally restores editor focus.
@@ -1072,7 +1075,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 new KeyValue(popupContent.scaleYProperty(), POPUP_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
                 new KeyValue(popupContent.translateYProperty(), popupTransitionOffsetY, M3Motion.STANDARD_ACCELERATE)
         ));
-        hideAnimation.playFromStart();
+        M3Animation.playFromStart(this, hideAnimation);
     }
 
     /// Handles popup hidden cleanup and optional focus return.

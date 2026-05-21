@@ -12,6 +12,7 @@ import javafx.scene.layout.Region;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Tab;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Tab].
@@ -95,7 +96,7 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
                         new KeyValue(activeIndicator.scaleXProperty(), targetScale, M3Motion.STANDARD)
                 )
         );
-        indicatorAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), indicatorAnimation);
     }
 
     /// Updates the active indicator without animation.

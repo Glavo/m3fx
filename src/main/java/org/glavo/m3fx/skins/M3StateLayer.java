@@ -20,6 +20,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -168,6 +169,15 @@ final class M3StateLayer extends Pane {
 
     /// Plays a bounded ripple from a point in this state layer's coordinate space.
     void playRipple(double x, double y) {
+        Node owner = animationOwner();
+        if (!M3Animation.areAnimationsEnabled(owner)) {
+            rippleAnimation.stop();
+            ripple.setOpacity(0.0);
+            ripple.setScaleX(0.0);
+            ripple.setScaleY(0.0);
+            return;
+        }
+
         double width = getWidth();
         double height = getHeight();
         if (width <= 0.0 || height <= 0.0) {
@@ -194,7 +204,7 @@ final class M3StateLayer extends Pane {
                         new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, M3Motion.STANDARD_DECELERATE)
                 )
         );
-        rippleAnimation.playFromStart();
+        M3Animation.playFromStart(owner, rippleAnimation);
     }
 
     /// Plays a bounded ripple from the layer center.
@@ -204,6 +214,15 @@ final class M3StateLayer extends Pane {
 
     /// Releases the active ripple and fades it out.
     void releaseRipple() {
+        Node owner = animationOwner();
+        if (!M3Animation.areAnimationsEnabled(owner)) {
+            rippleAnimation.stop();
+            ripple.setOpacity(0.0);
+            ripple.setScaleX(1.0);
+            ripple.setScaleY(1.0);
+            return;
+        }
+
         double startOpacity = ripple.getOpacity();
         if (startOpacity <= 0.0) {
             return;
@@ -229,7 +248,7 @@ final class M3StateLayer extends Pane {
                         new KeyValue(ripple.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE)
                 )
         );
-        rippleAnimation.playFromStart();
+        M3Animation.playFromStart(owner, rippleAnimation);
     }
 
     /// Stops ripple animation and clears transient ripple state.
@@ -270,6 +289,11 @@ final class M3StateLayer extends Pane {
             return;
         }
 
+        if (!M3Animation.areAnimationsEnabled(owner)) {
+            overlay.setOpacity(targetOpacity);
+            return;
+        }
+
         Duration duration = targetOpacity > startOpacity ? STATE_LAYER_ENTER_DURATION : STATE_LAYER_EXIT_DURATION;
         overlayOpacityAnimation.getKeyFrames().setAll(
                 new KeyFrame(
@@ -281,7 +305,13 @@ final class M3StateLayer extends Pane {
                         new KeyValue(overlay.opacityProperty(), targetOpacity, M3Motion.STANDARD)
                 )
         );
-        overlayOpacityAnimation.playFromStart();
+        M3Animation.playFromStart(owner, overlayOpacityAnimation);
+    }
+
+    /// Returns the node whose motion setting controls this state layer.
+    private Node animationOwner() {
+        @Nullable Node owner = stateOwner;
+        return owner == null ? this : owner;
     }
 
     /// Computes the ripple diameter needed to cover this layer from an origin point.

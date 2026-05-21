@@ -25,6 +25,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SideSheetSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -355,7 +356,7 @@ public class M3SideSheet extends Control {
                     new KeyValue(opacityProperty(), 1.0, M3Motion.EMPHASIZED_DECELERATE),
                     new KeyValue(translateXProperty(), 0.0, M3Motion.EMPHASIZED_DECELERATE)
             ));
-            visibilityAnimation.playFromStart();
+            M3Animation.playFromStart(this, visibilityAnimation);
         } else {
             if (getScene() == null || !isVisible()) {
                 applyShownStateImmediately(false);
@@ -372,7 +373,7 @@ public class M3SideSheet extends Control {
                     new KeyValue(opacityProperty(), 0.0, M3Motion.EMPHASIZED_ACCELERATE),
                     new KeyValue(translateXProperty(), hiddenTranslateX(), M3Motion.EMPHASIZED_ACCELERATE)
             ));
-            visibilityAnimation.playFromStart();
+            M3Animation.playFromStart(this, visibilityAnimation);
         }
     }
 

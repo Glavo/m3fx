@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -61,6 +63,49 @@ final class M3StateLayerTest {
 
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
             assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
+        });
+    }
+
+    /// Verifies that disabled motion applies CSS-resolved hover opacity without starting a transition.
+    @Test
+    void disabledMotionAppliesCssResolvedHoverOpacityImmediately() {
+        runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add("m3-button");
+            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+
+            Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            stateLayer.animateOverlayOpacityFromCss();
+
+            assertTrue(overlay.getOpacity() > 0.0);
+            assertFalse(stateLayer.isOverlayOpacityAnimationRunning());
+        });
+    }
+
+    /// Verifies that disabled motion suppresses transient ripple animation.
+    @Test
+    void disabledMotionSuppressesRippleAnimation() {
+        runOnFxThread(() -> {
+            Pane owner = new Pane();
+            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            stateLayer.installStateTransitions(owner);
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+
+            stateLayer.playRipple(20.0, 20.0);
+
+            Region ripple = lookupRegion(stateLayer, ".m3-ripple");
+            assertEquals(0.0, ripple.getOpacity(), 0.0001);
+            assertFalse(stateLayer.isRippleAnimationRunning());
         });
     }
 

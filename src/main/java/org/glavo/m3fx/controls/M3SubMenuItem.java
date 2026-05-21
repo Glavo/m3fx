@@ -23,6 +23,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -218,7 +220,7 @@ public class M3SubMenuItem extends M3MenuItem {
                 new KeyValue(subMenu.scaleYProperty(), SUB_MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
                 new KeyValue(subMenu.translateXProperty(), currentTransitionOffsetX, M3Motion.STANDARD_ACCELERATE)
         ));
-        hideAnimation.playFromStart();
+        M3Animation.playFromStart(this, hideAnimation);
     }
 
     /// Returns accessibility attributes for submenu content and expanded state.
@@ -461,7 +463,7 @@ public class M3SubMenuItem extends M3MenuItem {
                 new KeyValue(subMenu.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
                 new KeyValue(subMenu.translateXProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
         ));
-        showAnimation.playFromStart();
+        M3Animation.playFromStart(this, showAnimation);
     }
 
     /// Resets transient submenu animation transforms.
@@ -492,6 +494,7 @@ public class M3SubMenuItem extends M3MenuItem {
         Parent root = scene.getRoot();
         @Nullable String rootStyle = root == null ? null : root.getStyle();
         subMenu.setStyle(rootStyle == null ? "" : rootStyle);
+        M3MotionSettings.setAnimationsEnabled(subMenu, M3MotionSettings.areAnimationsEnabled(this));
         subMenu.applyCss();
     }
 

@@ -12,6 +12,7 @@ import javafx.scene.shape.SVGPath;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3DisclosureIcon;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3DisclosureIcon].
@@ -150,7 +151,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
                 ROTATION_DURATION,
                 new KeyValue(arrow.rotateProperty(), rotationFor(expanded), M3Motion.STANDARD)
         ));
-        rotationAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), rotationAnimation);
     }
 
     /// Returns the arrow rotation for an expanded state.

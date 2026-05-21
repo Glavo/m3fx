@@ -23,6 +23,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.stage.Popup;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -264,7 +266,7 @@ public class M3MenuButton extends M3Button {
                 new KeyValue(menu.scaleYProperty(), MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
                 new KeyValue(menu.translateYProperty(), MENU_TRANSITION_OFFSET_Y, M3Motion.STANDARD_ACCELERATE)
         ));
-        hideAnimation.playFromStart();
+        M3Animation.playFromStart(this, hideAnimation);
     }
 
     /// Toggles the menu popup when the button fires.
@@ -453,7 +455,7 @@ public class M3MenuButton extends M3Button {
                 new KeyValue(menu.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
                 new KeyValue(menu.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
         ));
-        showAnimation.playFromStart();
+        M3Animation.playFromStart(this, showAnimation);
     }
 
     /// Resets transient popup menu animation transforms.
@@ -485,6 +487,7 @@ public class M3MenuButton extends M3Button {
         Parent root = scene.getRoot();
         @Nullable String rootStyle = root == null ? null : root.getStyle();
         menu.setStyle(rootStyle == null ? "" : rootStyle);
+        M3MotionSettings.setAnimationsEnabled(menu, M3MotionSettings.areAnimationsEnabled(this));
         menu.applyCss();
     }
 }

@@ -14,6 +14,7 @@ import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3Switch;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Switch].
@@ -120,7 +121,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
                 SELECTION_DURATION,
                 new KeyValue(thumbPosition, selected ? 1.0 : 0.0, M3Motion.STANDARD)
         ));
-        selectionAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 
     /// Lays out the thumb from the animated position value.

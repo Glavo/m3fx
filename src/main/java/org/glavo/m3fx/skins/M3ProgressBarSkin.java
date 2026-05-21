@@ -16,6 +16,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.controls.M3ProgressBar;
+import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3ProgressBar].
@@ -154,7 +155,10 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
-            if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
+            if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
+                indeterminateAnimation.stop();
+                indeterminatePosition.set(INDETERMINATE_START_POSITION);
+            } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
                 indeterminateAnimation.play();
             }
         } else {
@@ -167,7 +171,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Animates the displayed determinate progress value.
     private void animateDisplayedProgress(double targetProgress, boolean animate) {
         determinateAnimation.stop();
-        if (!animate) {
+        if (!animate || !M3Animation.areAnimationsEnabled(getSkinnable())) {
             displayedProgress.set(targetProgress);
             return;
         }
@@ -178,7 +182,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
                         new KeyValue(displayedProgress, targetProgress, M3Motion.STANDARD)
                 )
         );
-        determinateAnimation.playFromStart();
+        M3Animation.playFromStart(getSkinnable(), determinateAnimation);
     }
 
     /// Returns the initial displayed progress value for a public progress value.
