@@ -1946,6 +1946,66 @@ final class M3ControlStyleTest {
         assertEquals(8.0, textField.getPadding().getTop(), 0.0001);
     }
 
+    /// Verifies that filled text input labels and text keep stable vertical placement in a shown window.
+    @Test
+    void filledTextInputLayoutKeepsFloatingLabelAndTextAlignedInWindow() {
+        runOnFxThread(() -> {
+            M3TextField textField = M3TextField.withVariant("support@example.com", M3TextInputVariant.FILLED);
+            textField.setPrefWidth(340.0);
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Email address");
+            layout.setLabelText("Filled with text");
+            layout.setLeading(new M3Icon("E"));
+            layout.setClearButtonEnabled(true);
+            layout.setCharacterCounterVisible(true);
+            layout.setCharacterLimit(32);
+            layout.setPrefWidth(340.0);
+
+            StackPane root = new StackPane(layout);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 420.0, 130.0);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(scene);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.resize(420.0, 130.0);
+                root.layout();
+
+                Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
+                Label label = assertInstanceOf(
+                        Label.class,
+                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                );
+                Text inputText = renderedTextNode(textField, "support@example.com");
+
+                Bounds containerBounds = inputContainer.localToScene(inputContainer.getLayoutBounds());
+                Bounds labelBounds = label.localToScene(label.getLayoutBounds());
+                Bounds textBounds = inputText.localToScene(inputText.getLayoutBounds());
+
+                assertEquals(containerBounds.getMinY() + 4.0, labelBounds.getMinY(), 1.0);
+                assertTrue(labelBounds.getMaxY() + 3.0 <= textBounds.getMinY(),
+                        () -> "labelBounds=" + labelBounds + ", textBounds=" + textBounds);
+                assertTrue(textBounds.getMaxY() <= containerBounds.getMaxY() - 6.0,
+                        () -> "textBounds=" + textBounds + ", containerBounds=" + containerBounds);
+
+                WritableImage image = snapshotImageOnFxThread(root);
+                assertSnapshotNodeContainsContrast(image, label, Color.WHITE, 0.04);
+                assertSnapshotNodeContainsContrast(image, inputText, Color.WHITE, 0.04);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-text-field-filled-label-alignment.png"
+                ));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that text input layout presentation changes use Material motion timelines.
     @Test
     void textInputLayoutAnimatesLabelClearButtonAndSupportingRow() {
@@ -13029,6 +13089,25 @@ final class M3ControlStyleTest {
     private static boolean hasRenderableBounds(Node node) {
         Bounds bounds = node.getLayoutBounds();
         return bounds.getWidth() > 0.5 && bounds.getHeight() > 0.5;
+    }
+
+    /// Returns the first visible rendered text node with the supplied text.
+    private static Text renderedTextNode(Node root, String value) {
+        AtomicReference<@Nullable Text> result = new AtomicReference<>();
+        visitVisibleNodes(root, node -> {
+            if (result.get() == null
+                    && node instanceof Text text
+                    && value.equals(text.getText())
+                    && hasRenderableBounds(text)) {
+                result.set(text);
+            }
+        });
+
+        Text text = result.get();
+        if (text == null) {
+            throw new AssertionError("No rendered text node found for " + value);
+        }
+        return text;
     }
 
     /// Returns the nearest ancestor that should constrain visible text.
