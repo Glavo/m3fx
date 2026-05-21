@@ -73,7 +73,9 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
                 ? M3ShapeTokens.expressive()
                 : M3ShapeTokens.baseline();
         M3ElevationTokens elevationTokens = M3ElevationTokens.baseline();
-        M3MotionTokens motionTokens = M3MotionTokens.baseline();
+        M3MotionTokens motionTokens = profile == M3Profile.EXPRESSIVE_2025
+                ? M3MotionTokens.expressive()
+                : M3MotionTokens.baseline();
         M3StateLayerTokens stateLayerTokens = M3StateLayerTokens.baseline();
         M3ComponentTokens componentTokens = M3ComponentTokens.create(profile, shapeTokens, density);
 

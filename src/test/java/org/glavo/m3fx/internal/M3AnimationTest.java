@@ -9,8 +9,15 @@ import javafx.animation.Timeline;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionEasing;
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
@@ -44,5 +51,35 @@ final class M3AnimationTest {
         assertTrue(keyFrameFinished.get());
         assertTrue(animationFinished.get());
         assertFalse(timeline.getStatus() == Timeline.Status.RUNNING);
+    }
+
+    /// Verifies that animation helpers resolve the theme motion scheme through the parent chain.
+    @Test
+    void resolvesThemeMotionSchemeFromParentChain() {
+        Pane root = new Pane();
+        Pane child = new Pane();
+        root.getChildren().add(child);
+        M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"), M3Profile.EXPRESSIVE_2025, Brightness.LIGHT);
+
+        assertEquals(M3MotionEasing.STANDARD, M3Animation.defaultEffects(child).easing());
+
+        M3ThemeManager.install(root, theme);
+
+        assertEquals(M3MotionEasing.EMPHASIZED, M3Animation.defaultEffects(child).easing());
+        assertEquals(400.0, M3Animation.defaultSpatial(child).duration().toMillis(), 0.0001);
+    }
+
+    /// Verifies that a node-local motion scheme override takes precedence over an installed theme.
+    @Test
+    void nodeMotionSchemeOverrideTakesPrecedenceOverTheme() {
+        Pane root = new Pane();
+        Pane child = new Pane();
+        root.getChildren().add(child);
+        M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"), M3Profile.EXPRESSIVE_2025, Brightness.LIGHT);
+        M3ThemeManager.install(root, theme);
+
+        M3MotionSettings.setMotionScheme(child, M3MotionScheme.standard());
+
+        assertEquals(M3MotionEasing.STANDARD, M3Animation.defaultEffects(child).easing());
     }
 }

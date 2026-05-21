@@ -3,8 +3,11 @@
 
 package org.glavo.m3fx.internal.tokens;
 
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.tokens.M3MotionTokens;
 import org.jetbrains.annotations.NotNullByDefault;
+
+import java.util.Objects;
 
 /// Default immutable implementation of [M3MotionTokens].
 ///
@@ -24,6 +27,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// @param extraLong2 the extraLong2 duration token
 /// @param extraLong3 the extraLong3 duration token
 /// @param extraLong4 the extraLong4 duration token
+/// @param scheme the semantic motion scheme
 @NotNullByDefault
 public record M3MotionTokensImpl(
         int short1,
@@ -41,7 +45,8 @@ public record M3MotionTokensImpl(
         int extraLong1,
         int extraLong2,
         int extraLong3,
-        int extraLong4
+        int extraLong4,
+        M3MotionScheme scheme
 ) implements M3MotionTokens {
     /// Creates motion tokens.
     public M3MotionTokensImpl {
@@ -61,6 +66,7 @@ public record M3MotionTokensImpl(
         validate(extraLong2, "extraLong2");
         validate(extraLong3, "extraLong3");
         validate(extraLong4, "extraLong4");
+        Objects.requireNonNull(scheme, "scheme");
     }
 
     /// Validates a duration token.

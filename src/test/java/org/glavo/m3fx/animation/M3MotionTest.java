@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests Material Design 3 motion constants.
@@ -53,5 +54,32 @@ final class M3MotionTest {
         double emphasized = M3Motion.EMPHASIZED.interpolate(0.0, 1.0, 0.5);
 
         assertTrue(emphasized > 0.75);
+    }
+
+    /// Verifies that named easing constants expose their JavaFX interpolators.
+    @Test
+    void namedEasingsExposeInterpolators() {
+        assertEquals("standard", M3MotionEasing.STANDARD.tokenName());
+        assertEquals("emphasized", M3MotionEasing.EMPHASIZED.tokenName());
+        assertSame(M3Motion.STANDARD, M3MotionEasing.STANDARD.interpolator());
+        assertSame(M3Motion.EMPHASIZED, M3MotionEasing.EMPHASIZED.interpolator());
+    }
+
+    /// Verifies that standard and expressive motion schemes expose distinct semantic specs.
+    @Test
+    void motionSchemesExposeSemanticSpecs() {
+        M3MotionScheme standard = M3MotionScheme.standard();
+        M3MotionScheme expressive = M3MotionScheme.expressive();
+
+        assertEquals(M3Motion.SHORT4, standard.defaultEffects().duration());
+        assertEquals(M3MotionEasing.STANDARD, standard.defaultEffects().easing());
+        assertEquals(M3Motion.MEDIUM3, standard.defaultSpatial().duration());
+        assertEquals(M3MotionEasing.STANDARD, standard.defaultSpatial().easing());
+
+        assertEquals(M3Motion.MEDIUM1, expressive.defaultEffects().duration());
+        assertEquals(M3MotionEasing.EMPHASIZED, expressive.defaultEffects().easing());
+        assertEquals(M3Motion.MEDIUM4, expressive.defaultSpatial().duration());
+        assertEquals(M3MotionEasing.EMPHASIZED, expressive.defaultSpatial().easing());
+        assertSame(M3Motion.EMPHASIZED, expressive.defaultSpatial().interpolator());
     }
 }

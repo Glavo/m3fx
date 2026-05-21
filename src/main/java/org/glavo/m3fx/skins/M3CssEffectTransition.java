@@ -13,7 +13,7 @@ import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -21,12 +21,6 @@ import org.jetbrains.annotations.Nullable;
 /// Animates CSS-resolved drop shadow effect changes for an interaction owner.
 @NotNullByDefault
 final class M3CssEffectTransition {
-    /// The duration used when an effect becomes stronger.
-    private static final Duration ENTER_DURATION = M3Motion.SHORT2;
-
-    /// The duration used when an effect becomes weaker or disappears.
-    private static final Duration EXIT_DURATION = M3Motion.SHORT1;
-
     /// Handles owner interaction state changes.
     private final ChangeListener<Boolean> interactionStateListener =
             (observable, oldValue, newValue) -> animateEffectFromCss();
@@ -96,40 +90,26 @@ final class M3CssEffectTransition {
 
         DropShadow animated = start == null ? emptyShadow(end) : start;
         DropShadow targetShadow = end == null ? emptyShadow(start) : end;
+        M3MotionSpec spec = M3Animation.fastEffects(owner);
         target.setEffect(animated);
         animation.getKeyFrames().setAll(
-                keyFrame(Duration.ZERO, animated, animated),
-                keyFrame(transitionDuration(start, end), animated, targetShadow)
+                keyFrame(Duration.ZERO, spec, animated, animated),
+                keyFrame(spec.duration(), spec, animated, targetShadow)
         );
         animation.setOnFinished(event -> target.setEffect(end));
         M3Animation.playFromStart(owner, animation);
     }
 
     /// Creates a key frame for the supplied shadow state.
-    private static KeyFrame keyFrame(Duration duration, DropShadow animated, DropShadow state) {
+    private static KeyFrame keyFrame(Duration duration, M3MotionSpec spec, DropShadow animated, DropShadow state) {
         return new KeyFrame(
                 duration,
-                new KeyValue(animated.radiusProperty(), state.getRadius(), M3Motion.STANDARD),
-                new KeyValue(animated.spreadProperty(), state.getSpread(), M3Motion.STANDARD),
-                new KeyValue(animated.offsetXProperty(), state.getOffsetX(), M3Motion.STANDARD),
-                new KeyValue(animated.offsetYProperty(), state.getOffsetY(), M3Motion.STANDARD),
-                new KeyValue(animated.colorProperty(), state.getColor(), M3Motion.STANDARD)
+                new KeyValue(animated.radiusProperty(), state.getRadius(), spec.interpolator()),
+                new KeyValue(animated.spreadProperty(), state.getSpread(), spec.interpolator()),
+                new KeyValue(animated.offsetXProperty(), state.getOffsetX(), spec.interpolator()),
+                new KeyValue(animated.offsetYProperty(), state.getOffsetY(), spec.interpolator()),
+                new KeyValue(animated.colorProperty(), state.getColor(), spec.interpolator())
         );
-    }
-
-    /// Returns the transition duration for a shadow change.
-    private static Duration transitionDuration(@Nullable DropShadow start, @Nullable DropShadow end) {
-        double startDepth = shadowDepth(start);
-        double endDepth = shadowDepth(end);
-        return endDepth > startDepth ? ENTER_DURATION : EXIT_DURATION;
-    }
-
-    /// Returns a simple depth metric for comparing shadow strength.
-    private static double shadowDepth(@Nullable DropShadow shadow) {
-        if (shadow == null) {
-            return 0.0;
-        }
-        return shadow.getRadius() + Math.abs(shadow.getOffsetY()) + Math.abs(shadow.getOffsetX());
     }
 
     /// Creates a zero-strength shadow that can animate to or from another shadow.

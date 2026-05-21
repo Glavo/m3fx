@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3BottomSheet;
@@ -76,8 +77,10 @@ final class M3ThemeTest {
 
         assertEquals(M3Profile.BASELINE_2021, theme.profile());
         assertSame(theme.colorScheme(), theme.tokens().colorTokens().colorScheme());
+        assertEquals(M3MotionEasing.STANDARD, theme.tokens().motionTokens().defaultEffects().easing());
         assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-effects-easing: standard"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-label-large-font-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-display-medium-font-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-body-small-line-height"));
@@ -152,8 +155,12 @@ final class M3ThemeTest {
 
         assertEquals(M3Profile.EXPRESSIVE_2025, theme.profile());
         assertSame(theme.colorScheme(), theme.tokens().colorTokens().colorScheme());
+        assertEquals(M3MotionEasing.EMPHASIZED, theme.tokens().motionTokens().defaultEffects().easing());
+        assertEquals(400.0, theme.tokens().motionTokens().defaultSpatial().duration().toMillis(), 0.0001);
         assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-effects-easing: emphasized"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-spatial-duration: 400ms"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size: 64px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height: 48px"));

@@ -19,7 +19,7 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -38,18 +38,6 @@ final class M3StateLayer extends Pane {
 
     /// The opacity used by the animated ripple at the start of a press.
     private static final double RIPPLE_START_OPACITY = 0.18;
-
-    /// The duration used by the ripple expansion.
-    private static final Duration RIPPLE_EXPANSION_DURATION = M3Motion.MEDIUM3;
-
-    /// The duration used after an interaction releases the ripple.
-    private static final Duration RIPPLE_RELEASE_DURATION = M3Motion.SHORT4;
-
-    /// The duration used when a state layer appears.
-    private static final Duration STATE_LAYER_ENTER_DURATION = M3Motion.SHORT2;
-
-    /// The duration used when a state layer disappears.
-    private static final Duration STATE_LAYER_EXIT_DURATION = M3Motion.SHORT1;
 
     /// The persistent overlay node controlled by CSS pseudo-class rules.
     private final Region overlay = new Region();
@@ -190,18 +178,19 @@ final class M3StateLayer extends Pane {
         ripple.setScaleX(0.0);
         ripple.setScaleY(0.0);
         ripple.setOpacity(RIPPLE_START_OPACITY);
+        M3MotionSpec rippleSpec = M3Animation.defaultSpatial(owner);
         rippleAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(ripple.scaleXProperty(), 0.0, M3Motion.STANDARD_DECELERATE),
-                        new KeyValue(ripple.scaleYProperty(), 0.0, M3Motion.STANDARD_DECELERATE),
-                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, M3Motion.STANDARD_DECELERATE)
+                        new KeyValue(ripple.scaleXProperty(), 0.0, rippleSpec.interpolator()),
+                        new KeyValue(ripple.scaleYProperty(), 0.0, rippleSpec.interpolator()),
+                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, rippleSpec.interpolator())
                 ),
                 new KeyFrame(
-                        RIPPLE_EXPANSION_DURATION,
-                        new KeyValue(ripple.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                        new KeyValue(ripple.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, M3Motion.STANDARD_DECELERATE)
+                        rippleSpec.duration(),
+                        new KeyValue(ripple.scaleXProperty(), 1.0, rippleSpec.interpolator()),
+                        new KeyValue(ripple.scaleYProperty(), 1.0, rippleSpec.interpolator()),
+                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, rippleSpec.interpolator())
                 )
         );
         M3Animation.playFromStart(owner, rippleAnimation);
@@ -234,18 +223,19 @@ final class M3StateLayer extends Pane {
         ripple.setOpacity(startOpacity);
         ripple.setScaleX(startScaleX);
         ripple.setScaleY(startScaleY);
+        M3MotionSpec releaseSpec = M3Animation.fastEffects(owner);
         rippleAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(ripple.scaleXProperty(), startScaleX, M3Motion.STANDARD_DECELERATE),
-                        new KeyValue(ripple.scaleYProperty(), startScaleY, M3Motion.STANDARD_DECELERATE),
-                        new KeyValue(ripple.opacityProperty(), startOpacity, M3Motion.STANDARD_ACCELERATE)
+                        new KeyValue(ripple.scaleXProperty(), startScaleX, releaseSpec.interpolator()),
+                        new KeyValue(ripple.scaleYProperty(), startScaleY, releaseSpec.interpolator()),
+                        new KeyValue(ripple.opacityProperty(), startOpacity, releaseSpec.interpolator())
                 ),
                 new KeyFrame(
-                        RIPPLE_RELEASE_DURATION,
-                        new KeyValue(ripple.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                        new KeyValue(ripple.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                        new KeyValue(ripple.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE)
+                        releaseSpec.duration(),
+                        new KeyValue(ripple.scaleXProperty(), 1.0, releaseSpec.interpolator()),
+                        new KeyValue(ripple.scaleYProperty(), 1.0, releaseSpec.interpolator()),
+                        new KeyValue(ripple.opacityProperty(), 0.0, releaseSpec.interpolator())
                 )
         );
         M3Animation.playFromStart(owner, rippleAnimation);
@@ -294,15 +284,15 @@ final class M3StateLayer extends Pane {
             return;
         }
 
-        Duration duration = targetOpacity > startOpacity ? STATE_LAYER_ENTER_DURATION : STATE_LAYER_EXIT_DURATION;
+        M3MotionSpec opacitySpec = M3Animation.fastEffects(owner);
         overlayOpacityAnimation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(overlay.opacityProperty(), startOpacity, M3Motion.STANDARD)
+                        new KeyValue(overlay.opacityProperty(), startOpacity, opacitySpec.interpolator())
                 ),
                 new KeyFrame(
-                        duration,
-                        new KeyValue(overlay.opacityProperty(), targetOpacity, M3Motion.STANDARD)
+                        opacitySpec.duration(),
+                        new KeyValue(overlay.opacityProperty(), targetOpacity, opacitySpec.interpolator())
                 )
         );
         M3Animation.playFromStart(owner, overlayOpacityAnimation);

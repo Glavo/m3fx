@@ -13,7 +13,7 @@ public enum M3Profile {
     /// Uses the baseline Material Design 3 token defaults.
     BASELINE_2021(ColorSpecVersion.SPEC_2021, ColorStyle.TONAL_SPOT),
 
-    /// Reserves the 2025 expressive profile for future expressive component tuning.
+    /// Uses the Material Design 3 Expressive 2025 token defaults.
     EXPRESSIVE_2025(ColorSpecVersion.SPEC_2025, ColorStyle.EXPRESSIVE);
 
     /// The MonetFX color specification version used by this profile.

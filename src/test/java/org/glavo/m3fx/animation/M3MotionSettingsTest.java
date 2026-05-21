@@ -7,6 +7,7 @@ import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -58,5 +59,38 @@ final class M3MotionSettingsTest {
         } finally {
             M3MotionSettings.setAnimationsEnabled(previous);
         }
+    }
+
+    /// Verifies the global motion scheme switch.
+    @Test
+    void globalMotionSchemeSwitchControlsDefaultScheme() {
+        M3MotionScheme previous = M3MotionSettings.getMotionScheme();
+        try {
+            M3MotionSettings.setMotionScheme(M3MotionScheme.expressive());
+
+            assertEquals(M3MotionEasing.EMPHASIZED, M3MotionSettings.getMotionScheme().defaultEffects().easing());
+
+            M3MotionSettings.setMotionScheme(M3MotionScheme.standard());
+
+            assertEquals(M3MotionEasing.STANDARD, M3MotionSettings.getMotionScheme().defaultEffects().easing());
+        } finally {
+            M3MotionSettings.setMotionScheme(previous);
+        }
+    }
+
+    /// Verifies that node-local motion schemes can be set and cleared.
+    @Test
+    void nodeMotionSchemeStoresLocalOverride() {
+        Pane node = new Pane();
+
+        assertNull(M3MotionSettings.getMotionScheme(node));
+
+        M3MotionSettings.setMotionScheme(node, M3MotionScheme.expressive());
+
+        assertEquals(M3MotionEasing.EMPHASIZED, M3MotionSettings.getMotionScheme(node).defaultEffects().easing());
+
+        M3MotionSettings.clearMotionScheme(node);
+
+        assertNull(M3MotionSettings.getMotionScheme(node));
     }
 }

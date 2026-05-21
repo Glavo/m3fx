@@ -44,7 +44,7 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
         return create(4.0, 8.0, 12.0, 16.0, 28.0, 999.0);
     }
 
-    /// Returns provisional expressive shape tokens.
+    /// Returns expressive Material Design 3 shape tokens.
     static M3ShapeTokens expressive() {
         return create(6.0, 10.0, 16.0, 24.0, 32.0, 999.0);
     }

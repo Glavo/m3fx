@@ -4,6 +4,8 @@
 package org.glavo.m3fx.tokens;
 
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.animation.M3MotionEasing;
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
@@ -64,6 +66,7 @@ final class M3TokenFactoryTest {
         assertEquals(90, motion.short2());
         assertEquals(210, motion.mediumDuration());
         assertEquals(420, motion.long2());
+        assertEquals(M3MotionEasing.STANDARD, motion.defaultEffects().easing());
         assertEquals(0.42, stateLayer.disabledContentOpacity(), 0.0001);
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-font-family: \"Demo\""));
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-title-small-font-size: 16px"));
@@ -132,6 +135,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-medium: 220ms"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-short2: 80ms"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-long2: 460ms"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-default-effects-easing: standard"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-default-spatial-duration: 350ms"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-body-large-text"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));
@@ -150,6 +155,38 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-opacity: 0.15"));
+    }
+
+    /// Verifies that explicit motion tokens preserve a supplied semantic scheme.
+    @Test
+    void createsMotionTokensWithExplicitScheme() {
+        M3MotionTokens motion = M3MotionTokens.create(
+                10,
+                20,
+                30,
+                40,
+                50,
+                60,
+                70,
+                80,
+                90,
+                100,
+                110,
+                120,
+                130,
+                140,
+                150,
+                160,
+                M3MotionScheme.expressive()
+        );
+
+        assertEquals(20, motion.shortDuration());
+        assertEquals(50, motion.mediumDuration());
+        assertEquals(100, motion.longDuration());
+        assertEquals(M3MotionEasing.EMPHASIZED, motion.defaultEffects().easing());
+        assertEquals(400.0, motion.defaultSpatial().duration().toMillis(), 0.0001);
+        assertTrue(motion.toStyleDeclarations().contains("-m3-motion-default-effects-easing: emphasized"));
+        assertTrue(motion.toStyleDeclarations().contains("-m3-motion-default-spatial-duration: 400ms"));
     }
 
     /// Creates component tokens with distinctive values for factory tests.

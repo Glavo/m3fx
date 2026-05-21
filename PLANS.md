@@ -15,6 +15,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Material colors are generated through `org.glavo:MonetFX:0.4.0`.
 - The demo app is a separate Gradle subproject.
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
+- M3 Expressive currently has profile-specific color, typography, shape, component sizing, and semantic motion scheme tokens.
 
 ## Architecture
 
@@ -49,7 +50,8 @@ This file tracks product status and planning only. Repository rules, code style,
 - Root CSS token generation for color, typography, shape, elevation, motion, state layers, density, and component defaults.
 - Generated token stylesheets use stable content hashing.
 - Baseline and expressive profile hooks exist for shape and component token evolution.
-- Reusable Material motion constants and easing curves exist for JavaFX animations.
+- Reusable Material motion constants, easing curves, semantic specs, and standard/expressive motion schemes exist for JavaFX animations.
+- State layers, ripples, and CSS-resolved elevation transitions resolve the installed theme motion scheme when available.
 
 ### Component Coverage
 
@@ -74,11 +76,11 @@ This file tracks product status and planning only. Repository rules, code style,
 
 ## Next Goals
 
-- Expand Material motion coverage so hover, press, release, selection, shape, indicator, and elevation transitions consistently use tokenized timing and easing.
+- Expand semantic Material motion coverage so selection, shape, indicator, popup, and container transitions consistently resolve profile-specific motion specs.
 - Increase page-level visual coverage for the demo, especially for alignment, clipping, and animated intermediate states.
 - Continue filling component gaps and richer composite workflows where existing controls are still shallow.
 - Tighten accessibility behavior for composite controls, especially keyboard parity and focus routing across popups.
-- Improve M3 Expressive parity with profile-specific component tokens and visual verification as target values become stable.
+- Improve M3 Expressive parity with additional profile-specific component tokens, expressive containment, and visual verification as target values become stable.
 
 ## Validation Entry Points
 

@@ -140,7 +140,7 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
         );
     }
 
-    /// Returns provisional expressive typography tokens.
+    /// Returns expressive Material Design 3 typography tokens.
     static M3TypographyTokens expressive() {
         return create(
                 M3TextStyle.create("System", 64.0, 72.0, 500),
