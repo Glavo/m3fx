@@ -223,21 +223,51 @@ final class M3StateLayer extends Pane {
         ripple.setOpacity(startOpacity);
         ripple.setScaleX(startScaleX);
         ripple.setScaleY(startScaleY);
-        M3MotionSpec releaseSpec = M3Animation.fastEffects(owner);
-        rippleAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        Duration.ZERO,
-                        new KeyValue(ripple.scaleXProperty(), startScaleX, releaseSpec.interpolator()),
-                        new KeyValue(ripple.scaleYProperty(), startScaleY, releaseSpec.interpolator()),
-                        new KeyValue(ripple.opacityProperty(), startOpacity, releaseSpec.interpolator())
-                ),
-                new KeyFrame(
-                        releaseSpec.duration(),
-                        new KeyValue(ripple.scaleXProperty(), 1.0, releaseSpec.interpolator()),
-                        new KeyValue(ripple.scaleYProperty(), 1.0, releaseSpec.interpolator()),
-                        new KeyValue(ripple.opacityProperty(), 0.0, releaseSpec.interpolator())
-                )
+
+        M3MotionSpec expansionSpec = M3Animation.defaultSpatial(owner);
+        M3MotionSpec fadeSpec = M3Animation.fastEffects(owner);
+        Duration remainingExpansion = remainingRippleExpansionDuration(
+                expansionSpec.duration(),
+                Math.max(startScaleX, startScaleY)
         );
+        Duration fadeEnd = Duration.millis(remainingExpansion.toMillis() + fadeSpec.duration().toMillis());
+        if (remainingExpansion.greaterThan(Duration.ZERO)) {
+            rippleAnimation.getKeyFrames().setAll(
+                    new KeyFrame(
+                            Duration.ZERO,
+                            new KeyValue(ripple.scaleXProperty(), startScaleX, expansionSpec.interpolator()),
+                            new KeyValue(ripple.scaleYProperty(), startScaleY, expansionSpec.interpolator()),
+                            new KeyValue(ripple.opacityProperty(), startOpacity, fadeSpec.interpolator())
+                    ),
+                    new KeyFrame(
+                            remainingExpansion,
+                            new KeyValue(ripple.scaleXProperty(), 1.0, expansionSpec.interpolator()),
+                            new KeyValue(ripple.scaleYProperty(), 1.0, expansionSpec.interpolator()),
+                            new KeyValue(ripple.opacityProperty(), startOpacity, fadeSpec.interpolator())
+                    ),
+                    new KeyFrame(
+                            fadeEnd,
+                            new KeyValue(ripple.scaleXProperty(), 1.0, expansionSpec.interpolator()),
+                            new KeyValue(ripple.scaleYProperty(), 1.0, expansionSpec.interpolator()),
+                            new KeyValue(ripple.opacityProperty(), 0.0, fadeSpec.interpolator())
+                    )
+            );
+        } else {
+            rippleAnimation.getKeyFrames().setAll(
+                    new KeyFrame(
+                            Duration.ZERO,
+                            new KeyValue(ripple.scaleXProperty(), startScaleX, fadeSpec.interpolator()),
+                            new KeyValue(ripple.scaleYProperty(), startScaleY, fadeSpec.interpolator()),
+                            new KeyValue(ripple.opacityProperty(), startOpacity, fadeSpec.interpolator())
+                    ),
+                    new KeyFrame(
+                            fadeSpec.duration(),
+                            new KeyValue(ripple.scaleXProperty(), 1.0, fadeSpec.interpolator()),
+                            new KeyValue(ripple.scaleYProperty(), 1.0, fadeSpec.interpolator()),
+                            new KeyValue(ripple.opacityProperty(), 0.0, fadeSpec.interpolator())
+                    )
+            );
+        }
         M3Animation.playFromStart(owner, rippleAnimation);
     }
 
@@ -312,6 +342,12 @@ final class M3StateLayer extends Pane {
         double bottom = height - y;
         double radius = Math.hypot(Math.max(left, right), Math.max(top, bottom));
         return radius * 2.0;
+    }
+
+    /// Returns the remaining expansion duration for a ripple released before it reaches full size.
+    private static Duration remainingRippleExpansionDuration(Duration fullDuration, double currentScale) {
+        double clampedScale = Math.max(0.0, Math.min(1.0, currentScale));
+        return Duration.millis(fullDuration.toMillis() * (1.0 - clampedScale));
     }
 
     /// Resolves a token radius to a radius that can be represented within the current bounds.

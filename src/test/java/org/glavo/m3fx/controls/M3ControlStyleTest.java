@@ -9554,7 +9554,7 @@ final class M3ControlStyleTest {
         Pane root = new Pane(button);
 
         runOnFxThreadAfterDelay(
-                Duration.millis(260.0),
+                Duration.millis(520.0),
                 () -> {
                     Scene scene = new Scene(root, 200.0, 100.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());

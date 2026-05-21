@@ -173,6 +173,87 @@ final class M3StateLayerTest {
         }
     }
 
+    /// Verifies that an early release still lets the ripple expand before it fades.
+    @Test
+    void rippleReleasedBeforeExpansionCompletesStillExpandsBeforeFade() throws InterruptedException {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Platform.runLater(() -> {
+            try {
+                Pane root = new Pane();
+                M3StateLayer stateLayer = new M3StateLayer();
+                root.getChildren().add(stateLayer);
+                Scene scene = new Scene(root, 100.0, 40.0);
+
+                root.applyCss();
+                stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+                stateLayer.playRipple(12.0, 20.0);
+
+                Region ripple = lookupRegion(stateLayer, ".m3-ripple");
+                double startScale = Math.max(ripple.getScaleX(), ripple.getScaleY());
+                stateLayer.releaseRipple();
+
+                assertTrue(ripple.getOpacity() > 0.1);
+                assertTrue(stateLayer.isRippleAnimationRunning());
+
+                PauseTransition expansionPause = new PauseTransition(Duration.millis(160.0));
+                expansionPause.setOnFinished(event -> verifyEarlyReleaseExpansion(
+                        ripple,
+                        startScale,
+                        failure,
+                        latch
+                ));
+                expansionPause.play();
+            } catch (Throwable e) {
+                failure.set(e);
+                latch.countDown();
+            }
+        });
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Throwable exception = failure.get();
+        if (exception instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        if (exception instanceof Error error) {
+            throw error;
+        }
+        if (exception != null) {
+            throw new AssertionError(exception);
+        }
+    }
+
+    /// Verifies the visible part of a ripple that was released immediately after press.
+    private static void verifyEarlyReleaseExpansion(
+            Region ripple,
+            double startScale,
+            AtomicReference<Throwable> failure,
+            CountDownLatch latch
+    ) {
+        try {
+            assertTrue(Math.max(ripple.getScaleX(), ripple.getScaleY()) > startScale);
+            assertTrue(ripple.getOpacity() > 0.1);
+
+            PauseTransition completionPause = new PauseTransition(Duration.millis(560.0));
+            completionPause.setOnFinished(event -> {
+                try {
+                    assertEquals(0.0, ripple.getOpacity(), 0.0001);
+                    assertEquals(1.0, ripple.getScaleX(), 0.0001);
+                    assertEquals(1.0, ripple.getScaleY(), 0.0001);
+                } catch (Throwable e) {
+                    failure.set(e);
+                } finally {
+                    latch.countDown();
+                }
+            });
+            completionPause.play();
+        } catch (Throwable e) {
+            failure.set(e);
+            latch.countDown();
+        }
+    }
+
     /// Verifies release behavior after the expansion phase has had time to complete.
     private static void verifyRippleRelease(
             M3StateLayer stateLayer,
