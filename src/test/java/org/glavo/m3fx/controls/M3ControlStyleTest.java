@@ -32,6 +32,7 @@ import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextInputControl;
@@ -11860,6 +11861,66 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3SnackbarHost(), "/styles/controls/snackbar.css");
     }
 
+    /// Verifies that Material scroll styling can be applied to JavaFX scroll panes.
+    @Test
+    void scrollPaneMaterialStyleAppliesScrollbarColors() {
+        Region content = new Region();
+        content.setMinSize(160.0, 480.0);
+        ScrollPane scrollPane = new ScrollPane(content);
+        M3ScrollPanes.style(scrollPane);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle()
+                + " -m3-color-outline-variant: rgb(51,52,53);"
+                + " -m3-color-outline: rgb(61,62,63);"
+                + " -m3-color-primary: rgb(71,72,73);");
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+
+        ScrollBar scrollBar = lookupScrollBar(scrollPane, Orientation.VERTICAL);
+        Region thumb = lookupRegion(scrollBar, ".thumb");
+        Region track = lookupRegion(scrollBar, ".track");
+
+        assertTrue(scrollPane.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+        assertEquals(12.0, scrollBar.prefWidth(-1.0), 0.0001);
+        assertRegionFill(track, Color.TRANSPARENT);
+        assertRegionFill(thumb, Color.rgb(51, 52, 53));
+
+        scrollBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        root.applyCss();
+        assertRegionFill(thumb, Color.rgb(61, 62, 63));
+
+        scrollBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+        root.applyCss();
+        assertRegionFill(thumb, Color.rgb(71, 72, 73));
+    }
+
+    /// Verifies that Material scroll styling can be applied to standalone JavaFX scroll bars.
+    @Test
+    void standaloneScrollBarMaterialStyleAppliesScrollbarColors() {
+        ScrollBar scrollBar = new ScrollBar();
+        scrollBar.setOrientation(Orientation.VERTICAL);
+        M3ScrollPanes.style(scrollBar);
+        StackPane root = new StackPane(scrollBar);
+        Scene scene = new Scene(root, 80.0, 160.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle(root.getStyle() + " -m3-color-outline-variant: rgb(51,52,53);");
+        root.applyCss();
+        root.resize(80.0, 160.0);
+        root.layout();
+
+        Region thumb = lookupRegion(scrollBar, ".thumb");
+
+        assertTrue(scrollBar.getStyleClass().contains(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS));
+        assertEquals(12.0, scrollBar.prefWidth(-1.0), 0.0001);
+        assertRegionFill(thumb, Color.rgb(51, 52, 53));
+    }
+
     /// Applies the m3fx stylesheet to a control in a scene.
     private static void applyCss(javafx.scene.Node node) {
         Pane root = new Pane(node);
@@ -12096,6 +12157,16 @@ final class M3ControlStyleTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Shape.class, child);
         return (Shape) child;
+    }
+
+    /// Returns a scroll bar with the requested orientation from a parent node.
+    private static ScrollBar lookupScrollBar(Parent parent, Orientation orientation) {
+        for (Node node : parent.lookupAll(".scroll-bar")) {
+            if (node instanceof ScrollBar scrollBar && scrollBar.getOrientation() == orientation) {
+                return scrollBar;
+            }
+        }
+        throw new AssertionError("Missing " + orientation + " scroll bar below " + parent);
     }
 
     /// Returns the first point in a path made from move and line elements.

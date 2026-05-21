@@ -1,4 +1,5 @@
 @import "controls/tooltip.css";
+@import "controls/scroll.css";
 
 .m3-root {
     -fx-font-family: "System";

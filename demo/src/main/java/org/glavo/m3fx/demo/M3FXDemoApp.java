@@ -99,6 +99,7 @@ import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
+import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode;
@@ -378,6 +379,7 @@ public final class M3FXDemoApp extends Application {
 
         ScrollPane scrollPane = new ScrollPane(sidebar);
         scrollPane.getStyleClass().add("demo-sidebar-scroll-pane");
+        M3ScrollPanes.style(scrollPane);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -467,6 +469,7 @@ public final class M3FXDemoApp extends Application {
 
         ScrollPane scrollPane = new ScrollPane(host);
         scrollPane.getStyleClass().add("demo-scroll-pane");
+        M3ScrollPanes.style(scrollPane);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         return scrollPane;
