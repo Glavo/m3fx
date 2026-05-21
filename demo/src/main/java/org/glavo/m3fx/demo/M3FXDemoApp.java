@@ -160,6 +160,9 @@ public final class M3FXDemoApp extends Application {
             Color.web("#7d5260")
     );
 
+    /// Linear progress widths shown in the progress demo page.
+    private static final @Unmodifiable List<Double> PROGRESS_BAR_WIDTHS = List.of(96.0, 160.0, 260.0, 420.0);
+
     /// The sidebar destination for the components overview page.
     private static final String COMPONENTS_OVERVIEW_GROUP = "Components overview";
 
@@ -1304,6 +1307,7 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup("Standard Linear", determinateBar, indeterminateBar),
                 createShowcaseGroup("Standard Circular", determinateIndicator, indeterminateIndicator),
                 createShowcaseGroup("Expressive Wavy Linear", expressiveDeterminateBar, expressiveIndeterminateBar),
+                createShowcaseGroup("Linear Widths", createProgressWidthMatrix()),
                 createShowcaseGroup(
                         "Expressive Wavy Circular",
                         expressiveDeterminateIndicator,
@@ -1775,6 +1779,55 @@ public final class M3FXDemoApp extends Application {
         progressIndicator.setStyle("-m3-wave-amplitude: 2px; "
                 + "-m3-wavelength: 15px; "
                 + "-m3-track-gap: 4px;");
+    }
+
+    /// Creates the width comparison matrix for linear progress bars.
+    private static VBox createProgressWidthMatrix() {
+        VBox matrix = new VBox(
+                14.0,
+                createProgressWidthRow("Standard determinate", false, false),
+                createProgressWidthRow("Standard indeterminate", false, true),
+                createProgressWidthRow("Expressive determinate", true, false),
+                createProgressWidthRow("Expressive indeterminate", true, true)
+        );
+        matrix.setFillWidth(true);
+        matrix.setMaxWidth(Double.MAX_VALUE);
+        return matrix;
+    }
+
+    /// Creates one row in the linear progress width comparison matrix.
+    private static VBox createProgressWidthRow(String title, boolean expressive, boolean indeterminate) {
+        Label label = new Label(title);
+        label.getStyleClass().add("demo-group-title");
+
+        FlowPane bars = new FlowPane(16.0, 12.0);
+        bars.setAlignment(Pos.CENTER_LEFT);
+        bars.setPrefWrapLength(980.0);
+        for (double width : PROGRESS_BAR_WIDTHS) {
+            bars.getChildren().add(createProgressWidthSample(width, expressive, indeterminate));
+        }
+
+        VBox row = new VBox(8.0, label, bars);
+        row.setMaxWidth(Double.MAX_VALUE);
+        return row;
+    }
+
+    /// Creates one labeled linear progress bar sample for a requested width.
+    private static VBox createProgressWidthSample(double width, boolean expressive, boolean indeterminate) {
+        M3ProgressBar progressBar = indeterminate ? new M3ProgressBar() : new M3ProgressBar(0.62);
+        progressBar.setPrefWidth(width);
+        if (expressive) {
+            applyExpressiveLinearProgress(progressBar);
+        } else {
+            applyBaselineProgress(progressBar);
+        }
+
+        Label widthLabel = new Label((int) width + " px");
+        VBox sample = new VBox(6.0, widthLabel, progressBar);
+        sample.setAlignment(Pos.CENTER_LEFT);
+        sample.setMinWidth(width);
+        sample.setPrefWidth(width);
+        return sample;
     }
 
     /// Creates a button configured with the requested variant.
