@@ -79,6 +79,8 @@ This file tracks product status and planning only. Repository rules, code style,
 - Snapshot-based visual tests render representative control families into report images and include automated checks for contrast, geometry, clipping, borders, and animation-state frames.
 - Recent visual regressions covered by tests include icon fallback glyph clipping, outlined text input notch geometry, segmented button selected borders, progress geometry, selection states, snackbar sizing, and trailing icon ripple behavior.
 - Expressive profile visual coverage checks real rendered component sizes, profile root classes, fixed-target centering, date-cell alignment, and search bar height constraints in mixed-height layouts.
+- Dark expressive token-driven visual coverage renders representative action, input, selection, feedback, progress, date picker, and navigation controls without overriding generated dark theme colors.
+- Dark expressive popup visual coverage opens real menu and tooltip popups, checks inherited profile and brightness mode classes, and writes rendered snapshots for overlay review.
 
 ## Next Goals
 

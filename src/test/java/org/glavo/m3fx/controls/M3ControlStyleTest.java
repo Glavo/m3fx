@@ -10538,6 +10538,196 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that actual dark expressive theme tokens render the main control families visibly.
+    @Test
+    void darkExpressiveVisualSnapshotRendersTokenDrivenControls() {
+        runOnFxThread(() -> {
+            M3Button filledButton = M3Button.withVariant("Filled", M3ButtonVariant.FILLED);
+            M3Button tonalButton = M3Button.withVariant("Tonal", M3ButtonVariant.TONAL);
+            M3Button outlinedButton = M3Button.withVariant("Outlined", M3ButtonVariant.OUTLINED);
+            M3IconToggleButton selectedToggle = M3IconToggleButton.withIcon(
+                    "B",
+                    M3IconToggleButtonVariant.FILLED,
+                    true
+            );
+            M3FloatingActionButton fab = M3FloatingActionButton.withGraphic(
+                    new M3Icon("+"),
+                    M3FloatingActionButtonVariant.PRIMARY,
+                    M3FloatingActionButtonSize.REGULAR
+            );
+            M3TextField textField = M3TextField.withVariant("Dark field", M3TextInputVariant.OUTLINED);
+            textField.setText("M3FX");
+            textField.setPrefWidth(260.0);
+            M3PasswordField passwordField = new M3PasswordField("Password");
+            passwordField.setPrefWidth(260.0);
+            M3CheckBox checkBox = new M3CheckBox("Checkbox");
+            checkBox.setSelected(true);
+            M3CheckBox indeterminateCheckBox = new M3CheckBox("Mixed");
+            indeterminateCheckBox.setIndeterminate(true);
+            M3RadioButton radioButton = new M3RadioButton("Radio");
+            radioButton.setSelected(true);
+            M3Switch controlSwitch = new M3Switch("Switch");
+            controlSwitch.setSelected(true);
+            M3Slider slider = new M3Slider(0.0, 100.0, 48.0);
+            slider.setPrefWidth(260.0);
+            M3SegmentedButton day = new M3SegmentedButton("Day");
+            M3SegmentedButton week = M3SegmentedButton.withSelected("Week", true);
+            M3SegmentedButtonGroup segments = new M3SegmentedButtonGroup(day, week);
+            M3Chip filterChip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
+            M3ProgressBar progressBar = new M3ProgressBar(0.58);
+            progressBar.setPrefWidth(280.0);
+            M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.7);
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 21));
+            M3SearchBar searchBar = new M3SearchBar("Search dark");
+            searchBar.setPrefWidth(320.0);
+            M3NavigationItem home = M3NavigationItem.withSelected("Home", new M3Icon("H"), true);
+            M3NavigationBar navigationBar = new M3NavigationBar(
+                    home,
+                    new M3NavigationItem("Search", new M3Icon("S"))
+            );
+            M3Snackbar snackbar = new M3Snackbar("Dark snackbar", "Action");
+
+            VBox root = new VBox(
+                    18.0,
+                    visualSection("Actions", filledButton, tonalButton, outlinedButton, selectedToggle, fab),
+                    visualSection("Inputs", textField, passwordField, searchBar),
+                    visualSection(
+                            "Selection",
+                            checkBox,
+                            indeterminateCheckBox,
+                            radioButton,
+                            controlSwitch,
+                            slider,
+                            segments,
+                            filterChip
+                    ),
+                    visualSection("Feedback", progressBar, progressIndicator, snackbar),
+                    visualSection("Navigation", datePicker, navigationBar)
+            );
+            root.setStyle("-fx-background-color: -m3-color-surface; -fx-padding: 24px;");
+            Scene scene = new Scene(root, 980.0, 880.0);
+            M3Theme theme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+
+            M3ThemeManager.install(scene, theme);
+            root.applyCss();
+            root.resize(980.0, Math.ceil(root.prefHeight(980.0)));
+            root.layout();
+
+            assertTrue(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+            assertTrue(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            assertEquals(48.0, filledButton.getContainerHeight(), 0.0001);
+            assertEquals(64.0, textField.getContainerHeight(), 0.0001);
+            assertEquals(64.0, searchBar.getHeight(), 0.0001);
+            assertEquals(48.0, selectedToggle.getContainerHeight(), 0.0001);
+            assertEquals(64.0, fab.getContainerSize(), 0.0001);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotHasColorVariety(image, 18);
+            assertSnapshotNodeContainsContrast(image, filledButton, Color.BLACK, 0.08);
+            assertSnapshotNodeContainsContrast(image, textField, Color.BLACK, 0.08);
+            assertSnapshotNodeContainsContrast(image, indeterminateCheckBox, Color.BLACK, 0.08);
+            assertSnapshotNodeContainsContrast(image, slider, Color.BLACK, 0.08);
+            assertSnapshotNodeContainsContrast(image, progressBar, Color.BLACK, 0.08);
+            assertSnapshotNodeContainsContrast(image, datePicker, Color.BLACK, 0.08);
+            assertSnapshotNodeContainsContrast(image, navigationBar, Color.BLACK, 0.08);
+            assertSnapshotNodeContainsContrast(image, snackbar, Color.BLACK, 0.08);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-dark-expressive-controls.png"
+            ));
+            assertRenderedTextNodesStayInsideLayout(root);
+            assertFixedTargetControlsKeepCenteredContent(root);
+        });
+    }
+
+    /// Verifies that dark expressive popup roots inherit theme mode classes and render visible content.
+    @Test
+    void darkExpressivePopupVisualSnapshotInheritsThemeContext() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3Theme theme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            M3MenuItem open = new M3MenuItem("Open");
+            M3MenuItem save = new M3MenuItem("Save");
+            M3MenuButton menuButton = new M3MenuButton("More", open, save);
+            M3Button owner = new M3Button("Owner");
+            M3Tooltip tooltip = new M3Tooltip("Dark expressive tooltip");
+            try {
+                VBox root = new VBox(16.0, menuButton, owner);
+                root.setStyle("-fx-background-color: -m3-color-surface; -fx-padding: 24px;");
+                Scene scene = new Scene(root, 360.0, 180.0);
+                M3ThemeManager.install(scene, theme);
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(360.0, 180.0);
+                root.layout();
+
+                menuButton.showMenu();
+                Timeline showAnimation = controlTimeline(menuButton, "showAnimation");
+                showAnimation.jumpTo(showAnimation.getTotalDuration());
+                showAnimation.stop();
+
+                M3Menu menu = menuButton.getMenu();
+                resizeToPreferredSize(menu);
+                assertTrue(menu.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(menu.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertSame(theme, M3ThemeManager.getTheme(menu));
+                assertTrue(menu.getStyle().contains("-m3-color-primary"));
+
+                WritableImage menuImage = snapshotImageOnFxThread(menu);
+                assertSnapshotHasColorVariety(menuImage, 4);
+                assertSnapshotNodeContainsContrast(menuImage, menu, Color.BLACK, 0.08);
+                writeVisualSnapshot(menuImage, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-dark-expressive-menu-popup.png"
+                ));
+                assertRenderedTextNodesStayInsideLayout(menu);
+                assertFixedTargetControlsKeepCenteredContent(menu);
+
+                tooltip.setTheme(theme);
+                tooltip.show(owner, stage.getX() + 48.0, stage.getY() + 128.0);
+                Parent tooltipRoot = tooltip.getScene().getRoot();
+                tooltipRoot.applyCss();
+                if (tooltipRoot instanceof Region region) {
+                    resizeToPreferredSize(region);
+                } else {
+                    tooltipRoot.layout();
+                }
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertSame(theme, tooltip.getTheme());
+                assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
+
+                WritableImage tooltipImage = snapshotImageOnFxThread(tooltipRoot);
+                assertSnapshotHasColorVariety(tooltipImage, 2);
+                assertSnapshotNodeContainsContrast(tooltipImage, tooltipRoot, Color.BLACK, 0.08);
+                writeVisualSnapshot(tooltipImage, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-dark-expressive-tooltip.png"
+                ));
+                assertRenderedTextNodesStayInsideLayout(tooltipRoot);
+            } finally {
+                tooltip.hide();
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that tooltip popups render their inverse surface and text.
     @Test
     void tooltipSnapshotRendersPopupSurface() {
@@ -12124,6 +12314,15 @@ final class M3ControlStyleTest {
         );
         node.snapshot(null, image);
         return image;
+    }
+
+    /// Resizes a region to its preferred size before taking a detached popup snapshot.
+    private static void resizeToPreferredSize(Region region) {
+        double width = Math.ceil(region.prefWidth(-1.0));
+        double height = Math.ceil(region.prefHeight(width));
+        region.resize(width, height);
+        region.applyCss();
+        region.layout();
     }
 
     /// Verifies that a rendered snapshot contains enough distinct visible colors.
