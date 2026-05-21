@@ -44,6 +44,9 @@ public class M3Icon extends Labeled {
     /// The default icon font weight token.
     private static final FontWeight DEFAULT_ICON_FONT_WEIGHT = FontWeight.MEDIUM;
 
+    /// The layout line box multiplier used to keep fallback font glyphs from being clipped.
+    private static final double ICON_LINE_BOX_SCALE = 1.25;
+
     /// The icon size role property.
     private final ObjectProperty<M3IconSize> size =
             new SimpleObjectProperty<>(this, "size", M3IconSize.MEDIUM) {
@@ -352,8 +355,9 @@ public class M3Icon extends Labeled {
     /// Applies icon size tokens to layout metrics.
     private void updateMetrics() {
         double size = getIconSize();
-        setMinSize(size, size);
-        setPrefSize(size, size);
+        double lineBoxSize = Math.ceil(size * ICON_LINE_BOX_SCALE);
+        setMinSize(lineBoxSize, lineBoxSize);
+        setPrefSize(lineBoxSize, lineBoxSize);
     }
 
     /// Validates a font weight token.

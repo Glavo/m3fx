@@ -2699,8 +2699,39 @@ final class M3ControlStyleTest {
         assertEquals(28.0, icon.getIconSize(), 0.0001);
         assertEquals(700.0, icon.getIconFontWeight(), 0.0001);
         assertEquals(28.0, icon.getFont().getSize(), 0.0001);
-        assertEquals(28.0, icon.getPrefWidth(), 0.0001);
-        assertEquals(28.0, icon.getPrefHeight(), 0.0001);
+        assertEquals(35.0, icon.getPrefWidth(), 0.0001);
+        assertEquals(35.0, icon.getPrefHeight(), 0.0001);
+        assertTrue(icon.getPrefHeight() > icon.getIconSize());
+    }
+
+    /// Verifies that fallback text glyphs keep a padded line box instead of touching clipped edges.
+    @Test
+    void iconFallbackGlyphKeepsClearSnapshotEdges() {
+        runOnFxThread(() -> {
+            M3Icon icon = new M3Icon("M", M3IconSize.SMALL, M3IconVariant.PRIMARY);
+            StackPane root = new StackPane(icon);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 80.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(80.0, 80.0);
+            root.layout();
+
+            assertEquals(18.0, icon.getIconSize(), 0.0001);
+            assertEquals(23.0, icon.getPrefWidth(), 0.0001);
+            assertEquals(23.0, icon.getPrefHeight(), 0.0001);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, icon, Color.WHITE, 0.05);
+            assertSnapshotNodeEdgesClear(image, icon, Color.WHITE, 0.05);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-icon-fallback-glyph.png"
+            ));
+        });
     }
 
     /// Verifies that icon size roles provide default size tokens through user-agent CSS.
@@ -7324,6 +7355,44 @@ final class M3ControlStyleTest {
         assertInstanceOf(HBox.class, topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
     }
 
+    /// Verifies that top app bar icon buttons do not clip fallback glyphs.
+    @Test
+    void topAppBarFallbackIconButtonsDoNotClipGlyphs() {
+        runOnFxThread(() -> {
+            M3Icon navigationIcon = new M3Icon("M", M3IconSize.SMALL, M3IconVariant.PRIMARY);
+            M3Icon searchIcon = new M3Icon("S", M3IconSize.SMALL, M3IconVariant.PRIMARY);
+            M3Icon accountIcon = new M3Icon("A", M3IconSize.SMALL, M3IconVariant.PRIMARY);
+            M3TopAppBar topAppBar = new M3TopAppBar(
+                    "Inbox",
+                    new M3IconButton(navigationIcon),
+                    new M3IconButton(searchIcon),
+                    new M3IconButton(accountIcon)
+            );
+            topAppBar.setPrefWidth(560.0);
+
+            StackPane root = new StackPane(topAppBar);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 640.0, 96.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(640.0, 96.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            for (M3Icon icon : java.util.List.of(navigationIcon, searchIcon, accountIcon)) {
+                assertSnapshotNodeContainsContrast(image, icon, Color.WHITE, 0.05);
+                assertSnapshotNodeEdgesClear(image, icon, Color.WHITE, 0.05);
+            }
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-top-app-bar-fallback-icons.png"
+            ));
+        });
+    }
+
     /// Verifies that bottom app bars expose action and floating action slots.
     @Test
     void bottomAppBarExposesSlots() {
@@ -11709,6 +11778,35 @@ final class M3ControlStyleTest {
         }
 
         throw new AssertionError("No contrasting border pixels found for " + description);
+    }
+
+    /// Verifies that a node snapshot keeps all contrasting pixels away from its rendered edges.
+    private static void assertSnapshotNodeEdgesClear(
+            WritableImage image,
+            Node node,
+            Color reference,
+            double minimumDistance
+    ) {
+        var bounds = node.localToScene(node.getBoundsInLocal());
+        int minX = (int) Math.floor(bounds.getMinX());
+        int minY = (int) Math.floor(bounds.getMinY());
+        int maxX = (int) Math.ceil(bounds.getMaxX());
+        int maxY = (int) Math.ceil(bounds.getMaxY());
+        int edge = Math.max(1, Math.min(3, Math.min(maxX - minX, maxY - minY) / 6));
+
+        boolean touchesTop = snapshotAreaContainsContrast(image, minX, minY, maxX, minY + edge,
+                reference, minimumDistance);
+        boolean touchesBottom = snapshotAreaContainsContrast(image, minX, maxY - edge, maxX, maxY,
+                reference, minimumDistance);
+        boolean touchesLeft = snapshotAreaContainsContrast(image, minX, minY, minX + edge, maxY,
+                reference, minimumDistance);
+        boolean touchesRight = snapshotAreaContainsContrast(image, maxX - edge, minY, maxX, maxY,
+                reference, minimumDistance);
+
+        assertFalse(
+                touchesTop || touchesBottom || touchesLeft || touchesRight,
+                () -> "Contrasting pixels reached the edge for " + node + ", bounds=" + bounds
+        );
     }
 
     /// Verifies that a snapshot area contains pixels that contrast with a reference color.
