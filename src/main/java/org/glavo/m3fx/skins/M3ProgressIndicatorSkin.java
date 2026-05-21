@@ -26,9 +26,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3ProgressIndicator].
 @NotNullByDefault
 public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
-    /// The duration of one indeterminate circular sweep.
-    private static final Duration INDETERMINATE_DURATION = Duration.millis(1332.0);
-
     /// The shortest visible sweep used by indeterminate progress.
     private static final double INDETERMINATE_MIN_SWEEP = 42.0;
 
@@ -85,16 +82,6 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         displayedProgress.addListener(animationInvalidation);
         indeterminatePhase.addListener(animationInvalidation);
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
-        indeterminateAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        Duration.ZERO,
-                        new KeyValue(indeterminatePhase, INDETERMINATE_START_PHASE, M3Motion.LINEAR)
-                ),
-                new KeyFrame(
-                        INDETERMINATE_DURATION,
-                        new KeyValue(indeterminatePhase, 1.0, M3Motion.LINEAR)
-                )
-        );
 
         control.progressProperty().addListener(progressInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
@@ -162,6 +149,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
                 indeterminateAnimation.stop();
                 indeterminatePhase.set(INDETERMINATE_START_PHASE);
             } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
+                configureIndeterminateAnimation();
                 indeterminateAnimation.play();
             }
         } else {
@@ -169,6 +157,20 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             indeterminatePhase.set(INDETERMINATE_START_PHASE);
             animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
         }
+    }
+
+    /// Configures the indeterminate sweep with the current owner behavior timing.
+    private void configureIndeterminateAnimation() {
+        indeterminateAnimation.getKeyFrames().setAll(
+                new KeyFrame(
+                        Duration.ZERO,
+                        new KeyValue(indeterminatePhase, INDETERMINATE_START_PHASE, M3Motion.LINEAR)
+                ),
+                new KeyFrame(
+                        M3Animation.motionBehavior(getSkinnable()).circularProgressIndeterminateCycleDuration(),
+                        new KeyValue(indeterminatePhase, 1.0, M3Motion.LINEAR)
+                )
+        );
     }
 
     /// Animates the displayed determinate progress value.

@@ -4,6 +4,8 @@
 package org.glavo.m3fx.tokens;
 
 import javafx.scene.paint.Color;
+import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.monetfx.ColorScheme;
@@ -67,6 +69,7 @@ final class M3TokenFactoryTest {
         assertEquals(210, motion.mediumDuration());
         assertEquals(420, motion.long2());
         assertEquals(M3MotionEasing.STANDARD, motion.defaultEffects().easing());
+        assertEquals(Duration.millis(500.0), motion.behavior().tooltipShowDelay());
         assertEquals(0.42, stateLayer.disabledContentOpacity(), 0.0001);
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-font-family: \"Demo\""));
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-title-small-font-size: 16px"));
@@ -137,6 +140,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-long2: 460ms"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-default-effects-easing: standard"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-default-spatial-duration: 350ms"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-sub-menu-hover-open-delay: 200ms"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-body-large-text"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));
@@ -177,16 +181,19 @@ final class M3TokenFactoryTest {
                 140,
                 150,
                 160,
-                M3MotionScheme.expressive()
+                M3MotionScheme.expressive(),
+                M3MotionBehavior.expressive()
         );
 
         assertEquals(20, motion.shortDuration());
         assertEquals(50, motion.mediumDuration());
         assertEquals(100, motion.longDuration());
         assertEquals(M3MotionEasing.EMPHASIZED, motion.defaultEffects().easing());
+        assertEquals(150.0, motion.behavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
         assertEquals(400.0, motion.defaultSpatial().duration().toMillis(), 0.0001);
         assertTrue(motion.toStyleDeclarations().contains("-m3-motion-default-effects-easing: emphasized"));
         assertTrue(motion.toStyleDeclarations().contains("-m3-motion-default-spatial-duration: 400ms"));
+        assertTrue(motion.toStyleDeclarations().contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
     }
 
     /// Creates component tokens with distinctive values for factory tests.

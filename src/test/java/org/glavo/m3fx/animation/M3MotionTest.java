@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.animation;
 
+import javafx.util.Duration;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
@@ -83,5 +84,21 @@ final class M3MotionTest {
         assertEquals(M3Motion.MEDIUM4, expressive.defaultSpatial().duration());
         assertEquals(M3MotionEasing.EMPHASIZED, expressive.defaultSpatial().easing());
         assertSame(M3Motion.EMPHASIZED, expressive.defaultSpatial().interpolator());
+    }
+
+    /// Verifies that standard and expressive motion behavior timings remain distinct where needed.
+    @Test
+    void motionBehaviorsExposeInteractionTimings() {
+        M3MotionBehavior standard = M3MotionBehavior.standard();
+        M3MotionBehavior expressive = M3MotionBehavior.expressive();
+
+        assertEquals(Duration.millis(500.0), standard.tooltipShowDelay());
+        assertEquals(Duration.seconds(5.0), standard.tooltipShowDuration());
+        assertEquals(Duration.seconds(10.0), standard.richTooltipShowDuration());
+        assertEquals(Duration.millis(200.0), standard.subMenuHoverOpenDelay());
+        assertEquals(Duration.millis(1400.0), standard.linearProgressIndeterminateCycleDuration());
+
+        assertEquals(Duration.millis(150.0), expressive.subMenuHoverOpenDelay());
+        assertEquals(Duration.millis(150.0), expressive.subMenuHoverCloseDelay());
     }
 }

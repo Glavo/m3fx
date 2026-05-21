@@ -157,10 +157,12 @@ final class M3ThemeTest {
         assertSame(theme.colorScheme(), theme.tokens().colorTokens().colorScheme());
         assertEquals(M3MotionEasing.EMPHASIZED, theme.tokens().motionTokens().defaultEffects().easing());
         assertEquals(400.0, theme.tokens().motionTokens().defaultSpatial().duration().toMillis(), 0.0001);
+        assertEquals(150.0, theme.tokens().motionTokens().behavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
         assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-effects-easing: emphasized"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-spatial-duration: 400ms"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size: 64px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height: 48px"));

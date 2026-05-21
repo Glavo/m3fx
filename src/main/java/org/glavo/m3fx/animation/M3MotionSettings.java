@@ -25,6 +25,9 @@ public final class M3MotionSettings {
     /// The key used to store nullable node-local motion scheme overrides.
     private static final Object MOTION_SCHEME_KEY = new Object();
 
+    /// The key used to store nullable node-local motion behavior overrides.
+    private static final Object MOTION_BEHAVIOR_KEY = new Object();
+
     /// The global animation switch used when a node has no inherited override.
     private static final BooleanProperty animationsEnabled =
             new SimpleBooleanProperty(M3MotionSettings.class, "animationsEnabled", true);
@@ -32,6 +35,10 @@ public final class M3MotionSettings {
     /// The global motion scheme used when a node has no inherited override and no installed theme.
     private static final ObjectProperty<M3MotionScheme> motionScheme =
             new SimpleObjectProperty<>(M3MotionSettings.class, "motionScheme", M3MotionScheme.standard());
+
+    /// The global motion behavior used when a node has no inherited override and no installed theme.
+    private static final ObjectProperty<M3MotionBehavior> motionBehavior =
+            new SimpleObjectProperty<>(M3MotionSettings.class, "motionBehavior", M3MotionBehavior.standard());
 
     /// Prevents instantiation.
     private M3MotionSettings() {
@@ -65,6 +72,21 @@ public final class M3MotionSettings {
     /// Returns the global motion scheme property.
     public static ObjectProperty<M3MotionScheme> motionSchemeProperty() {
         return motionScheme;
+    }
+
+    /// Returns the global motion behavior.
+    public static M3MotionBehavior getMotionBehavior() {
+        return motionBehavior.get();
+    }
+
+    /// Sets the global motion behavior.
+    public static void setMotionBehavior(M3MotionBehavior behavior) {
+        motionBehavior.set(Objects.requireNonNull(behavior, "behavior"));
+    }
+
+    /// Returns the global motion behavior property.
+    public static ObjectProperty<M3MotionBehavior> motionBehaviorProperty() {
+        return motionBehavior;
     }
 
     /// Returns whether animations are enabled for a node after resolving inherited overrides.
@@ -116,6 +138,28 @@ public final class M3MotionSettings {
     /// Clears the node-local motion scheme override so the node inherits its setting.
     public static void clearMotionScheme(Node node) {
         setMotionScheme(node, null);
+    }
+
+    /// Returns the node-local motion behavior override, or `null` when the node inherits its setting.
+    public static @Nullable M3MotionBehavior getMotionBehavior(Node node) {
+        Objects.requireNonNull(node, "node");
+        @Nullable Object value = node.getProperties().get(MOTION_BEHAVIOR_KEY);
+        return value instanceof M3MotionBehavior behavior ? behavior : null;
+    }
+
+    /// Sets the node-local motion behavior override, or clears it when `null` is supplied.
+    public static void setMotionBehavior(Node node, @Nullable M3MotionBehavior behavior) {
+        Objects.requireNonNull(node, "node");
+        if (behavior == null) {
+            node.getProperties().remove(MOTION_BEHAVIOR_KEY);
+        } else {
+            node.getProperties().put(MOTION_BEHAVIOR_KEY, behavior);
+        }
+    }
+
+    /// Clears the node-local motion behavior override so the node inherits its setting.
+    public static void clearMotionBehavior(Node node) {
+        setMotionBehavior(node, null);
     }
 
     /// Finds the nearest inherited node animation override.

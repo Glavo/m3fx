@@ -15,7 +15,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Material colors are generated through `org.glavo:MonetFX:0.4.0`.
 - The demo app is a separate Gradle subproject.
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
-- M3 Expressive currently has profile-specific color, typography, shape, component sizing, and semantic motion scheme tokens.
+- M3 Expressive currently has profile-specific color, typography, shape, component sizing, semantic motion scheme tokens, and motion behavior timings.
 
 ## Architecture
 
@@ -50,10 +50,11 @@ This file tracks product status and planning only. Repository rules, code style,
 - Root CSS token generation for color, typography, shape, elevation, motion, state layers, density, and component defaults.
 - Generated token stylesheets use stable content hashing.
 - Baseline and expressive profile hooks exist for shape and component token evolution.
-- Reusable Material motion constants, easing curves, semantic specs, and standard/expressive motion schemes exist for JavaFX animations.
+- Reusable Material motion constants, easing curves, semantic specs, standard/expressive motion schemes, and motion behavior timings exist for JavaFX animations and motion-adjacent interaction delays.
 - State layers, ripples, and CSS-resolved elevation transitions resolve the installed theme motion scheme when available.
 - Selection controls, indicators, text input details, popup surfaces, sheets, snackbars, search results, FAB menus, carousel scrolling, and determinate progress transitions now resolve semantic motion specs from the active motion scheme.
-- Popup-hosted menus and pickers propagate animation settings and the active motion scheme into their popup content roots.
+- Popup-hosted menus and pickers propagate animation settings, the active motion scheme, and motion behavior timings into their popup content roots.
+- Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.
 
 ### Component Coverage
 
@@ -78,7 +79,7 @@ This file tracks product status and planning only. Repository rules, code style,
 
 ## Next Goals
 
-- Audit remaining fixed-delay motion-adjacent behaviors, such as tooltip delays, submenu hover delays, and indeterminate progress timing, to decide which should remain behavior constants and which should become tokenized.
+- Audit remaining non-animation timing assumptions in tests and visual snapshots so they describe semantic behavior instead of hard-coded milliseconds.
 - Increase page-level visual coverage for the demo, especially for alignment, clipping, and animated intermediate states.
 - Continue filling component gaps and richer composite workflows where existing controls are still shallow.
 - Tighten accessibility behavior for composite controls, especially keyboard parity and focus routing across popups.

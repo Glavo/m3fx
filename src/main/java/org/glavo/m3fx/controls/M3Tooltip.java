@@ -23,6 +23,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionBehavior;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -107,15 +109,15 @@ public class M3Tooltip extends PopupControl {
 
     /// The delay before the tooltip opens after pointer entry.
     private final ObjectProperty<Duration> showDelay =
-            new DurationProperty("showDelay", Duration.millis(500.0));
+            new DurationProperty("showDelay", M3MotionBehavior.standard().tooltipShowDelay());
 
     /// The delay before the tooltip closes after pointer exit.
     private final ObjectProperty<Duration> hideDelay =
-            new DurationProperty("hideDelay", Duration.millis(0.0));
+            new DurationProperty("hideDelay", M3MotionBehavior.standard().tooltipHideDelay());
 
     /// The maximum duration the tooltip remains visible after pointer-triggered opening.
     private final ObjectProperty<Duration> showDuration =
-            new DurationProperty("showDuration", Duration.seconds(5.0));
+            new DurationProperty("showDuration", M3MotionBehavior.standard().tooltipShowDuration());
 
     /// The explicit theme applied directly to this tooltip.
     private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
@@ -135,6 +137,15 @@ public class M3Tooltip extends PopupControl {
 
     /// Whether the current theme mutation is applying an inherited value.
     private boolean applyingInheritedTheme;
+
+    /// Whether the show delay was explicitly assigned by application code.
+    private boolean showDelayExplicit;
+
+    /// Whether the hide delay was explicitly assigned by application code.
+    private boolean hideDelayExplicit;
+
+    /// Whether the show duration was explicitly assigned by application code.
+    private boolean showDurationExplicit;
 
     /// Creates an empty tooltip.
     public M3Tooltip() {
@@ -242,6 +253,7 @@ public class M3Tooltip extends PopupControl {
 
     /// Sets the delay before the tooltip opens after pointer entry.
     public final void setShowDelay(Duration showDelay) {
+        showDelayExplicit = true;
         this.showDelay.set(Objects.requireNonNull(showDelay, "showDelay"));
     }
 
@@ -257,6 +269,7 @@ public class M3Tooltip extends PopupControl {
 
     /// Sets the delay before the tooltip closes after pointer exit.
     public final void setHideDelay(Duration hideDelay) {
+        hideDelayExplicit = true;
         this.hideDelay.set(Objects.requireNonNull(hideDelay, "hideDelay"));
     }
 
@@ -272,6 +285,7 @@ public class M3Tooltip extends PopupControl {
 
     /// Sets the maximum duration the tooltip remains visible after pointer-triggered opening.
     public final void setShowDuration(Duration showDuration) {
+        showDurationExplicit = true;
         this.showDuration.set(Objects.requireNonNull(showDuration, "showDuration"));
     }
 
@@ -309,6 +323,35 @@ public class M3Tooltip extends PopupControl {
         setAutoFix(true);
         setAutoHide(true);
         setHideOnEscape(true);
+    }
+
+    /// Sets the default visible duration without marking it as an application override.
+    protected final void setDefaultShowDuration(Duration showDuration) {
+        showDurationExplicit = false;
+        this.showDuration.set(Objects.requireNonNull(showDuration, "showDuration"));
+    }
+
+    /// Returns the default visible duration for this tooltip kind from a behavior profile.
+    protected Duration defaultShowDuration(M3MotionBehavior behavior) {
+        return behavior.tooltipShowDuration();
+    }
+
+    /// Returns the effective show delay for an installed target node.
+    private Duration effectiveShowDelay(Node owner) {
+        return showDelayExplicit ? getShowDelay() : M3Animation.motionBehavior(owner).tooltipShowDelay();
+    }
+
+    /// Returns the effective hide delay for an installed target node.
+    private Duration effectiveHideDelay(Node owner) {
+        return hideDelayExplicit ? getHideDelay() : M3Animation.motionBehavior(owner).tooltipHideDelay();
+    }
+
+    /// Returns the effective visible duration for an installed target node.
+    private Duration effectiveShowDuration(Node owner) {
+        if (showDurationExplicit) {
+            return getShowDuration();
+        }
+        return defaultShowDuration(M3Animation.motionBehavior(owner));
     }
 
     /// Applies the node's scene theme when this tooltip has no explicit theme.
@@ -557,7 +600,7 @@ public class M3Tooltip extends PopupControl {
             showTimer.stop();
             hideTimer.stop();
             durationTimer.stop();
-            showTimer.setDuration(tooltip.getShowDelay());
+            showTimer.setDuration(tooltip.effectiveShowDelay(node));
             showTimer.playFromStart();
         }
 
@@ -566,7 +609,7 @@ public class M3Tooltip extends PopupControl {
             showTimer.stop();
             durationTimer.stop();
             if (tooltip.isShowing()) {
-                hideTimer.setDuration(tooltip.getHideDelay());
+                hideTimer.setDuration(tooltip.effectiveHideDelay(node));
                 hideTimer.playFromStart();
             }
         }
@@ -599,7 +642,7 @@ public class M3Tooltip extends PopupControl {
 
         /// Schedules automatic hiding for finite show durations.
         private void scheduleAutoHide() {
-            Duration duration = tooltip.getShowDuration();
+            Duration duration = tooltip.effectiveShowDuration(node);
             if (!isFiniteDuration(duration)) {
                 return;
             }

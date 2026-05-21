@@ -15,6 +15,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -50,6 +51,18 @@ public final class M3Animation {
 
         @Nullable M3Theme theme = findTheme(owner);
         return theme == null ? M3MotionSettings.getMotionScheme() : theme.tokens().motionTokens().scheme();
+    }
+
+    /// Returns the semantic motion behavior for an owner node.
+    public static M3MotionBehavior motionBehavior(Node owner) {
+        Objects.requireNonNull(owner, "owner");
+        @Nullable M3MotionBehavior override = findMotionBehaviorOverride(owner);
+        if (override != null) {
+            return override;
+        }
+
+        @Nullable M3Theme theme = findTheme(owner);
+        return theme == null ? M3MotionSettings.getMotionBehavior() : theme.tokens().motionTokens().behavior();
     }
 
     /// Returns the fast effects motion spec for an owner node.
@@ -88,6 +101,7 @@ public final class M3Animation {
         Objects.requireNonNull(target, "target");
         M3MotionSettings.setAnimationsEnabled(target, M3MotionSettings.areAnimationsEnabled(source));
         M3MotionSettings.setMotionScheme(target, motionScheme(source));
+        M3MotionSettings.setMotionBehavior(target, motionBehavior(source));
     }
 
     /// Plays an animation from the beginning or finishes it immediately when animations are disabled.
@@ -179,6 +193,19 @@ public final class M3Animation {
         @Nullable Node current = owner;
         while (current != null) {
             @Nullable M3MotionScheme override = M3MotionSettings.getMotionScheme(current);
+            if (override != null) {
+                return override;
+            }
+            current = current.getParent();
+        }
+        return null;
+    }
+
+    /// Finds the nearest node-local motion behavior override.
+    private static @Nullable M3MotionBehavior findMotionBehaviorOverride(Node owner) {
+        @Nullable Node current = owner;
+        while (current != null) {
+            @Nullable M3MotionBehavior override = M3MotionSettings.getMotionBehavior(current);
             if (override != null) {
                 return override;
             }

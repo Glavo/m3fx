@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.tokens;
 
+import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.tokens.M3MotionTokensImpl;
@@ -63,6 +64,9 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
 
     /// Returns the semantic motion scheme used by this profile.
     M3MotionScheme scheme();
+
+    /// Returns the motion-adjacent interaction timings used by this profile.
+    M3MotionBehavior behavior();
 
     /// Returns the fast effects motion spec.
     default M3MotionSpec fastEffects() {
@@ -128,7 +132,8 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
                 longDuration,
                 longDuration,
                 longDuration,
-                M3MotionScheme.standard()
+                M3MotionScheme.standard(),
+                M3MotionBehavior.standard()
         );
     }
 
@@ -168,7 +173,8 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
                 extraLong2,
                 extraLong3,
                 extraLong4,
-                M3MotionScheme.standard()
+                M3MotionScheme.standard(),
+                M3MotionBehavior.standard()
         );
     }
 
@@ -192,7 +198,51 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
             int extraLong4,
             M3MotionScheme scheme
     ) {
+        return create(
+                short1,
+                short2,
+                short3,
+                short4,
+                medium1,
+                medium2,
+                medium3,
+                medium4,
+                long1,
+                long2,
+                long3,
+                long4,
+                extraLong1,
+                extraLong2,
+                extraLong3,
+                extraLong4,
+                scheme,
+                M3MotionBehavior.standard()
+        );
+    }
+
+    /// Creates motion duration tokens with semantic motion and behavior timings.
+    static M3MotionTokens create(
+            int short1,
+            int short2,
+            int short3,
+            int short4,
+            int medium1,
+            int medium2,
+            int medium3,
+            int medium4,
+            int long1,
+            int long2,
+            int long3,
+            int long4,
+            int extraLong1,
+            int extraLong2,
+            int extraLong3,
+            int extraLong4,
+            M3MotionScheme scheme,
+            M3MotionBehavior behavior
+    ) {
         Objects.requireNonNull(scheme, "scheme");
+        Objects.requireNonNull(behavior, "behavior");
         return new M3MotionTokensImpl(
                 short1,
                 short2,
@@ -210,7 +260,8 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
                 extraLong2,
                 extraLong3,
                 extraLong4,
-                scheme
+                scheme,
+                behavior
         );
     }
 
@@ -255,7 +306,8 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
                 800,
                 900,
                 1000,
-                M3MotionScheme.expressive()
+                M3MotionScheme.expressive(),
+                M3MotionBehavior.expressive()
         );
     }
 
@@ -264,6 +316,7 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
         StringBuilder builder = new StringBuilder();
         appendLegacyStyleDeclarations(builder);
         appendSchemeStyleDeclarations(builder);
+        appendBehaviorStyleDeclarations(builder);
         M3TokenCss.append(builder, "-m3-motion-duration-short1", short1() + "ms");
         M3TokenCss.append(builder, "-m3-motion-duration-short2", short2() + "ms");
         M3TokenCss.append(builder, "-m3-motion-duration-short3", short3() + "ms");
@@ -300,9 +353,35 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
         appendSpec(builder, "slow-spatial", slowSpatial());
     }
 
+    /// Appends interaction timing declarations.
+    private void appendBehaviorStyleDeclarations(StringBuilder builder) {
+        M3MotionBehavior behavior = behavior();
+        appendDuration(builder, "-m3-motion-tooltip-show-delay", behavior.tooltipShowDelay());
+        appendDuration(builder, "-m3-motion-tooltip-hide-delay", behavior.tooltipHideDelay());
+        appendDuration(builder, "-m3-motion-tooltip-show-duration", behavior.tooltipShowDuration());
+        appendDuration(builder, "-m3-motion-rich-tooltip-show-duration", behavior.richTooltipShowDuration());
+        appendDuration(builder, "-m3-motion-sub-menu-hover-open-delay", behavior.subMenuHoverOpenDelay());
+        appendDuration(builder, "-m3-motion-sub-menu-hover-close-delay", behavior.subMenuHoverCloseDelay());
+        appendDuration(
+                builder,
+                "-m3-motion-linear-progress-indeterminate-cycle-duration",
+                behavior.linearProgressIndeterminateCycleDuration()
+        );
+        appendDuration(
+                builder,
+                "-m3-motion-circular-progress-indeterminate-cycle-duration",
+                behavior.circularProgressIndeterminateCycleDuration()
+        );
+    }
+
     /// Appends declarations for one semantic motion spec.
     private static void appendSpec(StringBuilder builder, String name, M3MotionSpec spec) {
-        M3TokenCss.append(builder, "-m3-motion-" + name + "-duration", M3TokenCss.format(spec.duration().toMillis()) + "ms");
+        appendDuration(builder, "-m3-motion-" + name + "-duration", spec.duration());
         M3TokenCss.append(builder, "-m3-motion-" + name + "-easing", spec.easing().tokenName());
+    }
+
+    /// Appends one duration declaration in milliseconds.
+    private static void appendDuration(StringBuilder builder, String name, javafx.util.Duration duration) {
+        M3TokenCss.append(builder, name, M3TokenCss.format(duration.toMillis()) + "ms");
     }
 }

@@ -93,4 +93,37 @@ final class M3MotionSettingsTest {
 
         assertNull(M3MotionSettings.getMotionScheme(node));
     }
+
+    /// Verifies the global motion behavior switch.
+    @Test
+    void globalMotionBehaviorSwitchControlsDefaultBehavior() {
+        M3MotionBehavior previous = M3MotionSettings.getMotionBehavior();
+        try {
+            M3MotionSettings.setMotionBehavior(M3MotionBehavior.expressive());
+
+            assertEquals(150.0, M3MotionSettings.getMotionBehavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
+
+            M3MotionSettings.setMotionBehavior(M3MotionBehavior.standard());
+
+            assertEquals(200.0, M3MotionSettings.getMotionBehavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
+        } finally {
+            M3MotionSettings.setMotionBehavior(previous);
+        }
+    }
+
+    /// Verifies that node-local motion behavior can be set and cleared.
+    @Test
+    void nodeMotionBehaviorStoresLocalOverride() {
+        Pane node = new Pane();
+
+        assertNull(M3MotionSettings.getMotionBehavior(node));
+
+        M3MotionSettings.setMotionBehavior(node, M3MotionBehavior.expressive());
+
+        assertEquals(150.0, M3MotionSettings.getMotionBehavior(node).subMenuHoverOpenDelay().toMillis(), 0.0001);
+
+        M3MotionSettings.clearMotionBehavior(node);
+
+        assertNull(M3MotionSettings.getMotionBehavior(node));
+    }
 }

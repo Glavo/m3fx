@@ -21,8 +21,6 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -49,12 +47,6 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The initial horizontal popup menu offset used for enter and exit motion.
     private static final double SUB_MENU_TRANSITION_OFFSET_X = -6.0;
 
-    /// The delay before pointer hover opens a submenu.
-    private static final Duration SUB_MENU_HOVER_OPEN_DELAY = M3Motion.SHORT4;
-
-    /// The delay before pointer exit hides a submenu.
-    private static final Duration SUB_MENU_HOVER_CLOSE_DELAY = M3Motion.SHORT4;
-
     /// The submenu displayed by this item.
     private final M3Menu subMenu = new M3Menu();
 
@@ -74,10 +66,10 @@ public class M3SubMenuItem extends M3MenuItem {
     private final Timeline hideAnimation = new Timeline();
 
     /// The pointer-hover open delay.
-    private final PauseTransition hoverOpenDelay = new PauseTransition(SUB_MENU_HOVER_OPEN_DELAY);
+    private final PauseTransition hoverOpenDelay = new PauseTransition();
 
     /// The pointer-exit close delay.
-    private final PauseTransition hoverCloseDelay = new PauseTransition(SUB_MENU_HOVER_CLOSE_DELAY);
+    private final PauseTransition hoverCloseDelay = new PauseTransition();
 
     /// Whether an action from the submenu is being forwarded to this item's parent menu.
     private boolean forwardingSubMenuAction = false;
@@ -352,6 +344,7 @@ public class M3SubMenuItem extends M3MenuItem {
         pointerInsideOwner = true;
         hoverCloseDelay.stop();
         if (!popup.isShowing()) {
+            hoverOpenDelay.setDuration(M3Animation.motionBehavior(this).subMenuHoverOpenDelay());
             hoverOpenDelay.playFromStart();
         }
     }
@@ -475,6 +468,7 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Starts the pointer-exit close delay when the submenu is open.
     private void scheduleHoverClose() {
         if (popup.isShowing()) {
+            hoverCloseDelay.setDuration(M3Animation.motionBehavior(this).subMenuHoverCloseDelay());
             hoverCloseDelay.playFromStart();
         }
     }

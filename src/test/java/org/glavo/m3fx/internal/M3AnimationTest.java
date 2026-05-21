@@ -11,6 +11,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -67,6 +68,7 @@ final class M3AnimationTest {
 
         assertEquals(M3MotionEasing.EMPHASIZED, M3Animation.defaultEffects(child).easing());
         assertEquals(400.0, M3Animation.defaultSpatial(child).duration().toMillis(), 0.0001);
+        assertEquals(150.0, M3Animation.motionBehavior(child).subMenuHoverOpenDelay().toMillis(), 0.0001);
     }
 
     /// Verifies that a node-local motion scheme override takes precedence over an installed theme.
@@ -91,10 +93,12 @@ final class M3AnimationTest {
 
         M3MotionSettings.setAnimationsEnabled(source, false);
         M3MotionSettings.setMotionScheme(source, M3MotionScheme.expressive());
+        M3MotionSettings.setMotionBehavior(source, M3MotionBehavior.expressive());
 
         M3Animation.copyResolvedMotionSettings(source, target);
 
         assertFalse(M3MotionSettings.areAnimationsEnabled(target));
         assertEquals(M3MotionEasing.EMPHASIZED, M3Animation.defaultEffects(target).easing());
+        assertEquals(150.0, M3Animation.motionBehavior(target).subMenuHoverOpenDelay().toMillis(), 0.0001);
     }
 }

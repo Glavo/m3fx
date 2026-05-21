@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
@@ -155,7 +156,7 @@ public class M3RichTooltip extends M3Tooltip {
     private void initializeRichTooltip() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        setShowDuration(Duration.seconds(10.0));
+        setDefaultShowDuration(M3MotionBehavior.standard().richTooltipShowDuration());
 
         container.getStyleClass().add(CONTAINER_STYLE_CLASS);
         titleLabel.getStyleClass().add(TITLE_STYLE_CLASS);
@@ -215,5 +216,11 @@ public class M3RichTooltip extends M3Tooltip {
             return currentTitle;
         }
         return currentTitle + " " + currentSupportingText;
+    }
+
+    /// Returns the default visible duration for rich tooltip behavior profiles.
+    @Override
+    protected Duration defaultShowDuration(M3MotionBehavior behavior) {
+        return behavior.richTooltipShowDuration();
     }
 }
