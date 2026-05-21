@@ -13,4 +13,10 @@ public class M3FloatingActionButtonSkin extends M3LabeledButtonSkinBase<M3Floati
     public M3FloatingActionButtonSkin(M3FloatingActionButton control) {
         super(control);
     }
+
+    /// Returns depth-style pressed scale for floating action buttons.
+    @Override
+    protected double pressedScale(boolean pressed) {
+        return depthPressedScale(pressed);
+    }
 }

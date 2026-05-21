@@ -30,7 +30,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// A base animated skin for m3fx labeled button controls.
 @NotNullByDefault
 abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkinBase<C> {
-    /// The scale applied while the button is pressed.
+    /// The scale applied by controls that opt into depth-style pressed motion.
     private static final double PRESSED_SCALE = 0.98;
 
     /// The duration used when entering the pressed state.
@@ -259,6 +259,11 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
     /// Returns the skinnable scale used for the requested pressed state.
     protected double pressedScale(boolean pressed) {
+        return 1.0;
+    }
+
+    /// Returns the skinnable scale for controls that opt into depth-style pressed motion.
+    protected final double depthPressedScale(boolean pressed) {
         return pressed ? PRESSED_SCALE : 1.0;
     }
 

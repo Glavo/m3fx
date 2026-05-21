@@ -18,8 +18,8 @@ public class M3ButtonSkin extends M3LabeledButtonSkinBase<M3Button> {
     /// Returns a pressed scale only for elevated buttons that already own elevation.
     @Override
     protected double pressedScale(boolean pressed) {
-        if (!pressed || getSkinnable().getVariant() == M3ButtonVariant.ELEVATED) {
-            return super.pressedScale(pressed);
+        if (getSkinnable().getVariant() == M3ButtonVariant.ELEVATED) {
+            return depthPressedScale(pressed);
         }
         return 1.0;
     }

@@ -20,6 +20,7 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContentDisplay;
@@ -417,6 +418,54 @@ final class M3ControlStyleTest {
 
             button.setVariant(M3ButtonVariant.ELEVATED);
             root.applyCss();
+            pressButtonAndJumpToPressedFrame(button);
+
+            assertEquals(0.98, button.getScaleX(), 0.0001);
+            assertEquals(0.98, button.getScaleY(), 0.0001);
+        });
+    }
+
+    /// Verifies that flat labeled button controls do not use depth-style pressed scaling.
+    @Test
+    void flatLabeledButtonControlsDoNotScaleWhenPressed() {
+        runOnFxThread(() -> {
+            M3Chip chip = new M3Chip("Chip");
+            M3SegmentedButton segmentedButton = new M3SegmentedButton("Segment");
+            M3Tab tab = new M3Tab("Tab");
+            M3IconToggleButton iconToggleButton = new M3IconToggleButton("star");
+            FlowPane root = new FlowPane(12.0, 12.0, chip, segmentedButton, tab, iconToggleButton);
+            Scene scene = new Scene(root, 420.0, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+
+            for (ButtonBase button : java.util.List.of(chip, segmentedButton, tab, iconToggleButton)) {
+                button.resize(120.0, 40.0);
+                button.layout();
+                pressButtonAndJumpToPressedFrame(button);
+
+                assertEquals(1.0, button.getScaleX(), 0.0001,
+                        () -> button.getClass().getSimpleName() + " scaleX");
+                assertEquals(1.0, button.getScaleY(), 0.0001,
+                        () -> button.getClass().getSimpleName() + " scaleY");
+                button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
+            }
+        });
+    }
+
+    /// Verifies that floating action buttons keep depth-style pressed scaling.
+    @Test
+    void floatingActionButtonKeepsDepthPressedScaling() {
+        runOnFxThread(() -> {
+            M3FloatingActionButton button = new M3FloatingActionButton("Create");
+            Pane root = new Pane(button);
+            Scene scene = new Scene(root, 200.0, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            button.resize(96.0, 56.0);
+            button.layout();
             pressButtonAndJumpToPressedFrame(button);
 
             assertEquals(0.98, button.getScaleX(), 0.0001);
@@ -11170,8 +11219,8 @@ final class M3ControlStyleTest {
         throw new NoSuchFieldException(fieldName);
     }
 
-    /// Presses a button and advances the shared pressed-state animation to its pressed frame.
-    private static void pressButtonAndJumpToPressedFrame(M3Button button) {
+    /// Presses a button base and advances the shared pressed-state animation to its pressed frame.
+    private static void pressButtonAndJumpToPressedFrame(ButtonBase button) {
         button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
         Timeline animation = skinTimeline(button.getSkin(), "animation");
         animation.jumpTo(Duration.millis(50.0));
