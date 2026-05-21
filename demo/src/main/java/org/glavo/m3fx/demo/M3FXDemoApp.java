@@ -160,8 +160,8 @@ public final class M3FXDemoApp extends Application {
             Color.web("#7d5260")
     );
 
-    /// Linear progress widths shown in the progress demo page.
-    private static final @Unmodifiable List<Double> PROGRESS_BAR_WIDTHS = List.of(96.0, 160.0, 260.0, 420.0);
+    /// Progress track heights shown in the progress demo page.
+    private static final @Unmodifiable List<Double> PROGRESS_TRACK_HEIGHTS = List.of(2.0, 4.0, 6.0, 8.0, 12.0);
 
     /// The sidebar destination for the components overview page.
     private static final String COMPONENTS_OVERVIEW_GROUP = "Components overview";
@@ -1307,7 +1307,7 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup("Standard Linear", determinateBar, indeterminateBar),
                 createShowcaseGroup("Standard Circular", determinateIndicator, indeterminateIndicator),
                 createShowcaseGroup("Expressive Wavy Linear", expressiveDeterminateBar, expressiveIndeterminateBar),
-                createShowcaseGroup("Linear Widths", createProgressWidthMatrix()),
+                createShowcaseGroup("Track Heights", createProgressTrackHeightMatrix()),
                 createShowcaseGroup(
                         "Expressive Wavy Circular",
                         expressiveDeterminateIndicator,
@@ -1781,53 +1781,98 @@ public final class M3FXDemoApp extends Application {
                 + "-m3-track-gap: 4px;");
     }
 
-    /// Creates the width comparison matrix for linear progress bars.
-    private static VBox createProgressWidthMatrix() {
+    /// Creates the track height comparison matrix for progress indicators.
+    private static VBox createProgressTrackHeightMatrix() {
         VBox matrix = new VBox(
                 14.0,
-                createProgressWidthRow("Standard determinate", false, false),
-                createProgressWidthRow("Standard indeterminate", false, true),
-                createProgressWidthRow("Expressive determinate", true, false),
-                createProgressWidthRow("Expressive indeterminate", true, true)
+                createProgressTrackHeightRow("Linear standard determinate", false, false, false),
+                createProgressTrackHeightRow("Linear standard indeterminate", false, false, true),
+                createProgressTrackHeightRow("Linear expressive determinate", false, true, false),
+                createProgressTrackHeightRow("Linear expressive indeterminate", false, true, true),
+                createProgressTrackHeightRow("Circular standard determinate", true, false, false),
+                createProgressTrackHeightRow("Circular standard indeterminate", true, false, true),
+                createProgressTrackHeightRow("Circular expressive determinate", true, true, false),
+                createProgressTrackHeightRow("Circular expressive indeterminate", true, true, true)
         );
         matrix.setFillWidth(true);
         matrix.setMaxWidth(Double.MAX_VALUE);
         return matrix;
     }
 
-    /// Creates one row in the linear progress width comparison matrix.
-    private static VBox createProgressWidthRow(String title, boolean expressive, boolean indeterminate) {
+    /// Creates one row in the progress track height comparison matrix.
+    private static VBox createProgressTrackHeightRow(
+            String title,
+            boolean circular,
+            boolean expressive,
+            boolean indeterminate
+    ) {
         Label label = new Label(title);
         label.getStyleClass().add("demo-group-title");
 
-        FlowPane bars = new FlowPane(16.0, 12.0);
-        bars.setAlignment(Pos.CENTER_LEFT);
-        bars.setPrefWrapLength(980.0);
-        for (double width : PROGRESS_BAR_WIDTHS) {
-            bars.getChildren().add(createProgressWidthSample(width, expressive, indeterminate));
+        FlowPane indicators = new FlowPane(16.0, 12.0);
+        indicators.setAlignment(Pos.CENTER_LEFT);
+        indicators.setPrefWrapLength(980.0);
+        for (double trackHeight : PROGRESS_TRACK_HEIGHTS) {
+            indicators.getChildren().add(createProgressTrackHeightSample(
+                    trackHeight,
+                    circular,
+                    expressive,
+                    indeterminate
+            ));
         }
 
-        VBox row = new VBox(8.0, label, bars);
+        VBox row = new VBox(8.0, label, indicators);
         row.setMaxWidth(Double.MAX_VALUE);
         return row;
     }
 
-    /// Creates one labeled linear progress bar sample for a requested width.
-    private static VBox createProgressWidthSample(double width, boolean expressive, boolean indeterminate) {
-        M3ProgressBar progressBar = indeterminate ? new M3ProgressBar() : new M3ProgressBar(0.62);
-        progressBar.setPrefWidth(width);
-        if (expressive) {
-            applyExpressiveLinearProgress(progressBar);
+    /// Creates one labeled progress sample for a requested track height.
+    private static VBox createProgressTrackHeightSample(
+            double trackHeight,
+            boolean circular,
+            boolean expressive,
+            boolean indeterminate
+    ) {
+        Node indicator;
+        double sampleWidth;
+        if (circular) {
+            M3ProgressIndicator progressIndicator = indeterminate
+                    ? new M3ProgressIndicator()
+                    : new M3ProgressIndicator(0.62);
+            progressIndicator.setIndicatorSize(56.0);
+            if (expressive) {
+                applyExpressiveCircularProgress(progressIndicator);
+            } else {
+                applyBaselineProgress(progressIndicator);
+            }
+            appendInlineStyle(progressIndicator, "-m3-track-thickness: " + trackHeight + "px;");
+            indicator = progressIndicator;
+            sampleWidth = 72.0;
         } else {
-            applyBaselineProgress(progressBar);
+            M3ProgressBar progressBar = indeterminate ? new M3ProgressBar() : new M3ProgressBar(0.62);
+            progressBar.setPrefWidth(180.0);
+            if (expressive) {
+                applyExpressiveLinearProgress(progressBar);
+            } else {
+                applyBaselineProgress(progressBar);
+            }
+            appendInlineStyle(progressBar, "-m3-track-thickness: " + trackHeight + "px;");
+            indicator = progressBar;
+            sampleWidth = 180.0;
         }
 
-        Label widthLabel = new Label((int) width + " px");
-        VBox sample = new VBox(6.0, widthLabel, progressBar);
+        Label heightLabel = new Label((int) trackHeight + " px");
+        VBox sample = new VBox(6.0, heightLabel, indicator);
         sample.setAlignment(Pos.CENTER_LEFT);
-        sample.setMinWidth(width);
-        sample.setPrefWidth(width);
+        sample.setMinWidth(sampleWidth);
+        sample.setPrefWidth(sampleWidth);
         return sample;
+    }
+
+    /// Appends inline CSS to a node while preserving styles already applied by demo helpers.
+    private static void appendInlineStyle(Node node, String style) {
+        String currentStyle = node.getStyle();
+        node.setStyle(currentStyle.isBlank() ? style : currentStyle + " " + style);
     }
 
     /// Creates a button configured with the requested variant.
