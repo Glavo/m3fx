@@ -32,13 +32,13 @@ public class M3BadgedBox extends Control {
     /// The base style class for M3FX badged boxes.
     public static final String STYLE_CLASS = "m3-badged-box";
 
-    /// The optional content node property.
+    // The optional content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    /// The optional badge property.
+    // The optional badge property.
     private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
 
-    /// The badge alignment inside this container.
+    // The badge alignment inside this container.
     private final ObjectProperty<Pos> badgeAlignment = new SimpleObjectProperty<>(this, "badgeAlignment", Pos.TOP_RIGHT) {
         /// Restores the default badge alignment when the property is set to null.
         @Override
@@ -51,7 +51,7 @@ public class M3BadgedBox extends Control {
         }
     };
 
-    /// The horizontal badge translation after alignment is applied.
+    // The horizontal badge translation after alignment is applied.
     private final DoubleProperty badgeOffsetX = new SimpleDoubleProperty(this, "badgeOffsetX") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -60,7 +60,7 @@ public class M3BadgedBox extends Control {
         }
     };
 
-    /// The vertical badge translation after alignment is applied.
+    // The vertical badge translation after alignment is applied.
     private final DoubleProperty badgeOffsetY = new SimpleDoubleProperty(this, "badgeOffsetY") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -75,11 +75,16 @@ public class M3BadgedBox extends Control {
     }
 
     /// Creates a badged box with content.
+    ///
+    /// @param content the content node, or `null` for no content
     public M3BadgedBox(@Nullable Node content) {
         this(content, null);
     }
 
     /// Creates a badged box with content and badge.
+    ///
+    /// @param content the content node, or `null` for no content
+    /// @param badge the badge node, or `null` for no badge
     public M3BadgedBox(@Nullable Node content, @Nullable M3Badge badge) {
         initialize();
         setContent(content);
@@ -87,76 +92,106 @@ public class M3BadgedBox extends Control {
     }
 
     /// Returns the optional content node.
+    ///
+    /// @return the content node, or `null` when no content is set
     public final @Nullable Node getContent() {
         return content.get();
     }
 
     /// Sets the optional content node.
+    ///
+    /// @param content the content node, or `null` to clear it
     public final void setContent(@Nullable Node content) {
         this.content.set(content);
     }
 
     /// Returns the optional content node property.
+    ///
+    /// @return the content node property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
 
     /// Returns the optional badge.
+    ///
+    /// @return the badge node, or `null` when no badge is set
     public final @Nullable M3Badge getBadge() {
         return badge.get();
     }
 
     /// Sets the optional badge.
+    ///
+    /// @param badge the badge node, or `null` to clear it
     public final void setBadge(@Nullable M3Badge badge) {
         this.badge.set(badge);
     }
 
     /// Returns the optional badge property.
+    ///
+    /// @return the badge node property
     public final ObjectProperty<@Nullable M3Badge> badgeProperty() {
         return badge;
     }
 
     /// Returns the badge alignment inside this container.
+    ///
+    /// @return the badge alignment
     public final Pos getBadgeAlignment() {
         return badgeAlignment.get();
     }
 
     /// Sets the badge alignment inside this container.
+    ///
+    /// @param badgeAlignment the badge alignment
     public final void setBadgeAlignment(Pos badgeAlignment) {
         this.badgeAlignment.set(Objects.requireNonNull(badgeAlignment, "badgeAlignment"));
     }
 
     /// Returns the badge alignment property.
+    ///
+    /// @return the badge alignment property
     public final ObjectProperty<Pos> badgeAlignmentProperty() {
         return badgeAlignment;
     }
 
     /// Returns the horizontal badge translation after alignment is applied.
+    ///
+    /// @return the horizontal badge offset in pixels
     public final double getBadgeOffsetX() {
         return badgeOffsetX.get();
     }
 
     /// Sets the horizontal badge translation after alignment is applied.
+    ///
+    /// @param badgeOffsetX the horizontal badge offset in pixels
     public final void setBadgeOffsetX(double badgeOffsetX) {
         this.badgeOffsetX.set(badgeOffsetX);
     }
 
     /// Returns the horizontal badge translation property.
+    ///
+    /// @return the horizontal badge offset property
     public final DoubleProperty badgeOffsetXProperty() {
         return badgeOffsetX;
     }
 
     /// Returns the vertical badge translation after alignment is applied.
+    ///
+    /// @return the vertical badge offset in pixels
     public final double getBadgeOffsetY() {
         return badgeOffsetY.get();
     }
 
     /// Sets the vertical badge translation after alignment is applied.
+    ///
+    /// @param badgeOffsetY the vertical badge offset in pixels
     public final void setBadgeOffsetY(double badgeOffsetY) {
         this.badgeOffsetY.set(badgeOffsetY);
     }
 
     /// Returns the vertical badge translation property.
+    ///
+    /// @return the vertical badge offset property
     public final DoubleProperty badgeOffsetYProperty() {
         return badgeOffsetY;
     }

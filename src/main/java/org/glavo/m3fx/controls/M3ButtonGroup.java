@@ -71,28 +71,38 @@ public class M3ButtonGroup extends Control {
     }
 
     /// Creates a button group with the supplied buttons.
+    ///
+    /// @param buttons the buttons displayed by the group
     public M3ButtonGroup(M3Button... buttons) {
         initialize();
         addButtons(buttons);
     }
 
     /// Returns the mutable child list used as button group content.
+    ///
+    /// @return the mutable child list used as button group content
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one button to the group.
+    ///
+    /// @param button the button to add
     public final void addButton(M3Button button) {
         getItems().add(Objects.requireNonNull(button, "button"));
     }
 
     /// Adds buttons to the group.
+    ///
+    /// @param buttons the buttons to add
     public final void addButtons(M3Button... buttons) {
         validateButtons(buttons);
         getItems().addAll(buttons);
     }
 
     /// Replaces all grouped buttons.
+    ///
+    /// @param buttons the replacement grouped buttons
     public final void setButtons(M3Button... buttons) {
         validateButtons(buttons);
         getItems().setAll(buttons);

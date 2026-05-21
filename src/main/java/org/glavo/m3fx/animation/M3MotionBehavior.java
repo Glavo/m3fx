@@ -10,6 +10,13 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Describes motion-adjacent interaction timings that are not animation specs.
+///
+/// Behavior timings cover delays and cycle durations that are part of the interaction model but are not direct
+/// property animations, such as tooltip show delays, submenu hover delays, and indeterminate progress cycles.
+/// M3FX resolves these values from [M3MotionSettings] so applications can switch motion behavior globally or for
+/// a scene graph subtree.
+///
+/// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     /// Returns the delay before a tooltip opens after pointer entry or keyboard focus.
@@ -37,6 +44,16 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     Duration circularProgressIndeterminateCycleDuration();
 
     /// Creates finite non-negative motion behavior timings.
+    ///
+    /// @param tooltipShowDelay the delay before a tooltip opens
+    /// @param tooltipHideDelay the delay before a tooltip closes
+    /// @param tooltipShowDuration the visible duration for plain tooltips
+    /// @param richTooltipShowDuration the visible duration for rich tooltips
+    /// @param subMenuHoverOpenDelay the delay before hover opens a submenu
+    /// @param subMenuHoverCloseDelay the delay before hover exit closes a submenu
+    /// @param linearProgressIndeterminateCycleDuration the linear progress indeterminate cycle duration
+    /// @param circularProgressIndeterminateCycleDuration the circular progress indeterminate cycle duration
+    /// @return immutable motion behavior timings
     static M3MotionBehavior create(
             Duration tooltipShowDelay,
             Duration tooltipHideDelay,
@@ -66,6 +83,8 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     }
 
     /// Returns the standard M3FX interaction timings.
+    ///
+    /// @return the baseline behavior timings
     static M3MotionBehavior standard() {
         return create(
                 Duration.millis(500.0),
@@ -80,6 +99,8 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     }
 
     /// Returns the expressive M3FX interaction timings.
+    ///
+    /// @return the expressive behavior timings
     static M3MotionBehavior expressive() {
         return create(
                 Duration.millis(500.0),

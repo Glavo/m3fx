@@ -44,10 +44,10 @@ public class M3Banner extends Control {
     /// The actions container style class.
     public static final String ACTIONS_STYLE_CLASS = "m3-banner-actions";
 
-    /// The banner message text property.
+    // The banner message text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    /// The optional leading icon property.
+    // The optional leading icon property.
     private final ObjectProperty<@Nullable Node> icon = new SimpleObjectProperty<>(this, "icon");
 
     /// The mutable trailing action node list.
@@ -59,18 +59,28 @@ public class M3Banner extends Control {
     }
 
     /// Creates a banner with message text.
+    ///
+    /// @param text the banner message text
     public M3Banner(String text) {
         initialize();
         setText(text);
     }
 
     /// Creates a banner with message text and trailing actions.
+    ///
+    /// @param text the banner message text
+    /// @param actions the trailing action nodes
     public M3Banner(String text, Node... actions) {
         this(text);
         addActions(actions);
     }
 
     /// Creates a banner with message text, a leading icon, and trailing actions.
+    ///
+    /// @param text the banner message text
+    /// @param icon the leading icon node
+    /// @param actions the trailing action nodes
+    /// @return a new banner configured with the supplied icon and actions
     public static M3Banner withIcon(String text, Node icon, Node... actions) {
         M3Banner banner = new M3Banner(text, actions);
         banner.setIcon(Objects.requireNonNull(icon, "icon"));
@@ -78,52 +88,72 @@ public class M3Banner extends Control {
     }
 
     /// Returns the banner message text.
+    ///
+    /// @return the banner message text
     public final String getText() {
         return text.get();
     }
 
     /// Sets the banner message text.
+    ///
+    /// @param text the banner message text
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
     /// Returns the banner message text property.
+    ///
+    /// @return the banner message text property
     public final StringProperty textProperty() {
         return text;
     }
 
     /// Returns the optional leading icon node.
+    ///
+    /// @return the leading icon node, or `null` when no icon is set
     public final @Nullable Node getIcon() {
         return icon.get();
     }
 
     /// Sets the optional leading icon node.
+    ///
+    /// @param icon the leading icon node, or `null` to clear the icon
     public final void setIcon(@Nullable Node icon) {
         this.icon.set(icon);
     }
 
     /// Returns the optional leading icon property.
+    ///
+    /// @return the leading icon property
     public final ObjectProperty<@Nullable Node> iconProperty() {
         return icon;
     }
 
     /// Returns the mutable trailing action node list.
+    ///
+    /// @return the mutable trailing action node list
     public final ObservableList<Node> getActions() {
         return actions;
     }
 
     /// Adds one trailing action node.
+    ///
+    /// @param action the trailing action node to add
     public final void addAction(Node action) {
         getActions().add(Objects.requireNonNull(action, "action"));
     }
 
     /// Adds trailing actions after validating the action array.
+    ///
+    /// @param actions the trailing action nodes to add
     public final void addActions(Node... actions) {
         validateActions(actions);
         getActions().addAll(actions);
     }
 
     /// Replaces all trailing action nodes.
+    ///
+    /// @param actions the replacement trailing action nodes
     public final void setActions(Node... actions) {
         validateActions(actions);
         getActions().setAll(actions);

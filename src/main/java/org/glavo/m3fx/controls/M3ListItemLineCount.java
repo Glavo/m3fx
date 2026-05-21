@@ -5,7 +5,12 @@ package org.glavo.m3fx.controls;
 
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Describes the derived line count of an m3fx list item.
+/// Describes the derived line count of an M3FX list item.
+///
+/// The line count is computed from the list item's headline, overline, supporting text, and trailing supporting
+/// text. It drives the default list item height and vertical text placement.
+///
+/// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public enum M3ListItemLineCount {
     /// A list item with only headline content.
@@ -26,6 +31,8 @@ public enum M3ListItemLineCount {
     }
 
     /// Returns the number of text lines represented by this value.
+    ///
+    /// @return the number of text lines represented by this value
     public int getLineCount() {
         return lineCount;
     }

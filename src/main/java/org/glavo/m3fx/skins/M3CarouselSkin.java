@@ -53,6 +53,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     private boolean pendingSelectedScrollAnimated;
 
     /// Creates a carousel skin.
+    ///
+    /// @param control the carousel controlled by this skin
     public M3CarouselSkin(M3Carousel control) {
         super(control);
         installViewport();
@@ -74,6 +76,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     }
 
     /// Scrolls the selected carousel item into the viewport.
+    ///
+    /// @param animated whether the viewport scroll should animate
     public void scrollSelectedItemIntoView(boolean animated) {
         if (deferSelectedItemScrollIfNeeded(animated)) {
             requestSelectedScroll(animated);

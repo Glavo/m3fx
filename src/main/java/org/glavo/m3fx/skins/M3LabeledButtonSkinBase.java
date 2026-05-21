@@ -260,11 +260,17 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     }
 
     /// Returns the skinnable scale used for the requested pressed state.
+    ///
+    /// @param pressed whether the skinnable is currently pressed
+    /// @return the scale applied while transitioning to the requested pressed state
     protected double pressedScale(boolean pressed) {
         return 1.0;
     }
 
     /// Returns the skinnable scale for controls that opt into depth-style pressed motion.
+    ///
+    /// @param pressed whether the skinnable is currently pressed
+    /// @return the depth-style pressed scale, or `1.0` when released
     protected final double depthPressedScale(boolean pressed) {
         return pressed ? PRESSED_SCALE : 1.0;
     }

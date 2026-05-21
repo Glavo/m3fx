@@ -54,16 +54,16 @@ public class M3CheckBox extends ButtonBase {
     /// The default checkbox touch target size.
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 40.0;
 
-    /// The styleable touch target size token.
+    // The styleable touch target size token.
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
-    /// The selected state property.
+    // The selected state property.
     private @Nullable BooleanProperty selected;
 
-    /// The indeterminate state property.
+    // The indeterminate state property.
     private @Nullable BooleanProperty indeterminate;
 
-    /// Whether user activation cycles through the indeterminate state.
+    // Whether user activation cycles through the indeterminate state.
     private @Nullable BooleanProperty allowIndeterminate;
 
     /// Creates an empty checkbox.
@@ -72,12 +72,18 @@ public class M3CheckBox extends ButtonBase {
     }
 
     /// Creates a checkbox with text.
+    ///
+    /// @param text the text displayed by the checkbox
     public M3CheckBox(String text) {
         super(text);
         initialize();
     }
 
     /// Creates a checkbox with text and the requested selected state.
+    ///
+    /// @param text the text displayed by the checkbox
+    /// @param selected whether the checkbox should start selected
+    /// @return a new checkbox configured with the requested selected state
     public static M3CheckBox withSelected(String text, boolean selected) {
         M3CheckBox checkBox = new M3CheckBox(text);
         checkBox.setSelected(selected);
@@ -85,16 +91,22 @@ public class M3CheckBox extends ButtonBase {
     }
 
     /// Sets whether this checkbox is selected.
+    ///
+    /// @param selected whether this checkbox should be selected
     public final void setSelected(boolean selected) {
         selectedProperty().set(selected);
     }
 
     /// Returns whether this checkbox is selected.
+    ///
+    /// @return `true` when this checkbox is selected
     public final boolean isSelected() {
         return selected != null && selected.get();
     }
 
     /// Returns the selected state property.
+    ///
+    /// @return the selected state property
     public final BooleanProperty selectedProperty() {
         if (selected == null) {
             selected = new BooleanPropertyBase(false) {
@@ -123,16 +135,22 @@ public class M3CheckBox extends ButtonBase {
     }
 
     /// Sets whether this checkbox is in its indeterminate state.
+    ///
+    /// @param indeterminate whether this checkbox should be in the indeterminate state
     public final void setIndeterminate(boolean indeterminate) {
         indeterminateProperty().set(indeterminate);
     }
 
     /// Returns whether this checkbox is in its indeterminate state.
+    ///
+    /// @return `true` when this checkbox is in the indeterminate state
     public final boolean isIndeterminate() {
         return indeterminate != null && indeterminate.get();
     }
 
     /// Returns the indeterminate state property.
+    ///
+    /// @return the indeterminate state property
     public final BooleanProperty indeterminateProperty() {
         if (indeterminate == null) {
             indeterminate = new BooleanPropertyBase(false) {
@@ -163,16 +181,22 @@ public class M3CheckBox extends ButtonBase {
     }
 
     /// Sets whether user activation cycles through the indeterminate state.
+    ///
+    /// @param allowIndeterminate whether user activation cycles through the indeterminate state
     public final void setAllowIndeterminate(boolean allowIndeterminate) {
         allowIndeterminateProperty().set(allowIndeterminate);
     }
 
     /// Returns whether user activation cycles through the indeterminate state.
+    ///
+    /// @return `true` when user activation includes the indeterminate state
     public final boolean isAllowIndeterminate() {
         return allowIndeterminate != null && allowIndeterminate.get();
     }
 
     /// Returns the allow-indeterminate state property.
+    ///
+    /// @return the allow-indeterminate state property
     public final BooleanProperty allowIndeterminateProperty() {
         if (allowIndeterminate == null) {
             allowIndeterminate = new SimpleBooleanProperty(this, "allowIndeterminate", false);
@@ -181,16 +205,22 @@ public class M3CheckBox extends ButtonBase {
     }
 
     /// Returns the preferred touch target size token.
+    ///
+    /// @return the preferred touch target size in pixels
     public final double getTouchTargetSize() {
         return touchTargetSize == null ? DEFAULT_TOUCH_TARGET_SIZE : touchTargetSize.get();
     }
 
     /// Sets the preferred touch target size token.
+    ///
+    /// @param touchTargetSize the preferred touch target size in pixels
     public final void setTouchTargetSize(double touchTargetSize) {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
     }
 
     /// Returns the preferred touch target size token property.
+    ///
+    /// @return the preferred touch target size property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
             touchTargetSize = new StyleableDoubleProperty(DEFAULT_TOUCH_TARGET_SIZE) {
@@ -224,6 +254,8 @@ public class M3CheckBox extends ButtonBase {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

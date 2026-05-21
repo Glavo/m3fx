@@ -7,6 +7,12 @@ import org.glavo.m3fx.internal.animation.M3MotionSchemeImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Groups semantic Material Design 3 motion specs for a theme profile.
+///
+/// Effects specs are intended for opacity, color, and lightweight state feedback. Spatial specs are intended for
+/// movement, scale, size, and other transitions that change where a user perceives content to be. Themes expose a
+/// scheme so controls can select motion semantically and still switch between baseline and expressive profiles.
+///
+/// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     /// Returns the fast effects motion spec.
@@ -28,6 +34,14 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     M3MotionSpec slowSpatial();
 
     /// Creates a motion scheme from explicit specs.
+    ///
+    /// @param fastEffects the fast effects spec
+    /// @param defaultEffects the default effects spec
+    /// @param slowEffects the slow effects spec
+    /// @param fastSpatial the fast spatial spec
+    /// @param defaultSpatial the default spatial spec
+    /// @param slowSpatial the slow spatial spec
+    /// @return an immutable motion scheme
     static M3MotionScheme create(
             M3MotionSpec fastEffects,
             M3MotionSpec defaultEffects,
@@ -47,6 +61,8 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     }
 
     /// Returns the standard Material motion scheme for recurring utility interactions.
+    ///
+    /// @return the baseline M3FX motion scheme
     static M3MotionScheme standard() {
         return create(
                 M3MotionSpec.create(M3Motion.SHORT1, M3MotionEasing.STANDARD),
@@ -59,6 +75,8 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     }
 
     /// Returns the expressive Material motion scheme for prominent and spatial interactions.
+    ///
+    /// @return the expressive M3FX motion scheme
     static M3MotionScheme expressive() {
         return create(
                 M3MotionSpec.create(M3Motion.SHORT3, M3MotionEasing.EMPHASIZED),

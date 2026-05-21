@@ -19,99 +19,194 @@ import java.util.Objects;
 @NotNullByDefault
 public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by filled buttons.
+    ///
+    /// @return the filled button component tokens
     ButtonTokens filledButton();
 
     /// Returns tokens used by filled tonal buttons.
+    ///
+    /// @return the filled tonal button component tokens
     ButtonTokens tonalButton();
 
     /// Returns tokens used by outlined buttons.
+    ///
+    /// @return the outlined button component tokens
     ButtonTokens outlinedButton();
 
     /// Returns tokens used by text buttons.
+    ///
+    /// @return the text button component tokens
     ButtonTokens textButton();
 
     /// Returns tokens used by elevated buttons.
+    ///
+    /// @return the elevated button component tokens
     ButtonTokens elevatedButton();
 
     /// Returns tokens used by icon buttons.
+    ///
+    /// @return the icon button component tokens
     ButtonTokens iconButton();
 
     /// Returns tokens used by floating action buttons.
+    ///
+    /// @return the floating action button component tokens
     FabTokens floatingActionButton();
 
     /// Returns tokens used by segmented buttons.
+    ///
+    /// @return the segmented button component tokens
     ButtonTokens segmentedButton();
 
     /// Returns tokens used by tabs.
+    ///
+    /// @return the tab component tokens
     TabTokens tab();
 
     /// Returns tokens used by text input controls.
+    ///
+    /// @return the text input component tokens
     FieldTokens field();
 
     /// Returns tokens used by text area controls.
+    ///
+    /// @return the text area component tokens
     TextAreaTokens textArea();
 
     /// Returns tokens used by menus.
+    ///
+    /// @return the menu component tokens
     MenuTokens menu();
 
     /// Returns tokens used by search components.
+    ///
+    /// @return the search component tokens
     SearchTokens search();
 
     /// Returns tokens used by sheet containers.
+    ///
+    /// @return the sheet component tokens
     SheetTokens sheet();
 
     /// Returns tokens used by scrims.
+    ///
+    /// @return the scrim component tokens
     ScrimTokens scrim();
 
     /// Returns tokens used by selection controls.
+    ///
+    /// @return the selection control component tokens
     SelectionTokens selection();
 
     /// Returns tokens used by sliders.
+    ///
+    /// @return the slider component tokens
     SliderTokens slider();
 
     /// Returns tokens used by chips.
+    ///
+    /// @return the chip component tokens
     ChipTokens chip();
 
     /// Returns tokens used by progress controls.
+    ///
+    /// @return the progress component tokens
     ProgressTokens progress();
 
     /// Returns tokens used by cards.
+    ///
+    /// @return the card component tokens
     CardTokens card();
 
     /// Returns tokens used by dialogs.
+    ///
+    /// @return the dialog component tokens
     DialogTokens dialog();
 
     /// Returns tokens used by snackbar controls.
+    ///
+    /// @return the snackbar component tokens
     SnackbarTokens snackbar();
 
     /// Returns tokens used by dividers.
+    ///
+    /// @return the divider component tokens
     DividerTokens divider();
 
     /// Returns tokens used by badges.
+    ///
+    /// @return the badge component tokens
     BadgeTokens badge();
 
     /// Returns tokens used by avatars.
+    ///
+    /// @return the avatar component tokens
     AvatarTokens avatar();
 
     /// Returns tokens used by top app bars.
+    ///
+    /// @return the top app bar component tokens
     TopAppBarTokens topAppBar();
 
     /// Returns tokens used by bottom app bars.
+    ///
+    /// @return the bottom app bar component tokens
     BottomAppBarTokens bottomAppBar();
 
     /// Returns tokens used by navigation bars.
+    ///
+    /// @return the navigation bar component tokens
     NavigationBarTokens navigationBar();
 
     /// Returns tokens used by navigation rails.
+    ///
+    /// @return the navigation rail component tokens
     NavigationRailTokens navigationRail();
 
     /// Returns tokens used by navigation drawers.
+    ///
+    /// @return the navigation drawer component tokens
     NavigationDrawerTokens navigationDrawer();
 
     /// Returns tokens used by list items.
+    ///
+    /// @return the list item component tokens
     ListItemTokens listItem();
 
     /// Creates component tokens from explicit component token values.
+    ///
+    /// @param filledButton the filled button component tokens
+    /// @param tonalButton the filled tonal button component tokens
+    /// @param outlinedButton the outlined button component tokens
+    /// @param textButton the text button component tokens
+    /// @param elevatedButton the elevated button component tokens
+    /// @param iconButton the icon button component tokens
+    /// @param floatingActionButton the floating action button component tokens
+    /// @param segmentedButton the segmented button component tokens
+    /// @param tab the tab component tokens
+    /// @param field the text input component tokens
+    /// @param textArea the text area component tokens
+    /// @param menu the menu component tokens
+    /// @param search the search component tokens
+    /// @param sheet the sheet component tokens
+    /// @param scrim the scrim component tokens
+    /// @param selection the selection control component tokens
+    /// @param slider the slider component tokens
+    /// @param chip the chip component tokens
+    /// @param progress the progress component tokens
+    /// @param card the card component tokens
+    /// @param dialog the dialog component tokens
+    /// @param snackbar the snackbar component tokens
+    /// @param divider the divider component tokens
+    /// @param badge the badge component tokens
+    /// @param avatar the avatar component tokens
+    /// @param topAppBar the top app bar component tokens
+    /// @param bottomAppBar the bottom app bar component tokens
+    /// @param navigationBar the navigation bar component tokens
+    /// @param navigationRail the navigation rail component tokens
+    /// @param navigationDrawer the navigation drawer component tokens
+    /// @param listItem the list item component tokens
+    /// @return a component token set containing the supplied values
     static M3ComponentTokens create(
             ButtonTokens filledButton,
             ButtonTokens tonalButton,
@@ -181,6 +276,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Creates component tokens for a profile.
+    ///
+    /// @param profile the Material profile whose component metrics should be generated
+    /// @param shapeTokens the shape scale used by generated component tokens
+    /// @param density the density adjustment applied to generated component metrics
+    /// @return a component token set generated from the supplied profile, shape scale, and density
     static M3ComponentTokens create(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
         Objects.requireNonNull(profile, "profile");
         Objects.requireNonNull(shapeTokens, "shapeTokens");
@@ -335,6 +435,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Converts component tokens into inline JavaFX CSS declarations.
+    ///
+    /// @return inline JavaFX CSS declarations for all component tokens
     default String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
         append(builder, "button-filled", filledButton());
@@ -372,6 +474,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Converts component tokens into JavaFX CSS rules for m3fx controls.
+    ///
+    /// @return JavaFX CSS rules that apply these component tokens to M3FX controls
     default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
         appendButtonRule(builder, ".m3-filled-button", filledButton());
@@ -1697,6 +1801,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double circularTrackGap
     ) {
         /// Creates baseline progress tokens without wavy rendering.
+        ///
+        /// @param thickness the default track thickness
+        /// @param shape the progress indicator radius
+        /// @param indicatorSize the circular indicator size
         public ProgressTokens(double thickness, double shape, double indicatorSize) {
             this(thickness, shape, indicatorSize, 0.0, 40.0, 4.0, 4.0, 0.0, 15.0, 4.0);
         }

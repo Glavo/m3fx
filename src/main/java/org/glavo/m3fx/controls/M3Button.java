@@ -61,7 +61,7 @@ public class M3Button extends ButtonBase {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 24.0;
 
-    /// The button variant property.
+    // The button variant property.
     private final ObjectProperty<M3ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant", M3ButtonVariant.FILLED) {
         /// Updates variant style classes when the property changes.
         @Override
@@ -74,19 +74,19 @@ public class M3Button extends ButtonBase {
         }
     };
 
-    /// The styleable container height token.
+    // The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The styleable container shape token.
+    // The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable horizontal padding token.
+    // The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// Whether this button is the default action in its containing context.
+    // Whether this button is the default action in its containing context.
     private @Nullable BooleanProperty defaultButton;
 
-    /// Whether this button is the cancel action in its containing context.
+    // Whether this button is the cancel action in its containing context.
     private @Nullable BooleanProperty cancelButton;
 
     /// Creates an empty filled button.
@@ -95,28 +95,47 @@ public class M3Button extends ButtonBase {
     }
 
     /// Creates a filled button with text.
+    ///
+    /// @param text the text displayed by the button
     public M3Button(String text) {
         super(text);
         initialize();
     }
 
     /// Creates a filled button with text and graphic content.
+    ///
+    /// @param text the text displayed by the button
+    /// @param graphic the optional graphic displayed with the text
     public M3Button(String text, @Nullable Node graphic) {
         super(text, graphic);
         initialize();
     }
 
     /// Creates a button with text and the requested variant.
+    ///
+    /// @param text the text displayed by the button
+    /// @param variant the Material button variant
+    /// @return a new button configured with the requested variant
     public static M3Button withVariant(String text, M3ButtonVariant variant) {
         return withVariant(text, null, variant, null);
     }
 
     /// Creates a button with text, graphic content, and the requested variant.
+    ///
+    /// @param text the text displayed by the button
+    /// @param graphic the optional graphic displayed with the text
+    /// @param variant the Material button variant
+    /// @return a new button configured with the requested variant
     public static M3Button withVariant(String text, @Nullable Node graphic, M3ButtonVariant variant) {
         return withVariant(text, graphic, variant, null);
     }
 
     /// Creates a button with text, the requested variant, and an action handler.
+    ///
+    /// @param text the text displayed by the button
+    /// @param variant the Material button variant
+    /// @param onAction the action handler invoked when the button fires, or `null` for no handler
+    /// @return a new button configured with the requested variant and action handler
     public static M3Button withVariant(
             String text,
             M3ButtonVariant variant,
@@ -126,6 +145,12 @@ public class M3Button extends ButtonBase {
     }
 
     /// Creates a button with text, graphic content, the requested variant, and an action handler.
+    ///
+    /// @param text the text displayed by the button
+    /// @param graphic the optional graphic displayed with the text
+    /// @param variant the Material button variant
+    /// @param onAction the action handler invoked when the button fires, or `null` for no handler
+    /// @return a new button configured with the requested content, variant, and action handler
     public static M3Button withVariant(
             String text,
             @Nullable Node graphic,
@@ -139,31 +164,43 @@ public class M3Button extends ButtonBase {
     }
 
     /// Returns the button variant.
+    ///
+    /// @return the Material button variant
     public final M3ButtonVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the button variant.
+    ///
+    /// @param variant the Material button variant
     public final void setVariant(M3ButtonVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the button variant property.
+    ///
+    /// @return the button variant property
     public final ObjectProperty<M3ButtonVariant> variantProperty() {
         return variant;
     }
 
     /// Sets whether this button is the default action in its containing context.
+    ///
+    /// @param defaultButton whether this button should be treated as the default action
     public final void setDefaultButton(boolean defaultButton) {
         defaultButtonProperty().set(defaultButton);
     }
 
     /// Returns whether this button is the default action in its containing context.
+    ///
+    /// @return `true` when this button is the default action
     public final boolean isDefaultButton() {
         return defaultButton != null && defaultButton.get();
     }
 
     /// Returns the default button state property.
+    ///
+    /// @return the default button state property
     public final BooleanProperty defaultButtonProperty() {
         if (defaultButton == null) {
             defaultButton = new BooleanPropertyBase(false) {
@@ -190,16 +227,22 @@ public class M3Button extends ButtonBase {
     }
 
     /// Sets whether this button is the cancel action in its containing context.
+    ///
+    /// @param cancelButton whether this button should be treated as the cancel action
     public final void setCancelButton(boolean cancelButton) {
         cancelButtonProperty().set(cancelButton);
     }
 
     /// Returns whether this button is the cancel action in its containing context.
+    ///
+    /// @return `true` when this button is the cancel action
     public final boolean isCancelButton() {
         return cancelButton != null && cancelButton.get();
     }
 
     /// Returns the cancel button state property.
+    ///
+    /// @return the cancel button state property
     public final BooleanProperty cancelButtonProperty() {
         if (cancelButton == null) {
             cancelButton = new BooleanPropertyBase(false) {
@@ -226,16 +269,22 @@ public class M3Button extends ButtonBase {
     }
 
     /// Returns the preferred container height token.
+    ///
+    /// @return the preferred button container height in pixels
     public final double getContainerHeight() {
         return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
     }
 
     /// Sets the preferred container height token.
+    ///
+    /// @param containerHeight the preferred button container height in pixels
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
     /// Returns the preferred container height token property.
+    ///
+    /// @return the preferred container height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = new StyleableDoubleProperty(DEFAULT_CONTAINER_HEIGHT) {
@@ -269,16 +318,22 @@ public class M3Button extends ButtonBase {
     }
 
     /// Returns the container shape radius token.
+    ///
+    /// @return the button container corner radius in pixels
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the container shape radius token.
+    ///
+    /// @param containerShape the button container corner radius in pixels
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
     /// Returns the container shape radius token property.
+    ///
+    /// @return the container shape property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
@@ -311,16 +366,22 @@ public class M3Button extends ButtonBase {
     }
 
     /// Returns the horizontal content padding token.
+    ///
+    /// @return the horizontal content padding in pixels
     public final double getHorizontalPadding() {
         return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
     }
 
     /// Sets the horizontal content padding token.
+    ///
+    /// @param horizontalPadding the horizontal content padding in pixels
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
     /// Returns the horizontal content padding token property.
+    ///
+    /// @return the horizontal content padding property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = new StyleableDoubleProperty(DEFAULT_HORIZONTAL_PADDING) {
@@ -374,6 +435,8 @@ public class M3Button extends ButtonBase {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

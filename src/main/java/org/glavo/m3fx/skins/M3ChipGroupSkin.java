@@ -18,6 +18,8 @@ public final class M3ChipGroupSkin extends M3ItemContainerSkinBase<M3ChipGroup, 
     private static final double DEFAULT_VERTICAL_GAP = 8.0;
 
     /// Creates a chip group skin.
+    ///
+    /// @param control the chip group controlled by this skin
     public M3ChipGroupSkin(M3ChipGroup control) {
         super(control, control.getItems(), new FlowPane());
         getContainer().setAlignment(Pos.CENTER_LEFT);

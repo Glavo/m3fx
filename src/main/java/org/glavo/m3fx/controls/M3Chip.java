@@ -54,7 +54,7 @@ public class M3Chip extends ButtonBase {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
-    /// The chip variant property.
+    // The chip variant property.
     private final ObjectProperty<M3ChipVariant> variant = new SimpleObjectProperty<>(this, "variant", M3ChipVariant.ASSIST) {
         /// Updates variant style classes when the property changes.
         @Override
@@ -67,16 +67,16 @@ public class M3Chip extends ButtonBase {
         }
     };
 
-    /// The styleable container height token.
+    // The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The styleable container shape token.
+    // The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable horizontal padding token.
+    // The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The selected state property.
+    // The selected state property.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -93,32 +93,57 @@ public class M3Chip extends ButtonBase {
     }
 
     /// Creates an assist chip with text.
+    ///
+    /// @param text the text displayed by the chip
     public M3Chip(String text) {
         this(text, null);
     }
 
     /// Creates an assist chip with text and graphic content.
+    ///
+    /// @param text the text displayed by the chip
+    /// @param graphic the optional graphic displayed with the text
     public M3Chip(String text, @Nullable Node graphic) {
         super(Objects.requireNonNull(text, "text"), graphic);
         initialize();
     }
 
     /// Creates a chip with text and the requested variant.
+    ///
+    /// @param text the text displayed by the chip
+    /// @param variant the Material chip variant
+    /// @return a new chip configured with the requested variant
     public static M3Chip withVariant(String text, M3ChipVariant variant) {
         return withVariant(text, null, variant, false);
     }
 
     /// Creates a chip with text, the requested variant, and selected state.
+    ///
+    /// @param text the text displayed by the chip
+    /// @param variant the Material chip variant
+    /// @param selected whether the chip should start selected
+    /// @return a new chip configured with the requested variant and selected state
     public static M3Chip withVariant(String text, M3ChipVariant variant, boolean selected) {
         return withVariant(text, null, variant, selected);
     }
 
     /// Creates a chip with text, graphic content, and the requested variant.
+    ///
+    /// @param text the text displayed by the chip
+    /// @param graphic the optional graphic displayed with the text
+    /// @param variant the Material chip variant
+    /// @return a new chip configured with the requested content and variant
     public static M3Chip withVariant(String text, @Nullable Node graphic, M3ChipVariant variant) {
         return withVariant(text, graphic, variant, false);
     }
 
     /// Creates a chip with text, graphic content, the requested variant, and selected state.
+    ///
+    /// @param text the text displayed by the chip
+    /// @param graphic the optional graphic displayed with the text
+    /// @param variant the Material chip variant
+    /// @param selected whether the chip should start selected
+    /// @return a new chip configured with the requested content, variant, and selected state
     public static M3Chip withVariant(
             String text,
             @Nullable Node graphic,
@@ -132,46 +157,64 @@ public class M3Chip extends ButtonBase {
     }
 
     /// Returns whether this chip is selected.
+    ///
+    /// @return `true` when this chip is selected
     public final boolean isSelected() {
         return selected.get();
     }
 
     /// Sets whether this chip is selected.
+    ///
+    /// @param selected whether this chip should be selected
     public final void setSelected(boolean selected) {
         this.selected.set(selected);
     }
 
     /// Returns the selected state property.
+    ///
+    /// @return the selected state property
     public final BooleanProperty selectedProperty() {
         return selected;
     }
 
     /// Returns the chip variant.
+    ///
+    /// @return the Material chip variant
     public final M3ChipVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the chip variant.
+    ///
+    /// @param variant the Material chip variant
     public final void setVariant(M3ChipVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the chip variant property.
+    ///
+    /// @return the chip variant property
     public final ObjectProperty<M3ChipVariant> variantProperty() {
         return variant;
     }
 
     /// Returns the preferred container height token.
+    ///
+    /// @return the preferred chip container height in pixels
     public final double getContainerHeight() {
         return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
     }
 
     /// Sets the preferred container height token.
+    ///
+    /// @param containerHeight the preferred chip container height in pixels
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
     /// Returns the preferred container height token property.
+    ///
+    /// @return the preferred container height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = new StyleableDoubleProperty(DEFAULT_CONTAINER_HEIGHT) {
@@ -205,16 +248,22 @@ public class M3Chip extends ButtonBase {
     }
 
     /// Returns the container shape radius token.
+    ///
+    /// @return the chip container corner radius in pixels
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the container shape radius token.
+    ///
+    /// @param containerShape the chip container corner radius in pixels
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
     /// Returns the container shape radius token property.
+    ///
+    /// @return the container shape property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
@@ -247,16 +296,22 @@ public class M3Chip extends ButtonBase {
     }
 
     /// Returns the horizontal content padding token.
+    ///
+    /// @return the horizontal content padding in pixels
     public final double getHorizontalPadding() {
         return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
     }
 
     /// Sets the horizontal content padding token.
+    ///
+    /// @param horizontalPadding the horizontal content padding in pixels
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
     /// Returns the horizontal content padding token property.
+    ///
+    /// @return the horizontal content padding property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = new StyleableDoubleProperty(DEFAULT_HORIZONTAL_PADDING) {
@@ -290,6 +345,8 @@ public class M3Chip extends ButtonBase {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

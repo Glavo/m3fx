@@ -15,6 +15,8 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<M3ButtonGro
     private static final double GROUPED_BUTTON_SPACING = -1.0;
 
     /// Creates a button group skin.
+    ///
+    /// @param control the button group controlled by this skin
     public M3ButtonGroupSkin(M3ButtonGroup control) {
         super(control, control.getItems(), new HBox());
         getContainer().setAlignment(Pos.CENTER_LEFT);

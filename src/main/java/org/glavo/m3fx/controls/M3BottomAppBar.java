@@ -39,10 +39,10 @@ public class M3BottomAppBar extends Control {
     /// The floating action slot style class.
     public static final String FLOATING_ACTION_STYLE_CLASS = "m3-bottom-app-bar-floating-action";
 
-    /// The optional floating action node property.
+    // The optional floating action node property.
     private final ObjectProperty<@Nullable Node> floatingAction = new SimpleObjectProperty<>(this, "floatingAction");
 
-    /// The floating action node alignment property.
+    // The floating action node alignment property.
     private final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignment =
             new SimpleObjectProperty<>(this, "floatingActionAlignment", M3BottomAppBarFloatingActionAlignment.END) {
                 /// Updates alignment style classes when the property changes.
@@ -66,12 +66,18 @@ public class M3BottomAppBar extends Control {
     }
 
     /// Creates a bottom app bar containing the supplied action nodes.
+    ///
+    /// @param actions the regular action nodes displayed in the bar
     public M3BottomAppBar(Node... actions) {
         initialize();
         addActions(actions);
     }
 
     /// Creates a bottom app bar with floating action content, alignment, and regular actions.
+    ///
+    /// @param floatingActionAlignment the alignment of the optional floating action node
+    /// @param floatingAction the optional floating action node, or `null` for no floating action
+    /// @param actions the regular action nodes displayed in the bar
     public M3BottomAppBar(
             M3BottomAppBarFloatingActionAlignment floatingActionAlignment,
             @Nullable Node floatingAction,
@@ -83,22 +89,30 @@ public class M3BottomAppBar extends Control {
     }
 
     /// Returns the mutable action node list.
+    ///
+    /// @return the mutable regular action node list
     public final ObservableList<Node> getActions() {
         return actions;
     }
 
     /// Adds one regular action node.
+    ///
+    /// @param action the regular action node to add
     public final void addAction(Node action) {
         getActions().add(Objects.requireNonNull(action, "action"));
     }
 
     /// Adds regular actions after validating the action array.
+    ///
+    /// @param actions the regular action nodes to add
     public final void addActions(Node... actions) {
         validateActions(actions);
         getActions().addAll(actions);
     }
 
     /// Replaces all regular action nodes.
+    ///
+    /// @param actions the replacement regular action nodes
     public final void setActions(Node... actions) {
         validateActions(actions);
         getActions().setAll(actions);
@@ -110,31 +124,43 @@ public class M3BottomAppBar extends Control {
     }
 
     /// Returns the optional floating action node.
+    ///
+    /// @return the floating action node, or `null` when no floating action is set
     public final @Nullable Node getFloatingAction() {
         return floatingAction.get();
     }
 
     /// Sets the optional floating action node.
+    ///
+    /// @param floatingAction the floating action node, or `null` to clear it
     public final void setFloatingAction(@Nullable Node floatingAction) {
         this.floatingAction.set(floatingAction);
     }
 
     /// Returns the optional floating action node property.
+    ///
+    /// @return the floating action node property
     public final ObjectProperty<@Nullable Node> floatingActionProperty() {
         return floatingAction;
     }
 
     /// Returns the floating action node alignment.
+    ///
+    /// @return the floating action alignment
     public final M3BottomAppBarFloatingActionAlignment getFloatingActionAlignment() {
         return floatingActionAlignment.get();
     }
 
     /// Sets the floating action node alignment.
+    ///
+    /// @param floatingActionAlignment the floating action alignment
     public final void setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment floatingActionAlignment) {
         this.floatingActionAlignment.set(Objects.requireNonNull(floatingActionAlignment, "floatingActionAlignment"));
     }
 
     /// Returns the floating action node alignment property.
+    ///
+    /// @return the floating action alignment property
     public final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignmentProperty() {
         return floatingActionAlignment;
     }

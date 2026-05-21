@@ -6,6 +6,11 @@ package org.glavo.m3fx.controls;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Identifies a Material Design 3 typography role used by [M3Text].
+///
+/// Text roles correspond to the Material type scale. Controls and applications can use these roles to select
+/// typography by intent rather than by hard-coded font size or weight.
+///
+/// See [Material Design typography](https://m3.material.io/styles/typography/overview).
 @NotNullByDefault
 public enum M3TextRole {
     /// Display large text used for the largest presentation text.
@@ -62,6 +67,8 @@ public enum M3TextRole {
     }
 
     /// Returns the style class for this typography role.
+    ///
+    /// @return the style class applied by this typography role
     public String getStyleClass() {
         return styleClass;
     }

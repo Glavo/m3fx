@@ -6,6 +6,11 @@ package org.glavo.m3fx.controls;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Identifies a fixed Material Design 3 list item slot size.
+///
+/// Slot sizes define how leading and trailing list item content is measured and clipped. They provide the
+/// standard metrics for icons, avatars, and thumbnails while still allowing [AUTO] for arbitrary custom nodes.
+///
+/// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public enum M3ListItemSlotSize {
     /// Uses the node's computed size without clipping.
@@ -40,21 +45,29 @@ public enum M3ListItemSlotSize {
     }
 
     /// Returns whether this slot uses fixed width and height metrics.
+    ///
+    /// @return `true` when this value supplies fixed width and height metrics
     public boolean isFixedSize() {
         return width >= 0.0 && height >= 0.0;
     }
 
     /// Returns the fixed slot width.
+    ///
+    /// @return the fixed slot width, or a negative value when computed sizing is used
     public double getWidth() {
         return width;
     }
 
     /// Returns the fixed slot height.
+    ///
+    /// @return the fixed slot height, or a negative value when computed sizing is used
     public double getHeight() {
         return height;
     }
 
     /// Returns the clipping radius for fixed-size slot content.
+    ///
+    /// @return the clipping radius in pixels
     public double getShapeRadius() {
         return shapeRadius;
     }

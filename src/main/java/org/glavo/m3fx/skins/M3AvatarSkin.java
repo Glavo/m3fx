@@ -25,6 +25,8 @@ public final class M3AvatarSkin extends SkinBase<M3Avatar> {
     private final InvalidationListener graphicInvalidation = observable -> updateContent();
 
     /// Creates an avatar skin.
+    ///
+    /// @param control the avatar controlled by this skin
     public M3AvatarSkin(M3Avatar control) {
         super(control);
         container.setManaged(false);

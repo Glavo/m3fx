@@ -44,6 +44,8 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
     /// Creates a bottom app bar skin.
+    ///
+    /// @param control the bottom app bar controlled by this skin
     public M3BottomAppBarSkin(M3BottomAppBar control) {
         super(control);
         container.setManaged(false);

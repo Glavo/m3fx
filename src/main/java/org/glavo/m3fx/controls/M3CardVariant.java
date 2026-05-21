@@ -5,7 +5,12 @@ package org.glavo.m3fx.controls;
 
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Describes the visual variant of an m3fx card.
+/// Describes the visual variant of an M3FX card.
+///
+/// Card variants control how the card separates grouped content from the surrounding surface. Elevated cards use
+/// shadow, filled cards use a tonal container, and outlined cards use a boundary stroke.
+///
+/// See [Material Design cards](https://m3.material.io/components/cards/overview).
 @NotNullByDefault
 public enum M3CardVariant {
     /// An elevated card.
@@ -26,6 +31,8 @@ public enum M3CardVariant {
     }
 
     /// Returns the JavaFX style class used by this variant.
+    ///
+    /// @return the style class applied by this variant
     public String getStyleClass() {
         return styleClass;
     }

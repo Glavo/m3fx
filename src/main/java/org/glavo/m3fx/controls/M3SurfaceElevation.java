@@ -6,6 +6,11 @@ package org.glavo.m3fx.controls;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Identifies a Material Design 3 surface elevation level.
+///
+/// Elevation levels select the shadow and tonal elevation treatment used by [M3Surface]. Level zero is flush
+/// with the surrounding surface, while higher levels visually separate content layers.
+///
+/// See [Material Design elevation](https://m3.material.io/styles/elevation/overview).
 @NotNullByDefault
 public enum M3SurfaceElevation {
     /// Uses no shadow.
@@ -35,6 +40,8 @@ public enum M3SurfaceElevation {
     }
 
     /// Returns the style class for this elevation level.
+    ///
+    /// @return the style class applied by this elevation level
     public String getStyleClass() {
         return styleClass;
     }

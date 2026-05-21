@@ -48,7 +48,7 @@ public class M3ChipGroup extends Control {
     /// The mutable chip group content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
-    /// The preferred wrapping width used by the internal flow layout.
+    // The preferred wrapping width used by the internal flow layout.
     private final DoubleProperty prefWrapLength = new SimpleDoubleProperty(this, "prefWrapLength", 400.0) {
         /// Validates updated preferred wrap length values.
         @Override
@@ -57,7 +57,7 @@ public class M3ChipGroup extends Control {
         }
     };
 
-    /// The chip selection mode.
+    // The chip selection mode.
     private final ObjectProperty<M3ChipSelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3ChipSelectionMode.MULTIPLE) {
                 /// Enforces selection invariants when the mode changes.
@@ -71,7 +71,7 @@ public class M3ChipGroup extends Control {
                 }
             };
 
-    /// Whether the group allows all chips to be unselected.
+    // Whether the group allows all chips to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected chip when empty selection is disabled.
         @Override
@@ -89,7 +89,7 @@ public class M3ChipGroup extends Control {
     private final @UnmodifiableView ObservableList<M3Chip> selectedChipsView =
             FXCollections.unmodifiableObservableList(selectedChips);
 
-    /// The first selected chip in child order.
+    // The first selected chip in child order.
     private final ReadOnlyObjectWrapper<@Nullable M3Chip> selectedChip =
             new ReadOnlyObjectWrapper<>(this, "selectedChip");
 
@@ -126,28 +126,38 @@ public class M3ChipGroup extends Control {
     }
 
     /// Creates a chip group containing the supplied chips.
+    ///
+    /// @param chips the chips displayed by the group
     public M3ChipGroup(M3Chip... chips) {
         initialize();
         addChips(chips);
     }
 
     /// Returns the mutable child list used as chip group content.
+    ///
+    /// @return the mutable child list used as chip group content
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one chip.
+    ///
+    /// @param chip the chip to add
     public final void addChip(M3Chip chip) {
         getItems().add(Objects.requireNonNull(chip, "chip"));
     }
 
     /// Adds chips.
+    ///
+    /// @param chips the chips to add
     public final void addChips(M3Chip... chips) {
         validateChips(chips);
         getItems().addAll(chips);
     }
 
     /// Replaces all chip nodes.
+    ///
+    /// @param chips the replacement chip nodes
     public final void setChips(M3Chip... chips) {
         validateChips(chips);
         getItems().setAll(chips);
@@ -159,72 +169,100 @@ public class M3ChipGroup extends Control {
     }
 
     /// Returns the preferred wrapping width used by the chip flow layout.
+    ///
+    /// @return the preferred wrap length in pixels
     public final double getPrefWrapLength() {
         return prefWrapLength.get();
     }
 
     /// Sets the preferred wrapping width used by the chip flow layout.
+    ///
+    /// @param prefWrapLength the preferred wrap length in pixels
     public final void setPrefWrapLength(double prefWrapLength) {
         this.prefWrapLength.set(M3Css.nonNegative(prefWrapLength, "prefWrapLength"));
     }
 
     /// Returns the preferred wrapping width property.
+    ///
+    /// @return the preferred wrap length property
     public final DoubleProperty prefWrapLengthProperty() {
         return prefWrapLength;
     }
 
     /// Returns the chip selection mode.
+    ///
+    /// @return the chip selection mode
     public final M3ChipSelectionMode getSelectionMode() {
         return selectionMode.get();
     }
 
     /// Sets the chip selection mode.
+    ///
+    /// @param selectionMode the chip selection mode
     public final void setSelectionMode(M3ChipSelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the chip selection mode property.
+    ///
+    /// @return the chip selection mode property
     public final ObjectProperty<M3ChipSelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
     /// Returns whether this group allows all chips to be unselected.
+    ///
+    /// @return `true` when the group allows empty selection
     public final boolean isAllowEmptySelection() {
         return allowEmptySelection.get();
     }
 
     /// Sets whether this group allows all chips to be unselected.
+    ///
+    /// @param allowEmptySelection whether the group should allow empty selection
     public final void setAllowEmptySelection(boolean allowEmptySelection) {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
     /// Returns the empty-selection policy property.
+    ///
+    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
 
     /// Returns the currently selected chips in child order.
+    ///
+    /// @return an immutable observable view of selected chips in child order
     public final @UnmodifiableView ObservableList<M3Chip> getSelectedChips() {
         return selectedChipsView;
     }
 
     /// Returns the first selected chip in child order.
+    ///
+    /// @return the first selected chip in child order, or `null` when selection is empty
     public final @Nullable M3Chip getSelectedChip() {
         return selectedChip.get();
     }
 
     /// Returns the first selected chip property.
+    ///
+    /// @return the read-only first selected chip property
     public final ReadOnlyObjectProperty<@Nullable M3Chip> selectedChipProperty() {
         return selectedChip.getReadOnlyProperty();
     }
 
     /// Returns the child index of the first selected chip, or `-1` when no chip is selected.
+    ///
+    /// @return the child index of the first selected chip, or `-1` when selection is empty
     public final int getSelectedIndex() {
         @Nullable M3Chip chip = getSelectedChip();
         return chip == null ? -1 : getItems().indexOf(chip);
     }
 
     /// Selects a chip that belongs to this group.
+    ///
+    /// @param chip the chip to select
     public final void select(M3Chip chip) {
         Objects.requireNonNull(chip, "chip");
         if (!getItems().contains(chip)) {
@@ -245,6 +283,8 @@ public class M3ChipGroup extends Control {
     }
 
     /// Selects the chip at the given child index.
+    ///
+    /// @param index the child index to select
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3Chip chip) {

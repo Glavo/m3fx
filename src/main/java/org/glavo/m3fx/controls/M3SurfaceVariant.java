@@ -6,6 +6,12 @@ package org.glavo.m3fx.controls;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Identifies a Material Design 3 surface color variant.
+///
+/// Surface variants select the container color role applied by [M3Surface]. Use the surface and container roles
+/// for neutral layout surfaces, and the primary, secondary, or tertiary container roles for semantic or branded
+/// emphasis.
+///
+/// See [Material Design color roles](https://m3.material.io/styles/color/roles).
 @NotNullByDefault
 public enum M3SurfaceVariant {
     /// Uses the base surface color.
@@ -44,6 +50,8 @@ public enum M3SurfaceVariant {
     }
 
     /// Returns the style class for this surface variant.
+    ///
+    /// @return the style class applied by this variant
     public String getStyleClass() {
         return styleClass;
     }

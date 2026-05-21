@@ -62,13 +62,13 @@ public class M3BottomSheet extends Control {
     /// The drag handle style class.
     public static final String DRAG_HANDLE_STYLE_CLASS = "m3-bottom-sheet-drag-handle";
 
-    /// The sheet headline text property.
+    // The sheet headline text property.
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
 
-    /// The sheet content node property.
+    // The sheet content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    /// The sheet variant property.
+    // The sheet variant property.
     private final ObjectProperty<M3SheetVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SheetVariant.STANDARD) {
                 /// Updates variant style classes when the property changes.
@@ -82,7 +82,7 @@ public class M3BottomSheet extends Control {
                 }
             };
 
-    /// Whether this sheet is shown.
+    // Whether this sheet is shown.
     private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
         /// Updates the sheet visibility when the property changes.
         @Override
@@ -92,11 +92,11 @@ public class M3BottomSheet extends Control {
         }
     };
 
-    /// Whether focus returns to the previously focused node when a modal sheet hides.
+    // Whether focus returns to the previously focused node when a modal sheet hides.
     private final BooleanProperty restoreFocusOnHide =
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
 
-    /// Whether the drag handle is visible.
+    // Whether the drag handle is visible.
     private final BooleanProperty dragHandleVisible =
             new SimpleBooleanProperty(this, "dragHandleVisible", true) {
                 /// Requests skin layout when handle visibility changes.
@@ -124,11 +124,16 @@ public class M3BottomSheet extends Control {
     }
 
     /// Creates a bottom sheet with headline text.
+    ///
+    /// @param headline the sheet headline text
     public M3BottomSheet(String headline) {
         this(headline, null);
     }
 
     /// Creates a bottom sheet with headline text and content.
+    ///
+    /// @param headline the sheet headline text
+    /// @param content the sheet content node, or `null` for no content
     public M3BottomSheet(String headline, @Nullable Node content) {
         initialize();
         setHeadline(headline);
@@ -136,6 +141,10 @@ public class M3BottomSheet extends Control {
     }
 
     /// Creates a bottom sheet with headline text, content, and trailing actions.
+    ///
+    /// @param headline the sheet headline text
+    /// @param content the sheet content node, or `null` for no content
+    /// @param actions the trailing action nodes
     public M3BottomSheet(String headline, @Nullable Node content, Node... actions) {
         this(headline, content);
         validateActions(actions);
@@ -143,96 +152,134 @@ public class M3BottomSheet extends Control {
     }
 
     /// Returns the sheet headline.
+    ///
+    /// @return the sheet headline text
     public final String getHeadline() {
         return headline.get();
     }
 
     /// Sets the sheet headline.
+    ///
+    /// @param headline the sheet headline text
     public final void setHeadline(String headline) {
         this.headline.set(Objects.requireNonNull(headline, "headline"));
     }
 
     /// Returns the sheet headline property.
+    ///
+    /// @return the sheet headline property
     public final StringProperty headlineProperty() {
         return headline;
     }
 
     /// Returns the sheet content node.
+    ///
+    /// @return the sheet content node, or `null` when no content is set
     public final @Nullable Node getContent() {
         return content.get();
     }
 
     /// Sets the sheet content node.
+    ///
+    /// @param content the sheet content node, or `null` to clear it
     public final void setContent(@Nullable Node content) {
         this.content.set(content);
     }
 
     /// Returns the sheet content node property.
+    ///
+    /// @return the sheet content node property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
 
     /// Returns the sheet variant.
+    ///
+    /// @return the sheet variant
     public final M3SheetVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the sheet variant.
+    ///
+    /// @param variant the sheet variant
     public final void setVariant(M3SheetVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the sheet variant property.
+    ///
+    /// @return the sheet variant property
     public final ObjectProperty<M3SheetVariant> variantProperty() {
         return variant;
     }
 
     /// Returns whether this sheet is shown.
+    ///
+    /// @return `true` when the sheet is shown and participates in layout
     public final boolean isShown() {
         return shown.get();
     }
 
     /// Sets whether this sheet is shown.
+    ///
+    /// @param shown whether the sheet should be shown
     public final void setShown(boolean shown) {
         this.shown.set(shown);
     }
 
     /// Returns the shown property.
+    ///
+    /// @return the shown property
     public final BooleanProperty shownProperty() {
         return shown;
     }
 
     /// Returns whether modal sheet hiding restores focus to the previous focus owner.
+    ///
+    /// @return `true` when hiding a modal sheet restores focus to the previous focus owner
     public final boolean isRestoreFocusOnHide() {
         return restoreFocusOnHide.get();
     }
 
     /// Sets whether modal sheet hiding restores focus to the previous focus owner.
+    ///
+    /// @param restoreFocusOnHide whether hiding a modal sheet restores focus
     public final void setRestoreFocusOnHide(boolean restoreFocusOnHide) {
         this.restoreFocusOnHide.set(restoreFocusOnHide);
     }
 
     /// Returns the focus restoration property.
+    ///
+    /// @return the focus restoration property
     public final BooleanProperty restoreFocusOnHideProperty() {
         return restoreFocusOnHide;
     }
 
     /// Returns whether the drag handle is visible.
+    ///
+    /// @return `true` when the drag handle is visible
     public final boolean isDragHandleVisible() {
         return dragHandleVisible.get();
     }
 
     /// Sets whether the drag handle is visible.
+    ///
+    /// @param dragHandleVisible whether the drag handle should be visible
     public final void setDragHandleVisible(boolean dragHandleVisible) {
         this.dragHandleVisible.set(dragHandleVisible);
     }
 
     /// Returns the drag handle visibility property.
+    ///
+    /// @return the drag handle visibility property
     public final BooleanProperty dragHandleVisibleProperty() {
         return dragHandleVisible;
     }
 
     /// Returns the mutable trailing action node list.
+    ///
+    /// @return the mutable trailing action node list
     public final ObservableList<Node> getActions() {
         return actions;
     }

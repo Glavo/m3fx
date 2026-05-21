@@ -6,6 +6,11 @@ package org.glavo.m3fx.controls;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Defines the visual arrangement used by an [M3TopAppBar].
+///
+/// Top app bar variants choose the title placement and height metrics for different page hierarchy levels. The
+/// variant is visual and does not change the navigation or action slot APIs.
+///
+/// See [Material Design top app bars](https://m3.material.io/components/top-app-bar/overview).
 @NotNullByDefault
 public enum M3TopAppBarVariant {
     /// Uses the baseline small top app bar layout.
@@ -29,6 +34,8 @@ public enum M3TopAppBarVariant {
     }
 
     /// Returns the style class associated with this variant.
+    ///
+    /// @return the style class applied by this variant
     public String getStyleClass() {
         return styleClass;
     }

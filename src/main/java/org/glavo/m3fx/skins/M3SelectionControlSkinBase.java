@@ -162,16 +162,24 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     }
 
     /// Returns the indicator touch target slot.
+    ///
+    /// @return the indicator touch target slot
     protected final StackPane indicatorSlot() {
         return indicatorSlot;
     }
 
     /// Returns the mirrored label node.
+    ///
+    /// @return the mirrored label node
     protected final Label label() {
         return label;
     }
 
     /// Applies a fixed size to a region.
+    ///
+    /// @param region the region to size
+    /// @param width the fixed width in pixels
+    /// @param height the fixed height in pixels
     protected static void setFixedSize(Region region, double width, double height) {
         region.setMinSize(width, height);
         region.setPrefSize(width, height);
@@ -179,12 +187,21 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     }
 
     /// Applies a fixed size to the indicator touch target slot.
+    ///
+    /// @param width the fixed indicator slot width in pixels
+    /// @param height the fixed indicator slot height in pixels
     protected final void setIndicatorSlotSize(double width, double height) {
         setFixedSize(indicatorSlot, width, height);
         stateLayer.layoutLayer(0.0, 0.0, width, height, Math.max(width, height) / 2.0);
     }
 
     /// Lays out the indicator state layer within the indicator slot.
+    ///
+    /// @param x the layer x position
+    /// @param y the layer y position
+    /// @param width the layer width
+    /// @param height the layer height
+    /// @param shapeRadius the layer clipping radius
     protected final void layoutIndicatorStateLayer(
             double x,
             double y,

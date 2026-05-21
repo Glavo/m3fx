@@ -25,6 +25,8 @@ public final class M3BadgedBoxSkin extends SkinBase<M3BadgedBox> {
     private final InvalidationListener badgePlacementInvalidation = observable -> updateBadgePlacement();
 
     /// Creates a badged box skin.
+    ///
+    /// @param control the badged box controlled by this skin
     public M3BadgedBoxSkin(M3BadgedBox control) {
         super(control);
         container.setManaged(false);

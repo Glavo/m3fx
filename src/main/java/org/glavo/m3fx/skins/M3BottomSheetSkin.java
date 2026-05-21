@@ -61,6 +61,8 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
     /// Creates a bottom sheet skin.
+    ///
+    /// @param control the bottom sheet controlled by this skin
     public M3BottomSheetSkin(M3BottomSheet control) {
         super(control);
         container.setManaged(false);

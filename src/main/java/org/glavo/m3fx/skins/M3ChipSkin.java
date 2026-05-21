@@ -10,6 +10,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public class M3ChipSkin extends M3LabeledButtonSkinBase<M3Chip> {
     /// Creates a chip skin.
+    ///
+    /// @param control the chip controlled by this skin
     public M3ChipSkin(M3Chip control) {
         super(control);
     }

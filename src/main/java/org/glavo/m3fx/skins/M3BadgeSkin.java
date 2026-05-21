@@ -37,6 +37,8 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
     private String currentDisplayText = "";
 
     /// Creates a badge skin.
+    ///
+    /// @param control the badge controlled by this skin
     public M3BadgeSkin(M3Badge control) {
         super(control);
         label.getStyleClass().add("m3-badge-label");

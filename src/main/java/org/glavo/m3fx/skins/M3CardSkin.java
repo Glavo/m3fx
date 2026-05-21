@@ -47,6 +47,8 @@ public class M3CardSkin extends SkinBase<M3Card> {
     private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
 
     /// Creates a card skin.
+    ///
+    /// @param control the card controlled by this skin
     public M3CardSkin(M3Card control) {
         super(control);
         effectTransition = new M3CssEffectTransition(control, container);

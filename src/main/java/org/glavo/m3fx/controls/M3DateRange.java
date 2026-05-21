@@ -8,7 +8,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.time.LocalDate;
 import java.util.Objects;
 
-/// An inclusive local-date range.
+/// An immutable inclusive local-date range used by M3FX date range pickers.
+///
+/// The range always contains both endpoints and rejects values where the start date is after the end date.
+/// [M3DateRangePicker] and [M3DateRangePickerField] use this record as their selected-value type.
+///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 ///
 /// @param startDate the first date in the range
 /// @param endDate the last date in the range

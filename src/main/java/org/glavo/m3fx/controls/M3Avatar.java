@@ -46,13 +46,13 @@ public class M3Avatar extends Control {
     /// The default avatar container size.
     private static final double DEFAULT_CONTAINER_SIZE = 40.0;
 
-    /// The avatar text property.
+    // The avatar text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    /// The optional graphic node property.
+    // The optional graphic node property.
     private final ObjectProperty<@Nullable Node> graphic = new SimpleObjectProperty<>(this, "graphic");
 
-    /// The avatar color variant property.
+    // The avatar color variant property.
     private final ObjectProperty<M3AvatarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3AvatarVariant.PRIMARY) {
                 /// Updates avatar variant style classes when the property changes.
@@ -66,7 +66,7 @@ public class M3Avatar extends Control {
                 }
             };
 
-    /// The styleable avatar container size token.
+    // The styleable avatar container size token.
     private @Nullable StyleableDoubleProperty containerSize;
 
     /// Creates an empty avatar.
@@ -75,18 +75,26 @@ public class M3Avatar extends Control {
     }
 
     /// Creates an avatar with text.
+    ///
+    /// @param text the text displayed when no graphic is set
     public M3Avatar(String text) {
         initialize();
         setText(text);
     }
 
     /// Creates an avatar with a graphic node.
+    ///
+    /// @param graphic the graphic node displayed by the avatar, or `null` for no graphic
     public M3Avatar(@Nullable Node graphic) {
         initialize();
         setGraphic(graphic);
     }
 
     /// Creates an avatar with text and the requested color variant.
+    ///
+    /// @param text the text displayed when no graphic is set
+    /// @param variant the avatar color variant
+    /// @return a new avatar configured with the requested variant
     public static M3Avatar withVariant(String text, M3AvatarVariant variant) {
         M3Avatar avatar = new M3Avatar(text);
         avatar.setVariant(variant);
@@ -94,6 +102,10 @@ public class M3Avatar extends Control {
     }
 
     /// Creates an avatar with a graphic node and the requested color variant.
+    ///
+    /// @param graphic the graphic node displayed by the avatar, or `null` for no graphic
+    /// @param variant the avatar color variant
+    /// @return a new avatar configured with the requested variant
     public static M3Avatar withVariant(@Nullable Node graphic, M3AvatarVariant variant) {
         M3Avatar avatar = new M3Avatar(graphic);
         avatar.setVariant(variant);
@@ -101,61 +113,85 @@ public class M3Avatar extends Control {
     }
 
     /// Returns the avatar text.
+    ///
+    /// @return the text displayed when no graphic is set
     public final String getText() {
         return text.get();
     }
 
     /// Sets the avatar text.
+    ///
+    /// @param text the text displayed when no graphic is set
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
     /// Returns the avatar text property.
+    ///
+    /// @return the avatar text property
     public final StringProperty textProperty() {
         return text;
     }
 
     /// Returns the optional graphic node.
+    ///
+    /// @return the graphic node displayed by the avatar, or `null` when the avatar uses text
     public final @Nullable Node getGraphic() {
         return graphic.get();
     }
 
     /// Sets the optional graphic node.
+    ///
+    /// @param graphic the graphic node displayed by the avatar, or `null` to display text
     public final void setGraphic(@Nullable Node graphic) {
         this.graphic.set(graphic);
     }
 
     /// Returns the optional graphic node property.
+    ///
+    /// @return the graphic node property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
         return graphic;
     }
 
     /// Returns the avatar color variant.
+    ///
+    /// @return the avatar color variant
     public final M3AvatarVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the avatar color variant.
+    ///
+    /// @param variant the avatar color variant
     public final void setVariant(M3AvatarVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the avatar color variant property.
+    ///
+    /// @return the avatar color variant property
     public final ObjectProperty<M3AvatarVariant> variantProperty() {
         return variant;
     }
 
     /// Returns the avatar container size token.
+    ///
+    /// @return the avatar container size in pixels
     public final double getContainerSize() {
         return containerSize == null ? DEFAULT_CONTAINER_SIZE : containerSize.get();
     }
 
     /// Sets the avatar container size token.
+    ///
+    /// @param containerSize the avatar container size in pixels
     public final void setContainerSize(double containerSize) {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
 
     /// Returns the avatar container size token property.
+    ///
+    /// @return the avatar container size property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = new StyleableDoubleProperty(DEFAULT_CONTAINER_SIZE) {
@@ -189,6 +225,8 @@ public class M3Avatar extends Control {
     }
 
     /// Returns the CSS metadata for this node class.
+    ///
+    /// @return the immutable CSS metadata list for this class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

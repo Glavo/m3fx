@@ -50,10 +50,10 @@ public class M3Card extends Control {
     /// The default outlined card border width.
     private static final double DEFAULT_OUTLINE_WIDTH = 1.0;
 
-    /// The card content node property.
+    // The card content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    /// The action handler property.
+    // The action handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates accessibility semantics when action behavior changes.
@@ -63,7 +63,7 @@ public class M3Card extends Control {
                 }
             };
 
-    /// The card variant property.
+    // The card variant property.
     private final ObjectProperty<M3CardVariant> variant = new SimpleObjectProperty<>(this, "variant", M3CardVariant.FILLED) {
         /// Updates variant style classes when the property changes.
         @Override
@@ -76,13 +76,13 @@ public class M3Card extends Control {
         }
     };
 
-    /// The styleable container shape token.
+    // The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable content padding token.
+    // The styleable content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// The styleable outline width token.
+    // The styleable outline width token.
     private @Nullable StyleableDoubleProperty outlineWidth;
 
     /// Creates an empty filled card.
@@ -91,6 +91,8 @@ public class M3Card extends Control {
     }
 
     /// Creates a filled card with content.
+    ///
+    /// @param content the card content node, or `null` for no content
     public M3Card(@Nullable Node content) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setContent(content);
@@ -99,12 +101,19 @@ public class M3Card extends Control {
     }
 
     /// Creates a card with content and a variant.
+    ///
+    /// @param content the card content node, or `null` for no content
+    /// @param variant the Material card variant
     public M3Card(@Nullable Node content, M3CardVariant variant) {
         this(content);
         setVariant(variant);
     }
 
     /// Creates a card with content, variant, and action handler.
+    ///
+    /// @param content the card content node, or `null` for no content
+    /// @param variant the Material card variant
+    /// @param onAction the action handler invoked when the card fires, or `null` for a passive card
     public M3Card(
             @Nullable Node content,
             M3CardVariant variant,
@@ -115,61 +124,85 @@ public class M3Card extends Control {
     }
 
     /// Returns the card content node.
+    ///
+    /// @return the card content node, or `null` when no content is set
     public final @Nullable Node getContent() {
         return content.get();
     }
 
     /// Sets the card content node.
+    ///
+    /// @param content the card content node, or `null` to clear it
     public final void setContent(@Nullable Node content) {
         this.content.set(content);
     }
 
     /// Returns the card content property.
+    ///
+    /// @return the card content property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
 
     /// Returns the action handler.
+    ///
+    /// @return the action handler, or `null` when this card is passive
     public final @Nullable EventHandler<ActionEvent> getOnAction() {
         return onAction.get();
     }
 
     /// Sets the action handler.
+    ///
+    /// @param onAction the action handler invoked when the card fires, or `null` for a passive card
     public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
         this.onAction.set(onAction);
     }
 
     /// Returns the action handler property.
+    ///
+    /// @return the action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
 
     /// Returns the card variant.
+    ///
+    /// @return the Material card variant
     public final M3CardVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the card variant.
+    ///
+    /// @param variant the Material card variant
     public final void setVariant(M3CardVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the card variant property.
+    ///
+    /// @return the card variant property
     public final ObjectProperty<M3CardVariant> variantProperty() {
         return variant;
     }
 
     /// Returns the card container shape radius token.
+    ///
+    /// @return the card container corner radius in pixels
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the card container shape radius token.
+    ///
+    /// @param containerShape the card container corner radius in pixels
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
     /// Returns the card container shape radius token property.
+    ///
+    /// @return the card container shape property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
@@ -202,16 +235,22 @@ public class M3Card extends Control {
     }
 
     /// Returns the card content padding token.
+    ///
+    /// @return the card content padding in pixels
     public final double getContentPadding() {
         return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
     }
 
     /// Sets the card content padding token.
+    ///
+    /// @param contentPadding the card content padding in pixels
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
     /// Returns the card content padding token property.
+    ///
+    /// @return the card content padding property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
@@ -244,16 +283,22 @@ public class M3Card extends Control {
     }
 
     /// Returns the outlined card border width token.
+    ///
+    /// @return the outlined card border width in pixels
     public final double getOutlineWidth() {
         return outlineWidth == null ? DEFAULT_OUTLINE_WIDTH : outlineWidth.get();
     }
 
     /// Sets the outlined card border width token.
+    ///
+    /// @param outlineWidth the outlined card border width in pixels
     public final void setOutlineWidth(double outlineWidth) {
         outlineWidthProperty().set(M3Css.nonNegative(outlineWidth, "outlineWidth"));
     }
 
     /// Returns the outlined card border width token property.
+    ///
+    /// @return the outlined card border width property
     public final StyleableDoubleProperty outlineWidthProperty() {
         if (outlineWidth == null) {
             outlineWidth = new StyleableDoubleProperty(DEFAULT_OUTLINE_WIDTH) {
@@ -292,6 +337,8 @@ public class M3Card extends Control {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

@@ -6,6 +6,11 @@ package org.glavo.m3fx.controls;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Defines where an [M3BottomAppBar] places its floating action node.
+///
+/// Alignment is applied by the bottom app bar skin and affects only the optional floating action slot. Regular
+/// action nodes remain in the action list.
+///
+/// See [Material Design bottom app bars](https://m3.material.io/components/bottom-app-bar/overview).
 @NotNullByDefault
 public enum M3BottomAppBarFloatingActionAlignment {
     /// Places the floating action node before the regular actions.
@@ -26,6 +31,8 @@ public enum M3BottomAppBarFloatingActionAlignment {
     }
 
     /// Returns the style class associated with this alignment.
+    ///
+    /// @return the style class applied by this alignment
     public String getStyleClass() {
         return styleClass;
     }

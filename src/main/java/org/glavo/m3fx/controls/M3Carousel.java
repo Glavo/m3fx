@@ -60,7 +60,7 @@ public class M3Carousel extends Control {
     /// The mutable carousel item list.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
-    /// The selected item index, or `-1` when no item is selected.
+    // The selected item index, or `-1` when no item is selected.
     private final IntegerProperty selectedIndex = new SimpleIntegerProperty(this, "selectedIndex", -1) {
         /// Applies selection changes and keeps the index inside the current item range.
         @Override
@@ -72,13 +72,13 @@ public class M3Carousel extends Control {
         }
     };
 
-    /// Whether keyboard previous and next navigation wraps around list edges.
+    // Whether keyboard previous and next navigation wraps around list edges.
     private final BooleanProperty wrapAround = new SimpleBooleanProperty(this, "wrapAround", true);
 
-    /// Whether programmatic selection changes animate viewport scrolling.
+    // Whether programmatic selection changes animate viewport scrolling.
     private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
 
-    /// The currently selected item.
+    // The currently selected item.
     private final ReadOnlyObjectWrapper<@Nullable Node> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -117,28 +117,38 @@ public class M3Carousel extends Control {
     }
 
     /// Creates a carousel containing the supplied item nodes.
+    ///
+    /// @param items the item nodes displayed by the carousel
     public M3Carousel(Node... items) {
         initialize();
         addItems(items);
     }
 
     /// Returns the mutable carousel item list.
+    ///
+    /// @return the mutable carousel item list
     public final ObservableList<Node> getItems() {
         return items;
     }
 
     /// Adds one carousel item.
+    ///
+    /// @param item the item node to add
     public final void addItem(Node item) {
         getItems().add(Objects.requireNonNull(item, "item"));
     }
 
     /// Adds carousel items.
+    ///
+    /// @param items the item nodes to add
     public final void addItems(Node... items) {
         validateItems(items);
         getItems().addAll(items);
     }
 
     /// Replaces all carousel items.
+    ///
+    /// @param items the replacement item nodes
     public final void setItems(Node... items) {
         validateItems(items);
         getItems().setAll(items);
@@ -150,66 +160,92 @@ public class M3Carousel extends Control {
     }
 
     /// Returns the selected item index, or `-1` when no item is selected.
+    ///
+    /// @return the selected item index, or `-1` when selection is empty
     public final int getSelectedIndex() {
         return selectedIndex.get();
     }
 
     /// Sets the selected item index, or `-1` to clear selection.
+    ///
+    /// @param selectedIndex the selected item index, or `-1` to clear selection
     public final void setSelectedIndex(int selectedIndex) {
         this.selectedIndex.set(selectedIndex);
     }
 
     /// Returns the selected item index property.
+    ///
+    /// @return the selected item index property
     public final IntegerProperty selectedIndexProperty() {
         return selectedIndex;
     }
 
     /// Returns the selected item, or `null` when no item is selected.
+    ///
+    /// @return the selected item node, or `null` when selection is empty
     public final @Nullable Node getSelectedItem() {
         return selectedItem.get();
     }
 
     /// Returns the selected item property.
+    ///
+    /// @return the read-only selected item property
     public final ReadOnlyObjectProperty<@Nullable Node> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
 
     /// Returns the selected item as an immutable observable list.
+    ///
+    /// @return an immutable observable list containing the selected item, or empty when selection is empty
     public final @UnmodifiableView ObservableList<Node> getSelectedItems() {
         return selectedItemsView;
     }
 
     /// Returns whether keyboard previous and next navigation wraps around item edges.
+    ///
+    /// @return `true` when keyboard navigation wraps around carousel edges
     public final boolean isWrapAround() {
         return wrapAround.get();
     }
 
     /// Sets whether keyboard previous and next navigation wraps around item edges.
+    ///
+    /// @param wrapAround whether keyboard navigation should wrap around carousel edges
     public final void setWrapAround(boolean wrapAround) {
         this.wrapAround.set(wrapAround);
     }
 
     /// Returns the wrap-around navigation property.
+    ///
+    /// @return the wrap-around navigation property
     public final BooleanProperty wrapAroundProperty() {
         return wrapAround;
     }
 
     /// Returns whether selection changes animate viewport scrolling.
+    ///
+    /// @return `true` when selection changes animate viewport scrolling
     public final boolean isAnimatedScroll() {
         return animatedScroll.get();
     }
 
     /// Sets whether selection changes animate viewport scrolling.
+    ///
+    /// @param animatedScroll whether selection changes should animate viewport scrolling
     public final void setAnimatedScroll(boolean animatedScroll) {
         this.animatedScroll.set(animatedScroll);
     }
 
     /// Returns the animated viewport scrolling property.
+    ///
+    /// @return the animated viewport scrolling property
     public final BooleanProperty animatedScrollProperty() {
         return animatedScroll;
     }
 
     /// Selects the supplied item node.
+    ///
+    /// @param item the item node to select
     public final void select(Node item) {
         Objects.requireNonNull(item, "item");
         int index = getItems().indexOf(item);
@@ -220,6 +256,8 @@ public class M3Carousel extends Control {
     }
 
     /// Selects the item at the supplied index.
+    ///
+    /// @param index the item index to select
     public final void selectIndex(int index) {
         setSelectedIndex(index);
     }
@@ -267,6 +305,8 @@ public class M3Carousel extends Control {
     }
 
     /// Scrolls the selected item into view.
+    ///
+    /// @param animated whether the viewport scroll should animate
     public final void scrollSelectedItemIntoView(boolean animated) {
         Skin<?> skin = getSkin();
         if (skin instanceof M3CarouselSkin carouselSkin) {

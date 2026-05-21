@@ -37,11 +37,17 @@ public final class M3Animation {
     }
 
     /// Returns whether animations are enabled for the supplied owner.
+    ///
+    /// @param owner the node whose local, inherited, or global motion settings should be resolved
+    /// @return `true` when animations should play for the owner
     public static boolean areAnimationsEnabled(Node owner) {
         return M3MotionSettings.areAnimationsEnabled(Objects.requireNonNull(owner, "owner"));
     }
 
     /// Returns the semantic motion scheme for an owner node.
+    ///
+    /// @param owner the node whose local, theme, or global motion scheme should be resolved
+    /// @return the resolved motion scheme
     public static M3MotionScheme motionScheme(Node owner) {
         Objects.requireNonNull(owner, "owner");
         @Nullable M3MotionScheme override = findMotionSchemeOverride(owner);
@@ -54,6 +60,9 @@ public final class M3Animation {
     }
 
     /// Returns the semantic motion behavior for an owner node.
+    ///
+    /// @param owner the node whose local, theme, or global motion behavior should be resolved
+    /// @return the resolved motion behavior
     public static M3MotionBehavior motionBehavior(Node owner) {
         Objects.requireNonNull(owner, "owner");
         @Nullable M3MotionBehavior override = findMotionBehaviorOverride(owner);
@@ -66,36 +75,57 @@ public final class M3Animation {
     }
 
     /// Returns the fast effects motion spec for an owner node.
+    ///
+    /// @param owner the node whose motion scheme should be resolved
+    /// @return the resolved fast effects motion spec
     public static M3MotionSpec fastEffects(Node owner) {
         return motionScheme(owner).fastEffects();
     }
 
     /// Returns the default effects motion spec for an owner node.
+    ///
+    /// @param owner the node whose motion scheme should be resolved
+    /// @return the resolved default effects motion spec
     public static M3MotionSpec defaultEffects(Node owner) {
         return motionScheme(owner).defaultEffects();
     }
 
     /// Returns the slow effects motion spec for an owner node.
+    ///
+    /// @param owner the node whose motion scheme should be resolved
+    /// @return the resolved slow effects motion spec
     public static M3MotionSpec slowEffects(Node owner) {
         return motionScheme(owner).slowEffects();
     }
 
     /// Returns the fast spatial motion spec for an owner node.
+    ///
+    /// @param owner the node whose motion scheme should be resolved
+    /// @return the resolved fast spatial motion spec
     public static M3MotionSpec fastSpatial(Node owner) {
         return motionScheme(owner).fastSpatial();
     }
 
     /// Returns the default spatial motion spec for an owner node.
+    ///
+    /// @param owner the node whose motion scheme should be resolved
+    /// @return the resolved default spatial motion spec
     public static M3MotionSpec defaultSpatial(Node owner) {
         return motionScheme(owner).defaultSpatial();
     }
 
     /// Returns the slow spatial motion spec for an owner node.
+    ///
+    /// @param owner the node whose motion scheme should be resolved
+    /// @return the resolved slow spatial motion spec
     public static M3MotionSpec slowSpatial(Node owner) {
         return motionScheme(owner).slowSpatial();
     }
 
     /// Copies the resolved motion settings from a scene control into a detached popup root.
+    ///
+    /// @param source the node whose resolved motion settings should be copied
+    /// @param target the detached node that should receive equivalent local motion settings
     public static void copyResolvedMotionSettings(Node source, Node target) {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(target, "target");
@@ -105,6 +135,9 @@ public final class M3Animation {
     }
 
     /// Plays an animation from the beginning or finishes it immediately when animations are disabled.
+    ///
+    /// @param owner the node whose animation settings should be honored
+    /// @param animation the animation to play or finish
     public static void playFromStart(Node owner, Animation animation) {
         Objects.requireNonNull(animation, "animation");
         if (areAnimationsEnabled(owner)) {
@@ -115,6 +148,9 @@ public final class M3Animation {
     }
 
     /// Plays an animation from its current time or finishes it immediately when animations are disabled.
+    ///
+    /// @param owner the node whose animation settings should be honored
+    /// @param animation the animation to play or finish
     public static void play(Node owner, Animation animation) {
         Objects.requireNonNull(animation, "animation");
         if (areAnimationsEnabled(owner)) {
@@ -125,6 +161,8 @@ public final class M3Animation {
     }
 
     /// Finishes an animation synchronously and invokes its completion handlers.
+    ///
+    /// @param animation the animation to settle at its final state
     public static void finish(Animation animation) {
         Objects.requireNonNull(animation, "animation");
         animation.stop();

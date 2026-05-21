@@ -9,6 +9,11 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Identifies a named Material Design 3 motion easing curve.
+///
+/// Each value provides a stable token name and the JavaFX [Interpolator] used by M3FX animations. Controls use
+/// easing roles through [M3MotionSpec] and [M3MotionScheme] rather than hard-coding interpolators in skins.
+///
+/// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public enum M3MotionEasing {
     /// Uses a linear animation curve.

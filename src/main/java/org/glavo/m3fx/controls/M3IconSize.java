@@ -5,7 +5,12 @@ package org.glavo.m3fx.controls;
 
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Identifies a Material Design 3 icon size role.
+/// Identifies an M3FX icon size role.
+///
+/// Size roles provide stable icon metrics for [M3Icon] and icon-only controls. The default pixel values can be
+/// overridden by theme CSS, but the role names allow APIs and demos to describe icon scale semantically.
+///
+/// See [Material Design icons](https://m3.material.io/styles/icons/overview).
 @NotNullByDefault
 public enum M3IconSize {
     /// Uses the compact 18px icon size.
@@ -33,11 +38,15 @@ public enum M3IconSize {
     }
 
     /// Returns the style class for this icon size.
+    ///
+    /// @return the style class applied by this size role
     public String getStyleClass() {
         return styleClass;
     }
 
     /// Returns the default pixel size for this icon size.
+    ///
+    /// @return the default icon size in pixels
     public double getDefaultSize() {
         return defaultSize;
     }

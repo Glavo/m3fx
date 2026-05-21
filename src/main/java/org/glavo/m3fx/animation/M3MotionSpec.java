@@ -9,6 +9,12 @@ import org.glavo.m3fx.internal.animation.M3MotionSpecImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Describes one Material Design 3 motion spec.
+///
+/// A motion spec combines a finite duration with a named [M3MotionEasing]. It is the smallest reusable animation
+/// token consumed by M3FX controls for state transitions, popup motion, smooth scrolling, and progress
+/// indicators.
+///
+/// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public sealed interface M3MotionSpec permits M3MotionSpecImpl {
     /// Returns the animation duration.
@@ -23,6 +29,10 @@ public sealed interface M3MotionSpec permits M3MotionSpecImpl {
     }
 
     /// Creates a motion spec.
+    ///
+    /// @param duration the animation duration
+    /// @param easing the named easing curve
+    /// @return an immutable motion spec
     static M3MotionSpec create(Duration duration, M3MotionEasing easing) {
         return new M3MotionSpecImpl(duration, easing);
     }

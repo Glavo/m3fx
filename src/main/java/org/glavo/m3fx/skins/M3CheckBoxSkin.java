@@ -60,6 +60,8 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
             (observable, oldValue, newValue) -> animateMarkState();
 
     /// Creates a checkbox skin.
+    ///
+    /// @param control the checkbox controlled by this skin
     public M3CheckBoxSkin(M3CheckBox control) {
         super(control);
         box.getStyleClass().addAll("box", "m3-checkbox-box");

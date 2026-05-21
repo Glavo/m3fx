@@ -43,6 +43,8 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane> extend
     }
 
     /// Returns the internal layout container.
+    ///
+    /// @return the internal layout container that mirrors the public item list
     protected final P getContainer() {
         return container;
     }

@@ -6,6 +6,12 @@ package org.glavo.m3fx.controls;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Identifies a Material Design 3 toggle icon button color variant.
+///
+/// The variant controls the resting container treatment and selected-state emphasis for [M3IconToggleButton].
+/// Use standard buttons for low-emphasis icon toggles, filled and tonal variants for selected or higher-emphasis
+/// states, and outlined buttons when the control needs a persistent boundary.
+///
+/// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
 public enum M3IconToggleButtonVariant {
     /// Uses the standard transparent icon button container.
@@ -29,6 +35,8 @@ public enum M3IconToggleButtonVariant {
     }
 
     /// Returns the style class for this toggle icon button variant.
+    ///
+    /// @return the style class applied by this variant
     public String getStyleClass() {
         return styleClass;
     }

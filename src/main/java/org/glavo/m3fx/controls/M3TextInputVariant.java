@@ -5,7 +5,12 @@ package org.glavo.m3fx.controls;
 
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Describes the visual variant of an m3fx text input control.
+/// Describes the visual variant of an M3FX text input control.
+///
+/// Text input variants select the Material field container treatment. Filled fields use a tonal container and
+/// underline, while outlined fields use a transparent container with an outline and floating-label notch.
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public enum M3TextInputVariant {
     /// A filled text input.
@@ -23,6 +28,8 @@ public enum M3TextInputVariant {
     }
 
     /// Returns the JavaFX style class used by this variant.
+    ///
+    /// @return the style class applied by this variant
     public String getStyleClass() {
         return styleClass;
     }

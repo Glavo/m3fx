@@ -11,6 +11,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public class M3ButtonSkin extends M3LabeledButtonSkinBase<M3Button> {
     /// Creates a button skin.
+    ///
+    /// @param control the button controlled by this skin
     public M3ButtonSkin(M3Button control) {
         super(control);
     }

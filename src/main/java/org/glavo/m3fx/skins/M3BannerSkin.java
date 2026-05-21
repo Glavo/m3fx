@@ -40,6 +40,8 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
     /// Creates a banner skin.
+    ///
+    /// @param control the banner controlled by this skin
     public M3BannerSkin(M3Banner control) {
         super(control);
         container.setManaged(false);
