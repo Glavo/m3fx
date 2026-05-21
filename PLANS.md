@@ -37,6 +37,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Java module descriptors for the library and demo app.
 - Demo run, shadow jar, and jlink runtime-image tasks.
 - Demo shadow jar excludes JavaFX artifacts.
+- Demo shadow jar verification checks for an executable manifest and rejects bundled JavaFX entries.
 - jlink support uses BellSoft LibericaJDK Full jmods.
 - Platform and architecture-specific jlink tasks cover Windows, Linux, and macOS on x64 and AArch64.
 - Runtime packaging choices for library usage, demo shadow jars, and jlink images are documented in `docs/PACKAGING.md`.

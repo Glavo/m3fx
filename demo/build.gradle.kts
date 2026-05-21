@@ -60,7 +60,7 @@ application {
     mainClass = "org.glavo.m3fx.demo.M3FXDemoLauncher"
 }
 
-tasks.register<Jar>("shadowJar") {
+val shadowJar = tasks.register<Jar>("shadowJar") {
     group = "distribution"
     description = "Builds an executable fat JAR for the M3FX demo without bundling JavaFX."
     archiveBaseName = "m3fx-demo"
@@ -89,6 +89,42 @@ tasks.register<Jar>("shadowJar") {
     )
     manifest {
         attributes("Main-Class" to application.mainClass.get())
+    }
+}
+
+tasks.register("verifyShadowJar") {
+    group = "verification"
+    description = "Verifies that the M3FX demo shadow JAR stays executable and does not bundle JavaFX."
+    dependsOn(shadowJar)
+
+    val archiveFile = shadowJar.flatMap { it.archiveFile }
+    inputs.file(archiveFile)
+
+    doLast {
+        val jarFile = archiveFile.get().asFile
+        ZipFile(jarFile).use { zip ->
+            val forbiddenEntries = zip.entries().asSequence()
+                .map { it.name }
+                .filter { entryName ->
+                    entryName.startsWith("javafx/")
+                            || entryName.startsWith("com/sun/javafx/")
+                            || (entryName.startsWith("javafx-") && entryName.endsWith(".jar"))
+                }
+                .toList()
+            if (forbiddenEntries.isNotEmpty()) {
+                throw GradleException(
+                    "The demo shadow JAR must not bundle JavaFX entries: ${forbiddenEntries.take(10)}"
+                )
+            }
+
+            val manifestEntry = zip.getEntry("META-INF/MANIFEST.MF")
+                ?: throw GradleException("The demo shadow JAR is missing META-INF/MANIFEST.MF")
+            val manifest = zip.getInputStream(manifestEntry).bufferedReader().use { it.readText() }
+            val expectedMainClass = "Main-Class: ${application.mainClass.get()}"
+            if (!manifest.lineSequence().any { it.trimEnd() == expectedMainClass }) {
+                throw GradleException("The demo shadow JAR manifest is missing '$expectedMainClass'")
+            }
+        }
     }
 }
 

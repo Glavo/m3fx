@@ -132,4 +132,6 @@ Use these tasks before distributing artifacts:
 ./gradlew -g .gradle-user-home jlinkDemoRuntime
 ```
 
+`shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX classes or JavaFX jar files are bundled into the shadow jar, or if the executable manifest is missing.
+
 For cross-platform release checks, run the fixed platform and architecture jlink tasks needed by the release.

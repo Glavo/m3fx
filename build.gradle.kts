@@ -62,7 +62,7 @@ tasks.register("jlinkDemoRuntime") {
 tasks.register("shadowDemoJar") {
     group = "distribution"
     description = "Builds an executable fat JAR for the M3FX demo application."
-    dependsOn(":demo:shadowJar")
+    dependsOn(":demo:verifyShadowJar")
 }
 
 tasks.register("jlinkDemoWindowsRuntime") {
