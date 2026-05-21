@@ -10,8 +10,7 @@ import javafx.beans.InvalidationListener;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -19,9 +18,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3Badge].
 @NotNullByDefault
 public class M3BadgeSkin extends SkinBase<M3Badge> {
-    /// The badge content change transition duration.
-    private static final Duration CONTENT_CHANGE_DURATION = M3Motion.SHORT2;
-
     /// The initial scale used when badge content changes.
     private static final double CONTENT_CHANGE_START_SCALE = 0.86;
 
@@ -121,11 +117,12 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         label.setOpacity(0.0);
         label.setScaleX(CONTENT_CHANGE_START_SCALE);
         label.setScaleY(CONTENT_CHANGE_START_SCALE);
+        M3MotionSpec spec = M3Animation.fastEffects(getSkinnable());
         contentAnimation.getKeyFrames().setAll(new KeyFrame(
-                CONTENT_CHANGE_DURATION,
-                new KeyValue(label.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(label.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(label.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE)
+                spec.duration(),
+                new KeyValue(label.opacityProperty(), 1.0, spec.interpolator()),
+                new KeyValue(label.scaleXProperty(), 1.0, spec.interpolator()),
+                new KeyValue(label.scaleYProperty(), 1.0, spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), contentAnimation);
     }

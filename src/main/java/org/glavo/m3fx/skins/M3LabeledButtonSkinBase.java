@@ -20,8 +20,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.text.Text;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
 import org.glavo.m3fx.controls.M3Chip;
@@ -40,12 +39,6 @@ import org.jetbrains.annotations.Nullable;
 abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkinBase<C> {
     /// The scale applied by controls that opt into depth-style pressed motion.
     private static final double PRESSED_SCALE = 0.98;
-
-    /// The duration used when entering the pressed state.
-    private static final Duration PRESS_DURATION = M3Motion.SHORT1;
-
-    /// The duration used when leaving the pressed state.
-    private static final Duration RELEASE_DURATION = M3Motion.SHORT3;
 
     /// The press animation timeline.
     private final Timeline animation = new Timeline();
@@ -256,12 +249,12 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
 
         double scale = pressedScale(pressed);
-        Duration duration = pressed ? PRESS_DURATION : RELEASE_DURATION;
+        M3MotionSpec spec = pressed ? M3Animation.fastEffects(button) : M3Animation.defaultEffects(button);
         animation.stop();
         animation.getKeyFrames().setAll(new KeyFrame(
-                duration,
-                new KeyValue(button.scaleXProperty(), scale, M3Motion.STANDARD),
-                new KeyValue(button.scaleYProperty(), scale, M3Motion.STANDARD)
+                spec.duration(),
+                new KeyValue(button.scaleXProperty(), scale, spec.interpolator()),
+                new KeyValue(button.scaleYProperty(), scale, spec.interpolator())
         ));
         M3Animation.playFromStart(button, animation);
     }

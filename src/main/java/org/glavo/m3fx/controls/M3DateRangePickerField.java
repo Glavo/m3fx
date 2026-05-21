@@ -33,9 +33,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
@@ -76,12 +74,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// The vertical gap between the field and popup picker.
     private static final double POPUP_OFFSET_Y = 8.0;
-
-    /// The duration used when the picker popup enters.
-    private static final Duration POPUP_SHOW_DURATION = M3Motion.SHORT3;
-
-    /// The duration used when the picker popup exits.
-    private static final Duration POPUP_HIDE_DURATION = M3Motion.SHORT2;
 
     /// The initial popup picker scale used for enter and exit motion.
     private static final double POPUP_TRANSITION_SCALE = 0.96;
@@ -1028,7 +1020,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         Parent root = scene.getRoot();
         @Nullable String rootStyle = root == null ? null : root.getStyle();
         popupContent.setStyle(rootStyle == null ? "" : rootStyle);
-        M3MotionSettings.setAnimationsEnabled(popupContent, M3MotionSettings.areAnimationsEnabled(this));
+        M3Animation.copyResolvedMotionSettings(this, popupContent);
         double fieldWidth = Math.max(0.0, getWidth());
         popupContent.setMinWidth(Math.max(fieldWidth, popupContent.minWidth(-1.0)));
         popupContent.applyCss();
@@ -1046,12 +1038,13 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Plays the popup picker enter animation.
     private void playShowAnimation() {
         showAnimation.stop();
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         showAnimation.getKeyFrames().setAll(new KeyFrame(
-                POPUP_SHOW_DURATION,
-                new KeyValue(popupContent.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(popupContent.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(popupContent.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(popupContent.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+                spec.duration(),
+                new KeyValue(popupContent.opacityProperty(), 1.0, spec.interpolator()),
+                new KeyValue(popupContent.scaleXProperty(), 1.0, spec.interpolator()),
+                new KeyValue(popupContent.scaleYProperty(), 1.0, spec.interpolator()),
+                new KeyValue(popupContent.translateYProperty(), 0.0, spec.interpolator())
         ));
         M3Animation.playFromStart(this, showAnimation);
     }
@@ -1067,13 +1060,14 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
         }
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         hideAnimation.getKeyFrames().setAll(new KeyFrame(
-                POPUP_HIDE_DURATION,
+                spec.duration(),
                 event -> popup.hide(),
-                new KeyValue(popupContent.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(popupContent.scaleXProperty(), POPUP_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(popupContent.scaleYProperty(), POPUP_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(popupContent.translateYProperty(), popupTransitionOffsetY, M3Motion.STANDARD_ACCELERATE)
+                new KeyValue(popupContent.opacityProperty(), 0.0, spec.interpolator()),
+                new KeyValue(popupContent.scaleXProperty(), POPUP_TRANSITION_SCALE, spec.interpolator()),
+                new KeyValue(popupContent.scaleYProperty(), POPUP_TRANSITION_SCALE, spec.interpolator()),
+                new KeyValue(popupContent.translateYProperty(), popupTransitionOffsetY, spec.interpolator())
         ));
         M3Animation.playFromStart(this, hideAnimation);
     }

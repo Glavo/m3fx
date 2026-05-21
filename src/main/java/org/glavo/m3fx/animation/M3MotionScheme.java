@@ -49,10 +49,10 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     /// Returns the standard Material motion scheme for recurring utility interactions.
     static M3MotionScheme standard() {
         return create(
-                M3MotionSpec.create(M3Motion.SHORT2, M3MotionEasing.STANDARD),
+                M3MotionSpec.create(M3Motion.SHORT1, M3MotionEasing.STANDARD),
                 M3MotionSpec.create(M3Motion.SHORT4, M3MotionEasing.STANDARD),
                 M3MotionSpec.create(M3Motion.MEDIUM2, M3MotionEasing.STANDARD),
-                M3MotionSpec.create(M3Motion.SHORT4, M3MotionEasing.STANDARD),
+                M3MotionSpec.create(M3Motion.SHORT3, M3MotionEasing.STANDARD),
                 M3MotionSpec.create(M3Motion.MEDIUM3, M3MotionEasing.STANDARD),
                 M3MotionSpec.create(M3Motion.LONG2, M3MotionEasing.STANDARD)
         );

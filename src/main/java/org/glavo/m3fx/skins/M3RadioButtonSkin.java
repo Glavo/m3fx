@@ -10,8 +10,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -19,9 +18,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3RadioButton].
 @NotNullByDefault
 public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton> {
-    /// The radio selected dot transition duration.
-    private static final Duration SELECTION_DURATION = M3Motion.SHORT2;
-
     /// The hidden selected dot scale.
     private static final double HIDDEN_DOT_SCALE = 0.64;
 
@@ -88,11 +84,12 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     /// Animates the selected dot state.
     private void animateSelectedState(boolean selected) {
         selectionAnimation.stop();
+        M3MotionSpec spec = M3Animation.fastEffects(getSkinnable());
         selectionAnimation.getKeyFrames().setAll(new KeyFrame(
-                SELECTION_DURATION,
-                new KeyValue(dot.opacityProperty(), selected ? 1.0 : 0.0, M3Motion.STANDARD),
-                new KeyValue(dot.scaleXProperty(), selected ? 1.0 : HIDDEN_DOT_SCALE, M3Motion.STANDARD),
-                new KeyValue(dot.scaleYProperty(), selected ? 1.0 : HIDDEN_DOT_SCALE, M3Motion.STANDARD)
+                spec.duration(),
+                new KeyValue(dot.opacityProperty(), selected ? 1.0 : 0.0, spec.interpolator()),
+                new KeyValue(dot.scaleXProperty(), selected ? 1.0 : HIDDEN_DOT_SCALE, spec.interpolator()),
+                new KeyValue(dot.scaleYProperty(), selected ? 1.0 : HIDDEN_DOT_SCALE, spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }

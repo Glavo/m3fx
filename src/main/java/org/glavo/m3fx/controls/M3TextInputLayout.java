@@ -44,8 +44,7 @@ import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.QuadCurveTo;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
@@ -123,15 +122,6 @@ public class M3TextInputLayout extends Control {
 
     /// The top input padding used when a multiline field has a floating label.
     private static final double LABELED_MULTILINE_TOP_PADDING = 28.0;
-
-    /// The duration used for label state transitions.
-    private static final Duration LABEL_TRANSITION_DURATION = M3Motion.SHORT3;
-
-    /// The duration used for supporting row reveal transitions.
-    private static final Duration SUPPORTING_ROW_TRANSITION_DURATION = M3Motion.SHORT2;
-
-    /// The duration used for clear-button reveal transitions.
-    private static final Duration TRAILING_TRANSITION_DURATION = M3Motion.SHORT2;
 
     /// The label transition start opacity.
     private static final double LABEL_TRANSITION_START_OPACITY = 0.72;
@@ -1215,11 +1205,12 @@ public class M3TextInputLayout extends Control {
         labelAnimation.stop();
         label.setOpacity(LABEL_TRANSITION_START_OPACITY);
         label.setTranslateY(floating ? LABEL_TRANSITION_OFFSET_Y : -LABEL_TRANSITION_OFFSET_Y);
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         labelAnimation.getKeyFrames().setAll(new KeyFrame(
-                LABEL_TRANSITION_DURATION,
-                new KeyValue(label.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(label.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(outlineNotchProgress, floating ? 1.0 : 0.0, M3Motion.STANDARD_DECELERATE)
+                spec.duration(),
+                new KeyValue(label.opacityProperty(), 1.0, spec.interpolator()),
+                new KeyValue(label.translateYProperty(), 0.0, spec.interpolator()),
+                new KeyValue(outlineNotchProgress, floating ? 1.0 : 0.0, spec.interpolator())
         ));
         M3Animation.playFromStart(this, labelAnimation);
     }
@@ -1354,11 +1345,12 @@ public class M3TextInputLayout extends Control {
         clearButton.setOpacity(0.0);
         clearButton.setScaleX(TRAILING_TRANSITION_START_SCALE);
         clearButton.setScaleY(TRAILING_TRANSITION_START_SCALE);
+        M3MotionSpec spec = M3Animation.fastEffects(this);
         trailingAnimation.getKeyFrames().setAll(new KeyFrame(
-                TRAILING_TRANSITION_DURATION,
-                new KeyValue(clearButton.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(clearButton.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(clearButton.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE)
+                spec.duration(),
+                new KeyValue(clearButton.opacityProperty(), 1.0, spec.interpolator()),
+                new KeyValue(clearButton.scaleXProperty(), 1.0, spec.interpolator()),
+                new KeyValue(clearButton.scaleYProperty(), 1.0, spec.interpolator())
         ));
         M3Animation.playFromStart(this, trailingAnimation);
     }
@@ -1386,10 +1378,11 @@ public class M3TextInputLayout extends Control {
         supportingRowAnimation.stop();
         supportingRow.setOpacity(0.0);
         supportingRow.setTranslateY(SUPPORTING_ROW_TRANSITION_OFFSET_Y);
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         supportingRowAnimation.getKeyFrames().setAll(new KeyFrame(
-                SUPPORTING_ROW_TRANSITION_DURATION,
-                new KeyValue(supportingRow.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(supportingRow.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+                spec.duration(),
+                new KeyValue(supportingRow.opacityProperty(), 1.0, spec.interpolator()),
+                new KeyValue(supportingRow.translateYProperty(), 0.0, spec.interpolator())
         ));
         M3Animation.playFromStart(this, supportingRowAnimation);
     }

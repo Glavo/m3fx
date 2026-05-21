@@ -52,6 +52,8 @@ This file tracks product status and planning only. Repository rules, code style,
 - Baseline and expressive profile hooks exist for shape and component token evolution.
 - Reusable Material motion constants, easing curves, semantic specs, and standard/expressive motion schemes exist for JavaFX animations.
 - State layers, ripples, and CSS-resolved elevation transitions resolve the installed theme motion scheme when available.
+- Selection controls, indicators, text input details, popup surfaces, sheets, snackbars, search results, FAB menus, carousel scrolling, and determinate progress transitions now resolve semantic motion specs from the active motion scheme.
+- Popup-hosted menus and pickers propagate animation settings and the active motion scheme into their popup content roots.
 
 ### Component Coverage
 
@@ -76,7 +78,7 @@ This file tracks product status and planning only. Repository rules, code style,
 
 ## Next Goals
 
-- Expand semantic Material motion coverage so selection, shape, indicator, popup, and container transitions consistently resolve profile-specific motion specs.
+- Audit remaining fixed-delay motion-adjacent behaviors, such as tooltip delays, submenu hover delays, and indeterminate progress timing, to decide which should remain behavior constants and which should become tokenized.
 - Increase page-level visual coverage for the demo, especially for alignment, clipping, and animated intermediate states.
 - Continue filling component gaps and richer composite workflows where existing controls are still shallow.
 - Tighten accessibility behavior for composite controls, especially keyboard parity and focus routing across popups.

@@ -14,8 +14,7 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.internal.M3Animation;
@@ -29,9 +28,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
 
     /// The vertical offset applied to child rows while expanding or collapsing.
     private static final double CHILD_TRANSITION_OFFSET = -6.0;
-
-    /// The duration used by child row expansion and collapse.
-    private static final Duration EXPANSION_DURATION = M3Motion.MEDIUM1;
 
     /// The clipped viewport for child destination rows.
     private final Pane childViewport = new Pane();
@@ -240,12 +236,15 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         }
 
         boolean targetExpanded = expanded;
+        M3MotionSpec spec = targetExpanded
+                ? M3Animation.defaultSpatial(getSkinnable())
+                : M3Animation.fastSpatial(getSkinnable());
         expansionAnimation.getKeyFrames().setAll(new KeyFrame(
-                EXPANSION_DURATION,
+                spec.duration(),
                 new KeyValue(
                         expansionProgress,
                         targetProgress,
-                        targetExpanded ? M3Motion.STANDARD_DECELERATE : M3Motion.STANDARD_ACCELERATE
+                        spec.interpolator()
                 )
         ));
         expansionAnimation.setOnFinished(event -> {

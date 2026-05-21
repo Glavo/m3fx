@@ -26,7 +26,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SnackbarHostSkin;
@@ -44,12 +44,6 @@ public class M3SnackbarHost extends Control {
 
     /// The default snackbar display duration.
     private static final Duration DEFAULT_DISPLAY_DURATION = Duration.seconds(4.0);
-
-    /// The duration used when a snackbar appears.
-    private static final Duration SHOW_DURATION = M3Motion.SHORT3;
-
-    /// The duration used when a snackbar disappears.
-    private static final Duration HIDE_DURATION = M3Motion.SHORT2;
 
     /// The initial vertical offset used by snackbar entrance and exit motion.
     private static final double TRANSITION_OFFSET_Y = 16.0;
@@ -304,11 +298,12 @@ public class M3SnackbarHost extends Control {
     private void playShowAnimation(M3Snackbar target) {
         target.setOpacity(0.0);
         target.setTranslateY(TRANSITION_OFFSET_Y);
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         showAnimation.getKeyFrames().setAll(
                 new KeyFrame(
-                        SHOW_DURATION,
-                        new KeyValue(target.opacityProperty(), 1.0, M3Motion.EMPHASIZED_DECELERATE),
-                        new KeyValue(target.translateYProperty(), 0.0, M3Motion.EMPHASIZED_DECELERATE)
+                        spec.duration(),
+                        new KeyValue(target.opacityProperty(), 1.0, spec.interpolator()),
+                        new KeyValue(target.translateYProperty(), 0.0, spec.interpolator())
                 )
         );
         showAnimation.setOnFinished(event -> scheduleAutoDismiss(target));
@@ -318,11 +313,12 @@ public class M3SnackbarHost extends Control {
     /// Plays the snackbar exit animation.
     private void playHideAnimation(M3Snackbar target) {
         hideAnimation.stop();
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         hideAnimation.getKeyFrames().setAll(
                 new KeyFrame(
-                        HIDE_DURATION,
-                        new KeyValue(target.opacityProperty(), 0.0, M3Motion.EMPHASIZED_ACCELERATE),
-                        new KeyValue(target.translateYProperty(), TRANSITION_OFFSET_Y, M3Motion.EMPHASIZED_ACCELERATE)
+                        spec.duration(),
+                        new KeyValue(target.opacityProperty(), 0.0, spec.interpolator()),
+                        new KeyValue(target.translateYProperty(), TRANSITION_OFFSET_Y, spec.interpolator())
                 )
         );
         hideAnimation.setOnFinished(event -> removeSnackbar(target));

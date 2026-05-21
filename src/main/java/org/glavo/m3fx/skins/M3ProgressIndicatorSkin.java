@@ -18,6 +18,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -25,9 +26,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3ProgressIndicator].
 @NotNullByDefault
 public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
-    /// The duration used when determinate progress values change.
-    private static final Duration DETERMINATE_DURATION = M3Motion.MEDIUM1;
-
     /// The duration of one indeterminate circular sweep.
     private static final Duration INDETERMINATE_DURATION = Duration.millis(1332.0);
 
@@ -181,10 +179,11 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             return;
         }
 
+        M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
         determinateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
-                        DETERMINATE_DURATION,
-                        new KeyValue(displayedProgress, targetProgress, M3Motion.STANDARD)
+                        spec.duration(),
+                        new KeyValue(displayedProgress, targetProgress, spec.interpolator())
                 )
         );
         M3Animation.playFromStart(getSkinnable(), determinateAnimation);

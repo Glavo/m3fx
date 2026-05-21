@@ -11,8 +11,7 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.StackPane;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -20,9 +19,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3Switch].
 @NotNullByDefault
 public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
-    /// The switch state transition duration.
-    private static final Duration SELECTION_DURATION = M3Motion.SHORT3;
-
     /// The switch track width.
     private static final double TRACK_WIDTH = 52.0;
 
@@ -117,9 +113,10 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// Animates the thumb to the selected or unselected position.
     private void animateThumbPosition(boolean selected) {
         selectionAnimation.stop();
+        M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
         selectionAnimation.getKeyFrames().setAll(new KeyFrame(
-                SELECTION_DURATION,
-                new KeyValue(thumbPosition, selected ? 1.0 : 0.0, M3Motion.STANDARD)
+                spec.duration(),
+                new KeyValue(thumbPosition, selected ? 1.0 : 0.0, spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }

@@ -23,7 +23,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -42,12 +42,6 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// The horizontal overlap used when a submenu opens beside its owner item.
     private static final double SUB_MENU_OFFSET_X = -1.0;
-
-    /// The duration used when the submenu popup enters.
-    private static final Duration SUB_MENU_SHOW_DURATION = M3Motion.SHORT3;
-
-    /// The duration used when the submenu popup exits.
-    private static final Duration SUB_MENU_HIDE_DURATION = M3Motion.SHORT2;
 
     /// The initial popup menu scale used for enter and exit motion.
     private static final double SUB_MENU_TRANSITION_SCALE = 0.96;
@@ -212,13 +206,14 @@ public class M3SubMenuItem extends M3MenuItem {
         if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
         }
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         hideAnimation.getKeyFrames().setAll(new KeyFrame(
-                SUB_MENU_HIDE_DURATION,
+                spec.duration(),
                 event -> popup.hide(),
-                new KeyValue(subMenu.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(subMenu.scaleXProperty(), SUB_MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(subMenu.scaleYProperty(), SUB_MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(subMenu.translateXProperty(), currentTransitionOffsetX, M3Motion.STANDARD_ACCELERATE)
+                new KeyValue(subMenu.opacityProperty(), 0.0, spec.interpolator()),
+                new KeyValue(subMenu.scaleXProperty(), SUB_MENU_TRANSITION_SCALE, spec.interpolator()),
+                new KeyValue(subMenu.scaleYProperty(), SUB_MENU_TRANSITION_SCALE, spec.interpolator()),
+                new KeyValue(subMenu.translateXProperty(), currentTransitionOffsetX, spec.interpolator())
         ));
         M3Animation.playFromStart(this, hideAnimation);
     }
@@ -456,12 +451,13 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Plays the submenu popup enter animation.
     private void playShowAnimation() {
         showAnimation.stop();
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         showAnimation.getKeyFrames().setAll(new KeyFrame(
-                SUB_MENU_SHOW_DURATION,
-                new KeyValue(subMenu.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(subMenu.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(subMenu.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(subMenu.translateXProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+                spec.duration(),
+                new KeyValue(subMenu.opacityProperty(), 1.0, spec.interpolator()),
+                new KeyValue(subMenu.scaleXProperty(), 1.0, spec.interpolator()),
+                new KeyValue(subMenu.scaleYProperty(), 1.0, spec.interpolator()),
+                new KeyValue(subMenu.translateXProperty(), 0.0, spec.interpolator())
         ));
         M3Animation.playFromStart(this, showAnimation);
     }
@@ -494,7 +490,7 @@ public class M3SubMenuItem extends M3MenuItem {
         Parent root = scene.getRoot();
         @Nullable String rootStyle = root == null ? null : root.getStyle();
         subMenu.setStyle(rootStyle == null ? "" : rootStyle);
-        M3MotionSettings.setAnimationsEnabled(subMenu, M3MotionSettings.areAnimationsEnabled(this));
+        M3Animation.copyResolvedMotionSettings(this, subMenu);
         subMenu.applyCss();
     }
 

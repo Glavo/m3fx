@@ -18,8 +18,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Region;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -27,9 +26,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3Slider].
 @NotNullByDefault
 public class M3SliderSkin extends SkinBase<M3Slider> {
-    /// The duration used for non-drag slider value transitions.
-    private static final Duration VALUE_TRANSITION_DURATION = M3Motion.SHORT3;
-
     /// The default horizontal preferred length for sliders without an explicit width.
     private static final double DEFAULT_HORIZONTAL_LENGTH = 200.0;
 
@@ -409,9 +405,10 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         }
 
         valueAnimation.stop();
+        M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
         valueAnimation.getKeyFrames().setAll(new KeyFrame(
-                VALUE_TRANSITION_DURATION,
-                new KeyValue(displayedPosition, targetPosition, M3Motion.STANDARD)
+                spec.duration(),
+                new KeyValue(displayedPosition, targetPosition, spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), valueAnimation);
     }

@@ -9,8 +9,7 @@ import javafx.animation.Timeline;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.control.SkinBase;
 import javafx.scene.shape.SVGPath;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -29,9 +28,6 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
 
     /// The disclosure triangle path in a 24 by 24 icon box.
     private static final String TRIANGLE_PATH = "M 7 9 L 17 9 L 12 15 Z";
-
-    /// The arrow rotation animation duration.
-    private static final Duration ROTATION_DURATION = M3Motion.SHORT3;
 
     /// The disclosure triangle node.
     private final SVGPath arrow = new SVGPath();
@@ -147,9 +143,10 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     /// Animates the arrow rotation to match the expanded state.
     private void animateExpandedState(boolean expanded) {
         rotationAnimation.stop();
+        M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
         rotationAnimation.getKeyFrames().setAll(new KeyFrame(
-                ROTATION_DURATION,
-                new KeyValue(arrow.rotateProperty(), rotationFor(expanded), M3Motion.STANDARD)
+                spec.duration(),
+                new KeyValue(arrow.rotateProperty(), rotationFor(expanded), spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), rotationAnimation);
     }

@@ -23,8 +23,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
@@ -41,12 +40,6 @@ public class M3SearchView extends Control {
 
     /// The style class applied to the result container.
     public static final String RESULTS_STYLE_CLASS = "m3-search-view-results";
-
-    /// The duration used when search results enter.
-    private static final Duration RESULTS_ENTER_DURATION = M3Motion.SHORT4;
-
-    /// The duration used when search results exit.
-    private static final Duration RESULTS_EXIT_DURATION = M3Motion.SHORT2;
 
     /// The vertical offset used while search results are hidden.
     private static final double HIDDEN_RESULTS_TRANSLATE_Y = -8.0;
@@ -477,17 +470,19 @@ public class M3SearchView extends Control {
         if (active) {
             resultsBox.setVisible(true);
             resultsBox.setManaged(true);
+            M3MotionSpec spec = M3Animation.fastSpatial(this);
             resultsVisibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    RESULTS_ENTER_DURATION,
-                    new KeyValue(resultsBox.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                    new KeyValue(resultsBox.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+                    spec.duration(),
+                    new KeyValue(resultsBox.opacityProperty(), 1.0, spec.interpolator()),
+                    new KeyValue(resultsBox.translateYProperty(), 0.0, spec.interpolator())
             ));
         } else if (resultsBox.isVisible()) {
+            M3MotionSpec spec = M3Animation.fastSpatial(this);
             resultsVisibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    RESULTS_EXIT_DURATION,
+                    spec.duration(),
                     event -> applyResultsVisibilityImmediately(false),
-                    new KeyValue(resultsBox.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE),
-                    new KeyValue(resultsBox.translateYProperty(), HIDDEN_RESULTS_TRANSLATE_Y, M3Motion.STANDARD_ACCELERATE)
+                    new KeyValue(resultsBox.opacityProperty(), 0.0, spec.interpolator()),
+                    new KeyValue(resultsBox.translateYProperty(), HIDDEN_RESULTS_TRANSLATE_Y, spec.interpolator())
             ));
         } else {
             applyResultsVisibilityImmediately(false);

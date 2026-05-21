@@ -24,8 +24,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.internal.M3Animation;
@@ -35,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3ListItem].
 @NotNullByDefault
 public class M3ListItemSkin extends SkinBase<M3ListItem> {
-    /// The selected container animation duration.
-    private static final Duration SELECTION_DURATION = M3Motion.SHORT4;
-
     /// The hidden selected container scale.
     private static final double HIDDEN_SELECTION_SCALE = 0.96;
 
@@ -347,10 +343,11 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         double targetOpacity = selected ? 1.0 : 0.0;
         double targetScale = selected ? 1.0 : HIDDEN_SELECTION_SCALE;
         selectionAnimation.stop();
+        M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
         selectionAnimation.getKeyFrames().setAll(new KeyFrame(
-                SELECTION_DURATION,
-                new KeyValue(selectionContainer.opacityProperty(), targetOpacity, M3Motion.STANDARD),
-                new KeyValue(selectionContainer.scaleXProperty(), targetScale, M3Motion.STANDARD)
+                spec.duration(),
+                new KeyValue(selectionContainer.opacityProperty(), targetOpacity, spec.interpolator()),
+                new KeyValue(selectionContainer.scaleXProperty(), targetScale, spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }

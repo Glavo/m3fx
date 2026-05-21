@@ -82,6 +82,14 @@ public final class M3Animation {
         return motionScheme(owner).slowSpatial();
     }
 
+    /// Copies the resolved motion settings from a scene control into a detached popup root.
+    public static void copyResolvedMotionSettings(Node source, Node target) {
+        Objects.requireNonNull(source, "source");
+        Objects.requireNonNull(target, "target");
+        M3MotionSettings.setAnimationsEnabled(target, M3MotionSettings.areAnimationsEnabled(source));
+        M3MotionSettings.setMotionScheme(target, motionScheme(source));
+    }
+
     /// Plays an animation from the beginning or finishes it immediately when animations are disabled.
     public static void playFromStart(Node owner, Animation animation) {
         Objects.requireNonNull(animation, "animation");

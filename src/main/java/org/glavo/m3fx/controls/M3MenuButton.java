@@ -21,9 +21,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Popup;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -40,12 +38,6 @@ public class M3MenuButton extends M3Button {
 
     /// The vertical gap between the button and popup menu.
     private static final double MENU_OFFSET_Y = 4.0;
-
-    /// The duration used when the menu popup enters.
-    private static final Duration MENU_SHOW_DURATION = M3Motion.SHORT3;
-
-    /// The duration used when the menu popup exits.
-    private static final Duration MENU_HIDE_DURATION = M3Motion.SHORT2;
 
     /// The initial popup menu scale used for enter and exit motion.
     private static final double MENU_TRANSITION_SCALE = 0.96;
@@ -258,13 +250,14 @@ public class M3MenuButton extends M3Button {
         if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
         }
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         hideAnimation.getKeyFrames().setAll(new KeyFrame(
-                MENU_HIDE_DURATION,
+                spec.duration(),
                 event -> popup.hide(),
-                new KeyValue(menu.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(menu.scaleXProperty(), MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(menu.scaleYProperty(), MENU_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
-                new KeyValue(menu.translateYProperty(), MENU_TRANSITION_OFFSET_Y, M3Motion.STANDARD_ACCELERATE)
+                new KeyValue(menu.opacityProperty(), 0.0, spec.interpolator()),
+                new KeyValue(menu.scaleXProperty(), MENU_TRANSITION_SCALE, spec.interpolator()),
+                new KeyValue(menu.scaleYProperty(), MENU_TRANSITION_SCALE, spec.interpolator()),
+                new KeyValue(menu.translateYProperty(), MENU_TRANSITION_OFFSET_Y, spec.interpolator())
         ));
         M3Animation.playFromStart(this, hideAnimation);
     }
@@ -448,12 +441,13 @@ public class M3MenuButton extends M3Button {
     /// Plays the popup menu enter animation.
     private void playShowAnimation() {
         showAnimation.stop();
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         showAnimation.getKeyFrames().setAll(new KeyFrame(
-                MENU_SHOW_DURATION,
-                new KeyValue(menu.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(menu.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(menu.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                new KeyValue(menu.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+                spec.duration(),
+                new KeyValue(menu.opacityProperty(), 1.0, spec.interpolator()),
+                new KeyValue(menu.scaleXProperty(), 1.0, spec.interpolator()),
+                new KeyValue(menu.scaleYProperty(), 1.0, spec.interpolator()),
+                new KeyValue(menu.translateYProperty(), 0.0, spec.interpolator())
         ));
         M3Animation.playFromStart(this, showAnimation);
     }
@@ -487,7 +481,7 @@ public class M3MenuButton extends M3Button {
         Parent root = scene.getRoot();
         @Nullable String rootStyle = root == null ? null : root.getStyle();
         menu.setStyle(rootStyle == null ? "" : rootStyle);
-        M3MotionSettings.setAnimationsEnabled(menu, M3MotionSettings.areAnimationsEnabled(this));
+        M3Animation.copyResolvedMotionSettings(this, menu);
         menu.applyCss();
     }
 }

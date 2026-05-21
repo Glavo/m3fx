@@ -12,8 +12,7 @@ import javafx.geometry.Insets;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.Region;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.internal.M3Animation;
@@ -24,9 +23,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedButton> {
     /// The selected container style class.
     public static final String SELECTION_CONTAINER_STYLE_CLASS = "m3-segmented-button-selection-container";
-
-    /// The selected container animation duration.
-    private static final Duration SELECTION_DURATION = M3Motion.SHORT4;
 
     /// The hidden selected container scale.
     private static final double HIDDEN_SELECTION_SCALE = 0.96;
@@ -128,10 +124,11 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         double targetOpacity = selected ? 1.0 : 0.0;
         double targetScale = selected ? 1.0 : HIDDEN_SELECTION_SCALE;
         selectionAnimation.stop();
+        M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
         selectionAnimation.getKeyFrames().setAll(new KeyFrame(
-                SELECTION_DURATION,
-                new KeyValue(selectionContainer.opacityProperty(), targetOpacity, M3Motion.STANDARD),
-                new KeyValue(selectionContainer.scaleXProperty(), targetScale, M3Motion.STANDARD)
+                spec.duration(),
+                new KeyValue(selectionContainer.opacityProperty(), targetOpacity, spec.interpolator()),
+                new KeyValue(selectionContainer.scaleXProperty(), targetScale, spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }

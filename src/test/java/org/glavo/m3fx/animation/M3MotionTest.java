@@ -71,6 +71,8 @@ final class M3MotionTest {
         M3MotionScheme standard = M3MotionScheme.standard();
         M3MotionScheme expressive = M3MotionScheme.expressive();
 
+        assertEquals(M3Motion.SHORT1, standard.fastEffects().duration());
+        assertEquals(M3Motion.SHORT3, standard.fastSpatial().duration());
         assertEquals(M3Motion.SHORT4, standard.defaultEffects().duration());
         assertEquals(M3MotionEasing.STANDARD, standard.defaultEffects().easing());
         assertEquals(M3Motion.MEDIUM3, standard.defaultSpatial().duration());

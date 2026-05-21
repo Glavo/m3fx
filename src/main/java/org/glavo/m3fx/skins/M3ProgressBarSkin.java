@@ -15,6 +15,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -22,9 +23,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3ProgressBar].
 @NotNullByDefault
 public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
-    /// The duration used when determinate progress values change.
-    private static final Duration DETERMINATE_DURATION = M3Motion.MEDIUM1;
-
     /// The duration of one indeterminate track sweep.
     private static final Duration INDETERMINATE_DURATION = Duration.millis(1400.0);
 
@@ -176,10 +174,11 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
             return;
         }
 
+        M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
         determinateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
-                        DETERMINATE_DURATION,
-                        new KeyValue(displayedProgress, targetProgress, M3Motion.STANDARD)
+                        spec.duration(),
+                        new KeyValue(displayedProgress, targetProgress, spec.interpolator())
                 )
         );
         M3Animation.playFromStart(getSkinnable(), determinateAnimation);

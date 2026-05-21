@@ -23,8 +23,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BottomSheetSkin;
@@ -56,12 +55,6 @@ public class M3BottomSheet extends Control {
 
     /// The drag handle style class.
     public static final String DRAG_HANDLE_STYLE_CLASS = "m3-bottom-sheet-drag-handle";
-
-    /// The duration used when a bottom sheet enters.
-    private static final Duration SHOW_DURATION = M3Motion.MEDIUM2;
-
-    /// The duration used when a bottom sheet exits.
-    private static final Duration HIDE_DURATION = M3Motion.SHORT4;
 
     /// The sheet headline text property.
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
@@ -382,10 +375,11 @@ public class M3BottomSheet extends Control {
                 return;
             }
 
+            M3MotionSpec spec = M3Animation.defaultSpatial(this);
             visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    SHOW_DURATION,
-                    new KeyValue(opacityProperty(), 1.0, M3Motion.EMPHASIZED_DECELERATE),
-                    new KeyValue(translateYProperty(), 0.0, M3Motion.EMPHASIZED_DECELERATE)
+                    spec.duration(),
+                    new KeyValue(opacityProperty(), 1.0, spec.interpolator()),
+                    new KeyValue(translateYProperty(), 0.0, spec.interpolator())
             ));
             M3Animation.playFromStart(this, visibilityAnimation);
         } else {
@@ -394,15 +388,16 @@ public class M3BottomSheet extends Control {
                 return;
             }
 
+            M3MotionSpec spec = M3Animation.fastSpatial(this);
             visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    HIDE_DURATION,
+                    spec.duration(),
                     event -> {
                         if (!isShown()) {
                             applyShownStateImmediately(false);
                         }
                     },
-                    new KeyValue(opacityProperty(), 0.0, M3Motion.EMPHASIZED_ACCELERATE),
-                    new KeyValue(translateYProperty(), hiddenTranslateY(), M3Motion.EMPHASIZED_ACCELERATE)
+                    new KeyValue(opacityProperty(), 0.0, spec.interpolator()),
+                    new KeyValue(translateYProperty(), hiddenTranslateY(), spec.interpolator())
             ));
             M3Animation.playFromStart(this, visibilityAnimation);
         }

@@ -21,8 +21,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Region;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -38,12 +37,6 @@ public class M3Scrim extends Region {
 
     /// The default visible scrim opacity.
     private static final double DEFAULT_VISIBLE_OPACITY = 0.32;
-
-    /// The duration used when a scrim enters.
-    private static final Duration SHOW_DURATION = M3Motion.SHORT4;
-
-    /// The duration used when a scrim exits.
-    private static final Duration HIDE_DURATION = M3Motion.SHORT2;
 
     /// The action handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
@@ -235,9 +228,10 @@ public class M3Scrim extends Region {
                 return;
             }
 
+            M3MotionSpec spec = M3Animation.defaultEffects(this);
             visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    SHOW_DURATION,
-                    new KeyValue(opacityProperty(), getVisibleOpacity(), M3Motion.STANDARD_DECELERATE)
+                    spec.duration(),
+                    new KeyValue(opacityProperty(), getVisibleOpacity(), spec.interpolator())
             ));
             M3Animation.playFromStart(this, visibilityAnimation);
         } else {
@@ -246,14 +240,15 @@ public class M3Scrim extends Region {
                 return;
             }
 
+            M3MotionSpec spec = M3Animation.fastEffects(this);
             visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    HIDE_DURATION,
+                    spec.duration(),
                     event -> {
                         if (!isShown()) {
                             applyShownStateImmediately(false);
                         }
                     },
-                    new KeyValue(opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE)
+                    new KeyValue(opacityProperty(), 0.0, spec.interpolator())
             ));
             M3Animation.playFromStart(this, visibilityAnimation);
         }

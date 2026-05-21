@@ -22,8 +22,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
@@ -54,12 +53,6 @@ public class M3FabMenu extends Control {
 
     /// The scale used when action buttons enter or exit.
     private static final double ACTION_TRANSITION_SCALE = 0.86;
-
-    /// The duration used when the menu expands.
-    private static final Duration EXPAND_DURATION = M3Motion.MEDIUM1;
-
-    /// The duration used when the menu collapses.
-    private static final Duration COLLAPSE_DURATION = M3Motion.SHORT4;
 
     /// The action item container.
     private final VBox actions = new VBox();
@@ -330,6 +323,7 @@ public class M3FabMenu extends Control {
     private void playExpandAnimation() {
         prepareActionsForExpandedLayout();
         ParallelTransition transition = new ParallelTransition();
+        M3MotionSpec spec = M3Animation.defaultSpatial(this);
         int index = 0;
         int itemCount = getItems().size();
         for (Node item : getItems()) {
@@ -338,11 +332,11 @@ public class M3FabMenu extends Control {
             item.setScaleY(ACTION_TRANSITION_SCALE);
             item.setTranslateY(ACTION_TRANSITION_OFFSET_Y * Math.max(1, itemCount - index));
             transition.getChildren().add(new Timeline(new KeyFrame(
-                    EXPAND_DURATION,
-                    new KeyValue(item.opacityProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                    new KeyValue(item.scaleXProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                    new KeyValue(item.scaleYProperty(), 1.0, M3Motion.STANDARD_DECELERATE),
-                    new KeyValue(item.translateYProperty(), 0.0, M3Motion.STANDARD_DECELERATE)
+                    spec.duration(),
+                    new KeyValue(item.opacityProperty(), 1.0, spec.interpolator()),
+                    new KeyValue(item.scaleXProperty(), 1.0, spec.interpolator()),
+                    new KeyValue(item.scaleYProperty(), 1.0, spec.interpolator()),
+                    new KeyValue(item.translateYProperty(), 0.0, spec.interpolator())
             )));
             index++;
         }
@@ -353,18 +347,19 @@ public class M3FabMenu extends Control {
     /// Plays the action item collapse animation.
     private void playCollapseAnimation() {
         ParallelTransition transition = new ParallelTransition();
+        M3MotionSpec spec = M3Animation.fastSpatial(this);
         int index = 0;
         int itemCount = getItems().size();
         for (Node item : getItems()) {
             transition.getChildren().add(new Timeline(new KeyFrame(
-                    COLLAPSE_DURATION,
-                    new KeyValue(item.opacityProperty(), 0.0, M3Motion.STANDARD_ACCELERATE),
-                    new KeyValue(item.scaleXProperty(), ACTION_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
-                    new KeyValue(item.scaleYProperty(), ACTION_TRANSITION_SCALE, M3Motion.STANDARD_ACCELERATE),
+                    spec.duration(),
+                    new KeyValue(item.opacityProperty(), 0.0, spec.interpolator()),
+                    new KeyValue(item.scaleXProperty(), ACTION_TRANSITION_SCALE, spec.interpolator()),
+                    new KeyValue(item.scaleYProperty(), ACTION_TRANSITION_SCALE, spec.interpolator()),
                     new KeyValue(
                             item.translateYProperty(),
                             ACTION_TRANSITION_OFFSET_Y * Math.max(1, itemCount - index),
-                            M3Motion.STANDARD_ACCELERATE
+                            spec.interpolator()
                     )
             )));
             index++;

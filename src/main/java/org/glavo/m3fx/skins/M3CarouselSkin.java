@@ -14,7 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
-import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -198,9 +198,10 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
             return;
         }
 
+        M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
         Timeline timeline = new Timeline(new KeyFrame(
-                M3Motion.MEDIUM1,
-                new KeyValue(viewport.hvalueProperty(), targetHValue, M3Motion.STANDARD)
+                spec.duration(),
+                new KeyValue(viewport.hvalueProperty(), targetHValue, spec.interpolator())
         ));
         scrollAnimation = timeline;
         M3Animation.playFromStart(getSkinnable(), timeline);

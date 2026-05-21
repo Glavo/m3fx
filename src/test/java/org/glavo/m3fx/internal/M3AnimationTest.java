@@ -82,4 +82,19 @@ final class M3AnimationTest {
 
         assertEquals(M3MotionEasing.STANDARD, M3Animation.defaultEffects(child).easing());
     }
+
+    /// Verifies that detached popup roots can inherit resolved motion settings from their owner controls.
+    @Test
+    void copiesResolvedMotionSettingsToDetachedTarget() {
+        Pane source = new Pane();
+        Pane target = new Pane();
+
+        M3MotionSettings.setAnimationsEnabled(source, false);
+        M3MotionSettings.setMotionScheme(source, M3MotionScheme.expressive());
+
+        M3Animation.copyResolvedMotionSettings(source, target);
+
+        assertFalse(M3MotionSettings.areAnimationsEnabled(target));
+        assertEquals(M3MotionEasing.EMPHASIZED, M3Animation.defaultEffects(target).easing());
+    }
 }
