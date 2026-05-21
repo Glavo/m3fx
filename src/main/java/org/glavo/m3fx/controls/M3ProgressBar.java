@@ -45,6 +45,18 @@ public class M3ProgressBar extends Control {
     /// The default progress track shape radius.
     private static final double DEFAULT_TRACK_SHAPE = 999.0;
 
+    /// The default linear wave amplitude.
+    private static final double DEFAULT_WAVE_AMPLITUDE = 0.0;
+
+    /// The default linear wave length.
+    private static final double DEFAULT_WAVELENGTH = 40.0;
+
+    /// The default gap between active progress and track.
+    private static final double DEFAULT_TRACK_GAP = 4.0;
+
+    /// The default linear stop indicator size.
+    private static final double DEFAULT_STOP_SIZE = 4.0;
+
     /// The minimum accessible progress value.
     private static final double ACCESSIBLE_MIN_VALUE = 0.0;
 
@@ -63,6 +75,18 @@ public class M3ProgressBar extends Control {
 
     /// The styleable track shape token.
     private @Nullable StyleableDoubleProperty trackShape;
+
+    /// The styleable wave amplitude token.
+    private @Nullable StyleableDoubleProperty waveAmplitude;
+
+    /// The styleable wavelength token.
+    private @Nullable StyleableDoubleProperty wavelength;
+
+    /// The styleable track gap token.
+    private @Nullable StyleableDoubleProperty trackGap;
+
+    /// The styleable stop indicator size token.
+    private @Nullable StyleableDoubleProperty stopSize;
 
     /// Creates an indeterminate progress bar.
     public M3ProgressBar() {
@@ -210,6 +234,179 @@ public class M3ProgressBar extends Control {
         return trackShape;
     }
 
+    /// Returns the wavy progress amplitude token.
+    public final double getWaveAmplitude() {
+        return waveAmplitude == null ? DEFAULT_WAVE_AMPLITUDE : waveAmplitude.get();
+    }
+
+    /// Sets the wavy progress amplitude token.
+    public final void setWaveAmplitude(double waveAmplitude) {
+        waveAmplitudeProperty().set(M3Css.nonNegative(waveAmplitude, "waveAmplitude"));
+    }
+
+    /// Returns the wavy progress amplitude token property.
+    public final StyleableDoubleProperty waveAmplitudeProperty() {
+        if (waveAmplitude == null) {
+            waveAmplitude = new StyleableDoubleProperty(DEFAULT_WAVE_AMPLITUDE) {
+                /// Applies updated metrics when the token changes.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "waveAmplitude");
+                    updateMetrics();
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3ProgressBar.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "waveAmplitude";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
+                    return StyleableProperties.WAVE_AMPLITUDE;
+                }
+            };
+        }
+        return waveAmplitude;
+    }
+
+    /// Returns the wavy progress wavelength token.
+    public final double getWavelength() {
+        return wavelength == null ? DEFAULT_WAVELENGTH : wavelength.get();
+    }
+
+    /// Sets the wavy progress wavelength token.
+    public final void setWavelength(double wavelength) {
+        wavelengthProperty().set(M3Css.nonNegative(wavelength, "wavelength"));
+    }
+
+    /// Returns the wavy progress wavelength token property.
+    public final StyleableDoubleProperty wavelengthProperty() {
+        if (wavelength == null) {
+            wavelength = new StyleableDoubleProperty(DEFAULT_WAVELENGTH) {
+                /// Requests layout when the token changes.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "wavelength");
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3ProgressBar.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "wavelength";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
+                    return StyleableProperties.WAVELENGTH;
+                }
+            };
+        }
+        return wavelength;
+    }
+
+    /// Returns the gap token between active progress and track.
+    public final double getTrackGap() {
+        return trackGap == null ? DEFAULT_TRACK_GAP : trackGap.get();
+    }
+
+    /// Sets the gap token between active progress and track.
+    public final void setTrackGap(double trackGap) {
+        trackGapProperty().set(M3Css.nonNegative(trackGap, "trackGap"));
+    }
+
+    /// Returns the gap token property between active progress and track.
+    public final StyleableDoubleProperty trackGapProperty() {
+        if (trackGap == null) {
+            trackGap = new StyleableDoubleProperty(DEFAULT_TRACK_GAP) {
+                /// Requests layout when the token changes.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "trackGap");
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3ProgressBar.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "trackGap";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
+                    return StyleableProperties.TRACK_GAP;
+                }
+            };
+        }
+        return trackGap;
+    }
+
+    /// Returns the stop indicator size token.
+    public final double getStopSize() {
+        return stopSize == null ? DEFAULT_STOP_SIZE : stopSize.get();
+    }
+
+    /// Sets the stop indicator size token.
+    public final void setStopSize(double stopSize) {
+        stopSizeProperty().set(M3Css.nonNegative(stopSize, "stopSize"));
+    }
+
+    /// Returns the stop indicator size token property.
+    public final StyleableDoubleProperty stopSizeProperty() {
+        if (stopSize == null) {
+            stopSize = new StyleableDoubleProperty(DEFAULT_STOP_SIZE) {
+                /// Requests layout when the token changes.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "stopSize");
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3ProgressBar.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "stopSize";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
+                    return StyleableProperties.STOP_SIZE;
+                }
+            };
+        }
+        return stopSize;
+    }
+
     /// Returns the CSS metadata for this control class.
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
@@ -261,9 +458,10 @@ public class M3ProgressBar extends Control {
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double thickness = getTrackThickness();
-        setMinHeight(thickness);
-        setPrefHeight(thickness);
-        setMaxHeight(thickness);
+        double height = thickness + getWaveAmplitude() * 2.0;
+        setMinHeight(height);
+        setPrefHeight(height);
+        setMaxHeight(height);
     }
 
     /// Normalizes progress values to the supported range.
@@ -314,6 +512,70 @@ public class M3ProgressBar extends Control {
                     }
                 };
 
+        /// CSS metadata for the wave amplitude token.
+        private static final CssMetaData<M3ProgressBar, Number> WAVE_AMPLITUDE =
+                new CssMetaData<>("-m3-wave-amplitude", SizeConverter.getInstance(), DEFAULT_WAVE_AMPLITUDE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3ProgressBar control) {
+                        return M3Css.isSettable(control.waveAmplitudeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
+                        return control.waveAmplitudeProperty();
+                    }
+                };
+
+        /// CSS metadata for the wavelength token.
+        private static final CssMetaData<M3ProgressBar, Number> WAVELENGTH =
+                new CssMetaData<>("-m3-wavelength", SizeConverter.getInstance(), DEFAULT_WAVELENGTH) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3ProgressBar control) {
+                        return M3Css.isSettable(control.wavelengthProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
+                        return control.wavelengthProperty();
+                    }
+                };
+
+        /// CSS metadata for the active-to-track gap token.
+        private static final CssMetaData<M3ProgressBar, Number> TRACK_GAP =
+                new CssMetaData<>("-m3-track-gap", SizeConverter.getInstance(), DEFAULT_TRACK_GAP) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3ProgressBar control) {
+                        return M3Css.isSettable(control.trackGapProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
+                        return control.trackGapProperty();
+                    }
+                };
+
+        /// CSS metadata for the stop indicator size token.
+        private static final CssMetaData<M3ProgressBar, Number> STOP_SIZE =
+                new CssMetaData<>("-m3-stop-size", SizeConverter.getInstance(), DEFAULT_STOP_SIZE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3ProgressBar control) {
+                        return M3Css.isSettable(control.stopSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
+                        return control.stopSizeProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -321,6 +583,10 @@ public class M3ProgressBar extends Control {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(TRACK_THICKNESS);
             styleables.add(TRACK_SHAPE);
+            styleables.add(WAVE_AMPLITUDE);
+            styleables.add(WAVELENGTH);
+            styleables.add(TRACK_GAP);
+            styleables.add(STOP_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

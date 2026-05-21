@@ -15,6 +15,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Arc;
 import javafx.scene.shape.ArcType;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Path;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
@@ -40,6 +43,12 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
     /// The progress arc.
     private final Arc indicator = new Arc();
+
+    /// The expressive circular track path with a gap around the active indicator.
+    private final Path waveTrack = new Path();
+
+    /// The expressive wavy active indicator path.
+    private final Path waveIndicator = new Path();
 
     /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
@@ -69,14 +78,22 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         super(control);
         track.getStyleClass().add("track");
         indicator.getStyleClass().add("indicator");
+        waveTrack.getStyleClass().add("m3-progress-indicator-track-wave");
+        waveIndicator.getStyleClass().add("m3-progress-indicator-wave");
         track.setManaged(false);
         indicator.setManaged(false);
+        waveTrack.setManaged(false);
+        waveIndicator.setManaged(false);
         track.setFill(Color.TRANSPARENT);
         indicator.setFill(Color.TRANSPARENT);
+        waveTrack.setFill(null);
+        waveIndicator.setFill(null);
         track.setStrokeLineCap(StrokeLineCap.ROUND);
         indicator.setStrokeLineCap(StrokeLineCap.ROUND);
+        waveTrack.setStrokeLineCap(StrokeLineCap.ROUND);
+        waveIndicator.setStrokeLineCap(StrokeLineCap.ROUND);
         indicator.setType(ArcType.OPEN);
-        getChildren().addAll(track, indicator);
+        getChildren().addAll(track, indicator, waveTrack, waveIndicator);
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
         displayedProgress.addListener(animationInvalidation);
@@ -86,6 +103,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         control.progressProperty().addListener(progressInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.indicatorSizeProperty().addListener(layoutInvalidation);
+        control.waveAmplitudeProperty().addListener(layoutInvalidation);
+        control.wavelengthProperty().addListener(layoutInvalidation);
+        control.trackGapProperty().addListener(layoutInvalidation);
         updateProgressAnimation(false);
     }
 
@@ -100,6 +120,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         progressIndicator.progressProperty().removeListener(progressInvalidation);
         progressIndicator.trackThicknessProperty().removeListener(layoutInvalidation);
         progressIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
+        progressIndicator.waveAmplitudeProperty().removeListener(layoutInvalidation);
+        progressIndicator.wavelengthProperty().removeListener(layoutInvalidation);
+        progressIndicator.trackGapProperty().removeListener(layoutInvalidation);
         super.dispose();
     }
 
@@ -112,6 +135,13 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double centerX = x + width / 2.0;
         double centerY = y + height / 2.0;
 
+        if (getSkinnable().getWaveAmplitude() > 0.0) {
+            layoutWavyIndicator(centerX, centerY, radius, strokeWidth);
+            return;
+        }
+
+        waveTrack.setVisible(false);
+        waveIndicator.setVisible(false);
         track.setCenterX(centerX);
         track.setCenterY(centerY);
         track.setRadius(radius);
@@ -123,6 +153,48 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         indicator.setRadiusY(radius);
         indicator.setStrokeWidth(strokeWidth);
         updateIndicatorArc();
+    }
+
+    /// Lays out expressive wavy circular progress paths.
+    private void layoutWavyIndicator(double centerX, double centerY, double radius, double strokeWidth) {
+        M3ProgressIndicator progressIndicator = getSkinnable();
+        track.setVisible(false);
+        indicator.setVisible(false);
+        waveTrack.setStrokeWidth(strokeWidth);
+        waveIndicator.setStrokeWidth(strokeWidth);
+
+        double progress = progressIndicator.getProgress();
+        if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
+            double sweepFraction = indeterminateSweep(indeterminatePhase.get()) / 360.0;
+            double start = indeterminatePhase.get();
+            layoutCircularTrackPath(waveTrack, centerX, centerY, radius, start, start + sweepFraction);
+            layoutCircularWavePath(
+                    waveIndicator,
+                    centerX,
+                    centerY,
+                    radius,
+                    progressIndicator.getWaveAmplitude(),
+                    progressIndicator.getWavelength(),
+                    start,
+                    start + sweepFraction,
+                    indeterminatePhase.get()
+            );
+            return;
+        }
+
+        double displayed = displayedProgress.get();
+        layoutCircularTrackPath(waveTrack, centerX, centerY, radius, 0.0, displayed);
+        layoutCircularWavePath(
+                waveIndicator,
+                centerX,
+                centerY,
+                radius,
+                amplitudeForProgress(displayed) * progressIndicator.getWaveAmplitude(),
+                progressIndicator.getWavelength(),
+                0.0,
+                displayed,
+                0.0
+        );
     }
 
     /// Updates the visible arc for determinate or indeterminate progress.
@@ -206,6 +278,93 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double wave = 0.5 - Math.cos(phase * Math.PI * 2.0) / 2.0;
         return INDETERMINATE_MIN_SWEEP
                 + (INDETERMINATE_MAX_SWEEP - INDETERMINATE_MIN_SWEEP) * wave;
+    }
+
+    /// Returns the resolved active wave amplitude for a determinate progress value.
+    private static double amplitudeForProgress(double progress) {
+        return progress <= 0.1 || progress >= 0.95 ? 0.0 : 1.0;
+    }
+
+    /// Lays out the circular track path outside the active indicator and gap.
+    private void layoutCircularTrackPath(
+            Path path,
+            double centerX,
+            double centerY,
+            double radius,
+            double activeStart,
+            double activeEnd
+    ) {
+        double gapFraction = circularGapFraction(radius, getSkinnable().getTrackGap());
+        double start = activeEnd + gapFraction;
+        double end = activeStart + 1.0 - gapFraction;
+        path.getElements().clear();
+        if (radius <= 0.0 || end <= start) {
+            path.setVisible(false);
+            return;
+        }
+
+        path.setVisible(true);
+        appendCircularSegment(path, centerX, centerY, radius, 0.0, 1.0, start, end, 0.0);
+    }
+
+    /// Lays out a circular wavy active indicator path.
+    private static void layoutCircularWavePath(
+            Path path,
+            double centerX,
+            double centerY,
+            double radius,
+            double amplitude,
+            double wavelength,
+            double start,
+            double end,
+            double phase
+    ) {
+        path.getElements().clear();
+        if (radius <= 0.0 || end <= start) {
+            path.setVisible(false);
+            return;
+        }
+
+        path.setVisible(true);
+        appendCircularSegment(path, centerX, centerY, radius, amplitude, wavelength, start, end, phase);
+    }
+
+    /// Appends a sampled circular segment to a path.
+    private static void appendCircularSegment(
+            Path path,
+            double centerX,
+            double centerY,
+            double radius,
+            double amplitude,
+            double wavelength,
+            double start,
+            double end,
+            double phase
+    ) {
+        double circumference = Math.max(1.0, Math.PI * 2.0 * radius);
+        double waves = Math.max(1.0, circumference / Math.max(1.0, wavelength));
+        int steps = Math.max(4, (int) Math.ceil((end - start) * 72.0));
+        for (int i = 0; i <= steps; i++) {
+            double fraction = (double) i / (double) steps;
+            double progress = start + (end - start) * fraction;
+            double angle = Math.toRadians(90.0 - 360.0 * progress);
+            double waveRadius = radius + Math.sin((progress * waves + phase) * Math.PI * 2.0) * amplitude;
+            double x = centerX + Math.cos(angle) * waveRadius;
+            double y = centerY - Math.sin(angle) * waveRadius;
+            if (i == 0) {
+                path.getElements().add(new MoveTo(x, y));
+            } else {
+                path.getElements().add(new LineTo(x, y));
+            }
+        }
+    }
+
+    /// Converts a circular gap in pixels to a normalized circumference fraction.
+    private static double circularGapFraction(double radius, double gap) {
+        if (radius <= 0.0 || gap <= 0.0) {
+            return 0.0;
+        }
+        return Math.min(0.20, gap / (Math.PI * 2.0 * radius));
     }
 
     /// Clamps a progress value to the visible range.

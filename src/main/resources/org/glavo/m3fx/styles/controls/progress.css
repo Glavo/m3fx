@@ -1,6 +1,10 @@
 .m3-progress-bar {
     -m3-track-thickness: 4px;
     -m3-track-shape: 999px;
+    -m3-wave-amplitude: 0px;
+    -m3-wavelength: 40px;
+    -m3-track-gap: 4px;
+    -m3-stop-size: 4px;
     -fx-accent: -m3-color-primary;
 }
 
@@ -24,11 +28,30 @@
     -fx-stroke-width: 0px;
 }
 
+.m3-progress-bar.m3-progress-bar .m3-progress-bar-wave,
+.m3-progress-bar.m3-progress-bar:focused .m3-progress-bar-wave,
+.m3-progress-bar.m3-progress-bar:indeterminate .m3-progress-bar-wave {
+    -fx-fill: transparent;
+    -fx-stroke: -m3-color-primary;
+    -fx-stroke-width: 4px;
+}
+
+.m3-progress-bar.m3-progress-bar .m3-progress-stop,
+.m3-progress-bar.m3-progress-bar:focused .m3-progress-stop,
+.m3-progress-bar.m3-progress-bar:indeterminate .m3-progress-stop {
+    -fx-fill: -m3-color-primary;
+    -fx-stroke: transparent;
+    -fx-stroke-width: 0px;
+}
+
 .m3-progress-indicator.m3-progress-indicator,
 .m3-progress-indicator.m3-progress-indicator:focused,
 .m3-progress-indicator.m3-progress-indicator:indeterminate {
     -m3-track-thickness: 4px;
     -m3-indicator-size: 48px;
+    -m3-wave-amplitude: 0px;
+    -m3-wavelength: 15px;
+    -m3-track-gap: 4px;
     -fx-progress-color: -m3-color-primary;
     -fx-accent: -m3-color-primary;
 }
@@ -44,6 +67,22 @@
 .m3-progress-indicator.m3-progress-indicator .indicator,
 .m3-progress-indicator.m3-progress-indicator:focused .indicator,
 .m3-progress-indicator.m3-progress-indicator:indeterminate .indicator {
+    -fx-fill: transparent;
+    -fx-stroke: -m3-color-primary;
+    -fx-stroke-width: 4px;
+}
+
+.m3-progress-indicator.m3-progress-indicator .m3-progress-indicator-track-wave,
+.m3-progress-indicator.m3-progress-indicator:focused .m3-progress-indicator-track-wave,
+.m3-progress-indicator.m3-progress-indicator:indeterminate .m3-progress-indicator-track-wave {
+    -fx-fill: transparent;
+    -fx-stroke: -m3-color-secondary-container;
+    -fx-stroke-width: 4px;
+}
+
+.m3-progress-indicator.m3-progress-indicator .m3-progress-indicator-wave,
+.m3-progress-indicator.m3-progress-indicator:focused .m3-progress-indicator-wave,
+.m3-progress-indicator.m3-progress-indicator:indeterminate .m3-progress-indicator-wave {
     -fx-fill: transparent;
     -fx-stroke: -m3-color-primary;
     -fx-stroke-width: 4px;

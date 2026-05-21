@@ -5849,21 +5849,65 @@ final class M3ControlStyleTest {
     @Test
     void progressTokensAreStyleable() {
         M3ProgressBar progressBar = new M3ProgressBar(0.5);
-        progressBar.setStyle("-m3-track-thickness: 6px; -m3-track-shape: 18px;");
+        progressBar.setStyle("-m3-track-thickness: 6px; "
+                + "-m3-track-shape: 18px; "
+                + "-m3-wave-amplitude: 3px; "
+                + "-m3-wavelength: 36px; "
+                + "-m3-track-gap: 7px; "
+                + "-m3-stop-size: 8px;");
 
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
-        progressIndicator.setStyle("-m3-track-thickness: 6px; -m3-indicator-size: 72px;");
+        progressIndicator.setStyle("-m3-track-thickness: 6px; "
+                + "-m3-indicator-size: 72px; "
+                + "-m3-wave-amplitude: 2px; "
+                + "-m3-wavelength: 18px; "
+                + "-m3-track-gap: 5px;");
 
         applyCss(progressBar);
         applyCss(progressIndicator);
 
         assertEquals(6.0, progressBar.getTrackThickness(), 0.0001);
         assertEquals(18.0, progressBar.getTrackShape(), 0.0001);
-        assertEquals(6.0, progressBar.getPrefHeight(), 0.0001);
+        assertEquals(3.0, progressBar.getWaveAmplitude(), 0.0001);
+        assertEquals(36.0, progressBar.getWavelength(), 0.0001);
+        assertEquals(7.0, progressBar.getTrackGap(), 0.0001);
+        assertEquals(8.0, progressBar.getStopSize(), 0.0001);
+        assertEquals(12.0, progressBar.getPrefHeight(), 0.0001);
         assertEquals(6.0, progressIndicator.getTrackThickness(), 0.0001);
         assertEquals(72.0, progressIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(2.0, progressIndicator.getWaveAmplitude(), 0.0001);
+        assertEquals(18.0, progressIndicator.getWavelength(), 0.0001);
+        assertEquals(5.0, progressIndicator.getTrackGap(), 0.0001);
         assertEquals(72.0, progressIndicator.getPrefWidth(), 0.0001);
         assertEquals(72.0, progressIndicator.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that the expressive profile applies wavy progress defaults through generated CSS.
+    @Test
+    void expressiveProgressTokensApplyWavyDefaults() {
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        Pane root = new Pane(progressBar, progressIndicator);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+
+        assertEquals(4.0, progressBar.getTrackThickness(), 0.0001);
+        assertEquals(3.0, progressBar.getWaveAmplitude(), 0.0001);
+        assertEquals(40.0, progressBar.getWavelength(), 0.0001);
+        assertEquals(4.0, progressBar.getTrackGap(), 0.0001);
+        assertEquals(4.0, progressBar.getStopSize(), 0.0001);
+        assertEquals(10.0, progressBar.getPrefHeight(), 0.0001);
+        assertEquals(4.0, progressIndicator.getTrackThickness(), 0.0001);
+        assertEquals(48.0, progressIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(2.0, progressIndicator.getWaveAmplitude(), 0.0001);
+        assertEquals(15.0, progressIndicator.getWavelength(), 0.0001);
+        assertEquals(4.0, progressIndicator.getTrackGap(), 0.0001);
     }
 
     /// Verifies that m3fx progress controls create Material Design 3 skins.
@@ -6040,6 +6084,37 @@ final class M3ControlStyleTest {
         );
     }
 
+    /// Verifies that expressive progress bars render a wavy active path with separated track and stop indicator.
+    @Test
+    void expressiveProgressBarSkinDrawsWavyIndicatorAndStop() {
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        Pane root = new Pane(progressBar);
+        Scene scene = new Scene(root, 280.0, 60.0);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+        progressBar.resize(240.0, 16.0);
+        progressBar.layout();
+
+        Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
+        Path wave = assertInstanceOf(Path.class, lookupShape(progressBar, ".m3-progress-bar-wave"));
+        Rectangle track = (Rectangle) lookupShape(progressBar, ".track");
+        javafx.scene.shape.Circle stop =
+                assertInstanceOf(javafx.scene.shape.Circle.class, lookupShape(progressBar, ".m3-progress-stop"));
+
+        assertFalse(bar.isVisible());
+        assertTrue(wave.isVisible());
+        assertTrue(wave.getElements().size() > 8);
+        assertTrue(wave.getBoundsInLocal().getHeight() > progressBar.getTrackThickness());
+        assertTrue(track.getX() > 120.0);
+        assertTrue(stop.isVisible());
+        assertEquals(2.0, stop.getRadius(), 0.0001);
+    }
+
     /// Verifies that progress bar subnodes keep Material colors.
     @Test
     void progressBarStateStylesPreserveMaterialColors() {
@@ -6192,6 +6267,42 @@ final class M3ControlStyleTest {
                     assertTrue(indicator.getLength() >= -96.0);
                 }
         );
+    }
+
+    /// Verifies that expressive circular progress uses wavy paths instead of the baseline arc geometry.
+    @Test
+    void expressiveProgressIndicatorSkinDrawsWavyIndicatorAndTrack() {
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        Pane root = new Pane(progressIndicator);
+        Scene scene = new Scene(root, 96.0, 96.0);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+        progressIndicator.resize(64.0, 64.0);
+        progressIndicator.layout();
+
+        javafx.scene.shape.Circle track = (javafx.scene.shape.Circle) lookupShape(progressIndicator, ".track");
+        Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
+        Path waveTrack = assertInstanceOf(
+                Path.class,
+                lookupShape(progressIndicator, ".m3-progress-indicator-track-wave")
+        );
+        Path waveIndicator = assertInstanceOf(
+                Path.class,
+                lookupShape(progressIndicator, ".m3-progress-indicator-wave")
+        );
+
+        assertFalse(track.isVisible());
+        assertFalse(indicator.isVisible());
+        assertTrue(waveTrack.isVisible());
+        assertTrue(waveIndicator.isVisible());
+        assertTrue(waveTrack.getElements().size() > 8);
+        assertTrue(waveIndicator.getElements().size() > 8);
+        assertTrue(waveIndicator.getBoundsInLocal().getHeight() > 0.0);
     }
 
     /// Verifies that divider component token properties are styleable from CSS.
@@ -9082,6 +9193,50 @@ final class M3ControlStyleTest {
                     "reports",
                     "m3fx-visual",
                     "visual-progress-indicator-arc.png"
+            ));
+        });
+    }
+
+    /// Verifies that expressive progress snapshots render wavy linear and circular indicators.
+    @Test
+    void expressiveProgressSnapshotRendersWavyIndicators() {
+        runOnFxThread(() -> {
+            M3ProgressBar determinateBar = new M3ProgressBar(0.55);
+            determinateBar.setPrefWidth(260.0);
+            M3ProgressBar indeterminateBar = new M3ProgressBar();
+            indeterminateBar.setPrefWidth(260.0);
+            M3ProgressIndicator determinateIndicator = new M3ProgressIndicator(0.62);
+            M3ProgressIndicator indeterminateIndicator = new M3ProgressIndicator();
+            FlowPane root = new FlowPane(24.0, 24.0, determinateBar, indeterminateBar,
+                    determinateIndicator, indeterminateIndicator);
+            root.setStyle("-fx-background-color: white; -fx-padding: 24px; " + visualTestColors());
+            Scene scene = new Scene(root, 640.0, 160.0);
+
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            ));
+            root.applyCss();
+            root.resize(640.0, 160.0);
+            root.layout();
+
+            assertTrue(lookupShape(determinateBar, ".m3-progress-bar-wave").isVisible());
+            assertTrue(lookupShape(indeterminateBar, ".m3-progress-bar-wave").isVisible());
+            assertTrue(lookupShape(determinateIndicator, ".m3-progress-indicator-wave").isVisible());
+            assertTrue(lookupShape(indeterminateIndicator, ".m3-progress-indicator-wave").isVisible());
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotHasColorVariety(image, 6);
+            assertSnapshotNodeContainsContrast(image, determinateBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, indeterminateBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, determinateIndicator, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, indeterminateIndicator, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-expressive-progress-indicators.png"
             ));
         });
     }

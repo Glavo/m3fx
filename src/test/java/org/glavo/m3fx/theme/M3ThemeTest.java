@@ -24,6 +24,8 @@ import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
+import org.glavo.m3fx.controls.M3ProgressBar;
+import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
@@ -576,7 +578,9 @@ final class M3ThemeTest {
     void generatedComponentStylesheetAppliesUtilityTokens() {
         M3Divider divider = new M3Divider();
         M3Badge badge = new M3Badge("12");
-        Pane root = new Pane(divider, badge);
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        Pane root = new Pane(divider, badge, progressBar, progressIndicator);
         Scene scene = new Scene(root);
 
         M3Theme expressiveTheme = M3Theme.fromSeed(
@@ -595,6 +599,10 @@ final class M3ThemeTest {
         assertEquals(18.0, badge.getLargeHeight(), 0.0001);
         assertEquals(18.0, badge.getLargeMinWidth(), 0.0001);
         assertEquals(9.0, badge.getContainerShape(), 0.0001);
+        assertEquals(3.0, progressBar.getWaveAmplitude(), 0.0001);
+        assertEquals(40.0, progressBar.getWavelength(), 0.0001);
+        assertEquals(2.0, progressIndicator.getWaveAmplitude(), 0.0001);
+        assertEquals(15.0, progressIndicator.getWavelength(), 0.0001);
     }
 
     /// Verifies that generated component stylesheets apply list item tokens.

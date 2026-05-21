@@ -130,6 +130,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-text-area-container-height: 67px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-item-height: 43px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 44px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-linear-wave-amplitude: 3px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-circular-wavelength: 16px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-list-section-header-height: 32px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-list-section-header-horizontal-padding: 19px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-sheet-side-container-width: 46px"));
@@ -151,6 +153,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view .m3-list-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-sheet .m3-bottom-sheet-drag-handle"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-scrim.m3-scrim"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-wavelength: 41px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-stop-size: 7px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-avatar.m3-avatar"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-app-bar-actions"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-rail .m3-navigation-item"));
@@ -217,7 +221,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.SelectionTokens(42.0, 20.0),
                 new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 50.0),
                 new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0),
-                new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0),
+                new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
                 new M3ComponentTokens.CardTokens(13.0, 18.0, 2.0),
                 new M3ComponentTokens.DialogTokens(30.0, 26.0),
                 new M3ComponentTokens.SnackbarTokens(9.0, 18.0),

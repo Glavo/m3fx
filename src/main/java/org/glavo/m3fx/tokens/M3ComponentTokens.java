@@ -216,6 +216,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
         double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
         double listSectionHeaderHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
+        double progressLinearWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 3.0 : 0.0);
+        double progressCircularWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 2.0 : 0.0);
 
         return create(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
@@ -255,7 +257,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
                 new ChipTokens(chipHeight, shapeTokens.small(), 16.0),
-                new ProgressTokens(4.0, shapeTokens.full(), 48.0),
+                new ProgressTokens(
+                        density.apply(4.0),
+                        shapeTokens.full(),
+                        density.apply(48.0),
+                        progressLinearWaveAmplitude,
+                        density.apply(40.0),
+                        density.apply(4.0),
+                        density.apply(4.0),
+                        progressCircularWaveAmplitude,
+                        density.apply(15.0),
+                        density.apply(4.0)
+                ),
                 new CardTokens(shapeTokens.medium(), 16.0, 1.0),
                 new DialogTokens(shapeTokens.extraLarge(), 24.0),
                 new SnackbarTokens(shapeTokens.extraSmall(), 16.0),
@@ -564,6 +577,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-progress-thickness", M3TokenCss.pixels(tokens.thickness()));
         M3TokenCss.append(builder, "-m3-progress-shape", M3TokenCss.pixels(tokens.shape()));
         M3TokenCss.append(builder, "-m3-progress-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
+        M3TokenCss.append(builder, "-m3-progress-linear-wave-amplitude", M3TokenCss.pixels(tokens.linearWaveAmplitude()));
+        M3TokenCss.append(builder, "-m3-progress-linear-wavelength", M3TokenCss.pixels(tokens.linearWavelength()));
+        M3TokenCss.append(builder, "-m3-progress-linear-track-gap", M3TokenCss.pixels(tokens.linearTrackGap()));
+        M3TokenCss.append(builder, "-m3-progress-linear-stop-size", M3TokenCss.pixels(tokens.linearStopSize()));
+        M3TokenCss.append(builder, "-m3-progress-circular-wave-amplitude", M3TokenCss.pixels(tokens.circularWaveAmplitude()));
+        M3TokenCss.append(builder, "-m3-progress-circular-wavelength", M3TokenCss.pixels(tokens.circularWavelength()));
+        M3TokenCss.append(builder, "-m3-progress-circular-track-gap", M3TokenCss.pixels(tokens.circularTrackGap()));
     }
 
     /// Appends card token declarations.
@@ -1092,6 +1112,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, selector);
         appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.thickness()));
         appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.shape()));
+        appendDeclaration(builder, "-m3-wave-amplitude", M3TokenCss.pixels(tokens.linearWaveAmplitude()));
+        appendDeclaration(builder, "-m3-wavelength", M3TokenCss.pixels(tokens.linearWavelength()));
+        appendDeclaration(builder, "-m3-track-gap", M3TokenCss.pixels(tokens.linearTrackGap()));
+        appendDeclaration(builder, "-m3-stop-size", M3TokenCss.pixels(tokens.linearStopSize()));
         endRule(builder);
     }
 
@@ -1113,6 +1137,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, selector);
         appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.thickness()));
         appendDeclaration(builder, "-m3-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
+        appendDeclaration(builder, "-m3-wave-amplitude", M3TokenCss.pixels(tokens.circularWaveAmplitude()));
+        appendDeclaration(builder, "-m3-wavelength", M3TokenCss.pixels(tokens.circularWavelength()));
+        appendDeclaration(builder, "-m3-track-gap", M3TokenCss.pixels(tokens.circularTrackGap()));
         endRule(builder);
     }
 
@@ -1642,17 +1669,43 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param thickness the default track thickness
     /// @param shape the progress indicator radius
     /// @param indicatorSize the circular indicator size
+    /// @param linearWaveAmplitude the linear wavy indicator amplitude
+    /// @param linearWavelength the linear wavy indicator wavelength
+    /// @param linearTrackGap the gap between the linear active indicator and track
+    /// @param linearStopSize the stop indicator diameter at the end of the linear track
+    /// @param circularWaveAmplitude the circular wavy indicator amplitude
+    /// @param circularWavelength the circular wavy indicator wavelength
+    /// @param circularTrackGap the gap between the circular active indicator and track
     @NotNullByDefault
     record ProgressTokens(
             double thickness,
             double shape,
-            double indicatorSize
+            double indicatorSize,
+            double linearWaveAmplitude,
+            double linearWavelength,
+            double linearTrackGap,
+            double linearStopSize,
+            double circularWaveAmplitude,
+            double circularWavelength,
+            double circularTrackGap
     ) {
+        /// Creates baseline progress tokens without wavy rendering.
+        public ProgressTokens(double thickness, double shape, double indicatorSize) {
+            this(thickness, shape, indicatorSize, 0.0, 40.0, 4.0, 4.0, 0.0, 15.0, 4.0);
+        }
+
         /// Creates progress tokens.
         public ProgressTokens {
             validateNonNegative(thickness, "thickness");
             validateNonNegative(shape, "shape");
             validateNonNegative(indicatorSize, "indicatorSize");
+            validateNonNegative(linearWaveAmplitude, "linearWaveAmplitude");
+            validateNonNegative(linearWavelength, "linearWavelength");
+            validateNonNegative(linearTrackGap, "linearTrackGap");
+            validateNonNegative(linearStopSize, "linearStopSize");
+            validateNonNegative(circularWaveAmplitude, "circularWaveAmplitude");
+            validateNonNegative(circularWavelength, "circularWavelength");
+            validateNonNegative(circularTrackGap, "circularTrackGap");
         }
     }
 

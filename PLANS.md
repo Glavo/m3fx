@@ -16,6 +16,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - The demo app is a separate Gradle subproject.
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
 - M3 Expressive currently has profile-specific color, typography, shape, component sizing, semantic motion scheme tokens, and motion behavior timings.
+- M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens.
 - Theme installation marks roots with profile and brightness style classes so applications and demo pages can branch CSS for baseline, expressive, light, and dark modes without replacing the theme API.
 
 ## Architecture
@@ -57,6 +58,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Selection controls, indicators, text input details, popup surfaces, sheets, snackbars, search results, FAB menus, carousel scrolling, and determinate progress transitions now resolve semantic motion specs from the active motion scheme.
 - Popup-hosted menus and pickers propagate theme context, profile and brightness style classes, animation settings, the active motion scheme, and motion behavior timings into their popup content roots.
 - Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.
+- Progress component tokens include wavy linear and circular amplitude, wavelength, track gap, and linear stop indicator metrics; applications can override them per control through CSS.
 
 ### Component Coverage
 
@@ -69,6 +71,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - App bars: top app bar variants and bottom app bar with configurable FAB alignment.
 - Menus and search: menu, menu item, submenu item, menu sections, menu button, search bar, and search view.
 - Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, linear progress, and circular progress.
+- Expressive progress indicators render wavy active paths, separated tracks, and linear stop indicators while baseline progress indicators retain flat line and arc geometry.
 - Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, and accessibility routing.
 
 ## Demo And Verification
@@ -81,6 +84,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Expressive profile visual coverage checks real rendered component sizes, profile root classes, fixed-target centering, date-cell alignment, and search bar height constraints in mixed-height layouts.
 - Dark expressive token-driven visual coverage renders representative action, input, selection, feedback, progress, date picker, and navigation controls without overriding generated dark theme colors.
 - Dark expressive popup visual coverage opens real menu and tooltip popups, checks inherited profile and brightness mode classes, and writes rendered snapshots for overlay review.
+- Expressive progress visual coverage writes a dedicated snapshot for determinate and indeterminate wavy linear and circular progress indicators.
 
 ## Next Goals
 
