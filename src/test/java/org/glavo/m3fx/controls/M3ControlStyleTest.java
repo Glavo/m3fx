@@ -36,6 +36,7 @@ import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
@@ -6943,6 +6944,86 @@ final class M3ControlStyleTest {
                 assertEquals("Row 80", visibleEightieth.getHeadlineText());
                 assertTrue(factoryCalls.get() < listView.getItems().size());
             } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that virtualized list views animate wheel scrolling through Material motion.
+    @Test
+    void listViewSmoothScrollingAnimatesWheelScroll() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                M3MotionSettings.setAnimationsEnabled(listView, true);
+
+                ScrollEvent event = scrollEvent(listView, 0.0, -112.0);
+                listView.fireEvent(event);
+
+                assertTrue(event.isConsumed());
+                assertEquals(0.0, flow.getPosition(), 0.0001);
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that disabled animation settings make virtualized list wheel scrolling finish synchronously.
+    @Test
+    void listViewSmoothScrollingHonorsDisabledAnimations() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                M3MotionSettings.setAnimationsEnabled(listView, false);
+
+                ScrollEvent event = scrollEvent(listView, 0.0, -112.0);
+                listView.fireEvent(event);
+
+                assertTrue(event.isConsumed());
+                assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
                 stage.close();
             }
         });
