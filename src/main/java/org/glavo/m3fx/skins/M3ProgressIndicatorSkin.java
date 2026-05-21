@@ -35,8 +35,8 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The longest visible sweep used by indeterminate progress.
     private static final double INDETERMINATE_MAX_SWEEP = 96.0;
 
-    /// The first visible phase used when indeterminate progress starts.
-    private static final double INDETERMINATE_START_PHASE = 0.25;
+    /// The phase used at both ends of an indeterminate progress cycle.
+    private static final double INDETERMINATE_START_PHASE = 0.0;
 
     /// The track circle.
     private final Circle track = new Circle();

@@ -6269,6 +6269,19 @@ final class M3ControlStyleTest {
         );
     }
 
+    /// Verifies that indeterminate circular progress uses a seamless phase cycle.
+    @Test
+    void progressIndicatorIndeterminateCycleHasNoPhaseJump() {
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
+
+        applyCss(progressIndicator);
+
+        Timeline animation = skinTimeline(progressIndicator.getSkin(), "indeterminateAnimation");
+        assertEquals(2, animation.getKeyFrames().size());
+        assertEquals(0.0, keyFrameEndNumber(animation, 0), 0.0001);
+        assertEquals(1.0, keyFrameEndNumber(animation, 1), 0.0001);
+    }
+
     /// Verifies that expressive circular progress uses wavy paths instead of the baseline arc geometry.
     @Test
     void expressiveProgressIndicatorSkinDrawsWavyIndicatorAndTrack() {
@@ -11906,6 +11919,14 @@ final class M3ControlStyleTest {
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
+    }
+
+    /// Returns the single numeric end value from a timeline key frame.
+    private static double keyFrameEndNumber(Timeline timeline, int keyFrameIndex) {
+        var values = timeline.getKeyFrames().get(keyFrameIndex).getValues();
+        assertEquals(1, values.size());
+        Object endValue = values.iterator().next().getEndValue();
+        return assertInstanceOf(Number.class, endValue).doubleValue();
     }
 
     /// Returns a declared field from a class or one of its superclasses.
