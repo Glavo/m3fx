@@ -28,6 +28,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3AvatarVariant;
 import org.glavo.m3fx.controls.M3Badge;
@@ -204,6 +205,9 @@ public final class M3FXDemoApp extends Application {
     /// The current density scale applied to component tokens.
     private double densityScale;
 
+    /// Whether demo animations are enabled.
+    private boolean animationsEnabled = true;
+
     /// Animations owned by the active demo page.
     private final List<Animation> animations = new ArrayList<>();
 
@@ -245,6 +249,7 @@ public final class M3FXDemoApp extends Application {
         scene.getStylesheets().add(demoStylesheetUrl());
         this.scene = scene;
         applyTheme();
+        applyMotionSettings();
         showPage(pages.get(0));
 
         stage.setTitle("M3FX Demo");
@@ -305,7 +310,23 @@ public final class M3FXDemoApp extends Application {
             applyTheme();
         });
 
-        HBox header = new HBox(18.0, titleBox, spacer, seedButtons, profileButton, densityButton, brightnessButton);
+        M3Switch animationsSwitch = M3Switch.withSelected("Animations", animationsEnabled);
+        animationsSwitch.setOnAction(event -> {
+            animationsEnabled = animationsSwitch.isSelected();
+            applyMotionSettings();
+            refreshCurrentPage();
+        });
+
+        HBox header = new HBox(
+                18.0,
+                titleBox,
+                spacer,
+                seedButtons,
+                profileButton,
+                densityButton,
+                animationsSwitch,
+                brightnessButton
+        );
         header.getStyleClass().add("demo-header");
         header.setAlignment(Pos.CENTER_LEFT);
         return header;
@@ -506,6 +527,14 @@ public final class M3FXDemoApp extends Application {
         host.getChildren().setAll(pageNode);
     }
 
+    /// Recreates the current page so resolved runtime settings affect active controls immediately.
+    private void refreshCurrentPage() {
+        DemoPage page = currentPage;
+        if (page != null) {
+            showPage(page);
+        }
+    }
+
     /// Expands the collapsible sidebar group containing the requested page.
     private void expandSidebarGroupForPage(DemoPage page) {
         for (SidebarGroup group : sidebarGroups) {
@@ -531,6 +560,17 @@ public final class M3FXDemoApp extends Application {
             animation.stop();
         }
         animations.clear();
+    }
+
+    /// Applies the current demo animation switch to page-owned animations.
+    private void updatePageAnimations() {
+        for (Animation animation : animations) {
+            if (animationsEnabled) {
+                animation.play();
+            } else {
+                animation.pause();
+            }
+        }
     }
 
     /// Creates the component overview page.
@@ -2395,8 +2435,10 @@ public final class M3FXDemoApp extends Application {
         );
         animation.setAutoReverse(true);
         animation.setCycleCount(Animation.INDEFINITE);
-        animation.play();
         animations.add(animation);
+        if (animationsEnabled) {
+            animation.play();
+        }
     }
 
     /// Opens the demo dialog.
@@ -2520,6 +2562,17 @@ public final class M3FXDemoApp extends Application {
         }
 
         M3ThemeManager.install(activeScene, createTheme());
+    }
+
+    /// Applies the current demo animation switch to the active scene.
+    private void applyMotionSettings() {
+        Scene activeScene = scene;
+        if (activeScene == null) {
+            return;
+        }
+
+        M3MotionSettings.setAnimationsEnabled(activeScene.getRoot(), animationsEnabled);
+        updatePageAnimations();
     }
 
     /// Creates a theme from the current demo controls.
