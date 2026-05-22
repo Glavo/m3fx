@@ -538,6 +538,7 @@ public class M3MenuButton extends M3Button {
         Parent root = scene.getRoot();
         M3ThemeManager.copyThemeContext(root, menu);
         M3Animation.copyResolvedMotionSettings(this, menu);
+        menu.setNodeOrientation(getEffectiveNodeOrientation());
         menu.applyCss();
     }
 }

@@ -28,6 +28,7 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         container.setManaged(false);
         container.setAlignment(Pos.TOP_CENTER);
         container.setSpacing(8.0);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         getChildren().add(container);
         control.getItems().addListener(itemsListener);
         updateItems();
@@ -37,6 +38,7 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     @Override
     public void dispose() {
         getSkinnable().getItems().removeListener(itemsListener);
+        container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         super.dispose();
     }

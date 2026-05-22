@@ -6,7 +6,9 @@ package org.glavo.m3fx.skins;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.control.SkinBase;
 import javafx.scene.shape.SVGPath;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -26,6 +28,9 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     /// The expanded arrow rotation in degrees.
     private static final double EXPANDED_ROTATION = 0.0;
 
+    /// The collapsed right-to-left arrow rotation in degrees.
+    private static final double RIGHT_TO_LEFT_COLLAPSED_ROTATION = 90.0;
+
     /// The disclosure triangle path in a 24 by 24 icon box.
     private static final String TRIANGLE_PATH = "M 7 9 L 17 9 L 12 15 Z";
 
@@ -39,6 +44,10 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     private final ChangeListener<Boolean> expandedListener =
             (observable, oldValue, newValue) -> animateExpandedState(newValue);
 
+    /// Applies node-orientation changes to collapsed arrow direction.
+    private final InvalidationListener nodeOrientationInvalidation =
+            observable -> animateExpandedState(getSkinnable().isExpanded());
+
     /// Creates a disclosure icon skin.
     ///
     /// @param control the disclosure icon controlled by this skin
@@ -48,9 +57,10 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
         arrow.getStyleClass().add("m3-disclosure-icon-shape");
         arrow.setManaged(false);
         arrow.setMouseTransparent(true);
-        arrow.setRotate(rotationFor(control.isExpanded()));
+        arrow.setRotate(rotationFor(control.isExpanded(), isRightToLeft()));
         getChildren().add(arrow);
         control.expandedProperty().addListener(expandedListener);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
 
     /// Removes listeners and animations before disposal.
@@ -58,6 +68,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     public void dispose() {
         rotationAnimation.stop();
         getSkinnable().expandedProperty().removeListener(expandedListener);
+        getSkinnable().effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         super.dispose();
     }
 
@@ -148,13 +159,21 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
         M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
         rotationAnimation.getKeyFrames().setAll(new KeyFrame(
                 spec.duration(),
-                new KeyValue(arrow.rotateProperty(), rotationFor(expanded), spec.interpolator())
+                new KeyValue(arrow.rotateProperty(), rotationFor(expanded, isRightToLeft()), spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), rotationAnimation);
     }
 
     /// Returns the arrow rotation for an expanded state.
-    private static double rotationFor(boolean expanded) {
-        return expanded ? EXPANDED_ROTATION : COLLAPSED_ROTATION;
+    private static double rotationFor(boolean expanded, boolean rightToLeft) {
+        if (expanded) {
+            return EXPANDED_ROTATION;
+        }
+        return rightToLeft ? RIGHT_TO_LEFT_COLLAPSED_ROTATION : COLLAPSED_ROTATION;
+    }
+
+    /// Returns whether the icon is rendered in right-to-left orientation.
+    private boolean isRightToLeft() {
+        return getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     }
 }

@@ -8,16 +8,19 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
@@ -57,6 +60,9 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The submenu displayed by this item.
     private final M3Menu subMenu = new M3Menu();
 
+    /// The default submenu indicator used when no custom trailing content is set.
+    private final M3Icon defaultIndicator = createDefaultIndicator();
+
     /// The menu that directly owns this submenu item.
     private @Nullable M3Menu ownerMenu;
 
@@ -77,6 +83,9 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// The pointer-exit close delay.
     private final PauseTransition hoverCloseDelay = new PauseTransition();
+
+    /// Updates the default indicator glyph when node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateDefaultIndicatorDirection();
 
     /// Whether an action from the submenu is being forwarded to this item's parent menu.
     private boolean forwardingSubMenuAction = false;
@@ -281,8 +290,10 @@ public class M3SubMenuItem extends M3MenuItem {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         if (getTrailing() == null) {
-            setTrailing(createDefaultIndicator());
+            setTrailing(defaultIndicator);
         }
+        updateDefaultIndicatorDirection();
+        effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 setSelected(false);
@@ -403,35 +414,28 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Handles keyboard actions on the submenu item.
     private void handleKeyPressed(KeyEvent event) {
-        switch (event.getCode()) {
-            case RIGHT, ENTER, SPACE -> {
-                if (showSubMenuAndFocusFirstItem()) {
-                    event.consume();
-                }
+        KeyCode code = event.getCode();
+        if (code == KeyCode.ENTER || code == KeyCode.SPACE || isOpenSubMenuKey(code)) {
+            if (showSubMenuAndFocusFirstItem()) {
+                event.consume();
             }
-            case LEFT, ESCAPE -> {
-                if (popup.isShowing()) {
-                    hideSubMenu();
-                    requestFocus();
-                    event.consume();
-                }
-            }
-            default -> {
+        } else if (code == KeyCode.ESCAPE || isCloseSubMenuKey(code)) {
+            if (popup.isShowing()) {
+                hideSubMenu();
+                requestFocus();
+                event.consume();
             }
         }
     }
 
     /// Handles keyboard dismissal while focus is inside the submenu.
     private void handleSubMenuKeyPressed(KeyEvent event) {
-        switch (event.getCode()) {
-            case LEFT, ESCAPE -> {
-                if (popup.isShowing()) {
-                    hideSubMenu();
-                    requestFocus();
-                    event.consume();
-                }
-            }
-            default -> {
+        KeyCode code = event.getCode();
+        if (code == KeyCode.ESCAPE || isCloseSubMenuKey(code)) {
+            if (popup.isShowing()) {
+                hideSubMenu();
+                requestFocus();
+                event.consume();
             }
         }
     }
@@ -498,6 +502,26 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.setTranslateX(0.0);
     }
 
+    /// Returns whether a key opens the submenu for the current node orientation.
+    private boolean isOpenSubMenuKey(KeyCode keyCode) {
+        return keyCode == (isRightToLeft() ? KeyCode.LEFT : KeyCode.RIGHT);
+    }
+
+    /// Returns whether a key closes the submenu for the current node orientation.
+    private boolean isCloseSubMenuKey(KeyCode keyCode) {
+        return keyCode == (isRightToLeft() ? KeyCode.RIGHT : KeyCode.LEFT);
+    }
+
+    /// Returns whether this item is rendered in right-to-left orientation.
+    private boolean isRightToLeft() {
+        return getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+    }
+
+    /// Updates the default indicator to point toward the submenu opening side.
+    private void updateDefaultIndicatorDirection() {
+        defaultIndicator.setText(isRightToLeft() ? "<" : ">");
+    }
+
     /// Starts the pointer-exit close delay when the submenu is open.
     private void scheduleHoverClose() {
         if (popup.isShowing()) {
@@ -516,6 +540,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
         M3ThemeManager.copyThemeContext(popupThemeSource(scene), subMenu);
         M3Animation.copyResolvedMotionSettings(this, subMenu);
+        subMenu.setNodeOrientation(getEffectiveNodeOrientation());
         subMenu.applyCss();
     }
 

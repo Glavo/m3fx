@@ -15,6 +15,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -409,12 +410,20 @@ public class M3Menu extends Control {
             event.consume();
             return true;
         }
-        if (code == KeyCode.RIGHT && focusedItem instanceof M3SubMenuItem subMenuItem) {
+        if (isOpenSubMenuKey(code) && focusedItem instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.showSubMenuAndFocusFirstItem();
             event.consume();
             return true;
         }
         return false;
+    }
+
+    /// Returns whether a key opens a submenu for the current node orientation.
+    private boolean isOpenSubMenuKey(KeyCode keyCode) {
+        KeyCode openKey = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
+                ? KeyCode.LEFT
+                : KeyCode.RIGHT;
+        return keyCode == openKey;
     }
 
     /// Applies keyboard focus movement across menu items.

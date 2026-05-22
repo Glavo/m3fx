@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.geometry.Bounds;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
@@ -56,7 +57,8 @@ final class M3PopupPositioning {
                 visualBoundsFor(ownerBounds),
                 contentWidth,
                 contentHeight,
-                offsetX
+                offsetX,
+                owner.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
         );
     }
 
@@ -91,12 +93,27 @@ final class M3PopupPositioning {
             double contentHeight,
             double offsetX
     ) {
+        return subMenuBeside(ownerBounds, visualBounds, contentWidth, contentHeight, offsetX, false);
+    }
+
+    /// Returns a submenu popup position for known owner, screen, content bounds, and preferred side.
+    static Placement subMenuBeside(
+            Bounds ownerBounds,
+            Rectangle2D visualBounds,
+            double contentWidth,
+            double contentHeight,
+            double offsetX,
+            boolean preferLeft
+    ) {
         double rightX = ownerBounds.getMaxX() + offsetX;
         double leftX = ownerBounds.getMinX() - contentWidth - offsetX;
         boolean rightFits = rightX + contentWidth <= visualBounds.getMaxX();
         boolean leftFits = leftX >= visualBounds.getMinX();
-        boolean opensToLeft = !rightFits && (leftFits
-                || ownerBounds.getMinX() - visualBounds.getMinX() > visualBounds.getMaxX() - rightX);
+        double leftSpace = ownerBounds.getMinX() - visualBounds.getMinX();
+        double rightSpace = visualBounds.getMaxX() - rightX;
+        boolean opensToLeft = preferLeft
+                ? leftFits || !rightFits && leftSpace > rightSpace
+                : !rightFits && (leftFits || leftSpace > rightSpace);
         double x = opensToLeft ? leftX : rightX;
         double y = clampStart(ownerBounds.getMinY(), visualBounds.getMinY(), visualBounds.getMaxY(), contentHeight);
         return new Placement(

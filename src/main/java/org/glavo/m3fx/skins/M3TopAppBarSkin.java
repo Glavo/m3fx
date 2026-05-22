@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -44,20 +46,24 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     /// Updates the visual action list when public actions change.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
+    /// Updates logical alignment when node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateVariantLayout();
+
     /// Creates a top app bar skin.
     public M3TopAppBarSkin(M3TopAppBar control) {
         super(control);
         container.setManaged(false);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         navigationSlot.getStyleClass().add(M3TopAppBar.NAVIGATION_STYLE_CLASS);
         titleLabel.getStyleClass().add(M3TopAppBar.TITLE_STYLE_CLASS);
         actions.getStyleClass().add(M3TopAppBar.ACTIONS_STYLE_CLASS);
-        actions.setAlignment(Pos.CENTER_RIGHT);
         HBox.setHgrow(spacer, Priority.ALWAYS);
         titleLabel.textProperty().bind(control.titleProperty());
 
         control.navigationProperty().addListener((observable, oldValue, newValue) -> updateNavigation(newValue));
         control.getActions().addListener(actionsListener);
         control.variantProperty().addListener((observable, oldValue, newValue) -> updateVariantLayout());
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
 
         updateNavigation(control.getNavigation());
         updateActions();
@@ -72,6 +78,8 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         M3TopAppBar control = getSkinnable();
         titleLabel.textProperty().unbind();
         control.getActions().removeListener(actionsListener);
+        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.nodeOrientationProperty().unbind();
         actions.getChildren().clear();
         navigationSlot.getChildren().clear();
         container.getChildren().clear();
@@ -177,7 +185,9 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         M3TopAppBarVariant variant = getSkinnable().getVariant();
         boolean centerAligned = variant == M3TopAppBarVariant.CENTER_ALIGNED;
         boolean tall = variant == M3TopAppBarVariant.MEDIUM || variant == M3TopAppBarVariant.LARGE;
+        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
 
+        actions.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
         if (centerAligned) {
             HBox.setHgrow(titleLabel, Priority.ALWAYS);
             titleLabel.setAlignment(Pos.CENTER);
@@ -185,11 +195,15 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
             spacer.setManaged(false);
         } else {
             HBox.setHgrow(titleLabel, null);
-            titleLabel.setAlignment(Pos.CENTER_LEFT);
+            titleLabel.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
             spacer.setVisible(true);
             spacer.setManaged(true);
         }
-        container.setAlignment(tall ? Pos.BOTTOM_LEFT : Pos.CENTER_LEFT);
+        if (rightToLeft) {
+            container.setAlignment(tall ? Pos.BOTTOM_RIGHT : Pos.CENTER_RIGHT);
+        } else {
+            container.setAlignment(tall ? Pos.BOTTOM_LEFT : Pos.CENTER_LEFT);
+        }
         getSkinnable().requestLayout();
     }
 }

@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -40,12 +41,16 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
     /// Updates rendered text, slots, and metrics after row properties change.
     private final InvalidationListener updateListener = observable -> updateView();
 
+    /// Updates logical alignment when node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
+
     /// Creates a form row skin.
     ///
     /// @param control the form row controlled by this skin
     public M3FormRowSkin(M3FormRow control) {
         super(control);
         container.setManaged(false);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getStyleClass().add(M3FormRow.CONTAINER_STYLE_CLASS);
         textColumn.getStyleClass().add(M3FormRow.TEXT_COLUMN_STYLE_CLASS);
         label.getStyleClass().add(M3FormRow.LABEL_STYLE_CLASS);
@@ -55,8 +60,6 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
 
         label.setWrapText(true);
         supportingLabel.setWrapText(true);
-        contentSlot.setAlignment(Pos.CENTER_LEFT);
-        trailingSlot.setAlignment(Pos.CENTER_RIGHT);
         HBox.setHgrow(contentSlot, Priority.ALWAYS);
 
         textColumn.getChildren().addAll(label, supportingLabel);
@@ -64,6 +67,7 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         getChildren().add(container);
 
         installListeners(control);
+        updateNodeOrientationLayout();
         updateView();
     }
 
@@ -78,6 +82,8 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         control.labelWidthProperty().removeListener(updateListener);
         control.columnSpacingProperty().removeListener(updateListener);
         control.rowMinHeightProperty().removeListener(updateListener);
+        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.nodeOrientationProperty().unbind();
         contentSlot.getChildren().clear();
         trailingSlot.getChildren().clear();
         super.dispose();
@@ -148,6 +154,7 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         control.labelWidthProperty().addListener(updateListener);
         control.columnSpacingProperty().addListener(updateListener);
         control.rowMinHeightProperty().addListener(updateListener);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
 
     /// Applies current text, slot nodes, and styleable metrics.
@@ -183,5 +190,12 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         container.setSpacing(control.getColumnSpacing());
         container.setMinHeight(control.getRowMinHeight());
         control.requestLayout();
+    }
+
+    /// Updates child alignments from logical start and end positions.
+    private void updateNodeOrientationLayout() {
+        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        contentSlot.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        trailingSlot.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
     }
 }

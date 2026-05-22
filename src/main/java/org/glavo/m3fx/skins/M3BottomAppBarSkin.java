@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
@@ -43,21 +45,24 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     /// Updates the visual action list when public actions change.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
+    /// Updates logical floating-action placement when node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateLayoutOrder();
+
     /// Creates a bottom app bar skin.
     ///
     /// @param control the bottom app bar controlled by this skin
     public M3BottomAppBarSkin(M3BottomAppBar control) {
         super(control);
         container.setManaged(false);
-        container.setAlignment(Pos.CENTER_LEFT);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         actions.getStyleClass().add(M3BottomAppBar.ACTIONS_STYLE_CLASS);
-        actions.setAlignment(Pos.CENTER_LEFT);
         floatingActionSlot.getStyleClass().add(M3BottomAppBar.FLOATING_ACTION_STYLE_CLASS);
         HBox.setHgrow(leadingSpacer, Priority.ALWAYS);
         HBox.setHgrow(trailingSpacer, Priority.ALWAYS);
 
         control.floatingActionProperty().addListener((observable, oldValue, newValue) -> updateFloatingAction(newValue));
         control.floatingActionAlignmentProperty().addListener((observable, oldValue, newValue) -> updateLayoutOrder());
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.getActions().addListener(actionsListener);
 
         updateActions();
@@ -71,6 +76,8 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     public void dispose() {
         M3BottomAppBar control = getSkinnable();
         control.getActions().removeListener(actionsListener);
+        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.nodeOrientationProperty().unbind();
         actions.getChildren().clear();
         floatingActionSlot.getChildren().clear();
         container.getChildren().clear();
@@ -175,9 +182,12 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     /// Updates child order and slot alignment from the floating action alignment.
     private void updateLayoutOrder() {
         container.getChildren().clear();
+        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        container.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        actions.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
         switch (getSkinnable().getFloatingActionAlignment()) {
             case START -> {
-                floatingActionSlot.setAlignment(Pos.CENTER_LEFT);
+                floatingActionSlot.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
                 container.getChildren().addAll(floatingActionSlot, actions, trailingSpacer);
             }
             case CENTER -> {
@@ -185,7 +195,7 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
                 container.getChildren().addAll(actions, leadingSpacer, floatingActionSlot, trailingSpacer);
             }
             case END -> {
-                floatingActionSlot.setAlignment(Pos.CENTER_RIGHT);
+                floatingActionSlot.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
                 container.getChildren().addAll(actions, leadingSpacer, floatingActionSlot);
             }
         }

@@ -28,6 +28,7 @@ public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
         container.setManaged(false);
         container.setAlignment(Pos.CENTER);
         container.setSpacing(0.0);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         getChildren().add(container);
         control.getItems().addListener(itemsListener);
         updateItems();
@@ -37,6 +38,7 @@ public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
     @Override
     public void dispose() {
         getSkinnable().getItems().removeListener(itemsListener);
+        container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         super.dispose();
     }

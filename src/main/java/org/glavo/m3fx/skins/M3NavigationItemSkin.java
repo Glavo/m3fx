@@ -9,6 +9,7 @@ import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -78,6 +79,9 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     /// Keeps the state layer sized when controls are resized outside a layout pass.
     private final InvalidationListener stateLayerLayoutInvalidation = observable -> layoutStateLayer();
 
+    /// Updates logical overlay placement when node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
+
     /// Updates the displayed label text.
     private final ChangeListener<@Nullable String> textListener =
             (observable, oldValue, newValue) -> updateText(newValue);
@@ -123,7 +127,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         content.setAlignment(Pos.CENTER);
         iconContainer.setAlignment(Pos.CENTER);
         graphicContainer.setAlignment(Pos.CENTER);
-        badgeContainer.setAlignment(Pos.TOP_RIGHT);
+        updateNodeOrientationLayout();
         badgeContainer.setMouseTransparent(true);
         indicator.setManaged(false);
         indicator.setMouseTransparent(true);
@@ -145,6 +149,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         control.widthProperty().addListener(stateLayerLayoutInvalidation);
         control.heightProperty().addListener(stateLayerLayoutInvalidation);
         control.layoutBoundsProperty().addListener(stateLayerLayoutInvalidation);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
         layoutStateLayer();
@@ -162,6 +167,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         item.widthProperty().removeListener(stateLayerLayoutInvalidation);
         item.heightProperty().removeListener(stateLayerLayoutInvalidation);
         item.layoutBoundsProperty().removeListener(stateLayerLayoutInvalidation);
+        item.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
         uninstallInteractionHandlers(item);
@@ -326,9 +332,24 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
             if (!badge.getStyleClass().contains("m3-navigation-item-badge")) {
                 badge.getStyleClass().add("m3-navigation-item-badge");
             }
-            StackPane.setAlignment(badge, Pos.TOP_RIGHT);
+            StackPane.setAlignment(badge, badgeAlignment());
             badgeContainer.getChildren().add(badge);
         }
+    }
+
+    /// Updates alignment for overlay content that is anchored to logical end.
+    private void updateNodeOrientationLayout() {
+        badgeContainer.setAlignment(badgeAlignment());
+        for (Node badge : badgeContainer.getChildren()) {
+            StackPane.setAlignment(badge, badgeAlignment());
+        }
+    }
+
+    /// Returns the badge alignment for the current logical end edge.
+    private Pos badgeAlignment() {
+        return getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
+                ? Pos.TOP_LEFT
+                : Pos.TOP_RIGHT;
     }
 
     /// Animates the selected indicator to the requested state.

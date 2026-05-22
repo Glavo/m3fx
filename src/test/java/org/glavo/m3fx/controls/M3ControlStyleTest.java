@@ -3185,6 +3185,31 @@ final class M3ControlStyleTest {
         );
     }
 
+    /// Verifies that collapsed disclosure icons point toward logical child content in right-to-left layouts.
+    @Test
+    void disclosureIconMirrorsCollapsedDirectionForRightToLeft() {
+        M3DisclosureIcon leftToRightIcon = new M3DisclosureIcon();
+        M3DisclosureIcon rightToLeftIcon = new M3DisclosureIcon();
+        rightToLeftIcon.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        HBox root = new HBox(leftToRightIcon, rightToLeftIcon);
+        Scene scene = new Scene(root, 80.0, 40.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.layout();
+
+        SVGPath leftToRightArrow = assertInstanceOf(
+                SVGPath.class,
+                leftToRightIcon.lookup(".m3-disclosure-icon-shape")
+        );
+        SVGPath rightToLeftArrow = assertInstanceOf(
+                SVGPath.class,
+                rightToLeftIcon.lookup(".m3-disclosure-icon-shape")
+        );
+        assertEquals(-90.0, leftToRightArrow.getRotate(), 0.0001);
+        assertEquals(90.0, rightToLeftArrow.getRotate(), 0.0001);
+    }
+
     /// Verifies that disclosure icons render inside fixed list item icon slots without clipping.
     @Test
     void disclosureIconFitsNavigationDrawerSlot() {
@@ -3859,6 +3884,18 @@ final class M3ControlStyleTest {
         assertTrue(export.getItems().isEmpty());
     }
 
+    /// Verifies that the default submenu indicator mirrors in right-to-left layouts.
+    @Test
+    void subMenuItemMirrorsDefaultIndicatorForRightToLeft() {
+        M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
+        export.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+        applyCss(export);
+
+        M3Icon indicator = assertInstanceOf(M3Icon.class, export.getTrailing());
+        assertEquals("<", indicator.getText());
+    }
+
     /// Verifies that submenu items are focusable menu items but do not participate in parent menu selection.
     @Test
     void menuSelectionSkipsSubMenuItems() {
@@ -3990,6 +4027,32 @@ final class M3ControlStyleTest {
         assertTrue(leftPlacement.opensToLeft());
         assertEquals(131.0, leftPlacement.x(), 0.0001);
         assertEquals(120.0, bottomClampedPlacement.y(), 0.0001);
+    }
+
+    /// Verifies that popup positioning prefers the logical leading side for right-to-left submenus.
+    @Test
+    void popupPositioningPrefersLeftForRightToLeftSubMenus() {
+        Rectangle2D screen = new Rectangle2D(0.0, 0.0, 360.0, 200.0);
+        M3PopupPositioning.Placement rightToLeftPlacement = M3PopupPositioning.subMenuBeside(
+                new BoundingBox(160.0, 40.0, 80.0, 32.0),
+                screen,
+                120.0,
+                80.0,
+                -1.0,
+                true
+        );
+        M3PopupPositioning.Placement fallbackPlacement = M3PopupPositioning.subMenuBeside(
+                new BoundingBox(16.0, 40.0, 80.0, 32.0),
+                screen,
+                120.0,
+                80.0,
+                -1.0,
+                true
+        );
+
+        assertTrue(rightToLeftPlacement.opensToLeft());
+        assertEquals(41.0, rightToLeftPlacement.x(), 0.0001);
+        assertFalse(fallbackPlacement.opensToLeft());
     }
 
     /// Verifies that popup positioning flips menu popups above their owner near the bottom edge.
@@ -4360,6 +4423,55 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that submenu keyboard open and close keys mirror in right-to-left menus.
+    @Test
+    void menuKeyboardNavigationMirrorsSubMenuKeysForRightToLeft() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadAfterDelay(Duration.millis(220.0), () -> {
+                M3MenuItem pdf = new M3MenuItem("PDF");
+                M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
+                M3Menu menu = new M3Menu(export);
+                menu.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                Stage stage = new Stage();
+                Pane root = new Pane(menu);
+                stage.setScene(new Scene(root, 240.0, 180.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                stageReference.set(stage);
+                exportReference.set(export);
+                export.requestFocus();
+                menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertTrue(export.isSubMenuShowing());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, export.getSubMenu().getNodeOrientation());
+                assertTrue(pdf.isFocused());
+
+                export.getSubMenu().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+            }, () -> {
+                M3SubMenuItem export = Objects.requireNonNull(exportReference.get());
+
+                assertFalse(export.isSubMenuShowing());
+                assertTrue(export.isFocused());
+            });
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3SubMenuItem export = exportReference.get();
+                if (export != null) {
+                    export.hideSubMenu();
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that opening one submenu closes sibling submenus and keeps focus in the active branch.
     @Test
     void siblingSubMenusAreMutuallyExclusive() throws InterruptedException {
@@ -4647,6 +4759,24 @@ final class M3ControlStyleTest {
         assertFalse(HBox.class.isAssignableFrom(M3SearchBar.class));
         assertFalse(VBox.class.isAssignableFrom(M3SearchView.class));
         assertEquals(56.0, result.getOneLineHeight(), 0.0001);
+    }
+
+    /// Verifies that search views propagate right-to-left orientation to their embedded content.
+    @Test
+    void searchViewPropagatesRightToLeftOrientationToSearchBarAndResults() {
+        M3ListItem result = new M3ListItem("Result");
+        M3SearchView searchView = new M3SearchView("Search", result);
+        searchView.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        Pane root = new Pane(searchView);
+        Scene scene = new Scene(root, 360.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        searchView.resize(320.0, 120.0);
+        searchView.layout();
+
+        assertEquals(NodeOrientation.RIGHT_TO_LEFT, searchView.getSearchBar().getEffectiveNodeOrientation());
+        assertEquals(NodeOrientation.RIGHT_TO_LEFT, result.getEffectiveNodeOrientation());
     }
 
     /// Verifies that search bars keep their token height when a flow row contains taller controls.
@@ -7263,6 +7393,50 @@ final class M3ControlStyleTest {
         assertTrue(trailingText.isManaged());
     }
 
+    /// Verifies that list items mirror logical leading and trailing content in right-to-left layouts.
+    @Test
+    void listItemMirrorsLogicalSlotsForRightToLeft() {
+        runOnFxThread(() -> {
+            M3ListItem listItem = new M3ListItem("Headline");
+            listItem.setSupportingText("Supporting");
+            listItem.setLeadingIcon("L");
+            listItem.setTrailingSupportingText("3 min");
+            listItem.setTrailingIcon("T");
+            listItem.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            StackPane root = new StackPane(listItem);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 360.0, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(360.0, 120.0);
+            root.layout();
+            listItem.resize(320.0, 72.0);
+            listItem.layout();
+
+            Node leadingSlot = Objects.requireNonNull(listItem.lookup(".m3-list-item-leading"));
+            Node trailingSlot = Objects.requireNonNull(listItem.lookup(".m3-list-item-trailing"));
+            VBox textBox = assertInstanceOf(VBox.class, listItem.lookup(".m3-list-item-text"));
+            Bounds leadingBounds = leadingSlot.localToScene(leadingSlot.getBoundsInLocal());
+            Bounds trailingBounds = trailingSlot.localToScene(trailingSlot.getBoundsInLocal());
+
+            assertEquals(Pos.CENTER_RIGHT, textBox.getAlignment());
+            assertTrue(leadingBounds.getMinX() > trailingBounds.getMaxX(),
+                    () -> "leadingBounds=" + leadingBounds + ", trailingBounds=" + trailingBounds);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, leadingSlot, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, trailingSlot, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-list-item-rtl.png"
+            ));
+        });
+    }
+
     /// Verifies that fixed list item slot sizes drive media layout and clipping.
     @Test
     void listItemSlotSizesDriveMediaLayout() {
@@ -8413,6 +8587,28 @@ final class M3ControlStyleTest {
         assertNull(item.lookup(".m3-navigation-item-badge"));
     }
 
+    /// Verifies that navigation item badges stay anchored to logical end in right-to-left layouts.
+    @Test
+    void navigationItemMirrorsBadgeForRightToLeft() {
+        M3Badge badge = new M3Badge("3");
+        M3NavigationItem item = M3NavigationItem.withSelected("Inbox", new M3Icon("I"), badge, true);
+        item.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        Pane root = new Pane(item);
+        Scene scene = new Scene(root, 120.0, 96.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        item.resize(80.0, 80.0);
+        item.layout();
+
+        StackPane badgeContainer = assertInstanceOf(
+                StackPane.class,
+                item.lookup(".m3-navigation-item-badge-container")
+        );
+        assertEquals(Pos.TOP_LEFT, badgeContainer.getAlignment());
+        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(badge));
+    }
+
     /// Verifies that navigation bars group items and keep a selected item.
     @Test
     void navigationBarGroupsItemsAndKeepsSelection() {
@@ -8763,6 +8959,69 @@ final class M3ControlStyleTest {
         assertFalse(HBox.class.isAssignableFrom(M3Banner.class));
         assertFalse(HBox.class.isAssignableFrom(M3TopAppBar.class));
         assertFalse(HBox.class.isAssignableFrom(M3BottomAppBar.class));
+    }
+
+    /// Verifies that app bars and banners mirror logical leading and trailing slots in right-to-left layouts.
+    @Test
+    void appBarsAndBannersMirrorLogicalSlotsForRightToLeft() {
+        runOnFxThread(() -> {
+            Label topNavigation = new Label("N");
+            Label topAction = new Label("A");
+            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topAction);
+            topAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            Label bottomAction = new Label("B");
+            Label floatingAction = new Label("F");
+            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                    M3BottomAppBarFloatingActionAlignment.END,
+                    floatingAction,
+                    bottomAction
+            );
+            bottomAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            Label bannerIcon = new Label("I");
+            Label bannerAction = new Label("C");
+            M3Banner banner = M3Banner.withIcon("Message", bannerIcon, bannerAction);
+            banner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            Pane root = new Pane(topAppBar, bottomAppBar, banner);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 460.0, 240.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            topAppBar.resizeRelocate(20.0, 20.0, 420.0, 64.0);
+            bottomAppBar.resizeRelocate(20.0, 96.0, 420.0, 80.0);
+            banner.resizeRelocate(20.0, 188.0, 420.0, 48.0);
+            root.layout();
+            topAppBar.layout();
+            bottomAppBar.layout();
+            banner.layout();
+
+            assertTrue(
+                    topNavigation.localToScene(topNavigation.getBoundsInLocal()).getMinX()
+                            > topAction.localToScene(topAction.getBoundsInLocal()).getMaxX()
+            );
+            assertTrue(
+                    floatingAction.localToScene(floatingAction.getBoundsInLocal()).getMaxX()
+                            < bottomAction.localToScene(bottomAction.getBoundsInLocal()).getMinX()
+            );
+            assertTrue(
+                    bannerIcon.localToScene(bannerIcon.getBoundsInLocal()).getMinX()
+                            > bannerAction.localToScene(bannerAction.getBoundsInLocal()).getMaxX()
+            );
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, topNavigation, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, floatingAction, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, bannerIcon, Color.WHITE, 0.05);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-app-bars-banner-rtl.png"
+            ));
+        });
     }
 
     /// Verifies that navigation drawers group list items and keep one selected item.
@@ -9784,6 +10043,32 @@ final class M3ControlStyleTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies that form rows mirror content and trailing slots in right-to-left layouts.
+    @Test
+    void formRowMirrorsLogicalSlotsForRightToLeft() {
+        Label content = new Label("Content");
+        Label trailing = new Label("Trailing");
+        M3FormRow formRow = new M3FormRow("Label", "Helper", content, trailing);
+        formRow.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        Pane root = new Pane(formRow);
+        Scene scene = new Scene(root, 520.0, 96.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        formRow.resize(480.0, 72.0);
+        formRow.layout();
+
+        Node labelColumn = Objects.requireNonNull(formRow.lookup("." + M3FormRow.TEXT_COLUMN_STYLE_CLASS));
+        Bounds contentBounds = content.localToScene(content.getBoundsInLocal());
+        Bounds trailingBounds = trailing.localToScene(trailing.getBoundsInLocal());
+        Bounds labelBounds = labelColumn.localToScene(labelColumn.getBoundsInLocal());
+
+        assertTrue(labelBounds.getMinX() > contentBounds.getMaxX(),
+                () -> "labelBounds=" + labelBounds + ", contentBounds=" + contentBounds);
+        assertTrue(contentBounds.getMinX() > trailingBounds.getMaxX(),
+                () -> "contentBounds=" + contentBounds + ", trailingBounds=" + trailingBounds);
     }
 
     /// Verifies that navigation drawer token rules override list item metrics.

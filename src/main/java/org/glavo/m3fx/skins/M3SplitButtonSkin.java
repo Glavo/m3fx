@@ -25,6 +25,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         super(control);
         container.setManaged(false);
         container.setAlignment(Pos.CENTER_LEFT);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().setAll(control.getActionButton(), control.getMenuButton());
         getChildren().add(container);
     }
@@ -32,6 +33,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     /// Removes child references before disposal.
     @Override
     public void dispose() {
+        container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         super.dispose();
     }

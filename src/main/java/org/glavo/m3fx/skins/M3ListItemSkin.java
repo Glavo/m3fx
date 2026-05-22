@@ -10,6 +10,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -106,6 +107,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Applies metric token changes to the list item layout.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
+    /// Applies logical leading and trailing alignment when node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
+
     /// Animates the selected container when selection changes.
     private final ChangeListener<Boolean> selectedListener =
             (observable, oldValue, newValue) -> animateSelectionContainer(newValue);
@@ -141,13 +145,15 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
         selectionContainer.setManaged(false);
         selectionContainer.setMouseTransparent(true);
-        textBox.setAlignment(Pos.CENTER_LEFT);
         textBox.getChildren().addAll(overlineLabel, headlineLabel, supportingLabel);
         HBox.setHgrow(textBox, Priority.ALWAYS);
-        trailingBox.setAlignment(Pos.CENTER_RIGHT);
         trailingBox.getChildren().addAll(trailingSupportingLabel, trailingSlot);
         container.getChildren().addAll(leadingSlot, textBox, trailingBox);
         getChildren().addAll(selectionContainer, container, stateLayer);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        textBox.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        trailingBox.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        updateNodeOrientationLayout();
 
         stateLayer.installStateTransitions(control);
         updateSelectionContainerImmediate(control.isSelected());
@@ -172,6 +178,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         control.horizontalPaddingProperty().addListener(metricsInvalidation);
         control.verticalPaddingProperty().addListener(metricsInvalidation);
         control.contentSpacingProperty().addListener(metricsInvalidation);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
     }
@@ -199,12 +206,16 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         item.horizontalPaddingProperty().removeListener(metricsInvalidation);
         item.verticalPaddingProperty().removeListener(metricsInvalidation);
         item.contentSpacingProperty().removeListener(metricsInvalidation);
+        item.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
         item.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         item.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         item.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         item.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        container.nodeOrientationProperty().unbind();
+        textBox.nodeOrientationProperty().unbind();
+        trailingBox.nodeOrientationProperty().unbind();
         super.dispose();
     }
 
@@ -308,13 +319,21 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         double horizontalPadding = item.getHorizontalPadding();
         double verticalPadding = item.getVerticalPadding();
         double spacing = item.getContentSpacing();
-        container.setAlignment(Pos.CENTER_LEFT);
+        updateNodeOrientationLayout();
         container.setSpacing(spacing);
         container.setMinHeight(height);
         container.setPrefHeight(height);
         container.setMaxHeight(height);
         container.setPadding(new Insets(verticalPadding, horizontalPadding, verticalPadding, horizontalPadding));
         getSkinnable().requestLayout();
+    }
+
+    /// Updates child alignment from logical start and end positions.
+    private void updateNodeOrientationLayout() {
+        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        container.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        textBox.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        trailingBox.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
     }
 
     /// Returns the preferred height for the current text structure.
