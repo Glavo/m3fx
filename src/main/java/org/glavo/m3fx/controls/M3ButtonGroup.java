@@ -3,9 +3,11 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -64,6 +66,10 @@ public class M3ButtonGroup extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     };
+
+    /// Updates physical edge style classes when the effective layout direction changes.
+    private final ChangeListener<NodeOrientation> effectiveNodeOrientationListener =
+            (observable, oldValue, newValue) -> updateButtonStyles();
 
     /// Creates an empty button group.
     public M3ButtonGroup() {
@@ -147,6 +153,7 @@ public class M3ButtonGroup extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
         getItems().addListener(childrenListener);
         updateButtonStyles();
     }
@@ -172,13 +179,15 @@ public class M3ButtonGroup extends Control {
             }
         }
 
+        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
         int buttonIndex = 0;
         for (Node child : getItems()) {
             if (child instanceof M3Button button) {
+                int visualButtonIndex = rightToLeft ? buttonCount - buttonIndex - 1 : buttonIndex;
                 M3ControlStyles.add(button, GROUPED_BUTTON_STYLE_CLASS);
                 M3ControlStyles.replaceVariant(
                         button,
-                        buttonStyleClass(buttonIndex, buttonCount),
+                        buttonStyleClass(visualButtonIndex, buttonCount),
                         SINGLE_BUTTON_STYLE_CLASS,
                         FIRST_BUTTON_STYLE_CLASS,
                         MIDDLE_BUTTON_STYLE_CLASS,

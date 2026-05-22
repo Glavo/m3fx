@@ -13,6 +13,7 @@ import javafx.event.Event;
 import javafx.event.EventType;
 import javafx.geometry.Bounds;
 import javafx.geometry.BoundingBox;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
@@ -623,6 +624,57 @@ final class M3ControlStyleTest {
         assertTrue(third.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS));
     }
 
+    /// Verifies that button groups mirror physical edge style classes for right-to-left layout.
+    @Test
+    void buttonGroupMirrorsPositionStyleClassesForRightToLeft() {
+        M3Button first = new M3Button("Archive");
+        M3Button second = new M3Button("Share");
+        M3Button third = new M3Button("Edit");
+        M3ButtonGroup group = new M3ButtonGroup(first, second, third);
+
+        group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+        assertTrue(first.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+        assertTrue(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
+
+        group.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+
+        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+    }
+
+    /// Verifies that button group corners and feedback layers match right-to-left visual order.
+    @Test
+    void buttonGroupUsesRightToLeftPositionSpecificShapes() {
+        runOnFxThread(() -> {
+            M3Button first = new M3Button("Archive");
+            M3Button second = new M3Button("Share");
+            M3Button third = new M3Button("Edit");
+            M3ButtonGroup group = new M3ButtonGroup(first, second, third);
+            group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            Pane root = new Pane(group);
+            Scene scene = new Scene(root, 360.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+            group.resize(group.prefWidth(-1.0), group.prefHeight(-1.0));
+            group.layout();
+            first.layout();
+            second.layout();
+            third.layout();
+            root.applyCss();
+
+            assertRegionRoundedCorners(first, false, true, true, false);
+            assertRegionRoundedCorners(second, false, false, false, false);
+            assertRegionRoundedCorners(third, true, false, false, true);
+            assertStateLayerRadii(first, 0.0, 20.0, 20.0, 0.0);
+            assertStateLayerRadii(second, 0.0, 0.0, 0.0, 0.0);
+            assertStateLayerRadii(third, 20.0, 0.0, 0.0, 20.0);
+        });
+    }
+
     /// Verifies that grouped selection containers create Material Design 3 skins.
     @Test
     void groupedSelectionContainersCreateMaterialSkins() {
@@ -694,6 +746,38 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3SplitButtonSkin.class, splitButton.getSkin());
         assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
         assertEquals(0.0, splitButton.getMenuButton().getHorizontalPadding(), 0.0001);
+    }
+
+    /// Verifies that split button part shapes mirror under right-to-left layout.
+    @Test
+    void splitButtonMirrorsPartShapesForRightToLeft() {
+        runOnFxThread(() -> {
+            M3SplitButton splitButton = M3SplitButton.withVariant(
+                    "Export",
+                    M3ButtonVariant.TONAL,
+                    new M3MenuItem("PDF")
+            );
+            Pane root = new Pane(splitButton);
+            Scene scene = new Scene(root, 240.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            splitButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            splitButton.resize(splitButton.prefWidth(-1.0), splitButton.prefHeight(-1.0));
+            splitButton.layout();
+            splitButton.getActionButton().layout();
+            splitButton.getMenuButton().layout();
+            root.applyCss();
+
+            assertTrue(splitButton.getActionButton().getStyleClass().contains("m3-split-button-right"));
+            assertTrue(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-left"));
+            assertRegionRoundedCorners(splitButton.getActionButton(), false, true, true, false);
+            assertRegionRoundedCorners(splitButton.getMenuButton(), true, false, false, true);
+            assertStateLayerRadii(splitButton.getActionButton(), 0.0, 20.0, 20.0, 0.0);
+            assertStateLayerRadii(splitButton.getMenuButton(), 20.0, 0.0, 0.0, 20.0);
+        });
     }
 
     /// Verifies that floating action button component token properties are styleable from CSS.
@@ -5422,6 +5506,26 @@ final class M3ControlStyleTest {
         assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS));
     }
 
+    /// Verifies that segmented button groups mirror physical edge style classes for right-to-left layout.
+    @Test
+    void segmentedButtonGroupMirrorsPositionStyleClassesForRightToLeft() {
+        M3SegmentedButton first = new M3SegmentedButton("Day");
+        M3SegmentedButton second = new M3SegmentedButton("Week");
+        M3SegmentedButton third = new M3SegmentedButton("Month");
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(first, second, third);
+
+        group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
+        assertTrue(second.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
+
+        group.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+
+        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
+    }
+
     /// Verifies that segmented button surfaces and state layers follow segment position shapes.
     @Test
     void segmentedButtonGroupUsesPositionSpecificShapes() {
@@ -5450,6 +5554,39 @@ final class M3ControlStyleTest {
             assertStateLayerRadii(day, 20.0, 0.0, 0.0, 20.0);
             assertStateLayerRadii(week, 0.0, 0.0, 0.0, 0.0);
             assertStateLayerRadii(month, 0.0, 20.0, 20.0, 0.0);
+        });
+    }
+
+    /// Verifies that segmented button corners and feedback layers match right-to-left visual order.
+    @Test
+    void segmentedButtonGroupUsesRightToLeftPositionSpecificShapes() {
+        runOnFxThread(() -> {
+            M3SegmentedButton day = new M3SegmentedButton("Day");
+            M3SegmentedButton week = new M3SegmentedButton("Week");
+            M3SegmentedButton month = new M3SegmentedButton("Month");
+            M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(day, week, month);
+            group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            Pane root = new Pane(group);
+            Scene scene = new Scene(root, 320.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            month.setSelected(true);
+            week.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            root.applyCss();
+            root.layout();
+            group.layout();
+            day.layout();
+            week.layout();
+            month.layout();
+            root.applyCss();
+
+            assertRegionRoundedCorners(day, false, true, true, false);
+            assertRegionRoundedCorners(week, false, false, false, false);
+            assertRegionRoundedCorners(month, true, false, false, true);
+            assertStateLayerRadii(day, 0.0, 20.0, 20.0, 0.0);
+            assertStateLayerRadii(week, 0.0, 0.0, 0.0, 0.0);
+            assertStateLayerRadii(month, 20.0, 0.0, 0.0, 20.0);
+            assertRegionRadii(segmentedButtonSelectionContainer(month), 19.0, 0.0, 0.0, 19.0);
         });
     }
 

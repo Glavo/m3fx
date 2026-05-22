@@ -13,6 +13,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -120,6 +121,10 @@ public class M3SegmentedButtonGroup extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     };
+
+    /// Updates physical edge style classes when the effective layout direction changes.
+    private final ChangeListener<NodeOrientation> effectiveNodeOrientationListener =
+            (observable, oldValue, newValue) -> updateSegmentStyles();
 
     /// Whether the group is currently synchronizing selected states.
     private boolean updatingSelection;
@@ -370,6 +375,7 @@ public class M3SegmentedButtonGroup extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
         getItems().addListener(childrenListener);
         updateSegmentStyles();
     }
@@ -549,12 +555,14 @@ public class M3SegmentedButtonGroup extends Control {
             }
         }
 
+        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
         int segmentIndex = 0;
         for (Node child : getItems()) {
             if (child instanceof M3SegmentedButton button) {
+                int visualSegmentIndex = rightToLeft ? segmentCount - segmentIndex - 1 : segmentIndex;
                 M3ControlStyles.replaceVariant(
                         button,
-                        segmentStyleClass(segmentIndex, segmentCount),
+                        segmentStyleClass(visualSegmentIndex, segmentCount),
                         SINGLE_SEGMENT_STYLE_CLASS,
                         FIRST_SEGMENT_STYLE_CLASS,
                         MIDDLE_SEGMENT_STYLE_CLASS,

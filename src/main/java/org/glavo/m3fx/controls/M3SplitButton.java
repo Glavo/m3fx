@@ -9,10 +9,12 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -46,6 +48,20 @@ public class M3SplitButton extends Control {
     /// The style class applied to the menu button.
     public static final String MENU_BUTTON_STYLE_CLASS = "m3-split-button-menu";
 
+    /// The style class applied to the child button rendered on the physical left side.
+    private static final String LEFT_SIDE_BUTTON_STYLE_CLASS = "m3-split-button-left";
+
+    /// The style class applied to the child button rendered on the physical right side.
+    private static final String RIGHT_SIDE_BUTTON_STYLE_CLASS = "m3-split-button-right";
+
+    /// Inline shape style for the physical left side button.
+    private static final String LEFT_SIDE_SHAPE_STYLE =
+            "-fx-background-radius: 999px 0 0 999px; -fx-border-radius: 999px 0 0 999px;";
+
+    /// Inline shape style for the physical right side button.
+    private static final String RIGHT_SIDE_SHAPE_STYLE =
+            "-fx-background-radius: 0 999px 999px 0; -fx-border-radius: 0 999px 999px 0;";
+
     /// The minimum width used for the menu side of the split button.
     private static final double DEFAULT_MENU_BUTTON_WIDTH = 48.0;
 
@@ -60,6 +76,10 @@ public class M3SplitButton extends Control {
 
     /// The focusable button parts exposed to accessibility and keyboard navigation.
     private final ObservableList<Node> buttonParts = FXCollections.observableArrayList();
+
+    /// Updates physical edge style classes when the effective layout direction changes.
+    private final ChangeListener<NodeOrientation> effectiveNodeOrientationListener =
+            (observable, oldValue, newValue) -> updateNodeOrientationStyle();
 
     // Backing property for the public shared button variant API.
     private final ObjectProperty<M3ButtonVariant> variant =
@@ -440,7 +460,9 @@ public class M3SplitButton extends Control {
         menuButton.showingProperty().addListener((observable, oldValue, newValue) ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED));
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
         updateVariant();
+        updateNodeOrientationStyle();
     }
 
     /// Applies keyboard focus navigation across the two split button parts.
@@ -460,6 +482,28 @@ public class M3SplitButton extends Control {
         M3ButtonVariant currentVariant = getVariant();
         actionButton.setVariant(currentVariant);
         menuButton.setVariant(currentVariant);
+    }
+
+    /// Updates layout-direction-dependent style classes and child feedback geometry.
+    private void updateNodeOrientationStyle() {
+        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        M3ControlStyles.replaceVariant(
+                actionButton,
+                rightToLeft ? RIGHT_SIDE_BUTTON_STYLE_CLASS : LEFT_SIDE_BUTTON_STYLE_CLASS,
+                LEFT_SIDE_BUTTON_STYLE_CLASS,
+                RIGHT_SIDE_BUTTON_STYLE_CLASS
+        );
+        M3ControlStyles.replaceVariant(
+                menuButton,
+                rightToLeft ? LEFT_SIDE_BUTTON_STYLE_CLASS : RIGHT_SIDE_BUTTON_STYLE_CLASS,
+                LEFT_SIDE_BUTTON_STYLE_CLASS,
+                RIGHT_SIDE_BUTTON_STYLE_CLASS
+        );
+        actionButton.setStyle(rightToLeft ? RIGHT_SIDE_SHAPE_STYLE : LEFT_SIDE_SHAPE_STYLE);
+        menuButton.setStyle(rightToLeft ? LEFT_SIDE_SHAPE_STYLE : RIGHT_SIDE_SHAPE_STYLE);
+        actionButton.requestLayout();
+        menuButton.requestLayout();
+        requestLayout();
     }
 
     /// Creates the default Material Design 3 split button skin.

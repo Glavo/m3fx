@@ -10,6 +10,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.ButtonBase;
@@ -387,8 +388,21 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
             return true;
         }
-        if (button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS)) {
+        boolean rightToLeft = button.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        boolean roundedLeft = false;
+        boolean roundedRight = false;
+        if (button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)) {
+            roundedLeft = true;
+        } else if (button.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS)) {
+            roundedRight = true;
+        } else if (button.getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS)) {
+            roundedLeft = !rightToLeft;
+            roundedRight = rightToLeft;
+        } else if (button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS)) {
+            roundedLeft = rightToLeft;
+            roundedRight = !rightToLeft;
+        }
+        if (roundedLeft) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius, 0.0, 0.0, radius);
             return true;
         }
@@ -396,8 +410,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0);
             return true;
         }
-        if (button.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS)) {
+        if (roundedRight) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0, radius, radius, 0.0);
             return true;
         }

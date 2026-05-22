@@ -1,13 +1,31 @@
 .m3-split-button .m3-button.m3-split-button-action {
     -m3-horizontal-padding: 20px;
-    -fx-background-radius: 999px 0 0 999px;
-    -fx-border-radius: 999px 0 0 999px;
 }
 
 .m3-split-button .m3-button.m3-split-button-menu {
     -m3-horizontal-padding: 0px;
     -fx-min-width: 48px;
     -fx-pref-width: 48px;
+}
+
+.m3-split-button .m3-button.m3-split-button-right {
+    -fx-background-radius: 0 999px 999px 0;
+    -fx-border-radius: 0 999px 999px 0;
+}
+
+.m3-split-button .m3-button.m3-split-button-left {
+    -fx-background-radius: 999px 0 0 999px;
+    -fx-border-radius: 999px 0 0 999px;
+}
+
+.m3-split-button .m3-button.m3-split-button-action.m3-split-button-left,
+.m3-split-button .m3-button.m3-split-button-menu.m3-split-button-left {
+    -fx-background-radius: 999px 0 0 999px;
+    -fx-border-radius: 999px 0 0 999px;
+}
+
+.m3-split-button .m3-button.m3-split-button-action.m3-split-button-right,
+.m3-split-button .m3-button.m3-split-button-menu.m3-split-button-right {
     -fx-background-radius: 0 999px 999px 0;
     -fx-border-radius: 0 999px 999px 0;
 }
@@ -15,4 +33,14 @@
 .m3-split-button .m3-button.m3-split-button-action:disabled,
 .m3-split-button .m3-button.m3-split-button-menu:disabled {
     -fx-opacity: 0.38;
+}
+
+.m3-split-button .m3-button.m3-button.m3-split-button-left.m3-split-button-left {
+    -fx-background-radius: 999px 0 0 999px;
+    -fx-border-radius: 999px 0 0 999px;
+}
+
+.m3-split-button .m3-button.m3-button.m3-split-button-right.m3-split-button-right {
+    -fx-background-radius: 0 999px 999px 0;
+    -fx-border-radius: 0 999px 999px 0;
 }
