@@ -8,7 +8,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.HBox;
@@ -334,21 +333,13 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
     private void initializePresetContent() {
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
         presetContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        presetContent.setAlignment(Pos.TOP_LEFT);
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
-        effectiveNodeOrientationProperty().addListener(observable -> updatePresetOrientationLayout());
+        presetList.setAlignment(Pos.TOP_LEFT);
         getPicker().minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         getPicker().maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         presets.addListener(presetsListener);
-        updatePresetOrientationLayout();
-    }
-
-    /// Updates orientation-dependent popup preset alignment.
-    private void updatePresetOrientationLayout() {
-        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-        Pos alignment = rightToLeft ? Pos.TOP_RIGHT : Pos.TOP_LEFT;
-        presetContent.setAlignment(alignment);
-        presetList.setAlignment(alignment);
     }
 
     /// Rebuilds popup content from the current preset list.

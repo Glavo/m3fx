@@ -211,9 +211,12 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
         M3DialogPane pane = getM3DialogPane();
         pane.setHeaderText(DEFAULT_TITLE);
         pane.setContent(picker);
+        picker.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
+        presetContent.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetContent.setAlignment(Pos.TOP_LEFT);
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
+        presetList.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetList.setAlignment(Pos.TOP_LEFT);
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
         setResultConverter(this::convertResult);

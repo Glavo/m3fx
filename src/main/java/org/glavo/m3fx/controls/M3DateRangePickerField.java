@@ -19,7 +19,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -837,9 +836,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         popupContent.getChildren().setAll(picker);
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
         presetContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        presetContent.setAlignment(Pos.TOP_LEFT);
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
-        effectiveNodeOrientationProperty().addListener(observable -> updatePresetOrientationLayout());
+        presetList.setAlignment(Pos.TOP_LEFT);
         popup.setAutoHide(true);
         popup.getContent().add(popupContent);
         popup.setOnHidden(event -> handlePopupHidden());
@@ -860,15 +860,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         picker.minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         picker.maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         presets.addListener(presetsListener);
-        updatePresetOrientationLayout();
-    }
-
-    /// Updates orientation-dependent popup preset alignment.
-    private void updatePresetOrientationLayout() {
-        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-        Pos alignment = rightToLeft ? Pos.TOP_RIGHT : Pos.TOP_LEFT;
-        presetContent.setAlignment(alignment);
-        presetList.setAlignment(alignment);
     }
 
     /// Creates one popup open button.

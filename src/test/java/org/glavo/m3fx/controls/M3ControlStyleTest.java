@@ -10088,13 +10088,16 @@ final class M3ControlStyleTest {
 
             M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
             dateField.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            dateField.setCommonPresets(LocalDate.of(2026, 5, 18));
             M3DateRangePickerField rangeField = new M3DateRangePickerField(
                     LocalDate.of(2026, 5, 12),
                     LocalDate.of(2026, 5, 16)
             );
             rangeField.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            rangeField.setCommonPresets(LocalDate.of(2026, 5, 18));
             M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
             timeField.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            timeField.setCommonPresets(LocalTime.of(10, 30));
 
             Pane root = new Pane(datePicker, dateRangePicker, timePicker, dateField, rangeField, timeField);
             Scene scene = new Scene(root, 1100.0, 720.0);
@@ -10142,6 +10145,18 @@ final class M3ControlStyleTest {
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateField.getPicker().getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, rangeField.getPicker().getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, timeField.getPicker().getEffectiveNodeOrientation());
+            assertPickerFieldPresetContentUsesLogicalStart(
+                    assertInstanceOf(Node.class, dateField.getPicker().getParent()),
+                    M3DatePickerField.PRESET_LIST_STYLE_CLASS
+            );
+            assertPickerFieldPresetContentUsesLogicalStart(
+                    assertInstanceOf(Node.class, rangeField.getPicker().getParent()),
+                    M3DateRangePickerField.PRESET_LIST_STYLE_CLASS
+            );
+            assertPickerFieldPresetContentUsesLogicalStart(
+                    assertInstanceOf(Node.class, timeField.getPicker().getParent()),
+                    M3TimePickerField.PRESET_LIST_STYLE_CLASS
+            );
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
@@ -11619,6 +11634,79 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that picker dialog preset columns follow right-to-left layout direction.
+    @Test
+    void pickerPresetDialogsPropagateRightToLeftOrientation() {
+        runOnFxThread(() -> {
+            M3DatePickerDialog dateDialog = new M3DatePickerDialog(LocalDate.of(2026, 5, 19));
+            dateDialog.setCommonPresets(LocalDate.of(2026, 5, 19));
+            M3DialogPane datePane = dateDialog.getM3DialogPane();
+            datePane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            M3DateRangePickerDialog rangeDialog = new M3DateRangePickerDialog(
+                    LocalDate.of(2026, 5, 19),
+                    LocalDate.of(2026, 5, 24)
+            );
+            rangeDialog.setCommonPresets(LocalDate.of(2026, 5, 19));
+            M3DialogPane rangePane = rangeDialog.getM3DialogPane();
+            rangePane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            M3TimePickerDialog timeDialog = new M3TimePickerDialog(LocalTime.of(10, 30));
+            timeDialog.setUse24HourClock(true);
+            timeDialog.setMinuteStep(15);
+            timeDialog.setCommonPresets(LocalTime.of(10, 30));
+            M3DialogPane timePane = timeDialog.getM3DialogPane();
+            timePane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            Pane root = new Pane(datePane, rangePane, timePane);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 1420.0, 1240.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(1420.0, 1240.0);
+            datePane.resizeRelocate(20.0, 20.0, 620.0, 560.0);
+            rangePane.resizeRelocate(680.0, 20.0, 660.0, 560.0);
+            timePane.resizeRelocate(20.0, 620.0, 720.0, 560.0);
+            root.layout();
+            datePane.layout();
+            rangePane.layout();
+            timePane.layout();
+
+            assertPickerPresetMirrorsRightToLeft(
+                    datePane,
+                    M3DatePickerDialog.PRESET_CONTENT_STYLE_CLASS,
+                    M3DatePickerDialog.PRESET_LIST_STYLE_CLASS,
+                    dateDialog.getPicker()
+            );
+            assertPickerPresetMirrorsRightToLeft(
+                    rangePane,
+                    M3DateRangePickerDialog.PRESET_CONTENT_STYLE_CLASS,
+                    M3DateRangePickerDialog.PRESET_LIST_STYLE_CLASS,
+                    rangeDialog.getPicker()
+            );
+            assertPickerPresetMirrorsRightToLeft(
+                    timePane,
+                    M3TimePickerDialog.PRESET_CONTENT_STYLE_CLASS,
+                    M3TimePickerDialog.PRESET_LIST_STYLE_CLASS,
+                    timeDialog.getPicker()
+            );
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, datePane, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, rangePane, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, timePane, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-picker-dialog-presets-rtl.png"
+            ));
+            assertRenderedTextNodesStayInsideLayout(root);
+            assertFixedTargetControlsKeepCenteredContent(root);
+        });
+    }
+
     /// Verifies that date range field presets render beside the popup picker.
     @Test
     void dateRangePickerFieldPresetPopupSnapshotRendersPresetColumn() throws InterruptedException {
@@ -11676,6 +11764,77 @@ final class M3ControlStyleTest {
                         "m3fx-visual",
                         "visual-date-range-field-presets.png"
                 ));
+            });
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3DateRangePickerField field = fieldReference.get();
+                if (field != null) {
+                    field.hidePicker();
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that date range field preset popups mirror preset columns in right-to-left layout.
+    @Test
+    void dateRangePickerFieldPresetPopupMirrorsRightToLeft() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DateRangePickerField> fieldReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+                M3DateRangePickerField field = new M3DateRangePickerField(
+                        LocalDate.of(2026, 5, 19),
+                        LocalDate.of(2026, 5, 25)
+                );
+                field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                field.setCommonPresets(LocalDate.of(2026, 5, 19));
+                field.setPrefWidth(680.0);
+
+                Pane root = new Pane(field);
+                Stage stage = new Stage();
+                Scene scene = new Scene(root, 760.0, 180.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
+                root.layout();
+
+                stageReference.set(stage);
+                fieldReference.set(field);
+                field.showPicker();
+            }, () -> {
+                M3DateRangePickerField field = Objects.requireNonNull(fieldReference.get());
+                assertTrue(field.isShowing());
+                Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+                Node popupRoot = assertInstanceOf(Node.class, presetContent.getParent());
+                popupRoot.applyCss();
+                if (popupRoot instanceof Region region) {
+                    region.layout();
+                }
+
+                assertPickerPresetMirrorsRightToLeft(
+                        popupRoot,
+                        M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
+                        M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
+                        field.getPicker()
+                );
+
+                WritableImage image = snapshotImageOnFxThread(popupRoot);
+                assertSnapshotNodeContainsContrast(image, presetContent, Color.WHITE, 0.04);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-date-range-field-presets-rtl.png"
+                ));
+                assertRenderedTextNodesStayInsideLayout(popupRoot);
+                assertFixedTargetControlsKeepCenteredContent(popupRoot);
             });
         } finally {
             runOnFxThread(() -> {
@@ -14077,6 +14236,40 @@ final class M3ControlStyleTest {
         javafx.scene.Node container = button.lookup("." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS);
         assertInstanceOf(javafx.scene.layout.Region.class, container);
         return (javafx.scene.layout.Region) container;
+    }
+
+    /// Verifies that a picker preset column is on the right-to-left logical start side.
+    private static void assertPickerPresetMirrorsRightToLeft(
+            Node root,
+            String presetContentStyleClass,
+            String presetListStyleClass,
+            Node picker
+    ) {
+        HBox presetContent = assertInstanceOf(HBox.class, root.lookup("." + presetContentStyleClass));
+        VBox presetList = assertInstanceOf(VBox.class, root.lookup("." + presetListStyleClass));
+
+        assertEquals(NodeOrientation.RIGHT_TO_LEFT, root.getEffectiveNodeOrientation());
+        assertEquals(NodeOrientation.RIGHT_TO_LEFT, presetContent.getEffectiveNodeOrientation());
+        assertEquals(NodeOrientation.RIGHT_TO_LEFT, presetList.getEffectiveNodeOrientation());
+        assertEquals(NodeOrientation.RIGHT_TO_LEFT, picker.getEffectiveNodeOrientation());
+        assertEquals(Pos.TOP_LEFT, presetContent.getAlignment());
+        assertEquals(Pos.TOP_LEFT, presetList.getAlignment());
+
+        Bounds pickerBounds = picker.localToScene(picker.getBoundsInLocal());
+        Bounds presetListBounds = presetList.localToScene(presetList.getBoundsInLocal());
+        assertTrue(presetListBounds.getMinX() > pickerBounds.getMaxX(),
+                () -> "presetListBounds=" + presetListBounds + ", pickerBounds=" + pickerBounds);
+    }
+
+    /// Verifies that hidden picker field preset content uses the orientation-aware logical start alignment.
+    private static void assertPickerFieldPresetContentUsesLogicalStart(Node presetContentNode, String presetListStyleClass) {
+        HBox presetContent = assertInstanceOf(HBox.class, presetContentNode);
+        VBox presetList = assertInstanceOf(VBox.class, presetContent.lookup("." + presetListStyleClass));
+
+        assertEquals(NodeOrientation.RIGHT_TO_LEFT, presetContent.getEffectiveNodeOrientation());
+        assertEquals(NodeOrientation.RIGHT_TO_LEFT, presetList.getEffectiveNodeOrientation());
+        assertEquals(Pos.TOP_LEFT, presetContent.getAlignment());
+        assertEquals(Pos.TOP_LEFT, presetList.getAlignment());
     }
 
     /// Verifies that rendered text nodes do not escape their nearest visual layout boundary.
