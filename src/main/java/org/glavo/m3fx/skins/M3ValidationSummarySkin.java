@@ -49,6 +49,12 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     /// Updates skin content when simple summary properties change.
     private final InvalidationListener summaryListener = observable -> updateContent();
 
+    /// Rebuilds orientation-sensitive item rows when the effective node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> {
+        updateNodeOrientationLayout();
+        updateContent();
+    };
+
     /// Updates skin content when the validator invalid input list changes.
     private final ListChangeListener<M3TextInputLayout> invalidInputsListener = change -> updateContent();
 
@@ -65,16 +71,23 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
         container.setManaged(false);
         container.setAlignment(Pos.CENTER_LEFT);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        items.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         titleLabel.getStyleClass().add(M3ValidationSummary.TITLE_STYLE_CLASS);
         emptyLabel.getStyleClass().add(M3ValidationSummary.EMPTY_TEXT_STYLE_CLASS);
         items.getStyleClass().add(M3ValidationSummary.ITEMS_STYLE_CLASS);
+        titleLabel.setMaxWidth(Double.MAX_VALUE);
+        emptyLabel.setMaxWidth(Double.MAX_VALUE);
+        items.setMaxWidth(Double.MAX_VALUE);
 
         control.titleTextProperty().addListener(summaryListener);
         control.emptyTextProperty().addListener(summaryListener);
         control.showWhenValidProperty().addListener(summaryListener);
         control.validatorProperty().addListener(validatorListener);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
 
         updateValidator(control.getValidator());
+        updateNodeOrientationLayout();
         updateContent();
         getChildren().add(container);
     }
@@ -87,6 +100,9 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         control.emptyTextProperty().removeListener(summaryListener);
         control.showWhenValidProperty().removeListener(summaryListener);
         control.validatorProperty().removeListener(validatorListener);
+        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.nodeOrientationProperty().unbind();
+        items.nodeOrientationProperty().unbind();
         updateValidator(null);
         items.getChildren().clear();
         container.getChildren().clear();
@@ -206,18 +222,24 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     private Node createItem(M3TextInputLayout input) {
         StackPane item = new StackPane();
         item.getStyleClass().add(M3ValidationSummary.ITEM_STYLE_CLASS);
+        item.setMaxWidth(Double.MAX_VALUE);
         item.setAccessibleRole(AccessibleRole.BUTTON);
         item.setAccessibleText(itemAccessibleText(input));
         item.setFocusTraversable(true);
 
         Label label = new Label(itemLabel(input));
         label.getStyleClass().add(M3ValidationSummary.ITEM_LABEL_STYLE_CLASS);
+        label.setMaxWidth(Double.MAX_VALUE);
         Label error = new Label(itemError(input));
         error.getStyleClass().add(M3ValidationSummary.ITEM_ERROR_STYLE_CLASS);
         error.setWrapText(true);
+        error.setMaxWidth(Double.MAX_VALUE);
 
         VBox text = new VBox(ITEM_TEXT_SPACING, label, error);
-        text.setAlignment(Pos.CENTER_LEFT);
+        text.setMaxWidth(Double.MAX_VALUE);
+        text.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        text.setAlignment(textAlignment());
+        StackPane.setAlignment(text, textAlignment());
         item.getChildren().add(text);
 
         item.setOnMouseClicked(event -> {
@@ -233,6 +255,19 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             }
         });
         return item;
+    }
+
+    /// Updates orientation-dependent summary alignments.
+    private void updateNodeOrientationLayout() {
+        container.setAlignment(textAlignment());
+        items.setAlignment(textAlignment());
+        titleLabel.setAlignment(textAlignment());
+        emptyLabel.setAlignment(textAlignment());
+    }
+
+    /// Returns the current logical text alignment.
+    private Pos textAlignment() {
+        return Pos.CENTER_LEFT;
     }
 
     /// Returns the field label shown for one invalid input item.

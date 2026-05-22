@@ -4,7 +4,9 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -52,6 +54,9 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
     /// The fixed Material day touch target size.
     private static final double DAY_CELL_SIZE = 40.0;
 
+    /// The pseudo-class applied to day cells while the picker is displayed right-to-left.
+    private static final PseudoClass RTL_PSEUDO_CLASS = PseudoClass.getPseudoClass("rtl");
+
     /// The root skin container.
     private final VBox container = new VBox();
 
@@ -82,6 +87,12 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
     /// Refreshes visible text, style classes, and disabled states after control changes.
     private final InvalidationListener refreshListener = observable -> refresh();
 
+    /// Updates logical layout when the effective node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> {
+        updateNodeOrientationLayout();
+        refresh();
+    };
+
     /// Creates a date range picker skin.
     ///
     /// @param control the date range picker controlled by this skin
@@ -104,6 +115,11 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         control.minDateProperty().removeListener(refreshListener);
         control.maxDateProperty().removeListener(refreshListener);
         control.showAdjacentMonthDaysProperty().removeListener(refreshListener);
+        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.nodeOrientationProperty().unbind();
+        header.nodeOrientationProperty().unbind();
+        weekdayRow.nodeOrientationProperty().unbind();
+        dayGrid.nodeOrientationProperty().unbind();
         super.dispose();
     }
 
@@ -230,6 +246,10 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         weekdayRow.getStyleClass().add(M3DateRangePicker.WEEKDAY_ROW_STYLE_CLASS);
         dayGrid.getStyleClass().add(M3DatePicker.DAY_GRID_STYLE_CLASS);
         dayGrid.getStyleClass().add(M3DateRangePicker.DAY_GRID_STYLE_CLASS);
+        container.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        header.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        weekdayRow.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        dayGrid.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -252,6 +272,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         previousButton.setOnAction(event -> getSkinnable().showPreviousMonth());
         nextButton.setOnAction(event -> getSkinnable().showNextMonth());
         container.getChildren().addAll(header, weekdayRow, dayGrid);
+        updateNodeOrientationLayout();
     }
 
     /// Installs listeners that keep the skin synchronized with control state.
@@ -263,6 +284,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         control.minDateProperty().addListener(refreshListener);
         control.maxDateProperty().addListener(refreshListener);
         control.showAdjacentMonthDaysProperty().addListener(refreshListener);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
 
     /// Updates all visible labels and day cells from the current control state.
@@ -297,6 +319,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         @Nullable LocalDate startDate = control.getStartDate();
         @Nullable LocalDate endDate = control.getEndDate();
         boolean completeRange = startDate != null && endDate != null;
+        boolean rightToLeft = control.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
 
         for (int index = 0; index < DAY_CELL_COUNT; index++) {
             LocalDate date = gridStart.plusDays(index);
@@ -335,6 +358,7 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
             setStyleClass(dayCell, M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS, rangeMiddle);
             setStyleClass(dayCell, M3DateRangePicker.RANGE_ROW_START_DAY_STYLE_CLASS, rowStart);
             setStyleClass(dayCell, M3DateRangePicker.RANGE_ROW_END_DAY_STYLE_CLASS, rowEnd);
+            dayCell.pseudoClassStateChanged(RTL_PSEUDO_CLASS, rightToLeft);
         }
     }
 
@@ -346,6 +370,15 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         @Nullable LocalDate maxDate = control.getMaxDate();
         previousButton.setDisable(minDate != null && previousMonthEnd.isBefore(minDate));
         nextButton.setDisable(maxDate != null && nextMonthStart.isAfter(maxDate));
+    }
+
+    /// Updates orientation-dependent alignment and navigation glyphs.
+    private void updateNodeOrientationLayout() {
+        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        header.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        weekdayRow.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        setNavigationIcon(previousButton, rightToLeft ? ">" : "<");
+        setNavigationIcon(nextButton, rightToLeft ? "<" : ">");
     }
 
     /// Selects the date represented by a day cell action.
@@ -363,6 +396,13 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         M3IconButton button = new M3IconButton(new M3Icon(text, M3IconSize.SMALL, M3IconVariant.PRIMARY));
         button.getStyleClass().add(M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS);
         return button;
+    }
+
+    /// Updates a navigation button icon glyph.
+    private static void setNavigationIcon(M3IconButton button, String text) {
+        if (button.getGraphic() instanceof M3Icon icon) {
+            icon.setText(text);
+        }
     }
 
     /// Creates a weekday label.

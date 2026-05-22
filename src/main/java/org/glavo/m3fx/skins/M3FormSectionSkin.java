@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -36,6 +37,9 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
     /// Updates title, supporting text, and layout metrics when section properties change.
     private final InvalidationListener updateListener = observable -> updateView();
 
+    /// Updates logical layout when the effective node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
+
     /// Creates a form section skin.
     ///
     /// @param control the form section controlled by this skin
@@ -46,9 +50,16 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
         titleLabel.getStyleClass().add(M3FormSection.TITLE_STYLE_CLASS);
         supportingLabel.getStyleClass().add(M3FormSection.SUPPORTING_TEXT_STYLE_CLASS);
         content.getStyleClass().add(M3FormSection.CONTENT_STYLE_CLASS);
+        root.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        content.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
 
         titleLabel.setWrapText(true);
         supportingLabel.setWrapText(true);
+        header.setMaxWidth(Double.MAX_VALUE);
+        content.setMaxWidth(Double.MAX_VALUE);
+        titleLabel.setMaxWidth(Double.MAX_VALUE);
+        supportingLabel.setMaxWidth(Double.MAX_VALUE);
         header.getChildren().addAll(titleLabel, supportingLabel);
         root.getChildren().addAll(header, content);
         getChildren().add(root);
@@ -57,7 +68,9 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
         control.titleTextProperty().addListener(updateListener);
         control.supportingTextProperty().addListener(updateListener);
         control.contentSpacingProperty().addListener(updateListener);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         updateContent();
+        updateNodeOrientationLayout();
         updateView();
     }
 
@@ -69,6 +82,10 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
         control.titleTextProperty().removeListener(updateListener);
         control.supportingTextProperty().removeListener(updateListener);
         control.contentSpacingProperty().removeListener(updateListener);
+        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        root.nodeOrientationProperty().unbind();
+        header.nodeOrientationProperty().unbind();
+        content.nodeOrientationProperty().unbind();
         content.getChildren().clear();
         super.dispose();
     }
@@ -152,5 +169,14 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
 
         content.setSpacing(control.getContentSpacing());
         control.requestLayout();
+    }
+
+    /// Updates orientation-dependent text and content alignment.
+    private void updateNodeOrientationLayout() {
+        header.setAlignment(Pos.TOP_LEFT);
+        content.setAlignment(Pos.TOP_LEFT);
+        titleLabel.setAlignment(Pos.CENTER_LEFT);
+        supportingLabel.setAlignment(Pos.CENTER_LEFT);
+        getSkinnable().requestLayout();
     }
 }

@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.event.ActionEvent;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -83,6 +84,9 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     /// Refreshes visible text, style classes, and disabled states after control changes.
     private final InvalidationListener refreshListener = observable -> refresh();
 
+    /// Updates logical layout when the effective node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
+
     /// Creates a time picker skin.
     public M3TimePickerSkin(M3TimePicker control) {
         super(control);
@@ -101,6 +105,15 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         control.minuteStepProperty().removeListener(refreshListener);
         control.minTimeProperty().removeListener(refreshListener);
         control.maxTimeProperty().removeListener(refreshListener);
+        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.nodeOrientationProperty().unbind();
+        display.nodeOrientationProperty().unbind();
+        sections.nodeOrientationProperty().unbind();
+        hourSection.nodeOrientationProperty().unbind();
+        minuteSection.nodeOrientationProperty().unbind();
+        hourGrid.nodeOrientationProperty().unbind();
+        minuteGrid.nodeOrientationProperty().unbind();
+        periodRow.nodeOrientationProperty().unbind();
         super.dispose();
     }
 
@@ -222,6 +235,14 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         hourGrid.getStyleClass().add(M3TimePicker.GRID_STYLE_CLASS);
         minuteGrid.getStyleClass().add(M3TimePicker.GRID_STYLE_CLASS);
         periodRow.getStyleClass().add(M3TimePicker.PERIOD_ROW_STYLE_CLASS);
+        container.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        display.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        sections.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        hourSection.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        minuteSection.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        hourGrid.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        minuteGrid.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        periodRow.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
 
         display.setAlignment(Pos.CENTER_LEFT);
         display.getChildren().addAll(hourDisplay, displaySeparator, minuteDisplay, periodDisplay);
@@ -230,6 +251,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         minuteSection.getChildren().addAll(createSectionTitle("Minute"), minuteGrid);
         sections.getChildren().addAll(hourSection, minuteSection);
         container.getChildren().addAll(display, sections, periodRow);
+        updateNodeOrientationLayout();
     }
 
     /// Installs listeners that keep the skin synchronized with control state.
@@ -239,6 +261,13 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         control.minuteStepProperty().addListener(refreshListener);
         control.minTimeProperty().addListener(refreshListener);
         control.maxTimeProperty().addListener(refreshListener);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
+    }
+
+    /// Updates orientation-dependent alignment.
+    private void updateNodeOrientationLayout() {
+        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        display.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
     }
 
     /// Updates visible labels, selectable cells, and disabled states.

@@ -3,8 +3,10 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -46,6 +48,9 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
     /// Updates actions when the public action list changes.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
+    /// Updates logical layout when the effective node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
+
     /// Creates a side sheet skin.
     ///
     /// @param control the side sheet controlled by this skin
@@ -58,16 +63,21 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         contentSlot.getStyleClass().add(M3SideSheet.CONTENT_STYLE_CLASS);
         contentSlot.setAlignment(Pos.TOP_LEFT);
         header.setAlignment(Pos.CENTER_LEFT);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        contentSlot.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         HBox.setHgrow(spacer, Priority.ALWAYS);
         headlineLabel.textProperty().bind(control.headlineProperty());
 
         control.contentProperty().addListener(contentListener);
         control.getActions().addListener(actionsListener);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         updateContent(control.getContent());
         updateActions();
         header.getChildren().setAll(headlineLabel, spacer, actions);
         container.setTop(header);
         container.setCenter(contentSlot);
+        updateNodeOrientationLayout();
         getChildren().add(container);
     }
 
@@ -78,6 +88,10 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         headlineLabel.textProperty().unbind();
         control.contentProperty().removeListener(contentListener);
         control.getActions().removeListener(actionsListener);
+        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.nodeOrientationProperty().unbind();
+        header.nodeOrientationProperty().unbind();
+        contentSlot.nodeOrientationProperty().unbind();
         actions.getChildren().clear();
         contentSlot.getChildren().clear();
         header.getChildren().clear();
@@ -176,6 +190,15 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
     /// Updates the action row.
     private void updateActions() {
         actions.getChildren().setAll(getSkinnable().getActions());
+        getSkinnable().requestLayout();
+    }
+
+    /// Updates orientation-dependent alignments for header and content slots.
+    private void updateNodeOrientationLayout() {
+        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        header.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        actions.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
+        contentSlot.setAlignment(Pos.TOP_LEFT);
         getSkinnable().requestLayout();
     }
 }

@@ -15,6 +15,7 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -445,7 +446,8 @@ public class M3SideSheet extends Control {
         if (width <= 0.0) {
             width = prefWidth(-1.0);
         }
-        return Math.max(0.0, width);
+        double offset = Math.max(0.0, width);
+        return getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT ? -offset : offset;
     }
 
     /// Updates the active variant style class.

@@ -535,6 +535,8 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
         inputLayout.setTrailing(openButton);
         inputLayout.disableProperty().bind(disabledProperty());
+        picker.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        popupContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         openButton.setAccessibleText(openButtonAccessibleText);
         openButton.setOnAction(event -> togglePicker());
 

@@ -10071,6 +10071,221 @@ final class M3ControlStyleTest {
                 () -> "contentBounds=" + contentBounds + ", trailingBounds=" + trailingBounds);
     }
 
+    /// Verifies that picker skins propagate right-to-left orientation into their rendered layout nodes.
+    @Test
+    void pickerSkinsPropagateRightToLeftOrientation() {
+        runOnFxThread(() -> {
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            datePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            M3DateRangePicker dateRangePicker = new M3DateRangePicker(
+                    LocalDate.of(2026, 5, 12),
+                    LocalDate.of(2026, 5, 16)
+            );
+            dateRangePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
+            timePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            timePicker.setPrefWidth(360.0);
+
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
+            dateField.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 12),
+                    LocalDate.of(2026, 5, 16)
+            );
+            rangeField.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
+            timeField.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            Pane root = new Pane(datePicker, dateRangePicker, timePicker, dateField, rangeField, timeField);
+            Scene scene = new Scene(root, 1100.0, 720.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(1100.0, 720.0);
+            datePicker.resizeRelocate(20.0, 20.0, 340.0, 320.0);
+            dateRangePicker.resizeRelocate(390.0, 20.0, 340.0, 320.0);
+            timePicker.resizeRelocate(20.0, 360.0, 440.0, 220.0);
+            dateField.resizeRelocate(580.0, 360.0, 420.0, 96.0);
+            rangeField.resizeRelocate(580.0, 460.0, 480.0, 96.0);
+            timeField.resizeRelocate(580.0, 560.0, 420.0, 96.0);
+            root.layout();
+            datePicker.layout();
+            dateRangePicker.layout();
+            timePicker.layout();
+
+            HBox dateHeader = assertInstanceOf(
+                    HBox.class,
+                    datePicker.lookup("." + M3DatePicker.HEADER_STYLE_CLASS)
+            );
+            HBox dateWeekdays = assertInstanceOf(
+                    HBox.class,
+                    datePicker.lookup("." + M3DatePicker.WEEKDAY_ROW_STYLE_CLASS)
+            );
+            HBox rangeHeader = assertInstanceOf(
+                    HBox.class,
+                    dateRangePicker.lookup("." + M3DatePicker.HEADER_STYLE_CLASS)
+            );
+            HBox timeDisplay = assertInstanceOf(
+                    HBox.class,
+                    timePicker.lookup("." + M3TimePicker.DISPLAY_STYLE_CLASS)
+            );
+
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateHeader.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateWeekdays.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, rangeHeader.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, timeDisplay.getEffectiveNodeOrientation());
+            assertEquals(Pos.CENTER_RIGHT, dateHeader.getAlignment());
+            assertEquals(Pos.CENTER_RIGHT, dateWeekdays.getAlignment());
+            assertEquals(Pos.CENTER_RIGHT, rangeHeader.getAlignment());
+            assertEquals(Pos.CENTER_RIGHT, timeDisplay.getAlignment());
+            assertEquals(">", pickerHeaderNavigationIconText(dateHeader, 2));
+            assertEquals("<", pickerHeaderNavigationIconText(dateHeader, 3));
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateField.getPicker().getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, rangeField.getPicker().getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, timeField.getPicker().getEffectiveNodeOrientation());
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, dateRangePicker, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, timePicker, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-pickers-rtl.png"
+            ));
+        });
+    }
+
+    /// Verifies that sheets, form sections, and validation summaries mirror logical slots in right-to-left layout.
+    @Test
+    void sheetFormAndValidationSkinsPropagateRightToLeftOrientation() {
+        runOnFxThread(() -> {
+            Label sideContent = new Label("Side content");
+            M3Button sideAction = M3Button.withVariant("Close", M3ButtonVariant.TEXT);
+            M3SideSheet sideSheet = new M3SideSheet("Details", sideContent, sideAction);
+            sideSheet.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            sideSheet.setPrefSize(300.0, 160.0);
+
+            Label bottomContent = new Label("Bottom content");
+            M3Button bottomAction = M3Button.withVariant("Done", M3ButtonVariant.TEXT);
+            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent, bottomAction);
+            bottomSheet.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            bottomSheet.setPrefSize(360.0, 160.0);
+
+            Label sectionContent = new Label("Section content");
+            M3FormSection formSection = new M3FormSection("Account", sectionContent);
+            formSection.setSupportingText("Preferences and profile settings");
+            formSection.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            formSection.setPrefWidth(360.0);
+
+            M3TextField invalidField = new M3TextField();
+            M3TextInputLayout invalidLayout = new M3TextInputLayout(invalidField, "Display name", "Required");
+            invalidLayout.setValidator(M3TextInputValidators.required("Display name is required"));
+            M3FormValidator validator = new M3FormValidator(invalidLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            summary.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            summary.setPrefWidth(360.0);
+            assertFalse(validator.validate());
+
+            Pane root = new Pane(sideSheet, bottomSheet, formSection, invalidLayout, summary);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 520.0, 760.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(520.0, 760.0);
+            sideSheet.resizeRelocate(20.0, 20.0, 300.0, 160.0);
+            bottomSheet.resizeRelocate(20.0, 200.0, 360.0, 160.0);
+            formSection.resizeRelocate(20.0, 380.0, 360.0, 110.0);
+            invalidLayout.resizeRelocate(20.0, 510.0, 360.0, 88.0);
+            summary.resizeRelocate(20.0, 620.0, 360.0, 110.0);
+            root.layout();
+            sideSheet.layout();
+            bottomSheet.layout();
+            formSection.layout();
+            invalidLayout.layout();
+            summary.layout();
+
+            HBox sideHeader = assertInstanceOf(
+                    HBox.class,
+                    sideSheet.lookup("." + M3SideSheet.HEADER_STYLE_CLASS)
+            );
+            StackPane sideContentSlot = assertInstanceOf(
+                    StackPane.class,
+                    sideSheet.lookup("." + M3SideSheet.CONTENT_STYLE_CLASS)
+            );
+            HBox bottomHeader = assertInstanceOf(
+                    HBox.class,
+                    bottomSheet.lookup("." + M3BottomSheet.HEADER_STYLE_CLASS)
+            );
+            StackPane bottomContentSlot = assertInstanceOf(
+                    StackPane.class,
+                    bottomSheet.lookup("." + M3BottomSheet.CONTENT_STYLE_CLASS)
+            );
+            VBox formHeader = assertInstanceOf(
+                    VBox.class,
+                    formSection.lookup("." + M3FormSection.HEADER_STYLE_CLASS)
+            );
+            Label sectionTitle = assertInstanceOf(
+                    Label.class,
+                    formSection.lookup("." + M3FormSection.TITLE_STYLE_CLASS)
+            );
+            VBox summaryItems = assertInstanceOf(
+                    VBox.class,
+                    summary.lookup("." + M3ValidationSummary.ITEMS_STYLE_CLASS)
+            );
+            Label summaryTitle = assertInstanceOf(
+                    Label.class,
+                    summary.lookup("." + M3ValidationSummary.TITLE_STYLE_CLASS)
+            );
+            Label summaryItemLabel = assertInstanceOf(
+                    Label.class,
+                    summary.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+            );
+
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, sideHeader.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, bottomHeader.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, formHeader.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, summaryItems.getEffectiveNodeOrientation());
+            assertEquals(Pos.CENTER_RIGHT, sideHeader.getAlignment());
+            assertEquals(Pos.TOP_LEFT, sideContentSlot.getAlignment());
+            assertEquals(Pos.CENTER_RIGHT, bottomHeader.getAlignment());
+            assertEquals(Pos.TOP_LEFT, bottomContentSlot.getAlignment());
+            assertEquals(Pos.TOP_LEFT, formHeader.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, summaryItems.getAlignment());
+
+            Bounds sideContentBounds = sideContent.localToScene(sideContent.getBoundsInLocal());
+            Bounds sideActionBounds = sideAction.localToScene(sideAction.getBoundsInLocal());
+            assertTrue(sideContentBounds.getMinX() > sideActionBounds.getMaxX(),
+                    () -> "sideContentBounds=" + sideContentBounds + ", sideActionBounds=" + sideActionBounds);
+            Bounds formBounds = formSection.localToScene(formSection.getBoundsInLocal());
+            Node sectionTitleText = Objects.requireNonNull(sectionTitle.lookup(".text"));
+            Bounds sectionTitleBounds = sectionTitleText.localToScene(sectionTitleText.getBoundsInLocal());
+            assertTrue(sectionTitleBounds.getCenterX() > formBounds.getCenterX(),
+                    () -> "sectionTitleBounds=" + sectionTitleBounds + ", formBounds=" + formBounds);
+            Bounds summaryBounds = summary.localToScene(summary.getBoundsInLocal());
+            Node summaryTitleText = Objects.requireNonNull(summaryTitle.lookup(".text"));
+            Node summaryItemLabelText = Objects.requireNonNull(summaryItemLabel.lookup(".text"));
+            Bounds summaryTitleBounds = summaryTitleText.localToScene(summaryTitleText.getBoundsInLocal());
+            Bounds summaryItemLabelBounds = summaryItemLabelText.localToScene(summaryItemLabelText.getBoundsInLocal());
+            assertTrue(summaryTitleBounds.getCenterX() > summaryBounds.getCenterX(),
+                    () -> "summaryTitleBounds=" + summaryTitleBounds + ", summaryBounds=" + summaryBounds);
+            assertTrue(summaryItemLabelBounds.getCenterX() > summaryBounds.getCenterX(),
+                    () -> "summaryItemLabelBounds=" + summaryItemLabelBounds + ", summaryBounds=" + summaryBounds);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, sideSheet, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, bottomSheet, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, formSection, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, summary, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-sheets-form-validation-rtl.png"
+            ));
+        });
+    }
+
     /// Verifies that navigation drawer token rules override list item metrics.
     @Test
     void navigationDrawerAppliesItemMetrics() {
@@ -14469,6 +14684,13 @@ final class M3ControlStyleTest {
 
         assertTrue(totalWeight > 0.0, () -> "No contrasting pixels found for " + node);
         return new Point2D(weightedX / totalWeight, weightedY / totalWeight);
+    }
+
+    /// Returns the icon text rendered by a picker header navigation button.
+    private static String pickerHeaderNavigationIconText(HBox header, int childIndex) {
+        M3IconButton button = assertInstanceOf(M3IconButton.class, header.getChildren().get(childIndex));
+        M3Icon icon = assertInstanceOf(M3Icon.class, button.getGraphic());
+        return icon.getText();
     }
 
     /// Writes a rendered snapshot to a build report path for manual visual inspection.

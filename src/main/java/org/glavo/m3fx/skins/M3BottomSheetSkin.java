@@ -3,8 +3,10 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -60,6 +62,9 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
     /// Updates actions when the public action list changes.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
+    /// Updates logical layout when the effective node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
+
     /// Creates a bottom sheet skin.
     ///
     /// @param control the bottom sheet controlled by this skin
@@ -74,12 +79,17 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
         contentSlot.getStyleClass().add(M3BottomSheet.CONTENT_STYLE_CLASS);
         contentSlot.setAlignment(Pos.TOP_LEFT);
         header.setAlignment(Pos.CENTER_LEFT);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        topArea.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        contentSlot.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         HBox.setHgrow(spacer, Priority.ALWAYS);
         headlineLabel.textProperty().bind(control.headlineProperty());
 
         control.contentProperty().addListener(contentListener);
         control.dragHandleVisibleProperty().addListener(dragHandleVisibleListener);
         control.getActions().addListener(actionsListener);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         updateContent(control.getContent());
         updateActions();
         updateDragHandleVisibility();
@@ -88,6 +98,7 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
         topArea.getChildren().setAll(dragHandleSlot, header);
         container.setTop(topArea);
         container.setCenter(contentSlot);
+        updateNodeOrientationLayout();
         getChildren().add(container);
     }
 
@@ -99,6 +110,11 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
         control.contentProperty().removeListener(contentListener);
         control.dragHandleVisibleProperty().removeListener(dragHandleVisibleListener);
         control.getActions().removeListener(actionsListener);
+        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.nodeOrientationProperty().unbind();
+        topArea.nodeOrientationProperty().unbind();
+        header.nodeOrientationProperty().unbind();
+        contentSlot.nodeOrientationProperty().unbind();
         actions.getChildren().clear();
         contentSlot.getChildren().clear();
         dragHandleSlot.getChildren().clear();
@@ -207,6 +223,15 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
         boolean visible = getSkinnable().isDragHandleVisible();
         dragHandleSlot.setVisible(visible);
         dragHandleSlot.setManaged(visible);
+        getSkinnable().requestLayout();
+    }
+
+    /// Updates orientation-dependent alignments for header and content slots.
+    private void updateNodeOrientationLayout() {
+        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        header.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        actions.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
+        contentSlot.setAlignment(Pos.TOP_LEFT);
         getSkinnable().requestLayout();
     }
 }

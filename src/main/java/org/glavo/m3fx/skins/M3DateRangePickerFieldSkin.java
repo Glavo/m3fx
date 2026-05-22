@@ -25,6 +25,7 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
         super(control);
         container.setManaged(false);
         container.getStyleClass().add(M3DateRangePickerField.CONTAINER_STYLE_CLASS);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().setAll(control.getStartInputLayout(), control.getEndInputLayout());
         getChildren().add(container);
     }
@@ -32,6 +33,7 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
     /// Removes child references before disposal.
     @Override
     public void dispose() {
+        container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         super.dispose();
     }

@@ -19,6 +19,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -826,14 +827,19 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         endInputLayout.setTrailing(endOpenButton);
         startInputLayout.disableProperty().bind(disabledProperty());
         endInputLayout.disableProperty().bind(disabledProperty());
+        startInputLayout.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        endInputLayout.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        picker.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        popupContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
 
         popupContent.getStyleClass().add(M3PickerField.POPUP_STYLE_CLASS);
         popupContent.getStyleClass().add(POPUP_STYLE_CLASS);
         popupContent.getChildren().setAll(picker);
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
-        presetContent.setAlignment(Pos.TOP_LEFT);
+        presetContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
-        presetList.setAlignment(Pos.TOP_LEFT);
+        presetList.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        effectiveNodeOrientationProperty().addListener(observable -> updatePresetOrientationLayout());
         popup.setAutoHide(true);
         popup.getContent().add(popupContent);
         popup.setOnHidden(event -> handlePopupHidden());
@@ -854,6 +860,15 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         picker.minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         picker.maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         presets.addListener(presetsListener);
+        updatePresetOrientationLayout();
+    }
+
+    /// Updates orientation-dependent popup preset alignment.
+    private void updatePresetOrientationLayout() {
+        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        Pos alignment = rightToLeft ? Pos.TOP_RIGHT : Pos.TOP_LEFT;
+        presetContent.setAlignment(alignment);
+        presetList.setAlignment(alignment);
     }
 
     /// Creates one popup open button.
