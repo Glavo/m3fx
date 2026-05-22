@@ -8758,6 +8758,30 @@ final class M3ControlStyleTest {
         assertEquals(overview, navigationDrawer.getSelectedItem());
     }
 
+    /// Verifies that right-to-left navigation drawers mirror disclosure arrow keys.
+    @Test
+    void navigationDrawerMirrorsGroupDisclosureKeysForRightToLeft() {
+        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+        M3ListItem commonButtons = new M3ListItem("Common buttons");
+        M3ListItem floatingActions = new M3ListItem("Floating actions");
+        group.addItems(commonButtons, floatingActions);
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(group);
+        navigationDrawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+        KeyEvent expandEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT);
+        navigationDrawer.fireEvent(expandEvent);
+
+        assertTrue(group.isExpanded());
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+
+        navigationDrawer.select(commonButtons);
+        KeyEvent collapseFromChildEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+        navigationDrawer.fireEvent(collapseFromChildEvent);
+
+        assertFalse(group.isExpanded());
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+    }
+
     /// Verifies that navigation drawer groups expose disclosure accessibility state and actions.
     @Test
     void navigationDrawerGroupExposesAccessibleDisclosureStateAndActions() {
@@ -8868,6 +8892,56 @@ final class M3ControlStyleTest {
                     "reports",
                     "m3fx-visual",
                     "visual-navigation-drawer-child-selection.png"
+            ));
+        });
+    }
+
+    /// Verifies that selected child rows mirror their indentation in right-to-left drawers.
+    @Test
+    void navigationDrawerGroupChildSelectionPillMirrorsIndentForRightToLeft() {
+        runOnFxThread(() -> {
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
+            M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
+            M3ListItem sideSheets = new M3ListItem("Side sheets");
+            group.addItems(bottomSheets, sideSheets);
+            group.setExpanded(true);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            drawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            drawer.select(bottomSheets);
+            drawer.setPrefWidth(320.0);
+
+            StackPane root = new StackPane(drawer);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 380.0, 260.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(380.0, 260.0);
+            root.layout();
+            group.layout();
+            bottomSheets.layout();
+
+            Bounds headerBounds = group.getHeaderItem().localToScene(group.getHeaderItem().getBoundsInLocal());
+            Bounds childBounds = bottomSheets.localToScene(bottomSheets.getBoundsInLocal());
+            Region childSelection = listItemSelectionContainer(bottomSheets);
+
+            assertEquals(headerBounds.getMinX(), childBounds.getMinX(), 0.0001);
+            assertTrue(childBounds.getMaxX() < headerBounds.getMaxX() - 6.0);
+            assertEquals(headerBounds.getHeight(), childBounds.getHeight(), 0.0001);
+            assertEquals(childBounds.getWidth(), childSelection.getWidth(), 0.0001);
+            assertRegionRadii(childSelection, 28.0, 28.0, 28.0, 28.0);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            Color afterChildPill =
+                    snapshotNodePixel(image, bottomSheets, bottomSheets.getWidth() + 4.0, bottomSheets.getHeight() / 2.0);
+            Color insideChildPill =
+                    snapshotNodePixel(image, bottomSheets, bottomSheets.getWidth() - 12.0, bottomSheets.getHeight() / 2.0);
+            assertTrue(colorDistance(afterChildPill, insideChildPill) > 0.01);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-navigation-drawer-child-selection-rtl.png"
             ));
         });
     }

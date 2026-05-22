@@ -71,8 +71,10 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         super(control);
         childViewport.setManaged(false);
         childViewport.setClip(childrenClip);
+        childViewport.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         childrenContainer.setManaged(false);
         childrenContainer.setSpacing(ITEM_SPACING);
+        childrenContainer.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         childViewport.getChildren().add(childrenContainer);
         getChildren().addAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
@@ -86,6 +88,8 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         expansionAnimation.stop();
         getSkinnable().getItems().removeListener(itemsListener);
         getSkinnable().expandedProperty().removeListener(expandedListener);
+        childViewport.nodeOrientationProperty().unbind();
+        childrenContainer.nodeOrientationProperty().unbind();
         childrenContainer.getChildren().clear();
         childViewport.getChildren().clear();
         super.dispose();
@@ -176,9 +180,9 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             return;
         }
 
-        double childLeftInset = childLeftInset();
-        updateChildrenContainerPadding(childLeftInset);
-        updateChildItemWidths(width, childLeftInset);
+        double childEdgeInset = childEdgeInset();
+        updateChildrenContainerPadding(childEdgeInset);
+        updateChildItemWidths(width, childEdgeInset);
         double childrenHeight = childrenContainer.prefHeight(width);
         double viewportHeight = childrenHeight * expansionProgress.get();
         if (viewportHeight <= 0.0) {
@@ -301,15 +305,15 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     }
 
     /// Keeps child list item containers inside the group content area.
-    private void updateChildItemWidths(double width, double childLeftInset) {
-        double itemWidth = Math.max(0.0, width - childLeftInset);
+    private void updateChildItemWidths(double width, double childEdgeInset) {
+        double itemWidth = Math.max(0.0, width - childEdgeInset);
         for (M3ListItem item : getSkinnable().getItems()) {
             updateListItemWidth(item, itemWidth);
         }
     }
 
-    /// Returns the child row left inset derived from child and header content padding.
-    private double childLeftInset() {
+    /// Returns the child row edge inset derived from child and header content padding.
+    private double childEdgeInset() {
         double headerPadding = getSkinnable().getHeaderItem().getHorizontalPadding();
         double childPadding = 0.0;
         for (M3ListItem item : getSkinnable().getItems()) {
@@ -319,10 +323,10 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     }
 
     /// Updates the child container padding that creates indented selected row geometry.
-    private void updateChildrenContainerPadding(double childLeftInset) {
-        Insets padding = childLeftInset == 0.0
+    private void updateChildrenContainerPadding(double childEdgeInset) {
+        Insets padding = childEdgeInset == 0.0
                 ? EMPTY_CHILD_PADDING
-                : new Insets(0.0, 0.0, 0.0, childLeftInset);
+                : new Insets(0.0, 0.0, 0.0, childEdgeInset);
         if (!padding.equals(childrenContainer.getPadding())) {
             childrenContainer.setPadding(padding);
         }

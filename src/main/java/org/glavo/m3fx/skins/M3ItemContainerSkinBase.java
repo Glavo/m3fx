@@ -29,6 +29,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane> extend
         this.items = items;
         this.container = container;
         container.setManaged(false);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         getChildren().add(container);
         items.addListener(itemsListener);
         updateItems();
@@ -38,6 +39,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane> extend
     @Override
     public void dispose() {
         items.removeListener(itemsListener);
+        container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         super.dispose();
     }

@@ -13,6 +13,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -355,7 +356,11 @@ public class M3NavigationDrawer extends Control {
             return false;
         }
 
-        if (code == KeyCode.RIGHT) {
+        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        KeyCode expandKey = rightToLeft ? KeyCode.LEFT : KeyCode.RIGHT;
+        KeyCode collapseKey = rightToLeft ? KeyCode.RIGHT : KeyCode.LEFT;
+
+        if (code == expandKey) {
             @Nullable M3NavigationDrawerGroup headerGroup = groupForHeader(anchor);
             if (headerGroup != null && !headerGroup.isExpanded()) {
                 headerGroup.setExpanded(true);
@@ -363,6 +368,10 @@ public class M3NavigationDrawer extends Control {
                 event.consume();
                 return true;
             }
+            return false;
+        }
+
+        if (code != collapseKey) {
             return false;
         }
 
