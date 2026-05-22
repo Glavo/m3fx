@@ -728,7 +728,7 @@ final class M3ControlStyleTest {
         assertFalse(splitButton.isShowing());
     }
 
-    /// Verifies that split buttons apply stable style classes to both child button parts.
+    /// Verifies that split buttons apply stable part style classes and internal edge pseudo-classes.
     @Test
     void splitButtonAppliesPartStyleClasses() {
         M3SplitButton splitButton = M3SplitButton.withVariant(
@@ -736,10 +736,18 @@ final class M3ControlStyleTest {
                 M3ButtonVariant.TONAL,
                 new M3MenuItem("PDF")
         );
+        PseudoClass leftEdge = PseudoClass.getPseudoClass("left-edge");
+        PseudoClass rightEdge = PseudoClass.getPseudoClass("right-edge");
 
         assertTrue(splitButton.getStyleClass().contains(M3SplitButton.STYLE_CLASS));
         assertTrue(splitButton.getActionButton().getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS));
         assertTrue(splitButton.getMenuButton().getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS));
+        assertTrue(splitButton.getActionButton().getPseudoClassStates().contains(leftEdge));
+        assertTrue(splitButton.getMenuButton().getPseudoClassStates().contains(rightEdge));
+        assertFalse(splitButton.getActionButton().getStyleClass().contains("m3-split-button-left"));
+        assertFalse(splitButton.getActionButton().getStyleClass().contains("m3-split-button-right"));
+        assertFalse(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-left"));
+        assertFalse(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-right"));
 
         applyCss(splitButton);
 
@@ -771,12 +779,70 @@ final class M3ControlStyleTest {
             splitButton.getMenuButton().layout();
             root.applyCss();
 
-            assertTrue(splitButton.getActionButton().getStyleClass().contains("m3-split-button-right"));
-            assertTrue(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-left"));
+            PseudoClass leftEdge = PseudoClass.getPseudoClass("left-edge");
+            PseudoClass rightEdge = PseudoClass.getPseudoClass("right-edge");
+            assertFalse(splitButton.getActionButton().getPseudoClassStates().contains(leftEdge));
+            assertTrue(splitButton.getActionButton().getPseudoClassStates().contains(rightEdge));
+            assertTrue(splitButton.getMenuButton().getPseudoClassStates().contains(leftEdge));
+            assertFalse(splitButton.getMenuButton().getPseudoClassStates().contains(rightEdge));
+            assertFalse(splitButton.getActionButton().getStyleClass().contains("m3-split-button-left"));
+            assertFalse(splitButton.getActionButton().getStyleClass().contains("m3-split-button-right"));
+            assertFalse(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-left"));
+            assertFalse(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-right"));
             assertRegionRoundedCorners(splitButton.getActionButton(), false, true, true, false);
             assertRegionRoundedCorners(splitButton.getMenuButton(), true, false, false, true);
             assertStateLayerRadii(splitButton.getActionButton(), 0.0, 20.0, 20.0, 0.0);
             assertStateLayerRadii(splitButton.getMenuButton(), 20.0, 0.0, 0.0, 20.0);
+        });
+    }
+
+    /// Verifies that right-to-left joined buttons render mirrored edge shapes in snapshots.
+    @Test
+    void rightToLeftJoinedButtonsRenderMirroredCornersInSnapshot() {
+        runOnFxThread(() -> {
+            M3Button firstGroupButton = M3Button.withVariant("Archive", M3ButtonVariant.TONAL);
+            M3Button secondGroupButton = M3Button.withVariant("Share", M3ButtonVariant.TONAL);
+            M3Button thirdGroupButton = M3Button.withVariant("Edit", M3ButtonVariant.TONAL);
+            M3ButtonGroup buttonGroup =
+                    new M3ButtonGroup(firstGroupButton, secondGroupButton, thirdGroupButton);
+            buttonGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            M3SegmentedButton day = new M3SegmentedButton("Day");
+            M3SegmentedButton week = new M3SegmentedButton("Week");
+            M3SegmentedButton month = new M3SegmentedButton("Month");
+            M3SegmentedButtonGroup segmentedGroup = new M3SegmentedButtonGroup(day, week, month);
+            segmentedGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            month.setSelected(true);
+
+            M3SplitButton splitButton = M3SplitButton.withVariant(
+                    "Export",
+                    M3ButtonVariant.TONAL,
+                    new M3MenuItem("PDF")
+            );
+            splitButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            VBox root = new VBox(16.0, buttonGroup, segmentedGroup, splitButton);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 420.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(420.0, 220.0);
+            root.layout();
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-rtl-joined-buttons.png"
+            ));
+            assertSnapshotEdgeCorners(image, firstGroupButton, false, true);
+            assertSnapshotEdgeCorners(image, thirdGroupButton, true, false);
+            assertSnapshotNodeBorderContainsContrast(image, day, Color.WHITE, 0.04);
+            assertSnapshotNodeBorderContainsContrast(image, month, Color.WHITE, 0.04);
+            assertSnapshotEdgeCorners(image, splitButton.getActionButton(), false, true);
+            assertSnapshotEdgeCorners(image, splitButton.getMenuButton(), true, false);
         });
     }
 
@@ -13679,6 +13745,25 @@ final class M3ControlStyleTest {
         int pixelX = clampPixelCoordinate((int) Math.round(point.getX()), (int) image.getWidth());
         int pixelY = clampPixelCoordinate((int) Math.round(point.getY()), (int) image.getHeight());
         return image.getPixelReader().getColor(pixelX, pixelY);
+    }
+
+    /// Verifies that a rendered region has rounded or square top edge corners.
+    private static void assertSnapshotEdgeCorners(
+            WritableImage image,
+            Region region,
+            boolean roundedLeft,
+            boolean roundedRight
+    ) {
+        Color background = Color.WHITE;
+        double topY = 2.0;
+        double leftDistance = colorDistance(snapshotNodePixel(image, region, 2.0, topY), background);
+        double rightDistance =
+                colorDistance(snapshotNodePixel(image, region, region.getWidth() - 3.0, topY), background);
+
+        assertEquals(roundedLeft, leftDistance < 0.04,
+                () -> "left corner distance=" + leftDistance + ", region=" + region);
+        assertEquals(roundedRight, rightDistance < 0.04,
+                () -> "right corner distance=" + rightDistance + ", region=" + region);
     }
 
     /// Clamps a pixel coordinate to a rendered snapshot dimension.

@@ -12,6 +12,7 @@ import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.NodeOrientation;
@@ -48,18 +49,18 @@ public class M3SplitButton extends Control {
     /// The style class applied to the menu button.
     public static final String MENU_BUTTON_STYLE_CLASS = "m3-split-button-menu";
 
-    /// The style class applied to the child button rendered on the physical left side.
-    private static final String LEFT_SIDE_BUTTON_STYLE_CLASS = "m3-split-button-left";
+    /// The pseudo-class applied to the child button rendered on the physical left edge.
+    private static final PseudoClass LEFT_EDGE_PSEUDO_CLASS = PseudoClass.getPseudoClass("left-edge");
 
-    /// The style class applied to the child button rendered on the physical right side.
-    private static final String RIGHT_SIDE_BUTTON_STYLE_CLASS = "m3-split-button-right";
+    /// The pseudo-class applied to the child button rendered on the physical right edge.
+    private static final PseudoClass RIGHT_EDGE_PSEUDO_CLASS = PseudoClass.getPseudoClass("right-edge");
 
-    /// Inline shape style for the physical left side button.
-    private static final String LEFT_SIDE_SHAPE_STYLE =
+    /// Inline shape style for the child button rendered on the physical left edge.
+    private static final String LEFT_EDGE_SHAPE_STYLE =
             "-fx-background-radius: 999px 0 0 999px; -fx-border-radius: 999px 0 0 999px;";
 
-    /// Inline shape style for the physical right side button.
-    private static final String RIGHT_SIDE_SHAPE_STYLE =
+    /// Inline shape style for the child button rendered on the physical right edge.
+    private static final String RIGHT_EDGE_SHAPE_STYLE =
             "-fx-background-radius: 0 999px 999px 0; -fx-border-radius: 0 999px 999px 0;";
 
     /// The minimum width used for the menu side of the split button.
@@ -484,26 +485,21 @@ public class M3SplitButton extends Control {
         menuButton.setVariant(currentVariant);
     }
 
-    /// Updates layout-direction-dependent style classes and child feedback geometry.
+    /// Updates layout-direction-dependent edge states and child feedback geometry.
     private void updateNodeOrientationStyle() {
         boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-        M3ControlStyles.replaceVariant(
-                actionButton,
-                rightToLeft ? RIGHT_SIDE_BUTTON_STYLE_CLASS : LEFT_SIDE_BUTTON_STYLE_CLASS,
-                LEFT_SIDE_BUTTON_STYLE_CLASS,
-                RIGHT_SIDE_BUTTON_STYLE_CLASS
-        );
-        M3ControlStyles.replaceVariant(
-                menuButton,
-                rightToLeft ? LEFT_SIDE_BUTTON_STYLE_CLASS : RIGHT_SIDE_BUTTON_STYLE_CLASS,
-                LEFT_SIDE_BUTTON_STYLE_CLASS,
-                RIGHT_SIDE_BUTTON_STYLE_CLASS
-        );
-        actionButton.setStyle(rightToLeft ? RIGHT_SIDE_SHAPE_STYLE : LEFT_SIDE_SHAPE_STYLE);
-        menuButton.setStyle(rightToLeft ? LEFT_SIDE_SHAPE_STYLE : RIGHT_SIDE_SHAPE_STYLE);
+        applyEdgeState(actionButton, !rightToLeft);
+        applyEdgeState(menuButton, rightToLeft);
         actionButton.requestLayout();
         menuButton.requestLayout();
         requestLayout();
+    }
+
+    /// Applies physical edge pseudo-classes and shape to a child button.
+    private static void applyEdgeState(M3Button button, boolean leftEdge) {
+        button.pseudoClassStateChanged(LEFT_EDGE_PSEUDO_CLASS, leftEdge);
+        button.pseudoClassStateChanged(RIGHT_EDGE_PSEUDO_CLASS, !leftEdge);
+        button.setStyle(leftEdge ? LEFT_EDGE_SHAPE_STYLE : RIGHT_EDGE_SHAPE_STYLE);
     }
 
     /// Creates the default Material Design 3 split button skin.
