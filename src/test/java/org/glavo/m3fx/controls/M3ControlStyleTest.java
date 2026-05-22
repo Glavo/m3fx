@@ -2255,6 +2255,54 @@ final class M3ControlStyleTest {
         assertEquals("Email Helper text", layout.queryAccessibleAttribute(AccessibleAttribute.TEXT));
     }
 
+    /// Verifies that visible supporting rows do not replay entry motion while validation refreshes during edits.
+    @Test
+    void textInputLayoutDoesNotFlickerVisibleValidationFeedbackOnEdits() {
+        runOnFxThread(() -> {
+            M3TextField textField = new M3TextField();
+            textField.setPrefWidth(280.0);
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
+            layout.setValidator((input, text) -> text.contains("@") ? null : "Use an email address");
+            layout.setPrefWidth(280.0);
+
+            StackPane root = new StackPane(layout);
+            Scene scene = new Scene(root, 360.0, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(360.0, 120.0);
+            root.layout();
+
+            HBox supportingRow = assertInstanceOf(
+                    HBox.class,
+                    layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+            );
+
+            assertFalse(layout.validate());
+            assertEquals("Use an email address", layout.getValidationErrorText());
+            assertVisibleSupportingRowIsStable(supportingRow);
+
+            textField.setText("support");
+
+            assertEquals("Use an email address", layout.getValidationErrorText());
+            assertVisibleSupportingRowIsStable(supportingRow);
+
+            layout.setCharacterCounterVisible(true);
+            layout.setCharacterLimit(32);
+            assertVisibleSupportingRowIsStable(supportingRow);
+
+            textField.setText("supportx");
+
+            assertEquals("Use an email address", layout.getValidationErrorText());
+            assertVisibleSupportingRowIsStable(supportingRow);
+
+            textField.setText("support@example.com");
+
+            assertEquals("", layout.getValidationErrorText());
+            assertVisibleSupportingRowIsStable(supportingRow);
+        });
+    }
+
     /// Verifies that reusable text input validators cover common validation rules.
     @Test
     void textInputValidatorsProvideReusableRules() {
@@ -13129,6 +13177,14 @@ final class M3ControlStyleTest {
                 }
             }
         });
+    }
+
+    /// Verifies that an already visible supporting row is not in an entry-transition frame.
+    private static void assertVisibleSupportingRowIsStable(HBox supportingRow) {
+        assertTrue(supportingRow.isVisible());
+        assertTrue(supportingRow.isManaged());
+        assertEquals(1.0, supportingRow.getOpacity(), 0.0001);
+        assertEquals(0.0, supportingRow.getTranslateY(), 0.0001);
     }
 
     /// Verifies that single-line outlined text inputs keep entered text vertically centered.

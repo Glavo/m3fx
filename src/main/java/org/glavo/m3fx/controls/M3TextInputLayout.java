@@ -449,15 +449,6 @@ public class M3TextInputLayout extends Control {
     /// Whether the supporting row was visible during the last supporting row update.
     private boolean supportingRowVisible = false;
 
-    /// The supporting message used during the last supporting row update.
-    private String displayedSupportingRowText = "";
-
-    /// The counter message used during the last supporting row update.
-    private String displayedCounterText = "";
-
-    /// Whether the supporting row rendered error state during the last update.
-    private boolean supportingRowError = false;
-
     /// Whether supporting row motion has been initialized.
     private boolean supportingRowMotionInitialized = false;
 
@@ -1159,10 +1150,7 @@ public class M3TextInputLayout extends Control {
         boolean showRow = showMessage || showCounter;
         boolean error = hasErrorState();
         String counterText = characterCounterText();
-        boolean contentChanged = supportingRowVisible != showRow
-                || !Objects.equals(displayedSupportingRowText, message)
-                || !Objects.equals(displayedCounterText, counterText)
-                || supportingRowError != error;
+        boolean rowVisibilityChanged = supportingRowVisible != showRow;
 
         supportingLabel.setText(message);
         supportingLabel.setVisible(showMessage);
@@ -1183,11 +1171,8 @@ public class M3TextInputLayout extends Control {
         supportingRow.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
         updateLabelErrorState();
         updateOutlineState();
-        updateSupportingRowMotion(showRow, contentChanged);
+        updateSupportingRowMotion(showRow, rowVisibilityChanged);
         supportingRowVisible = showRow;
-        displayedSupportingRowText = message;
-        displayedCounterText = counterText;
-        supportingRowError = error;
     }
 
     /// Updates label transition state when the label appears or changes floating state.
@@ -1368,8 +1353,8 @@ public class M3TextInputLayout extends Control {
         M3Animation.playFromStart(this, trailingAnimation);
     }
 
-    /// Updates supporting row transition state when text, counter, or error presentation changes.
-    private void updateSupportingRowMotion(boolean showRow, boolean contentChanged) {
+    /// Updates supporting row transition state when the row appears or disappears.
+    private void updateSupportingRowMotion(boolean showRow, boolean rowVisibilityChanged) {
         if (!supportingRowMotionInitialized || getScene() == null) {
             supportingRow.setOpacity(showRow ? 1.0 : 0.0);
             supportingRow.setTranslateY(0.0);
@@ -1377,14 +1362,17 @@ public class M3TextInputLayout extends Control {
             return;
         }
 
-        if (!showRow) {
+        if (!rowVisibilityChanged) {
             supportingRowAnimation.stop();
-            supportingRow.setOpacity(0.0);
+            supportingRow.setOpacity(showRow ? 1.0 : 0.0);
             supportingRow.setTranslateY(0.0);
             return;
         }
 
-        if (!contentChanged) {
+        if (!showRow) {
+            supportingRowAnimation.stop();
+            supportingRow.setOpacity(0.0);
+            supportingRow.setTranslateY(0.0);
             return;
         }
 
