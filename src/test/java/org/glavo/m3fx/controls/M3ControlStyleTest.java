@@ -7322,9 +7322,8 @@ final class M3ControlStyleTest {
         assertEquals(Pos.TOP_LEFT, badgedBox.getBadgeAlignment());
         assertEquals(3.0, badgedBox.getBadgeOffsetX(), 0.0001);
         assertEquals(-2.0, badgedBox.getBadgeOffsetY(), 0.0001);
-        assertInstanceOf(StackPane.class, content.getParent());
-        assertInstanceOf(StackPane.class, badge.getParent());
-        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(badge));
+        assertTrue(content.getParent() != null);
+        assertTrue(badge.getParent() != null);
         assertEquals(3.0, badge.getTranslateX(), 0.0001);
         assertEquals(-2.0, badge.getTranslateY(), 0.0001);
 
@@ -7332,15 +7331,54 @@ final class M3ControlStyleTest {
 
         assertNull(badgedBox.getBadge());
         assertNull(badge.getParent());
-        assertInstanceOf(StackPane.class, content.getParent());
+        assertTrue(content.getParent() != null);
 
         M3Badge replacement = new M3Badge();
         badgedBox.setBadge(replacement);
 
-        assertInstanceOf(StackPane.class, replacement.getParent());
-        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(replacement));
+        assertTrue(replacement.getParent() != null);
         assertEquals(3.0, replacement.getTranslateX(), 0.0001);
         assertEquals(-2.0, replacement.getTranslateY(), 0.0001);
+    }
+
+    /// Verifies that the default badge alignment maps to logical end in right-to-left layouts.
+    @Test
+    void badgedBoxMirrorsDefaultBadgeAlignmentForRightToLeft() {
+        runOnFxThread(() -> {
+            M3Avatar content = new M3Avatar("M");
+            M3Badge badge = new M3Badge("9");
+            M3BadgedBox badgedBox = new M3BadgedBox(content, badge);
+            badgedBox.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            Pane root = new Pane(badgedBox);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 140.0, 120.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(140.0, 120.0);
+            badgedBox.resizeRelocate(40.0, 36.0, 48.0, 48.0);
+            root.layout();
+            badgedBox.layout();
+
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, badgedBox.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, assertInstanceOf(
+                    Node.class,
+                    badge.getParent()
+            ).getEffectiveNodeOrientation());
+            assertEquals(Pos.TOP_RIGHT, badgedBox.getBadgeAlignment());
+
+            assertBadgedBoxBadgeAnchoredToLogicalEnd(badgedBox, true);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, badgedBox, Color.WHITE, 0.08);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-badged-box-rtl.png"
+            ));
+            assertRenderedTextNodesStayInsideLayout(root);
+        });
     }
 
     /// Verifies that list item component token properties are styleable from CSS.
@@ -11421,6 +11459,7 @@ final class M3ControlStyleTest {
             root.resize(640.0, 420.0);
             root.layout();
 
+            assertBadgedBoxBadgeAnchoredToLogicalEnd(badgedBox, false);
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, avatar, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, badgedBox, Color.WHITE, 0.08);
@@ -14236,6 +14275,35 @@ final class M3ControlStyleTest {
         javafx.scene.Node container = button.lookup("." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS);
         assertInstanceOf(javafx.scene.layout.Region.class, container);
         return (javafx.scene.layout.Region) container;
+    }
+
+    /// Verifies that a badged box badge is anchored to logical end and top of its content.
+    private static void assertBadgedBoxBadgeAnchoredToLogicalEnd(M3BadgedBox badgedBox, boolean rightToLeft) {
+        Node content = assertInstanceOf(Node.class, badgedBox.getContent());
+        M3Badge badge = assertInstanceOf(M3Badge.class, badgedBox.getBadge());
+        Bounds contentBounds = content.localToScene(content.getBoundsInLocal());
+        Bounds badgeBounds = badge.localToScene(badge.getBoundsInLocal());
+
+        if (rightToLeft) {
+            assertTrue(badgeBounds.getCenterX() < contentBounds.getCenterX(),
+                    () -> "badgeBounds=" + badgeBounds + ", contentBounds=" + contentBounds);
+        } else {
+            assertTrue(badgeBounds.getCenterX() > contentBounds.getCenterX(),
+                    () -> "badgeBounds=" + badgeBounds + ", contentBounds=" + contentBounds);
+        }
+        assertTrue(badgeBounds.getCenterY() < contentBounds.getCenterY(),
+                () -> "badgeBounds=" + badgeBounds + ", contentBounds=" + contentBounds);
+        assertTrue(rangesOverlap(badgeBounds.getMinX(), badgeBounds.getMaxX(), contentBounds.getMinX(), contentBounds.getMaxX()),
+                () -> "badge should overlap content horizontally: badgeBounds="
+                        + badgeBounds + ", contentBounds=" + contentBounds);
+        assertTrue(rangesOverlap(badgeBounds.getMinY(), badgeBounds.getMaxY(), contentBounds.getMinY(), contentBounds.getMaxY()),
+                () -> "badge should overlap content vertically: badgeBounds="
+                        + badgeBounds + ", contentBounds=" + contentBounds);
+    }
+
+    /// Returns whether two one-dimensional intervals overlap.
+    private static boolean rangesOverlap(double firstMin, double firstMax, double secondMin, double secondMax) {
+        return firstMax > secondMin && firstMin < secondMax;
     }
 
     /// Verifies that a picker preset column is on the right-to-left logical start side.
