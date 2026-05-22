@@ -10,6 +10,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.event.EventHandler;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.scene.control.SkinBase;
@@ -89,6 +90,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.minProperty().addListener(rangeInvalidation);
         control.maxProperty().addListener(rangeInvalidation);
         control.orientationProperty().addListener(layoutInvalidation);
+        control.effectiveNodeOrientationProperty().addListener(layoutInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.thumbSizeProperty().addListener(layoutInvalidation);
         control.touchTargetSizeProperty().addListener(layoutInvalidation);
@@ -110,6 +112,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.minProperty().removeListener(rangeInvalidation);
         control.maxProperty().removeListener(rangeInvalidation);
         control.orientationProperty().removeListener(layoutInvalidation);
+        control.effectiveNodeOrientationProperty().removeListener(layoutInvalidation);
         control.trackThicknessProperty().removeListener(layoutInvalidation);
         control.thumbSizeProperty().removeListener(layoutInvalidation);
         control.touchTargetSizeProperty().removeListener(layoutInvalidation);
@@ -215,7 +218,8 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double trackLength = Math.max(0.0, width - thumbSize);
         double trackX = x + thumbSize / 2.0;
         double trackY = y + (height - trackThickness) / 2.0;
-        double thumbX = trackX + trackLength * position - thumbSize / 2.0;
+        double visualPosition = horizontalVisualPosition(position);
+        double thumbX = trackX + trackLength * visualPosition - thumbSize / 2.0;
         double thumbY = y + (height - thumbSize) / 2.0;
 
         track.resizeRelocate(trackX, trackY, trackLength, trackThickness);
@@ -312,12 +316,30 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                 playReleasedCenteredRipple();
                 event.consume();
             }
-            case LEFT, DOWN -> {
+            case LEFT -> {
+                if (isHorizontalRightToLeft()) {
+                    slider.increment();
+                } else {
+                    slider.decrement();
+                }
+                playReleasedCenteredRipple();
+                event.consume();
+            }
+            case RIGHT -> {
+                if (isHorizontalRightToLeft()) {
+                    slider.decrement();
+                } else {
+                    slider.increment();
+                }
+                playReleasedCenteredRipple();
+                event.consume();
+            }
+            case DOWN -> {
                 slider.decrement();
                 playReleasedCenteredRipple();
                 event.consume();
             }
-            case RIGHT, UP -> {
+            case UP -> {
                 slider.increment();
                 playReleasedCenteredRipple();
                 event.consume();
@@ -369,7 +391,8 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             return 0.0;
         }
         double start = thumbSize / 2.0;
-        return clamp((point.getX() - start) / length);
+        double physicalPosition = clamp((point.getX() - start) / length);
+        return isHorizontalRightToLeft() ? 1.0 - physicalPosition : physicalPosition;
     }
 
     /// Converts a slider value to a normalized position.
@@ -380,6 +403,18 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             return 0.0;
         }
         return clamp((value - slider.getMin()) / range);
+    }
+
+    /// Returns a horizontal position after applying right-to-left visual mirroring.
+    private double horizontalVisualPosition(double position) {
+        return isHorizontalRightToLeft() ? 1.0 - position : position;
+    }
+
+    /// Returns whether this slider currently mirrors horizontal value geometry.
+    private boolean isHorizontalRightToLeft() {
+        M3Slider slider = getSkinnable();
+        return slider.getOrientation() == Orientation.HORIZONTAL
+                && slider.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     }
 
     /// Converts a normalized position to a slider value.

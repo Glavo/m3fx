@@ -2262,6 +2262,64 @@ final class M3ControlStyleTest {
         assertEquals(64.0, widePaddingField.getPadding().getRight(), 0.0001);
     }
 
+    /// Verifies that text input layouts mirror logical adornments and floating label geometry in right-to-left mode.
+    @Test
+    void textInputLayoutMirrorsAdornmentsAndFloatingLabelForRightToLeft() {
+        runOnFxThread(() -> {
+            M3TextField textField = M3TextField.withVariant("M3FX", M3TextInputVariant.OUTLINED);
+            textField.setPrefWidth(360.0);
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
+            layout.setLabelText("Outlined with text");
+            layout.setLeading(new M3Icon("T"));
+            layout.setTrailing(M3IconButton.withIcon("V"));
+            layout.setCharacterCounterVisible(true);
+            layout.setCharacterLimit(24);
+            layout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            layout.setPrefWidth(360.0);
+
+            StackPane root = new StackPane(layout);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 430.0, 140.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(430.0, 140.0);
+            root.layout();
+            layout.layout();
+
+            Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
+            Region leadingSlot = lookupRegion(layout, "." + M3TextInputLayout.LEADING_STYLE_CLASS);
+            Region trailingSlot = lookupRegion(layout, "." + M3TextInputLayout.TRAILING_STYLE_CLASS);
+            Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+            Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+
+            Bounds containerBounds = inputContainer.localToScene(inputContainer.getBoundsInLocal());
+            Bounds leadingBounds = leadingSlot.localToScene(leadingSlot.getBoundsInLocal());
+            Bounds trailingBounds = trailingSlot.localToScene(trailingSlot.getBoundsInLocal());
+            Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
+
+            assertTrue(leadingBounds.getMinX() > containerBounds.getCenterX(),
+                    () -> "leadingBounds=" + leadingBounds + ", containerBounds=" + containerBounds);
+            assertTrue(trailingBounds.getMaxX() < containerBounds.getCenterX(),
+                    () -> "trailingBounds=" + trailingBounds + ", containerBounds=" + containerBounds);
+            assertTrue(labelBounds.getCenterX() > containerBounds.getCenterX(),
+                    () -> "labelBounds=" + labelBounds + ", containerBounds=" + containerBounds);
+            assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(label));
+            assertTrue(outlineNotchGap(outline) >= labelBounds.getWidth() - 1.0,
+                    () -> "outlineNotchGap=" + outlineNotchGap(outline) + ", labelWidth=" + labelBounds.getWidth());
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, label, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-text-field-rtl.png"
+            ));
+        });
+    }
+
     /// Verifies that text input trailing icon buttons keep square state layers and visible ripples.
     @Test
     void textInputLayoutTrailingIconButtonKeepsSquareRipple() {
@@ -6013,6 +6071,44 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that selection controls mirror indicator and label order in right-to-left mode.
+    @Test
+    void selectionControlsMirrorIndicatorAndLabelOrderForRightToLeft() {
+        runOnFxThread(() -> {
+            M3CheckBox checkBox = M3CheckBox.withSelected("Checkbox", true);
+            M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
+            M3Switch switchControl = M3Switch.withSelected("Switch", true);
+            checkBox.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            radioButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            switchControl.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            FlowPane row = new FlowPane(24.0, 12.0, checkBox, radioButton, switchControl);
+            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(row, 460.0, 96.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            row.applyCss();
+            row.resize(460.0, 96.0);
+            row.layout();
+
+            assertSelectionIndicatorAfterLabel(checkBox);
+            assertSelectionIndicatorAfterLabel(radioButton);
+
+            Region track = lookupRegion(switchControl, ".box");
+            Region thumb = lookupRegion(switchControl, ".thumb");
+            double trackCenter = track.localToScene(track.getBoundsInLocal()).getCenterX();
+            double thumbCenter = thumb.localToScene(thumb.getBoundsInLocal()).getCenterX();
+            assertTrue(thumbCenter < trackCenter, () -> "thumbCenter=" + thumbCenter + ", trackCenter=" + trackCenter);
+
+            writeVisualSnapshot(snapshotImageOnFxThread(row), java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-selection-rtl.png"
+            ));
+        });
+    }
+
     /// Verifies that checkbox indeterminate-to-selected transitions replay the mark animation.
     @Test
     void checkBoxIndeterminateTransitionReplaysMarkAnimation() {
@@ -6152,6 +6248,31 @@ final class M3ControlStyleTest {
         assertTrue(onThumb.getWidth() > offThumb.getWidth());
         assertEquals(8.0, offThumb.getLayoutX(), 0.0001);
         assertEquals(24.0, onThumb.getLayoutX(), 0.0001);
+    }
+
+    /// Verifies that switches mirror selected thumb geometry in right-to-left mode.
+    @Test
+    void switchSkinMirrorsThumbPositionForRightToLeft() {
+        M3Switch switchControl = M3Switch.withSelected("On", true);
+        switchControl.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        Pane root = new Pane(switchControl);
+        Scene scene = new Scene(root, 180.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        switchControl.resize(120.0, 40.0);
+        switchControl.layout();
+
+        Region track = lookupRegion(switchControl, ".box");
+        Region thumb = lookupRegion(switchControl, ".thumb");
+        Region stateLayer = lookupRegion(switchControl, ".m3-state-layer-container");
+        double trackCenter = track.localToScene(track.getBoundsInLocal()).getCenterX();
+        double thumbCenter = thumb.localToScene(thumb.getBoundsInLocal()).getCenterX();
+        double stateLayerCenter = stateLayer.localToScene(stateLayer.getBoundsInLocal()).getCenterX();
+
+        assertTrue(thumbCenter < trackCenter, () -> "thumbCenter=" + thumbCenter + ", trackCenter=" + trackCenter);
+        assertEquals(24.0, thumb.getWidth(), 0.0001);
+        assertEquals(thumbCenter, stateLayerCenter, 0.0001);
     }
 
     /// Verifies that switch hover and ripple feedback uses a circular thumb state layer.
@@ -6434,6 +6555,34 @@ final class M3ControlStyleTest {
         assertNoBorder(track);
         assertRegionFill(thumb, Color.rgb(1, 2, 3));
         assertNoBorder(thumb);
+    }
+
+    /// Verifies that horizontal sliders mirror value geometry and arrow-key semantics in right-to-left mode.
+    @Test
+    void sliderMirrorsHorizontalValueAndKeysForRightToLeft() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 25.0);
+        slider.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 280.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+
+        Region track = lookupRegion(slider, ".track");
+        Region thumb = lookupRegion(slider, ".thumb");
+        double trackCenter = track.getLayoutX() + track.getWidth() / 2.0;
+        double thumbCenter = thumb.getLayoutX() + thumb.getWidth() / 2.0;
+        assertTrue(thumbCenter > trackCenter, () -> "thumbCenter=" + thumbCenter + ", trackCenter=" + trackCenter);
+
+        slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+        assertEquals(35.0, slider.getValue(), 0.0001);
+
+        slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+        assertEquals(25.0, slider.getValue(), 0.0001);
     }
 
     /// Verifies that progress component token properties are styleable from CSS.
@@ -13309,6 +13458,16 @@ final class M3ControlStyleTest {
         Node radio = radioButton.lookup(".radio");
         assertInstanceOf(Region.class, radio);
         return (Region) radio;
+    }
+
+    /// Verifies that a right-to-left selection control paints its indicator after its text.
+    private static void assertSelectionIndicatorAfterLabel(ButtonBase control) {
+        Region indicator = lookupRegion(control, ".m3-selection-indicator");
+        Labeled label = assertInstanceOf(Labeled.class, control.lookup(".m3-selection-label"));
+        Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
+        Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
+        assertTrue(indicatorBounds.getMinX() > labelBounds.getMaxX(),
+                () -> "indicatorBounds=" + indicatorBounds + ", labelBounds=" + labelBounds);
     }
 
     /// Returns the radio indicator ring shape.

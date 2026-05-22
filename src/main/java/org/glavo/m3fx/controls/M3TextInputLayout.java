@@ -27,6 +27,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -371,6 +372,9 @@ public class M3TextInputLayout extends Control {
 
     /// The listener used to rebuild the outlined border path when layout geometry changes.
     private final InvalidationListener outlineGeometryListener = observable -> updateOutlinePath();
+
+    /// The listener used to mirror logical leading and trailing geometry when layout direction changes.
+    private final InvalidationListener nodeOrientationListener = observable -> updateNodeOrientationLayout();
 
     /// The container that overlays leading and trailing adornments over the input.
     private final StackPane inputContainer = new StackPane();
@@ -844,13 +848,13 @@ public class M3TextInputLayout extends Control {
         trailingSlot.getStyleClass().add(TRAILING_STYLE_CLASS);
         label.setOpacity(0.0);
         supportingRow.setOpacity(0.0);
-        StackPane.setAlignment(label, Pos.CENTER_LEFT);
-        StackPane.setAlignment(leadingSlot, Pos.CENTER_LEFT);
-        StackPane.setAlignment(trailingSlot, Pos.CENTER_RIGHT);
+        inputContainer.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
+        supportingRow.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         inputContainer.widthProperty().addListener(outlineGeometryListener);
         inputContainer.heightProperty().addListener(outlineGeometryListener);
         label.boundsInParentProperty().addListener(outlineGeometryListener);
         outlinePath.strokeWidthProperty().addListener(outlineGeometryListener);
+        effectiveNodeOrientationProperty().addListener(nodeOrientationListener);
         inputContainer.getChildren().setAll(outlinePath, label, leadingSlot, trailingSlot);
 
         supportingRow.getStyleClass().add(SUPPORTING_ROW_STYLE_CLASS);
@@ -864,6 +868,7 @@ public class M3TextInputLayout extends Control {
 
         HBox.setHgrow(supportingSpacer, Priority.ALWAYS);
         supportingRow.getChildren().setAll(supportingLabel, supportingSpacer, counterLabel);
+        updateNodeOrientationLayout();
         updateInputContainer();
         updateInputVariantStyle();
         updateLabel();
@@ -988,7 +993,7 @@ public class M3TextInputLayout extends Control {
         label.setText(text);
         label.setVisible(visible);
         label.setManaged(visible);
-        StackPane.setAlignment(label, floating ? Pos.TOP_LEFT : Pos.CENTER_LEFT);
+        StackPane.setAlignment(label, labelAlignment(floating));
         label.pseudoClassStateChanged(FLOATING_PSEUDO_CLASS, floating);
         updateLabelErrorState();
         updateLabelMotion(visible, floating);
@@ -1078,12 +1083,14 @@ public class M3TextInputLayout extends Control {
             return;
         }
 
-        double left = getLeading() == null
-                ? basePadding.getLeft()
-                : Math.max(basePadding.getLeft(), ADORNED_HORIZONTAL_PADDING);
-        double right = effectiveTrailing() == null
-                ? basePadding.getRight()
-                : Math.max(basePadding.getRight(), ADORNED_HORIZONTAL_PADDING);
+        double leading = getLeading() == null
+                ? leadingInset(basePadding)
+                : Math.max(leadingInset(basePadding), ADORNED_HORIZONTAL_PADDING);
+        double trailing = effectiveTrailing() == null
+                ? trailingInset(basePadding)
+                : Math.max(trailingInset(basePadding), ADORNED_HORIZONTAL_PADDING);
+        double left = physicalLeftInset(leading, trailing);
+        double right = physicalRightInset(leading, trailing);
         // Outlined floating labels occupy the outline notch, not the input content area.
         double top = isLabelFloating() && !isOutlinedInput()
                 ? Math.max(basePadding.getTop(), labeledTopPadding(input))
@@ -1098,8 +1105,10 @@ public class M3TextInputLayout extends Control {
 
     /// Updates label placement and floating-label notch padding.
     private void updateLabelPadding() {
-        double textLeft = getLeading() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING;
-        double textRight = effectiveTrailing() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING;
+        double leadingInset = getLeading() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING;
+        double trailingInset = effectiveTrailing() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING;
+        double textLeft = physicalLeftInset(leadingInset, trailingInset);
+        double textRight = physicalRightInset(leadingInset, trailingInset);
         if (isLabelFloating()) {
             label.setPadding(new Insets(
                     0.0,
@@ -1117,6 +1126,47 @@ public class M3TextInputLayout extends Control {
             label.setPadding(Insets.EMPTY);
             StackPane.setMargin(label, new Insets(0.0, textRight, 0.0, textLeft));
         }
+    }
+
+    /// Updates child alignments and geometry that depend on logical layout direction.
+    private void updateNodeOrientationLayout() {
+        StackPane.setAlignment(leadingSlot, Pos.CENTER_LEFT);
+        StackPane.setAlignment(trailingSlot, Pos.CENTER_RIGHT);
+        StackPane.setAlignment(label, labelAlignment(isLabelFloating()));
+        updateLabelPadding();
+        updateInputPadding();
+        updateOutlinePath();
+        requestLayout();
+    }
+
+    /// Returns the logical floating or resting label alignment.
+    private Pos labelAlignment(boolean floating) {
+        return floating ? Pos.TOP_LEFT : Pos.CENTER_LEFT;
+    }
+
+    /// Returns the leading inset from physical input padding.
+    private double leadingInset(Insets padding) {
+        return isRightToLeft() ? padding.getRight() : padding.getLeft();
+    }
+
+    /// Returns the trailing inset from physical input padding.
+    private double trailingInset(Insets padding) {
+        return isRightToLeft() ? padding.getLeft() : padding.getRight();
+    }
+
+    /// Converts a logical leading/trailing inset pair to a physical left inset.
+    private double physicalLeftInset(double leading, double trailing) {
+        return isRightToLeft() ? trailing : leading;
+    }
+
+    /// Converts a logical leading/trailing inset pair to a physical right inset.
+    private double physicalRightInset(double leading, double trailing) {
+        return isRightToLeft() ? leading : trailing;
+    }
+
+    /// Returns whether this layout is currently displayed right-to-left.
+    private boolean isRightToLeft() {
+        return getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     }
 
     /// Returns the top padding required while a label is floating.

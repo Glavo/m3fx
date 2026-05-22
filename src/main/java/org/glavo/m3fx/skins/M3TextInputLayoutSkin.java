@@ -22,6 +22,7 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
         super(control);
         container.setManaged(false);
         container.setFillWidth(true);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().setAll(control.getInputContainer(), control.getSupportingRow());
         getChildren().add(container);
     }
@@ -29,6 +30,7 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
     /// Removes child references before disposal.
     @Override
     public void dispose() {
+        container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         super.dispose();
     }

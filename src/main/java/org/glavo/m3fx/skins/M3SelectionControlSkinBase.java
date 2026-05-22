@@ -72,6 +72,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         indicatorSlot.getStyleClass().add("m3-selection-indicator");
         label.getStyleClass().add("m3-selection-label");
         container.setAlignment(Pos.CENTER_LEFT);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         indicatorSlot.setAlignment(Pos.CENTER);
         bindLabel(control);
         stateLayer.installStateTransitions(control);
@@ -89,6 +90,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         resetInteractionState();
         stateLayer.uninstallStateTransitions();
         control.disabledProperty().removeListener(disabledListener);
+        container.nodeOrientationProperty().unbind();
         unbindLabel();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);

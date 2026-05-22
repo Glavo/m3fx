@@ -47,6 +47,7 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         super(control);
         container.setManaged(false);
         container.setAlignment(Pos.CENTER_LEFT);
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         leadingSlot.getStyleClass().add(M3SearchBar.LEADING_STYLE_CLASS);
         trailingBox.getStyleClass().add(M3SearchBar.TRAILING_STYLE_CLASS);
         trailingBox.setAlignment(Pos.CENTER);
@@ -67,6 +68,7 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         M3SearchBar control = getSkinnable();
         control.leadingProperty().removeListener(leadingListener);
         control.getTrailingActions().removeListener(trailingActionsListener);
+        container.nodeOrientationProperty().unbind();
         trailingBox.getChildren().clear();
         leadingSlot.getChildren().clear();
         container.getChildren().clear();
