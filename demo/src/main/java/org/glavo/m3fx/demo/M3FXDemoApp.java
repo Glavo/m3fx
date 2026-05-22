@@ -214,6 +214,9 @@ public final class M3FXDemoApp extends Application {
     /// Sidebar groups rendered by the navigation drawer.
     private final List<SidebarGroup> sidebarGroups = new ArrayList<>();
 
+    /// Demo pages created for the current application instance.
+    private @Unmodifiable List<DemoPage> pages = List.of();
+
     /// The active JavaFX scene.
     private @Nullable Scene scene;
 
@@ -238,8 +241,9 @@ public final class M3FXDemoApp extends Application {
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
         this.snackbarHost = snackbarHost;
 
-        List<DemoPage> pages = createPages();
-        StackPane centerStack = new StackPane(createContent(pages), snackbarHost);
+        List<DemoPage> createdPages = createPages();
+        pages = createdPages;
+        StackPane centerStack = new StackPane(createContent(createdPages), snackbarHost);
         StackPane.setAlignment(snackbarHost, Pos.BOTTOM_CENTER);
 
         root.setTop(createHeader());
@@ -250,7 +254,7 @@ public final class M3FXDemoApp extends Application {
         this.scene = scene;
         applyTheme();
         applyMotionSettings();
-        showPage(pages.get(0));
+        showPage(createdPages.get(0));
 
         stage.setTitle("M3FX Demo");
         stage.setMinWidth(960.0);
@@ -533,6 +537,31 @@ public final class M3FXDemoApp extends Application {
         if (page != null) {
             showPage(page);
         }
+    }
+
+    /// Returns the demo page titles created for this application instance.
+    @Unmodifiable List<String> demoPageTitlesForTesting() {
+        return pages.stream().map(DemoPage::title).toList();
+    }
+
+    /// Shows the demo page with the requested title.
+    void showPageForTesting(String title) {
+        Objects.requireNonNull(title, "title");
+        if (pages.isEmpty()) {
+            throw new IllegalStateException("demo pages have not been created");
+        }
+        for (DemoPage page : pages) {
+            if (page.title().equals(title)) {
+                showPage(page);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("unknown demo page title: " + title);
+    }
+
+    /// Returns the active scene for visual tests.
+    @Nullable Scene sceneForTesting() {
+        return scene;
     }
 
     /// Expands the collapsible sidebar group containing the requested page.
@@ -1860,7 +1889,7 @@ public final class M3FXDemoApp extends Application {
 
         FlowPane indicators = new FlowPane(16.0, 12.0);
         indicators.setAlignment(Pos.CENTER_LEFT);
-        indicators.setPrefWrapLength(980.0);
+        indicators.setPrefWrapLength(760.0);
         for (double trackHeight : PROGRESS_TRACK_HEIGHTS) {
             indicators.getChildren().add(createProgressTrackHeightSample(
                     trackHeight,
