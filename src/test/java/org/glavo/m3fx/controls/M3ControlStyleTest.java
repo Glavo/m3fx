@@ -10012,6 +10012,7 @@ final class M3ControlStyleTest {
                     "visual-inputs.png"
             ));
             assertRenderedTextNodesStayInsideLayout(row);
+            assertOutlinedTextInputsKeepTextCentered(row);
             assertFixedTargetControlsKeepCenteredContent(row);
         });
     }
@@ -10129,6 +10130,7 @@ final class M3ControlStyleTest {
                     "visual-input-layouts.png"
             ));
             assertRenderedTextNodesStayInsideLayout(row);
+            assertOutlinedTextInputsKeepTextCentered(row);
             assertFixedTargetControlsKeepCenteredContent(row);
         });
     }
@@ -10161,8 +10163,17 @@ final class M3ControlStyleTest {
             WritableImage image = snapshotImageOnFxThread(root);
             Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
             Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+            Text inputText = renderedTextNode(textField, "M3FX");
             var labelBounds = label.localToScene(label.getBoundsInLocal());
             var fieldBounds = textField.localToScene(textField.getBoundsInLocal());
+            var inputTextBounds = inputText.localToScene(inputText.getBoundsInLocal());
+            double fieldCenterY = (fieldBounds.getMinY() + fieldBounds.getMaxY()) / 2.0;
+            double inputTextCenterY = (inputTextBounds.getMinY() + inputTextBounds.getMaxY()) / 2.0;
+
+            assertEquals(8.0, textField.getPadding().getTop(), 0.0001);
+            assertEquals(fieldCenterY, inputTextCenterY, 2.0,
+                    () -> "outlined input text should stay vertically centered: field="
+                            + fieldBounds + ", text=" + inputTextBounds);
             assertTrue(label.getBackground() == null || label.getBackground().getFills().isEmpty());
             assertTrue(outlineNotchGap(outline) >= labelBounds.getWidth() - 1.0,
                     () -> "outline gap is narrower than the floating label: gap="
@@ -10203,6 +10214,7 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-outlined-input-notch.png"
             ));
+            assertOutlinedTextInputsKeepTextCentered(root);
         });
     }
 
@@ -13116,6 +13128,31 @@ final class M3ControlStyleTest {
                     assertNodeCentersAligned(button, textNode, 1.0);
                 }
             }
+        });
+    }
+
+    /// Verifies that single-line outlined text inputs keep entered text vertically centered.
+    private static void assertOutlinedTextInputsKeepTextCentered(Node root) {
+        visitVisibleNodes(root, node -> {
+            if (!(node instanceof TextInputControl input)
+                    || input instanceof M3TextArea
+                    || input instanceof M3PasswordField
+                    || !(input instanceof M3TextInput textInput)
+                    || textInput.getVariant() != M3TextInputVariant.OUTLINED
+                    || input.getText().isBlank()
+                    || !hasRenderableBounds(input)) {
+                return;
+            }
+
+            Text text = renderedTextNode(input, input.getText());
+            Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
+            Bounds textBounds = text.localToScene(text.getBoundsInLocal());
+            double inputCenterY = (inputBounds.getMinY() + inputBounds.getMaxY()) / 2.0;
+            double textCenterY = (textBounds.getMinY() + textBounds.getMaxY()) / 2.0;
+
+            assertEquals(inputCenterY, textCenterY, 2.0,
+                    () -> "outlined input text is vertically misaligned: input="
+                            + inputBounds + ", text=" + textBounds);
         });
     }
 

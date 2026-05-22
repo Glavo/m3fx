@@ -1093,7 +1093,8 @@ public class M3TextInputLayout extends Control {
         double right = effectiveTrailing() == null
                 ? basePadding.getRight()
                 : Math.max(basePadding.getRight(), ADORNED_HORIZONTAL_PADDING);
-        double top = isLabelFloating()
+        // Outlined floating labels occupy the outline notch, not the input content area.
+        double top = isLabelFloating() && !isOutlinedInput()
                 ? Math.max(basePadding.getTop(), labeledTopPadding(input))
                 : basePadding.getTop();
         applyingInputPadding = true;
