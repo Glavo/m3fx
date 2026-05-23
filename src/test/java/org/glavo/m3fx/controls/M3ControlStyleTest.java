@@ -8912,7 +8912,19 @@ final class M3ControlStyleTest {
         assertEquals(16.0, topAppBar.getPadding().getLeft(), 0.0001);
         assertInstanceOf(M3TopAppBarSkin.class, topAppBar.getSkin());
         assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
-        assertInstanceOf(HBox.class, topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
+        HBox actions = assertInstanceOf(HBox.class, topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
+        assertEquals(8.0, actions.getSpacing(), 0.0001);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+
+        assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(24.0, topAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(12.0, actions.getSpacing(), 0.0001);
     }
 
     /// Verifies that top app bar icon buttons do not clip fallback glyphs.
@@ -9034,7 +9046,19 @@ final class M3ControlStyleTest {
         assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
         assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertInstanceOf(M3BottomAppBarSkin.class, bottomAppBar.getSkin());
-        assertInstanceOf(HBox.class, bottomAppBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS));
+        HBox actions = assertInstanceOf(HBox.class, bottomAppBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS));
+        assertEquals(8.0, actions.getSpacing(), 0.0001);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+
+        assertEquals(88.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(24.0, bottomAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(12.0, actions.getSpacing(), 0.0001);
     }
 
     /// Verifies that app bars and banners create Material Design 3 skins.
@@ -12571,6 +12595,9 @@ final class M3ControlStyleTest {
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
             M3ListItem listItem = new M3ListItem("Expressive list item");
             M3Avatar avatar = new M3Avatar("EX");
+            M3Card card = new M3Card(new Label("Expressive card"), M3CardVariant.FILLED);
+            card.setPrefSize(220.0, 96.0);
+            M3Snackbar snackbar = new M3Snackbar("Expressive snackbar", "Action");
             M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side sheet content"));
             sideSheet.setPrefHeight(160.0);
             M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom sheet content"));
@@ -12619,6 +12646,7 @@ final class M3ControlStyleTest {
                             searchView,
                             datePicker
                     ),
+                    visualSection("Surfaces", card, snackbar),
                     visualSection(
                             "Navigation",
                             listItem,
@@ -12668,6 +12696,10 @@ final class M3ControlStyleTest {
             assertEquals(16.0, searchResult.getContentSpacing(), 0.0001);
             assertEquals(64.0, listItem.getOneLineHeight(), 0.0001);
             assertEquals(44.0, avatar.getContainerSize(), 0.0001);
+            assertEquals(24.0, card.getContainerShape(), 0.0001);
+            assertEquals(20.0, card.getContentPadding(), 0.0001);
+            assertEquals(16.0, snackbar.getContainerShape(), 0.0001);
+            assertEquals(18.0, snackbar.getContentPadding(), 0.0001);
             assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
             assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
             assertEquals(
@@ -12701,6 +12733,8 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, menu, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, searchView, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, card, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, snackbar, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, sideSheet, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, bottomSheet, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, navigationBar, Color.WHITE, 0.04);

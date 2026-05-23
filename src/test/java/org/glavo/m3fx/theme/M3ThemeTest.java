@@ -11,6 +11,7 @@ import javafx.scene.paint.Color;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Badge;
+import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
@@ -32,10 +33,12 @@ import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SideSheet;
+import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextRole;
+import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.m3fx.tokens.M3TokenSet;
@@ -178,11 +181,19 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-result-padding: 12px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-content-padding: 28px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-drag-handle-width: 36px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 24px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-content-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-shape: 32px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-content-padding: 28px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-container-shape: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-content-padding: 18px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 8px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 72px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-horizontal-padding: 24px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-action-spacing: 12px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 88px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-horizontal-padding: 24px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-action-spacing: 12px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 112px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 384px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-bar-horizontal-padding: 12px"));
@@ -225,6 +236,14 @@ final class M3ThemeTest {
         assertEquals(12.0, theme.tokens().componentTokens().search().viewResultPadding(), 0.0001);
         assertEquals(28.0, theme.tokens().componentTokens().sheet().contentPadding(), 0.0001);
         assertEquals(36.0, theme.tokens().componentTokens().sheet().dragHandleWidth(), 0.0001);
+        assertEquals(24.0, theme.tokens().componentTokens().card().containerShape(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().card().contentPadding(), 0.0001);
+        assertEquals(28.0, theme.tokens().componentTokens().dialog().contentPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().snackbar().containerShape(), 0.0001);
+        assertEquals(18.0, theme.tokens().componentTokens().snackbar().contentPadding(), 0.0001);
+        assertEquals(24.0, theme.tokens().componentTokens().topAppBar().horizontalPadding(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().topAppBar().contentSpacing(), 0.0001);
+        assertEquals(12.0, theme.tokens().componentTokens().bottomAppBar().actionSpacing(), 0.0001);
     }
 
     /// Verifies that convenience theme factories use the expected defaults.
@@ -527,6 +546,11 @@ final class M3ThemeTest {
         M3ListSectionHeader listSectionHeader = new M3ListSectionHeader("Results");
         M3SideSheet sideSheet = new M3SideSheet();
         M3BottomSheet bottomSheet = new M3BottomSheet();
+        M3Card card = new M3Card();
+        M3DialogPane dialogPane = new M3DialogPane();
+        M3Snackbar snackbar = new M3Snackbar("Saved");
+        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
         M3Scrim scrim = new M3Scrim();
         M3Avatar avatar = new M3Avatar("A");
         M3Text displayText = new M3Text("Display", M3TextRole.DISPLAY_LARGE);
@@ -544,6 +568,11 @@ final class M3ThemeTest {
                 listSectionHeader,
                 sideSheet,
                 bottomSheet,
+                card,
+                dialogPane,
+                snackbar,
+                topAppBar,
+                bottomAppBar,
                 scrim,
                 avatar,
                 displayText,
@@ -582,6 +611,17 @@ final class M3ThemeTest {
                 ((Region) sideSheet.lookup("." + M3SideSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
                 0.0001
         );
+        assertEquals(24.0, card.getContainerShape(), 0.0001);
+        assertEquals(20.0, card.getContentPadding(), 0.0001);
+        assertEquals(32.0, dialogPane.getContainerShape(), 0.0001);
+        assertEquals(28.0, dialogPane.getContentPadding(), 0.0001);
+        assertEquals(28.0, dialogPane.getPadding().getTop(), 0.0001);
+        assertEquals(16.0, snackbar.getContainerShape(), 0.0001);
+        assertEquals(18.0, snackbar.getContentPadding(), 0.0001);
+        assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(24.0, topAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(88.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(24.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
         assertEquals(44.0, avatar.getContainerSize(), 0.0001);
         assertEquals(64.0, displayText.getTypographyFontSize(), 0.0001);
@@ -604,6 +644,16 @@ final class M3ThemeTest {
         assertEquals(16.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(320.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(12.0, card.getContainerShape(), 0.0001);
+        assertEquals(16.0, card.getContentPadding(), 0.0001);
+        assertEquals(28.0, dialogPane.getContainerShape(), 0.0001);
+        assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
+        assertEquals(4.0, snackbar.getContainerShape(), 0.0001);
+        assertEquals(16.0, snackbar.getContentPadding(), 0.0001);
+        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(16.0, topAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
         assertEquals(40.0, avatar.getContainerSize(), 0.0001);
         assertEquals(57.0, displayText.getTypographyFontSize(), 0.0001);
@@ -691,12 +741,12 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, expressiveTheme);
         root.applyCss();
 
-        assertEquals(16.0, card.getContainerShape(), 0.0001);
-        assertEquals(16.0, card.getContentPadding(), 0.0001);
+        assertEquals(24.0, card.getContainerShape(), 0.0001);
+        assertEquals(20.0, card.getContentPadding(), 0.0001);
         assertEquals(1.0, card.getOutlineWidth(), 0.0001);
         assertEquals(32.0, dialogPane.getContainerShape(), 0.0001);
-        assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
-        assertEquals(24.0, dialogPane.getPadding().getTop(), 0.0001);
+        assertEquals(28.0, dialogPane.getContentPadding(), 0.0001);
+        assertEquals(28.0, dialogPane.getPadding().getTop(), 0.0001);
     }
 
     /// Writes an application stylesheet for stylesheet cascade tests.

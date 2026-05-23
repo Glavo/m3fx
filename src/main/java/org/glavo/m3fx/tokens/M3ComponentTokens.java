@@ -352,6 +352,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double sheetHeaderPadding = density.apply(expressive ? 28.0 : 24.0);
         double sheetDragHandleWidth = density.apply(expressive ? 36.0 : 32.0);
         double sheetDragHandleHeight = density.apply(expressive ? 5.0 : 4.0);
+        double cardContainerShape = expressive ? shapeTokens.large() : shapeTokens.medium();
+        double cardContentPadding = density.apply(expressive ? 20.0 : 16.0);
+        double dialogContentPadding = density.apply(expressive ? 28.0 : 24.0);
+        double snackbarContainerShape = expressive ? shapeTokens.medium() : shapeTokens.extraSmall();
+        double snackbarContentPadding = density.apply(expressive ? 18.0 : 16.0);
+        double appBarHorizontalPadding = density.apply(expressive ? 24.0 : 16.0);
+        double appBarContentSpacing = density.apply(expressive ? 20.0 : 16.0);
+        double appBarActionSpacing = density.apply(expressive ? 12.0 : 8.0);
 
         return create(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
@@ -418,14 +426,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         density.apply(15.0),
                         density.apply(4.0)
                 ),
-                new CardTokens(shapeTokens.medium(), 16.0, 1.0),
-                new DialogTokens(shapeTokens.extraLarge(), 24.0),
-                new SnackbarTokens(shapeTokens.extraSmall(), 16.0),
+                new CardTokens(cardContainerShape, cardContentPadding, 1.0),
+                new DialogTokens(shapeTokens.extraLarge(), dialogContentPadding),
+                new SnackbarTokens(snackbarContainerShape, snackbarContentPadding),
                 new DividerTokens(1.0, 0.0, 0.0),
                 new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeMinWidth, badgeLargeHeight / 2.0, 4.0),
                 new AvatarTokens(avatarSize, shapeTokens.full()),
-                new TopAppBarTokens(topAppBarHeight, 16.0, 16.0, 8.0),
-                new BottomAppBarTokens(bottomAppBarHeight, 16.0, 16.0, 8.0),
+                new TopAppBarTokens(topAppBarHeight, appBarHorizontalPadding, appBarContentSpacing, appBarActionSpacing),
+                new BottomAppBarTokens(bottomAppBarHeight, appBarHorizontalPadding, appBarContentSpacing, appBarActionSpacing),
                 new NavigationBarTokens(
                         navigationBarHeight,
                         navigationItemWidth,
