@@ -24,6 +24,9 @@ import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
+import org.glavo.m3fx.controls.M3FormPane;
+import org.glavo.m3fx.controls.M3FormRow;
+import org.glavo.m3fx.controls.M3FormSection;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
@@ -43,6 +46,7 @@ import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
+import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.controls.M3TopAppBar;
@@ -116,6 +120,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-form-row-min-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-validation-summary-container-shape"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-display-medium-text"));
         assertTrue(theme.toControlStyleRules().contains(".m3-body-small-text"));
@@ -136,6 +142,8 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-navigation-drawer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-section-header"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-form-row"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-validation-summary-item"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.08"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.1"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.38"));
@@ -157,6 +165,8 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().navigationRail());
         assertNotNull(theme.tokens().componentTokens().navigationDrawer());
         assertNotNull(theme.tokens().componentTokens().listItem());
+        assertNotNull(theme.tokens().componentTokens().form());
+        assertNotNull(theme.tokens().componentTokens().validationSummary());
     }
 
     /// Verifies that the expressive profile creates a complete token set.
@@ -238,6 +248,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-content-spacing: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-height: 56px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-horizontal-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-form-row-min-height: 72px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-validation-summary-content-padding: 20px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-content-spacing: 6px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-horizontal-padding: 40px"));
@@ -262,6 +274,8 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().pickerField());
         assertNotNull(theme.tokens().componentTokens().datePicker());
         assertNotNull(theme.tokens().componentTokens().timePicker());
+        assertNotNull(theme.tokens().componentTokens().form());
+        assertNotNull(theme.tokens().componentTokens().validationSummary());
         assertEquals(28.0, theme.tokens().componentTokens().filledButton().horizontalPadding(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().textButton().horizontalPadding(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().floatingActionButton().regularHorizontalPadding(), 0.0001);
@@ -283,6 +297,8 @@ final class M3ThemeTest {
         assertEquals(16.0, theme.tokens().componentTokens().menu().itemContentSpacing(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().search().barHorizontalPadding(), 0.0001);
         assertEquals(12.0, theme.tokens().componentTokens().search().viewResultPadding(), 0.0001);
+        assertEquals(72.0, theme.tokens().componentTokens().form().rowMinHeight(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().validationSummary().contentPadding(), 0.0001);
         assertEquals(28.0, theme.tokens().componentTokens().sheet().contentPadding(), 0.0001);
         assertEquals(36.0, theme.tokens().componentTokens().sheet().dragHandleWidth(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().card().containerShape(), 0.0001);
@@ -605,6 +621,11 @@ final class M3ThemeTest {
         M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
         M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
         M3DatePickerField datePickerField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
+        M3FormPane formPane = new M3FormPane();
+        M3FormSection formSection = new M3FormSection("Account", new M3TextField());
+        M3FormRow formRow = new M3FormRow("Name", new M3TextField());
+        M3ValidationSummary validationSummary = new M3ValidationSummary();
+        validationSummary.setShowWhenValid(true);
         M3ListSectionHeader listSectionHeader = new M3ListSectionHeader("Results");
         M3SideSheet sideSheet = new M3SideSheet();
         M3BottomSheet bottomSheet = new M3BottomSheet();
@@ -634,6 +655,10 @@ final class M3ThemeTest {
                 datePicker,
                 timePicker,
                 datePickerField,
+                formPane,
+                formSection,
+                formRow,
+                validationSummary,
                 listSectionHeader,
                 sideSheet,
                 bottomSheet,
@@ -686,6 +711,12 @@ final class M3ThemeTest {
         assertEquals(22.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
         assertEquals(48.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(48.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
+        assertEquals(20.0, formPane.getRowSpacing(), 0.0001);
+        assertEquals(16.0, formSection.getContentSpacing(), 0.0001);
+        assertEquals(200.0, formRow.getLabelWidth(), 0.0001);
+        assertEquals(28.0, formRow.getColumnSpacing(), 0.0001);
+        assertEquals(72.0, formRow.getRowMinHeight(), 0.0001);
+        assertEquals(20.0, validationSummary.getPadding().getTop(), 0.0001);
         assertEquals(56.0, listSectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(20.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
@@ -755,6 +786,12 @@ final class M3ThemeTest {
         assertEquals(18.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
         assertEquals(44.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
+        assertEquals(16.0, formPane.getRowSpacing(), 0.0001);
+        assertEquals(12.0, formSection.getContentSpacing(), 0.0001);
+        assertEquals(180.0, formRow.getLabelWidth(), 0.0001);
+        assertEquals(24.0, formRow.getColumnSpacing(), 0.0001);
+        assertEquals(64.0, formRow.getRowMinHeight(), 0.0001);
+        assertEquals(16.0, validationSummary.getPadding().getTop(), 0.0001);
         assertEquals(48.0, listSectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(16.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);

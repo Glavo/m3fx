@@ -21,6 +21,8 @@ import java.util.Objects;
 /// @param tab tokens used by tabs
 /// @param field tokens used by text input controls
 /// @param textArea tokens used by text area controls
+/// @param form tokens used by form containers
+/// @param validationSummary tokens used by validation summaries
 /// @param menu tokens used by menus
 /// @param search tokens used by search components
 /// @param pickerField tokens used by picker fields
@@ -59,6 +61,8 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.TabTokens tab,
         M3ComponentTokens.FieldTokens field,
         M3ComponentTokens.TextAreaTokens textArea,
+        M3ComponentTokens.FormTokens form,
+        M3ComponentTokens.ValidationSummaryTokens validationSummary,
         M3ComponentTokens.MenuTokens menu,
         M3ComponentTokens.SearchTokens search,
         M3ComponentTokens.PickerFieldTokens pickerField,
@@ -98,6 +102,8 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(tab, "tab");
         Objects.requireNonNull(field, "field");
         Objects.requireNonNull(textArea, "textArea");
+        Objects.requireNonNull(form, "form");
+        Objects.requireNonNull(validationSummary, "validationSummary");
         Objects.requireNonNull(menu, "menu");
         Objects.requireNonNull(search, "search");
         Objects.requireNonNull(pickerField, "pickerField");

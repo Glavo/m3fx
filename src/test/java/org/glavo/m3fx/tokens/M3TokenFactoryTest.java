@@ -128,6 +128,8 @@ final class M3TokenFactoryTest {
         assertEquals(37.0, tokenSet.componentTokens().pickerField().popupShape(), 0.0001);
         assertEquals(47.0, tokenSet.componentTokens().datePicker().dayCellSize(), 0.0001);
         assertEquals(54.0, tokenSet.componentTokens().timePicker().displayCellHeight(), 0.0001);
+        assertEquals(71.0, tokenSet.componentTokens().form().rowMinHeight(), 0.0001);
+        assertEquals(14.0, tokenSet.componentTokens().validationSummary().contentPadding(), 0.0001);
         assertEquals(62.0, tokenSet.componentTokens().bottomAppBar().containerHeight(), 0.0001);
         assertEquals(72.0, tokenSet.componentTokens().navigationRail().containerWidth(), 0.0001);
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 51px"));
@@ -172,6 +174,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-date-picker-container"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-time-picker-container"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-picker-field-popup"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-form-row-text-column"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-sheet .m3-bottom-sheet-drag-handle"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-scrim.m3-scrim"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-wavelength: 41px"));
@@ -235,6 +239,8 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.TabTokens(61.0, 91.0, 15.0, 4.0, 4.0),
                 new M3ComponentTokens.FieldTokens(66.0, 8.0, 18.0),
                 new M3ComponentTokens.TextAreaTokens(67.0, 9.0, 19.0, 20.0),
+                new M3ComponentTokens.FormTokens(1.0, 12.0, 11.0, 3.0, 4.0, 190.0, 25.0, 71.0, 5.0),
+                new M3ComponentTokens.ValidationSummaryTokens(10.0, 14.0, 4.0, 7.0, 9.0, 13.0),
                 new M3ComponentTokens.MenuTokens(7.0, 8.0, 43.0, 6.0, 13.0, 14.0),
                 new M3ComponentTokens.SearchTokens(44.0, 22.0, 15.0, 11.0, 21.0, 9.0, 45.0),
                 new M3ComponentTokens.PickerFieldTokens(46.0, 28.0, 37.0, 18.0, 19.0, 140.0, 7.0, 16.0),

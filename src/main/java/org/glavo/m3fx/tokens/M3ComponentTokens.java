@@ -73,6 +73,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the text area component tokens
     TextAreaTokens textArea();
 
+    /// Returns tokens used by form containers.
+    ///
+    /// @return the form component tokens
+    FormTokens form();
+
+    /// Returns tokens used by validation summaries.
+    ///
+    /// @return the validation summary component tokens
+    ValidationSummaryTokens validationSummary();
+
     /// Returns tokens used by menus.
     ///
     /// @return the menu component tokens
@@ -211,6 +221,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param tab the tab component tokens
     /// @param field the text input component tokens
     /// @param textArea the text area component tokens
+    /// @param form the form component tokens
+    /// @param validationSummary the validation summary component tokens
     /// @param menu the menu component tokens
     /// @param search the search component tokens
     /// @param pickerField the picker field component tokens
@@ -249,6 +261,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             TabTokens tab,
             FieldTokens field,
             TextAreaTokens textArea,
+            FormTokens form,
+            ValidationSummaryTokens validationSummary,
             MenuTokens menu,
             SearchTokens search,
             PickerFieldTokens pickerField,
@@ -287,6 +301,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 tab,
                 field,
                 textArea,
+                form,
+                validationSummary,
                 menu,
                 search,
                 pickerField,
@@ -459,6 +475,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double fieldHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
         double textAreaHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
         double textAreaVerticalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double formRowSpacing = density.apply(expressive ? 20.0 : 16.0);
+        double formSectionContentSpacing = density.apply(expressive ? 16.0 : 12.0);
+        double formSectionHeaderSpacing = density.apply(expressive ? 6.0 : 4.0);
+        double formSectionHeaderBottomPadding = density.apply(expressive ? 6.0 : 4.0);
+        double formRowLabelWidth = density.apply(expressive ? 200.0 : 180.0);
+        double formRowColumnSpacing = density.apply(expressive ? 28.0 : 24.0);
+        double formRowMinHeight = density.apply(expressive ? 72.0 : 64.0);
+        double formRowTextSpacing = density.apply(expressive ? 4.0 : 2.0);
+        double validationSummaryContainerShape = expressive ? shapeTokens.medium() : shapeTokens.small();
+        double validationSummaryContentPadding = density.apply(expressive ? 20.0 : 16.0);
+        double validationSummaryItemsSpacing = density.apply(expressive ? 6.0 : 4.0);
+        double validationSummaryItemShape = expressive ? shapeTokens.small() : shapeTokens.extraSmall();
+        double validationSummaryItemVerticalPadding = density.apply(expressive ? 10.0 : 8.0);
+        double validationSummaryItemHorizontalPadding = density.apply(expressive ? 12.0 : 10.0);
         double selectionTouchTargetSize = density.apply(expressive ? 48.0 : 40.0);
         double sliderTrackThickness = density.apply(expressive ? 6.0 : 4.0);
         double sliderThumbSize = density.apply(expressive ? 24.0 : 20.0);
@@ -496,6 +526,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         shapeTokens.extraSmall(),
                         textAreaHorizontalPadding,
                         textAreaVerticalPadding
+                ),
+                new FormTokens(
+                        0.0,
+                        formRowSpacing,
+                        formSectionContentSpacing,
+                        formSectionHeaderSpacing,
+                        formSectionHeaderBottomPadding,
+                        formRowLabelWidth,
+                        formRowColumnSpacing,
+                        formRowMinHeight,
+                        formRowTextSpacing
+                ),
+                new ValidationSummaryTokens(
+                        validationSummaryContainerShape,
+                        validationSummaryContentPadding,
+                        validationSummaryItemsSpacing,
+                        validationSummaryItemShape,
+                        validationSummaryItemVerticalPadding,
+                        validationSummaryItemHorizontalPadding
                 ),
                 new MenuTokens(
                         shapeTokens.extraSmall(),
@@ -680,6 +729,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, tab());
         append(builder, field());
         append(builder, textArea());
+        append(builder, form());
+        append(builder, validationSummary());
         append(builder, menu());
         append(builder, search());
         append(builder, pickerField());
@@ -752,6 +803,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendOutlinedFieldRule(builder, ".m3-outlined-field", field());
         appendFilledTextAreaRule(builder, ".m3-text-area.m3-filled-field", textArea());
         appendOutlinedTextAreaRule(builder, ".m3-text-area.m3-outlined-field", textArea());
+        appendFormPaneRule(builder, ".m3-form-pane", form());
+        appendFormSectionRule(builder, ".m3-form-section", form());
+        appendFormSectionHeaderRule(builder, ".m3-form-section-header", form());
+        appendFormRowRule(builder, ".m3-form-row", form());
+        appendFormRowTextColumnRule(builder, ".m3-form-row-text-column", form());
+        appendValidationSummaryRule(builder, ".m3-validation-summary", validationSummary());
+        appendValidationSummaryItemsRule(builder, ".m3-validation-summary-items", validationSummary());
+        appendValidationSummaryItemRule(builder, ".m3-validation-summary-item", validationSummary());
         appendMenuRule(builder, ".m3-menu.m3-menu", menu());
         appendMenuItemRule(builder, ".m3-menu .m3-menu-item.m3-menu-item", menu());
         appendSearchBarRule(builder, ".m3-search-bar.m3-search-bar", search());
@@ -920,6 +979,53 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-text-area-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-text-area-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-text-area-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
+    }
+
+    /// Appends form token declarations.
+    private static void append(StringBuilder builder, FormTokens tokens) {
+        M3TokenCss.append(builder, "-m3-form-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        M3TokenCss.append(builder, "-m3-form-row-spacing", M3TokenCss.pixels(tokens.rowSpacing()));
+        M3TokenCss.append(builder, "-m3-form-section-content-spacing", M3TokenCss.pixels(tokens.sectionContentSpacing()));
+        M3TokenCss.append(builder, "-m3-form-section-header-spacing", M3TokenCss.pixels(tokens.sectionHeaderSpacing()));
+        M3TokenCss.append(
+                builder,
+                "-m3-form-section-header-bottom-padding",
+                M3TokenCss.pixels(tokens.sectionHeaderBottomPadding())
+        );
+        M3TokenCss.append(builder, "-m3-form-row-label-width", M3TokenCss.pixels(tokens.rowLabelWidth()));
+        M3TokenCss.append(builder, "-m3-form-row-column-spacing", M3TokenCss.pixels(tokens.rowColumnSpacing()));
+        M3TokenCss.append(builder, "-m3-form-row-min-height", M3TokenCss.pixels(tokens.rowMinHeight()));
+        M3TokenCss.append(builder, "-m3-form-row-text-spacing", M3TokenCss.pixels(tokens.rowTextSpacing()));
+    }
+
+    /// Appends validation summary token declarations.
+    private static void append(StringBuilder builder, ValidationSummaryTokens tokens) {
+        M3TokenCss.append(
+                builder,
+                "-m3-validation-summary-container-shape",
+                M3TokenCss.pixels(tokens.containerShape())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-validation-summary-content-padding",
+                M3TokenCss.pixels(tokens.contentPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-validation-summary-items-spacing",
+                M3TokenCss.pixels(tokens.itemsSpacing())
+        );
+        M3TokenCss.append(builder, "-m3-validation-summary-item-shape", M3TokenCss.pixels(tokens.itemShape()));
+        M3TokenCss.append(
+                builder,
+                "-m3-validation-summary-item-vertical-padding",
+                M3TokenCss.pixels(tokens.itemVerticalPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-validation-summary-item-horizontal-padding",
+                M3TokenCss.pixels(tokens.itemHorizontalPadding())
+        );
     }
 
     /// Appends menu token declarations.
@@ -1429,6 +1535,88 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, selector);
         appendDeclaration(builder, "-fx-background-radius", radius);
         appendDeclaration(builder, "-fx-border-radius", radius);
+        endRule(builder);
+    }
+
+    /// Appends a form pane token CSS rule.
+    private static void appendFormPaneRule(StringBuilder builder, String selector, FormTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        appendDeclaration(builder, "-m3-row-spacing", M3TokenCss.pixels(tokens.rowSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a form section token CSS rule.
+    private static void appendFormSectionRule(StringBuilder builder, String selector, FormTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.sectionContentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a form section header token CSS rule.
+    private static void appendFormSectionHeaderRule(StringBuilder builder, String selector, FormTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.sectionHeaderSpacing()));
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 0 " + M3TokenCss.pixels(tokens.sectionHeaderBottomPadding()) + " 0"
+        );
+        endRule(builder);
+    }
+
+    /// Appends a form row token CSS rule.
+    private static void appendFormRowRule(StringBuilder builder, String selector, FormTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-label-width", M3TokenCss.pixels(tokens.rowLabelWidth()));
+        appendDeclaration(builder, "-m3-column-spacing", M3TokenCss.pixels(tokens.rowColumnSpacing()));
+        appendDeclaration(builder, "-m3-row-min-height", M3TokenCss.pixels(tokens.rowMinHeight()));
+        endRule(builder);
+    }
+
+    /// Appends a form row text column token CSS rule.
+    private static void appendFormRowTextColumnRule(StringBuilder builder, String selector, FormTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.rowTextSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a validation summary token CSS rule.
+    private static void appendValidationSummaryRule(
+            StringBuilder builder,
+            String selector,
+            ValidationSummaryTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a validation summary item container token CSS rule.
+    private static void appendValidationSummaryItemsRule(
+            StringBuilder builder,
+            String selector,
+            ValidationSummaryTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemsSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a validation summary item token CSS rule.
+    private static void appendValidationSummaryItemRule(
+            StringBuilder builder,
+            String selector,
+            ValidationSummaryTokens tokens
+    ) {
+        String shape = M3TokenCss.pixels(tokens.itemShape());
+        String verticalPadding = M3TokenCss.pixels(tokens.itemVerticalPadding());
+        String horizontalPadding = M3TokenCss.pixels(tokens.itemHorizontalPadding());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", shape);
+        appendDeclaration(builder, "-fx-border-radius", shape);
+        appendDeclaration(builder, "-fx-padding", verticalPadding + " " + horizontalPadding);
         endRule(builder);
     }
 
@@ -2318,6 +2506,71 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(verticalPadding, "verticalPadding");
+        }
+    }
+
+    /// Component tokens for form containers.
+    ///
+    /// @param contentPadding the uniform padding around top-level form content
+    /// @param rowSpacing the vertical spacing between top-level form rows and sections
+    /// @param sectionContentSpacing the vertical spacing between section content nodes
+    /// @param sectionHeaderSpacing the vertical spacing between section title and supporting text
+    /// @param sectionHeaderBottomPadding the bottom padding below a section header
+    /// @param rowLabelWidth the width reserved for form row labels
+    /// @param rowColumnSpacing the horizontal spacing between row label, content, and trailing regions
+    /// @param rowMinHeight the minimum height of each form row
+    /// @param rowTextSpacing the vertical spacing between row label and supporting text
+    @NotNullByDefault
+    record FormTokens(
+            double contentPadding,
+            double rowSpacing,
+            double sectionContentSpacing,
+            double sectionHeaderSpacing,
+            double sectionHeaderBottomPadding,
+            double rowLabelWidth,
+            double rowColumnSpacing,
+            double rowMinHeight,
+            double rowTextSpacing
+    ) {
+        /// Validates form tokens.
+        public FormTokens {
+            validateNonNegative(contentPadding, "contentPadding");
+            validateNonNegative(rowSpacing, "rowSpacing");
+            validateNonNegative(sectionContentSpacing, "sectionContentSpacing");
+            validateNonNegative(sectionHeaderSpacing, "sectionHeaderSpacing");
+            validateNonNegative(sectionHeaderBottomPadding, "sectionHeaderBottomPadding");
+            validateNonNegative(rowLabelWidth, "rowLabelWidth");
+            validateNonNegative(rowColumnSpacing, "rowColumnSpacing");
+            validateNonNegative(rowMinHeight, "rowMinHeight");
+            validateNonNegative(rowTextSpacing, "rowTextSpacing");
+        }
+    }
+
+    /// Component tokens for validation summaries.
+    ///
+    /// @param containerShape the summary container corner radius
+    /// @param contentPadding the uniform summary content padding
+    /// @param itemsSpacing the vertical spacing between invalid item rows
+    /// @param itemShape the invalid item state container corner radius
+    /// @param itemVerticalPadding the vertical padding inside each invalid item
+    /// @param itemHorizontalPadding the horizontal padding inside each invalid item
+    @NotNullByDefault
+    record ValidationSummaryTokens(
+            double containerShape,
+            double contentPadding,
+            double itemsSpacing,
+            double itemShape,
+            double itemVerticalPadding,
+            double itemHorizontalPadding
+    ) {
+        /// Validates validation summary tokens.
+        public ValidationSummaryTokens {
+            validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(contentPadding, "contentPadding");
+            validateNonNegative(itemsSpacing, "itemsSpacing");
+            validateNonNegative(itemShape, "itemShape");
+            validateNonNegative(itemVerticalPadding, "itemVerticalPadding");
+            validateNonNegative(itemHorizontalPadding, "itemHorizontalPadding");
         }
     }
 

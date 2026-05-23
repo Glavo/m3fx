@@ -64,6 +64,7 @@ final class M3FormControlsTest {
             form.addItem(second);
             form.setContentPadding(20.0);
             form.setRowSpacing(10.0);
+            form.setStyle("-m3-content-padding: 20px; -m3-row-spacing: 10px;");
 
             applyCss(form);
 
@@ -86,6 +87,7 @@ final class M3FormControlsTest {
             M3FormRow row = new M3FormRow("Field", new Label("Value"));
             M3FormSection section = new M3FormSection("Account", "Profile fields", row);
             section.setContentSpacing(18.0);
+            section.setStyle("-m3-content-spacing: 18px;");
 
             applyCss(section);
 
@@ -116,6 +118,7 @@ final class M3FormControlsTest {
             row.setLabelWidth(144.0);
             row.setColumnSpacing(12.0);
             row.setRowMinHeight(72.0);
+            row.setStyle("-m3-label-width: 144px; -m3-column-spacing: 12px; -m3-row-min-height: 72px;");
 
             applyCss(row);
 
