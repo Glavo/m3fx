@@ -244,6 +244,76 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
+    /// Verifies that animated progress indicators visibly advance between real rendered frames.
+    @Test
+    void progressDemoAnimationsProduceDistinctFrames() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> pageReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> firstFrameReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> secondFrameReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+                M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                app.showPageForTesting("Progress");
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                pageReference.set(Objects.requireNonNull(firstVisibleNodeWithStyle(
+                        scene.getRoot(),
+                        "demo-page"
+                ), "demo page"));
+            }, () -> {
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                firstFrameReference.set(snapshot(scene));
+                writeAnimationSnapshot(
+                        Objects.requireNonNull(firstFrameReference.get(), "first progress frame"),
+                        "progress",
+                        "frame-a"
+                );
+            });
+
+            runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+            }, () -> {
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                secondFrameReference.set(snapshot(scene));
+                writeAnimationSnapshot(
+                        Objects.requireNonNull(secondFrameReference.get(), "second progress frame"),
+                        "progress",
+                        "frame-b"
+                );
+            });
+
+            assertNodeAreaChanged(
+                    Objects.requireNonNull(pageReference.get(), "progress page"),
+                    Objects.requireNonNull(firstFrameReference.get(), "first progress frame"),
+                    Objects.requireNonNull(secondFrameReference.get(), "second progress frame"),
+                    "progress animation frames"
+            );
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies hover and pressed feedback on a regular demo button.
     private static void verifyButtonMouseFeedback(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -658,6 +728,16 @@ final class M3FXDemoVisualSmokeTest {
                 "reports",
                 "m3fx-demo-visual",
                 "interaction-" + targetName + "-" + stateName + ".png"
+        ));
+    }
+
+    /// Writes a named animation-frame visual snapshot to the build report directory.
+    private static void writeAnimationSnapshot(WritableImage image, String targetName, String stateName) {
+        writeVisualSnapshot(image, Path.of(
+                "build",
+                "reports",
+                "m3fx-demo-visual",
+                "animation-" + targetName + "-" + stateName + ".png"
         ));
     }
 
