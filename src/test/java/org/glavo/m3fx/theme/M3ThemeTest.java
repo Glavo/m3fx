@@ -178,9 +178,18 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 88px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 112px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 384px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-bar-horizontal-padding: 12px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-item-spacing: 12px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-padding: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-group-child-item-horizontal-padding: 40px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height: 64px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-horizontal-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-content-spacing: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-height: 56px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-horizontal-padding: 20px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
+        assertTrue(theme.toControlStyleRules().contains("-m3-content-spacing: 6px"));
+        assertTrue(theme.toControlStyleRules().contains("-m3-horizontal-padding: 40px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
@@ -196,6 +205,10 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().navigationRail());
         assertNotNull(theme.tokens().componentTokens().navigationDrawer());
         assertNotNull(theme.tokens().componentTokens().listItem());
+        assertEquals(12.0, theme.tokens().componentTokens().navigationBar().horizontalPadding(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().navigationRail().verticalPadding(), 0.0001);
+        assertEquals(40.0, theme.tokens().componentTokens().navigationDrawer().groupChildItemHorizontalPadding(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().listItem().horizontalPadding(), 0.0001);
     }
 
     /// Verifies that convenience theme factories use the expected defaults.
@@ -540,7 +553,7 @@ final class M3ThemeTest {
         assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(64.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(56.0, listSectionHeader.prefHeight(-1.0), 0.0001);
-        assertEquals(16.0, listSectionHeader.getPadding().getLeft(), 0.0001);
+        assertEquals(20.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
@@ -628,11 +641,11 @@ final class M3ThemeTest {
         assertEquals(80.0, listItem.getTwoLineHeight(), 0.0001);
         assertEquals(96.0, listItem.getThreeLineHeight(), 0.0001);
         assertEquals(10.0, listItem.getContainerShape(), 0.0001);
-        assertEquals(16.0, listItem.getHorizontalPadding(), 0.0001);
-        assertEquals(8.0, listItem.getVerticalPadding(), 0.0001);
-        assertEquals(16.0, listItem.getContentSpacing(), 0.0001);
+        assertEquals(20.0, listItem.getHorizontalPadding(), 0.0001);
+        assertEquals(10.0, listItem.getVerticalPadding(), 0.0001);
+        assertEquals(20.0, listItem.getContentSpacing(), 0.0001);
         assertEquals(56.0, sectionHeader.prefHeight(-1.0), 0.0001);
-        assertEquals(16.0, sectionHeader.getPadding().getLeft(), 0.0001);
+        assertEquals(20.0, sectionHeader.getPadding().getLeft(), 0.0001);
     }
 
     /// Verifies that generated component stylesheets apply container tokens.

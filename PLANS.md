@@ -17,6 +17,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
 - M3 Expressive currently has profile-specific color, typography, shape, component sizing, semantic motion scheme tokens, and motion behavior timings.
 - M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens.
+- M3 Expressive navigation and list components use profile-specific spacing, padding, and selected-container shape tokens.
 - Theme installation marks roots with profile and brightness style classes so applications and demo pages can branch CSS for baseline, expressive, light, and dark modes without replacing the theme API.
 
 ## Architecture
@@ -60,6 +61,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.
 - JavaFX scroll panes styled through `M3ScrollPanes` and virtualized list view flows support smooth wheel, focus, and programmatic scrolling that resolve the active motion scheme and animation settings, including horizontal-only content such as carousel viewports.
 - Progress component tokens include wavy linear and circular amplitude, wavelength, track gap, and linear stop indicator metrics; applications can override them per control through CSS.
+- Navigation bar, navigation rail, navigation drawer, and list item component tokens include Expressive-specific content spacing, item spacing, and content padding.
 
 ### Component Coverage
 

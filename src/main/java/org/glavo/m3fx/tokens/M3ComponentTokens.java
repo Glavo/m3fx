@@ -325,6 +325,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double listSectionHeaderHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
         double progressLinearWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 3.0 : 0.0);
         double progressCircularWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 2.0 : 0.0);
+        boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
+        double navigationContentSpacing = density.apply(expressive ? 6.0 : 4.0);
+        double navigationHorizontalPadding = density.apply(expressive ? 12.0 : 8.0);
+        double navigationRailVerticalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double navigationRailHorizontalPadding = density.apply(expressive ? 12.0 : 8.0);
+        double navigationRailItemSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double navigationDrawerContainerPadding = density.apply(expressive ? 16.0 : 12.0);
+        double navigationDrawerItemHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double navigationDrawerItemContentSpacing = density.apply(expressive ? 16.0 : 12.0);
+        double navigationDrawerItemSpacing = density.apply(expressive ? 6.0 : 4.0);
+        double navigationDrawerGroupChildPadding = density.apply(expressive ? 40.0 : 32.0);
+        double listItemHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double listItemVerticalPadding = density.apply(expressive ? 10.0 : 8.0);
+        double listItemContentSpacing = density.apply(expressive ? 20.0 : 16.0);
+        double listSectionHeaderHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
 
         return create(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
@@ -390,8 +405,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         navigationIndicatorWidth,
                         navigationIndicatorHeight,
                         shapeTokens.full(),
-                        4.0,
-                        8.0
+                        navigationContentSpacing,
+                        navigationHorizontalPadding
                 ),
                 new NavigationRailTokens(
                         navigationRailWidth,
@@ -400,36 +415,36 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         navigationRailIndicatorWidth,
                         navigationIndicatorHeight,
                         shapeTokens.full(),
-                        4.0,
-                        16.0,
-                        8.0,
-                        8.0
+                        navigationContentSpacing,
+                        navigationRailVerticalPadding,
+                        navigationRailHorizontalPadding,
+                        navigationRailItemSpacing
                 ),
                 new NavigationDrawerTokens(
                         navigationDrawerWidth,
                         navigationDrawerOneLineItemHeight,
                         navigationDrawerTwoLineItemHeight,
                         navigationDrawerThreeLineItemHeight,
-                        profile == M3Profile.EXPRESSIVE_2025 ? shapeTokens.large() : shapeTokens.full(),
-                        12.0,
-                        16.0,
+                        expressive ? shapeTokens.large() : shapeTokens.full(),
+                        navigationDrawerContainerPadding,
+                        navigationDrawerItemHorizontalPadding,
                         0.0,
-                        12.0,
-                        4.0,
+                        navigationDrawerItemContentSpacing,
+                        navigationDrawerItemSpacing,
                         navigationDrawerOneLineItemHeight,
                         shapeTokens.full(),
-                        32.0
+                        navigationDrawerGroupChildPadding
                 ),
                 new ListItemTokens(
                         listItemOneLineHeight,
                         listItemTwoLineHeight,
                         listItemThreeLineHeight,
-                        profile == M3Profile.EXPRESSIVE_2025 ? shapeTokens.small() : 0.0,
-                        16.0,
-                        8.0,
-                        16.0,
+                        expressive ? shapeTokens.small() : 0.0,
+                        listItemHorizontalPadding,
+                        listItemVerticalPadding,
+                        listItemContentSpacing,
                         listSectionHeaderHeight,
-                        16.0
+                        listSectionHeaderHorizontalPadding
                 )
         );
     }

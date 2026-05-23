@@ -12517,6 +12517,11 @@ final class M3ControlStyleTest {
                     navigationRailItem,
                     new M3NavigationItem("Search", new M3Icon("S"))
             );
+            M3ListItem drawerItem = new M3ListItem("Inbox");
+            drawerItem.setLeadingIcon("I");
+            drawerItem.setSelected(true);
+            M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(drawerItem);
+            navigationDrawer.setPrefHeight(120.0);
             M3TopAppBar topAppBar = new M3TopAppBar(
                     "Expressive app bar",
                     new M3IconButton(new M3Icon("<")),
@@ -12549,6 +12554,7 @@ final class M3ControlStyleTest {
                             avatar,
                             navigationBar,
                             navigationRail,
+                            navigationDrawer,
                             topAppBar
                     )
             );
@@ -12583,8 +12589,15 @@ final class M3ControlStyleTest {
             assertEquals(88.0, navigationBar.getPrefHeight(), 0.0001);
             assertEquals(96.0, navigationBarItem.getItemWidth(), 0.0001);
             assertEquals(72.0, navigationBarItem.getIndicatorWidth(), 0.0001);
+            assertEquals(6.0, navigationBarItem.getContentSpacing(), 0.0001);
             assertEquals(112.0, navigationRail.getPrefWidth(), 0.0001);
             assertEquals(96.0, navigationRailItem.getItemWidth(), 0.0001);
+            assertEquals(6.0, navigationRailItem.getContentSpacing(), 0.0001);
+            assertEquals(384.0, navigationDrawer.getPrefWidth(), 0.0001);
+            assertEquals(64.0, drawerItem.getOneLineHeight(), 0.0001);
+            assertEquals(24.0, drawerItem.getContainerShape(), 0.0001);
+            assertEquals(20.0, drawerItem.getHorizontalPadding(), 0.0001);
+            assertEquals(16.0, drawerItem.getContentSpacing(), 0.0001);
             assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
@@ -12594,6 +12607,7 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, navigationBar, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, navigationRail, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, navigationDrawer, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, topAppBar, Color.WHITE, 0.04);
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
