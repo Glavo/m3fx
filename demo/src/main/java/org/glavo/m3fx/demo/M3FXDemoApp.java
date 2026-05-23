@@ -564,6 +564,15 @@ public final class M3FXDemoApp extends Application {
         return scene;
     }
 
+    /// Applies a demo theme mode directly for visual tests.
+    void setThemeModeForTesting(M3Profile profile, Brightness brightness) {
+        this.profile = Objects.requireNonNull(profile, "profile");
+        this.brightness = Objects.requireNonNull(brightness, "brightness");
+        applyTheme();
+        applyMotionSettings();
+        refreshCurrentPage();
+    }
+
     /// Expands the collapsible sidebar group containing the requested page.
     private void expandSidebarGroupForPage(DemoPage page) {
         for (SidebarGroup group : sidebarGroups) {

@@ -31,6 +31,9 @@ import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3TextField;
+import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -59,6 +62,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Visual smoke tests for the demo application's real JavaFX window hierarchy.
 @NotNullByDefault
 final class M3FXDemoVisualSmokeTest {
+    /// Representative pages rendered under the dark expressive theme combination.
+    private static final @Unmodifiable List<String> DARK_EXPRESSIVE_VISUAL_PAGES = List.of(
+            "Buttons",
+            "Button Groups",
+            "Text Fields",
+            "Date Pickers",
+            "Progress",
+            "Menus",
+            "Navigation Drawer"
+    );
+
     /// Demo pages that are sensitive to right-to-left mirroring in real window layouts.
     private static final @Unmodifiable List<String> RTL_VISUAL_PAGES = List.of(
             "Button Groups",
@@ -134,6 +148,68 @@ final class M3FXDemoVisualSmokeTest {
                             "reports",
                             "m3fx-demo-visual",
                             "demo-" + snapshotFileName(pageTitle) + ".png"
+                    ));
+                    assertSnapshotHasVisibleContent(image, pageTitle);
+                    assertVisibleTextInsideScene(scene, pageTitle);
+                    assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
+                });
+            }
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that representative demo pages stay readable under the dark expressive theme combination.
+    @Test
+    void darkExpressiveDemoPagesRenderWithoutClippedTextOrOffCenterFixedTargets() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1366.0);
+            stage.setHeight(900.0);
+            app.setThemeModeForTesting(M3Profile.EXPRESSIVE_2025, Brightness.DARK);
+
+            Scene scene = Objects.requireNonNull(app.sceneForTesting(), "scene");
+            assertNotNull(scene);
+            assertTrue(app.demoPageTitlesForTesting().containsAll(DARK_EXPRESSIVE_VISUAL_PAGES));
+            assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+            assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(scene);
+        });
+
+        try {
+            for (String pageTitle : DARK_EXPRESSIVE_VISUAL_PAGES) {
+                runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+                    M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                    app.showPageForTesting(pageTitle);
+                    scene.getRoot().applyCss();
+                    scene.getRoot().layout();
+                }, () -> {
+                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                    assertCurrentPageTitle(scene, pageTitle);
+                    assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                    assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+
+                    WritableImage image = snapshot(scene);
+                    writeVisualSnapshot(image, Path.of(
+                            "build",
+                            "reports",
+                            "m3fx-demo-visual",
+                            "demo-dark-expressive-" + snapshotFileName(pageTitle) + ".png"
                     ));
                     assertSnapshotHasVisibleContent(image, pageTitle);
                     assertVisibleTextInsideScene(scene, pageTitle);
