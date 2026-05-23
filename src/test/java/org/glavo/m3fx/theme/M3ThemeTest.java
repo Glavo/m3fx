@@ -15,6 +15,7 @@ import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
+import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
@@ -33,6 +34,7 @@ import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SideSheet;
+import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3Text;
@@ -180,7 +182,12 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-container-height: 56px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-horizontal-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-active-indicator-height: 4px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-field-horizontal-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-text-area-vertical-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-selection-touch-target-size: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness: 6px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-thumb-size: 24px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 56px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-horizontal-padding: 18px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-padding: 10px"));
@@ -241,6 +248,12 @@ final class M3ThemeTest {
         assertEquals(20.0, theme.tokens().componentTokens().tab().horizontalPadding(), 0.0001);
         assertEquals(4.0, theme.tokens().componentTokens().tab().activeIndicatorHeight(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().chip().horizontalPadding(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().field().horizontalPadding(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().textArea().verticalPadding(), 0.0001);
+        assertEquals(48.0, theme.tokens().componentTokens().selection().touchTargetSize(), 0.0001);
+        assertEquals(6.0, theme.tokens().componentTokens().slider().trackThickness(), 0.0001);
+        assertEquals(24.0, theme.tokens().componentTokens().slider().thumbSize(), 0.0001);
+        assertEquals(56.0, theme.tokens().componentTokens().slider().touchTargetSize(), 0.0001);
         assertEquals(12.0, theme.tokens().componentTokens().navigationBar().horizontalPadding(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().navigationRail().verticalPadding(), 0.0001);
         assertEquals(40.0, theme.tokens().componentTokens().navigationDrawer().groupChildItemHorizontalPadding(), 0.0001);
@@ -554,6 +567,8 @@ final class M3ThemeTest {
         M3Button button = new M3Button("Button");
         M3TextField textField = new M3TextField();
         M3TextArea textArea = new M3TextArea();
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
         M3Menu menu = new M3Menu(new M3MenuItem("Open"));
         M3SearchBar searchBar = new M3SearchBar();
         M3SearchView searchView = new M3SearchView();
@@ -578,6 +593,8 @@ final class M3ThemeTest {
                 button,
                 textField,
                 textArea,
+                checkBox,
+                slider,
                 menu,
                 searchBar,
                 searchView,
@@ -611,7 +628,14 @@ final class M3ThemeTest {
         assertEquals(48.0, button.getContainerHeight(), 0.0001);
         assertEquals(28.0, button.getHorizontalPadding(), 0.0001);
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(20.0, textField.getHorizontalPadding(), 0.0001);
         assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
+        assertEquals(20.0, textArea.getHorizontalPadding(), 0.0001);
+        assertEquals(20.0, textArea.getVerticalPadding(), 0.0001);
+        assertEquals(48.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(6.0, slider.getTrackThickness(), 0.0001);
+        assertEquals(24.0, slider.getThumbSize(), 0.0001);
+        assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
         assertEquals(56.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
         assertEquals(16.0, ((M3MenuItem) menu.getItems().get(0)).getHorizontalPadding(), 0.0001);
@@ -661,7 +685,14 @@ final class M3ThemeTest {
         assertEquals(40.0, button.getContainerHeight(), 0.0001);
         assertEquals(24.0, button.getHorizontalPadding(), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(16.0, textField.getHorizontalPadding(), 0.0001);
         assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
+        assertEquals(16.0, textArea.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, textArea.getVerticalPadding(), 0.0001);
+        assertEquals(40.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(4.0, slider.getTrackThickness(), 0.0001);
+        assertEquals(20.0, slider.getThumbSize(), 0.0001);
+        assertEquals(48.0, slider.getTouchTargetSize(), 0.0001);
         assertEquals(48.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(56.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);

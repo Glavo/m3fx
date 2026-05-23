@@ -12584,6 +12584,10 @@ final class M3ControlStyleTest {
             M3TextArea textArea = M3TextArea.withVariant("Multiline\ntext", M3TextInputVariant.FILLED);
             textArea.setPrefSize(300.0, 128.0);
             M3Chip filterChip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
+            M3CheckBox checkBox = new M3CheckBox("Check");
+            checkBox.setSelected(true);
+            M3Slider slider = new M3Slider(0.0, 100.0, 54.0);
+            slider.setPrefWidth(220.0);
             M3MenuItem menuOpen = new M3MenuItem("Open");
             M3MenuItem menuSave = new M3MenuItem("Save");
             M3Menu menu = new M3Menu(menuOpen, menuSave);
@@ -12641,6 +12645,8 @@ final class M3ControlStyleTest {
                             textField,
                             textArea,
                             filterChip,
+                            checkBox,
+                            slider,
                             menu,
                             searchBar,
                             searchView,
@@ -12686,9 +12692,16 @@ final class M3ControlStyleTest {
             assertEquals(20.0, selectedTab.getHorizontalPadding(), 0.0001);
             assertEquals(4.0, selectedTab.getActiveIndicatorHeight(), 0.0001);
             assertEquals(64.0, textField.getContainerHeight(), 0.0001);
+            assertEquals(20.0, textField.getHorizontalPadding(), 0.0001);
             assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
+            assertEquals(20.0, textArea.getHorizontalPadding(), 0.0001);
+            assertEquals(20.0, textArea.getVerticalPadding(), 0.0001);
             assertEquals(36.0, filterChip.getContainerHeight(), 0.0001);
             assertEquals(18.0, filterChip.getHorizontalPadding(), 0.0001);
+            assertEquals(48.0, checkBox.getTouchTargetSize(), 0.0001);
+            assertEquals(6.0, slider.getTrackThickness(), 0.0001);
+            assertEquals(24.0, slider.getThumbSize(), 0.0001);
+            assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
             assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
             assertEquals(56.0, menuOpen.getOneLineHeight(), 0.0001);
             assertEquals(16.0, menuOpen.getHorizontalPadding(), 0.0001);
@@ -12737,6 +12750,8 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, filledButton, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, toggleGroup, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, menu, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, checkBox, Color.WHITE, 0.08);
+            assertSnapshotNodeContainsContrast(image, slider, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, searchView, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, card, Color.WHITE, 0.04);

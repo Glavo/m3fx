@@ -370,6 +370,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double tabActiveIndicatorHeight = density.apply(expressive ? 4.0 : 3.0);
         double tabActiveIndicatorShape = density.apply(expressive ? 4.0 : 3.0);
         double chipHorizontalPadding = density.apply(expressive ? 18.0 : 16.0);
+        double fieldHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double textAreaHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double textAreaVerticalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double selectionTouchTargetSize = density.apply(expressive ? 48.0 : 40.0);
+        double sliderTrackThickness = density.apply(expressive ? 6.0 : 4.0);
+        double sliderThumbSize = density.apply(expressive ? 24.0 : 20.0);
+        double sliderTouchTargetSize = density.apply(expressive ? 56.0 : 48.0);
 
         return create(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
@@ -397,8 +404,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         tabActiveIndicatorHeight,
                         tabActiveIndicatorShape
                 ),
-                new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
-                new TextAreaTokens(textAreaHeight, shapeTokens.extraSmall(), 16.0, 16.0),
+                new FieldTokens(fieldHeight, shapeTokens.extraSmall(), fieldHorizontalPadding),
+                new TextAreaTokens(
+                        textAreaHeight,
+                        shapeTokens.extraSmall(),
+                        textAreaHorizontalPadding,
+                        textAreaVerticalPadding
+                ),
                 new MenuTokens(
                         shapeTokens.extraSmall(),
                         menuContainerPadding,
@@ -427,8 +439,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         sheetDragHandleHeight
                 ),
                 new ScrimTokens(0.32),
-                new SelectionTokens(density.apply(40.0), shapeTokens.full()),
-                new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
+                new SelectionTokens(selectionTouchTargetSize, shapeTokens.full()),
+                new SliderTokens(sliderTrackThickness, shapeTokens.full(), sliderThumbSize, sliderTouchTargetSize),
                 new ChipTokens(chipHeight, shapeTokens.small(), chipHorizontalPadding),
                 new ProgressTokens(
                         density.apply(4.0),
