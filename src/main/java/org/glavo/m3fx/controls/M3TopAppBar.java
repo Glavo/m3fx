@@ -252,16 +252,7 @@ public class M3TopAppBar extends Control {
 
     /// Updates variant-dependent control sizing.
     private void updateVariantMetrics() {
-        M3TopAppBarVariant currentVariant = getVariant();
-        if (currentVariant == M3TopAppBarVariant.MEDIUM) {
-            setMinHeight(112.0);
-            setPrefHeight(112.0);
-        } else if (currentVariant == M3TopAppBarVariant.LARGE) {
-            setMinHeight(152.0);
-            setPrefHeight(152.0);
-        } else {
-            setMinHeight(Region.USE_COMPUTED_SIZE);
-            setPrefHeight(Region.USE_COMPUTED_SIZE);
-        }
+        setMinHeight(Region.USE_COMPUTED_SIZE);
+        setPrefHeight(Region.USE_COMPUTED_SIZE);
     }
 }

@@ -307,6 +307,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double badgeLargeMinWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
         double avatarSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
         double topAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
+        double topAppBarMediumHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 120.0 : 112.0);
+        double topAppBarLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 160.0 : 152.0);
         double bottomAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
         double navigationBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
         double navigationItemWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
@@ -360,6 +362,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double appBarHorizontalPadding = density.apply(expressive ? 24.0 : 16.0);
         double appBarContentSpacing = density.apply(expressive ? 20.0 : 16.0);
         double appBarActionSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double topAppBarMediumBottomPadding = density.apply(expressive ? 24.0 : 20.0);
+        double topAppBarLargeBottomPadding = density.apply(expressive ? 32.0 : 28.0);
         double buttonHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
         double textButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
         double fabSmallHorizontalPadding = density.apply(expressive ? 14.0 : 12.0);
@@ -460,7 +464,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new DividerTokens(1.0, 0.0, 0.0),
                 new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeMinWidth, badgeLargeHeight / 2.0, 4.0),
                 new AvatarTokens(avatarSize, shapeTokens.full()),
-                new TopAppBarTokens(topAppBarHeight, appBarHorizontalPadding, appBarContentSpacing, appBarActionSpacing),
+                new TopAppBarTokens(
+                        topAppBarHeight,
+                        topAppBarMediumHeight,
+                        topAppBarLargeHeight,
+                        appBarHorizontalPadding,
+                        topAppBarMediumBottomPadding,
+                        topAppBarLargeBottomPadding,
+                        appBarContentSpacing,
+                        appBarActionSpacing
+                ),
                 new BottomAppBarTokens(bottomAppBarHeight, appBarHorizontalPadding, appBarContentSpacing, appBarActionSpacing),
                 new NavigationBarTokens(
                         navigationBarHeight,
@@ -628,6 +641,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendBadgeRule(builder, ".m3-badge", badge());
         appendAvatarRule(builder, ".m3-avatar.m3-avatar", avatar());
         appendTopAppBarRule(builder, ".m3-top-app-bar", topAppBar());
+        appendTopAppBarVariantRule(
+                builder,
+                ".m3-top-app-bar-medium",
+                topAppBar().mediumContainerHeight(),
+                topAppBar().mediumBottomPadding(),
+                topAppBar()
+        );
+        appendTopAppBarVariantRule(
+                builder,
+                ".m3-top-app-bar-large",
+                topAppBar().largeContainerHeight(),
+                topAppBar().largeBottomPadding(),
+                topAppBar()
+        );
         appendTopAppBarActionsRule(builder, ".m3-top-app-bar-actions", topAppBar());
         appendBottomAppBarRule(builder, ".m3-bottom-app-bar", bottomAppBar());
         appendBottomAppBarActionsRule(builder, ".m3-bottom-app-bar-actions", bottomAppBar());
@@ -819,7 +846,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends top app bar token declarations.
     private static void append(StringBuilder builder, TopAppBarTokens tokens) {
         M3TokenCss.append(builder, "-m3-top-app-bar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-medium-container-height", M3TokenCss.pixels(tokens.mediumContainerHeight()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-large-container-height", M3TokenCss.pixels(tokens.largeContainerHeight()));
         M3TokenCss.append(builder, "-m3-top-app-bar-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-medium-bottom-padding", M3TokenCss.pixels(tokens.mediumBottomPadding()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-large-bottom-padding", M3TokenCss.pixels(tokens.largeBottomPadding()));
         M3TokenCss.append(builder, "-m3-top-app-bar-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         M3TokenCss.append(builder, "-m3-top-app-bar-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
     }
@@ -1395,6 +1426,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a top app bar variant token CSS rule.
+    private static void appendTopAppBarVariantRule(
+            StringBuilder builder,
+            String selector,
+            double containerHeight,
+            double bottomPadding,
+            TopAppBarTokens tokens
+    ) {
+        String horizontalPadding = M3TokenCss.pixels(tokens.horizontalPadding());
+        String padding = "0 " + horizontalPadding + " " + M3TokenCss.pixels(bottomPadding) + " " + horizontalPadding;
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(containerHeight));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(containerHeight));
+        appendDeclaration(builder, "-fx-padding", padding);
         endRule(builder);
     }
 
@@ -2015,21 +2063,33 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by top app bars.
     ///
-    /// @param containerHeight the top app bar container height
+    /// @param containerHeight the small top app bar container height
+    /// @param mediumContainerHeight the medium top app bar container height
+    /// @param largeContainerHeight the large top app bar container height
     /// @param horizontalPadding the horizontal content padding
+    /// @param mediumBottomPadding the medium top app bar bottom content padding
+    /// @param largeBottomPadding the large top app bar bottom content padding
     /// @param contentSpacing the spacing between leading, title, and trailing regions
     /// @param actionSpacing the spacing between trailing action nodes
     @NotNullByDefault
     record TopAppBarTokens(
             double containerHeight,
+            double mediumContainerHeight,
+            double largeContainerHeight,
             double horizontalPadding,
+            double mediumBottomPadding,
+            double largeBottomPadding,
             double contentSpacing,
             double actionSpacing
     ) {
         /// Creates top app bar tokens.
         public TopAppBarTokens {
             validateNonNegative(containerHeight, "containerHeight");
+            validateNonNegative(mediumContainerHeight, "mediumContainerHeight");
+            validateNonNegative(largeContainerHeight, "largeContainerHeight");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(mediumBottomPadding, "mediumBottomPadding");
+            validateNonNegative(largeBottomPadding, "largeBottomPadding");
             validateNonNegative(contentSpacing, "contentSpacing");
             validateNonNegative(actionSpacing, "actionSpacing");
         }

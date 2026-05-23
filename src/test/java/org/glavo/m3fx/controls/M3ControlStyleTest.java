@@ -8882,14 +8882,14 @@ final class M3ControlStyleTest {
         assertEquals(M3TopAppBarVariant.MEDIUM, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass()));
-        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
 
         assertEquals(M3TopAppBarVariant.LARGE, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE.getStyleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
-        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
 
         topAppBar.variantProperty().set(null);
 
@@ -8914,6 +8914,16 @@ final class M3ControlStyleTest {
         assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
         HBox actions = assertInstanceOf(HBox.class, topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
         assertEquals(8.0, actions.getSpacing(), 0.0001);
+        topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
+        root.applyCss();
+        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(20.0, topAppBar.getPadding().getBottom(), 0.0001);
+        topAppBar.setVariant(M3TopAppBarVariant.LARGE);
+        root.applyCss();
+        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(28.0, topAppBar.getPadding().getBottom(), 0.0001);
+        topAppBar.setVariant(M3TopAppBarVariant.SMALL);
+        root.applyCss();
 
         M3ThemeManager.install(scene, M3Theme.fromSeed(
                 Color.web("#006a6a"),
@@ -8925,6 +8935,14 @@ final class M3ControlStyleTest {
         assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
         assertEquals(24.0, topAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(12.0, actions.getSpacing(), 0.0001);
+        topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
+        root.applyCss();
+        assertEquals(120.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(24.0, topAppBar.getPadding().getBottom(), 0.0001);
+        topAppBar.setVariant(M3TopAppBarVariant.LARGE);
+        root.applyCss();
+        assertEquals(160.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(32.0, topAppBar.getPadding().getBottom(), 0.0001);
     }
 
     /// Verifies that top app bar icon buttons do not clip fallback glyphs.
@@ -12628,6 +12646,13 @@ final class M3ControlStyleTest {
                     new M3IconButton(new M3Icon("A"))
             );
             topAppBar.setPrefWidth(560.0);
+            M3TopAppBar mediumTopAppBar = new M3TopAppBar(
+                    "Medium expressive app bar",
+                    M3TopAppBarVariant.MEDIUM,
+                    new M3IconButton(new M3Icon("<")),
+                    new M3IconButton(new M3Icon("A"))
+            );
+            mediumTopAppBar.setPrefWidth(560.0);
 
             VBox root = new VBox(
                     18.0,
@@ -12661,6 +12686,7 @@ final class M3ControlStyleTest {
                             navigationRail,
                             navigationDrawer,
                             topAppBar,
+                            mediumTopAppBar,
                             sideSheet,
                             bottomSheet
                     )
@@ -12744,6 +12770,8 @@ final class M3ControlStyleTest {
             assertEquals(20.0, drawerItem.getHorizontalPadding(), 0.0001);
             assertEquals(16.0, drawerItem.getContentSpacing(), 0.0001);
             assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
+            assertEquals(120.0, mediumTopAppBar.getPrefHeight(), 0.0001);
+            assertEquals(24.0, mediumTopAppBar.getPadding().getBottom(), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotHasColorVariety(image, 18);
@@ -12762,6 +12790,7 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, navigationRail, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, navigationDrawer, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, topAppBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, mediumTopAppBar, Color.WHITE, 0.04);
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
                     "reports",
