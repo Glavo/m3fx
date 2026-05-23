@@ -35,6 +35,9 @@ public class M3Banner extends Control {
     /// The base style class for M3FX banners.
     public static final String STYLE_CLASS = "m3-banner";
 
+    /// The internal content container style class.
+    public static final String CONTAINER_STYLE_CLASS = "m3-banner-container";
+
     /// The leading icon slot style class.
     public static final String ICON_STYLE_CLASS = "m3-banner-icon";
 

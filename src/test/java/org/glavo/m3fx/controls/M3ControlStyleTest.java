@@ -1215,6 +1215,36 @@ final class M3ControlStyleTest {
         assertThrows(NullPointerException.class, () -> M3Banner.withIcon("Message", null));
     }
 
+    /// Verifies that banner component tokens apply profile-specific layout metrics.
+    @Test
+    void bannerAppliesProfileMetrics() {
+        M3Banner banner = M3Banner.withIcon("Message", new Label("i"), new M3Button("Action"));
+        Pane root = new Pane(banner);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+
+        assertEquals(88.0, banner.getMinHeight(), 0.0001);
+        assertEquals(20.0, banner.getPadding().getTop(), 0.0001);
+        assertEquals(28.0, banner.getPadding().getLeft(), 0.0001);
+        assertEquals(20.0, assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.CONTAINER_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(12.0, assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertEquals(80.0, banner.getMinHeight(), 0.0001);
+        assertEquals(16.0, banner.getPadding().getTop(), 0.0001);
+        assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.CONTAINER_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(8.0, assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+    }
+
     /// Verifies that snackbars expose action constructors and programmatic action firing.
     @Test
     void snackbarActionConstructorsAndFireAction() {
@@ -2874,6 +2904,80 @@ final class M3ControlStyleTest {
         assertThrows(NullPointerException.class, () -> tooltip.setTitle(null));
         assertThrows(NullPointerException.class, () -> tooltip.setSupportingText(null));
         assertThrows(NullPointerException.class, () -> tooltip.addAction(null));
+    }
+
+    /// Verifies that tooltip component tokens apply profile-specific popup metrics.
+    @Test
+    void tooltipAppliesProfileMetrics() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+
+        Platform.runLater(() -> {
+            Stage stage = new Stage();
+            M3Tooltip plainTooltip = new M3Tooltip("Details");
+            M3RichTooltip richTooltip = new M3RichTooltip("Title", "Supporting text", new M3Button("Action"));
+            try {
+                Label owner = new Label("Owner");
+                StackPane ownerRoot = new StackPane(owner);
+                Scene scene = new Scene(ownerRoot, 320.0, 160.0);
+                M3Theme expressiveTheme = M3Theme.fromSeed(
+                        Color.web("#006a6a"),
+                        M3Profile.EXPRESSIVE_2025,
+                        Brightness.LIGHT
+                );
+                M3ThemeManager.install(scene, expressiveTheme);
+                stage.setScene(scene);
+                stage.show();
+
+                plainTooltip.setTheme(expressiveTheme);
+                plainTooltip.show(owner, stage.getX() + 24.0, stage.getY() + 48.0);
+                plainTooltip.getScene().getRoot().applyCss();
+                Region plainRoot = assertInstanceOf(Region.class, plainTooltip.getSkin().getNode());
+                assertEquals(8.0, plainRoot.getPadding().getTop(), 0.0001);
+                assertEquals(12.0, plainRoot.getPadding().getLeft(), 0.0001);
+                assertEquals(
+                        10.0,
+                        plainRoot.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(),
+                        0.0001
+                );
+
+                richTooltip.setTheme(expressiveTheme);
+                richTooltip.show(owner, stage.getX() + 24.0, stage.getY() + 88.0);
+                richTooltip.getScene().getRoot().applyCss();
+                Parent richRoot = assertInstanceOf(Parent.class, richTooltip.getSkin().getNode());
+                VBox richContainer = assertInstanceOf(
+                        VBox.class,
+                        richRoot.lookup("." + M3RichTooltip.CONTAINER_STYLE_CLASS)
+                );
+                assertEquals(16.0, richContainer.getPadding().getTop(), 0.0001);
+                assertEquals(20.0, richContainer.getPadding().getLeft(), 0.0001);
+                assertEquals(12.0, richContainer.getSpacing(), 0.0001);
+                assertEquals(360.0, richContainer.getPrefWidth(), 0.0001);
+                assertEquals(
+                        16.0,
+                        richContainer.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(),
+                        0.0001
+                );
+                HBox actions = assertInstanceOf(HBox.class, richContainer.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS));
+                M3Button actionButton = assertInstanceOf(M3Button.class, richTooltip.getActions().get(0));
+                assertEquals(12.0, actions.getSpacing(), 0.0001);
+                assertEquals(36.0, actionButton.getContainerHeight(), 0.0001);
+                assertEquals(16.0, actionButton.getHorizontalPadding(), 0.0001);
+            } catch (Throwable throwable) {
+                failure.set(throwable);
+            } finally {
+                plainTooltip.hide();
+                richTooltip.hide();
+                stage.close();
+                latch.countDown();
+            }
+        });
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Throwable throwable = failure.get();
+        if (throwable != null) {
+            throw new AssertionError(throwable);
+        }
     }
 
     /// Verifies that rich tooltips install on nodes and expose combined accessible help.

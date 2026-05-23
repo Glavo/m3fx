@@ -3,7 +3,11 @@
     -fx-border-color: transparent transparent -m3-color-outline-variant transparent;
     -fx-border-width: 0 0 1px 0;
     -fx-min-height: 80px;
-    -fx-padding: 16px 24px 16px 24px;
+    -fx-padding: 16px 24px;
+}
+
+.m3-banner-container {
+    -fx-spacing: 16px;
 }
 
 .m3-banner-icon {

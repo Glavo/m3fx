@@ -32,6 +32,8 @@ import java.util.Objects;
 /// @param card tokens used by cards
 /// @param dialog tokens used by dialogs
 /// @param snackbar tokens used by snackbar controls
+/// @param banner tokens used by banners
+/// @param tooltip tokens used by tooltips
 /// @param divider tokens used by dividers
 /// @param badge tokens used by badges
 /// @param avatar tokens used by avatars
@@ -65,6 +67,8 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.CardTokens card,
         M3ComponentTokens.DialogTokens dialog,
         M3ComponentTokens.SnackbarTokens snackbar,
+        M3ComponentTokens.BannerTokens banner,
+        M3ComponentTokens.TooltipTokens tooltip,
         M3ComponentTokens.DividerTokens divider,
         M3ComponentTokens.BadgeTokens badge,
         M3ComponentTokens.AvatarTokens avatar,
@@ -99,6 +103,8 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(card, "card");
         Objects.requireNonNull(dialog, "dialog");
         Objects.requireNonNull(snackbar, "snackbar");
+        Objects.requireNonNull(banner, "banner");
+        Objects.requireNonNull(tooltip, "tooltip");
         Objects.requireNonNull(divider, "divider");
         Objects.requireNonNull(badge, "badge");
         Objects.requireNonNull(avatar, "avatar");

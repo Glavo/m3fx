@@ -69,7 +69,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Text input, text area, selection, and slider component tokens include Expressive-specific padding and interaction geometry.
 - Navigation bar, navigation rail, navigation drawer, and list item component tokens include Expressive-specific content spacing, item spacing, and content padding.
 - Menu, search, and sheet component tokens include Expressive-specific container padding, item spacing, result padding, sheet padding, and drag-handle metrics.
-- Card, dialog, snackbar, top app bar, and bottom app bar component tokens include Expressive-specific shape, padding, height, action spacing, and top app bar variant metrics.
+- Card, dialog, snackbar, banner, tooltip, top app bar, and bottom app bar component tokens include Expressive-specific shape, padding, height, action spacing, popup sizing, and top app bar variant metrics.
 
 ### Component Coverage
 

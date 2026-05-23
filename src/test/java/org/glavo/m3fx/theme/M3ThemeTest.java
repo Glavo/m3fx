@@ -11,6 +11,7 @@ import javafx.scene.paint.Color;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Badge;
+import org.glavo.m3fx.controls.M3Banner;
 import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
@@ -203,6 +204,10 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-content-padding: 28px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-container-shape: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-content-padding: 18px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-banner-container-min-height: 88px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-banner-horizontal-padding: 28px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-plain-container-shape: 10px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-rich-pref-width: 360px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 8px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 72px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-medium-container-height: 120px"));
@@ -274,6 +279,10 @@ final class M3ThemeTest {
         assertEquals(28.0, theme.tokens().componentTokens().dialog().contentPadding(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().snackbar().containerShape(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().snackbar().contentPadding(), 0.0001);
+        assertEquals(88.0, theme.tokens().componentTokens().banner().containerMinHeight(), 0.0001);
+        assertEquals(28.0, theme.tokens().componentTokens().banner().horizontalPadding(), 0.0001);
+        assertEquals(10.0, theme.tokens().componentTokens().tooltip().plainContainerShape(), 0.0001);
+        assertEquals(360.0, theme.tokens().componentTokens().tooltip().richPreferredWidth(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().topAppBar().horizontalPadding(), 0.0001);
         assertEquals(120.0, theme.tokens().componentTokens().topAppBar().mediumContainerHeight(), 0.0001);
         assertEquals(160.0, theme.tokens().componentTokens().topAppBar().largeContainerHeight(), 0.0001);
@@ -588,6 +597,7 @@ final class M3ThemeTest {
         M3Card card = new M3Card();
         M3DialogPane dialogPane = new M3DialogPane();
         M3Snackbar snackbar = new M3Snackbar("Saved");
+        M3Banner banner = new M3Banner("Message");
         M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
         M3BottomAppBar bottomAppBar = new M3BottomAppBar();
         M3Scrim scrim = new M3Scrim();
@@ -613,6 +623,7 @@ final class M3ThemeTest {
                 card,
                 dialogPane,
                 snackbar,
+                banner,
                 topAppBar,
                 bottomAppBar,
                 scrim,
@@ -669,6 +680,8 @@ final class M3ThemeTest {
         assertEquals(28.0, dialogPane.getPadding().getTop(), 0.0001);
         assertEquals(16.0, snackbar.getContainerShape(), 0.0001);
         assertEquals(18.0, snackbar.getContentPadding(), 0.0001);
+        assertEquals(88.0, banner.getMinHeight(), 0.0001);
+        assertEquals(28.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
         assertEquals(24.0, topAppBar.getPadding().getLeft(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
@@ -725,6 +738,8 @@ final class M3ThemeTest {
         assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
         assertEquals(4.0, snackbar.getContainerShape(), 0.0001);
         assertEquals(16.0, snackbar.getContentPadding(), 0.0001);
+        assertEquals(80.0, banner.getMinHeight(), 0.0001);
+        assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
         assertEquals(16.0, topAppBar.getPadding().getLeft(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);

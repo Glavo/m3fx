@@ -128,6 +128,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the snackbar component tokens
     SnackbarTokens snackbar();
 
+    /// Returns tokens used by banner controls.
+    ///
+    /// @return the banner component tokens
+    BannerTokens banner();
+
+    /// Returns tokens used by tooltip controls.
+    ///
+    /// @return the tooltip component tokens
+    TooltipTokens tooltip();
+
     /// Returns tokens used by dividers.
     ///
     /// @return the divider component tokens
@@ -197,6 +207,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param card the card component tokens
     /// @param dialog the dialog component tokens
     /// @param snackbar the snackbar component tokens
+    /// @param banner the banner component tokens
+    /// @param tooltip the tooltip component tokens
     /// @param divider the divider component tokens
     /// @param badge the badge component tokens
     /// @param avatar the avatar component tokens
@@ -230,6 +242,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             CardTokens card,
             DialogTokens dialog,
             SnackbarTokens snackbar,
+            BannerTokens banner,
+            TooltipTokens tooltip,
             DividerTokens divider,
             BadgeTokens badge,
             AvatarTokens avatar,
@@ -263,6 +277,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 card,
                 dialog,
                 snackbar,
+                banner,
+                tooltip,
                 divider,
                 badge,
                 avatar,
@@ -359,6 +375,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double dialogContentPadding = density.apply(expressive ? 28.0 : 24.0);
         double snackbarContainerShape = expressive ? shapeTokens.medium() : shapeTokens.extraSmall();
         double snackbarContentPadding = density.apply(expressive ? 18.0 : 16.0);
+        double bannerMinHeight = density.apply(expressive ? 88.0 : 80.0);
+        double bannerVerticalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double bannerHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
+        double bannerContentSpacing = density.apply(expressive ? 20.0 : 16.0);
+        double bannerActionSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double tooltipPlainContainerShape = expressive ? shapeTokens.small() : shapeTokens.extraSmall();
+        double tooltipPlainVerticalPadding = density.apply(expressive ? 8.0 : 6.0);
+        double tooltipPlainHorizontalPadding = density.apply(expressive ? 12.0 : 8.0);
+        double tooltipRichContainerShape = expressive ? shapeTokens.medium() : shapeTokens.small();
+        double tooltipRichTopPadding = density.apply(expressive ? 16.0 : 12.0);
+        double tooltipRichHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double tooltipRichBottomPadding = density.apply(expressive ? 12.0 : 8.0);
+        double tooltipRichContentSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double tooltipRichPreferredWidth = density.apply(expressive ? 360.0 : 320.0);
+        double tooltipRichActionSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double tooltipRichActionButtonHeight = density.apply(expressive ? 36.0 : 32.0);
+        double tooltipRichActionButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
         double appBarHorizontalPadding = density.apply(expressive ? 24.0 : 16.0);
         double appBarContentSpacing = density.apply(expressive ? 20.0 : 16.0);
         double appBarActionSpacing = density.apply(expressive ? 12.0 : 8.0);
@@ -461,6 +494,27 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new CardTokens(cardContainerShape, cardContentPadding, 1.0),
                 new DialogTokens(shapeTokens.extraLarge(), dialogContentPadding),
                 new SnackbarTokens(snackbarContainerShape, snackbarContentPadding),
+                new BannerTokens(
+                        bannerMinHeight,
+                        bannerVerticalPadding,
+                        bannerHorizontalPadding,
+                        bannerContentSpacing,
+                        bannerActionSpacing
+                ),
+                new TooltipTokens(
+                        tooltipPlainContainerShape,
+                        tooltipPlainVerticalPadding,
+                        tooltipPlainHorizontalPadding,
+                        tooltipRichContainerShape,
+                        tooltipRichTopPadding,
+                        tooltipRichHorizontalPadding,
+                        tooltipRichBottomPadding,
+                        tooltipRichContentSpacing,
+                        tooltipRichPreferredWidth,
+                        tooltipRichActionSpacing,
+                        tooltipRichActionButtonHeight,
+                        tooltipRichActionButtonHorizontalPadding
+                ),
                 new DividerTokens(1.0, 0.0, 0.0),
                 new BadgeTokens(badgeSmallSize, badgeLargeHeight, badgeLargeMinWidth, badgeLargeHeight / 2.0, 4.0),
                 new AvatarTokens(avatarSize, shapeTokens.full()),
@@ -552,6 +606,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, card());
         append(builder, dialog());
         append(builder, snackbar());
+        append(builder, banner());
+        append(builder, tooltip());
         append(builder, divider());
         append(builder, badge());
         append(builder, avatar());
@@ -637,6 +693,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendCardRule(builder, ".m3-card", card());
         appendDialogRule(builder, ".m3-dialog-pane", dialog());
         appendSnackbarRule(builder, ".m3-snackbar", snackbar());
+        appendBannerRule(builder, ".m3-banner", banner());
+        appendBannerContentRule(builder, ".m3-banner-container", banner());
+        appendBannerActionsRule(builder, ".m3-banner-actions", banner());
+        appendTooltipRule(builder, ".m3-tooltip", tooltip());
+        appendRichTooltipRule(builder, ".m3-rich-tooltip-container", tooltip());
+        appendRichTooltipActionsRule(builder, ".m3-rich-tooltip-actions", tooltip());
+        appendRichTooltipActionButtonRule(builder, ".m3-rich-tooltip-actions .m3-button", tooltip());
         appendDividerRule(builder, ".m3-divider", divider());
         appendBadgeRule(builder, ".m3-badge", badge());
         appendAvatarRule(builder, ".m3-avatar.m3-avatar", avatar());
@@ -819,6 +882,39 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void append(StringBuilder builder, SnackbarTokens tokens) {
         M3TokenCss.append(builder, "-m3-snackbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-snackbar-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+    }
+
+    /// Appends banner token declarations.
+    private static void append(StringBuilder builder, BannerTokens tokens) {
+        M3TokenCss.append(builder, "-m3-banner-container-min-height", M3TokenCss.pixels(tokens.containerMinHeight()));
+        M3TokenCss.append(builder, "-m3-banner-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
+        M3TokenCss.append(builder, "-m3-banner-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-banner-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        M3TokenCss.append(builder, "-m3-banner-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+    }
+
+    /// Appends tooltip token declarations.
+    private static void append(StringBuilder builder, TooltipTokens tokens) {
+        M3TokenCss.append(builder, "-m3-tooltip-plain-container-shape", M3TokenCss.pixels(tokens.plainContainerShape()));
+        M3TokenCss.append(builder, "-m3-tooltip-plain-vertical-padding", M3TokenCss.pixels(tokens.plainVerticalPadding()));
+        M3TokenCss.append(builder, "-m3-tooltip-plain-horizontal-padding", M3TokenCss.pixels(tokens.plainHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-tooltip-rich-container-shape", M3TokenCss.pixels(tokens.richContainerShape()));
+        M3TokenCss.append(builder, "-m3-tooltip-rich-top-padding", M3TokenCss.pixels(tokens.richTopPadding()));
+        M3TokenCss.append(builder, "-m3-tooltip-rich-horizontal-padding", M3TokenCss.pixels(tokens.richHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-tooltip-rich-bottom-padding", M3TokenCss.pixels(tokens.richBottomPadding()));
+        M3TokenCss.append(builder, "-m3-tooltip-rich-content-spacing", M3TokenCss.pixels(tokens.richContentSpacing()));
+        M3TokenCss.append(builder, "-m3-tooltip-rich-pref-width", M3TokenCss.pixels(tokens.richPreferredWidth()));
+        M3TokenCss.append(builder, "-m3-tooltip-rich-action-spacing", M3TokenCss.pixels(tokens.richActionSpacing()));
+        M3TokenCss.append(
+                builder,
+                "-m3-tooltip-rich-action-button-container-height",
+                M3TokenCss.pixels(tokens.richActionButtonHeight())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-tooltip-rich-action-button-horizontal-padding",
+                M3TokenCss.pixels(tokens.richActionButtonHorizontalPadding())
+        );
     }
 
     /// Appends divider token declarations.
@@ -1387,6 +1483,77 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, selector);
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a banner token CSS rule.
+    private static void appendBannerRule(StringBuilder builder, String selector, BannerTokens tokens) {
+        String horizontalPadding = M3TokenCss.pixels(tokens.horizontalPadding());
+        String verticalPadding = M3TokenCss.pixels(tokens.verticalPadding());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerMinHeight()));
+        appendDeclaration(builder, "-fx-padding", verticalPadding + " " + horizontalPadding);
+        endRule(builder);
+    }
+
+    /// Appends a banner content container token CSS rule.
+    private static void appendBannerContentRule(StringBuilder builder, String selector, BannerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a banner action container token CSS rule.
+    private static void appendBannerActionsRule(StringBuilder builder, String selector, BannerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a plain tooltip token CSS rule.
+    private static void appendTooltipRule(StringBuilder builder, String selector, TooltipTokens tokens) {
+        String verticalPadding = M3TokenCss.pixels(tokens.plainVerticalPadding());
+        String horizontalPadding = M3TokenCss.pixels(tokens.plainHorizontalPadding());
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.plainContainerShape()));
+        appendDeclaration(builder, "-fx-padding", verticalPadding + " " + horizontalPadding);
+        endRule(builder);
+    }
+
+    /// Appends a rich tooltip container token CSS rule.
+    private static void appendRichTooltipRule(StringBuilder builder, String selector, TooltipTokens tokens) {
+        String horizontalPadding = M3TokenCss.pixels(tokens.richHorizontalPadding());
+        String padding = M3TokenCss.pixels(tokens.richTopPadding())
+                + " "
+                + horizontalPadding
+                + " "
+                + M3TokenCss.pixels(tokens.richBottomPadding())
+                + " "
+                + horizontalPadding;
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.richContainerShape()));
+        appendDeclaration(builder, "-fx-padding", padding);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.richContentSpacing()));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.richPreferredWidth()));
+        endRule(builder);
+    }
+
+    /// Appends a rich tooltip actions token CSS rule.
+    private static void appendRichTooltipActionsRule(StringBuilder builder, String selector, TooltipTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.richActionSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a rich tooltip action button token CSS rule.
+    private static void appendRichTooltipActionButtonRule(StringBuilder builder, String selector, TooltipTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.richActionButtonHeight()));
+        appendDeclaration(
+                builder,
+                "-m3-horizontal-padding",
+                M3TokenCss.pixels(tokens.richActionButtonHorizontalPadding())
+        );
         endRule(builder);
     }
 
@@ -1998,6 +2165,77 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         public SnackbarTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(contentPadding, "contentPadding");
+        }
+    }
+
+    /// Tokens used by banners.
+    ///
+    /// @param containerMinHeight the minimum banner container height
+    /// @param verticalPadding the vertical banner content padding
+    /// @param horizontalPadding the horizontal banner content padding
+    /// @param contentSpacing the spacing between icon, message, and actions
+    /// @param actionSpacing the spacing between action nodes
+    @NotNullByDefault
+    record BannerTokens(
+            double containerMinHeight,
+            double verticalPadding,
+            double horizontalPadding,
+            double contentSpacing,
+            double actionSpacing
+    ) {
+        /// Creates banner tokens.
+        public BannerTokens {
+            validateNonNegative(containerMinHeight, "containerMinHeight");
+            validateNonNegative(verticalPadding, "verticalPadding");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(contentSpacing, "contentSpacing");
+            validateNonNegative(actionSpacing, "actionSpacing");
+        }
+    }
+
+    /// Tokens used by plain and rich tooltips.
+    ///
+    /// @param plainContainerShape the plain tooltip container radius
+    /// @param plainVerticalPadding the plain tooltip vertical content padding
+    /// @param plainHorizontalPadding the plain tooltip horizontal content padding
+    /// @param richContainerShape the rich tooltip container radius
+    /// @param richTopPadding the rich tooltip top content padding
+    /// @param richHorizontalPadding the rich tooltip horizontal content padding
+    /// @param richBottomPadding the rich tooltip bottom content padding
+    /// @param richContentSpacing the spacing between rich tooltip content rows
+    /// @param richPreferredWidth the rich tooltip preferred content width
+    /// @param richActionSpacing the spacing between rich tooltip action nodes
+    /// @param richActionButtonHeight the rich tooltip action button container height
+    /// @param richActionButtonHorizontalPadding the rich tooltip action button horizontal padding
+    @NotNullByDefault
+    record TooltipTokens(
+            double plainContainerShape,
+            double plainVerticalPadding,
+            double plainHorizontalPadding,
+            double richContainerShape,
+            double richTopPadding,
+            double richHorizontalPadding,
+            double richBottomPadding,
+            double richContentSpacing,
+            double richPreferredWidth,
+            double richActionSpacing,
+            double richActionButtonHeight,
+            double richActionButtonHorizontalPadding
+    ) {
+        /// Creates tooltip tokens.
+        public TooltipTokens {
+            validateNonNegative(plainContainerShape, "plainContainerShape");
+            validateNonNegative(plainVerticalPadding, "plainVerticalPadding");
+            validateNonNegative(plainHorizontalPadding, "plainHorizontalPadding");
+            validateNonNegative(richContainerShape, "richContainerShape");
+            validateNonNegative(richTopPadding, "richTopPadding");
+            validateNonNegative(richHorizontalPadding, "richHorizontalPadding");
+            validateNonNegative(richBottomPadding, "richBottomPadding");
+            validateNonNegative(richContentSpacing, "richContentSpacing");
+            validateNonNegative(richPreferredWidth, "richPreferredWidth");
+            validateNonNegative(richActionSpacing, "richActionSpacing");
+            validateNonNegative(richActionButtonHeight, "richActionButtonHeight");
+            validateNonNegative(richActionButtonHorizontalPadding, "richActionButtonHorizontalPadding");
         }
     }
 

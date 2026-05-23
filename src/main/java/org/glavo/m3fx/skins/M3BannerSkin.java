@@ -20,14 +20,8 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3Banner].
 @NotNullByDefault
 public final class M3BannerSkin extends SkinBase<M3Banner> {
-    /// The spacing between banner content slots.
-    private static final double CONTENT_SPACING = 16.0;
-
-    /// The spacing between trailing action nodes.
-    private static final double ACTION_SPACING = 8.0;
-
     /// The internal horizontal container.
-    private final HBox container = new HBox(CONTENT_SPACING);
+    private final HBox container = new HBox();
 
     /// The slot that hosts the optional leading icon.
     private final StackPane iconSlot = new StackPane();
@@ -36,7 +30,7 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
     private final Label textLabel = new Label();
 
     /// The trailing action node container.
-    private final HBox actions = new HBox(ACTION_SPACING);
+    private final HBox actions = new HBox();
 
     /// Updates the visual action list when public actions change.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
@@ -51,6 +45,7 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         super(control);
         container.setManaged(false);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        container.getStyleClass().add(M3Banner.CONTAINER_STYLE_CLASS);
         iconSlot.getStyleClass().add(M3Banner.ICON_STYLE_CLASS);
         textLabel.getStyleClass().add(M3Banner.TEXT_STYLE_CLASS);
         actions.getStyleClass().add(M3Banner.ACTIONS_STYLE_CLASS);

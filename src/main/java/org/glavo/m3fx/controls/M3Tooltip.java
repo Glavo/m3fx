@@ -29,6 +29,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -491,7 +492,11 @@ public class M3Tooltip extends PopupControl {
             baseStyle = getStyle();
         }
         M3ThemeManager.applyThemeStyleClasses(this, theme);
-        setStyle(mergeStyles(baseStyle, theme.toRootStyleDeclarations()));
+        String themeStyle = theme.toRootStyleDeclarations();
+        if (usesPlainContainerStyle()) {
+            themeStyle = mergeStyles(themeStyle, plainContainerStyle(theme.tokens().componentTokens().tooltip()));
+        }
+        setStyle(mergeStyles(baseStyle, themeStyle));
     }
 
     /// Merges existing tooltip style declarations with generated theme declarations.
@@ -500,6 +505,30 @@ public class M3Tooltip extends PopupControl {
             return themeStyle;
         }
         return baseStyle.stripTrailing() + " " + themeStyle;
+    }
+
+    /// Returns whether the tooltip root should receive plain tooltip container metrics.
+    protected boolean usesPlainContainerStyle() {
+        return true;
+    }
+
+    /// Creates inline CSS for plain tooltip container metrics.
+    private static String plainContainerStyle(M3ComponentTokens.TooltipTokens tokens) {
+        return "-fx-background-radius: "
+                + pixels(tokens.plainContainerShape())
+                + "; -fx-padding: "
+                + pixels(tokens.plainVerticalPadding())
+                + " "
+                + pixels(tokens.plainHorizontalPadding())
+                + ";";
+    }
+
+    /// Formats a CSS pixel value.
+    private static String pixels(double value) {
+        if (Math.rint(value) == value) {
+            return Long.toString((long) value) + "px";
+        }
+        return Double.toString(value) + "px";
     }
 
     /// Installs a listener that keeps inherited tooltip themes in sync with the target node scene.
