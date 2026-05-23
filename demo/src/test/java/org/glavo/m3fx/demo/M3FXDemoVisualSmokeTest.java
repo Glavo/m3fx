@@ -5,6 +5,8 @@ package org.glavo.m3fx.demo;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.css.PseudoClass;
+import javafx.event.EventType;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
@@ -18,10 +20,9 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
-import javafx.css.PseudoClass;
-import javafx.event.EventType;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
@@ -232,6 +233,7 @@ final class M3FXDemoVisualSmokeTest {
             verifyButtonMouseFeedback(appReference, sceneReference);
             verifyTextFieldFocusFeedback(appReference, sceneReference);
             verifySidebarMouseFeedback(appReference, sceneReference);
+            verifyDisabledAnimationInteractionFeedback(appReference, sceneReference);
         } finally {
             runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -265,12 +267,22 @@ final class M3FXDemoVisualSmokeTest {
             ), "button");
             targetReference.set(target);
             normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal button snapshot"),
+                    "button",
+                    "normal"
+            );
             applyPseudoState(target, "hover");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             hoverReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(hoverReference.get(), "hover button snapshot"),
+                    "button",
+                    "hover"
+            );
             Node target = Objects.requireNonNull(targetReference.get(), "button");
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
             scene.getRoot().applyCss();
@@ -281,6 +293,11 @@ final class M3FXDemoVisualSmokeTest {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             pressedReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed button snapshot"),
+                    "button",
+                    "pressed"
+            );
             Node target = Objects.requireNonNull(targetReference.get(), "button");
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
             clearPseudoState(target, "hover");
@@ -322,12 +339,22 @@ final class M3FXDemoVisualSmokeTest {
             ), "text field");
             targetReference.set(target);
             normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal text field snapshot"),
+                    "text-field",
+                    "normal"
+            );
             target.requestFocus();
             scene.getRoot().applyCss();
             scene.getRoot().layout();
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             focusedReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(focusedReference.get(), "focused text field snapshot"),
+                    "text-field",
+                    "focused"
+            );
         });
 
         assertNodeAreaChanged(
@@ -361,12 +388,22 @@ final class M3FXDemoVisualSmokeTest {
             ), "sidebar item");
             targetReference.set(target);
             normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal sidebar snapshot"),
+                    "sidebar",
+                    "normal"
+            );
             applyPseudoState(target, "hover");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             hoverReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(hoverReference.get(), "hover sidebar snapshot"),
+                    "sidebar",
+                    "hover"
+            );
             Node target = Objects.requireNonNull(targetReference.get(), "sidebar item");
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
             scene.getRoot().applyCss();
@@ -377,6 +414,11 @@ final class M3FXDemoVisualSmokeTest {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             pressedReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed sidebar snapshot"),
+                    "sidebar",
+                    "pressed"
+            );
             Node target = Objects.requireNonNull(targetReference.get(), "sidebar item");
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
             clearPseudoState(target, "hover");
@@ -393,6 +435,48 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(hoverReference.get(), "hover sidebar snapshot"),
                 Objects.requireNonNull(pressedReference.get(), "pressed sidebar snapshot"),
                 "sidebar pressed"
+        );
+    }
+
+    /// Verifies that disabled animations still apply interaction states immediately.
+    private static void verifyDisabledAnimationInteractionFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(80.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3MotionSettings.setAnimationsEnabled(scene.getRoot(), false);
+            app.showPageForTesting("Buttons");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            Node target = Objects.requireNonNull(firstVisibleButtonWithText(
+                    scene.getRoot(),
+                    "Filled"
+            ), "button");
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            applyPseudoState(target, "hover");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            hoverReference.set(snapshot(scene));
+            M3MotionSettings.clearAnimationsEnabled(scene.getRoot());
+            Node target = Objects.requireNonNull(targetReference.get(), "button");
+            clearPseudoState(target, "hover");
+        });
+
+        assertNodeAreaChanged(
+                Objects.requireNonNull(targetReference.get(), "button"),
+                Objects.requireNonNull(normalReference.get(), "normal no-motion button snapshot"),
+                Objects.requireNonNull(hoverReference.get(), "hover no-motion button snapshot"),
+                "button hover with animations disabled"
         );
     }
 
@@ -565,6 +649,16 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(finalChangedPixels >= minimumChangedPixels,
                 () -> description + " produced too little visual change: changed="
                         + finalChangedPixels + ", minimum=" + minimumChangedPixels + ", bounds=" + bounds);
+    }
+
+    /// Writes a named interaction-state visual snapshot to the build report directory.
+    private static void writeInteractionSnapshot(WritableImage image, String targetName, String stateName) {
+        writeVisualSnapshot(image, Path.of(
+                "build",
+                "reports",
+                "m3fx-demo-visual",
+                "interaction-" + targetName + "-" + stateName + ".png"
+        ));
     }
 
     /// Clamps a floating point coordinate to a valid snapshot pixel coordinate.
