@@ -23,6 +23,9 @@ import java.util.Objects;
 /// @param textArea tokens used by text area controls
 /// @param menu tokens used by menus
 /// @param search tokens used by search components
+/// @param pickerField tokens used by picker fields
+/// @param datePicker tokens used by date pickers
+/// @param timePicker tokens used by time pickers
 /// @param sheet tokens used by sheet containers
 /// @param scrim tokens used by scrims
 /// @param selection tokens used by selection controls
@@ -58,6 +61,9 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.TextAreaTokens textArea,
         M3ComponentTokens.MenuTokens menu,
         M3ComponentTokens.SearchTokens search,
+        M3ComponentTokens.PickerFieldTokens pickerField,
+        M3ComponentTokens.DatePickerTokens datePicker,
+        M3ComponentTokens.TimePickerTokens timePicker,
         M3ComponentTokens.SheetTokens sheet,
         M3ComponentTokens.ScrimTokens scrim,
         M3ComponentTokens.SelectionTokens selection,
@@ -94,6 +100,9 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(textArea, "textArea");
         Objects.requireNonNull(menu, "menu");
         Objects.requireNonNull(search, "search");
+        Objects.requireNonNull(pickerField, "pickerField");
+        Objects.requireNonNull(datePicker, "datePicker");
+        Objects.requireNonNull(timePicker, "timePicker");
         Objects.requireNonNull(sheet, "sheet");
         Objects.requireNonNull(scrim, "scrim");
         Objects.requireNonNull(selection, "selection");

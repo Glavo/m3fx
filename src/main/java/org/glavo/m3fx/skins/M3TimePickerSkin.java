@@ -16,7 +16,6 @@ import javafx.scene.control.Skin;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -35,15 +34,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
 
     /// The number of columns used by compact 12-item grids.
     private static final int COMPACT_GRID_COLUMNS = 4;
-
-    /// The fixed hour cell width.
-    private static final double HOUR_CELL_WIDTH = 44.0;
-
-    /// The fixed minute cell width.
-    private static final double MINUTE_CELL_WIDTH = 44.0;
-
-    /// The fixed time cell height.
-    private static final double CELL_HEIGHT = 40.0;
 
     /// The root skin container.
     private final VBox container = new VBox();
@@ -295,7 +285,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         if (control.isUse24HourClock()) {
             for (int hour = 0; hour < 24; hour++) {
                 LocalTime candidate = baseTime.withHour(hour);
-                TimeCellButton cell = createCell(formatTwoDigits(hour), HOUR_CELL_WIDTH, M3TimePicker.HOUR_CELL_STYLE_CLASS);
+                TimeCellButton cell = createCell(formatTwoDigits(hour), M3TimePicker.HOUR_CELL_STYLE_CLASS);
                 cell.setUserData(candidate);
                 cell.setAccessibleText(candidate.toString());
                 setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS,
@@ -309,7 +299,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             for (int displayHour = 1; displayHour <= 12; displayHour++) {
                 int actualHour = toActualHour(displayHour, afternoon);
                 LocalTime candidate = baseTime.withHour(actualHour);
-                TimeCellButton cell = createCell(Integer.toString(displayHour), HOUR_CELL_WIDTH, M3TimePicker.HOUR_CELL_STYLE_CLASS);
+                TimeCellButton cell = createCell(Integer.toString(displayHour), M3TimePicker.HOUR_CELL_STYLE_CLASS);
                 cell.setUserData(candidate);
                 cell.setAccessibleText(candidate.toString());
                 setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS,
@@ -328,7 +318,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         int index = 0;
         for (int minute = 0; minute < 60; minute += control.getMinuteStep()) {
             LocalTime candidate = baseTime.withMinute(minute);
-            TimeCellButton cell = createCell(formatTwoDigits(minute), MINUTE_CELL_WIDTH, M3TimePicker.MINUTE_CELL_STYLE_CLASS);
+            TimeCellButton cell = createCell(formatTwoDigits(minute), M3TimePicker.MINUTE_CELL_STYLE_CLASS);
             cell.setUserData(candidate);
             cell.setAccessibleText(candidate.toString());
             setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS,
@@ -350,7 +340,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         }
 
         boolean afternoon = selectedTime == null ? baseTime.getHour() >= 12 : selectedTime.getHour() >= 12;
-        TimeCellButton am = createCell("AM", 92.0, M3TimePicker.PERIOD_CELL_STYLE_CLASS);
+        TimeCellButton am = createCell("AM", M3TimePicker.PERIOD_CELL_STYLE_CLASS);
         am.getStyleClass().add("m3-time-picker-period-start");
         am.setUserData(baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), false)));
         am.setAccessibleText(am.getUserData().toString());
@@ -358,7 +348,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         setStyleClass(am, M3TimePicker.SELECTED_CELL_STYLE_CLASS, !afternoon);
         am.setOnAction(this::handleTimeCellAction);
 
-        TimeCellButton pm = createCell("PM", 92.0, M3TimePicker.PERIOD_CELL_STYLE_CLASS);
+        TimeCellButton pm = createCell("PM", M3TimePicker.PERIOD_CELL_STYLE_CLASS);
         pm.getStyleClass().add("m3-time-picker-period-end");
         pm.setUserData(baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), true)));
         pm.setAccessibleText(pm.getUserData().toString());
@@ -416,12 +406,9 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     }
 
     /// Creates a selectable time cell.
-    private static TimeCellButton createCell(String text, double width, String roleStyleClass) {
+    private static TimeCellButton createCell(String text, String roleStyleClass) {
         TimeCellButton cell = new TimeCellButton(text);
         cell.getStyleClass().add(roleStyleClass);
-        cell.setMinSize(width, CELL_HEIGHT);
-        cell.setPrefSize(width, CELL_HEIGHT);
-        cell.setMaxSize(width, CELL_HEIGHT);
         return cell;
     }
 

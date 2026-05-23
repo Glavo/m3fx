@@ -49,9 +49,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
     /// The number of day cells kept in the reusable grid.
     private static final int DAY_CELL_COUNT = COLUMN_COUNT * ROW_COUNT;
 
-    /// The fixed Material day touch target size.
-    private static final double DAY_CELL_SIZE = 40.0;
-
     /// The root skin container.
     private final VBox container = new VBox();
 
@@ -374,9 +371,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
     private static Label createWeekdayLabel() {
         Label label = new Label();
         label.getStyleClass().add(M3DatePicker.WEEKDAY_LABEL_STYLE_CLASS);
-        label.setMinSize(DAY_CELL_SIZE, Region.USE_PREF_SIZE);
-        label.setPrefWidth(DAY_CELL_SIZE);
-        label.setMaxWidth(DAY_CELL_SIZE);
         label.setAlignment(Pos.CENTER);
         return label;
     }
@@ -417,9 +411,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
             setFocusTraversable(true);
             setMnemonicParsing(false);
             setTextOverrun(OverrunStyle.CLIP);
-            setMinSize(DAY_CELL_SIZE, DAY_CELL_SIZE);
-            setPrefSize(DAY_CELL_SIZE, DAY_CELL_SIZE);
-            setMaxSize(DAY_CELL_SIZE, DAY_CELL_SIZE);
         }
 
         /// Fires this date cell's action handler.

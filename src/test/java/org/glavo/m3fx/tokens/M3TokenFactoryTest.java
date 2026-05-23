@@ -125,6 +125,9 @@ final class M3TokenFactoryTest {
         assertEquals(13.0, tokenSet.componentTokens().topAppBar().largeBottomPadding(), 0.0001);
         assertEquals(70.0, tokenSet.componentTokens().banner().containerMinHeight(), 0.0001);
         assertEquals(6.0, tokenSet.componentTokens().tooltip().richContainerShape(), 0.0001);
+        assertEquals(37.0, tokenSet.componentTokens().pickerField().popupShape(), 0.0001);
+        assertEquals(47.0, tokenSet.componentTokens().datePicker().dayCellSize(), 0.0001);
+        assertEquals(54.0, tokenSet.componentTokens().timePicker().displayCellHeight(), 0.0001);
         assertEquals(62.0, tokenSet.componentTokens().bottomAppBar().containerHeight(), 0.0001);
         assertEquals(72.0, tokenSet.componentTokens().navigationRail().containerWidth(), 0.0001);
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 51px"));
@@ -136,6 +139,9 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-large-bottom-padding: 13px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-banner-container-min-height: 70px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-tooltip-rich-container-shape: 6px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-picker-field-popup-shape: 37px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-date-picker-day-cell-size: 47px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-time-picker-display-cell-height: 54px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 62px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 72px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 78px"));
@@ -163,6 +169,9 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-text-area"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-menu .m3-menu-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view .m3-list-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-date-picker-container"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-time-picker-container"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-picker-field-popup"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-sheet .m3-bottom-sheet-drag-handle"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-scrim.m3-scrim"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-wavelength: 41px"));
@@ -228,6 +237,23 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.TextAreaTokens(67.0, 9.0, 19.0, 20.0),
                 new M3ComponentTokens.MenuTokens(7.0, 8.0, 43.0, 6.0, 13.0, 14.0),
                 new M3ComponentTokens.SearchTokens(44.0, 22.0, 15.0, 11.0, 21.0, 9.0, 45.0),
+                new M3ComponentTokens.PickerFieldTokens(46.0, 28.0, 37.0, 18.0, 19.0, 140.0, 7.0, 16.0),
+                new M3ComponentTokens.DatePickerTokens(29.0, 17.0, 13.0, 5.0, 46.0, 23.0, 47.0, 24.0, 6.0),
+                new M3ComponentTokens.TimePickerTokens(
+                        30.0,
+                        18.0,
+                        17.0,
+                        6.0,
+                        19.0,
+                        73.0,
+                        54.0,
+                        9.0,
+                        7.0,
+                        45.0,
+                        42.0,
+                        94.0,
+                        21.0
+                ),
                 new M3ComponentTokens.SheetTokens(46.0, 23.0, 47.0, 24.0, 25.0, 26.0, 27.0, 5.0),
                 new M3ComponentTokens.ScrimTokens(0.31),
                 new M3ComponentTokens.SelectionTokens(42.0, 20.0),

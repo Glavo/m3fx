@@ -83,6 +83,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the search component tokens
     SearchTokens search();
 
+    /// Returns tokens used by picker fields.
+    ///
+    /// @return the picker field component tokens
+    PickerFieldTokens pickerField();
+
+    /// Returns tokens used by date pickers.
+    ///
+    /// @return the date picker component tokens
+    DatePickerTokens datePicker();
+
+    /// Returns tokens used by time pickers.
+    ///
+    /// @return the time picker component tokens
+    TimePickerTokens timePicker();
+
     /// Returns tokens used by sheet containers.
     ///
     /// @return the sheet component tokens
@@ -198,6 +213,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param textArea the text area component tokens
     /// @param menu the menu component tokens
     /// @param search the search component tokens
+    /// @param pickerField the picker field component tokens
+    /// @param datePicker the date picker component tokens
+    /// @param timePicker the time picker component tokens
     /// @param sheet the sheet component tokens
     /// @param scrim the scrim component tokens
     /// @param selection the selection control component tokens
@@ -233,6 +251,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             TextAreaTokens textArea,
             MenuTokens menu,
             SearchTokens search,
+            PickerFieldTokens pickerField,
+            DatePickerTokens datePicker,
+            TimePickerTokens timePicker,
             SheetTokens sheet,
             ScrimTokens scrim,
             SelectionTokens selection,
@@ -268,6 +289,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 textArea,
                 menu,
                 search,
+                pickerField,
+                datePicker,
+                timePicker,
                 sheet,
                 scrim,
                 selection,
@@ -315,6 +339,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
         double searchBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double searchViewResultHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double pickerNavigationButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
+        double datePickerDayCellSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
+        double timePickerCellHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
+        double timePickerCellWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 44.0);
         double sideSheetWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 384.0 : 360.0);
         double bottomSheetHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 360.0 : 320.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
@@ -366,6 +394,27 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double searchBarContentSpacing = density.apply(expressive ? 16.0 : 12.0);
         double searchViewContainerShape = expressive ? shapeTokens.extraLarge() : 28.0;
         double searchViewResultPadding = density.apply(expressive ? 12.0 : 8.0);
+        double pickerFieldPopupShape = expressive ? shapeTokens.extraLarge() : 28.0;
+        double pickerFieldPopupPadding = density.apply(expressive ? 20.0 : 16.0);
+        double pickerFieldPopupSpacing = density.apply(expressive ? 20.0 : 16.0);
+        double pickerFieldPresetListWidth = density.apply(expressive ? 148.0 : 132.0);
+        double pickerFieldPresetListSpacing = density.apply(expressive ? 8.0 : 6.0);
+        double pickerFieldPresetButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
+        double datePickerContainerShape = expressive ? shapeTokens.extraLarge() : 28.0;
+        double datePickerContainerPadding = density.apply(expressive ? 20.0 : 16.0);
+        double datePickerContainerSpacing = density.apply(expressive ? 16.0 : 12.0);
+        double datePickerHeaderSpacing = density.apply(expressive ? 8.0 : 4.0);
+        double datePickerGridGap = density.apply(expressive ? 6.0 : 4.0);
+        double timePickerContainerShape = expressive ? shapeTokens.extraLarge() : 28.0;
+        double timePickerContainerPadding = density.apply(expressive ? 22.0 : 18.0);
+        double timePickerContainerSpacing = density.apply(expressive ? 20.0 : 16.0);
+        double timePickerDisplaySpacing = density.apply(expressive ? 6.0 : 4.0);
+        double timePickerDisplayCellShape = expressive ? shapeTokens.large() : shapeTokens.medium();
+        double timePickerDisplayCellWidth = density.apply(expressive ? 80.0 : 72.0);
+        double timePickerDisplayCellHeight = density.apply(expressive ? 72.0 : 64.0);
+        double timePickerSectionSpacing = density.apply(expressive ? 10.0 : 8.0);
+        double timePickerGridGap = density.apply(expressive ? 8.0 : 6.0);
+        double timePickerPeriodCellWidth = density.apply(expressive ? 100.0 : 92.0);
         double sheetContentPadding = density.apply(expressive ? 28.0 : 24.0);
         double sheetHeaderPadding = density.apply(expressive ? 28.0 : 24.0);
         double sheetDragHandleWidth = density.apply(expressive ? 36.0 : 32.0);
@@ -464,6 +513,42 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         searchViewContainerShape,
                         searchViewResultPadding,
                         searchViewResultHeight
+                ),
+                new PickerFieldTokens(
+                        pickerNavigationButtonSize,
+                        shapeTokens.full(),
+                        pickerFieldPopupShape,
+                        pickerFieldPopupPadding,
+                        pickerFieldPopupSpacing,
+                        pickerFieldPresetListWidth,
+                        pickerFieldPresetListSpacing,
+                        pickerFieldPresetButtonHorizontalPadding
+                ),
+                new DatePickerTokens(
+                        datePickerContainerShape,
+                        datePickerContainerPadding,
+                        datePickerContainerSpacing,
+                        datePickerHeaderSpacing,
+                        pickerNavigationButtonSize,
+                        shapeTokens.full(),
+                        datePickerDayCellSize,
+                        shapeTokens.full(),
+                        datePickerGridGap
+                ),
+                new TimePickerTokens(
+                        timePickerContainerShape,
+                        timePickerContainerPadding,
+                        timePickerContainerSpacing,
+                        timePickerDisplaySpacing,
+                        timePickerDisplayCellShape,
+                        timePickerDisplayCellWidth,
+                        timePickerDisplayCellHeight,
+                        timePickerSectionSpacing,
+                        timePickerGridGap,
+                        timePickerCellWidth,
+                        timePickerCellHeight,
+                        timePickerPeriodCellWidth,
+                        shapeTokens.full()
                 ),
                 new SheetTokens(
                         sideSheetWidth,
@@ -597,6 +682,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, textArea());
         append(builder, menu());
         append(builder, search());
+        append(builder, pickerField());
+        append(builder, datePicker());
+        append(builder, timePicker());
         append(builder, sheet());
         append(builder, scrim());
         append(builder, selection());
@@ -669,6 +757,48 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendSearchBarRule(builder, ".m3-search-bar.m3-search-bar", search());
         appendSearchViewRule(builder, ".m3-search-view.m3-search-view", search());
         appendSearchViewResultRule(builder, ".m3-search-view .m3-list-item.m3-list-item", search());
+        appendPickerFieldRule(builder, ".m3-picker-field-popup", pickerField());
+        appendPickerFieldOpenButtonRule(builder, ".m3-picker-field-open-button", pickerField());
+        appendPickerFieldPresetContentRule(
+                builder,
+                ".m3-date-picker-field-preset-content, "
+                        + ".m3-date-range-picker-field-preset-content, "
+                        + ".m3-time-picker-field-preset-content",
+                pickerField()
+        );
+        appendPickerFieldPresetListRule(
+                builder,
+                ".m3-date-picker-field-preset-list, "
+                        + ".m3-date-range-picker-field-preset-list, "
+                        + ".m3-time-picker-field-preset-list",
+                pickerField()
+        );
+        appendPickerFieldPresetButtonRule(
+                builder,
+                ".m3-date-picker-field-preset-button, "
+                        + ".m3-date-range-picker-field-preset-button, "
+                        + ".m3-time-picker-field-preset-button",
+                pickerField()
+        );
+        appendDatePickerRule(builder, ".m3-date-picker-container", datePicker());
+        appendDatePickerHeaderRule(builder, ".m3-date-picker-header", datePicker());
+        appendDatePickerNavigationButtonRule(builder, ".m3-date-picker-navigation-button", datePicker());
+        appendDatePickerWeekdayRowRule(builder, ".m3-date-picker-weekday-row", datePicker());
+        appendDatePickerGridRule(builder, ".m3-date-picker-day-grid", datePicker());
+        appendDatePickerCellRule(builder, ".m3-date-picker-day-cell", datePicker());
+        appendDatePickerCellShapeRules(builder, datePicker());
+        appendTimePickerRule(builder, ".m3-time-picker-container", timePicker());
+        appendTimePickerDisplayRule(builder, ".m3-time-picker-display", timePicker());
+        appendTimePickerDisplayCellRule(
+                builder,
+                ".m3-time-picker-hour-display, .m3-time-picker-minute-display",
+                timePicker()
+        );
+        appendTimePickerSectionRule(builder, ".m3-time-picker-section", timePicker());
+        appendTimePickerGridRule(builder, ".m3-time-picker-grid", timePicker());
+        appendTimePickerCellRule(builder, ".m3-time-picker-cell", timePicker());
+        appendTimePickerPeriodCellRule(builder, ".m3-time-picker-period-cell", timePicker());
+        appendTimePickerPeriodCellShapeRules(builder, timePicker());
         appendSideSheetRule(builder, ".m3-side-sheet.m3-side-sheet", sheet());
         appendBottomSheetRule(builder, ".m3-bottom-sheet.m3-bottom-sheet", sheet());
         appendSheetHeaderRule(builder, ".m3-side-sheet .m3-sheet-header, .m3-bottom-sheet .m3-sheet-header", sheet());
@@ -811,6 +941,52 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-search-view-container-shape", M3TokenCss.pixels(tokens.viewContainerShape()));
         M3TokenCss.append(builder, "-m3-search-view-result-padding", M3TokenCss.pixels(tokens.viewResultPadding()));
         M3TokenCss.append(builder, "-m3-search-view-result-height", M3TokenCss.pixels(tokens.resultHeight()));
+    }
+
+    /// Appends picker field token declarations.
+    private static void append(StringBuilder builder, PickerFieldTokens tokens) {
+        M3TokenCss.append(builder, "-m3-picker-field-open-button-size", M3TokenCss.pixels(tokens.openButtonSize()));
+        M3TokenCss.append(builder, "-m3-picker-field-open-button-shape", M3TokenCss.pixels(tokens.openButtonShape()));
+        M3TokenCss.append(builder, "-m3-picker-field-popup-shape", M3TokenCss.pixels(tokens.popupShape()));
+        M3TokenCss.append(builder, "-m3-picker-field-popup-padding", M3TokenCss.pixels(tokens.popupPadding()));
+        M3TokenCss.append(builder, "-m3-picker-field-popup-spacing", M3TokenCss.pixels(tokens.popupSpacing()));
+        M3TokenCss.append(builder, "-m3-picker-field-preset-list-width", M3TokenCss.pixels(tokens.presetListWidth()));
+        M3TokenCss.append(builder, "-m3-picker-field-preset-list-spacing", M3TokenCss.pixels(tokens.presetListSpacing()));
+        M3TokenCss.append(
+                builder,
+                "-m3-picker-field-preset-button-horizontal-padding",
+                M3TokenCss.pixels(tokens.presetButtonHorizontalPadding())
+        );
+    }
+
+    /// Appends date picker token declarations.
+    private static void append(StringBuilder builder, DatePickerTokens tokens) {
+        M3TokenCss.append(builder, "-m3-date-picker-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-date-picker-container-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        M3TokenCss.append(builder, "-m3-date-picker-container-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
+        M3TokenCss.append(builder, "-m3-date-picker-header-spacing", M3TokenCss.pixels(tokens.headerSpacing()));
+        M3TokenCss.append(builder, "-m3-date-picker-navigation-button-size", M3TokenCss.pixels(tokens.navigationButtonSize()));
+        M3TokenCss.append(builder, "-m3-date-picker-navigation-button-shape", M3TokenCss.pixels(tokens.navigationButtonShape()));
+        M3TokenCss.append(builder, "-m3-date-picker-day-cell-size", M3TokenCss.pixels(tokens.dayCellSize()));
+        M3TokenCss.append(builder, "-m3-date-picker-day-cell-shape", M3TokenCss.pixels(tokens.dayCellShape()));
+        M3TokenCss.append(builder, "-m3-date-picker-grid-gap", M3TokenCss.pixels(tokens.gridGap()));
+    }
+
+    /// Appends time picker token declarations.
+    private static void append(StringBuilder builder, TimePickerTokens tokens) {
+        M3TokenCss.append(builder, "-m3-time-picker-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-time-picker-container-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        M3TokenCss.append(builder, "-m3-time-picker-container-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
+        M3TokenCss.append(builder, "-m3-time-picker-display-spacing", M3TokenCss.pixels(tokens.displaySpacing()));
+        M3TokenCss.append(builder, "-m3-time-picker-display-cell-shape", M3TokenCss.pixels(tokens.displayCellShape()));
+        M3TokenCss.append(builder, "-m3-time-picker-display-cell-width", M3TokenCss.pixels(tokens.displayCellWidth()));
+        M3TokenCss.append(builder, "-m3-time-picker-display-cell-height", M3TokenCss.pixels(tokens.displayCellHeight()));
+        M3TokenCss.append(builder, "-m3-time-picker-section-spacing", M3TokenCss.pixels(tokens.sectionSpacing()));
+        M3TokenCss.append(builder, "-m3-time-picker-grid-gap", M3TokenCss.pixels(tokens.gridGap()));
+        M3TokenCss.append(builder, "-m3-time-picker-cell-width", M3TokenCss.pixels(tokens.cellWidth()));
+        M3TokenCss.append(builder, "-m3-time-picker-cell-height", M3TokenCss.pixels(tokens.cellHeight()));
+        M3TokenCss.append(builder, "-m3-time-picker-period-cell-width", M3TokenCss.pixels(tokens.periodCellWidth()));
+        M3TokenCss.append(builder, "-m3-time-picker-cell-shape", M3TokenCss.pixels(tokens.cellShape()));
     }
 
     /// Appends sheet token declarations.
@@ -1305,6 +1481,244 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.barContainerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.barHorizontalPadding()));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.barContentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a picker field popup token CSS rule.
+    private static void appendPickerFieldRule(StringBuilder builder, String selector, PickerFieldTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.popupShape()));
+        endRule(builder);
+    }
+
+    /// Appends a picker field open button token CSS rule.
+    private static void appendPickerFieldOpenButtonRule(
+            StringBuilder builder,
+            String selector,
+            PickerFieldTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.openButtonSize()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.openButtonShape()));
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.openButtonSize()));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.openButtonSize()));
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.openButtonSize()));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.openButtonSize()));
+        endRule(builder);
+    }
+
+    /// Appends a picker field preset content token CSS rule.
+    private static void appendPickerFieldPresetContentRule(
+            StringBuilder builder,
+            String selector,
+            PickerFieldTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.popupShape()));
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.popupPadding()));
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.popupSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a picker field preset list token CSS rule.
+    private static void appendPickerFieldPresetListRule(
+            StringBuilder builder,
+            String selector,
+            PickerFieldTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.presetListSpacing()));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.presetListWidth()));
+        endRule(builder);
+    }
+
+    /// Appends a picker field preset button token CSS rule.
+    private static void appendPickerFieldPresetButtonRule(
+            StringBuilder builder,
+            String selector,
+            PickerFieldTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.presetButtonHorizontalPadding()));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.presetListWidth()));
+        appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(tokens.presetListWidth()));
+        endRule(builder);
+    }
+
+    /// Appends a date picker container token CSS rule.
+    private static void appendDatePickerRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a date picker header token CSS rule.
+    private static void appendDatePickerHeaderRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.headerSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a date picker navigation button token CSS rule.
+    private static void appendDatePickerNavigationButtonRule(
+            StringBuilder builder,
+            String selector,
+            DatePickerTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.navigationButtonSize()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.navigationButtonShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(0.0));
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.navigationButtonSize()));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.navigationButtonSize()));
+        appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(tokens.navigationButtonSize()));
+        endRule(builder);
+    }
+
+    /// Appends a date picker weekday row token CSS rule.
+    private static void appendDatePickerWeekdayRowRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.gridGap()));
+        endRule(builder);
+    }
+
+    /// Appends a date picker day grid token CSS rule.
+    private static void appendDatePickerGridRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-hgap", M3TokenCss.pixels(tokens.gridGap()));
+        appendDeclaration(builder, "-fx-vgap", M3TokenCss.pixels(tokens.gridGap()));
+        endRule(builder);
+    }
+
+    /// Appends date picker day and weekday cell token CSS rules.
+    private static void appendDatePickerCellRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
+        String size = M3TokenCss.pixels(tokens.dayCellSize());
+        String shape = M3TokenCss.pixels(tokens.dayCellShape());
+        beginRule(builder, selector + ", .m3-date-picker-weekday-label");
+        appendDeclaration(builder, "-fx-min-width", size);
+        appendDeclaration(builder, "-fx-pref-width", size);
+        appendDeclaration(builder, "-fx-max-width", size);
+        appendDeclaration(builder, "-fx-min-height", size);
+        appendDeclaration(builder, "-fx-pref-height", size);
+        appendDeclaration(builder, "-fx-max-height", size);
+        endRule(builder);
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", shape);
+        appendDeclaration(builder, "-fx-border-radius", shape);
+        endRule(builder);
+    }
+
+    /// Appends date range cell shape token CSS rules.
+    private static void appendDatePickerCellShapeRules(StringBuilder builder, DatePickerTokens tokens) {
+        String shape = M3TokenCss.pixels(tokens.dayCellShape());
+        appendDatePickerRangeShapeRule(
+                builder,
+                ".m3-date-picker-day-cell.m3-date-range-picker-range-start-day",
+                shape + " 0 0 " + shape
+        );
+        appendDatePickerRangeShapeRule(
+                builder,
+                ".m3-date-picker-day-cell.m3-date-range-picker-range-end-day",
+                "0 " + shape + " " + shape + " 0"
+        );
+        appendDatePickerRangeShapeRule(
+                builder,
+                ".m3-date-picker-day-cell.m3-date-range-picker-range-single-day",
+                shape
+        );
+    }
+
+    /// Appends one date range cell shape token CSS rule.
+    private static void appendDatePickerRangeShapeRule(StringBuilder builder, String selector, String radius) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", radius);
+        endRule(builder);
+    }
+
+    /// Appends a time picker container token CSS rule.
+    private static void appendTimePickerRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a time picker display token CSS rule.
+    private static void appendTimePickerDisplayRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.displaySpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a time picker selected display cell token CSS rule.
+    private static void appendTimePickerDisplayCellRule(
+            StringBuilder builder,
+            String selector,
+            TimePickerTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.displayCellShape()));
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.displayCellWidth()));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.displayCellWidth()));
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.displayCellHeight()));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.displayCellHeight()));
+        endRule(builder);
+    }
+
+    /// Appends a time picker section token CSS rule.
+    private static void appendTimePickerSectionRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.sectionSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends a time picker grid token CSS rule.
+    private static void appendTimePickerGridRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-fx-hgap", M3TokenCss.pixels(tokens.gridGap()));
+        appendDeclaration(builder, "-fx-vgap", M3TokenCss.pixels(tokens.gridGap()));
+        endRule(builder);
+    }
+
+    /// Appends a time picker selectable cell token CSS rule.
+    private static void appendTimePickerCellRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendTimePickerCellSize(builder, tokens.cellWidth(), tokens.cellHeight());
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.cellShape()));
+        appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(tokens.cellShape()));
+        endRule(builder);
+    }
+
+    /// Appends a time picker period cell token CSS rule.
+    private static void appendTimePickerPeriodCellRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
+        beginRule(builder, selector);
+        appendTimePickerCellSize(builder, tokens.periodCellWidth(), tokens.cellHeight());
+        endRule(builder);
+    }
+
+    /// Appends tokenized time cell size declarations.
+    private static void appendTimePickerCellSize(StringBuilder builder, double width, double height) {
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(width));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(width));
+        appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(width));
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(height));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(height));
+        appendDeclaration(builder, "-fx-max-height", M3TokenCss.pixels(height));
+    }
+
+    /// Appends time picker period segmented shape token CSS rules.
+    private static void appendTimePickerPeriodCellShapeRules(StringBuilder builder, TimePickerTokens tokens) {
+        String shape = M3TokenCss.pixels(tokens.cellShape());
+        beginRule(builder, ".m3-time-picker-period-start");
+        appendDeclaration(builder, "-fx-background-radius", shape + " 0 0 " + shape);
+        appendDeclaration(builder, "-fx-border-radius", shape + " 0 0 " + shape);
+        endRule(builder);
+        beginRule(builder, ".m3-time-picker-period-end");
+        appendDeclaration(builder, "-fx-background-radius", "0 " + shape + " " + shape + " 0");
+        appendDeclaration(builder, "-fx-border-radius", "0 " + shape + " " + shape + " 0");
         endRule(builder);
     }
 
@@ -1963,6 +2377,126 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(viewContainerShape, "viewContainerShape");
             validateNonNegative(viewResultPadding, "viewResultPadding");
             validateNonNegative(resultHeight, "resultHeight");
+        }
+    }
+
+    /// Component tokens for picker fields and their preset popup surfaces.
+    ///
+    /// @param openButtonSize the trailing open button size
+    /// @param openButtonShape the trailing open button radius
+    /// @param popupShape the popup surface radius
+    /// @param popupPadding the popup preset content padding
+    /// @param popupSpacing the spacing between popup preset list and picker content
+    /// @param presetListWidth the preset list preferred width
+    /// @param presetListSpacing the spacing between preset buttons
+    /// @param presetButtonHorizontalPadding the preset button horizontal padding
+    @NotNullByDefault
+    record PickerFieldTokens(
+            double openButtonSize,
+            double openButtonShape,
+            double popupShape,
+            double popupPadding,
+            double popupSpacing,
+            double presetListWidth,
+            double presetListSpacing,
+            double presetButtonHorizontalPadding
+    ) {
+        /// Validates picker field tokens.
+        public PickerFieldTokens {
+            validateNonNegative(openButtonSize, "openButtonSize");
+            validateNonNegative(openButtonShape, "openButtonShape");
+            validateNonNegative(popupShape, "popupShape");
+            validateNonNegative(popupPadding, "popupPadding");
+            validateNonNegative(popupSpacing, "popupSpacing");
+            validateNonNegative(presetListWidth, "presetListWidth");
+            validateNonNegative(presetListSpacing, "presetListSpacing");
+            validateNonNegative(presetButtonHorizontalPadding, "presetButtonHorizontalPadding");
+        }
+    }
+
+    /// Component tokens for date pickers.
+    ///
+    /// @param containerShape the picker container radius
+    /// @param containerPadding the picker container padding
+    /// @param containerSpacing the spacing between container rows
+    /// @param headerSpacing the spacing between header controls
+    /// @param navigationButtonSize the previous and next month button size
+    /// @param navigationButtonShape the previous and next month button radius
+    /// @param dayCellSize the day and weekday cell size
+    /// @param dayCellShape the selected day and range endpoint radius
+    /// @param gridGap the day grid gap
+    @NotNullByDefault
+    record DatePickerTokens(
+            double containerShape,
+            double containerPadding,
+            double containerSpacing,
+            double headerSpacing,
+            double navigationButtonSize,
+            double navigationButtonShape,
+            double dayCellSize,
+            double dayCellShape,
+            double gridGap
+    ) {
+        /// Validates date picker tokens.
+        public DatePickerTokens {
+            validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(containerPadding, "containerPadding");
+            validateNonNegative(containerSpacing, "containerSpacing");
+            validateNonNegative(headerSpacing, "headerSpacing");
+            validateNonNegative(navigationButtonSize, "navigationButtonSize");
+            validateNonNegative(navigationButtonShape, "navigationButtonShape");
+            validateNonNegative(dayCellSize, "dayCellSize");
+            validateNonNegative(dayCellShape, "dayCellShape");
+            validateNonNegative(gridGap, "gridGap");
+        }
+    }
+
+    /// Component tokens for time pickers.
+    ///
+    /// @param containerShape the picker container radius
+    /// @param containerPadding the picker container padding
+    /// @param containerSpacing the spacing between container rows
+    /// @param displaySpacing the spacing between selected time display fields
+    /// @param displayCellShape the selected time display field radius
+    /// @param displayCellWidth the selected hour or minute display width
+    /// @param displayCellHeight the selected hour or minute display height
+    /// @param sectionSpacing the spacing inside hour and minute sections
+    /// @param gridGap the selectable time grid gap
+    /// @param cellWidth the hour and minute selectable cell width
+    /// @param cellHeight the selectable cell height
+    /// @param periodCellWidth the AM and PM selectable cell width
+    /// @param cellShape the selectable cell radius
+    @NotNullByDefault
+    record TimePickerTokens(
+            double containerShape,
+            double containerPadding,
+            double containerSpacing,
+            double displaySpacing,
+            double displayCellShape,
+            double displayCellWidth,
+            double displayCellHeight,
+            double sectionSpacing,
+            double gridGap,
+            double cellWidth,
+            double cellHeight,
+            double periodCellWidth,
+            double cellShape
+    ) {
+        /// Validates time picker tokens.
+        public TimePickerTokens {
+            validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(containerPadding, "containerPadding");
+            validateNonNegative(containerSpacing, "containerSpacing");
+            validateNonNegative(displaySpacing, "displaySpacing");
+            validateNonNegative(displayCellShape, "displayCellShape");
+            validateNonNegative(displayCellWidth, "displayCellWidth");
+            validateNonNegative(displayCellHeight, "displayCellHeight");
+            validateNonNegative(sectionSpacing, "sectionSpacing");
+            validateNonNegative(gridGap, "gridGap");
+            validateNonNegative(cellWidth, "cellWidth");
+            validateNonNegative(cellHeight, "cellHeight");
+            validateNonNegative(periodCellWidth, "periodCellWidth");
+            validateNonNegative(cellShape, "cellShape");
         }
     }
 

@@ -20,7 +20,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - M3 Expressive action controls use profile-specific button padding, FAB extended padding, segmented button padding, tab indicator metrics, and chip padding.
 - M3 Expressive inputs, selection controls, and sliders use profile-specific input padding, touch target, track thickness, and thumb sizing.
 - M3 Expressive navigation and list components use profile-specific spacing, padding, and selected-container shape tokens.
-- M3 Expressive menus, search surfaces, and sheets use profile-specific padding, item spacing, result spacing, and drag-handle metrics.
+- M3 Expressive menus, search surfaces, picker surfaces, and sheets use profile-specific padding, item spacing, result spacing, day/time cell sizing, popup sizing, and drag-handle metrics.
 - M3 Expressive cards, dialogs, snackbars, and app bars use profile-specific container shape, padding, height, and action spacing metrics.
 - Theme installation marks roots with profile and brightness style classes so applications and demo pages can branch CSS for baseline, expressive, light, and dark modes without replacing the theme API.
 
@@ -68,7 +68,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Button, FAB, segmented button, tab, and chip component tokens include Expressive-specific horizontal padding and tab active indicator metrics.
 - Text input, text area, selection, and slider component tokens include Expressive-specific padding and interaction geometry.
 - Navigation bar, navigation rail, navigation drawer, and list item component tokens include Expressive-specific content spacing, item spacing, and content padding.
-- Menu, search, and sheet component tokens include Expressive-specific container padding, item spacing, result padding, sheet padding, and drag-handle metrics.
+- Menu, search, picker field, date picker, time picker, and sheet component tokens include Expressive-specific container padding, item spacing, result padding, day/time cell sizing, popup sizing, sheet padding, and drag-handle metrics.
 - Card, dialog, snackbar, banner, tooltip, top app bar, and bottom app bar component tokens include Expressive-specific shape, padding, height, action spacing, popup sizing, and top app bar variant metrics.
 
 ### Component Coverage

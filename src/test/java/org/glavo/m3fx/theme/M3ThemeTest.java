@@ -18,6 +18,8 @@ import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
+import org.glavo.m3fx.controls.M3DatePicker;
+import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
@@ -42,6 +44,7 @@ import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextRole;
+import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.tokens.M3Density;
@@ -56,6 +59,8 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -208,6 +213,9 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-banner-horizontal-padding: 28px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-plain-container-shape: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-rich-pref-width: 360px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-picker-field-popup-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-date-picker-day-cell-size: 44px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-cell-height: 44px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 8px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 72px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-medium-container-height: 120px"));
@@ -251,6 +259,9 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().navigationRail());
         assertNotNull(theme.tokens().componentTokens().navigationDrawer());
         assertNotNull(theme.tokens().componentTokens().listItem());
+        assertNotNull(theme.tokens().componentTokens().pickerField());
+        assertNotNull(theme.tokens().componentTokens().datePicker());
+        assertNotNull(theme.tokens().componentTokens().timePicker());
         assertEquals(28.0, theme.tokens().componentTokens().filledButton().horizontalPadding(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().textButton().horizontalPadding(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().floatingActionButton().regularHorizontalPadding(), 0.0001);
@@ -591,6 +602,9 @@ final class M3ThemeTest {
         M3SearchBar searchBar = new M3SearchBar();
         M3SearchView searchView = new M3SearchView();
         searchView.getResults().add(new M3ListItem("Result"));
+        M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+        M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
+        M3DatePickerField datePickerField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
         M3ListSectionHeader listSectionHeader = new M3ListSectionHeader("Results");
         M3SideSheet sideSheet = new M3SideSheet();
         M3BottomSheet bottomSheet = new M3BottomSheet();
@@ -617,6 +631,9 @@ final class M3ThemeTest {
                 menu,
                 searchBar,
                 searchView,
+                datePicker,
+                timePicker,
+                datePickerField,
                 listSectionHeader,
                 sideSheet,
                 bottomSheet,
@@ -664,6 +681,11 @@ final class M3ThemeTest {
         assertEquals(20.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(64.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(20.0, ((M3ListItem) searchView.getResults().get(0)).getHorizontalPadding(), 0.0001);
+        assertEquals(20.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(44.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(22.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(48.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
         assertEquals(56.0, listSectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(20.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
@@ -728,6 +750,11 @@ final class M3ThemeTest {
         assertEquals(48.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(56.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
+        assertEquals(16.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(40.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(18.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(44.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
         assertEquals(48.0, listSectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(16.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);

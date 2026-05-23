@@ -8,6 +8,15 @@
 
 .m3-date-picker-container {
     -fx-background-color: -m3-color-surface-container-low;
+    -m3-container-shape: 28px;
+    -m3-container-padding: 16px;
+    -m3-container-spacing: 12px;
+    -m3-header-spacing: 4px;
+    -m3-navigation-button-size: 40px;
+    -m3-navigation-button-shape: 999px;
+    -m3-day-cell-size: 40px;
+    -m3-day-cell-shape: 999px;
+    -m3-grid-gap: 4px;
     -fx-background-radius: 28px;
     -fx-padding: 16px;
     -fx-spacing: 12px;
@@ -43,6 +52,12 @@
 }
 
 .m3-date-picker-weekday-label {
+    -fx-min-width: 40px;
+    -fx-pref-width: 40px;
+    -fx-max-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
     -fx-font-size: 12px;
     -fx-font-weight: 600;
     -fx-text-fill: -m3-color-on-surface-variant;
@@ -66,6 +81,9 @@
     -fx-min-width: 40px;
     -fx-pref-width: 40px;
     -fx-max-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
     -fx-background-color: transparent;
     -fx-background-radius: 999px;
     -fx-border-color: transparent;

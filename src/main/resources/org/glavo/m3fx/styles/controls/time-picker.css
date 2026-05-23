@@ -4,6 +4,19 @@
 
 .m3-time-picker-container {
     -fx-background-color: -m3-color-surface-container-low;
+    -m3-container-shape: 28px;
+    -m3-container-padding: 18px;
+    -m3-container-spacing: 16px;
+    -m3-display-spacing: 4px;
+    -m3-display-cell-shape: 16px;
+    -m3-display-cell-width: 72px;
+    -m3-display-cell-height: 64px;
+    -m3-section-spacing: 8px;
+    -m3-grid-gap: 6px;
+    -m3-cell-width: 44px;
+    -m3-cell-height: 40px;
+    -m3-period-cell-width: 92px;
+    -m3-cell-shape: 999px;
     -fx-background-radius: 28px;
     -fx-padding: 18px;
     -fx-spacing: 16px;
@@ -65,6 +78,12 @@
     -fx-background-radius: 999px;
     -fx-border-color: transparent;
     -fx-border-radius: 999px;
+    -fx-min-width: 44px;
+    -fx-pref-width: 44px;
+    -fx-max-width: 44px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-height: 40px;
     -fx-cursor: hand;
     -fx-font-size: 14px;
     -fx-font-weight: 500;
@@ -115,6 +134,9 @@
     -fx-background-color: transparent;
     -fx-border-color: -m3-color-outline;
     -fx-border-width: 1px;
+    -fx-min-width: 92px;
+    -fx-pref-width: 92px;
+    -fx-max-width: 92px;
 }
 
 .m3-time-picker-period-start,
