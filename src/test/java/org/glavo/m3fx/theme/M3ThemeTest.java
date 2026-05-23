@@ -34,6 +34,7 @@ import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Snackbar;
+import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
@@ -170,11 +171,18 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-spatial-duration: 400ms"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-horizontal-padding: 28px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-text-horizontal-padding: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size: 64px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-horizontal-padding: 18px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-horizontal-padding: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-container-height: 56px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-horizontal-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-active-indicator-height: 4px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-horizontal-padding: 18px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-padding: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-container-shape: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-horizontal-padding: 20px"));
@@ -226,6 +234,13 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().navigationRail());
         assertNotNull(theme.tokens().componentTokens().navigationDrawer());
         assertNotNull(theme.tokens().componentTokens().listItem());
+        assertEquals(28.0, theme.tokens().componentTokens().filledButton().horizontalPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().textButton().horizontalPadding(), 0.0001);
+        assertEquals(18.0, theme.tokens().componentTokens().floatingActionButton().regularHorizontalPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().segmentedButton().horizontalPadding(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().tab().horizontalPadding(), 0.0001);
+        assertEquals(4.0, theme.tokens().componentTokens().tab().activeIndicatorHeight(), 0.0001);
+        assertEquals(18.0, theme.tokens().componentTokens().chip().horizontalPadding(), 0.0001);
         assertEquals(12.0, theme.tokens().componentTokens().navigationBar().horizontalPadding(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().navigationRail().verticalPadding(), 0.0001);
         assertEquals(40.0, theme.tokens().componentTokens().navigationDrawer().groupChildItemHorizontalPadding(), 0.0001);
@@ -558,6 +573,7 @@ final class M3ThemeTest {
         M3FloatingActionButton fab = new M3FloatingActionButton();
         fab.setSize(M3FloatingActionButtonSize.LARGE);
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Week");
+        M3Tab tab = M3Tab.withSelected("Overview", true);
         Pane root = new Pane(
                 button,
                 textField,
@@ -578,7 +594,8 @@ final class M3ThemeTest {
                 displayText,
                 chip,
                 fab,
-                segmentedButton
+                segmentedButton,
+                tab
         );
         Scene scene = new Scene(root);
 
@@ -592,6 +609,7 @@ final class M3ThemeTest {
         root.applyCss();
 
         assertEquals(48.0, button.getContainerHeight(), 0.0001);
+        assertEquals(28.0, button.getHorizontalPadding(), 0.0001);
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
         assertEquals(56.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
@@ -627,14 +645,21 @@ final class M3ThemeTest {
         assertEquals(64.0, displayText.getTypographyFontSize(), 0.0001);
         assertEquals(72.0, displayText.getTypographyLineHeight(), 0.0001);
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
+        assertEquals(18.0, chip.getHorizontalPadding(), 0.0001);
         assertEquals(104.0, fab.getContainerSize(), 0.0001);
+        assertEquals(28.0, fab.getHorizontalPadding(), 0.0001);
         assertEquals(48.0, segmentedButton.getContainerHeight(), 0.0001);
+        assertEquals(16.0, segmentedButton.getHorizontalPadding(), 0.0001);
+        assertEquals(56.0, tab.getContainerHeight(), 0.0001);
+        assertEquals(20.0, tab.getHorizontalPadding(), 0.0001);
+        assertEquals(4.0, tab.getActiveIndicatorHeight(), 0.0001);
 
         M3Theme baselineTheme = M3Theme.defaultTheme();
         M3ThemeManager.install(scene, baselineTheme);
         root.applyCss();
 
         assertEquals(40.0, button.getContainerHeight(), 0.0001);
+        assertEquals(24.0, button.getHorizontalPadding(), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
         assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
         assertEquals(48.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
@@ -659,8 +684,14 @@ final class M3ThemeTest {
         assertEquals(57.0, displayText.getTypographyFontSize(), 0.0001);
         assertEquals(64.0, displayText.getTypographyLineHeight(), 0.0001);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
+        assertEquals(16.0, chip.getHorizontalPadding(), 0.0001);
         assertEquals(96.0, fab.getContainerSize(), 0.0001);
+        assertEquals(24.0, fab.getHorizontalPadding(), 0.0001);
         assertEquals(40.0, segmentedButton.getContainerHeight(), 0.0001);
+        assertEquals(12.0, segmentedButton.getHorizontalPadding(), 0.0001);
+        assertEquals(48.0, tab.getContainerHeight(), 0.0001);
+        assertEquals(16.0, tab.getHorizontalPadding(), 0.0001);
+        assertEquals(3.0, tab.getActiveIndicatorHeight(), 0.0001);
         assertEquals(2, scene.getStylesheets().size());
     }
 

@@ -17,6 +17,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
 - M3 Expressive currently has profile-specific color, typography, shape, component sizing, semantic motion scheme tokens, and motion behavior timings.
 - M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens.
+- M3 Expressive action controls use profile-specific button padding, FAB extended padding, segmented button padding, tab indicator metrics, and chip padding.
 - M3 Expressive navigation and list components use profile-specific spacing, padding, and selected-container shape tokens.
 - M3 Expressive menus, search surfaces, and sheets use profile-specific padding, item spacing, result spacing, and drag-handle metrics.
 - M3 Expressive cards, dialogs, snackbars, and app bars use profile-specific container shape, padding, height, and action spacing metrics.
@@ -63,6 +64,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.
 - JavaFX scroll panes styled through `M3ScrollPanes` and virtualized list view flows support smooth wheel, focus, and programmatic scrolling that resolve the active motion scheme and animation settings, including horizontal-only content such as carousel viewports.
 - Progress component tokens include wavy linear and circular amplitude, wavelength, track gap, and linear stop indicator metrics; applications can override them per control through CSS.
+- Button, FAB, segmented button, tab, and chip component tokens include Expressive-specific horizontal padding and tab active indicator metrics.
 - Navigation bar, navigation rail, navigation drawer, and list item component tokens include Expressive-specific content spacing, item spacing, and content padding.
 - Menu, search, and sheet component tokens include Expressive-specific container padding, item spacing, result padding, sheet padding, and drag-handle metrics.
 - Card, dialog, snackbar, top app bar, and bottom app bar component tokens include Expressive-specific shape, padding, height, and action spacing.
@@ -89,7 +91,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Unit tests cover style classes, token CSS metadata, skin creation, interaction events, state-layer/ripple behavior, accessibility attributes/actions, selection behavior, and packaging assumptions.
 - Snapshot-based visual tests render representative control families into report images and include automated checks for contrast, geometry, clipping, borders, and animation-state frames.
 - Recent visual regressions covered by tests include icon fallback glyph clipping, outlined text input notch geometry, segmented button selected borders, progress geometry, selection states, snackbar sizing, and trailing icon ripple behavior.
-- Expressive profile visual coverage checks real rendered component sizes, profile root classes, fixed-target centering, date-cell alignment, menu/search/sheet metrics, card/snackbar metrics, and search bar height constraints in mixed-height layouts.
+- Expressive profile visual coverage checks real rendered component sizes, action-control padding, tab indicators, profile root classes, fixed-target centering, date-cell alignment, menu/search/sheet metrics, card/snackbar metrics, and search bar height constraints in mixed-height layouts.
 - Dark expressive token-driven visual coverage renders representative action, input, selection, feedback, progress, date picker, and navigation controls without overriding generated dark theme colors.
 - Dark expressive popup visual coverage opens real menu and tooltip popups, checks inherited profile and brightness mode classes, and writes rendered snapshots for overlay review.
 - Expressive progress visual coverage writes a dedicated snapshot for determinate and indeterminate wavy linear and circular progress indicators.

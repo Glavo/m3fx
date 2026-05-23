@@ -360,13 +360,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double appBarHorizontalPadding = density.apply(expressive ? 24.0 : 16.0);
         double appBarContentSpacing = density.apply(expressive ? 20.0 : 16.0);
         double appBarActionSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double buttonHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
+        double textButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
+        double fabSmallHorizontalPadding = density.apply(expressive ? 14.0 : 12.0);
+        double fabRegularHorizontalPadding = density.apply(expressive ? 18.0 : 16.0);
+        double fabLargeHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
+        double segmentedButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
+        double tabHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double tabActiveIndicatorHeight = density.apply(expressive ? 4.0 : 3.0);
+        double tabActiveIndicatorShape = density.apply(expressive ? 4.0 : 3.0);
+        double chipHorizontalPadding = density.apply(expressive ? 18.0 : 16.0);
 
         return create(
-                new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
-                new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
-                new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
-                new ButtonTokens(buttonHeight, shapeTokens.full(), 12.0),
-                new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
+                new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
+                new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
+                new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
+                new ButtonTokens(buttonHeight, shapeTokens.full(), textButtonHorizontalPadding),
+                new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
                 new ButtonTokens(iconButtonSize, shapeTokens.full(), 0.0),
                 new FabTokens(
                         fabSmallSize,
@@ -375,12 +385,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         shapeTokens.medium(),
                         shapeTokens.large(),
                         shapeTokens.extraLarge(),
-                        12.0,
-                        16.0,
-                        24.0
+                        fabSmallHorizontalPadding,
+                        fabRegularHorizontalPadding,
+                        fabLargeHorizontalPadding
                 ),
-                new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), 12.0),
-                new TabTokens(tabHeight, tabMinWidth, 16.0, 3.0, 3.0),
+                new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
+                new TabTokens(
+                        tabHeight,
+                        tabMinWidth,
+                        tabHorizontalPadding,
+                        tabActiveIndicatorHeight,
+                        tabActiveIndicatorShape
+                ),
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
                 new TextAreaTokens(textAreaHeight, shapeTokens.extraSmall(), 16.0, 16.0),
                 new MenuTokens(
@@ -413,7 +429,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new ScrimTokens(0.32),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),
                 new SliderTokens(4.0, shapeTokens.full(), 20.0, density.apply(48.0)),
-                new ChipTokens(chipHeight, shapeTokens.small(), 16.0),
+                new ChipTokens(chipHeight, shapeTokens.small(), chipHorizontalPadding),
                 new ProgressTokens(
                         density.apply(4.0),
                         shapeTokens.full(),
