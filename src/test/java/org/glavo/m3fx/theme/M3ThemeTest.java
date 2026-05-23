@@ -6,6 +6,7 @@ package org.glavo.m3fx.theme;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.controls.M3Avatar;
@@ -171,6 +172,12 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-container-height: 56px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-padding: 10px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-container-shape: 10px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-horizontal-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-result-padding: 12px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-content-padding: 28px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-drag-handle-width: 36px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-shape: 32px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 8px"));
@@ -190,6 +197,9 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-content-spacing: 6px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-horizontal-padding: 40px"));
+        assertTrue(theme.toControlStyleRules().contains("-fx-padding: 10px"));
+        assertTrue(theme.toControlStyleRules().contains("-fx-padding: 0 20px"));
+        assertTrue(theme.toControlStyleRules().contains("-fx-padding: 28px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
@@ -209,6 +219,12 @@ final class M3ThemeTest {
         assertEquals(20.0, theme.tokens().componentTokens().navigationRail().verticalPadding(), 0.0001);
         assertEquals(40.0, theme.tokens().componentTokens().navigationDrawer().groupChildItemHorizontalPadding(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().listItem().horizontalPadding(), 0.0001);
+        assertEquals(10.0, theme.tokens().componentTokens().menu().containerPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().menu().itemContentSpacing(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().search().barHorizontalPadding(), 0.0001);
+        assertEquals(12.0, theme.tokens().componentTokens().search().viewResultPadding(), 0.0001);
+        assertEquals(28.0, theme.tokens().componentTokens().sheet().contentPadding(), 0.0001);
+        assertEquals(36.0, theme.tokens().componentTokens().sheet().dragHandleWidth(), 0.0001);
     }
 
     /// Verifies that convenience theme factories use the expected defaults.
@@ -550,12 +566,22 @@ final class M3ThemeTest {
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
         assertEquals(56.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
+        assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
+        assertEquals(16.0, ((M3MenuItem) menu.getItems().get(0)).getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, ((M3MenuItem) menu.getItems().get(0)).getContentSpacing(), 0.0001);
         assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(20.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(64.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
+        assertEquals(20.0, ((M3ListItem) searchView.getResults().get(0)).getHorizontalPadding(), 0.0001);
         assertEquals(56.0, listSectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(20.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(
+                28.0,
+                ((Region) sideSheet.lookup("." + M3SideSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
         assertEquals(0.32, scrim.getOpacity(), 0.0001);
         assertEquals(44.0, avatar.getContainerSize(), 0.0001);
         assertEquals(64.0, displayText.getTypographyFontSize(), 0.0001);

@@ -340,6 +340,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double listItemVerticalPadding = density.apply(expressive ? 10.0 : 8.0);
         double listItemContentSpacing = density.apply(expressive ? 20.0 : 16.0);
         double listSectionHeaderHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double menuContainerPadding = density.apply(expressive ? 10.0 : 8.0);
+        double menuItemContainerShape = expressive ? shapeTokens.small() : shapeTokens.extraSmall();
+        double menuItemHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
+        double menuItemContentSpacing = density.apply(expressive ? 16.0 : 12.0);
+        double searchBarHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double searchBarContentSpacing = density.apply(expressive ? 16.0 : 12.0);
+        double searchViewContainerShape = expressive ? shapeTokens.extraLarge() : 28.0;
+        double searchViewResultPadding = density.apply(expressive ? 12.0 : 8.0);
+        double sheetContentPadding = density.apply(expressive ? 28.0 : 24.0);
+        double sheetHeaderPadding = density.apply(expressive ? 28.0 : 24.0);
+        double sheetDragHandleWidth = density.apply(expressive ? 36.0 : 32.0);
+        double sheetDragHandleHeight = density.apply(expressive ? 5.0 : 4.0);
 
         return create(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), 24.0),
@@ -363,17 +375,32 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new TabTokens(tabHeight, tabMinWidth, 16.0, 3.0, 3.0),
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), 16.0),
                 new TextAreaTokens(textAreaHeight, shapeTokens.extraSmall(), 16.0, 16.0),
-                new MenuTokens(shapeTokens.extraSmall(), 8.0, menuItemHeight, shapeTokens.extraSmall(), 12.0, 12.0),
-                new SearchTokens(searchBarHeight, shapeTokens.full(), 16.0, 12.0, 28.0, 8.0, searchViewResultHeight),
+                new MenuTokens(
+                        shapeTokens.extraSmall(),
+                        menuContainerPadding,
+                        menuItemHeight,
+                        menuItemContainerShape,
+                        menuItemHorizontalPadding,
+                        menuItemContentSpacing
+                ),
+                new SearchTokens(
+                        searchBarHeight,
+                        shapeTokens.full(),
+                        searchBarHorizontalPadding,
+                        searchBarContentSpacing,
+                        searchViewContainerShape,
+                        searchViewResultPadding,
+                        searchViewResultHeight
+                ),
                 new SheetTokens(
                         sideSheetWidth,
                         shapeTokens.extraLarge(),
                         bottomSheetHeight,
                         shapeTokens.extraLarge(),
-                        24.0,
-                        24.0,
-                        32.0,
-                        4.0
+                        sheetContentPadding,
+                        sheetHeaderPadding,
+                        sheetDragHandleWidth,
+                        sheetDragHandleHeight
                 ),
                 new ScrimTokens(0.32),
                 new SelectionTokens(density.apply(40.0), shapeTokens.full()),

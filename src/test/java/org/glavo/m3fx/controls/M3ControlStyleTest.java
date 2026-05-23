@@ -3612,6 +3612,19 @@ final class M3ControlStyleTest {
         assertEquals(4.0, open.getContainerShape(), 0.0001);
         assertEquals(12.0, open.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, open.getContentSpacing(), 0.0001);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+
+        assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
+        assertEquals(56.0, open.getOneLineHeight(), 0.0001);
+        assertEquals(10.0, open.getContainerShape(), 0.0001);
+        assertEquals(16.0, open.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, open.getContentSpacing(), 0.0001);
     }
 
     /// Verifies that menu item action events bubble through the menu.
@@ -4759,6 +4772,21 @@ final class M3ControlStyleTest {
         assertFalse(HBox.class.isAssignableFrom(M3SearchBar.class));
         assertFalse(VBox.class.isAssignableFrom(M3SearchView.class));
         assertEquals(56.0, result.getOneLineHeight(), 0.0001);
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+
+        assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(20.0, searchBar.getPadding().getLeft(), 0.0001);
+        assertEquals(20.0, searchBar.getPadding().getRight(), 0.0001);
+        assertEquals(64.0, result.getOneLineHeight(), 0.0001);
+        assertEquals(20.0, result.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, result.getContentSpacing(), 0.0001);
+        assertEquals(12.0, searchView.getPadding().getBottom(), 0.0001);
     }
 
     /// Verifies that search views propagate right-to-left orientation to their embedded content.
@@ -5184,6 +5212,36 @@ final class M3ControlStyleTest {
         assertEquals(
                 32.0,
                 lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefWidth(),
+                0.0001
+        );
+
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+
+        assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
+        assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(
+                28.0,
+                lookupRegion(sideSheet, "." + M3SideSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(
+                28.0,
+                lookupRegion(bottomSheet, "." + M3BottomSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(
+                36.0,
+                lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefWidth(),
+                0.0001
+        );
+        assertEquals(
+                5.0,
+                lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefHeight(),
                 0.0001
         );
     }
@@ -12502,11 +12560,22 @@ final class M3ControlStyleTest {
             M3TextArea textArea = M3TextArea.withVariant("Multiline\ntext", M3TextInputVariant.FILLED);
             textArea.setPrefSize(300.0, 128.0);
             M3Chip filterChip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
+            M3MenuItem menuOpen = new M3MenuItem("Open");
+            M3MenuItem menuSave = new M3MenuItem("Save");
+            M3Menu menu = new M3Menu(menuOpen, menuSave);
             M3SearchBar searchBar = new M3SearchBar("Search");
             searchBar.setPrefWidth(300.0);
+            M3ListItem searchResult = new M3ListItem("Expressive result");
+            M3SearchView searchView = new M3SearchView("Search", searchResult);
+            searchView.setPrefWidth(340.0);
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
             M3ListItem listItem = new M3ListItem("Expressive list item");
             M3Avatar avatar = new M3Avatar("EX");
+            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side sheet content"));
+            sideSheet.setPrefHeight(160.0);
+            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom sheet content"));
+            bottomSheet.setPrefWidth(360.0);
+            bottomSheet.setPrefHeight(180.0);
             M3NavigationItem navigationBarItem = M3NavigationItem.withSelected("Home", new M3Icon("H"), true);
             M3NavigationBar navigationBar = new M3NavigationBar(
                     navigationBarItem,
@@ -12545,7 +12614,9 @@ final class M3ControlStyleTest {
                             textField,
                             textArea,
                             filterChip,
+                            menu,
                             searchBar,
+                            searchView,
                             datePicker
                     ),
                     visualSection(
@@ -12555,11 +12626,13 @@ final class M3ControlStyleTest {
                             navigationBar,
                             navigationRail,
                             navigationDrawer,
-                            topAppBar
+                            topAppBar,
+                            sideSheet,
+                            bottomSheet
                     )
             );
             root.setStyle("-fx-background-color: white; -fx-padding: 24px; " + visualTestColors());
-            Scene scene = new Scene(root, 960.0, 920.0);
+            Scene scene = new Scene(root, 960.0, 1080.0);
             M3Theme expressiveTheme = M3Theme.fromSeed(
                     Color.web("#006a6a"),
                     M3Profile.EXPRESSIVE_2025,
@@ -12582,10 +12655,31 @@ final class M3ControlStyleTest {
             assertEquals(64.0, textField.getContainerHeight(), 0.0001);
             assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
             assertEquals(36.0, filterChip.getContainerHeight(), 0.0001);
+            assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
+            assertEquals(56.0, menuOpen.getOneLineHeight(), 0.0001);
+            assertEquals(16.0, menuOpen.getHorizontalPadding(), 0.0001);
+            assertEquals(16.0, menuOpen.getContentSpacing(), 0.0001);
             assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
             assertEquals(64.0, searchBar.getHeight(), 0.0001);
+            assertEquals(20.0, searchBar.getPadding().getLeft(), 0.0001);
+            assertEquals(12.0, searchView.getPadding().getBottom(), 0.0001);
+            assertEquals(64.0, searchResult.getOneLineHeight(), 0.0001);
+            assertEquals(20.0, searchResult.getHorizontalPadding(), 0.0001);
+            assertEquals(16.0, searchResult.getContentSpacing(), 0.0001);
             assertEquals(64.0, listItem.getOneLineHeight(), 0.0001);
             assertEquals(44.0, avatar.getContainerSize(), 0.0001);
+            assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
+            assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
+            assertEquals(
+                    28.0,
+                    lookupRegion(sideSheet, "." + M3SideSheet.CONTENT_STYLE_CLASS).getPadding().getLeft(),
+                    0.0001
+            );
+            assertEquals(
+                    36.0,
+                    lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefWidth(),
+                    0.0001
+            );
             assertEquals(88.0, navigationBar.getPrefHeight(), 0.0001);
             assertEquals(96.0, navigationBarItem.getItemWidth(), 0.0001);
             assertEquals(72.0, navigationBarItem.getIndicatorWidth(), 0.0001);
@@ -12604,7 +12698,11 @@ final class M3ControlStyleTest {
             assertSnapshotHasColorVariety(image, 18);
             assertSnapshotNodeContainsContrast(image, filledButton, Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, toggleGroup, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, menu, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, searchView, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, datePicker, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, sideSheet, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, bottomSheet, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, navigationBar, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, navigationRail, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, navigationDrawer, Color.WHITE, 0.04);
