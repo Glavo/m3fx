@@ -117,6 +117,7 @@ final class M3TokenFactoryTest {
         assertSame(componentTokens, tokenSet.componentTokens());
         assertEquals(51.0, tokenSet.componentTokens().filledButton().height(), 0.0001);
         assertEquals(70.0, tokenSet.componentTokens().floatingActionButton().regularSize(), 0.0001);
+        assertEquals(33.0, tokenSet.componentTokens().icon().largeSize(), 0.0001);
         assertEquals(49.0, tokenSet.componentTokens().buttonGroup().splitMenuButtonWidth(), 0.0001);
         assertEquals(61.0, tokenSet.componentTokens().tab().containerHeight(), 0.0001);
         assertEquals(59.0, tokenSet.componentTokens().topAppBar().containerHeight(), 0.0001);
@@ -242,6 +243,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ButtonTokens(55.0, 25.0, 21.0),
                 new M3ComponentTokens.ButtonTokens(56.0, 28.0, 0.0),
                 new M3ComponentTokens.FabTokens(50.0, 70.0, 110.0, 14.0, 22.0, 30.0, 13.0, 17.0, 25.0),
+                new M3ComponentTokens.IconTokens(19.0, 25.0, 33.0, 41.0),
                 new M3ComponentTokens.ButtonGroupTokens(23.0, 24.0, 49.0),
                 new M3ComponentTokens.ButtonTokens(57.0, 26.0, 14.0),
                 new M3ComponentTokens.TabTokens(61.0, 91.0, 15.0, 4.0, 4.0),
@@ -272,7 +274,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ScrimTokens(0.31),
                 new M3ComponentTokens.SelectionTokens(42.0, 20.0),
                 new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 50.0),
-                new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0),
+                new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0, 9.0, 11.0),
                 new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
                 new M3ComponentTokens.SurfaceTokens(22.0, 19.0),
                 new M3ComponentTokens.CarouselTokens(5.0, 13.0, 0.91, 11.0, 0.13, 4.0),

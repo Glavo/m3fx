@@ -5691,6 +5691,18 @@ final class M3ControlStyleTest {
         assertTrue(first.isSelected());
     }
 
+    /// Verifies that chip group layout gaps are styleable from CSS.
+    @Test
+    void chipGroupGapTokensAreStyleable() {
+        M3ChipGroup group = new M3ChipGroup(new M3Chip("First"), new M3Chip("Second"));
+        group.setStyle("-m3-chip-group-horizontal-gap: 12px; -m3-chip-group-vertical-gap: 14px;");
+
+        applyCss(group);
+
+        assertEquals(12.0, group.getHorizontalGap(), 0.0001);
+        assertEquals(14.0, group.getVerticalGap(), 0.0001);
+    }
+
     /// Verifies that segmented button component token properties are styleable from CSS.
     @Test
     void segmentedButtonTokensAreStyleable() {

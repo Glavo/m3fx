@@ -17,6 +17,11 @@
     -fx-cursor: hand;
 }
 
+.m3-chip-group {
+    -m3-chip-group-horizontal-gap: 8px;
+    -m3-chip-group-vertical-gap: 8px;
+}
+
 .m3-chip.m3-assist-chip,
 .m3-chip.m3-assist-chip:hover,
 .m3-chip.m3-assist-chip:focused,

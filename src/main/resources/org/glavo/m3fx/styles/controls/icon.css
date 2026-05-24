@@ -1,5 +1,9 @@
 .m3-icon {
     -m3-icon-font-family: "System";
+    -m3-icon-small-size: 18px;
+    -m3-icon-medium-size: 24px;
+    -m3-icon-large-size: 32px;
+    -m3-icon-extra-large-size: 40px;
     -m3-icon-size: 24px;
     -m3-icon-font-weight: 500;
     -fx-alignment: center;
@@ -7,19 +11,19 @@
 }
 
 .m3-small-icon {
-    -m3-icon-size: 18px;
+    -m3-icon-size: -m3-icon-small-size;
 }
 
 .m3-medium-icon {
-    -m3-icon-size: 24px;
+    -m3-icon-size: -m3-icon-medium-size;
 }
 
 .m3-large-icon {
-    -m3-icon-size: 32px;
+    -m3-icon-size: -m3-icon-large-size;
 }
 
 .m3-extra-large-icon {
-    -m3-icon-size: 40px;
+    -m3-icon-size: -m3-icon-extra-large-size;
 }
 
 .m3-primary-icon {

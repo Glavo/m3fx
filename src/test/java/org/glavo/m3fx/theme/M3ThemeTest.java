@@ -22,6 +22,7 @@ import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
+import org.glavo.m3fx.controls.M3ChipGroup;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3DialogPane;
@@ -31,7 +32,10 @@ import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3FormPane;
 import org.glavo.m3fx.controls.M3FormRow;
 import org.glavo.m3fx.controls.M3FormSection;
+import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3IconSize;
+import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3Menu;
@@ -135,6 +139,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-button.m3-grouped-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-button.m3-split-button-menu"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-large-icon"));
         assertTrue(theme.toControlStyleRules().contains(".m3-display-medium-text"));
         assertTrue(theme.toControlStyleRules().contains(".m3-body-small-text"));
         assertTrue(theme.toControlStyleRules().contains(".m3-regular-fab"));
@@ -167,6 +172,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-surface-elevation-level5"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
+        assertNotNull(theme.tokens().componentTokens().icon());
         assertNotNull(theme.tokens().componentTokens().buttonGroup());
         assertNotNull(theme.tokens().componentTokens().segmentedButton());
         assertNotNull(theme.tokens().componentTokens().tab());
@@ -209,6 +215,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-horizontal-padding: 28px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-text-horizontal-padding: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-small-size: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-large-size: 36px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size: 64px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-horizontal-padding: 18px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height: 48px"));
@@ -224,6 +232,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 56px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-horizontal-padding: 18px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-group-horizontal-gap: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-padding: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-container-shape: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-horizontal-padding: 20px"));
@@ -280,6 +289,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
+        assertNotNull(theme.tokens().componentTokens().icon());
         assertNotNull(theme.tokens().componentTokens().buttonGroup());
         assertNotNull(theme.tokens().componentTokens().segmentedButton());
         assertNotNull(theme.tokens().componentTokens().tab());
@@ -300,6 +310,7 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().validationSummary());
         assertEquals(28.0, theme.tokens().componentTokens().filledButton().horizontalPadding(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().textButton().horizontalPadding(), 0.0001);
+        assertEquals(36.0, theme.tokens().componentTokens().icon().largeSize(), 0.0001);
         assertEquals(22.0, theme.tokens().componentTokens().buttonGroup().buttonHorizontalPadding(), 0.0001);
         assertEquals(52.0, theme.tokens().componentTokens().buttonGroup().splitMenuButtonWidth(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().floatingActionButton().regularHorizontalPadding(), 0.0001);
@@ -307,6 +318,7 @@ final class M3ThemeTest {
         assertEquals(20.0, theme.tokens().componentTokens().tab().horizontalPadding(), 0.0001);
         assertEquals(4.0, theme.tokens().componentTokens().tab().activeIndicatorHeight(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().chip().horizontalPadding(), 0.0001);
+        assertEquals(10.0, theme.tokens().componentTokens().chip().groupHorizontalGap(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().field().horizontalPadding(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().textArea().verticalPadding(), 0.0001);
         assertEquals(48.0, theme.tokens().componentTokens().selection().touchTargetSize(), 0.0001);
@@ -672,7 +684,9 @@ final class M3ThemeTest {
         M3Button carouselSecond = new M3Button("Second");
         M3Carousel carousel = new M3Carousel(carouselFirst, carouselSecond);
         carousel.select(carouselSecond);
+        M3Icon icon = new M3Icon("I", M3IconSize.LARGE, M3IconVariant.PRIMARY);
         M3Chip chip = new M3Chip("Chip");
+        M3ChipGroup chipGroup = new M3ChipGroup(new M3Chip("First"), new M3Chip("Second"));
         M3FloatingActionButton fab = new M3FloatingActionButton();
         fab.setSize(M3FloatingActionButtonSize.LARGE);
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Week");
@@ -709,7 +723,9 @@ final class M3ThemeTest {
                 displayText,
                 surface,
                 carousel,
+                icon,
                 chip,
+                chipGroup,
                 fab,
                 segmentedButton,
                 tab
@@ -801,8 +817,11 @@ final class M3ThemeTest {
         assertEquals(0.94, carouselFirst.getOpacity(), 0.0001);
         assertEquals(1.0, carouselSecond.getOpacity(), 0.0001);
         assertSelectedCarouselShadow(carouselSecond, 12.0, 0.14, 4.0);
+        assertEquals(36.0, icon.getIconSize(), 0.0001);
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
         assertEquals(18.0, chip.getHorizontalPadding(), 0.0001);
+        assertEquals(10.0, chipGroup.getHorizontalGap(), 0.0001);
+        assertEquals(10.0, chipGroup.getVerticalGap(), 0.0001);
         assertEquals(104.0, fab.getContainerSize(), 0.0001);
         assertEquals(28.0, fab.getHorizontalPadding(), 0.0001);
         assertEquals(48.0, segmentedButton.getContainerHeight(), 0.0001);
@@ -877,8 +896,11 @@ final class M3ThemeTest {
         assertEquals(12.0, ((javafx.scene.layout.HBox) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getSpacing(), 0.0001);
         assertEquals(0.92, carouselFirst.getOpacity(), 0.0001);
         assertSelectedCarouselShadow(carouselSecond, 10.0, 0.12, 3.0);
+        assertEquals(32.0, icon.getIconSize(), 0.0001);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
         assertEquals(16.0, chip.getHorizontalPadding(), 0.0001);
+        assertEquals(8.0, chipGroup.getHorizontalGap(), 0.0001);
+        assertEquals(8.0, chipGroup.getVerticalGap(), 0.0001);
         assertEquals(96.0, fab.getContainerSize(), 0.0001);
         assertEquals(24.0, fab.getHorizontalPadding(), 0.0001);
         assertEquals(40.0, segmentedButton.getContainerHeight(), 0.0001);

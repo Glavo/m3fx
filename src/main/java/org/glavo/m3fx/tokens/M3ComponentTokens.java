@@ -53,6 +53,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the floating action button component tokens
     FabTokens floatingActionButton();
 
+    /// Returns tokens used by icon glyph primitives.
+    ///
+    /// @return the icon component tokens
+    IconTokens icon();
+
     /// Returns tokens used by connected button groups and split buttons.
     ///
     /// @return the button group component tokens
@@ -232,6 +237,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param elevatedButton the elevated button component tokens
     /// @param iconButton the icon button component tokens
     /// @param floatingActionButton the floating action button component tokens
+    /// @param icon the icon component tokens
     /// @param buttonGroup the button group component tokens
     /// @param segmentedButton the segmented button component tokens
     /// @param tab the tab component tokens
@@ -275,6 +281,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             ButtonTokens elevatedButton,
             ButtonTokens iconButton,
             FabTokens floatingActionButton,
+            IconTokens icon,
             ButtonGroupTokens buttonGroup,
             ButtonTokens segmentedButton,
             TabTokens tab,
@@ -318,6 +325,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 elevatedButton,
                 iconButton,
                 floatingActionButton,
+                icon,
                 buttonGroup,
                 segmentedButton,
                 tab,
@@ -368,6 +376,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
         double buttonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double iconButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
+        double iconSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 20.0 : 18.0);
+        double iconMediumSize = density.apply(24.0);
+        double iconLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
+        double iconExtraLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
         double fabSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double fabRegularSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double fabLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 104.0 : 96.0);
@@ -498,6 +510,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double tabActiveIndicatorHeight = density.apply(expressive ? 4.0 : 3.0);
         double tabActiveIndicatorShape = density.apply(expressive ? 4.0 : 3.0);
         double chipHorizontalPadding = density.apply(expressive ? 18.0 : 16.0);
+        double chipGroupHorizontalGap = density.apply(expressive ? 10.0 : 8.0);
+        double chipGroupVerticalGap = density.apply(expressive ? 10.0 : 8.0);
         double fieldHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
         double textAreaHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
         double textAreaVerticalPadding = density.apply(expressive ? 20.0 : 16.0);
@@ -546,6 +560,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         fabRegularHorizontalPadding,
                         fabLargeHorizontalPadding
                 ),
+                new IconTokens(iconSmallSize, iconMediumSize, iconLargeSize, iconExtraLargeSize),
                 new ButtonGroupTokens(groupedButtonHorizontalPadding, groupedButtonHorizontalPadding, splitButtonMenuWidth),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
                 new TabTokens(
@@ -647,7 +662,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new ScrimTokens(0.32),
                 new SelectionTokens(selectionTouchTargetSize, shapeTokens.full()),
                 new SliderTokens(sliderTrackThickness, shapeTokens.full(), sliderThumbSize, sliderTouchTargetSize),
-                new ChipTokens(chipHeight, shapeTokens.small(), chipHorizontalPadding),
+                new ChipTokens(chipHeight, shapeTokens.small(), chipHorizontalPadding, chipGroupHorizontalGap, chipGroupVerticalGap),
                 new ProgressTokens(
                         density.apply(4.0),
                         shapeTokens.full(),
@@ -769,6 +784,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, "button-elevated", elevatedButton());
         append(builder, "button-icon", iconButton());
         append(builder, floatingActionButton());
+        append(builder, icon());
         append(builder, buttonGroup());
         append(builder, "segmented-button", segmentedButton());
         append(builder, tab());
@@ -818,6 +834,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendButtonRule(builder, ".m3-elevated-button", elevatedButton());
         appendButtonRule(builder, ".m3-icon-button", iconButton());
         appendButtonRule(builder, ".m3-icon-toggle-button", iconButton());
+        appendIconRules(builder, icon());
         appendConnectedButtonRules(builder, filledButton(), buttonGroup());
         appendFabRule(
                 builder,
@@ -922,6 +939,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendSliderTrackRule(builder, ".m3-slider .track", slider());
         appendSliderThumbRule(builder, ".m3-slider .thumb", slider());
         appendChipRule(builder, ".m3-chip", chip());
+        appendChipGroupRule(builder, ".m3-chip-group", chip());
         appendProgressBarRule(builder, ".m3-progress-bar", progress());
         appendProgressBarTrackRule(builder, ".m3-progress-bar .track", progress());
         appendProgressBarTrackRule(builder, ".m3-progress-bar .bar", progress());
@@ -1006,6 +1024,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-fab-small-horizontal-padding", M3TokenCss.pixels(tokens.smallHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-fab-regular-horizontal-padding", M3TokenCss.pixels(tokens.regularHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-fab-large-horizontal-padding", M3TokenCss.pixels(tokens.largeHorizontalPadding()));
+    }
+
+    /// Appends icon token declarations.
+    private static void append(StringBuilder builder, IconTokens tokens) {
+        M3TokenCss.append(builder, "-m3-icon-small-size", M3TokenCss.pixels(tokens.smallSize()));
+        M3TokenCss.append(builder, "-m3-icon-medium-size", M3TokenCss.pixels(tokens.mediumSize()));
+        M3TokenCss.append(builder, "-m3-icon-large-size", M3TokenCss.pixels(tokens.largeSize()));
+        M3TokenCss.append(builder, "-m3-icon-extra-large-size", M3TokenCss.pixels(tokens.extraLargeSize()));
     }
 
     /// Appends button group token declarations.
@@ -1201,6 +1227,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-chip-container-height", M3TokenCss.pixels(tokens.height()));
         M3TokenCss.append(builder, "-m3-chip-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-chip-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-chip-group-horizontal-gap", M3TokenCss.pixels(tokens.groupHorizontalGap()));
+        M3TokenCss.append(builder, "-m3-chip-group-vertical-gap", M3TokenCss.pixels(tokens.groupVerticalGap()));
     }
 
     /// Appends progress token declarations.
@@ -1418,6 +1446,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(tokens.containerShape()));
+        endRule(builder);
+    }
+
+    /// Appends generated icon size rules.
+    private static void appendIconRules(StringBuilder builder, IconTokens tokens) {
+        appendIconRule(builder, ".m3-small-icon", tokens.smallSize());
+        appendIconRule(builder, ".m3-medium-icon", tokens.mediumSize());
+        appendIconRule(builder, ".m3-large-icon", tokens.largeSize());
+        appendIconRule(builder, ".m3-extra-large-icon", tokens.extraLargeSize());
+    }
+
+    /// Appends a generated icon size rule.
+    private static void appendIconRule(StringBuilder builder, String selector, double size) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-icon-size", M3TokenCss.pixels(size));
         endRule(builder);
     }
 
@@ -2144,6 +2187,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends a generated chip group rule.
+    private static void appendChipGroupRule(StringBuilder builder, String selector, ChipTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-chip-group-horizontal-gap", M3TokenCss.pixels(tokens.groupHorizontalGap()));
+        appendDeclaration(builder, "-m3-chip-group-vertical-gap", M3TokenCss.pixels(tokens.groupVerticalGap()));
+        endRule(builder);
+    }
+
     /// Appends a progress bar token CSS rule.
     private static void appendProgressBarRule(StringBuilder builder, String selector, ProgressTokens tokens) {
         beginRule(builder, selector);
@@ -2604,6 +2655,28 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         }
     }
 
+    /// Tokens shared by icon size roles.
+    ///
+    /// @param smallSize the small icon glyph size
+    /// @param mediumSize the medium icon glyph size
+    /// @param largeSize the large icon glyph size
+    /// @param extraLargeSize the extra-large icon glyph size
+    @NotNullByDefault
+    record IconTokens(
+            double smallSize,
+            double mediumSize,
+            double largeSize,
+            double extraLargeSize
+    ) {
+        /// Creates icon tokens.
+        public IconTokens {
+            validateNonNegative(smallSize, "smallSize");
+            validateNonNegative(mediumSize, "mediumSize");
+            validateNonNegative(largeSize, "largeSize");
+            validateNonNegative(extraLargeSize, "extraLargeSize");
+        }
+    }
+
     /// Tokens used by connected button groups and split buttons.
     ///
     /// @param buttonHorizontalPadding the horizontal padding applied to grouped buttons
@@ -3021,17 +3094,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param height the preferred chip height
     /// @param containerShape the chip container radius
     /// @param horizontalPadding the horizontal content padding
+    /// @param groupHorizontalGap the horizontal gap between chips in a chip group
+    /// @param groupVerticalGap the vertical gap between wrapped rows in a chip group
     @NotNullByDefault
     record ChipTokens(
             double height,
             double containerShape,
-            double horizontalPadding
+            double horizontalPadding,
+            double groupHorizontalGap,
+            double groupVerticalGap
     ) {
         /// Creates chip tokens.
         public ChipTokens {
             validateNonNegative(height, "height");
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(groupHorizontalGap, "groupHorizontalGap");
+            validateNonNegative(groupVerticalGap, "groupVerticalGap");
         }
     }
 
