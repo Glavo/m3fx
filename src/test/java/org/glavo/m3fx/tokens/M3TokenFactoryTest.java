@@ -130,6 +130,8 @@ final class M3TokenFactoryTest {
         assertEquals(54.0, tokenSet.componentTokens().timePicker().displayCellHeight(), 0.0001);
         assertEquals(71.0, tokenSet.componentTokens().form().rowMinHeight(), 0.0001);
         assertEquals(14.0, tokenSet.componentTokens().validationSummary().contentPadding(), 0.0001);
+        assertEquals(22.0, tokenSet.componentTokens().surface().containerShape(), 0.0001);
+        assertEquals(0.91, tokenSet.componentTokens().carousel().itemOpacity(), 0.0001);
         assertEquals(62.0, tokenSet.componentTokens().bottomAppBar().containerHeight(), 0.0001);
         assertEquals(72.0, tokenSet.componentTokens().navigationRail().containerWidth(), 0.0001);
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 51px"));
@@ -176,6 +178,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-picker-field-popup"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-form-row-text-column"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-carousel-selected-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-surface"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-sheet .m3-bottom-sheet-drag-handle"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-scrim.m3-scrim"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-wavelength: 41px"));
@@ -266,6 +270,8 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 50.0),
                 new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0),
                 new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
+                new M3ComponentTokens.SurfaceTokens(22.0, 19.0),
+                new M3ComponentTokens.CarouselTokens(5.0, 13.0, 0.91, 11.0, 0.13, 4.0),
                 new M3ComponentTokens.CardTokens(13.0, 18.0, 2.0),
                 new M3ComponentTokens.DialogTokens(30.0, 26.0),
                 new M3ComponentTokens.SnackbarTokens(9.0, 18.0),

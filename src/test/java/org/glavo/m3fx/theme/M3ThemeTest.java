@@ -5,6 +5,8 @@ package org.glavo.m3fx.theme;
 
 import javafx.application.Platform;
 import javafx.scene.Scene;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.effect.Effect;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
@@ -16,6 +18,7 @@ import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3Card;
+import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3DatePicker;
@@ -42,6 +45,7 @@ import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3Snackbar;
+import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
@@ -70,6 +74,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -122,6 +127,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-form-row-min-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-validation-summary-container-shape"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-surface-content-padding"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-display-medium-text"));
         assertTrue(theme.toControlStyleRules().contains(".m3-body-small-text"));
@@ -144,6 +151,8 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-list-section-header"));
         assertTrue(theme.toControlStyleRules().contains(".m3-form-row"));
         assertTrue(theme.toControlStyleRules().contains(".m3-validation-summary-item"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-carousel-track"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-surface"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.08"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.1"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.38"));
@@ -167,6 +176,8 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().listItem());
         assertNotNull(theme.tokens().componentTokens().form());
         assertNotNull(theme.tokens().componentTokens().validationSummary());
+        assertNotNull(theme.tokens().componentTokens().surface());
+        assertNotNull(theme.tokens().componentTokens().carousel());
     }
 
     /// Verifies that the expressive profile creates a complete token set.
@@ -250,6 +261,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-horizontal-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-form-row-min-height: 72px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-validation-summary-content-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-surface-content-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing: 16px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-content-spacing: 6px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-horizontal-padding: 40px"));
@@ -299,6 +312,8 @@ final class M3ThemeTest {
         assertEquals(12.0, theme.tokens().componentTokens().search().viewResultPadding(), 0.0001);
         assertEquals(72.0, theme.tokens().componentTokens().form().rowMinHeight(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().validationSummary().contentPadding(), 0.0001);
+        assertEquals(24.0, theme.tokens().componentTokens().surface().containerShape(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().carousel().itemSpacing(), 0.0001);
         assertEquals(28.0, theme.tokens().componentTokens().sheet().contentPadding(), 0.0001);
         assertEquals(36.0, theme.tokens().componentTokens().sheet().dragHandleWidth(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().card().containerShape(), 0.0001);
@@ -638,6 +653,11 @@ final class M3ThemeTest {
         M3Scrim scrim = new M3Scrim();
         M3Avatar avatar = new M3Avatar("A");
         M3Text displayText = new M3Text("Display", M3TextRole.DISPLAY_LARGE);
+        M3Surface surface = new M3Surface();
+        M3Button carouselFirst = new M3Button("First");
+        M3Button carouselSecond = new M3Button("Second");
+        M3Carousel carousel = new M3Carousel(carouselFirst, carouselSecond);
+        carousel.select(carouselSecond);
         M3Chip chip = new M3Chip("Chip");
         M3FloatingActionButton fab = new M3FloatingActionButton();
         fab.setSize(M3FloatingActionButtonSize.LARGE);
@@ -671,6 +691,8 @@ final class M3ThemeTest {
                 scrim,
                 avatar,
                 displayText,
+                surface,
+                carousel,
                 chip,
                 fab,
                 segmentedButton,
@@ -753,6 +775,13 @@ final class M3ThemeTest {
         assertEquals(44.0, avatar.getContainerSize(), 0.0001);
         assertEquals(64.0, displayText.getTypographyFontSize(), 0.0001);
         assertEquals(72.0, displayText.getTypographyLineHeight(), 0.0001);
+        assertEquals(24.0, surface.getContainerShape(), 0.0001);
+        assertEquals(20.0, surface.getContentPadding(), 0.0001);
+        assertEquals(8.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(16.0, ((javafx.scene.layout.HBox) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(0.94, carouselFirst.getOpacity(), 0.0001);
+        assertEquals(1.0, carouselSecond.getOpacity(), 0.0001);
+        assertSelectedCarouselShadow(carouselSecond, 12.0, 0.14, 4.0);
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
         assertEquals(18.0, chip.getHorizontalPadding(), 0.0001);
         assertEquals(104.0, fab.getContainerSize(), 0.0001);
@@ -820,6 +849,12 @@ final class M3ThemeTest {
         assertEquals(40.0, avatar.getContainerSize(), 0.0001);
         assertEquals(57.0, displayText.getTypographyFontSize(), 0.0001);
         assertEquals(64.0, displayText.getTypographyLineHeight(), 0.0001);
+        assertEquals(12.0, surface.getContainerShape(), 0.0001);
+        assertEquals(16.0, surface.getContentPadding(), 0.0001);
+        assertEquals(4.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(12.0, ((javafx.scene.layout.HBox) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(0.92, carouselFirst.getOpacity(), 0.0001);
+        assertSelectedCarouselShadow(carouselSecond, 10.0, 0.12, 3.0);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
         assertEquals(16.0, chip.getHorizontalPadding(), 0.0001);
         assertEquals(96.0, fab.getContainerSize(), 0.0001);
@@ -923,6 +958,20 @@ final class M3ThemeTest {
         Files.writeString(path, content);
         path.toFile().deleteOnExit();
         return path.toUri().toString();
+    }
+
+    /// Verifies that a selected carousel item uses the expected token-driven shadow.
+    private static void assertSelectedCarouselShadow(
+            M3Button item,
+            double radius,
+            double spread,
+            double offsetY
+    ) {
+        Effect effect = item.getEffect();
+        DropShadow shadow = assertInstanceOf(DropShadow.class, effect);
+        assertEquals(radius, shadow.getRadius(), 0.0001);
+        assertEquals(spread, shadow.getSpread(), 0.0001);
+        assertEquals(offsetY, shadow.getOffsetY(), 0.0001);
     }
 
     /// Verifies that an icon button keeps the fixed swatch metrics from application CSS.

@@ -22,6 +22,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - M3 Expressive navigation and list components use profile-specific spacing, padding, and selected-container shape tokens.
 - M3 Expressive menus, search surfaces, picker surfaces, and sheets use profile-specific padding, item spacing, result spacing, day/time cell sizing, popup sizing, and drag-handle metrics.
 - M3 Expressive forms and validation summaries use profile-specific row spacing, section spacing, label width, row height, summary padding, and invalid-item geometry.
+- M3 Expressive surfaces and carousels use profile-specific surface padding, container shape, carousel track padding, item spacing, item opacity, and selected-item shadow metrics.
 - M3 Expressive cards, dialogs, snackbars, and app bars use profile-specific container shape, padding, height, and action spacing metrics.
 - Theme installation marks roots with profile and brightness style classes so applications and demo pages can branch CSS for baseline, expressive, light, and dark modes without replacing the theme API.
 
@@ -72,6 +73,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Menu, search, picker field, date picker, time picker, and sheet component tokens include Expressive-specific container padding, item spacing, result padding, day/time cell sizing, popup sizing, sheet padding, and drag-handle metrics.
 - Card, dialog, snackbar, banner, tooltip, top app bar, and bottom app bar component tokens include Expressive-specific shape, padding, height, action spacing, popup sizing, and top app bar variant metrics.
 - Form and validation summary component tokens include Expressive-specific spacing, row sizing, label width, container shape, and invalid-item padding.
+- Surface and carousel component tokens include Expressive-specific surface geometry and carousel track/item emphasis metrics.
 
 ### Component Coverage
 

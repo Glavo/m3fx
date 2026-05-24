@@ -34,6 +34,8 @@ import java.util.Objects;
 /// @param slider tokens used by sliders
 /// @param chip tokens used by chips
 /// @param progress tokens used by progress controls
+/// @param surface tokens used by surfaces
+/// @param carousel tokens used by carousels
 /// @param card tokens used by cards
 /// @param dialog tokens used by dialogs
 /// @param snackbar tokens used by snackbar controls
@@ -74,6 +76,8 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.SliderTokens slider,
         M3ComponentTokens.ChipTokens chip,
         M3ComponentTokens.ProgressTokens progress,
+        M3ComponentTokens.SurfaceTokens surface,
+        M3ComponentTokens.CarouselTokens carousel,
         M3ComponentTokens.CardTokens card,
         M3ComponentTokens.DialogTokens dialog,
         M3ComponentTokens.SnackbarTokens snackbar,
@@ -115,6 +119,8 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(slider, "slider");
         Objects.requireNonNull(chip, "chip");
         Objects.requireNonNull(progress, "progress");
+        Objects.requireNonNull(surface, "surface");
+        Objects.requireNonNull(carousel, "carousel");
         Objects.requireNonNull(card, "card");
         Objects.requireNonNull(dialog, "dialog");
         Objects.requireNonNull(snackbar, "snackbar");
