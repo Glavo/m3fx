@@ -17,7 +17,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
 - M3 Expressive currently has profile-specific color, typography, shape, component sizing, semantic motion scheme tokens, and motion behavior timings.
 - M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens.
-- M3 Expressive action controls use profile-specific button padding, FAB extended padding, segmented button padding, tab indicator metrics, and chip padding.
+- M3 Expressive action controls use profile-specific button padding, connected button padding, split button menu sizing, FAB extended padding, segmented button padding, tab indicator metrics, and chip padding.
 - M3 Expressive inputs, selection controls, and sliders use profile-specific input padding, touch target, track thickness, and thumb sizing.
 - M3 Expressive navigation and list components use profile-specific spacing, padding, and selected-container shape tokens.
 - M3 Expressive menus, search surfaces, picker surfaces, and sheets use profile-specific padding, item spacing, result spacing, day/time cell sizing, popup sizing, and drag-handle metrics.
@@ -68,6 +68,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - JavaFX scroll panes styled through `M3ScrollPanes` and virtualized list view flows support smooth wheel, focus, and programmatic scrolling that resolve the active motion scheme and animation settings, including horizontal-only content such as carousel viewports.
 - Progress component tokens include wavy linear and circular amplitude, wavelength, track gap, and linear stop indicator metrics; applications can override them per control through CSS.
 - Button, FAB, segmented button, tab, and chip component tokens include Expressive-specific horizontal padding and tab active indicator metrics.
+- Connected button group and split button component tokens include Expressive-specific grouped action padding and split menu width.
 - Text input, text area, selection, and slider component tokens include Expressive-specific padding and interaction geometry.
 - Navigation bar, navigation rail, navigation drawer, and list item component tokens include Expressive-specific content spacing, item spacing, and content padding.
 - Menu, search, picker field, date picker, time picker, and sheet component tokens include Expressive-specific container padding, item spacing, result padding, day/time cell sizing, popup sizing, sheet padding, and drag-handle metrics.

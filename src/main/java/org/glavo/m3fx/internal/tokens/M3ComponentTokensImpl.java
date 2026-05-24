@@ -17,6 +17,7 @@ import java.util.Objects;
 /// @param elevatedButton tokens used by elevated buttons
 /// @param iconButton tokens used by icon buttons
 /// @param floatingActionButton tokens used by floating action buttons
+/// @param buttonGroup tokens used by connected button groups and split buttons
 /// @param segmentedButton tokens used by segmented buttons
 /// @param tab tokens used by tabs
 /// @param field tokens used by text input controls
@@ -59,6 +60,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.ButtonTokens elevatedButton,
         M3ComponentTokens.ButtonTokens iconButton,
         M3ComponentTokens.FabTokens floatingActionButton,
+        M3ComponentTokens.ButtonGroupTokens buttonGroup,
         M3ComponentTokens.ButtonTokens segmentedButton,
         M3ComponentTokens.TabTokens tab,
         M3ComponentTokens.FieldTokens field,
@@ -102,6 +104,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(elevatedButton, "elevatedButton");
         Objects.requireNonNull(iconButton, "iconButton");
         Objects.requireNonNull(floatingActionButton, "floatingActionButton");
+        Objects.requireNonNull(buttonGroup, "buttonGroup");
         Objects.requireNonNull(segmentedButton, "segmentedButton");
         Objects.requireNonNull(tab, "tab");
         Objects.requireNonNull(field, "field");

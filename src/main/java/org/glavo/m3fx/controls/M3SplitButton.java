@@ -55,17 +55,6 @@ public class M3SplitButton extends Control {
     /// The pseudo-class applied to the child button rendered on the physical right edge.
     private static final PseudoClass RIGHT_EDGE_PSEUDO_CLASS = PseudoClass.getPseudoClass("right-edge");
 
-    /// Inline shape style for the child button rendered on the physical left edge.
-    private static final String LEFT_EDGE_SHAPE_STYLE =
-            "-fx-background-radius: 999px 0 0 999px; -fx-border-radius: 999px 0 0 999px;";
-
-    /// Inline shape style for the child button rendered on the physical right edge.
-    private static final String RIGHT_EDGE_SHAPE_STYLE =
-            "-fx-background-radius: 0 999px 999px 0; -fx-border-radius: 0 999px 999px 0;";
-
-    /// The minimum width used for the menu side of the split button.
-    private static final double DEFAULT_MENU_BUTTON_WIDTH = 48.0;
-
     /// The text used for the default menu indicator.
     private static final String MENU_INDICATOR_TEXT = "v";
 
@@ -454,8 +443,6 @@ public class M3SplitButton extends Control {
         M3ControlStyles.add(menuButton, MENU_BUTTON_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         buttonParts.setAll(actionButton, menuButton);
-        menuButton.setMinWidth(DEFAULT_MENU_BUTTON_WIDTH);
-        menuButton.setPrefWidth(DEFAULT_MENU_BUTTON_WIDTH);
         menuButton.setHorizontalPadding(0.0);
         actionButton.addEventHandler(ActionEvent.ACTION, event -> hideMenu());
         menuButton.showingProperty().addListener((observable, oldValue, newValue) ->
@@ -499,7 +486,6 @@ public class M3SplitButton extends Control {
     private static void applyEdgeState(M3Button button, boolean leftEdge) {
         button.pseudoClassStateChanged(LEFT_EDGE_PSEUDO_CLASS, leftEdge);
         button.pseudoClassStateChanged(RIGHT_EDGE_PSEUDO_CLASS, !leftEdge);
-        button.setStyle(leftEdge ? LEFT_EDGE_SHAPE_STYLE : RIGHT_EDGE_SHAPE_STYLE);
     }
 
     /// Creates the default Material Design 3 split button skin.

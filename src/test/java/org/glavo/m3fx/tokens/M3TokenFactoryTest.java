@@ -117,6 +117,7 @@ final class M3TokenFactoryTest {
         assertSame(componentTokens, tokenSet.componentTokens());
         assertEquals(51.0, tokenSet.componentTokens().filledButton().height(), 0.0001);
         assertEquals(70.0, tokenSet.componentTokens().floatingActionButton().regularSize(), 0.0001);
+        assertEquals(49.0, tokenSet.componentTokens().buttonGroup().splitMenuButtonWidth(), 0.0001);
         assertEquals(61.0, tokenSet.componentTokens().tab().containerHeight(), 0.0001);
         assertEquals(59.0, tokenSet.componentTokens().topAppBar().containerHeight(), 0.0001);
         assertEquals(60.0, tokenSet.componentTokens().topAppBar().mediumContainerHeight(), 0.0001);
@@ -168,6 +169,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-height: 51px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-body-large-text"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-split-button-menu-width: 49px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-fx-pref-width: 49px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-tab-active-indicator"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-top-app-bar-actions"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-text-area"));
@@ -239,6 +242,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ButtonTokens(55.0, 25.0, 21.0),
                 new M3ComponentTokens.ButtonTokens(56.0, 28.0, 0.0),
                 new M3ComponentTokens.FabTokens(50.0, 70.0, 110.0, 14.0, 22.0, 30.0, 13.0, 17.0, 25.0),
+                new M3ComponentTokens.ButtonGroupTokens(23.0, 24.0, 49.0),
                 new M3ComponentTokens.ButtonTokens(57.0, 26.0, 14.0),
                 new M3ComponentTokens.TabTokens(61.0, 91.0, 15.0, 4.0, 4.0),
                 new M3ComponentTokens.FieldTokens(66.0, 8.0, 18.0),

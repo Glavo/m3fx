@@ -53,6 +53,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the floating action button component tokens
     FabTokens floatingActionButton();
 
+    /// Returns tokens used by connected button groups and split buttons.
+    ///
+    /// @return the button group component tokens
+    ButtonGroupTokens buttonGroup();
+
     /// Returns tokens used by segmented buttons.
     ///
     /// @return the segmented button component tokens
@@ -227,6 +232,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param elevatedButton the elevated button component tokens
     /// @param iconButton the icon button component tokens
     /// @param floatingActionButton the floating action button component tokens
+    /// @param buttonGroup the button group component tokens
     /// @param segmentedButton the segmented button component tokens
     /// @param tab the tab component tokens
     /// @param field the text input component tokens
@@ -269,6 +275,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             ButtonTokens elevatedButton,
             ButtonTokens iconButton,
             FabTokens floatingActionButton,
+            ButtonGroupTokens buttonGroup,
             ButtonTokens segmentedButton,
             TabTokens tab,
             FieldTokens field,
@@ -311,6 +318,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 elevatedButton,
                 iconButton,
                 floatingActionButton,
+                buttonGroup,
                 segmentedButton,
                 tab,
                 field,
@@ -480,6 +488,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double topAppBarLargeBottomPadding = density.apply(expressive ? 32.0 : 28.0);
         double buttonHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
         double textButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
+        double groupedButtonHorizontalPadding = density.apply(expressive ? 22.0 : 20.0);
+        double splitButtonMenuWidth = density.apply(expressive ? 52.0 : 48.0);
         double fabSmallHorizontalPadding = density.apply(expressive ? 14.0 : 12.0);
         double fabRegularHorizontalPadding = density.apply(expressive ? 18.0 : 16.0);
         double fabLargeHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
@@ -536,6 +546,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         fabRegularHorizontalPadding,
                         fabLargeHorizontalPadding
                 ),
+                new ButtonGroupTokens(groupedButtonHorizontalPadding, groupedButtonHorizontalPadding, splitButtonMenuWidth),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
                 new TabTokens(
                         tabHeight,
@@ -758,6 +769,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, "button-elevated", elevatedButton());
         append(builder, "button-icon", iconButton());
         append(builder, floatingActionButton());
+        append(builder, buttonGroup());
         append(builder, "segmented-button", segmentedButton());
         append(builder, tab());
         append(builder, field());
@@ -806,7 +818,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendButtonRule(builder, ".m3-elevated-button", elevatedButton());
         appendButtonRule(builder, ".m3-icon-button", iconButton());
         appendButtonRule(builder, ".m3-icon-toggle-button", iconButton());
-        appendConnectedButtonRules(builder, filledButton());
+        appendConnectedButtonRules(builder, filledButton(), buttonGroup());
         appendFabRule(
                 builder,
                 ".m3-small-fab",
@@ -994,6 +1006,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-fab-small-horizontal-padding", M3TokenCss.pixels(tokens.smallHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-fab-regular-horizontal-padding", M3TokenCss.pixels(tokens.regularHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-fab-large-horizontal-padding", M3TokenCss.pixels(tokens.largeHorizontalPadding()));
+    }
+
+    /// Appends button group token declarations.
+    private static void append(StringBuilder builder, ButtonGroupTokens tokens) {
+        M3TokenCss.append(
+                builder,
+                "-m3-button-group-button-horizontal-padding",
+                M3TokenCss.pixels(tokens.buttonHorizontalPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-split-button-action-horizontal-padding",
+                M3TokenCss.pixels(tokens.splitActionHorizontalPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-split-button-menu-width",
+                M3TokenCss.pixels(tokens.splitMenuButtonWidth())
+        );
     }
 
     /// Appends tab token declarations.
@@ -1466,10 +1497,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends connected button group and split button override rules.
-    private static void appendConnectedButtonRules(StringBuilder builder, ButtonTokens tokens) {
+    private static void appendConnectedButtonRules(
+            StringBuilder builder,
+            ButtonTokens tokens,
+            ButtonGroupTokens groupTokens
+    ) {
         String radius = M3TokenCss.pixels(tokens.containerShape());
         beginRule(builder, ".m3-button.m3-grouped-button");
-        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(20.0));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(groupTokens.buttonHorizontalPadding()));
         endRule(builder);
 
         appendConnectedButtonShapeRule(
@@ -1506,18 +1541,35 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
 
         beginRule(builder, ".m3-button.m3-split-button-action");
-        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(20.0));
-        appendDeclaration(builder, "-fx-background-radius", radius + " 0 0 " + radius);
-        appendDeclaration(builder, "-fx-border-radius", radius + " 0 0 " + radius);
+        appendDeclaration(
+                builder,
+                "-m3-horizontal-padding",
+                M3TokenCss.pixels(groupTokens.splitActionHorizontalPadding())
+        );
         endRule(builder);
 
         beginRule(builder, ".m3-button.m3-split-button-menu");
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(0.0));
-        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(48.0));
-        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(48.0));
-        appendDeclaration(builder, "-fx-background-radius", "0 " + radius + " " + radius + " 0");
-        appendDeclaration(builder, "-fx-border-radius", "0 " + radius + " " + radius + " 0");
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(groupTokens.splitMenuButtonWidth()));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(groupTokens.splitMenuButtonWidth()));
         endRule(builder);
+
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-split-button .m3-button:left-edge",
+                radius,
+                "0",
+                "0",
+                radius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-split-button .m3-button:right-edge",
+                "0",
+                radius,
+                radius,
+                "0"
+        );
     }
 
     /// Appends a connected button position shape CSS rule.
@@ -2549,6 +2601,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(smallHorizontalPadding, "smallHorizontalPadding");
             validateNonNegative(regularHorizontalPadding, "regularHorizontalPadding");
             validateNonNegative(largeHorizontalPadding, "largeHorizontalPadding");
+        }
+    }
+
+    /// Tokens used by connected button groups and split buttons.
+    ///
+    /// @param buttonHorizontalPadding the horizontal padding applied to grouped buttons
+    /// @param splitActionHorizontalPadding the horizontal padding applied to split button action parts
+    /// @param splitMenuButtonWidth the preferred width of split button menu parts
+    @NotNullByDefault
+    record ButtonGroupTokens(
+            double buttonHorizontalPadding,
+            double splitActionHorizontalPadding,
+            double splitMenuButtonWidth
+    ) {
+        /// Creates button group tokens.
+        public ButtonGroupTokens {
+            validateNonNegative(buttonHorizontalPadding, "buttonHorizontalPadding");
+            validateNonNegative(splitActionHorizontalPadding, "splitActionHorizontalPadding");
+            validateNonNegative(splitMenuButtonWidth, "splitMenuButtonWidth");
         }
     }
 
