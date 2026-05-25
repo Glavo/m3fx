@@ -189,12 +189,12 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         }
 
         double rotation = indeterminate ? phase / INDETERMINATE_SHAPE_COUNT : -phase * 0.5;
-        ShapeSpec shape = indeterminate ? indeterminateShapeAt(phase) : determinateShapeAt(phase);
+        MorphState morph = indeterminate ? indeterminateMorphAt(phase) : determinateMorphAt(phase);
 
         for (int i = 0; i < SAMPLE_COUNT; i++) {
             double angle = Math.PI * 2.0 * i / SAMPLE_COUNT;
             double rotatedAngle = angle + Math.PI * 2.0 * rotation;
-            double shapeRadius = radiusFor(shape, angle) * radius;
+            double shapeRadius = radiusFor(morph, angle) * radius;
             double pointX = centerX + Math.cos(rotatedAngle) * shapeRadius;
             double pointY = centerY + Math.sin(rotatedAngle) * shapeRadius;
 
@@ -207,19 +207,28 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         indicator.getElements().add(new ClosePath());
     }
 
-    /// Returns the interpolated indeterminate shape for the current phase.
-    private static ShapeSpec indeterminateShapeAt(double phase) {
+    /// Returns the interpolated indeterminate morph state for the current phase.
+    private static MorphState indeterminateMorphAt(double phase) {
         double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
         int index = (int) Math.floor(normalized);
         double fraction = normalized - index;
         ShapeSpec current = INDETERMINATE_SHAPES[index];
         ShapeSpec next = INDETERMINATE_SHAPES[(index + 1) % INDETERMINATE_SHAPE_COUNT];
-        return current.interpolate(next, fraction);
+        return new MorphState(current, next, smoothStep(fraction));
     }
 
-    /// Returns the interpolated determinate shape for the current progress.
-    private static ShapeSpec determinateShapeAt(double progress) {
-        return DETERMINATE_START_SHAPE.interpolate(DETERMINATE_END_SHAPE, clamp(progress));
+    /// Returns the interpolated determinate morph state for the current progress.
+    private static MorphState determinateMorphAt(double progress) {
+        return new MorphState(DETERMINATE_START_SHAPE, DETERMINATE_END_SHAPE, smoothStep(clamp(progress)));
+    }
+
+    /// Returns a sampled radius multiplier for a morph state.
+    private static double radiusFor(MorphState morph, double angle) {
+        return interpolate(
+                radiusFor(morph.start(), angle),
+                radiusFor(morph.end(), angle),
+                morph.fraction()
+        );
     }
 
     /// Returns a sampled radius multiplier for a shape.
@@ -230,6 +239,12 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
         double wave = Math.cos(shape.lobes() * (angle + Math.PI * 2.0 * shape.phaseOffset()));
         return 1.0 - shape.amplitude() * 0.5 + shape.amplitude() * 0.5 * wave;
+    }
+
+    /// Returns a smooth interpolation fraction with zero velocity at both ends.
+    private static double smoothStep(double value) {
+        double clamped = clamp(value);
+        return clamped * clamped * (3.0 - 2.0 * clamped);
     }
 
     /// Returns the initial displayed progress value for a public progress value.
@@ -248,6 +263,22 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         return Math.max(0.0, Math.min(1.0, value));
     }
 
+    /// Interpolates between two scalar values.
+    private static double interpolate(double start, double end, double fraction) {
+        return start + (end - start) * fraction;
+    }
+
+    /// Describes the current morph between two sampled radial shapes.
+    ///
+    /// @param start the source shape
+    /// @param end the target shape
+    /// @param fraction the interpolation fraction from `0.0` to `1.0`
+    private record MorphState(ShapeSpec start, ShapeSpec end, double fraction) {
+        /// Creates a morph state.
+        private MorphState {
+        }
+    }
+
     /// Describes a sampled radial shape.
     ///
     /// @param lobes the number of radial lobes, or `0` for a circle
@@ -256,24 +287,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     private record ShapeSpec(int lobes, double amplitude, double phaseOffset) {
         /// Creates a shape specification.
         private ShapeSpec {
-        }
-
-        /// Interpolates this shape toward another shape.
-        ///
-        /// @param other the target shape
-        /// @param fraction the interpolation fraction from `0.0` to `1.0`
-        /// @return the interpolated shape
-        private ShapeSpec interpolate(ShapeSpec other, double fraction) {
-            double clamped = clamp(fraction);
-            int interpolatedLobes = clamped < 0.5 ? lobes : other.lobes;
-            double interpolatedAmplitude = interpolate(amplitude, other.amplitude, clamped);
-            double interpolatedPhaseOffset = interpolate(phaseOffset, other.phaseOffset, clamped);
-            return new ShapeSpec(interpolatedLobes, interpolatedAmplitude, interpolatedPhaseOffset);
-        }
-
-        /// Interpolates between two scalar values.
-        private static double interpolate(double start, double end, double fraction) {
-            return start + (end - start) * fraction;
         }
     }
 }
