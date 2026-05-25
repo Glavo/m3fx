@@ -49,13 +49,13 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// Shape coefficient states used by the indeterminate morphing loop.
     private static final double[][] INDETERMINATE_SHAPES = {
-            coefficients(0, 0.00, 0.00),
-            coefficients(3, 0.16, 0.08),
-            coefficients(4, 0.14, 0.21),
-            coefficients(5, 0.13, 0.34),
-            coefficients(6, 0.11, 0.47),
-            coefficients(7, 0.10, 0.59),
-            coefficients(5, 0.18, 0.74)
+            coefficients(8, 0.20, 0.00),
+            coefficients(7, 0.16, 0.08),
+            coefficients(5, 0.14, 0.21),
+            coefficients(2, 0.20, 0.25),
+            coefficients(8, 0.18, 0.47),
+            coefficients(4, 0.16, 0.59),
+            coefficients(2, 0.16, 0.00)
     };
 
     /// The determinate starting shape.

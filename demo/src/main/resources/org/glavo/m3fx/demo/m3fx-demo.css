@@ -143,12 +143,12 @@
     -fx-pref-height: 112px;
     -fx-max-width: 112px;
     -fx-max-height: 112px;
-    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-color: -m3-color-primary-container;
     -fx-background-radius: 56px;
 }
 
 .demo-contained-loading-indicator .m3-loading-indicator-indicator {
-    -fx-fill: -m3-color-on-secondary-container;
+    -fx-fill: -m3-color-on-primary-container;
 }
 
 .demo-icon-label {

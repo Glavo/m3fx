@@ -1333,19 +1333,26 @@ public final class M3FXDemoApp extends Application {
     /// Creates the loading indicator component page.
     private Node createLoadingIndicatorPage() {
         M3LoadingIndicator defaultIndicator = new M3LoadingIndicator();
-        defaultIndicator.setContainerSize(112.0);
-        defaultIndicator.setIndicatorSize(84.0);
+        applyLargeLoadingIndicator(defaultIndicator);
 
         M3LoadingIndicator containedIndicator = new M3LoadingIndicator();
-        containedIndicator.setContainerSize(88.0);
-        containedIndicator.setIndicatorSize(64.0);
+        applyLargeLoadingIndicator(containedIndicator);
         StackPane containedContainer = new StackPane(containedIndicator);
         containedContainer.getStyleClass().add("demo-contained-loading-indicator");
+        containedContainer.setAlignment(Pos.CENTER);
 
         return createGallery(
                 createShowcaseGroup("Default", defaultIndicator),
                 createShowcaseGroup("Contained", containedContainer)
         );
+    }
+
+    /// Applies the large demo loading indicator geometry.
+    private static void applyLargeLoadingIndicator(M3LoadingIndicator loadingIndicator) {
+        loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
+        loadingIndicator.setMinSize(112.0, 112.0);
+        loadingIndicator.setPrefSize(112.0, 112.0);
+        loadingIndicator.setMaxSize(112.0, 112.0);
     }
 
     /// Creates the progress component page.
