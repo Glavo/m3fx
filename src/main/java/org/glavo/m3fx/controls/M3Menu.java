@@ -399,6 +399,11 @@ public class M3Menu extends Control {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
+        sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (newScene == null) {
+                clearTypeAheadBuffer();
+            }
+        });
         typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
     }
 

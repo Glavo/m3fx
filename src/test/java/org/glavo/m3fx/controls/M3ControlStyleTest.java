@@ -4373,6 +4373,43 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that popup menu buttons preserve menu type-ahead navigation across show and hide cycles.
+    @Test
+    void menuButtonPopupSupportsTypeAheadKeyboardNavigation() {
+        runOnFxThread(() -> {
+            M3MenuItem archive = new M3MenuItem("Archive");
+            M3MenuItem settings = new M3MenuItem("Settings");
+            M3MenuItem share = new M3MenuItem("Share");
+            M3MenuButton menuButton = new M3MenuButton("More", archive, settings, share);
+            menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(menuButton);
+                stage.setScene(new Scene(root, 320.0, 160.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                menuButton.showMenu();
+                menuButton.getMenu().fireEvent(keyTypedEvent("s"));
+                menuButton.getMenu().fireEvent(keyTypedEvent("e"));
+
+                assertTrue(settings.isFocused());
+                assertEquals(settings, menuButton.getSelectedItem());
+
+                menuButton.hideMenu();
+                menuButton.showMenu();
+                menuButton.getMenu().fireEvent(keyTypedEvent("a"));
+
+                assertTrue(archive.isFocused());
+                assertEquals(archive, menuButton.getSelectedItem());
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that menu button accessibility focus requests follow the active popup focus branch.
     @Test
     void menuButtonRoutesAccessibleFocusAcrossPopupBranches() {
