@@ -11,7 +11,10 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.control.SkinBase;
-import javafx.scene.shape.SVGPath;
+import javafx.scene.shape.ClosePath;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Path;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -22,25 +25,31 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3LoadingIndicator].
 @NotNullByDefault
 public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
-    /// The number of visible loading indicator shapes.
-    private static final int SHAPE_COUNT = 4;
+    /// The number of sampled points used for the generated active shape.
+    private static final int SAMPLE_COUNT = 96;
 
-    /// SVG paths normalized to a 24 by 24 viewport.
-    private static final String[] SHAPE_PATHS = {
-            "M12 2A10 10 0 1 1 12 22A10 10 0 1 1 12 2",
-            "M5 3H19A2 2 0 0 1 21 5V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V5A2 2 0 0 1 5 3",
-            "M12 2L22 19A2 2 0 0 1 20.25 22H3.75A2 2 0 0 1 2 19L12 2",
-            "M12 2L22 12L12 22L2 12Z"
+    /// The number of default indeterminate shape states.
+    private static final int INDETERMINATE_SHAPE_COUNT = 7;
+
+    /// Shape states used by the indeterminate morphing loop.
+    private static final ShapeSpec[] INDETERMINATE_SHAPES = {
+            new ShapeSpec(0, 0.00, 0.00),
+            new ShapeSpec(3, 0.16, 0.08),
+            new ShapeSpec(4, 0.14, 0.21),
+            new ShapeSpec(5, 0.13, 0.34),
+            new ShapeSpec(6, 0.11, 0.47),
+            new ShapeSpec(7, 0.10, 0.59),
+            new ShapeSpec(5, 0.18, 0.74)
     };
 
-    /// The minimum visual scale for inactive shapes.
-    private static final double INACTIVE_SCALE = 0.58;
+    /// The determinate starting shape.
+    private static final ShapeSpec DETERMINATE_START_SHAPE = new ShapeSpec(0, 0.0, 0.0);
 
-    /// The minimum visual opacity for inactive shapes.
-    private static final double INACTIVE_OPACITY = 0.36;
+    /// The determinate completed shape.
+    private static final ShapeSpec DETERMINATE_END_SHAPE = new ShapeSpec(7, 0.16, 0.25);
 
-    /// The loading shapes.
-    private final SVGPath[] shapes = new SVGPath[SHAPE_COUNT];
+    /// The single active loading shape.
+    private final Path indicator = new Path();
 
     /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
@@ -69,14 +78,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// @param control the skinned loading indicator
     public M3LoadingIndicatorSkin(M3LoadingIndicator control) {
         super(control);
-        for (int i = 0; i < SHAPE_COUNT; i++) {
-            SVGPath shape = new SVGPath();
-            shape.getStyleClass().add("m3-loading-indicator-shape");
-            shape.setContent(SHAPE_PATHS[i]);
-            shape.setManaged(false);
-            shapes[i] = shape;
-        }
-        getChildren().addAll(shapes);
+        indicator.getStyleClass().add("m3-loading-indicator-indicator");
+        indicator.setManaged(false);
+        getChildren().add(indicator);
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
         displayedProgress.addListener(animationInvalidation);
@@ -84,9 +88,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
 
         control.progressProperty().addListener(progressInvalidation);
+        control.containerSizeProperty().addListener(layoutInvalidation);
         control.indicatorSizeProperty().addListener(layoutInvalidation);
-        control.shapeSizeProperty().addListener(layoutInvalidation);
-        control.shapeSpacingProperty().addListener(layoutInvalidation);
         updateProgressAnimation(false);
     }
 
@@ -99,32 +102,25 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         displayedProgress.removeListener(animationInvalidation);
         indeterminatePhase.removeListener(animationInvalidation);
         loadingIndicator.progressProperty().removeListener(progressInvalidation);
+        loadingIndicator.containerSizeProperty().removeListener(layoutInvalidation);
         loadingIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
-        loadingIndicator.shapeSizeProperty().removeListener(layoutInvalidation);
-        loadingIndicator.shapeSpacingProperty().removeListener(layoutInvalidation);
         super.dispose();
     }
 
-    /// Lays out the four loading shapes inside the control bounds.
+    /// Lays out the active loading shape inside the control bounds.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         M3LoadingIndicator loadingIndicator = getSkinnable();
-        double shapeSize = Math.min(loadingIndicator.getShapeSize(), Math.min(width, height));
-        double spacing = loadingIndicator.getShapeSpacing();
-        double contentWidth = shapeSize * SHAPE_COUNT + spacing * (SHAPE_COUNT - 1);
-        double startX = x + (width - contentWidth) / 2.0;
+        double indicatorSize = Math.min(loadingIndicator.getIndicatorSize(), Math.min(width, height));
+        double centerX = x + width / 2.0;
         double centerY = y + height / 2.0;
+        double phase = loadingIndicator.isIndeterminate()
+                ? indeterminatePhase.get()
+                : displayedProgress.get();
 
-        for (int i = 0; i < SHAPE_COUNT; i++) {
-            SVGPath shape = shapes[i];
-            double scale = scaleForShape(i);
-            double opacity = opacityForShape(i);
-            double baseX = startX + i * (shapeSize + spacing);
-            shape.resizeRelocate(baseX, centerY - shapeSize / 2.0, shapeSize, shapeSize);
-            shape.setScaleX(scaleForSvg(shape, shapeSize) * scale);
-            shape.setScaleY(scaleForSvg(shape, shapeSize) * scale);
-            shape.setOpacity(opacity);
-        }
+        rebuildIndicatorPath(centerX, centerY, indicatorSize / 2.0, phase, loadingIndicator.isIndeterminate());
+        indicator.resizeRelocate(x, y, width, height);
+        indicator.setOpacity(loadingIndicator.isDisabled() ? 0.38 : 1.0);
     }
 
     /// Updates determinate or indeterminate animation state for the current progress value.
@@ -156,7 +152,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                 ),
                 new KeyFrame(
                         M3Animation.motionBehavior(getSkinnable()).circularProgressIndeterminateCycleDuration(),
-                        new KeyValue(indeterminatePhase, SHAPE_COUNT, M3Motion.LINEAR)
+                        new KeyValue(indeterminatePhase, INDETERMINATE_SHAPE_COUNT, M3Motion.LINEAR)
                 )
         );
     }
@@ -179,35 +175,61 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         M3Animation.playFromStart(getSkinnable(), determinateAnimation);
     }
 
-    /// Returns the visual scale for a shape.
-    private double scaleForShape(int index) {
-        if (getSkinnable().isIndeterminate()) {
-            double distance = cyclicDistance(indeterminatePhase.get(), index);
-            double activity = Math.max(0.0, 1.0 - distance);
-            return INACTIVE_SCALE + (1.0 - INACTIVE_SCALE) * activity;
+    /// Rebuilds the active shape path for the current animation state.
+    private void rebuildIndicatorPath(
+            double centerX,
+            double centerY,
+            double radius,
+            double phase,
+            boolean indeterminate
+    ) {
+        indicator.getElements().clear();
+        if (radius <= 0.0) {
+            return;
         }
 
-        double shapeProgress = clamp(displayedProgress.get() * SHAPE_COUNT - index);
-        return INACTIVE_SCALE + (1.0 - INACTIVE_SCALE) * shapeProgress;
+        double rotation = indeterminate ? phase / INDETERMINATE_SHAPE_COUNT : -phase * 0.5;
+        ShapeSpec shape = indeterminate ? indeterminateShapeAt(phase) : determinateShapeAt(phase);
+
+        for (int i = 0; i < SAMPLE_COUNT; i++) {
+            double angle = Math.PI * 2.0 * i / SAMPLE_COUNT;
+            double rotatedAngle = angle + Math.PI * 2.0 * rotation;
+            double shapeRadius = radiusFor(shape, angle) * radius;
+            double pointX = centerX + Math.cos(rotatedAngle) * shapeRadius;
+            double pointY = centerY + Math.sin(rotatedAngle) * shapeRadius;
+
+            if (i == 0) {
+                indicator.getElements().add(new MoveTo(pointX, pointY));
+            } else {
+                indicator.getElements().add(new LineTo(pointX, pointY));
+            }
+        }
+        indicator.getElements().add(new ClosePath());
     }
 
-    /// Returns the visual opacity for a shape.
-    private double opacityForShape(int index) {
-        if (getSkinnable().isIndeterminate()) {
-            double distance = cyclicDistance(indeterminatePhase.get(), index);
-            double activity = Math.max(0.0, 1.0 - distance);
-            return INACTIVE_OPACITY + (1.0 - INACTIVE_OPACITY) * activity;
+    /// Returns the interpolated indeterminate shape for the current phase.
+    private static ShapeSpec indeterminateShapeAt(double phase) {
+        double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
+        int index = (int) Math.floor(normalized);
+        double fraction = normalized - index;
+        ShapeSpec current = INDETERMINATE_SHAPES[index];
+        ShapeSpec next = INDETERMINATE_SHAPES[(index + 1) % INDETERMINATE_SHAPE_COUNT];
+        return current.interpolate(next, fraction);
+    }
+
+    /// Returns the interpolated determinate shape for the current progress.
+    private static ShapeSpec determinateShapeAt(double progress) {
+        return DETERMINATE_START_SHAPE.interpolate(DETERMINATE_END_SHAPE, clamp(progress));
+    }
+
+    /// Returns a sampled radius multiplier for a shape.
+    private static double radiusFor(ShapeSpec shape, double angle) {
+        if (shape.lobes() == 0 || shape.amplitude() <= 0.0) {
+            return 1.0;
         }
 
-        double shapeProgress = clamp(displayedProgress.get() * SHAPE_COUNT - index);
-        return INACTIVE_OPACITY + (1.0 - INACTIVE_OPACITY) * shapeProgress;
-    }
-
-    /// Returns a normalized cyclic distance between an animation phase and shape index.
-    private static double cyclicDistance(double phase, int index) {
-        double wrapped = phase % SHAPE_COUNT;
-        double distance = Math.abs(wrapped - index);
-        return Math.min(distance, SHAPE_COUNT - distance);
+        double wave = Math.cos(shape.lobes() * (angle + Math.PI * 2.0 * shape.phaseOffset()));
+        return 1.0 - shape.amplitude() * 0.5 + shape.amplitude() * 0.5 * wave;
     }
 
     /// Returns the initial displayed progress value for a public progress value.
@@ -215,16 +237,43 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         return progress == M3LoadingIndicator.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
     }
 
-    /// Returns the SVG scale needed to fit a path into the requested shape size.
-    private static double scaleForSvg(SVGPath shape, double shapeSize) {
-        double width = shape.prefWidth(-1.0);
-        double height = shape.prefHeight(-1.0);
-        double sourceSize = Math.max(width, height);
-        return sourceSize <= 0.0 ? 1.0 : shapeSize / sourceSize;
+    /// Returns a positive modulo result.
+    private static double positiveModulo(double value, double modulus) {
+        double result = value % modulus;
+        return result < 0.0 ? result + modulus : result;
     }
 
     /// Clamps a progress value to the visible range.
     private static double clamp(double value) {
         return Math.max(0.0, Math.min(1.0, value));
+    }
+
+    /// Describes a sampled radial shape.
+    ///
+    /// @param lobes the number of radial lobes, or `0` for a circle
+    /// @param amplitude the radial variation amount
+    /// @param phaseOffset the angular phase offset, in turns
+    private record ShapeSpec(int lobes, double amplitude, double phaseOffset) {
+        /// Creates a shape specification.
+        private ShapeSpec {
+        }
+
+        /// Interpolates this shape toward another shape.
+        ///
+        /// @param other the target shape
+        /// @param fraction the interpolation fraction from `0.0` to `1.0`
+        /// @return the interpolated shape
+        private ShapeSpec interpolate(ShapeSpec other, double fraction) {
+            double clamped = clamp(fraction);
+            int interpolatedLobes = clamped < 0.5 ? lobes : other.lobes;
+            double interpolatedAmplitude = interpolate(amplitude, other.amplitude, clamped);
+            double interpolatedPhaseOffset = interpolate(phaseOffset, other.phaseOffset, clamped);
+            return new ShapeSpec(interpolatedLobes, interpolatedAmplitude, interpolatedPhaseOffset);
+        }
+
+        /// Interpolates between two scalar values.
+        private static double interpolate(double start, double end, double fraction) {
+            return start + (end - start) * fraction;
+        }
     }
 }

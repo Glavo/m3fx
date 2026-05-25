@@ -6979,15 +6979,13 @@ final class M3ControlStyleTest {
     @Test
     void loadingIndicatorTokensAreStyleable() {
         M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-        loadingIndicator.setStyle("-m3-indicator-size: 72px; "
-                + "-m3-shape-size: 20px; "
-                + "-m3-shape-spacing: 8px;");
+        loadingIndicator.setStyle("-m3-container-size: 72px; "
+                + "-m3-indicator-size: 48px;");
 
         applyCss(loadingIndicator);
 
-        assertEquals(72.0, loadingIndicator.getIndicatorSize(), 0.0001);
-        assertEquals(20.0, loadingIndicator.getShapeSize(), 0.0001);
-        assertEquals(8.0, loadingIndicator.getShapeSpacing(), 0.0001);
+        assertEquals(72.0, loadingIndicator.getContainerSize(), 0.0001);
+        assertEquals(48.0, loadingIndicator.getIndicatorSize(), 0.0001);
         assertEquals(72.0, loadingIndicator.getPrefWidth(), 0.0001);
         assertEquals(72.0, loadingIndicator.getPrefHeight(), 0.0001);
     }
@@ -7019,9 +7017,8 @@ final class M3ControlStyleTest {
         assertEquals(2.0, progressIndicator.getWaveAmplitude(), 0.0001);
         assertEquals(15.0, progressIndicator.getWavelength(), 0.0001);
         assertEquals(4.0, progressIndicator.getTrackGap(), 0.0001);
-        assertEquals(64.0, loadingIndicator.getIndicatorSize(), 0.0001);
-        assertEquals(18.0, loadingIndicator.getShapeSize(), 0.0001);
-        assertEquals(6.0, loadingIndicator.getShapeSpacing(), 0.0001);
+        assertEquals(64.0, loadingIndicator.getContainerSize(), 0.0001);
+        assertEquals(48.0, loadingIndicator.getIndicatorSize(), 0.0001);
     }
 
     /// Verifies that m3fx progress controls create Material Design 3 skins.
@@ -7100,9 +7097,9 @@ final class M3ControlStyleTest {
         }
     }
 
-    /// Verifies that the loading indicator skin lays out visible shape nodes.
+    /// Verifies that the loading indicator skin lays out one visible morphing shape.
     @Test
-    void loadingIndicatorSkinLaysOutShapes() {
+    void loadingIndicatorSkinLaysOutSingleMorphingShape() {
         M3LoadingIndicator loadingIndicator = new M3LoadingIndicator(0.5);
         Pane root = new Pane(loadingIndicator);
         Scene scene = new Scene(root, 120.0, 80.0);
@@ -7112,11 +7109,11 @@ final class M3ControlStyleTest {
         loadingIndicator.resize(72.0, 72.0);
         loadingIndicator.layout();
 
-        Set<Node> shapes = loadingIndicator.lookupAll(".m3-loading-indicator-shape");
-        assertEquals(4, shapes.size());
-        assertTrue(shapes.stream().allMatch(Node::isVisible));
-        assertTrue(shapes.stream().anyMatch(shape -> shape.getOpacity() >= 1.0));
-        assertTrue(shapes.stream().anyMatch(shape -> shape.getOpacity() < 1.0));
+        Set<Node> indicators = loadingIndicator.lookupAll(".m3-loading-indicator-indicator");
+        assertEquals(1, indicators.size());
+        Path indicator = assertInstanceOf(Path.class, indicators.iterator().next());
+        assertTrue(indicator.isVisible());
+        assertTrue(indicator.getElements().size() > 24);
     }
 
     /// Verifies that the progress bar skin lays out determinate progress without Modena internals.

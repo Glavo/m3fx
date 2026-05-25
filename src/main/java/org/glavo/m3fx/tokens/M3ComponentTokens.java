@@ -431,9 +431,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double listSectionHeaderHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
         double progressLinearWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 3.0 : 0.0);
         double progressCircularWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 2.0 : 0.0);
-        double loadingIndicatorSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 48.0);
-        double loadingIndicatorShapeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 14.0);
-        double loadingIndicatorShapeSpacing = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 6.0 : 5.0);
+        double loadingIndicatorContainerSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 48.0);
+        double loadingIndicatorIndicatorSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 36.0);
         boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
         double navigationContentSpacing = density.apply(expressive ? 6.0 : 4.0);
         double navigationHorizontalPadding = density.apply(expressive ? 12.0 : 8.0);
@@ -695,9 +694,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         density.apply(4.0)
                 ),
                 new LoadingIndicatorTokens(
-                        loadingIndicatorSize,
-                        loadingIndicatorShapeSize,
-                        loadingIndicatorShapeSpacing
+                        loadingIndicatorContainerSize,
+                        loadingIndicatorIndicatorSize
                 ),
                 new SurfaceTokens(surfaceContainerShape, surfaceContentPadding),
                 new CarouselTokens(
@@ -1296,9 +1294,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends loading indicator token declarations.
     private static void append(StringBuilder builder, LoadingIndicatorTokens tokens) {
-        M3TokenCss.append(builder, "-m3-loading-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
-        M3TokenCss.append(builder, "-m3-loading-indicator-shape-size", M3TokenCss.pixels(tokens.shapeSize()));
-        M3TokenCss.append(builder, "-m3-loading-indicator-shape-spacing", M3TokenCss.pixels(tokens.shapeSpacing()));
+        M3TokenCss.append(builder, "-m3-loading-indicator-container-size", M3TokenCss.pixels(tokens.containerSize()));
+        M3TokenCss.append(builder, "-m3-loading-indicator-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
     }
 
     /// Appends surface token declarations.
@@ -2301,9 +2298,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             LoadingIndicatorTokens tokens
     ) {
         beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-size", M3TokenCss.pixels(tokens.containerSize()));
         appendDeclaration(builder, "-m3-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
-        appendDeclaration(builder, "-m3-shape-size", M3TokenCss.pixels(tokens.shapeSize()));
-        appendDeclaration(builder, "-m3-shape-spacing", M3TokenCss.pixels(tokens.shapeSpacing()));
         endRule(builder);
     }
 
@@ -3253,20 +3249,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by loading indicators.
     ///
-    /// @param indicatorSize the preferred loading indicator layout size
-    /// @param shapeSize the size of each loading indicator shape
-    /// @param shapeSpacing the spacing between loading indicator shapes
+    /// @param containerSize the loading indicator container size
+    /// @param indicatorSize the active indicator shape size
     @NotNullByDefault
     record LoadingIndicatorTokens(
-            double indicatorSize,
-            double shapeSize,
-            double shapeSpacing
+            double containerSize,
+            double indicatorSize
     ) {
         /// Creates loading indicator tokens.
         public LoadingIndicatorTokens {
+            validateNonNegative(containerSize, "containerSize");
             validateNonNegative(indicatorSize, "indicatorSize");
-            validateNonNegative(shapeSize, "shapeSize");
-            validateNonNegative(shapeSpacing, "shapeSpacing");
         }
     }
 

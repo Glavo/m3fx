@@ -1333,16 +1333,14 @@ public final class M3FXDemoApp extends Application {
     /// Creates the loading indicator component page.
     private Node createLoadingIndicatorPage() {
         M3LoadingIndicator compactIndicator = new M3LoadingIndicator();
-        compactIndicator.setIndicatorSize(48.0);
-        compactIndicator.setShapeSize(14.0);
-        compactIndicator.setShapeSpacing(5.0);
+        compactIndicator.setContainerSize(48.0);
+        compactIndicator.setIndicatorSize(32.0);
 
         M3LoadingIndicator regularIndicator = new M3LoadingIndicator();
 
         M3LoadingIndicator largeIndicator = new M3LoadingIndicator();
-        largeIndicator.setIndicatorSize(80.0);
-        largeIndicator.setShapeSize(22.0);
-        largeIndicator.setShapeSpacing(8.0);
+        largeIndicator.setContainerSize(80.0);
+        largeIndicator.setIndicatorSize(56.0);
 
         M3LoadingIndicator quarterIndicator = new M3LoadingIndicator(0.25);
         M3LoadingIndicator halfIndicator = new M3LoadingIndicator(0.5);

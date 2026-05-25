@@ -1,14 +1,13 @@
 .m3-loading-indicator.m3-loading-indicator,
 .m3-loading-indicator.m3-loading-indicator:focused,
 .m3-loading-indicator.m3-loading-indicator:indeterminate {
-    -m3-indicator-size: 64px;
-    -m3-shape-size: 18px;
-    -m3-shape-spacing: 6px;
+    -m3-container-size: 48px;
+    -m3-indicator-size: 36px;
 }
 
-.m3-loading-indicator.m3-loading-indicator .m3-loading-indicator-shape,
-.m3-loading-indicator.m3-loading-indicator:focused .m3-loading-indicator-shape,
-.m3-loading-indicator.m3-loading-indicator:indeterminate .m3-loading-indicator-shape {
+.m3-loading-indicator.m3-loading-indicator .m3-loading-indicator-indicator,
+.m3-loading-indicator.m3-loading-indicator:focused .m3-loading-indicator-indicator,
+.m3-loading-indicator.m3-loading-indicator:indeterminate .m3-loading-indicator-indicator {
     -fx-fill: -m3-color-primary;
     -fx-stroke: transparent;
     -fx-stroke-width: 0px;

@@ -138,7 +138,8 @@ final class M3TokenFactoryTest {
         assertEquals(0.91, tokenSet.componentTokens().carousel().itemOpacity(), 0.0001);
         assertEquals(62.0, tokenSet.componentTokens().bottomAppBar().containerHeight(), 0.0001);
         assertEquals(72.0, tokenSet.componentTokens().navigationRail().containerWidth(), 0.0001);
-        assertEquals(63.0, tokenSet.componentTokens().loadingIndicator().indicatorSize(), 0.0001);
+        assertEquals(63.0, tokenSet.componentTokens().loadingIndicator().containerSize(), 0.0001);
+        assertEquals(22.0, tokenSet.componentTokens().loadingIndicator().indicatorSize(), 0.0001);
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 51px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-tab-container-height: 61px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 59px"));
@@ -159,7 +160,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 44px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-linear-wave-amplitude: 3px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-circular-wavelength: 16px"));
-        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-loading-indicator-shape-size: 22px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-loading-indicator-container-size: 63px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-loading-indicator-indicator-size: 22px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-list-section-header-height: 32px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-list-section-header-horizontal-padding: 19px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-sheet-side-container-width: 46px"));
@@ -280,7 +282,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 50.0),
                 new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0, 9.0, 11.0),
                 new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
-                new M3ComponentTokens.LoadingIndicatorTokens(63.0, 22.0, 8.0),
+                new M3ComponentTokens.LoadingIndicatorTokens(63.0, 22.0),
                 new M3ComponentTokens.SurfaceTokens(22.0, 19.0),
                 new M3ComponentTokens.CarouselTokens(5.0, 13.0, 0.91, 11.0, 0.13, 4.0),
                 new M3ComponentTokens.CardTokens(13.0, 18.0, 2.0),

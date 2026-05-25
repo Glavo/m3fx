@@ -27,10 +27,10 @@ import java.util.Objects;
 
 /// A Material Design 3 loading indicator.
 ///
-/// `M3LoadingIndicator` displays a compact sequence of animated shapes for indeterminate loading and a
-/// shape-by-shape completion state for determinate progress values from `0.0` to `1.0`. It is intended for
-/// loading affordances where Material Design 3 Expressive uses a dedicated loading indicator instead of a
-/// circular progress indicator. See
+/// `M3LoadingIndicator` displays one active shape that morphs as loading advances. Indeterminate indicators
+/// continuously rotate and morph between shape states, while determinate indicators use the progress value
+/// from `0.0` to `1.0` to choose the displayed shape. It is intended for loading affordances where Material
+/// Design 3 Expressive uses a dedicated loading indicator instead of a circular progress indicator. See
 /// [Material Design loading indicators](https://m3.material.io/components/loading-indicator/overview).
 @NotNullByDefault
 public class M3LoadingIndicator extends Control {
@@ -44,14 +44,11 @@ public class M3LoadingIndicator extends Control {
     private static final PseudoClass INDETERMINATE_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("indeterminate");
 
-    /// The default loading indicator layout size.
-    private static final double DEFAULT_INDICATOR_SIZE = 64.0;
+    /// The default loading indicator container size.
+    private static final double DEFAULT_CONTAINER_SIZE = 48.0;
 
-    /// The default size for each loading indicator shape.
-    private static final double DEFAULT_SHAPE_SIZE = 18.0;
-
-    /// The default gap between loading indicator shapes.
-    private static final double DEFAULT_SHAPE_SPACING = 6.0;
+    /// The default active indicator shape size.
+    private static final double DEFAULT_INDICATOR_SIZE = 36.0;
 
     /// The minimum accessible progress value.
     private static final double ACCESSIBLE_MIN_VALUE = 0.0;
@@ -66,14 +63,11 @@ public class M3LoadingIndicator extends Control {
     /// The current progress value.
     private @Nullable DoubleProperty progress;
 
-    /// The styleable loading indicator layout size token.
+    /// The styleable loading indicator container size token.
+    private @Nullable StyleableDoubleProperty containerSize;
+
+    /// The styleable active indicator size token.
     private @Nullable StyleableDoubleProperty indicatorSize;
-
-    /// The styleable loading indicator shape size token.
-    private @Nullable StyleableDoubleProperty shapeSize;
-
-    /// The styleable gap between loading indicator shapes.
-    private @Nullable StyleableDoubleProperty shapeSpacing;
 
     /// Creates an indeterminate loading indicator.
     public M3LoadingIndicator() {
@@ -146,31 +140,80 @@ public class M3LoadingIndicator extends Control {
         return getProgress() == INDETERMINATE_PROGRESS;
     }
 
-    /// Returns the loading indicator layout size token.
+    /// Returns the loading indicator container size token.
     ///
-    /// @return the indicator layout size in pixels
+    /// @return the container size in pixels
+    public final double getContainerSize() {
+        return containerSize == null ? DEFAULT_CONTAINER_SIZE : containerSize.get();
+    }
+
+    /// Sets the loading indicator container size token.
+    ///
+    /// @param containerSize the container size in pixels
+    public final void setContainerSize(double containerSize) {
+        containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
+    }
+
+    /// Returns the loading indicator container size token property.
+    ///
+    /// @return the styleable container size property
+    public final StyleableDoubleProperty containerSizeProperty() {
+        if (containerSize == null) {
+            containerSize = new StyleableDoubleProperty(DEFAULT_CONTAINER_SIZE) {
+                /// Applies updated metrics when the token changes.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "containerSize");
+                    updateMetrics();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3LoadingIndicator.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "containerSize";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3LoadingIndicator, Number> getCssMetaData() {
+                    return StyleableProperties.CONTAINER_SIZE;
+                }
+            };
+        }
+        return containerSize;
+    }
+
+    /// Returns the active indicator shape size token.
+    ///
+    /// @return the active indicator shape size in pixels
     public final double getIndicatorSize() {
         return indicatorSize == null ? DEFAULT_INDICATOR_SIZE : indicatorSize.get();
     }
 
-    /// Sets the loading indicator layout size token.
+    /// Sets the active indicator shape size token.
     ///
-    /// @param indicatorSize the indicator layout size in pixels
+    /// @param indicatorSize the active indicator shape size in pixels
     public final void setIndicatorSize(double indicatorSize) {
         indicatorSizeProperty().set(M3Css.nonNegative(indicatorSize, "indicatorSize"));
     }
 
-    /// Returns the loading indicator layout size token property.
+    /// Returns the active indicator shape size token property.
     ///
-    /// @return the styleable indicator size property
+    /// @return the styleable active indicator size property
     public final StyleableDoubleProperty indicatorSizeProperty() {
         if (indicatorSize == null) {
             indicatorSize = new StyleableDoubleProperty(DEFAULT_INDICATOR_SIZE) {
-                /// Applies updated metrics when the token changes.
+                /// Requests layout when the token changes.
                 @Override
                 protected void invalidated() {
                     M3Css.nonNegative(get(), "indicatorSize");
-                    updateMetrics();
+                    requestLayout();
                 }
 
                 /// Returns the owning bean.
@@ -193,104 +236,6 @@ public class M3LoadingIndicator extends Control {
             };
         }
         return indicatorSize;
-    }
-
-    /// Returns the loading indicator shape size token.
-    ///
-    /// @return the shape size in pixels
-    public final double getShapeSize() {
-        return shapeSize == null ? DEFAULT_SHAPE_SIZE : shapeSize.get();
-    }
-
-    /// Sets the loading indicator shape size token.
-    ///
-    /// @param shapeSize the shape size in pixels
-    public final void setShapeSize(double shapeSize) {
-        shapeSizeProperty().set(M3Css.nonNegative(shapeSize, "shapeSize"));
-    }
-
-    /// Returns the loading indicator shape size token property.
-    ///
-    /// @return the styleable shape size property
-    public final StyleableDoubleProperty shapeSizeProperty() {
-        if (shapeSize == null) {
-            shapeSize = new StyleableDoubleProperty(DEFAULT_SHAPE_SIZE) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "shapeSize");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3LoadingIndicator.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "shapeSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3LoadingIndicator, Number> getCssMetaData() {
-                    return StyleableProperties.SHAPE_SIZE;
-                }
-            };
-        }
-        return shapeSize;
-    }
-
-    /// Returns the loading indicator shape spacing token.
-    ///
-    /// @return the spacing between shapes in pixels
-    public final double getShapeSpacing() {
-        return shapeSpacing == null ? DEFAULT_SHAPE_SPACING : shapeSpacing.get();
-    }
-
-    /// Sets the loading indicator shape spacing token.
-    ///
-    /// @param shapeSpacing the spacing between shapes in pixels
-    public final void setShapeSpacing(double shapeSpacing) {
-        shapeSpacingProperty().set(M3Css.nonNegative(shapeSpacing, "shapeSpacing"));
-    }
-
-    /// Returns the loading indicator shape spacing token property.
-    ///
-    /// @return the styleable shape spacing property
-    public final StyleableDoubleProperty shapeSpacingProperty() {
-        if (shapeSpacing == null) {
-            shapeSpacing = new StyleableDoubleProperty(DEFAULT_SHAPE_SPACING) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "shapeSpacing");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3LoadingIndicator.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "shapeSpacing";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3LoadingIndicator, Number> getCssMetaData() {
-                    return StyleableProperties.SHAPE_SPACING;
-                }
-            };
-        }
-        return shapeSpacing;
     }
 
     /// Returns the CSS metadata for this control class.
@@ -350,7 +295,7 @@ public class M3LoadingIndicator extends Control {
 
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
-        double size = getIndicatorSize();
+        double size = getContainerSize();
         setMinSize(size, size);
         setPrefSize(size, size);
         setMaxSize(USE_COMPUTED_SIZE, USE_COMPUTED_SIZE);
@@ -372,7 +317,23 @@ public class M3LoadingIndicator extends Control {
     /// CSS metadata for m3fx loading indicator component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
-        /// CSS metadata for the loading indicator layout size token.
+        /// CSS metadata for the loading indicator container size token.
+        private static final CssMetaData<M3LoadingIndicator, Number> CONTAINER_SIZE =
+                new CssMetaData<>("-m3-container-size", SizeConverter.getInstance(), DEFAULT_CONTAINER_SIZE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3LoadingIndicator control) {
+                        return M3Css.isSettable(control.containerSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3LoadingIndicator control) {
+                        return control.containerSizeProperty();
+                    }
+                };
+
+        /// CSS metadata for the active indicator shape size token.
         private static final CssMetaData<M3LoadingIndicator, Number> INDICATOR_SIZE =
                 new CssMetaData<>("-m3-indicator-size", SizeConverter.getInstance(), DEFAULT_INDICATOR_SIZE) {
                     /// Returns whether this property can be set by CSS.
@@ -388,46 +349,13 @@ public class M3LoadingIndicator extends Control {
                     }
                 };
 
-        /// CSS metadata for the loading indicator shape size token.
-        private static final CssMetaData<M3LoadingIndicator, Number> SHAPE_SIZE =
-                new CssMetaData<>("-m3-shape-size", SizeConverter.getInstance(), DEFAULT_SHAPE_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3LoadingIndicator control) {
-                        return M3Css.isSettable(control.shapeSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3LoadingIndicator control) {
-                        return control.shapeSizeProperty();
-                    }
-                };
-
-        /// CSS metadata for the loading indicator shape spacing token.
-        private static final CssMetaData<M3LoadingIndicator, Number> SHAPE_SPACING =
-                new CssMetaData<>("-m3-shape-spacing", SizeConverter.getInstance(), DEFAULT_SHAPE_SPACING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3LoadingIndicator control) {
-                        return M3Css.isSettable(control.shapeSpacingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3LoadingIndicator control) {
-                        return control.shapeSpacingProperty();
-                    }
-                };
-
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(CONTAINER_SIZE);
             styleables.add(INDICATOR_SIZE);
-            styleables.add(SHAPE_SIZE);
-            styleables.add(SHAPE_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }
