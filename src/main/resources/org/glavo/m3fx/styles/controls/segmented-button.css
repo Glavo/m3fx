@@ -1,3 +1,7 @@
+.m3-segmented-button-group {
+    -m3-segmented-button-group-spacing: -1px;
+}
+
 .m3-segmented-button.m3-segmented-button,
 .m3-segmented-button.m3-segmented-button:hover,
 .m3-segmented-button.m3-segmented-button:focused,

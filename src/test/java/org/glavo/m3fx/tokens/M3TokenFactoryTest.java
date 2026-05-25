@@ -119,6 +119,8 @@ final class M3TokenFactoryTest {
         assertEquals(70.0, tokenSet.componentTokens().floatingActionButton().regularSize(), 0.0001);
         assertEquals(33.0, tokenSet.componentTokens().icon().largeSize(), 0.0001);
         assertEquals(49.0, tokenSet.componentTokens().buttonGroup().splitMenuButtonWidth(), 0.0001);
+        assertEquals(15.0, tokenSet.componentTokens().floatingActionButton().menuActionSpacing(), 0.0001);
+        assertEquals(10.0, tokenSet.componentTokens().buttonGroup().iconToggleGroupSpacing(), 0.0001);
         assertEquals(61.0, tokenSet.componentTokens().tab().containerHeight(), 0.0001);
         assertEquals(59.0, tokenSet.componentTokens().topAppBar().containerHeight(), 0.0001);
         assertEquals(60.0, tokenSet.componentTokens().topAppBar().mediumContainerHeight(), 0.0001);
@@ -242,9 +244,9 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ButtonTokens(54.0, 24.0, 20.0),
                 new M3ComponentTokens.ButtonTokens(55.0, 25.0, 21.0),
                 new M3ComponentTokens.ButtonTokens(56.0, 28.0, 0.0),
-                new M3ComponentTokens.FabTokens(50.0, 70.0, 110.0, 14.0, 22.0, 30.0, 13.0, 17.0, 25.0),
+                new M3ComponentTokens.FabTokens(50.0, 70.0, 110.0, 14.0, 22.0, 30.0, 13.0, 17.0, 25.0, 15.0),
                 new M3ComponentTokens.IconTokens(19.0, 25.0, 33.0, 41.0),
-                new M3ComponentTokens.ButtonGroupTokens(23.0, 24.0, 49.0),
+                new M3ComponentTokens.ButtonGroupTokens(23.0, 24.0, 49.0, -2.0, -3.0, 10.0),
                 new M3ComponentTokens.ButtonTokens(57.0, 26.0, 14.0),
                 new M3ComponentTokens.TabTokens(61.0, 91.0, 15.0, 4.0, 4.0),
                 new M3ComponentTokens.FieldTokens(66.0, 8.0, 18.0),

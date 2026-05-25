@@ -1,3 +1,7 @@
+.m3-button-group {
+    -m3-button-group-spacing: -1px;
+}
+
 .m3-button-group .m3-button.m3-grouped-button {
     -m3-horizontal-padding: 20px;
 }

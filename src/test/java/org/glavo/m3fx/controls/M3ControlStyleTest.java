@@ -644,6 +644,17 @@ final class M3ControlStyleTest {
         assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
     }
 
+    /// Verifies that button group spacing is styleable from CSS.
+    @Test
+    void buttonGroupSpacingTokenIsStyleable() {
+        M3ButtonGroup group = new M3ButtonGroup(new M3Button("A"), new M3Button("B"));
+        group.setStyle("-m3-button-group-spacing: -2px;");
+
+        applyCss(group);
+
+        assertEquals(-2.0, group.getSpacing(), 0.0001);
+    }
+
     /// Verifies that button group corners and feedback layers match right-to-left visual order.
     @Test
     void buttonGroupUsesRightToLeftPositionSpecificShapes() {
@@ -961,6 +972,17 @@ final class M3ControlStyleTest {
         menu.executeAccessibleAction(AccessibleAction.COLLAPSE);
 
         assertFalse(menu.isExpanded());
+    }
+
+    /// Verifies that FAB menu action spacing is styleable from CSS.
+    @Test
+    void fabMenuActionSpacingTokenIsStyleable() {
+        M3FabMenu menu = new M3FabMenu(new M3FloatingActionButton());
+        menu.setStyle("-m3-fab-menu-action-spacing: 18px;");
+
+        applyCss(menu);
+
+        assertEquals(18.0, menu.getActionSpacing(), 0.0001);
     }
 
     /// Verifies that card component token properties are styleable from CSS.
@@ -3631,6 +3653,18 @@ final class M3ControlStyleTest {
         assertTrue(first.isSelected());
     }
 
+    /// Verifies that toggle icon button group spacing is styleable from CSS.
+    @Test
+    void iconToggleButtonGroupSpacingTokenIsStyleable() {
+        M3IconToggleButtonGroup group =
+                new M3IconToggleButtonGroup(new M3IconToggleButton("A"), new M3IconToggleButton("B"));
+        group.setStyle("-m3-icon-toggle-button-group-spacing: 12px;");
+
+        applyCss(group);
+
+        assertEquals(12.0, group.getSpacing(), 0.0001);
+    }
+
     /// Verifies that text typography roles update style classes.
     @Test
     void textRoleUpdatesStyleClasses() {
@@ -5873,6 +5907,18 @@ final class M3ControlStyleTest {
         assertEquals(first, group.getSelectedButton());
         assertEquals(java.util.List.of(first), group.getSelectedButtons());
         assertTrue(first.isSelected());
+    }
+
+    /// Verifies that segmented button group spacing is styleable from CSS.
+    @Test
+    void segmentedButtonGroupSpacingTokenIsStyleable() {
+        M3SegmentedButtonGroup group =
+                new M3SegmentedButtonGroup(new M3SegmentedButton("A"), new M3SegmentedButton("B"));
+        group.setStyle("-m3-segmented-button-group-spacing: -2px;");
+
+        applyCss(group);
+
+        assertEquals(-2.0, group.getSpacing(), 0.0001);
     }
 
     /// Verifies that m3fx segmented buttons create the Material Design 3 skin.

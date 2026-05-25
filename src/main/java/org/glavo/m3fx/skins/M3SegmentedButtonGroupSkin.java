@@ -11,15 +11,19 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default Material Design 3 skin for [M3SegmentedButtonGroup].
 @NotNullByDefault
 public final class M3SegmentedButtonGroupSkin extends M3ItemContainerSkinBase<M3SegmentedButtonGroup, HBox> {
-    /// The spacing that lets adjacent segmented button borders overlap.
-    private static final double SEGMENT_SPACING = -1.0;
-
     /// Creates a segmented button group skin.
     ///
     /// @param control the segmented button group controlled by this skin
     public M3SegmentedButtonGroupSkin(M3SegmentedButtonGroup control) {
         super(control, control.getItems(), new HBox());
         getContainer().setAlignment(Pos.CENTER_LEFT);
-        getContainer().setSpacing(SEGMENT_SPACING);
+        getContainer().spacingProperty().bind(control.spacingProperty());
+    }
+
+    /// Removes bindings before disposal.
+    @Override
+    public void dispose() {
+        getContainer().spacingProperty().unbind();
+        super.dispose();
     }
 }

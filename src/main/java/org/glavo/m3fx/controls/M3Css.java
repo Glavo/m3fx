@@ -25,4 +25,12 @@ final class M3Css {
         }
         return value;
     }
+
+    /// Validates that a CSS numeric token is finite.
+    static double finite(double value, String name) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException(name + " must be finite");
+        }
+        return value;
+    }
 }

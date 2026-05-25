@@ -12,6 +12,11 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
@@ -30,6 +35,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -54,6 +60,9 @@ public class M3FabMenu extends Control {
     /// The style class applied to the menu toggle floating action button.
     public static final String TOGGLE_STYLE_CLASS = "m3-fab-menu-toggle";
 
+    /// The default spacing between expanded action items.
+    private static final double DEFAULT_ACTION_SPACING = 12.0;
+
     /// The offset used when action buttons enter or exit.
     private static final double ACTION_TRANSITION_OFFSET_Y = 16.0;
 
@@ -62,6 +71,9 @@ public class M3FabMenu extends Control {
 
     /// The action item container.
     private final VBox actions = new VBox();
+
+    // The styleable spacing between expanded action items.
+    private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// The toggle floating action button.
     private final M3FloatingActionButton toggleButton;
@@ -136,6 +148,54 @@ public class M3FabMenu extends Control {
     /// @return the action item container used by the default skin
     public final VBox getActionsContainer() {
         return actions;
+    }
+
+    /// Returns the spacing between expanded action items.
+    ///
+    /// @return the action item spacing in pixels
+    public final double getActionSpacing() {
+        return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
+    }
+
+    /// Sets the spacing between expanded action items.
+    ///
+    /// @param actionSpacing the action item spacing in pixels
+    public final void setActionSpacing(double actionSpacing) {
+        actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
+    }
+
+    /// Returns the action item spacing property.
+    ///
+    /// @return the styleable action item spacing property
+    public final StyleableDoubleProperty actionSpacingProperty() {
+        if (actionSpacing == null) {
+            actionSpacing = new StyleableDoubleProperty(DEFAULT_ACTION_SPACING) {
+                /// Validates updated action item spacing values.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "actionSpacing");
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3FabMenu.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "actionSpacing";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3FabMenu, Number> getCssMetaData() {
+                    return StyleableProperties.ACTION_SPACING;
+                }
+            };
+        }
+        return actionSpacing;
     }
 
     /// Returns the mutable action item list.
@@ -213,6 +273,19 @@ public class M3FabMenu extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("fab-menu.css");
+    }
+
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Returns accessibility attributes for the menu and action items.
@@ -500,6 +573,35 @@ public class M3FabMenu extends Control {
         Objects.requireNonNull(items, "items");
         for (Node item : items) {
             Objects.requireNonNull(item, "item");
+        }
+    }
+
+    /// CSS metadata for FAB menu layout tokens.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for expanded action item spacing.
+        private static final CssMetaData<M3FabMenu, Number> ACTION_SPACING =
+                new CssMetaData<>("-m3-fab-menu-action-spacing", SizeConverter.getInstance(), DEFAULT_ACTION_SPACING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3FabMenu control) {
+                        return M3Css.isSettable(control.actionSpacingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3FabMenu control) {
+                        return control.actionSpacingProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ACTION_SPACING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }
 }

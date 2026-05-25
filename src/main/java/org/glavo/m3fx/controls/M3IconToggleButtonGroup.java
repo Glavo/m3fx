@@ -13,6 +13,11 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -26,6 +31,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,8 +50,14 @@ public class M3IconToggleButtonGroup extends Control {
     /// The base style class for M3FX toggle icon button groups.
     public static final String STYLE_CLASS = "m3-icon-toggle-button-group";
 
+    /// The default spacing between toggle icon buttons.
+    private static final double DEFAULT_SPACING = 8.0;
+
     /// The mutable toggle icon button group content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
+
+    // The styleable spacing between toggle icon buttons.
+    private @Nullable StyleableDoubleProperty spacing;
 
     // The icon toggle button selection mode.
     private final ObjectProperty<M3IconToggleButtonSelectionMode> selectionMode =
@@ -127,6 +140,54 @@ public class M3IconToggleButtonGroup extends Control {
     /// @return the mutable child list used as toggle icon button group content
     public final ObservableList<Node> getItems() {
         return items;
+    }
+
+    /// Returns the spacing between toggle icon buttons.
+    ///
+    /// @return the child spacing in pixels
+    public final double getSpacing() {
+        return spacing == null ? DEFAULT_SPACING : spacing.get();
+    }
+
+    /// Sets the spacing between toggle icon buttons.
+    ///
+    /// @param spacing the child spacing in pixels
+    public final void setSpacing(double spacing) {
+        spacingProperty().set(M3Css.nonNegative(spacing, "spacing"));
+    }
+
+    /// Returns the spacing property.
+    ///
+    /// @return the styleable child spacing property
+    public final StyleableDoubleProperty spacingProperty() {
+        if (spacing == null) {
+            spacing = new StyleableDoubleProperty(DEFAULT_SPACING) {
+                /// Validates updated spacing values.
+                @Override
+                protected void invalidated() {
+                    M3Css.nonNegative(get(), "spacing");
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3IconToggleButtonGroup.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "spacing";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3IconToggleButtonGroup, Number> getCssMetaData() {
+                    return StyleableProperties.SPACING;
+                }
+            };
+        }
+        return spacing;
     }
 
     /// Adds one toggle icon button.
@@ -303,6 +364,19 @@ public class M3IconToggleButtonGroup extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("icon-toggle-button.css");
+    }
+
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Returns accessibility attributes for toggle icon button group content and selection state.
@@ -524,6 +598,39 @@ public class M3IconToggleButtonGroup extends Control {
         Objects.requireNonNull(buttons, "buttons");
         for (M3IconToggleButton button : buttons) {
             Objects.requireNonNull(button, "button");
+        }
+    }
+
+    /// CSS metadata for icon toggle button group layout tokens.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for icon toggle button spacing.
+        private static final CssMetaData<M3IconToggleButtonGroup, Number> SPACING =
+                new CssMetaData<>(
+                        "-m3-icon-toggle-button-group-spacing",
+                        SizeConverter.getInstance(),
+                        DEFAULT_SPACING
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3IconToggleButtonGroup control) {
+                        return M3Css.isSettable(control.spacingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3IconToggleButtonGroup control) {
+                        return control.spacingProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(SPACING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }
 }

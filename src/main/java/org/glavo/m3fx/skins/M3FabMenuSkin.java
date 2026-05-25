@@ -12,11 +12,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default Material Design 3 skin for [M3FabMenu].
 @NotNullByDefault
 public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
-    /// The spacing between floating action buttons.
-    private static final double BUTTON_SPACING = 12.0;
-
     /// The internal vertical container.
-    private final VBox container = new VBox(BUTTON_SPACING);
+    private final VBox container = new VBox();
 
     /// Creates a floating action button menu skin.
     ///
@@ -26,7 +23,8 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
         container.setManaged(false);
         container.setAlignment(Pos.BOTTOM_RIGHT);
         control.getActionsContainer().setAlignment(Pos.BOTTOM_RIGHT);
-        control.getActionsContainer().setSpacing(BUTTON_SPACING);
+        container.spacingProperty().bind(control.actionSpacingProperty());
+        control.getActionsContainer().spacingProperty().bind(control.actionSpacingProperty());
         control.getActionsContainer().setFillWidth(false);
         container.getChildren().setAll(control.getActionsContainer(), control.getToggleButton());
         getChildren().add(container);
@@ -35,6 +33,8 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
     /// Removes child references before disposal.
     @Override
     public void dispose() {
+        container.spacingProperty().unbind();
+        getSkinnable().getActionsContainer().spacingProperty().unbind();
         container.getChildren().clear();
         super.dispose();
     }

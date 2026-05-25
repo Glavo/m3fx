@@ -13,6 +13,11 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -27,6 +32,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +64,14 @@ public class M3SegmentedButtonGroup extends Control {
     /// The style class applied to the last segmented button in a group.
     public static final String LAST_SEGMENT_STYLE_CLASS = "m3-segmented-button-last";
 
+    /// The default spacing that lets adjacent segmented button borders overlap.
+    private static final double DEFAULT_SPACING = -1.0;
+
     /// The mutable segmented button group content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
+
+    // Backing property for the styleable segment spacing token.
+    private @Nullable StyleableDoubleProperty spacing;
 
     // Backing property for the public segmented button selection mode API.
     private final ObjectProperty<M3SegmentedButtonSelectionMode> selectionMode =
@@ -147,6 +160,54 @@ public class M3SegmentedButtonGroup extends Control {
     /// @return the mutable child list used as segmented button group content
     public final ObservableList<Node> getItems() {
         return items;
+    }
+
+    /// Returns the spacing between segmented buttons.
+    ///
+    /// @return the child spacing in pixels
+    public final double getSpacing() {
+        return spacing == null ? DEFAULT_SPACING : spacing.get();
+    }
+
+    /// Sets the spacing between segmented buttons.
+    ///
+    /// @param spacing the child spacing in pixels
+    public final void setSpacing(double spacing) {
+        spacingProperty().set(M3Css.finite(spacing, "spacing"));
+    }
+
+    /// Returns the spacing property.
+    ///
+    /// @return the styleable child spacing property
+    public final StyleableDoubleProperty spacingProperty() {
+        if (spacing == null) {
+            spacing = new StyleableDoubleProperty(DEFAULT_SPACING) {
+                /// Validates updated spacing values.
+                @Override
+                protected void invalidated() {
+                    M3Css.finite(get(), "spacing");
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3SegmentedButtonGroup.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "spacing";
+                }
+
+                /// Returns the CSS metadata for this property.
+                @Override
+                public CssMetaData<M3SegmentedButtonGroup, Number> getCssMetaData() {
+                    return StyleableProperties.SPACING;
+                }
+            };
+        }
+        return spacing;
     }
 
     /// Adds one segmented button.
@@ -327,6 +388,19 @@ public class M3SegmentedButtonGroup extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("segmented-button.css");
+    }
+
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Returns accessibility attributes for segmented button group content and selection state.
@@ -608,6 +682,35 @@ public class M3SegmentedButtonGroup extends Control {
         Objects.requireNonNull(buttons, "buttons");
         for (M3SegmentedButton button : buttons) {
             Objects.requireNonNull(button, "button");
+        }
+    }
+
+    /// CSS metadata for segmented button group layout tokens.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for segmented button spacing.
+        private static final CssMetaData<M3SegmentedButtonGroup, Number> SPACING =
+                new CssMetaData<>("-m3-segmented-button-group-spacing", SizeConverter.getInstance(), DEFAULT_SPACING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3SegmentedButtonGroup control) {
+                        return M3Css.isSettable(control.spacingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3SegmentedButtonGroup control) {
+                        return control.spacingProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(SPACING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }
 }

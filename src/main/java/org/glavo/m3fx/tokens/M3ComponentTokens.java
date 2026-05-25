@@ -558,10 +558,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         shapeTokens.extraLarge(),
                         fabSmallHorizontalPadding,
                         fabRegularHorizontalPadding,
-                        fabLargeHorizontalPadding
+                        fabLargeHorizontalPadding,
+                        density.apply(expressive ? 14.0 : 12.0)
                 ),
                 new IconTokens(iconSmallSize, iconMediumSize, iconLargeSize, iconExtraLargeSize),
-                new ButtonGroupTokens(groupedButtonHorizontalPadding, groupedButtonHorizontalPadding, splitButtonMenuWidth),
+                new ButtonGroupTokens(
+                        groupedButtonHorizontalPadding,
+                        groupedButtonHorizontalPadding,
+                        splitButtonMenuWidth,
+                        -1.0,
+                        -1.0,
+                        density.apply(expressive ? 10.0 : 8.0)
+                ),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
                 new TabTokens(
                         tabHeight,
@@ -836,6 +844,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendButtonRule(builder, ".m3-icon-toggle-button", iconButton());
         appendIconRules(builder, icon());
         appendConnectedButtonRules(builder, filledButton(), buttonGroup());
+        appendGroupSpacingRule(builder, ".m3-button-group", "-m3-button-group-spacing", buttonGroup().buttonGroupSpacing());
+        appendGroupSpacingRule(
+                builder,
+                ".m3-segmented-button-group",
+                "-m3-segmented-button-group-spacing",
+                buttonGroup().segmentedGroupSpacing()
+        );
+        appendGroupSpacingRule(
+                builder,
+                ".m3-icon-toggle-button-group",
+                "-m3-icon-toggle-button-group-spacing",
+                buttonGroup().iconToggleGroupSpacing()
+        );
+        appendGroupSpacingRule(
+                builder,
+                ".m3-fab-menu",
+                "-m3-fab-menu-action-spacing",
+                floatingActionButton().menuActionSpacing()
+        );
         appendFabRule(
                 builder,
                 ".m3-small-fab",
@@ -1024,6 +1051,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-fab-small-horizontal-padding", M3TokenCss.pixels(tokens.smallHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-fab-regular-horizontal-padding", M3TokenCss.pixels(tokens.regularHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-fab-large-horizontal-padding", M3TokenCss.pixels(tokens.largeHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-fab-menu-action-spacing", M3TokenCss.pixels(tokens.menuActionSpacing()));
     }
 
     /// Appends icon token declarations.
@@ -1051,6 +1079,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 "-m3-split-button-menu-width",
                 M3TokenCss.pixels(tokens.splitMenuButtonWidth())
         );
+        M3TokenCss.append(builder, "-m3-button-group-spacing", M3TokenCss.pixels(tokens.buttonGroupSpacing()));
+        M3TokenCss.append(builder, "-m3-segmented-button-group-spacing", M3TokenCss.pixels(tokens.segmentedGroupSpacing()));
+        M3TokenCss.append(builder, "-m3-icon-toggle-button-group-spacing", M3TokenCss.pixels(tokens.iconToggleGroupSpacing()));
     }
 
     /// Appends tab token declarations.
@@ -1461,6 +1492,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void appendIconRule(StringBuilder builder, String selector, double size) {
         beginRule(builder, selector);
         appendDeclaration(builder, "-m3-icon-size", M3TokenCss.pixels(size));
+        endRule(builder);
+    }
+
+    /// Appends a generated single spacing rule.
+    private static void appendGroupSpacingRule(StringBuilder builder, String selector, String property, double spacing) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, property, M3TokenCss.pixels(spacing));
         endRule(builder);
     }
 
@@ -2629,6 +2667,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param smallHorizontalPadding the horizontal padding for small extended floating action buttons
     /// @param regularHorizontalPadding the horizontal padding for regular extended floating action buttons
     /// @param largeHorizontalPadding the horizontal padding for large extended floating action buttons
+    /// @param menuActionSpacing the vertical spacing between expanded FAB menu actions
     @NotNullByDefault
     record FabTokens(
             double smallSize,
@@ -2639,7 +2678,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double largeShape,
             double smallHorizontalPadding,
             double regularHorizontalPadding,
-            double largeHorizontalPadding
+            double largeHorizontalPadding,
+            double menuActionSpacing
     ) {
         /// Creates floating action button tokens.
         public FabTokens {
@@ -2652,6 +2692,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(smallHorizontalPadding, "smallHorizontalPadding");
             validateNonNegative(regularHorizontalPadding, "regularHorizontalPadding");
             validateNonNegative(largeHorizontalPadding, "largeHorizontalPadding");
+            validateNonNegative(menuActionSpacing, "menuActionSpacing");
         }
     }
 
@@ -2682,17 +2723,26 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param buttonHorizontalPadding the horizontal padding applied to grouped buttons
     /// @param splitActionHorizontalPadding the horizontal padding applied to split button action parts
     /// @param splitMenuButtonWidth the preferred width of split button menu parts
+    /// @param buttonGroupSpacing the spacing between connected button group children
+    /// @param segmentedGroupSpacing the spacing between segmented button group children
+    /// @param iconToggleGroupSpacing the spacing between icon toggle button group children
     @NotNullByDefault
     record ButtonGroupTokens(
             double buttonHorizontalPadding,
             double splitActionHorizontalPadding,
-            double splitMenuButtonWidth
+            double splitMenuButtonWidth,
+            double buttonGroupSpacing,
+            double segmentedGroupSpacing,
+            double iconToggleGroupSpacing
     ) {
         /// Creates button group tokens.
         public ButtonGroupTokens {
             validateNonNegative(buttonHorizontalPadding, "buttonHorizontalPadding");
             validateNonNegative(splitActionHorizontalPadding, "splitActionHorizontalPadding");
             validateNonNegative(splitMenuButtonWidth, "splitMenuButtonWidth");
+            validateFinite(buttonGroupSpacing, "buttonGroupSpacing");
+            validateFinite(segmentedGroupSpacing, "segmentedGroupSpacing");
+            validateNonNegative(iconToggleGroupSpacing, "iconToggleGroupSpacing");
         }
     }
 
@@ -3606,6 +3656,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void validateNonNegative(double value, String name) {
         if (value < 0.0) {
             throw new IllegalArgumentException(name + " must not be negative");
+        }
+    }
+
+    /// Validates that a component token is finite.
+    private static void validateFinite(double value, String name) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException(name + " must be finite");
         }
     }
 
