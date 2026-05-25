@@ -67,6 +67,24 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The single active loading shape.
     private final Path indicator = new Path();
 
+    /// The reusable first path point.
+    private final MoveTo firstPoint = new MoveTo();
+
+    /// The reusable remaining path points.
+    private final LineTo[] remainingPoints = new LineTo[SAMPLE_COUNT - 1];
+
+    /// The reusable x-coordinate samples for the current frame.
+    private final double[] sampledX = new double[SAMPLE_COUNT];
+
+    /// The reusable y-coordinate samples for the current frame.
+    private final double[] sampledY = new double[SAMPLE_COUNT];
+
+    /// The x-coordinate of the current sampled polygon centroid.
+    private double sampledCentroidX;
+
+    /// The y-coordinate of the current sampled polygon centroid.
+    private double sampledCentroidY;
+
     /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
@@ -102,6 +120,13 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         super(control);
         indicator.getStyleClass().add("m3-loading-indicator-indicator");
         indicator.setManaged(false);
+        indicator.getElements().add(firstPoint);
+        for (int i = 0; i < remainingPoints.length; i++) {
+            LineTo point = new LineTo();
+            remainingPoints[i] = point;
+            indicator.getElements().add(point);
+        }
+        indicator.getElements().add(new ClosePath());
         getChildren().add(indicator);
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
@@ -220,7 +245,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             double phase,
             boolean indeterminate
     ) {
-        indicator.getElements().clear();
         if (radius <= 0.0) {
             return;
         }
@@ -230,16 +254,45 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             double angle = Math.PI * 2.0 * i / SAMPLE_COUNT;
             double rotatedAngle = angle + Math.PI * 2.0 * rotation;
             double shapeRadius = radiusFor(phase, angle, indeterminate) * radius;
-            double pointX = centerX + Math.cos(rotatedAngle) * shapeRadius;
-            double pointY = centerY + Math.sin(rotatedAngle) * shapeRadius;
-
-            if (i == 0) {
-                indicator.getElements().add(new MoveTo(pointX, pointY));
-            } else {
-                indicator.getElements().add(new LineTo(pointX, pointY));
-            }
+            sampledX[i] = centerX + Math.cos(rotatedAngle) * shapeRadius;
+            sampledY[i] = centerY + Math.sin(rotatedAngle) * shapeRadius;
         }
-        indicator.getElements().add(new ClosePath());
+
+        updatePolygonCentroid();
+        double offsetX = centerX - sampledCentroidX;
+        double offsetY = centerY - sampledCentroidY;
+        firstPoint.setX(sampledX[0] + offsetX);
+        firstPoint.setY(sampledY[0] + offsetY);
+        for (int i = 1; i < SAMPLE_COUNT; i++) {
+            LineTo point = remainingPoints[i - 1];
+            point.setX(sampledX[i] + offsetX);
+            point.setY(sampledY[i] + offsetY);
+        }
+    }
+
+    /// Updates the area centroid of the currently sampled polygon.
+    private void updatePolygonCentroid() {
+        double signedArea = 0.0;
+        double centroidX = 0.0;
+        double centroidY = 0.0;
+
+        for (int i = 0; i < SAMPLE_COUNT; i++) {
+            int next = (i + 1) % SAMPLE_COUNT;
+            double cross = sampledX[i] * sampledY[next] - sampledX[next] * sampledY[i];
+            signedArea += cross;
+            centroidX += (sampledX[i] + sampledX[next]) * cross;
+            centroidY += (sampledY[i] + sampledY[next]) * cross;
+        }
+
+        if (Math.abs(signedArea) < 1e-6) {
+            sampledCentroidX = sampledX[0];
+            sampledCentroidY = sampledY[0];
+            return;
+        }
+
+        double scale = 1.0 / (3.0 * signedArea);
+        sampledCentroidX = centroidX * scale;
+        sampledCentroidY = centroidY * scale;
     }
 
     /// Returns a sampled radius multiplier for the current animation state.
