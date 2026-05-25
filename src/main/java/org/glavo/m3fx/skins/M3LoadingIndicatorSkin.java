@@ -31,22 +31,25 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The number of default indeterminate shape states.
     private static final int INDETERMINATE_SHAPE_COUNT = 7;
 
-    /// Shape states used by the indeterminate morphing loop.
-    private static final ShapeSpec[] INDETERMINATE_SHAPES = {
-            new ShapeSpec(0, 0.00, 0.00),
-            new ShapeSpec(3, 0.16, 0.08),
-            new ShapeSpec(4, 0.14, 0.21),
-            new ShapeSpec(5, 0.13, 0.34),
-            new ShapeSpec(6, 0.11, 0.47),
-            new ShapeSpec(7, 0.10, 0.59),
-            new ShapeSpec(5, 0.18, 0.74)
+    /// The highest radial harmonic used by the generated shape sequence.
+    private static final int HARMONIC_COUNT = 8;
+
+    /// Shape coefficient states used by the indeterminate morphing loop.
+    private static final double[][] INDETERMINATE_SHAPES = {
+            coefficients(0, 0.00, 0.00),
+            coefficients(3, 0.16, 0.08),
+            coefficients(4, 0.14, 0.21),
+            coefficients(5, 0.13, 0.34),
+            coefficients(6, 0.11, 0.47),
+            coefficients(7, 0.10, 0.59),
+            coefficients(5, 0.18, 0.74)
     };
 
     /// The determinate starting shape.
-    private static final ShapeSpec DETERMINATE_START_SHAPE = new ShapeSpec(0, 0.0, 0.0);
+    private static final double[] DETERMINATE_START_SHAPE = coefficients(0, 0.0, 0.0);
 
     /// The determinate completed shape.
-    private static final ShapeSpec DETERMINATE_END_SHAPE = new ShapeSpec(7, 0.16, 0.25);
+    private static final double[] DETERMINATE_END_SHAPE = coefficients(7, 0.16, 0.25);
 
     /// The single active loading shape.
     private final Path indicator = new Path();
@@ -189,12 +192,10 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         }
 
         double rotation = indeterminate ? phase / INDETERMINATE_SHAPE_COUNT : -phase * 0.5;
-        MorphState morph = indeterminate ? indeterminateMorphAt(phase) : determinateMorphAt(phase);
-
         for (int i = 0; i < SAMPLE_COUNT; i++) {
             double angle = Math.PI * 2.0 * i / SAMPLE_COUNT;
             double rotatedAngle = angle + Math.PI * 2.0 * rotation;
-            double shapeRadius = radiusFor(morph, angle) * radius;
+            double shapeRadius = radiusFor(phase, angle, indeterminate) * radius;
             double pointX = centerX + Math.cos(rotatedAngle) * shapeRadius;
             double pointY = centerY + Math.sin(rotatedAngle) * shapeRadius;
 
@@ -207,38 +208,44 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         indicator.getElements().add(new ClosePath());
     }
 
-    /// Returns the interpolated indeterminate morph state for the current phase.
-    private static MorphState indeterminateMorphAt(double phase) {
+    /// Returns a sampled radius multiplier for the current animation state.
+    private static double radiusFor(double phase, double angle, boolean indeterminate) {
+        return indeterminate
+                ? indeterminateRadiusFor(phase, angle)
+                : determinateRadiusFor(phase, angle);
+    }
+
+    /// Returns a Catmull-Rom interpolated indeterminate radius multiplier.
+    private static double indeterminateRadiusFor(double phase, double angle) {
         double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
         int index = (int) Math.floor(normalized);
         double fraction = normalized - index;
-        ShapeSpec current = INDETERMINATE_SHAPES[index];
-        ShapeSpec next = INDETERMINATE_SHAPES[(index + 1) % INDETERMINATE_SHAPE_COUNT];
-        return new MorphState(current, next, smoothStep(fraction));
-    }
-
-    /// Returns the interpolated determinate morph state for the current progress.
-    private static MorphState determinateMorphAt(double progress) {
-        return new MorphState(DETERMINATE_START_SHAPE, DETERMINATE_END_SHAPE, smoothStep(clamp(progress)));
-    }
-
-    /// Returns a sampled radius multiplier for a morph state.
-    private static double radiusFor(MorphState morph, double angle) {
-        return interpolate(
-                radiusFor(morph.start(), angle),
-                radiusFor(morph.end(), angle),
-                morph.fraction()
-        );
-    }
-
-    /// Returns a sampled radius multiplier for a shape.
-    private static double radiusFor(ShapeSpec shape, double angle) {
-        if (shape.lobes() == 0 || shape.amplitude() <= 0.0) {
-            return 1.0;
+        double radius = catmullCoefficient(INDETERMINATE_SHAPES, index, fraction, 0);
+        for (int harmonic = 1; harmonic <= HARMONIC_COUNT; harmonic++) {
+            double harmonicAngle = harmonic * angle;
+            radius += catmullCoefficient(INDETERMINATE_SHAPES, index, fraction, harmonic)
+                    * Math.cos(harmonicAngle);
+            radius += catmullCoefficient(INDETERMINATE_SHAPES, index, fraction, HARMONIC_COUNT + harmonic)
+                    * Math.sin(harmonicAngle);
         }
+        return clampRadius(radius);
+    }
 
-        double wave = Math.cos(shape.lobes() * (angle + Math.PI * 2.0 * shape.phaseOffset()));
-        return 1.0 - shape.amplitude() * 0.5 + shape.amplitude() * 0.5 * wave;
+    /// Returns a linearly interpolated determinate radius multiplier.
+    private static double determinateRadiusFor(double progress, double angle) {
+        double fraction = smoothStep(clamp(progress));
+        double radius = interpolate(DETERMINATE_START_SHAPE[0], DETERMINATE_END_SHAPE[0], fraction);
+        for (int harmonic = 1; harmonic <= HARMONIC_COUNT; harmonic++) {
+            double harmonicAngle = harmonic * angle;
+            radius += interpolate(DETERMINATE_START_SHAPE[harmonic], DETERMINATE_END_SHAPE[harmonic], fraction)
+                    * Math.cos(harmonicAngle);
+            radius += interpolate(
+                    DETERMINATE_START_SHAPE[HARMONIC_COUNT + harmonic],
+                    DETERMINATE_END_SHAPE[HARMONIC_COUNT + harmonic],
+                    fraction
+            ) * Math.sin(harmonicAngle);
+        }
+        return clampRadius(radius);
     }
 
     /// Returns a smooth interpolation fraction with zero velocity at both ends.
@@ -268,25 +275,37 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         return start + (end - start) * fraction;
     }
 
-    /// Describes the current morph between two sampled radial shapes.
-    ///
-    /// @param start the source shape
-    /// @param end the target shape
-    /// @param fraction the interpolation fraction from `0.0` to `1.0`
-    private record MorphState(ShapeSpec start, ShapeSpec end, double fraction) {
-        /// Creates a morph state.
-        private MorphState {
-        }
+    /// Returns one Catmull-Rom interpolated coefficient for the closed indeterminate sequence.
+    private static double catmullCoefficient(double[][] sequence, int index, double fraction, int coefficientIndex) {
+        int count = sequence.length;
+        double previous = sequence[(index + count - 1) % count][coefficientIndex];
+        double current = sequence[index][coefficientIndex];
+        double next = sequence[(index + 1) % count][coefficientIndex];
+        double following = sequence[(index + 2) % count][coefficientIndex];
+        double t2 = fraction * fraction;
+        double t3 = t2 * fraction;
+
+        return 0.5 * ((2.0 * current)
+                + (-previous + next) * fraction
+                + (2.0 * previous - 5.0 * current + 4.0 * next - following) * t2
+                + (-previous + 3.0 * current - 3.0 * next + following) * t3);
     }
 
-    /// Describes a sampled radial shape.
-    ///
-    /// @param lobes the number of radial lobes, or `0` for a circle
-    /// @param amplitude the radial variation amount
-    /// @param phaseOffset the angular phase offset, in turns
-    private record ShapeSpec(int lobes, double amplitude, double phaseOffset) {
-        /// Creates a shape specification.
-        private ShapeSpec {
+    /// Returns a bounded radius multiplier to keep generated paths stable.
+    private static double clampRadius(double radius) {
+        return Math.max(0.70, Math.min(1.18, radius));
+    }
+
+    /// Creates harmonic coefficients for a radial shape.
+    private static double[] coefficients(int lobes, double amplitude, double phaseOffset) {
+        double[] coefficients = new double[HARMONIC_COUNT * 2 + 1];
+        coefficients[0] = 1.0;
+        if (lobes > 0 && lobes <= HARMONIC_COUNT && amplitude > 0.0) {
+            double harmonicPhase = lobes * Math.PI * 2.0 * phaseOffset;
+            coefficients[0] -= amplitude * 0.5;
+            coefficients[lobes] = amplitude * 0.5 * Math.cos(harmonicPhase);
+            coefficients[HARMONIC_COUNT + lobes] = -amplitude * 0.5 * Math.sin(harmonicPhase);
         }
+        return coefficients;
     }
 }
