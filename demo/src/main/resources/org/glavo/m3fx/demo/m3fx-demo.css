@@ -136,6 +136,21 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
+.demo-contained-loading-indicator {
+    -fx-min-width: 112px;
+    -fx-min-height: 112px;
+    -fx-pref-width: 112px;
+    -fx-pref-height: 112px;
+    -fx-max-width: 112px;
+    -fx-max-height: 112px;
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-radius: 56px;
+}
+
+.demo-contained-loading-indicator .m3-loading-indicator-indicator {
+    -fx-fill: -m3-color-on-secondary-container;
+}
+
 .demo-icon-label {
     -m3-icon-size: 18px;
     -m3-icon-font-weight: 700;
