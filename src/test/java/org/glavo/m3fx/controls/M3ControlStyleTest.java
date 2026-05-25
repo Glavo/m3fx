@@ -7116,6 +7116,35 @@ final class M3ControlStyleTest {
         assertTrue(indicator.getElements().size() > 24);
     }
 
+    /// Verifies that the contained loading indicator aligns the active shape with its container.
+    @Test
+    void containedLoadingIndicatorCentersShapeInContainer() {
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+        loadingIndicator.setVariant(M3LoadingIndicatorVariant.CONTAINED);
+        loadingIndicator.setStyle("-m3-container-size: 72px; -m3-indicator-size: 54px;");
+        Pane root = new Pane(loadingIndicator);
+        Scene scene = new Scene(root, 120.0, 90.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        loadingIndicator.resize(72.0, 72.0);
+        loadingIndicator.layout();
+
+        Region container = assertInstanceOf(
+                Region.class,
+                loadingIndicator.lookup(".m3-loading-indicator-container")
+        );
+        Path indicator = assertInstanceOf(
+                Path.class,
+                loadingIndicator.lookup(".m3-loading-indicator-indicator")
+        );
+        Bounds containerBounds = container.localToScene(container.getBoundsInLocal());
+        Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
+        assertEquals(containerBounds.getCenterX(), indicatorBounds.getCenterX(), 0.75);
+        assertEquals(containerBounds.getCenterY(), indicatorBounds.getCenterY(), 0.75);
+        assertTrue(containerBounds.contains(indicatorBounds));
+    }
+
     /// Verifies that the progress bar skin lays out determinate progress without Modena internals.
     @Test
     void progressBarSkinLaysOutDeterminateProgress() {

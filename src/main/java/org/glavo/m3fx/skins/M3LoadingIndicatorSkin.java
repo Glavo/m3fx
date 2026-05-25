@@ -12,6 +12,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.control.SkinBase;
+import javafx.scene.layout.Region;
 import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
@@ -20,6 +21,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
+import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -47,6 +49,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The highest radial harmonic used by the generated shape sequence.
     private static final int HARMONIC_COUNT = 8;
 
+    /// The maximum generated radius multiplier used to normalize the visible active size.
+    private static final double MAX_RADIUS_MULTIPLIER = 1.18;
+
     /// Shape coefficient states used by the indeterminate morphing loop.
     private static final double[][] INDETERMINATE_SHAPES = {
             coefficients(8, 0.20, 0.00),
@@ -67,6 +72,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The single active loading shape.
     private final Path indicator = new Path();
 
+    /// The optional contained loading indicator container.
+    private final Region container = new Region();
+
     /// The reusable first path point.
     private final MoveTo firstPoint = new MoveTo();
 
@@ -79,11 +87,17 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The reusable y-coordinate samples for the current frame.
     private final double[] sampledY = new double[SAMPLE_COUNT];
 
-    /// The x-coordinate of the current sampled polygon centroid.
-    private double sampledCentroidX;
+    /// The minimum x-coordinate of the current sampled polygon bounds.
+    private double sampledMinX;
 
-    /// The y-coordinate of the current sampled polygon centroid.
-    private double sampledCentroidY;
+    /// The minimum y-coordinate of the current sampled polygon bounds.
+    private double sampledMinY;
+
+    /// The maximum x-coordinate of the current sampled polygon bounds.
+    private double sampledMaxX;
+
+    /// The maximum y-coordinate of the current sampled polygon bounds.
+    private double sampledMaxY;
 
     /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
@@ -118,6 +132,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// @param control the skinned loading indicator
     public M3LoadingIndicatorSkin(M3LoadingIndicator control) {
         super(control);
+        container.getStyleClass().add("m3-loading-indicator-container");
+        container.setManaged(false);
         indicator.getStyleClass().add("m3-loading-indicator-indicator");
         indicator.setManaged(false);
         indicator.getElements().add(firstPoint);
@@ -127,7 +143,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             indicator.getElements().add(point);
         }
         indicator.getElements().add(new ClosePath());
-        getChildren().add(indicator);
+        getChildren().addAll(container, indicator);
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
         displayedProgress.addListener(animationInvalidation);
@@ -137,6 +153,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         globalRotationAnimation.setCycleCount(Animation.INDEFINITE);
 
         control.progressProperty().addListener(progressInvalidation);
+        control.variantProperty().addListener(layoutInvalidation);
         control.containerSizeProperty().addListener(layoutInvalidation);
         control.indicatorSizeProperty().addListener(layoutInvalidation);
         updateProgressAnimation(false);
@@ -153,6 +170,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         indeterminatePhase.removeListener(animationInvalidation);
         globalRotation.removeListener(animationInvalidation);
         loadingIndicator.progressProperty().removeListener(progressInvalidation);
+        loadingIndicator.variantProperty().removeListener(layoutInvalidation);
         loadingIndicator.containerSizeProperty().removeListener(layoutInvalidation);
         loadingIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
         super.dispose();
@@ -169,8 +187,20 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                 ? indeterminatePhase.get()
                 : displayedProgress.get();
 
-        rebuildIndicatorPath(centerX, centerY, indicatorSize / 2.0, phase, loadingIndicator.isIndeterminate());
-        indicator.resizeRelocate(x, y, width, height);
+        boolean contained = loadingIndicator.getVariant() == M3LoadingIndicatorVariant.CONTAINED;
+        container.setVisible(contained);
+        if (contained) {
+            container.resizeRelocate(x, y, width, height);
+        }
+        rebuildIndicatorPath(
+                centerX,
+                centerY,
+                indicatorSize / (2.0 * MAX_RADIUS_MULTIPLIER),
+                phase,
+                loadingIndicator.isIndeterminate()
+        );
+        indicator.setLayoutX(0.0);
+        indicator.setLayoutY(0.0);
         indicator.setOpacity(loadingIndicator.isDisabled() ? 0.38 : 1.0);
     }
 
@@ -258,9 +288,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             sampledY[i] = centerY + Math.sin(rotatedAngle) * shapeRadius;
         }
 
-        updatePolygonCentroid();
-        double offsetX = centerX - sampledCentroidX;
-        double offsetY = centerY - sampledCentroidY;
+        updatePolygonBounds();
+        double offsetX = centerX - (sampledMinX + sampledMaxX) / 2.0;
+        double offsetY = centerY - (sampledMinY + sampledMaxY) / 2.0;
         firstPoint.setX(sampledX[0] + offsetX);
         firstPoint.setY(sampledY[0] + offsetY);
         for (int i = 1; i < SAMPLE_COUNT; i++) {
@@ -270,29 +300,19 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         }
     }
 
-    /// Updates the area centroid of the currently sampled polygon.
-    private void updatePolygonCentroid() {
-        double signedArea = 0.0;
-        double centroidX = 0.0;
-        double centroidY = 0.0;
+    /// Updates the visual bounds of the currently sampled polygon.
+    private void updatePolygonBounds() {
+        sampledMinX = sampledX[0];
+        sampledMinY = sampledY[0];
+        sampledMaxX = sampledX[0];
+        sampledMaxY = sampledY[0];
 
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            int next = (i + 1) % SAMPLE_COUNT;
-            double cross = sampledX[i] * sampledY[next] - sampledX[next] * sampledY[i];
-            signedArea += cross;
-            centroidX += (sampledX[i] + sampledX[next]) * cross;
-            centroidY += (sampledY[i] + sampledY[next]) * cross;
+        for (int i = 1; i < SAMPLE_COUNT; i++) {
+            sampledMinX = Math.min(sampledMinX, sampledX[i]);
+            sampledMinY = Math.min(sampledMinY, sampledY[i]);
+            sampledMaxX = Math.max(sampledMaxX, sampledX[i]);
+            sampledMaxY = Math.max(sampledMaxY, sampledY[i]);
         }
-
-        if (Math.abs(signedArea) < 1e-6) {
-            sampledCentroidX = sampledX[0];
-            sampledCentroidY = sampledY[0];
-            return;
-        }
-
-        double scale = 1.0 / (3.0 * signedArea);
-        sampledCentroidX = centroidX * scale;
-        sampledCentroidY = centroidY * scale;
     }
 
     /// Returns a sampled radius multiplier for the current animation state.
@@ -374,7 +394,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// Returns a bounded radius multiplier to keep generated paths stable.
     private static double clampRadius(double radius) {
-        return Math.max(0.70, Math.min(1.18, radius));
+        return Math.max(0.70, Math.min(MAX_RADIUS_MULTIPLIER, radius));
     }
 
     /// Creates harmonic coefficients for a radial shape.

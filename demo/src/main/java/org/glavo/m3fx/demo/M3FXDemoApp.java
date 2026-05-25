@@ -83,6 +83,7 @@ import org.glavo.m3fx.controls.M3ListSelectionMode;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
+import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
@@ -1337,13 +1338,11 @@ public final class M3FXDemoApp extends Application {
 
         M3LoadingIndicator containedIndicator = new M3LoadingIndicator();
         applyLargeLoadingIndicator(containedIndicator);
-        StackPane containedContainer = new StackPane(containedIndicator);
-        containedContainer.getStyleClass().add("demo-contained-loading-indicator");
-        containedContainer.setAlignment(Pos.CENTER);
+        containedIndicator.setVariant(M3LoadingIndicatorVariant.CONTAINED);
 
         return createGallery(
                 createShowcaseGroup("Default", defaultIndicator),
-                createShowcaseGroup("Contained", containedContainer)
+                createShowcaseGroup("Contained", containedIndicator)
         );
     }
 

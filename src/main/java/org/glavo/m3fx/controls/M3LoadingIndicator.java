@@ -5,6 +5,8 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.DoublePropertyBase;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
@@ -44,6 +46,10 @@ public class M3LoadingIndicator extends Control {
     private static final PseudoClass INDETERMINATE_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("indeterminate");
 
+    /// The pseudo class applied while the contained variant is selected.
+    private static final PseudoClass CONTAINED_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("contained");
+
     /// The default loading indicator container size.
     private static final double DEFAULT_CONTAINER_SIZE = 48.0;
 
@@ -68,6 +74,9 @@ public class M3LoadingIndicator extends Control {
 
     /// The styleable active indicator size token.
     private @Nullable StyleableDoubleProperty indicatorSize;
+
+    /// The visual variant used by this loading indicator.
+    private @Nullable ObjectProperty<M3LoadingIndicatorVariant> variant;
 
     /// Creates an indeterminate loading indicator.
     public M3LoadingIndicator() {
@@ -138,6 +147,41 @@ public class M3LoadingIndicator extends Control {
     /// @return `true` when the current progress value is indeterminate
     public final boolean isIndeterminate() {
         return getProgress() == INDETERMINATE_PROGRESS;
+    }
+
+    /// Returns the visual variant used by this loading indicator.
+    ///
+    /// @return the visual variant
+    public final M3LoadingIndicatorVariant getVariant() {
+        return variant == null ? M3LoadingIndicatorVariant.DEFAULT : variant.get();
+    }
+
+    /// Sets the visual variant used by this loading indicator.
+    ///
+    /// @param variant the visual variant
+    public final void setVariant(M3LoadingIndicatorVariant variant) {
+        variantProperty().set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the visual variant property.
+    ///
+    /// @return the visual variant property
+    public final ObjectProperty<M3LoadingIndicatorVariant> variantProperty() {
+        if (variant == null) {
+            variant = new SimpleObjectProperty<>(this, "variant", M3LoadingIndicatorVariant.DEFAULT) {
+                /// Updates pseudo classes and redraws the skin when the variant changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3LoadingIndicatorVariant.DEFAULT);
+                        return;
+                    }
+                    pseudoClassStateChanged(CONTAINED_PSEUDO_CLASS, get() == M3LoadingIndicatorVariant.CONTAINED);
+                    requestLayout();
+                }
+            };
+        }
+        return variant;
     }
 
     /// Returns the loading indicator container size token.
@@ -290,6 +334,7 @@ public class M3LoadingIndicator extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, true);
+        pseudoClassStateChanged(CONTAINED_PSEUDO_CLASS, false);
         updateMetrics();
     }
 
