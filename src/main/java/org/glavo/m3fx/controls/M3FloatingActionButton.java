@@ -117,53 +117,6 @@ public class M3FloatingActionButton extends ButtonBase {
         initialize();
     }
 
-    /// Creates a floating action button with text, variant, and size.
-    ///
-    /// @param text the text displayed by the floating action button
-    /// @param variant the color variant applied to the floating action button
-    /// @param size the size variant applied to the floating action button
-    /// @return a floating action button configured with the supplied text, variant, and size
-    public static M3FloatingActionButton withVariant(
-            String text,
-            M3FloatingActionButtonVariant variant,
-            M3FloatingActionButtonSize size
-    ) {
-        return withVariant(text, null, variant, size);
-    }
-
-    /// Creates a floating action button with graphic content, variant, and size.
-    ///
-    /// @param graphic the graphic displayed by the floating action button, or `null`
-    /// @param variant the color variant applied to the floating action button
-    /// @param size the size variant applied to the floating action button
-    /// @return a floating action button configured with the supplied graphic, variant, and size
-    public static M3FloatingActionButton withGraphic(
-            @Nullable Node graphic,
-            M3FloatingActionButtonVariant variant,
-            M3FloatingActionButtonSize size
-    ) {
-        return withVariant("", graphic, variant, size);
-    }
-
-    /// Creates a floating action button with text, graphic content, variant, and size.
-    ///
-    /// @param text the text displayed by the floating action button
-    /// @param graphic the graphic displayed by the floating action button, or `null`
-    /// @param variant the color variant applied to the floating action button
-    /// @param size the size variant applied to the floating action button
-    /// @return a floating action button configured with the supplied text, graphic, variant, and size
-    public static M3FloatingActionButton withVariant(
-            String text,
-            @Nullable Node graphic,
-            M3FloatingActionButtonVariant variant,
-            M3FloatingActionButtonSize size
-    ) {
-        M3FloatingActionButton button = new M3FloatingActionButton(text, graphic);
-        button.setVariant(variant);
-        button.setSize(size);
-        return button;
-    }
-
     /// Returns the floating action button color variant.
     ///
     /// @return the floating action button color variant

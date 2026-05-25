@@ -107,36 +107,6 @@ public class M3SplitButton extends Control {
         addItems(items);
     }
 
-    /// Creates a split button with text, variant, and menu items.
-    ///
-    /// @param text the primary action text
-    /// @param variant the button variant shared by both split button parts
-    /// @param items the menu item nodes shown by the menu side
-    /// @return the created split button
-    public static M3SplitButton withVariant(String text, M3ButtonVariant variant, Node... items) {
-        M3SplitButton button = new M3SplitButton(text, items);
-        button.setVariant(variant);
-        return button;
-    }
-
-    /// Creates a split button with text, variant, action handler, and menu items.
-    ///
-    /// @param text the primary action text
-    /// @param variant the button variant shared by both split button parts
-    /// @param onAction the primary action handler, or `null` for none
-    /// @param items the menu item nodes shown by the menu side
-    /// @return the created split button
-    public static M3SplitButton withVariant(
-            String text,
-            M3ButtonVariant variant,
-            @Nullable EventHandler<ActionEvent> onAction,
-            Node... items
-    ) {
-        M3SplitButton button = withVariant(text, variant, items);
-        button.setOnAction(onAction);
-        return button;
-    }
-
     /// Returns the primary action button.
     ///
     /// @return the primary action button

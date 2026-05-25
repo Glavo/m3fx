@@ -115,9 +115,8 @@ public class M3Button extends ButtonBase {
     ///
     /// @param text the text displayed by the button
     /// @param variant the Material button variant
-    /// @return a new button configured with the requested variant
-    public static M3Button withVariant(String text, M3ButtonVariant variant) {
-        return withVariant(text, null, variant, null);
+    public M3Button(String text, M3ButtonVariant variant) {
+        this(text, null, variant, null);
     }
 
     /// Creates a button with text, graphic content, and the requested variant.
@@ -125,9 +124,8 @@ public class M3Button extends ButtonBase {
     /// @param text the text displayed by the button
     /// @param graphic the optional graphic displayed with the text
     /// @param variant the Material button variant
-    /// @return a new button configured with the requested variant
-    public static M3Button withVariant(String text, @Nullable Node graphic, M3ButtonVariant variant) {
-        return withVariant(text, graphic, variant, null);
+    public M3Button(String text, @Nullable Node graphic, M3ButtonVariant variant) {
+        this(text, graphic, variant, null);
     }
 
     /// Creates a button with text, the requested variant, and an action handler.
@@ -135,13 +133,12 @@ public class M3Button extends ButtonBase {
     /// @param text the text displayed by the button
     /// @param variant the Material button variant
     /// @param onAction the action handler invoked when the button fires, or `null` for no handler
-    /// @return a new button configured with the requested variant and action handler
-    public static M3Button withVariant(
+    public M3Button(
             String text,
             M3ButtonVariant variant,
             @Nullable EventHandler<ActionEvent> onAction
     ) {
-        return withVariant(text, null, variant, onAction);
+        this(text, null, variant, onAction);
     }
 
     /// Creates a button with text, graphic content, the requested variant, and an action handler.
@@ -150,17 +147,15 @@ public class M3Button extends ButtonBase {
     /// @param graphic the optional graphic displayed with the text
     /// @param variant the Material button variant
     /// @param onAction the action handler invoked when the button fires, or `null` for no handler
-    /// @return a new button configured with the requested content, variant, and action handler
-    public static M3Button withVariant(
+    public M3Button(
             String text,
             @Nullable Node graphic,
             M3ButtonVariant variant,
             @Nullable EventHandler<ActionEvent> onAction
     ) {
-        M3Button button = new M3Button(text, graphic);
-        button.setVariant(variant);
-        button.setOnAction(onAction);
-        return button;
+        this(text, graphic);
+        setVariant(variant);
+        setOnAction(onAction);
     }
 
     /// Returns the button variant.

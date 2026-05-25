@@ -414,11 +414,11 @@ public class M3TextInputLayout extends Control {
     private final Label counterLabel = new Label();
 
     /// The built-in trailing clear button.
-    private final M3IconButton clearButton = M3IconButton.withIcon(
+    private final M3IconButton clearButton = new M3IconButton(new M3Icon(
             "x",
             M3IconSize.SMALL,
             M3IconVariant.ON_SURFACE_VARIANT
-    );
+    ));
 
     /// The animation used when the label changes between resting and floating states.
     private final Timeline labelAnimation = new Timeline();

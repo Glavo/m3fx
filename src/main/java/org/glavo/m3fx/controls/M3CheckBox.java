@@ -79,17 +79,6 @@ public class M3CheckBox extends ButtonBase {
         initialize();
     }
 
-    /// Creates a checkbox with text and the requested selected state.
-    ///
-    /// @param text the text displayed by the checkbox
-    /// @param selected whether the checkbox should start selected
-    /// @return a new checkbox configured with the requested selected state
-    public static M3CheckBox withSelected(String text, boolean selected) {
-        M3CheckBox checkBox = new M3CheckBox(text);
-        checkBox.setSelected(selected);
-        return checkBox;
-    }
-
     /// Sets whether this checkbox is selected.
     ///
     /// @param selected whether this checkbox should be selected

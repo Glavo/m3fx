@@ -57,17 +57,6 @@ public class M3PasswordField extends PasswordField implements M3TextInput {
         initialize();
     }
 
-    /// Creates a password field with initial text and the requested variant.
-    ///
-    /// @param text the initial field text
-    /// @param variant the text input variant
-    /// @return a password field using the requested variant
-    public static M3PasswordField withVariant(String text, M3TextInputVariant variant) {
-        M3PasswordField passwordField = new M3PasswordField(text);
-        passwordField.setVariant(variant);
-        return passwordField;
-    }
-
     /// Returns the text input variant.
     @Override
     public final M3TextInputVariant getVariant() {

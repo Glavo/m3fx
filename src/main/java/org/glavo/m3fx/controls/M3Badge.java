@@ -101,11 +101,9 @@ public class M3Badge extends Control {
     /// Creates a badge that displays a non-negative count.
     ///
     /// @param count the non-negative count displayed by the badge
-    /// @return a new badge displaying the supplied count
-    public static M3Badge withCount(int count) {
-        M3Badge badge = new M3Badge();
-        badge.setCount(count);
-        return badge;
+    public M3Badge(int count) {
+        this();
+        setCount(count);
     }
 
     /// Returns the badge text.

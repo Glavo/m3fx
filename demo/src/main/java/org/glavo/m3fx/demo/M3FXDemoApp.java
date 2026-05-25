@@ -314,7 +314,8 @@ public final class M3FXDemoApp extends Application {
             applyTheme();
         });
 
-        M3Switch animationsSwitch = M3Switch.withSelected("Animations", animationsEnabled);
+        M3Switch animationsSwitch = new M3Switch("Animations");
+        animationsSwitch.setSelected(animationsEnabled);
         animationsSwitch.setOnAction(event -> {
             animationsEnabled = animationsSwitch.isSelected();
             applyMotionSettings();
@@ -826,14 +827,16 @@ public final class M3FXDemoApp extends Application {
         M3TextField outlined = createTextField("Outlined text field", "", M3TextInputVariant.OUTLINED, false);
         M3TextField outlinedText = createTextField("Outlined with text", "M3FX", M3TextInputVariant.OUTLINED, false);
         outlinedText.setPrefWidth(320.0);
-        M3PasswordField password = M3PasswordField.withVariant("", M3TextInputVariant.OUTLINED);
+        M3PasswordField password = new M3PasswordField("");
+        password.setVariant(M3TextInputVariant.OUTLINED);
         password.setPromptText("Password");
         password.setPrefWidth(320.0);
         M3TextField filledError = createTextField("Filled error", "Invalid value", M3TextInputVariant.FILLED, false);
         filledError.setError(true);
         M3TextField outlinedError = createTextField("Outlined error", "", M3TextInputVariant.OUTLINED, false);
         outlinedError.setError(true);
-        M3PasswordField passwordError = M3PasswordField.withVariant("", M3TextInputVariant.OUTLINED);
+        M3PasswordField passwordError = new M3PasswordField("");
+        passwordError.setVariant(M3TextInputVariant.OUTLINED);
         passwordError.setPromptText("Password error");
         passwordError.setError(true);
         passwordError.setPrefWidth(280.0);
@@ -967,10 +970,12 @@ public final class M3FXDemoApp extends Application {
     /// Creates the radio button component page.
     private Node createRadioButtonsPage() {
         ToggleGroup radioGroup = new ToggleGroup();
-        M3RadioButton radioOne = M3RadioButton.withSelected("Radio A", true);
+        M3RadioButton radioOne = new M3RadioButton("Radio A");
+        radioOne.setSelected(true);
         M3RadioButton radioTwo = new M3RadioButton("Radio B");
         M3RadioButton disabledUnchecked = new M3RadioButton("Disabled unchecked");
-        M3RadioButton disabledSelected = M3RadioButton.withSelected("Disabled selected", true);
+        M3RadioButton disabledSelected = new M3RadioButton("Disabled selected");
+        disabledSelected.setSelected(true);
         radioOne.setToggleGroup(radioGroup);
         radioTwo.setToggleGroup(radioGroup);
         disabledUnchecked.setDisable(true);
@@ -984,10 +989,12 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the switch component page.
     private Node createSwitchesPage() {
-        M3Switch onSwitch = M3Switch.withSelected("On", true);
+        M3Switch onSwitch = new M3Switch("On");
+        onSwitch.setSelected(true);
         M3Switch offSwitch = new M3Switch("Off");
         M3Switch disabledOffSwitch = new M3Switch("Disabled off");
-        M3Switch disabledOnSwitch = M3Switch.withSelected("Disabled on", true);
+        M3Switch disabledOnSwitch = new M3Switch("Disabled on");
+        disabledOnSwitch.setSelected(true);
         disabledOffSwitch.setDisable(true);
         disabledOnSwitch.setDisable(true);
 
@@ -1496,9 +1503,12 @@ public final class M3FXDemoApp extends Application {
     /// Creates the avatar component page.
     private Node createAvatarsPage() {
         M3Avatar initials = new M3Avatar("AB");
-        M3Avatar single = M3Avatar.withVariant("M", M3AvatarVariant.SECONDARY);
-        M3Avatar graphic = M3Avatar.withVariant(createNavigationIcon("G"), M3AvatarVariant.TERTIARY);
-        M3Avatar surface = M3Avatar.withVariant("S", M3AvatarVariant.SURFACE);
+        M3Avatar single = new M3Avatar("M");
+        single.setVariant(M3AvatarVariant.SECONDARY);
+        M3Avatar graphic = new M3Avatar(createNavigationIcon("G"));
+        graphic.setVariant(M3AvatarVariant.TERTIARY);
+        M3Avatar surface = new M3Avatar("S");
+        surface.setVariant(M3AvatarVariant.SURFACE);
 
         M3ListItem account = new M3ListItem("Account");
         account.setSupportingText("Avatar as leading content");
@@ -1645,21 +1655,21 @@ public final class M3FXDemoApp extends Application {
         learnButton.setOnAction(event -> showSnackbar());
         M3Button dismissButton = createButton("Dismiss", M3ButtonVariant.TEXT);
         dismissButton.setOnAction(event -> showSnackbar());
-        M3Banner informational = M3Banner.withIcon(
+        M3Banner informational = new M3Banner(
                 "M3FX can install generated token stylesheets for each JavaFX scene while keeping application scene management explicit.",
-                new M3Icon("i", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
                 learnButton,
                 dismissButton
         );
+        informational.setIcon(new M3Icon("i", M3IconSize.MEDIUM, M3IconVariant.PRIMARY));
         informational.setPrefWidth(760.0);
 
         M3Button reviewButton = createButton("Review", M3ButtonVariant.TEXT);
         reviewButton.setOnAction(event -> showActionSnackbar());
-        M3Banner warning = M3Banner.withIcon(
+        M3Banner warning = new M3Banner(
                 "The selected jlink target uses platform-specific BellSoft LibericaJDK Full jmods.",
-                new M3Icon("!", M3IconSize.MEDIUM, M3IconVariant.ERROR),
                 reviewButton
         );
+        warning.setIcon(new M3Icon("!", M3IconSize.MEDIUM, M3IconVariant.ERROR));
         warning.setPrefWidth(760.0);
 
         M3Button manageButton = createButton("Manage", M3ButtonVariant.TEXT);
@@ -1717,7 +1727,8 @@ public final class M3FXDemoApp extends Application {
         availability.setPrefWidth(420.0);
         availability.setMaxWidth(420.0);
 
-        M3Switch notifications = M3Switch.withSelected("", true);
+        M3Switch notifications = new M3Switch("");
+        notifications.setSelected(true);
         M3CheckBox beta = new M3CheckBox();
         beta.setAllowIndeterminate(true);
         beta.setIndeterminate(true);
@@ -1965,18 +1976,18 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a button configured with the requested variant.
     private static M3Button createButton(String text, M3ButtonVariant variant) {
-        return M3Button.withVariant(text, variant);
+        return new M3Button(text, variant);
     }
 
     /// Creates a split button configured with the requested variant.
     private M3SplitButton createSplitButton(String text, M3ButtonVariant variant) {
-        M3SplitButton splitButton = M3SplitButton.withVariant(
+        M3SplitButton splitButton = new M3SplitButton(
                 text,
-                variant,
                 new M3MenuItem("Duplicate"),
                 new M3MenuItem("Move"),
                 new M3MenuItem("Delete")
         );
+        splitButton.setVariant(variant);
         splitButton.setOnAction(event -> showSnackbar());
         return splitButton;
     }
@@ -1988,7 +1999,8 @@ public final class M3FXDemoApp extends Application {
             M3TextInputVariant variant,
             boolean disabled
     ) {
-        M3TextField textField = M3TextField.withVariant(text, variant);
+        M3TextField textField = new M3TextField(text);
+        textField.setVariant(variant);
         textField.setPromptText(prompt);
         textField.setDisable(disabled);
         textField.setPrefWidth(280.0);
@@ -2002,7 +2014,8 @@ public final class M3FXDemoApp extends Application {
             M3TextInputVariant variant,
             boolean disabled
     ) {
-        M3TextArea textArea = M3TextArea.withVariant(text, variant);
+        M3TextArea textArea = new M3TextArea(text);
+        textArea.setVariant(variant);
         textArea.setPromptText(prompt);
         textArea.setDisable(disabled);
         textArea.setPrefWidth(360.0);
@@ -2057,7 +2070,9 @@ public final class M3FXDemoApp extends Application {
             boolean selected,
             boolean disabled
     ) {
-        M3Chip chip = M3Chip.withVariant(text, variant, selected);
+        M3Chip chip = new M3Chip(text);
+        chip.setVariant(variant);
+        chip.setSelected(selected);
         chip.setDisable(disabled);
         return chip;
     }
@@ -2070,7 +2085,8 @@ public final class M3FXDemoApp extends Application {
             boolean allowIndeterminate,
             boolean disabled
     ) {
-        M3CheckBox checkBox = M3CheckBox.withSelected(text, selected);
+        M3CheckBox checkBox = new M3CheckBox(text);
+        checkBox.setSelected(selected);
         checkBox.setIndeterminate(indeterminate);
         checkBox.setAllowIndeterminate(allowIndeterminate);
         checkBox.setDisable(disabled);
@@ -2088,14 +2104,17 @@ public final class M3FXDemoApp extends Application {
     /// Creates a segmented button group sample.
     private static M3SegmentedButtonGroup createSegmentedGroup(String first, String second, String third) {
         M3SegmentedButton firstButton = new M3SegmentedButton(first);
-        M3SegmentedButton secondButton = M3SegmentedButton.withSelected(second, true);
+        M3SegmentedButton secondButton = new M3SegmentedButton(second);
+        secondButton.setSelected(true);
         M3SegmentedButton thirdButton = new M3SegmentedButton(third);
         return new M3SegmentedButtonGroup(firstButton, secondButton, thirdButton);
     }
 
     /// Creates a tab bar sample.
     private static M3TabBar createTabBar(String first, String second, String third) {
-        return new M3TabBar(M3Tab.withSelected(first, true), new M3Tab(second), new M3Tab(third));
+        M3Tab firstTab = new M3Tab(first);
+        firstTab.setSelected(true);
+        return new M3TabBar(firstTab, new M3Tab(second), new M3Tab(third));
     }
 
     /// Creates a top app bar sample.
@@ -2248,7 +2267,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a sample navigation item.
     private static M3NavigationItem createNavigationItem(String text, String iconText) {
-        return M3NavigationItem.withSelected(text, createNavigationIcon(iconText), false);
+        return new M3NavigationItem(text, createNavigationIcon(iconText));
     }
 
     /// Creates a sample navigation icon.
@@ -2273,7 +2292,10 @@ public final class M3FXDemoApp extends Application {
     ) {
         M3Icon icon = new M3Icon(text, M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT);
         icon.getStyleClass().add("demo-icon-label");
-        return M3IconToggleButton.withVariant(icon, variant, selected);
+        M3IconToggleButton button = new M3IconToggleButton(icon);
+        button.setVariant(variant);
+        button.setSelected(selected);
+        return button;
     }
 
     /// Creates a sample single-selection toggle icon button group.
@@ -2326,7 +2348,10 @@ public final class M3FXDemoApp extends Application {
     ) {
         M3Icon icon = new M3Icon(iconText, M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE);
         icon.getStyleClass().add("demo-fab-icon");
-        return M3FloatingActionButton.withGraphic(icon, variant, size);
+        M3FloatingActionButton button = new M3FloatingActionButton(icon);
+        button.setVariant(variant);
+        button.setSize(size);
+        return button;
     }
 
     /// Creates a floating action button menu sample.
@@ -2348,7 +2373,9 @@ public final class M3FXDemoApp extends Application {
         create.setOnAction(event -> showSnackbar());
         edit.setOnAction(event -> showSnackbar());
         share.setOnAction(event -> showSnackbar());
-        return new M3FabMenu(create, edit, share);
+        M3FabMenu menu = new M3FabMenu();
+        menu.addItems(create, edit, share);
+        return menu;
     }
 
     /// Creates a sample standalone icon.
@@ -2365,11 +2392,10 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a sample extended floating action button with a variant.
     private static M3FloatingActionButton createExtendedFab(String text, M3FloatingActionButtonVariant variant) {
-        return M3FloatingActionButton.withVariant(
-                text,
-                variant,
-                M3FloatingActionButtonSize.REGULAR
-        );
+        M3FloatingActionButton button = new M3FloatingActionButton(text);
+        button.setVariant(variant);
+        button.setSize(M3FloatingActionButtonSize.REGULAR);
+        return button;
     }
 
     /// Creates a sample card.

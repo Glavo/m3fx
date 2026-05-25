@@ -78,18 +78,6 @@ public class M3Banner extends Control {
         addActions(actions);
     }
 
-    /// Creates a banner with message text, a leading icon, and trailing actions.
-    ///
-    /// @param text the banner message text
-    /// @param icon the leading icon node
-    /// @param actions the trailing action nodes
-    /// @return a new banner configured with the supplied icon and actions
-    public static M3Banner withIcon(String text, Node icon, Node... actions) {
-        M3Banner banner = new M3Banner(text, actions);
-        banner.setIcon(Objects.requireNonNull(icon, "icon"));
-        return banner;
-    }
-
     /// Returns the banner message text.
     ///
     /// @return the banner message text

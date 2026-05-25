@@ -864,7 +864,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Creates one popup open button.
     private static M3IconButton createOpenButton(String accessibleText) {
-        M3IconButton button = M3IconButton.withIcon("v", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT);
+        M3IconButton button = new M3IconButton(new M3Icon("v", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
         M3ControlStyles.add(button, OPEN_BUTTON_STYLE_CLASS);
         button.setAccessibleText(accessibleText);
         return button;
@@ -925,7 +925,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Creates one popup preset action button.
     private M3Button createPresetButton(M3DateRangePreset preset) {
-        M3Button button = M3Button.withVariant(preset.text(), M3ButtonVariant.TEXT);
+        M3Button button = new M3Button(preset.text(), M3ButtonVariant.TEXT);
         button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
         button.setMaxWidth(Double.MAX_VALUE);
         button.setDisable(isPresetDisabled(preset));

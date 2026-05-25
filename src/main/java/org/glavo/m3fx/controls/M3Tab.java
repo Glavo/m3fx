@@ -99,18 +99,6 @@ public class M3Tab extends ButtonBase {
         initialize();
     }
 
-    /// Creates a tab with text and the requested selected state.
-    public static M3Tab withSelected(String text, boolean selected) {
-        return withSelected(text, null, selected);
-    }
-
-    /// Creates a tab with text, graphic content, and the requested selected state.
-    public static M3Tab withSelected(String text, @Nullable Node graphic, boolean selected) {
-        M3Tab tab = new M3Tab(text, graphic);
-        tab.setSelected(selected);
-        return tab;
-    }
-
     /// Returns whether this tab is selected.
     public final boolean isSelected() {
         return selected.get();

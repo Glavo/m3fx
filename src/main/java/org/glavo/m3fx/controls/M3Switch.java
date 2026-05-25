@@ -69,13 +69,6 @@ public class M3Switch extends ButtonBase {
         initialize();
     }
 
-    /// Creates a switch with text and the requested selected state.
-    public static M3Switch withSelected(String text, boolean selected) {
-        M3Switch switchControl = new M3Switch(text);
-        switchControl.setSelected(selected);
-        return switchControl;
-    }
-
     /// Sets whether this switch is selected.
     public final void setSelected(boolean selected) {
         selectedProperty().set(selected);

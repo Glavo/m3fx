@@ -73,17 +73,6 @@ public class M3RadioButton extends ButtonBase implements Toggle {
         initialize();
     }
 
-    /// Creates a radio button with text and the requested selected state.
-    ///
-    /// @param text the radio button text
-    /// @param selected the initial selected state
-    /// @return a radio button with the requested selected state
-    public static M3RadioButton withSelected(String text, boolean selected) {
-        M3RadioButton radioButton = new M3RadioButton(text);
-        radioButton.setSelected(selected);
-        return radioButton;
-    }
-
     /// Sets whether this radio button is selected.
     ///
     /// @param selected whether this radio button is selected

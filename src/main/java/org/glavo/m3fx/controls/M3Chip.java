@@ -108,54 +108,6 @@ public class M3Chip extends ButtonBase {
         initialize();
     }
 
-    /// Creates a chip with text and the requested variant.
-    ///
-    /// @param text the text displayed by the chip
-    /// @param variant the Material chip variant
-    /// @return a new chip configured with the requested variant
-    public static M3Chip withVariant(String text, M3ChipVariant variant) {
-        return withVariant(text, null, variant, false);
-    }
-
-    /// Creates a chip with text, the requested variant, and selected state.
-    ///
-    /// @param text the text displayed by the chip
-    /// @param variant the Material chip variant
-    /// @param selected whether the chip should start selected
-    /// @return a new chip configured with the requested variant and selected state
-    public static M3Chip withVariant(String text, M3ChipVariant variant, boolean selected) {
-        return withVariant(text, null, variant, selected);
-    }
-
-    /// Creates a chip with text, graphic content, and the requested variant.
-    ///
-    /// @param text the text displayed by the chip
-    /// @param graphic the optional graphic displayed with the text
-    /// @param variant the Material chip variant
-    /// @return a new chip configured with the requested content and variant
-    public static M3Chip withVariant(String text, @Nullable Node graphic, M3ChipVariant variant) {
-        return withVariant(text, graphic, variant, false);
-    }
-
-    /// Creates a chip with text, graphic content, the requested variant, and selected state.
-    ///
-    /// @param text the text displayed by the chip
-    /// @param graphic the optional graphic displayed with the text
-    /// @param variant the Material chip variant
-    /// @param selected whether the chip should start selected
-    /// @return a new chip configured with the requested content, variant, and selected state
-    public static M3Chip withVariant(
-            String text,
-            @Nullable Node graphic,
-            M3ChipVariant variant,
-            boolean selected
-    ) {
-        M3Chip chip = new M3Chip(text, graphic);
-        chip.setVariant(variant);
-        chip.setSelected(selected);
-        return chip;
-    }
-
     /// Returns whether this chip is selected.
     ///
     /// @return `true` when this chip is selected

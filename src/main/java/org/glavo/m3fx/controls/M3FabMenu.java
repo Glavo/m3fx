@@ -113,27 +113,12 @@ public class M3FabMenu extends Control {
         this(createDefaultToggleButton());
     }
 
-    /// Creates a floating action button menu with default toggle button and action items.
-    ///
-    /// @param items the action items shown when the menu is expanded
-    public M3FabMenu(Node... items) {
-        this(createDefaultToggleButton(), items);
-    }
-
-    /// Creates a floating action button menu with a custom toggle button and action items.
+    /// Creates a floating action button menu with a custom toggle button.
     ///
     /// @param toggleButton the floating action button used to expand or collapse the menu
-    /// @param items the action items shown when the menu is expanded
-    /// @return a floating action button menu with the supplied toggle button
-    public static M3FabMenu withToggleButton(M3FloatingActionButton toggleButton, Node... items) {
-        return new M3FabMenu(toggleButton, items);
-    }
-
-    /// Creates a floating action button menu with the resolved toggle button and action items.
-    private M3FabMenu(M3FloatingActionButton toggleButton, Node... items) {
+    public M3FabMenu(M3FloatingActionButton toggleButton) {
         this.toggleButton = Objects.requireNonNull(toggleButton, "toggleButton");
         initialize();
-        addItems(items);
     }
 
     /// Returns the toggle floating action button.
@@ -555,11 +540,10 @@ public class M3FabMenu extends Control {
 
     /// Creates the default menu toggle floating action button.
     private static M3FloatingActionButton createDefaultToggleButton() {
-        return M3FloatingActionButton.withGraphic(
-                new M3Icon("+"),
-                M3FloatingActionButtonVariant.PRIMARY,
-                M3FloatingActionButtonSize.REGULAR
-        );
+        M3FloatingActionButton button = new M3FloatingActionButton(new M3Icon("+"));
+        button.setVariant(M3FloatingActionButtonVariant.PRIMARY);
+        button.setSize(M3FloatingActionButtonSize.REGULAR);
+        return button;
     }
 
     /// Creates the default Material Design 3 floating action button menu skin.

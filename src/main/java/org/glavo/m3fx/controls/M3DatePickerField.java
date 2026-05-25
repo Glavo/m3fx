@@ -361,7 +361,7 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
 
     /// Creates one popup preset action button.
     private M3Button createPresetButton(M3DatePreset preset) {
-        M3Button button = M3Button.withVariant(preset.text(), M3ButtonVariant.TEXT);
+        M3Button button = new M3Button(preset.text(), M3ButtonVariant.TEXT);
         button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
         button.setMaxWidth(Double.MAX_VALUE);
         button.setDisable(getPicker().isDateDisabled(preset.date()));

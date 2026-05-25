@@ -124,43 +124,6 @@ public class M3NavigationItem extends ButtonBase {
         setBadge(badge);
     }
 
-    /// Creates a navigation item with text and the requested selected state.
-    ///
-    /// @param text the navigation item label
-    /// @param selected the initial selected state
-    /// @return a navigation item with the requested selected state
-    public static M3NavigationItem withSelected(String text, boolean selected) {
-        return withSelected(text, null, null, selected);
-    }
-
-    /// Creates a navigation item with text, graphic content, and the requested selected state.
-    ///
-    /// @param text the navigation item label
-    /// @param graphic the graphic node, or `null` for no graphic
-    /// @param selected the initial selected state
-    /// @return a navigation item with the requested selected state
-    public static M3NavigationItem withSelected(String text, @Nullable Node graphic, boolean selected) {
-        return withSelected(text, graphic, null, selected);
-    }
-
-    /// Creates a navigation item with text, graphic content, badge content, and the requested selected state.
-    ///
-    /// @param text the navigation item label
-    /// @param graphic the graphic node, or `null` for no graphic
-    /// @param badge the badge shown over the graphic, or `null` for no badge
-    /// @param selected the initial selected state
-    /// @return a navigation item with the requested selected state
-    public static M3NavigationItem withSelected(
-            String text,
-            @Nullable Node graphic,
-            @Nullable M3Badge badge,
-            boolean selected
-    ) {
-        M3NavigationItem item = new M3NavigationItem(text, graphic, badge);
-        item.setSelected(selected);
-        return item;
-    }
-
     /// Returns whether this navigation item is selected.
     ///
     /// @return `true` when this navigation item is selected

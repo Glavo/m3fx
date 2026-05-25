@@ -177,7 +177,7 @@ final class M3ControlStyleTest {
     @Test
     void buttonVariantUpdatesStyleClass() {
         AtomicInteger actions = new AtomicInteger();
-        M3Button button = M3Button.withVariant("Button", M3ButtonVariant.FILLED, event -> actions.incrementAndGet());
+        M3Button button = createButton("Button", M3ButtonVariant.FILLED, event -> actions.incrementAndGet());
 
         assertTrue(button.getStyleClass().contains(M3Button.STYLE_CLASS));
         assertTrue(button.getStyleClass().contains(M3ButtonVariant.FILLED.getStyleClass()));
@@ -378,7 +378,7 @@ final class M3ControlStyleTest {
     @Test
     void buttonElevationDoesNotLeakIntoNonElevatedVariants() {
         runOnFxThread(() -> {
-            M3Button button = M3Button.withVariant("Button", M3ButtonVariant.ELEVATED);
+            M3Button button = createButton("Button", M3ButtonVariant.ELEVATED);
             Pane root = new Pane(button);
             Scene scene = new Scene(root, 200.0, 100.0);
 
@@ -742,7 +742,7 @@ final class M3ControlStyleTest {
     /// Verifies that split buttons apply stable part style classes and internal edge pseudo-classes.
     @Test
     void splitButtonAppliesPartStyleClasses() {
-        M3SplitButton splitButton = M3SplitButton.withVariant(
+        M3SplitButton splitButton = createSplitButton(
                 "Export",
                 M3ButtonVariant.TONAL,
                 new M3MenuItem("PDF")
@@ -771,7 +771,7 @@ final class M3ControlStyleTest {
     @Test
     void splitButtonMirrorsPartShapesForRightToLeft() {
         runOnFxThread(() -> {
-            M3SplitButton splitButton = M3SplitButton.withVariant(
+            M3SplitButton splitButton = createSplitButton(
                     "Export",
                     M3ButtonVariant.TONAL,
                     new M3MenuItem("PDF")
@@ -811,9 +811,9 @@ final class M3ControlStyleTest {
     @Test
     void rightToLeftJoinedButtonsRenderMirroredCornersInSnapshot() {
         runOnFxThread(() -> {
-            M3Button firstGroupButton = M3Button.withVariant("Archive", M3ButtonVariant.TONAL);
-            M3Button secondGroupButton = M3Button.withVariant("Share", M3ButtonVariant.TONAL);
-            M3Button thirdGroupButton = M3Button.withVariant("Edit", M3ButtonVariant.TONAL);
+            M3Button firstGroupButton = createButton("Archive", M3ButtonVariant.TONAL);
+            M3Button secondGroupButton = createButton("Share", M3ButtonVariant.TONAL);
+            M3Button thirdGroupButton = createButton("Edit", M3ButtonVariant.TONAL);
             M3ButtonGroup buttonGroup =
                     new M3ButtonGroup(firstGroupButton, secondGroupButton, thirdGroupButton);
             buttonGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
@@ -825,7 +825,7 @@ final class M3ControlStyleTest {
             segmentedGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             month.setSelected(true);
 
-            M3SplitButton splitButton = M3SplitButton.withVariant(
+            M3SplitButton splitButton = createSplitButton(
                     "Export",
                     M3ButtonVariant.TONAL,
                     new M3MenuItem("PDF")
@@ -884,7 +884,7 @@ final class M3ControlStyleTest {
     /// Verifies that floating action button variants and sizes update style classes.
     @Test
     void floatingActionButtonVariantAndSizeUpdateStyleClasses() {
-        M3FloatingActionButton button = M3FloatingActionButton.withVariant(
+        M3FloatingActionButton button = createFab(
                 "+",
                 M3FloatingActionButtonVariant.PRIMARY,
                 M3FloatingActionButtonSize.REGULAR
@@ -906,7 +906,8 @@ final class M3ControlStyleTest {
     void fabMenuExpandsAndCollapsesActionItems() {
         M3FloatingActionButton first = new M3FloatingActionButton("A");
         M3FloatingActionButton second = new M3FloatingActionButton("B");
-        M3FabMenu menu = new M3FabMenu(first, second);
+        M3FabMenu menu = new M3FabMenu();
+        menu.addItems(first, second);
 
         assertTrue(menu.getStyleClass().contains(M3FabMenu.STYLE_CLASS));
         assertTrue(menu.getToggleButton().getStyleClass().contains(M3FabMenu.TOGGLE_STYLE_CLASS));
@@ -948,7 +949,8 @@ final class M3ControlStyleTest {
     void fabMenuTogglesFromButtonAndAccessibilityActions() {
         M3FloatingActionButton customToggle = new M3FloatingActionButton("+");
         M3FloatingActionButton action = new M3FloatingActionButton("A");
-        M3FabMenu menu = M3FabMenu.withToggleButton(customToggle, action);
+        M3FabMenu menu = new M3FabMenu(customToggle);
+        menu.addItem(action);
 
         applyCss(menu);
 
@@ -1208,7 +1210,7 @@ final class M3ControlStyleTest {
         Label icon = new Label("i");
         Label firstAction = new Label("First");
         Label secondAction = new Label("Second");
-        M3Banner banner = M3Banner.withIcon("Message", icon, firstAction);
+        M3Banner banner = createBanner("Message", icon, firstAction);
 
         assertTrue(banner.getStyleClass().contains(M3Banner.STYLE_CLASS));
         assertEquals("Message", banner.getText());
@@ -1234,13 +1236,13 @@ final class M3ControlStyleTest {
         assertEquals(0, banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertThrows(NullPointerException.class, () -> banner.setText(null));
         assertThrows(NullPointerException.class, () -> banner.addAction(null));
-        assertThrows(NullPointerException.class, () -> M3Banner.withIcon("Message", null));
+        assertThrows(NullPointerException.class, () -> createBanner("Message", null));
     }
 
     /// Verifies that banner component tokens apply profile-specific layout metrics.
     @Test
     void bannerAppliesProfileMetrics() {
-        M3Banner banner = M3Banner.withIcon("Message", new Label("i"), new M3Button("Action"));
+        M3Banner banner = createBanner("Message", new Label("i"), new M3Button("Action"));
         Pane root = new Pane(banner);
         Scene scene = new Scene(root);
 
@@ -1954,7 +1956,7 @@ final class M3ControlStyleTest {
     /// Verifies that text field component token properties are styleable from CSS.
     @Test
     void textFieldTokensAreStyleable() {
-        M3TextField textField = M3TextField.withVariant("Content", M3TextInputVariant.OUTLINED);
+        M3TextField textField = createTextField("Content", M3TextInputVariant.OUTLINED);
         textField.setStyle("-m3-container-height: 64px; -m3-container-shape: 12px; -m3-horizontal-padding: 22px;");
 
         applyCss(textField);
@@ -1972,7 +1974,7 @@ final class M3ControlStyleTest {
     /// Verifies that password field component token properties are styleable from CSS.
     @Test
     void passwordFieldTokensAreStyleable() {
-        M3PasswordField passwordField = M3PasswordField.withVariant("secret", M3TextInputVariant.OUTLINED);
+        M3PasswordField passwordField = createPasswordField("secret", M3TextInputVariant.OUTLINED);
         passwordField.setStyle("-m3-container-height: 60px; -m3-container-shape: 10px; -m3-horizontal-padding: 20px;");
 
         applyCss(passwordField);
@@ -1990,7 +1992,7 @@ final class M3ControlStyleTest {
     /// Verifies that text area component token properties are styleable from CSS.
     @Test
     void textAreaTokensAreStyleable() {
-        M3TextArea textArea = M3TextArea.withVariant("Notes", M3TextInputVariant.OUTLINED);
+        M3TextArea textArea = createTextArea("Notes", M3TextInputVariant.OUTLINED);
         textArea.setStyle(
                 "-m3-container-height: 140px; "
                         + "-m3-container-shape: 12px; "
@@ -2152,7 +2154,7 @@ final class M3ControlStyleTest {
     @Test
     void filledTextInputLayoutKeepsFloatingLabelAndTextAlignedInWindow() {
         runOnFxThread(() -> {
-            M3TextField textField = M3TextField.withVariant("support@example.com", M3TextInputVariant.FILLED);
+            M3TextField textField = createTextField("support@example.com", M3TextInputVariant.FILLED);
             textField.setPrefWidth(340.0);
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Email address");
             layout.setLabelText("Filled with text");
@@ -2212,7 +2214,7 @@ final class M3ControlStyleTest {
     @Test
     void textInputLayoutAnimatesLabelClearButtonAndSupportingRow() {
         runOnFxThread(() -> {
-            M3TextField textField = M3TextField.withVariant("", M3TextInputVariant.OUTLINED);
+            M3TextField textField = createTextField("", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(260.0);
             M3TextInputLayout layout = new M3TextInputLayout(textField);
             layout.setLabelText("Email");
@@ -2318,12 +2320,12 @@ final class M3ControlStyleTest {
     @Test
     void textInputLayoutMirrorsAdornmentsAndFloatingLabelForRightToLeft() {
         runOnFxThread(() -> {
-            M3TextField textField = M3TextField.withVariant("M3FX", M3TextInputVariant.OUTLINED);
+            M3TextField textField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
             layout.setLabelText("Outlined with text");
             layout.setLeading(new M3Icon("T"));
-            layout.setTrailing(M3IconButton.withIcon("V"));
+            layout.setTrailing(createIconButton("V"));
             layout.setCharacterCounterVisible(true);
             layout.setCharacterLimit(24);
             layout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
@@ -2376,9 +2378,9 @@ final class M3ControlStyleTest {
     @Test
     void textInputLayoutTrailingIconButtonKeepsSquareRipple() {
         runOnFxThread(() -> {
-            M3PasswordField passwordField = M3PasswordField.withVariant("Hello", M3TextInputVariant.OUTLINED);
+            M3PasswordField passwordField = createPasswordField("Hello", M3TextInputVariant.OUTLINED);
             passwordField.setPrefWidth(320.0);
-            M3IconButton trailingButton = M3IconButton.withIcon("V");
+            M3IconButton trailingButton = createIconButton("V");
 
             M3TextInputLayout layout = new M3TextInputLayout(passwordField, "At least 8 characters");
             layout.setTrailing(trailingButton);
@@ -2777,13 +2779,13 @@ final class M3ControlStyleTest {
             M3TextField filledField = new M3TextField("Filled error");
             filledField.setError(true);
             filledField.setPrefWidth(180.0);
-            M3TextField outlinedField = M3TextField.withVariant("Outlined error", M3TextInputVariant.OUTLINED);
+            M3TextField outlinedField = createTextField("Outlined error", M3TextInputVariant.OUTLINED);
             outlinedField.setError(true);
             outlinedField.setPrefWidth(190.0);
-            M3PasswordField passwordField = M3PasswordField.withVariant("secret", M3TextInputVariant.OUTLINED);
+            M3PasswordField passwordField = createPasswordField("secret", M3TextInputVariant.OUTLINED);
             passwordField.setError(true);
             passwordField.setPrefWidth(160.0);
-            M3TextArea textArea = M3TextArea.withVariant("Multiline\nerror", M3TextInputVariant.FILLED);
+            M3TextArea textArea = createTextArea("Multiline\nerror", M3TextInputVariant.FILLED);
             textArea.setError(true);
             textArea.setPrefSize(240.0, 96.0);
 
@@ -3035,7 +3037,7 @@ final class M3ControlStyleTest {
                             target,
                             "Title",
                             "Supporting text",
-                            M3Button.withVariant("Action", M3ButtonVariant.TEXT)
+                            createButton("Action", M3ButtonVariant.TEXT)
                     );
                     tooltip.setShowDelay(Duration.ZERO);
                     tooltip.setHideDelay(Duration.ZERO);
@@ -3184,7 +3186,7 @@ final class M3ControlStyleTest {
     /// Verifies that avatar variants update style classes.
     @Test
     void avatarVariantUpdatesStyleClasses() {
-        M3Avatar avatar = M3Avatar.withVariant("A", M3AvatarVariant.SECONDARY);
+        M3Avatar avatar = createAvatar("A", M3AvatarVariant.SECONDARY);
 
         assertEquals(M3AvatarVariant.SECONDARY, avatar.getVariant());
         assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.SECONDARY.getStyleClass()));
@@ -3393,7 +3395,7 @@ final class M3ControlStyleTest {
     /// Verifies that icon button factories create configured M3FX icon graphics.
     @Test
     void iconButtonFactoryCreatesIconGraphic() {
-        M3IconButton button = M3IconButton.withIcon("A", M3IconSize.SMALL, M3IconVariant.ERROR);
+        M3IconButton button = createIconButton("A", M3IconSize.SMALL, M3IconVariant.ERROR);
         M3Icon icon = assertInstanceOf(M3Icon.class, button.getGraphic());
 
         assertEquals(M3IconSize.SMALL, icon.getSize());
@@ -3403,7 +3405,7 @@ final class M3ControlStyleTest {
     /// Verifies that toggle icon button variants and selected states update style classes.
     @Test
     void iconToggleButtonVariantAndSelectionUpdateState() {
-        M3IconToggleButton button = M3IconToggleButton.withIcon(
+        M3IconToggleButton button = createIconToggleButton(
                 "A",
                 M3IconToggleButtonVariant.TONAL,
                 true
@@ -3474,8 +3476,8 @@ final class M3ControlStyleTest {
     void iconToggleButtonCentersGraphicContent() {
         runOnFxThread(() -> {
             M3IconToggleButton standard = new M3IconToggleButton("S");
-            M3IconToggleButton tonal = M3IconToggleButton.withIcon("B", M3IconToggleButtonVariant.TONAL, true);
-            M3IconToggleButton outlined = M3IconToggleButton.withIcon("O", M3IconToggleButtonVariant.OUTLINED, false);
+            M3IconToggleButton tonal = createIconToggleButton("B", M3IconToggleButtonVariant.TONAL, true);
+            M3IconToggleButton outlined = createIconToggleButton("O", M3IconToggleButtonVariant.OUTLINED, false);
             FlowPane row = new FlowPane(12.0, 12.0, standard, tonal, outlined);
             row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
             Scene scene = new Scene(row, 220.0, 96.0);
@@ -4977,7 +4979,7 @@ final class M3ControlStyleTest {
         M3ListItem replacement = new M3ListItem("Replacement");
         M3SearchView searchView = new M3SearchView("Find", result);
         Label leading = new Label("S");
-        M3IconButton trailing = M3IconButton.withIcon("C");
+        M3IconButton trailing = createIconButton("C");
         AtomicInteger actions = new AtomicInteger();
 
         searchView.setLeading(leading);
@@ -5581,7 +5583,7 @@ final class M3ControlStyleTest {
     @Test
     void chipSupportsGraphicContent() {
         M3Icon icon = new M3Icon("A");
-        M3Chip chip = M3Chip.withVariant("Assist", icon, M3ChipVariant.INPUT, true);
+        M3Chip chip = createChip("Assist", icon, M3ChipVariant.INPUT, true);
 
         assertEquals("Assist", chip.getText());
         assertEquals(icon, chip.getGraphic());
@@ -5740,7 +5742,7 @@ final class M3ControlStyleTest {
     /// Verifies that segmented button component token properties are styleable from CSS.
     @Test
     void segmentedButtonTokensAreStyleable() {
-        M3SegmentedButton button = M3SegmentedButton.withSelected("Week", true);
+        M3SegmentedButton button = createSegmentedButton("Week", true);
         button.setStyle("-m3-container-height: 44px; -m3-container-shape: 12px; -m3-horizontal-padding: 18px;");
 
         applyCss(button);
@@ -6068,7 +6070,7 @@ final class M3ControlStyleTest {
     @Test
     void segmentedButtonSelectionContainersAnimateBetweenStates() {
         runOnFxThread(() -> {
-            M3SegmentedButton day = M3SegmentedButton.withSelected("Day", true);
+            M3SegmentedButton day = createSegmentedButton("Day", true);
             M3SegmentedButton week = new M3SegmentedButton("Week");
             M3SegmentedButton month = new M3SegmentedButton("Month");
             M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(day, week, month);
@@ -6124,7 +6126,7 @@ final class M3ControlStyleTest {
     /// Verifies that tab component token properties are styleable from CSS.
     @Test
     void tabTokensAreStyleable() {
-        M3Tab tab = M3Tab.withSelected("Overview", true);
+        M3Tab tab = createTab("Overview", true);
         tab.setStyle(
                 "-m3-container-height: 52px; "
                         + "-m3-tab-min-width: 120px; "
@@ -6277,9 +6279,9 @@ final class M3ControlStyleTest {
     @Test
     void selectionSkinsInitializeAnimatedSelectedIndicators() {
         M3CheckBox uncheckedCheckBox = new M3CheckBox("Unchecked");
-        M3CheckBox checkedCheckBox = M3CheckBox.withSelected("Checked", true);
+        M3CheckBox checkedCheckBox = createCheckBox("Checked", true);
         M3RadioButton uncheckedRadioButton = new M3RadioButton("Unchecked");
-        M3RadioButton checkedRadioButton = M3RadioButton.withSelected("Checked", true);
+        M3RadioButton checkedRadioButton = createRadioButton("Checked", true);
         Pane root = new Pane(uncheckedCheckBox, checkedCheckBox, uncheckedRadioButton, checkedRadioButton);
         Scene scene = new Scene(root);
 
@@ -6425,9 +6427,9 @@ final class M3ControlStyleTest {
     @Test
     void selectionControlsMirrorIndicatorAndLabelOrderForRightToLeft() {
         runOnFxThread(() -> {
-            M3CheckBox checkBox = M3CheckBox.withSelected("Checkbox", true);
-            M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
-            M3Switch switchControl = M3Switch.withSelected("Switch", true);
+            M3CheckBox checkBox = createCheckBox("Checkbox", true);
+            M3RadioButton radioButton = createRadioButton("Radio", true);
+            M3Switch switchControl = createSwitch("Switch", true);
             checkBox.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             radioButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             switchControl.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
@@ -6579,7 +6581,7 @@ final class M3ControlStyleTest {
     @Test
     void switchSkinPositionsThumbFromSelectedState() {
         M3Switch offSwitch = new M3Switch("Off");
-        M3Switch onSwitch = M3Switch.withSelected("On", true);
+        M3Switch onSwitch = createSwitch("On", true);
         Pane root = new Pane(offSwitch, onSwitch);
         Scene scene = new Scene(root, 260.0, 80.0);
 
@@ -6603,7 +6605,7 @@ final class M3ControlStyleTest {
     /// Verifies that switches mirror selected thumb geometry in right-to-left mode.
     @Test
     void switchSkinMirrorsThumbPositionForRightToLeft() {
-        M3Switch switchControl = M3Switch.withSelected("On", true);
+        M3Switch switchControl = createSwitch("On", true);
         switchControl.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         Pane root = new Pane(switchControl);
         Scene scene = new Scene(root, 180.0, 80.0);
@@ -6629,7 +6631,7 @@ final class M3ControlStyleTest {
     @Test
     void switchSkinUsesCircularThumbStateLayer() {
         M3Switch offSwitch = new M3Switch("Off");
-        M3Switch onSwitch = M3Switch.withSelected("On", true);
+        M3Switch onSwitch = createSwitch("On", true);
         Pane root = new Pane(offSwitch, onSwitch);
         Scene scene = new Scene(root, 260.0, 120.0);
 
@@ -6716,9 +6718,9 @@ final class M3ControlStyleTest {
     /// Verifies that selection factories apply initial selected state.
     @Test
     void selectionFactoriesApplyInitialSelection() {
-        M3CheckBox checkBox = M3CheckBox.withSelected("Check", true);
-        M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
-        M3Switch switchControl = M3Switch.withSelected("Switch", true);
+        M3CheckBox checkBox = createCheckBox("Check", true);
+        M3RadioButton radioButton = createRadioButton("Radio", true);
+        M3Switch switchControl = createSwitch("Switch", true);
 
         assertTrue(checkBox.isSelected());
         assertTrue(radioButton.isSelected());
@@ -6729,7 +6731,7 @@ final class M3ControlStyleTest {
     @Test
     void radioButtonSupportsToggleGroupSelection() {
         javafx.scene.control.ToggleGroup group = new javafx.scene.control.ToggleGroup();
-        M3RadioButton first = M3RadioButton.withSelected("First", true);
+        M3RadioButton first = createRadioButton("First", true);
         M3RadioButton second = new M3RadioButton("Second");
         AtomicInteger secondActions = new AtomicInteger();
         second.setOnAction(event -> secondActions.incrementAndGet());
@@ -6823,7 +6825,7 @@ final class M3ControlStyleTest {
     @Test
     void selectedRadioButtonDotRendersCenteredInIndicator() {
         runOnFxThread(() -> {
-            M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
+            M3RadioButton radioButton = createRadioButton("Radio", true);
             Pane root = new Pane(radioButton);
             root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
             Scene scene = new Scene(root, 180.0, 80.0);
@@ -7493,7 +7495,7 @@ final class M3ControlStyleTest {
     /// Verifies that badges expose non-negative count convenience APIs.
     @Test
     void badgeSupportsCountConvenienceApi() {
-        M3Badge badge = M3Badge.withCount(1234);
+        M3Badge badge = new M3Badge(1234);
         badge.setMaxCharacterCount(3);
 
         assertEquals("1234", badge.getText());
@@ -7504,7 +7506,7 @@ final class M3ControlStyleTest {
         assertEquals("0", badge.getText());
         assertEquals("0", badge.getDisplayText());
         assertThrows(IllegalArgumentException.class, () -> badge.setCount(-1));
-        assertThrows(IllegalArgumentException.class, () -> M3Badge.withCount(-1));
+        assertThrows(IllegalArgumentException.class, () -> new M3Badge(-1));
     }
 
     /// Verifies that badge skins animate rendered text changes.
@@ -8825,7 +8827,7 @@ final class M3ControlStyleTest {
     @Test
     void navigationItemShowsBadge() {
         M3Badge badge = new M3Badge("3");
-        M3NavigationItem item = M3NavigationItem.withSelected("Inbox", new M3Icon("I"), badge, true);
+        M3NavigationItem item = createNavigationItem("Inbox", new M3Icon("I"), badge, true);
 
         applyCss(item);
 
@@ -8849,7 +8851,7 @@ final class M3ControlStyleTest {
     @Test
     void navigationItemMirrorsBadgeForRightToLeft() {
         M3Badge badge = new M3Badge("3");
-        M3NavigationItem item = M3NavigationItem.withSelected("Inbox", new M3Icon("I"), badge, true);
+        M3NavigationItem item = createNavigationItem("Inbox", new M3Icon("I"), badge, true);
         item.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         Pane root = new Pane(item);
         Scene scene = new Scene(root, 120.0, 96.0);
@@ -9281,7 +9283,7 @@ final class M3ControlStyleTest {
 
             Label bannerIcon = new Label("I");
             Label bannerAction = new Label("C");
-            M3Banner banner = M3Banner.withIcon("Message", bannerIcon, bannerAction);
+            M3Banner banner = createBanner("Message", bannerIcon, bannerAction);
             banner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
             Pane root = new Pane(topAppBar, bottomAppBar, banner);
@@ -10065,8 +10067,8 @@ final class M3ControlStyleTest {
     /// Verifies that multi-selection containers use arrow keys for focus movement without changing selection.
     @Test
     void multiSelectionContainersKeepSelectionDuringKeyboardFocusNavigation() {
-        M3Chip chipFirst = M3Chip.withVariant("Input", M3ChipVariant.INPUT, true);
-        M3Chip chipSecond = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, false);
+        M3Chip chipFirst = createChip("Input", M3ChipVariant.INPUT, true);
+        M3Chip chipSecond = createChip("Filter", M3ChipVariant.FILTER, false);
         M3ChipGroup chipGroup = new M3ChipGroup(chipFirst, chipSecond);
         KeyEvent chipEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
 
@@ -10075,12 +10077,12 @@ final class M3ControlStyleTest {
         assertEquals(java.util.List.of(chipFirst), chipGroup.getSelectedChips());
         assertFalse(chipSecond.isSelected());
 
-        M3IconToggleButton iconFirst = M3IconToggleButton.withIcon(
+        M3IconToggleButton iconFirst = createIconToggleButton(
                 "edit",
                 M3IconToggleButtonVariant.STANDARD,
                 true
         );
-        M3IconToggleButton iconSecond = M3IconToggleButton.withIcon(
+        M3IconToggleButton iconSecond = createIconToggleButton(
                 "done",
                 M3IconToggleButtonVariant.STANDARD,
                 false
@@ -10094,8 +10096,8 @@ final class M3ControlStyleTest {
         assertEquals(java.util.List.of(iconFirst), iconGroup.getSelectedButtons());
         assertFalse(iconSecond.isSelected());
 
-        M3SegmentedButton segmentFirst = M3SegmentedButton.withSelected("Day", true);
-        M3SegmentedButton segmentSecond = M3SegmentedButton.withSelected("Week", false);
+        M3SegmentedButton segmentFirst = createSegmentedButton("Day", true);
+        M3SegmentedButton segmentSecond = createSegmentedButton("Week", false);
         M3SegmentedButtonGroup segmentGroup = new M3SegmentedButtonGroup(segmentFirst, segmentSecond);
         segmentGroup.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);
         KeyEvent segmentEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
@@ -10170,7 +10172,7 @@ final class M3ControlStyleTest {
             );
 
             M3Button bannerAction = new M3Button("Dismiss");
-            M3Banner banner = M3Banner.withIcon("Network unavailable", new M3Icon("!"), bannerAction);
+            M3Banner banner = createBanner("Network unavailable", new M3Icon("!"), bannerAction);
             M3Button surfaceAction = new M3Button("Surface action");
             M3Surface surface = new M3Surface(surfaceAction);
             M3Button badgedContent = new M3Button("Messages");
@@ -10185,7 +10187,8 @@ final class M3ControlStyleTest {
             M3ListItem secondResult = new M3ListItem("Second result");
             M3SearchView searchView = new M3SearchView("Search", firstResult, secondResult);
             M3Button fabAction = new M3Button("Create note");
-            M3FabMenu fabMenu = new M3FabMenu(fabAction);
+            M3FabMenu fabMenu = new M3FabMenu();
+            fabMenu.addItem(fabAction);
 
             VBox root = new VBox(
                     topAppBar,
@@ -10258,7 +10261,7 @@ final class M3ControlStyleTest {
             M3BadgedBox badgedBox = new M3BadgedBox(badgedContent, new M3Badge("4"));
 
             M3Button bannerAction = new M3Button("Dismiss");
-            M3Banner banner = M3Banner.withIcon("Offline", new M3Icon("!"), bannerAction);
+            M3Banner banner = createBanner("Offline", new M3Icon("!"), bannerAction);
 
             M3Button topNavigation = new M3Button("Menu");
             M3Button topAction = new M3Button("Search");
@@ -10476,13 +10479,13 @@ final class M3ControlStyleTest {
     void sheetFormAndValidationSkinsPropagateRightToLeftOrientation() {
         runOnFxThread(() -> {
             Label sideContent = new Label("Side content");
-            M3Button sideAction = M3Button.withVariant("Close", M3ButtonVariant.TEXT);
+            M3Button sideAction = createButton("Close", M3ButtonVariant.TEXT);
             M3SideSheet sideSheet = new M3SideSheet("Details", sideContent, sideAction);
             sideSheet.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             sideSheet.setPrefSize(300.0, 160.0);
 
             Label bottomContent = new Label("Bottom content");
-            M3Button bottomAction = M3Button.withVariant("Done", M3ButtonVariant.TEXT);
+            M3Button bottomAction = createButton("Done", M3ButtonVariant.TEXT);
             M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent, bottomAction);
             bottomSheet.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             bottomSheet.setPrefSize(360.0, 160.0);
@@ -10884,25 +10887,25 @@ final class M3ControlStyleTest {
     @Test
     void interactiveStateSnapshotRendersHoverFocusAndPressedFeedback() {
         runOnFxThread(() -> {
-            M3Button normalButton = M3Button.withVariant("Normal", M3ButtonVariant.FILLED);
-            M3Button hoverButton = M3Button.withVariant("Hover", M3ButtonVariant.FILLED);
-            M3Button focusButton = M3Button.withVariant("Focus", M3ButtonVariant.FILLED);
-            M3Button pressedButton = M3Button.withVariant("Pressed", M3ButtonVariant.FILLED);
+            M3Button normalButton = createButton("Normal", M3ButtonVariant.FILLED);
+            M3Button hoverButton = createButton("Hover", M3ButtonVariant.FILLED);
+            M3Button focusButton = createButton("Focus", M3ButtonVariant.FILLED);
+            M3Button pressedButton = createButton("Pressed", M3ButtonVariant.FILLED);
             applyPseudoState(hoverButton, "hover");
             applyPseudoState(focusButton, "focus-visible");
             applyPseudoState(pressedButton, "pressed");
 
-            M3CheckBox hoverCheckBox = M3CheckBox.withSelected("Checkbox hover", true);
-            M3RadioButton focusRadioButton = M3RadioButton.withSelected("Radio focus", true);
-            M3Switch pressedSwitch = M3Switch.withSelected("Switch pressed", true);
+            M3CheckBox hoverCheckBox = createCheckBox("Checkbox hover", true);
+            M3RadioButton focusRadioButton = createRadioButton("Radio focus", true);
+            M3Switch pressedSwitch = createSwitch("Switch pressed", true);
             applyPseudoState(hoverCheckBox, "hover");
             applyPseudoState(focusRadioButton, "focus-visible");
             applyPseudoState(pressedSwitch, "pressed");
 
             M3Slider pressedSlider = new M3Slider(0.0, 100.0, 56.0);
             pressedSlider.setPrefWidth(180.0);
-            M3Tab focusTab = M3Tab.withSelected("Tab focus", true);
-            M3NavigationItem hoverNavigationItem = M3NavigationItem.withSelected(
+            M3Tab focusTab = createTab("Tab focus", true);
+            M3NavigationItem hoverNavigationItem = createNavigationItem(
                     "Home",
                     new M3Icon("H"),
                     true
@@ -10998,7 +11001,7 @@ final class M3ControlStyleTest {
     /// Verifies that a real button ripple remains visible after release and fades out through animation.
     @Test
     void buttonRippleReleaseAnimationFadesAfterPointerRelease() throws InterruptedException {
-        M3Button button = M3Button.withVariant("Ripple", M3ButtonVariant.FILLED);
+        M3Button button = createButton("Ripple", M3ButtonVariant.FILLED);
         Pane root = new Pane(button);
 
         runOnFxThreadAfterDelay(
@@ -11026,11 +11029,11 @@ final class M3ControlStyleTest {
     @Test
     void visualSmokeSnapshotRendersCoreControlsWithContrast() {
         runOnFxThread(() -> {
-            M3Button filledButton = M3Button.withVariant("Filled", M3ButtonVariant.FILLED);
-            M3Button tonalButton = M3Button.withVariant("Tonal", M3ButtonVariant.TONAL);
-            M3Button outlinedButton = M3Button.withVariant("Outlined", M3ButtonVariant.OUTLINED);
+            M3Button filledButton = createButton("Filled", M3ButtonVariant.FILLED);
+            M3Button tonalButton = createButton("Tonal", M3ButtonVariant.TONAL);
+            M3Button outlinedButton = createButton("Outlined", M3ButtonVariant.OUTLINED);
             M3SegmentedButton day = new M3SegmentedButton("Day");
-            M3SegmentedButton week = M3SegmentedButton.withSelected("Week", true);
+            M3SegmentedButton week = createSegmentedButton("Week", true);
             M3SegmentedButton month = new M3SegmentedButton("Month");
             M3SegmentedButtonGroup segments = new M3SegmentedButtonGroup(day, week, month);
             M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
@@ -11038,9 +11041,9 @@ final class M3ControlStyleTest {
             M3ProgressBar progressBar = new M3ProgressBar(0.62);
             progressBar.setPrefWidth(220.0);
             M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.72);
-            M3CheckBox checkBox = M3CheckBox.withSelected("Check", true);
-            M3RadioButton radioButton = M3RadioButton.withSelected("Radio", true);
-            M3Switch switchControl = M3Switch.withSelected("Switch", true);
+            M3CheckBox checkBox = createCheckBox("Check", true);
+            M3RadioButton radioButton = createRadioButton("Radio", true);
+            M3Switch switchControl = createSwitch("Switch", true);
 
             FlowPane buttons = new FlowPane(14.0, 14.0, filledButton, tonalButton, outlinedButton, segments);
             FlowPane controls = new FlowPane(18.0, 18.0, slider, progressBar, progressIndicator);
@@ -11102,7 +11105,7 @@ final class M3ControlStyleTest {
         runOnFxThread(() -> {
             M3SegmentedButton day = new M3SegmentedButton("Day");
             M3SegmentedButton week = new M3SegmentedButton("Week");
-            M3SegmentedButton month = M3SegmentedButton.withSelected("Month", true);
+            M3SegmentedButton month = createSegmentedButton("Month", true);
             M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(day, week, month);
             group.setPrefSize(240.0, 40.0);
             FlowPane root = new FlowPane(group);
@@ -11265,11 +11268,11 @@ final class M3ControlStyleTest {
         runOnFxThread(() -> {
             M3TextField filledField = new M3TextField("Filled text");
             filledField.setPrefWidth(180.0);
-            M3TextField outlinedField = M3TextField.withVariant("Outlined text", M3TextInputVariant.OUTLINED);
+            M3TextField outlinedField = createTextField("Outlined text", M3TextInputVariant.OUTLINED);
             outlinedField.setPrefWidth(190.0);
-            M3PasswordField passwordField = M3PasswordField.withVariant("secret", M3TextInputVariant.OUTLINED);
+            M3PasswordField passwordField = createPasswordField("secret", M3TextInputVariant.OUTLINED);
             passwordField.setPrefWidth(160.0);
-            M3TextArea textArea = M3TextArea.withVariant("Multiline\ncontent", M3TextInputVariant.FILLED);
+            M3TextArea textArea = createTextArea("Multiline\ncontent", M3TextInputVariant.FILLED);
             textArea.setPrefSize(240.0, 96.0);
 
             FlowPane row = new FlowPane(16.0, 16.0, filledField, outlinedField, passwordField, textArea);
@@ -11317,7 +11320,7 @@ final class M3ControlStyleTest {
             supportingLayout.setLeading(new M3Icon("A"));
             supportingLayout.setPrefWidth(220.0);
 
-            M3TextField counterField = M3TextField.withVariant("support@example.com", M3TextInputVariant.OUTLINED);
+            M3TextField counterField = createTextField("support@example.com", M3TextInputVariant.OUTLINED);
             counterField.setPrefWidth(320.0);
             M3TextInputLayout counterLayout = new M3TextInputLayout(counterField, "Email address");
             counterLayout.setLabelText("Email");
@@ -11327,7 +11330,7 @@ final class M3ControlStyleTest {
             counterLayout.setCharacterLimit(32);
             counterLayout.setPrefWidth(320.0);
 
-            M3TextField errorField = M3TextField.withVariant("abcdef", M3TextInputVariant.OUTLINED);
+            M3TextField errorField = createTextField("abcdef", M3TextInputVariant.OUTLINED);
             errorField.setPrefWidth(220.0);
             M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
             errorLayout.setLabelText("Code");
@@ -11337,7 +11340,7 @@ final class M3ControlStyleTest {
             errorLayout.setErrorText("Too long");
             errorLayout.setPrefWidth(220.0);
 
-            M3TextField enforcedField = M3TextField.withVariant("Too many characters", M3TextInputVariant.OUTLINED);
+            M3TextField enforcedField = createTextField("Too many characters", M3TextInputVariant.OUTLINED);
             enforcedField.setPrefWidth(260.0);
             M3TextInputLayout enforcedLayout = new M3TextInputLayout(enforcedField, "Limit enforced");
             enforcedLayout.setLabelText("Limited");
@@ -11346,7 +11349,7 @@ final class M3ControlStyleTest {
             enforcedLayout.setCharacterLimitEnforced(true);
             enforcedLayout.setPrefWidth(260.0);
 
-            M3TextField validatedField = M3TextField.withVariant("support", M3TextInputVariant.OUTLINED);
+            M3TextField validatedField = createTextField("support", M3TextInputVariant.OUTLINED);
             validatedField.setPrefWidth(260.0);
             M3TextInputLayout validatedLayout = new M3TextInputLayout(validatedField, "Email format");
             validatedLayout.setLabelText("Validated");
@@ -11428,7 +11431,7 @@ final class M3ControlStyleTest {
     @Test
     void outlinedInputLayoutSnapshotRendersNotchedOutlineWithoutLabelMask() {
         runOnFxThread(() -> {
-            M3TextField textField = M3TextField.withVariant("M3FX", M3TextInputVariant.OUTLINED);
+            M3TextField textField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
 
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
@@ -11557,11 +11560,11 @@ final class M3ControlStyleTest {
     void selectionSnapshotRendersStateMatrix() {
         runOnFxThread(() -> {
             M3CheckBox uncheckedCheckBox = new M3CheckBox("Unchecked");
-            M3CheckBox checkedCheckBox = M3CheckBox.withSelected("Checked", true);
+            M3CheckBox checkedCheckBox = createCheckBox("Checked", true);
             M3CheckBox indeterminateCheckBox = new M3CheckBox("Indeterminate");
             indeterminateCheckBox.setIndeterminate(true);
             M3CheckBox disabledUncheckedCheckBox = new M3CheckBox("Disabled unchecked");
-            M3CheckBox disabledCheckedCheckBox = M3CheckBox.withSelected("Disabled checked", true);
+            M3CheckBox disabledCheckedCheckBox = createCheckBox("Disabled checked", true);
             M3CheckBox disabledIndeterminateCheckBox = new M3CheckBox("Disabled indeterminate");
             disabledIndeterminateCheckBox.setIndeterminate(true);
             disabledUncheckedCheckBox.setDisable(true);
@@ -11569,16 +11572,16 @@ final class M3ControlStyleTest {
             disabledIndeterminateCheckBox.setDisable(true);
 
             M3RadioButton uncheckedRadioButton = new M3RadioButton("Radio off");
-            M3RadioButton selectedRadioButton = M3RadioButton.withSelected("Radio on", true);
+            M3RadioButton selectedRadioButton = createRadioButton("Radio on", true);
             M3RadioButton disabledUncheckedRadioButton = new M3RadioButton("Disabled off");
-            M3RadioButton disabledSelectedRadioButton = M3RadioButton.withSelected("Disabled on", true);
+            M3RadioButton disabledSelectedRadioButton = createRadioButton("Disabled on", true);
             disabledUncheckedRadioButton.setDisable(true);
             disabledSelectedRadioButton.setDisable(true);
 
             M3Switch offSwitch = new M3Switch("Switch off");
-            M3Switch onSwitch = M3Switch.withSelected("Switch on", true);
+            M3Switch onSwitch = createSwitch("Switch on", true);
             M3Switch disabledOffSwitch = new M3Switch("Disabled off");
-            M3Switch disabledOnSwitch = M3Switch.withSelected("Disabled on", true);
+            M3Switch disabledOnSwitch = createSwitch("Disabled on", true);
             disabledOffSwitch.setDisable(true);
             disabledOnSwitch.setDisable(true);
 
@@ -11696,7 +11699,7 @@ final class M3ControlStyleTest {
     @Test
     void containmentFeedbackAndNavigationSnapshotRendersVisibleSurfaces() {
         runOnFxThread(() -> {
-            M3Avatar avatar = M3Avatar.withVariant("AB", M3AvatarVariant.TERTIARY);
+            M3Avatar avatar = createAvatar("AB", M3AvatarVariant.TERTIARY);
             M3BadgedBox badgedBox = new M3BadgedBox(new M3Avatar("M"), new M3Badge("7"));
             M3ListItem listItem = new M3ListItem("Inbox");
             listItem.setSupportingText("Latest updates");
@@ -11707,7 +11710,7 @@ final class M3ControlStyleTest {
             M3Card card = new M3Card(new Label("Elevated card"));
             card.setVariant(M3CardVariant.ELEVATED);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            M3NavigationItem home = M3NavigationItem.withSelected("Home", new M3Icon("H"), true);
+            M3NavigationItem home = createNavigationItem("Home", new M3Icon("H"), true);
             M3NavigationItem search = new M3NavigationItem("Search", new M3Icon("S"));
             M3NavigationBar navigationBar = new M3NavigationBar(home, search);
 
@@ -12304,7 +12307,7 @@ final class M3ControlStyleTest {
             M3Text titleText = new M3Text("M3FX", M3TextRole.DISPLAY_SMALL);
             M3Icon primaryIcon = new M3Icon("A", M3IconSize.LARGE, M3IconVariant.PRIMARY);
             M3DisclosureIcon disclosureIcon = new M3DisclosureIcon(true);
-            M3Avatar avatar = M3Avatar.withVariant("AB", M3AvatarVariant.PRIMARY);
+            M3Avatar avatar = createAvatar("AB", M3AvatarVariant.PRIMARY);
             M3Badge badge = new M3Badge("9+");
             M3BadgedBox badgedBox = new M3BadgedBox(
                     new M3Icon("M", M3IconSize.LARGE, M3IconVariant.PRIMARY),
@@ -12315,41 +12318,41 @@ final class M3ControlStyleTest {
             M3Divider verticalDivider = new M3Divider(Orientation.VERTICAL);
             verticalDivider.setPrefHeight(48.0);
 
-            M3Button filledButton = M3Button.withVariant("Filled", M3ButtonVariant.FILLED);
-            M3Button tonalButton = M3Button.withVariant("Tonal", M3ButtonVariant.TONAL);
-            M3Button outlinedButton = M3Button.withVariant("Outlined", M3ButtonVariant.OUTLINED);
-            M3Button textButton = M3Button.withVariant("Text", M3ButtonVariant.TEXT);
-            M3Button elevatedButton = M3Button.withVariant("Elevated", M3ButtonVariant.ELEVATED);
-            M3Button disabledButton = M3Button.withVariant("Disabled", M3ButtonVariant.FILLED);
+            M3Button filledButton = createButton("Filled", M3ButtonVariant.FILLED);
+            M3Button tonalButton = createButton("Tonal", M3ButtonVariant.TONAL);
+            M3Button outlinedButton = createButton("Outlined", M3ButtonVariant.OUTLINED);
+            M3Button textButton = createButton("Text", M3ButtonVariant.TEXT);
+            M3Button elevatedButton = createButton("Elevated", M3ButtonVariant.ELEVATED);
+            M3Button disabledButton = createButton("Disabled", M3ButtonVariant.FILLED);
             disabledButton.setDisable(true);
             M3ButtonGroup buttonGroup = new M3ButtonGroup(
-                    M3Button.withVariant("Edit", M3ButtonVariant.TONAL),
-                    M3Button.withVariant("Share", M3ButtonVariant.TONAL),
-                    M3Button.withVariant("Done", M3ButtonVariant.TONAL)
+                    createButton("Edit", M3ButtonVariant.TONAL),
+                    createButton("Share", M3ButtonVariant.TONAL),
+                    createButton("Done", M3ButtonVariant.TONAL)
             );
-            M3SplitButton splitButton = M3SplitButton.withVariant(
+            M3SplitButton splitButton = createSplitButton(
                     "Create",
                     M3ButtonVariant.OUTLINED,
                     new M3MenuItem("Copy")
             );
 
             M3IconButton iconButton = new M3IconButton(new M3Icon("i"));
-            M3IconToggleButton standardToggle = M3IconToggleButton.withIcon(
+            M3IconToggleButton standardToggle = createIconToggleButton(
                     "S",
                     M3IconToggleButtonVariant.STANDARD,
                     true
             );
-            M3IconToggleButton filledToggle = M3IconToggleButton.withIcon(
+            M3IconToggleButton filledToggle = createIconToggleButton(
                     "F",
                     M3IconToggleButtonVariant.FILLED,
                     true
             );
-            M3IconToggleButton tonalToggle = M3IconToggleButton.withIcon(
+            M3IconToggleButton tonalToggle = createIconToggleButton(
                     "T",
                     M3IconToggleButtonVariant.TONAL,
                     true
             );
-            M3IconToggleButton outlinedToggle = M3IconToggleButton.withIcon(
+            M3IconToggleButton outlinedToggle = createIconToggleButton(
                     "O",
                     M3IconToggleButtonVariant.OUTLINED,
                     true
@@ -12361,35 +12364,36 @@ final class M3ControlStyleTest {
                     outlinedToggle
             );
 
-            M3FloatingActionButton smallFab = M3FloatingActionButton.withGraphic(
+            M3FloatingActionButton smallFab = createGraphicFab(
                     new M3Icon("+"),
                     M3FloatingActionButtonVariant.PRIMARY,
                     M3FloatingActionButtonSize.SMALL
             );
-            M3FloatingActionButton regularFab = M3FloatingActionButton.withGraphic(
+            M3FloatingActionButton regularFab = createGraphicFab(
                     new M3Icon("+"),
                     M3FloatingActionButtonVariant.SECONDARY,
                     M3FloatingActionButtonSize.REGULAR
             );
-            M3FloatingActionButton largeFab = M3FloatingActionButton.withVariant(
+            M3FloatingActionButton largeFab = createFab(
                     "*",
                     null,
                     M3FloatingActionButtonVariant.TERTIARY,
                     M3FloatingActionButtonSize.LARGE
             );
-            M3FloatingActionButton extendedFab = M3FloatingActionButton.withVariant(
+            M3FloatingActionButton extendedFab = createFab(
                     "Create",
                     new M3Icon("+"),
                     M3FloatingActionButtonVariant.SURFACE,
                     M3FloatingActionButtonSize.REGULAR
             );
-            M3FabMenu fabMenu = new M3FabMenu(
-                    M3FloatingActionButton.withGraphic(
+            M3FabMenu fabMenu = new M3FabMenu();
+            fabMenu.addItems(
+                    createGraphicFab(
                             new M3Icon("A"),
                             M3FloatingActionButtonVariant.PRIMARY,
                             M3FloatingActionButtonSize.SMALL
                     ),
-                    M3FloatingActionButton.withGraphic(
+                    createGraphicFab(
                             new M3Icon("B"),
                             M3FloatingActionButtonVariant.SECONDARY,
                             M3FloatingActionButtonSize.SMALL
@@ -12399,14 +12403,14 @@ final class M3ControlStyleTest {
 
             M3TextField filledField = new M3TextField("Filled text field");
             filledField.setPrefWidth(190.0);
-            M3TextField outlinedField = M3TextField.withVariant("Outlined text field", M3TextInputVariant.OUTLINED);
+            M3TextField outlinedField = createTextField("Outlined text field", M3TextInputVariant.OUTLINED);
             outlinedField.setPrefWidth(210.0);
-            M3PasswordField passwordField = M3PasswordField.withVariant("password", M3TextInputVariant.OUTLINED);
+            M3PasswordField passwordField = createPasswordField("password", M3TextInputVariant.OUTLINED);
             passwordField.setPrefWidth(170.0);
-            M3TextField errorField = M3TextField.withVariant("Error", M3TextInputVariant.OUTLINED);
+            M3TextField errorField = createTextField("Error", M3TextInputVariant.OUTLINED);
             errorField.setError(true);
             errorField.setPrefWidth(150.0);
-            M3TextArea textArea = M3TextArea.withVariant("Multiline\ntext area", M3TextInputVariant.FILLED);
+            M3TextArea textArea = createTextArea("Multiline\ntext area", M3TextInputVariant.FILLED);
             textArea.setPrefSize(260.0, 96.0);
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
             M3DateRangePicker dateRangePicker = new M3DateRangePicker(
@@ -12415,28 +12419,28 @@ final class M3ControlStyleTest {
             );
             M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
 
-            M3CheckBox selectedCheckBox = M3CheckBox.withSelected("Checkbox", true);
+            M3CheckBox selectedCheckBox = createCheckBox("Checkbox", true);
             M3CheckBox indeterminateCheckBox = new M3CheckBox("Mixed");
             indeterminateCheckBox.setIndeterminate(true);
-            M3RadioButton selectedRadioButton = M3RadioButton.withSelected("Radio", true);
-            M3Switch selectedSwitch = M3Switch.withSelected("Switch", true);
-            M3Switch disabledSwitch = M3Switch.withSelected("Disabled", true);
+            M3RadioButton selectedRadioButton = createRadioButton("Radio", true);
+            M3Switch selectedSwitch = createSwitch("Switch", true);
+            M3Switch disabledSwitch = createSwitch("Disabled", true);
             disabledSwitch.setDisable(true);
             M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
             slider.setPrefWidth(260.0);
 
-            M3Chip assistChip = M3Chip.withVariant("Assist", M3ChipVariant.ASSIST);
-            M3Chip filterChip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
-            M3Chip inputChip = M3Chip.withVariant("Input", new M3Icon("x"), M3ChipVariant.INPUT);
-            M3Chip suggestionChip = M3Chip.withVariant("Suggestion", M3ChipVariant.SUGGESTION);
+            M3Chip assistChip = createChip("Assist", M3ChipVariant.ASSIST);
+            M3Chip filterChip = createChip("Filter", M3ChipVariant.FILTER, true);
+            M3Chip inputChip = createChip("Input", new M3Icon("x"), M3ChipVariant.INPUT);
+            M3Chip suggestionChip = createChip("Suggestion", M3ChipVariant.SUGGESTION);
             M3ChipGroup chipGroup = new M3ChipGroup(assistChip, filterChip, inputChip, suggestionChip);
             M3SegmentedButtonGroup segmentedButtons = new M3SegmentedButtonGroup(
                     new M3SegmentedButton("Day"),
-                    M3SegmentedButton.withSelected("Week", true),
+                    createSegmentedButton("Week", true),
                     new M3SegmentedButton("Month")
             );
             M3TabBar tabBar = new M3TabBar(
-                    M3Tab.withSelected("Overview", true),
+                    createTab("Overview", true),
                     new M3Tab("Details"),
                     new M3Tab("History")
             );
@@ -12468,10 +12472,10 @@ final class M3ControlStyleTest {
             carousel.setPrefSize(420.0, 92.0);
             carousel.selectIndex(1);
 
-            M3Banner banner = M3Banner.withIcon(
+            M3Banner banner = createBanner(
                     "Banner message with persistent inline feedback.",
                     new M3Icon("i", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
-                    M3Button.withVariant("Action", M3ButtonVariant.TEXT)
+                    createButton("Action", M3ButtonVariant.TEXT)
             );
             banner.setPrefWidth(520.0);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
@@ -12536,7 +12540,7 @@ final class M3ControlStyleTest {
             topAppBar.setPrefWidth(520.0);
             M3BottomAppBar bottomAppBar = new M3BottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
-                    M3FloatingActionButton.withGraphic(
+                    createGraphicFab(
                             new M3Icon("+"),
                             M3FloatingActionButtonVariant.PRIMARY,
                             M3FloatingActionButtonSize.SMALL
@@ -12547,13 +12551,13 @@ final class M3ControlStyleTest {
             bottomAppBar.setPrefWidth(520.0);
 
             M3NavigationBar navigationBar = new M3NavigationBar(
-                    M3NavigationItem.withSelected("Home", new M3Icon("H"), true),
+                    createNavigationItem("Home", new M3Icon("H"), true),
                     new M3NavigationItem("Search", new M3Icon("S"), new M3Badge("1")),
                     new M3NavigationItem("Profile", new M3Icon("P"))
             );
             navigationBar.setPrefWidth(420.0);
             M3NavigationRail navigationRail = new M3NavigationRail(
-                    M3NavigationItem.withSelected("Home", new M3Icon("H"), true),
+                    createNavigationItem("Home", new M3Icon("H"), true),
                     new M3NavigationItem("Search", new M3Icon("S")),
                     new M3NavigationItem("Profile", new M3Icon("P"))
             );
@@ -12567,7 +12571,7 @@ final class M3ControlStyleTest {
             M3SideSheet sideSheet = new M3SideSheet(
                     "Side sheet",
                     visualLabel("Side sheet content"),
-                    M3Button.withVariant("Action", M3ButtonVariant.TEXT)
+                    createButton("Action", M3ButtonVariant.TEXT)
             );
             sideSheet.setVariant(M3SheetVariant.MODAL);
             sideSheet.setPrefSize(280.0, 180.0);
@@ -12575,7 +12579,7 @@ final class M3ControlStyleTest {
             M3BottomSheet bottomSheet = new M3BottomSheet(
                     "Bottom sheet",
                     visualLabel("Bottom sheet content"),
-                    M3Button.withVariant("Done", M3ButtonVariant.TEXT)
+                    createButton("Done", M3ButtonVariant.TEXT)
             );
             bottomSheet.setPrefSize(360.0, 180.0);
             bottomSheet.show();
@@ -12729,41 +12733,41 @@ final class M3ControlStyleTest {
     @Test
     void expressiveProfileVisualSnapshotRendersProfileSizedControls() {
         runOnFxThread(() -> {
-            M3Button filledButton = M3Button.withVariant("Filled", M3ButtonVariant.FILLED);
+            M3Button filledButton = createButton("Filled", M3ButtonVariant.FILLED);
             M3IconButton iconButton = new M3IconButton(new M3Icon("S"));
-            M3IconToggleButton standardToggle = M3IconToggleButton.withIcon(
+            M3IconToggleButton standardToggle = createIconToggleButton(
                     "B",
                     M3IconToggleButtonVariant.STANDARD,
                     false
             );
-            M3IconToggleButton tonalToggle = M3IconToggleButton.withIcon(
+            M3IconToggleButton tonalToggle = createIconToggleButton(
                     "I",
                     M3IconToggleButtonVariant.TONAL,
                     true
             );
-            M3IconToggleButton outlinedToggle = M3IconToggleButton.withIcon(
+            M3IconToggleButton outlinedToggle = createIconToggleButton(
                     "U",
                     M3IconToggleButtonVariant.OUTLINED,
                     false
             );
             M3IconToggleButtonGroup toggleGroup =
                     new M3IconToggleButtonGroup(standardToggle, tonalToggle, outlinedToggle);
-            M3FloatingActionButton regularFab = M3FloatingActionButton.withGraphic(
+            M3FloatingActionButton regularFab = createGraphicFab(
                     new M3Icon("+"),
                     M3FloatingActionButtonVariant.PRIMARY,
                     M3FloatingActionButtonSize.REGULAR
             );
             M3SegmentedButton day = new M3SegmentedButton("Day");
-            M3SegmentedButton week = M3SegmentedButton.withSelected("Week", true);
+            M3SegmentedButton week = createSegmentedButton("Week", true);
             M3SegmentedButton month = new M3SegmentedButton("Month");
             M3SegmentedButtonGroup segments = new M3SegmentedButtonGroup(day, week, month);
-            M3Tab selectedTab = M3Tab.withSelected("Overview", true);
+            M3Tab selectedTab = createTab("Overview", true);
             M3TabBar tabBar = new M3TabBar(selectedTab, new M3Tab("Details"));
-            M3TextField textField = M3TextField.withVariant("Outlined text", M3TextInputVariant.OUTLINED);
+            M3TextField textField = createTextField("Outlined text", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(260.0);
-            M3TextArea textArea = M3TextArea.withVariant("Multiline\ntext", M3TextInputVariant.FILLED);
+            M3TextArea textArea = createTextArea("Multiline\ntext", M3TextInputVariant.FILLED);
             textArea.setPrefSize(300.0, 128.0);
-            M3Chip filterChip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
+            M3Chip filterChip = createChip("Filter", M3ChipVariant.FILTER, true);
             M3CheckBox checkBox = new M3CheckBox("Check");
             checkBox.setSelected(true);
             M3Slider slider = new M3Slider(0.0, 100.0, 54.0);
@@ -12787,12 +12791,12 @@ final class M3ControlStyleTest {
             M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom sheet content"));
             bottomSheet.setPrefWidth(360.0);
             bottomSheet.setPrefHeight(180.0);
-            M3NavigationItem navigationBarItem = M3NavigationItem.withSelected("Home", new M3Icon("H"), true);
+            M3NavigationItem navigationBarItem = createNavigationItem("Home", new M3Icon("H"), true);
             M3NavigationBar navigationBar = new M3NavigationBar(
                     navigationBarItem,
                     new M3NavigationItem("Search", new M3Icon("S"))
             );
-            M3NavigationItem navigationRailItem = M3NavigationItem.withSelected("Home", new M3Icon("H"), true);
+            M3NavigationItem navigationRailItem = createNavigationItem("Home", new M3Icon("H"), true);
             M3NavigationRail navigationRail = new M3NavigationRail(
                     navigationRailItem,
                     new M3NavigationItem("Search", new M3Icon("S"))
@@ -12968,20 +12972,20 @@ final class M3ControlStyleTest {
     @Test
     void darkExpressiveVisualSnapshotRendersTokenDrivenControls() {
         runOnFxThread(() -> {
-            M3Button filledButton = M3Button.withVariant("Filled", M3ButtonVariant.FILLED);
-            M3Button tonalButton = M3Button.withVariant("Tonal", M3ButtonVariant.TONAL);
-            M3Button outlinedButton = M3Button.withVariant("Outlined", M3ButtonVariant.OUTLINED);
-            M3IconToggleButton selectedToggle = M3IconToggleButton.withIcon(
+            M3Button filledButton = createButton("Filled", M3ButtonVariant.FILLED);
+            M3Button tonalButton = createButton("Tonal", M3ButtonVariant.TONAL);
+            M3Button outlinedButton = createButton("Outlined", M3ButtonVariant.OUTLINED);
+            M3IconToggleButton selectedToggle = createIconToggleButton(
                     "B",
                     M3IconToggleButtonVariant.FILLED,
                     true
             );
-            M3FloatingActionButton fab = M3FloatingActionButton.withGraphic(
+            M3FloatingActionButton fab = createGraphicFab(
                     new M3Icon("+"),
                     M3FloatingActionButtonVariant.PRIMARY,
                     M3FloatingActionButtonSize.REGULAR
             );
-            M3TextField textField = M3TextField.withVariant("Dark field", M3TextInputVariant.OUTLINED);
+            M3TextField textField = createTextField("Dark field", M3TextInputVariant.OUTLINED);
             textField.setText("M3FX");
             textField.setPrefWidth(260.0);
             M3PasswordField passwordField = new M3PasswordField("Password");
@@ -12997,16 +13001,16 @@ final class M3ControlStyleTest {
             M3Slider slider = new M3Slider(0.0, 100.0, 48.0);
             slider.setPrefWidth(260.0);
             M3SegmentedButton day = new M3SegmentedButton("Day");
-            M3SegmentedButton week = M3SegmentedButton.withSelected("Week", true);
+            M3SegmentedButton week = createSegmentedButton("Week", true);
             M3SegmentedButtonGroup segments = new M3SegmentedButtonGroup(day, week);
-            M3Chip filterChip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
+            M3Chip filterChip = createChip("Filter", M3ChipVariant.FILTER, true);
             M3ProgressBar progressBar = new M3ProgressBar(0.58);
             progressBar.setPrefWidth(280.0);
             M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.7);
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 21));
             M3SearchBar searchBar = new M3SearchBar("Search dark");
             searchBar.setPrefWidth(320.0);
-            M3NavigationItem home = M3NavigationItem.withSelected("Home", new M3Icon("H"), true);
+            M3NavigationItem home = createNavigationItem("Home", new M3Icon("H"), true);
             M3NavigationBar navigationBar = new M3NavigationBar(
                     home,
                     new M3NavigationItem("Search", new M3Icon("S"))
@@ -13203,7 +13207,7 @@ final class M3ControlStyleTest {
             M3RichTooltip tooltip = new M3RichTooltip(
                     "Rich tooltip",
                     "A wider tooltip surface can include a title, supporting text, and actions.",
-                    M3Button.withVariant("Action", M3ButtonVariant.TEXT)
+                    createButton("Action", M3ButtonVariant.TEXT)
             );
             try {
                 M3Button owner = new M3Button("Owner");
@@ -13560,15 +13564,15 @@ final class M3ControlStyleTest {
     /// Verifies that custom selectable controls expose accessibility selection state.
     @Test
     void selectableControlsExposeAccessibleSelectionState() {
-        M3Chip chip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, true);
-        M3IconToggleButton iconToggleButton = M3IconToggleButton.withIcon(
+        M3Chip chip = createChip("Filter", M3ChipVariant.FILTER, true);
+        M3IconToggleButton iconToggleButton = createIconToggleButton(
                 "star",
                 M3IconToggleButtonVariant.TONAL,
                 true
         );
-        M3SegmentedButton segmentedButton = M3SegmentedButton.withSelected("Day", true);
-        M3Tab tab = M3Tab.withSelected("Overview", true);
-        M3NavigationItem navigationItem = M3NavigationItem.withSelected("Home", true);
+        M3SegmentedButton segmentedButton = createSegmentedButton("Day", true);
+        M3Tab tab = createTab("Overview", true);
+        M3NavigationItem navigationItem = createNavigationItem("Home", true);
 
         assertEquals(true, chip.queryAccessibleAttribute(AccessibleAttribute.SELECTED));
         assertEquals(AccessibleAttribute.ToggleState.CHECKED,
@@ -13651,8 +13655,8 @@ final class M3ControlStyleTest {
         assertEquals(false, menu.queryAccessibleAttribute(AccessibleAttribute.MULTIPLE_SELECTION));
         assertEquals(menu.getSelectedItems(), menu.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
 
-        M3Chip firstChip = M3Chip.withVariant("Input", M3ChipVariant.INPUT, true);
-        M3Chip secondChip = M3Chip.withVariant("Filter", M3ChipVariant.FILTER, false);
+        M3Chip firstChip = createChip("Input", M3ChipVariant.INPUT, true);
+        M3Chip secondChip = createChip("Filter", M3ChipVariant.FILTER, false);
         M3ChipGroup chipGroup = new M3ChipGroup(firstChip, secondChip);
 
         assertEquals(2, chipGroup.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
@@ -13660,16 +13664,16 @@ final class M3ControlStyleTest {
         assertEquals(true, chipGroup.queryAccessibleAttribute(AccessibleAttribute.MULTIPLE_SELECTION));
         assertEquals(chipGroup.getSelectedChips(), chipGroup.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
 
-        M3IconToggleButton iconFirst = M3IconToggleButton.withIcon("edit", M3IconToggleButtonVariant.STANDARD, true);
-        M3IconToggleButton iconSecond = M3IconToggleButton.withIcon("done", M3IconToggleButtonVariant.STANDARD, false);
+        M3IconToggleButton iconFirst = createIconToggleButton("edit", M3IconToggleButtonVariant.STANDARD, true);
+        M3IconToggleButton iconSecond = createIconToggleButton("done", M3IconToggleButtonVariant.STANDARD, false);
         M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond);
 
         assertEquals(iconFirst, iconGroup.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
         assertEquals(false, iconGroup.queryAccessibleAttribute(AccessibleAttribute.MULTIPLE_SELECTION));
         assertEquals(iconGroup.getSelectedButtons(), iconGroup.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
 
-        M3SegmentedButton segmentFirst = M3SegmentedButton.withSelected("Day", true);
-        M3SegmentedButton segmentSecond = M3SegmentedButton.withSelected("Week", false);
+        M3SegmentedButton segmentFirst = createSegmentedButton("Day", true);
+        M3SegmentedButton segmentSecond = createSegmentedButton("Week", false);
         M3SegmentedButtonGroup segmentedGroup = new M3SegmentedButtonGroup(segmentFirst, segmentSecond);
 
         assertEquals(segmentSecond, segmentedGroup.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
@@ -13677,20 +13681,20 @@ final class M3ControlStyleTest {
         assertEquals(segmentedGroup.getSelectedButtons(),
                 segmentedGroup.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
 
-        M3Tab tabFirst = M3Tab.withSelected("Overview", true);
-        M3Tab tabSecond = M3Tab.withSelected("Details", false);
+        M3Tab tabFirst = createTab("Overview", true);
+        M3Tab tabSecond = createTab("Details", false);
         M3TabBar tabBar = new M3TabBar(tabFirst, tabSecond);
 
         assertEquals(tabSecond, tabBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
         assertEquals(false, tabBar.queryAccessibleAttribute(AccessibleAttribute.MULTIPLE_SELECTION));
         assertEquals(tabBar.getSelectedTabs(), tabBar.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
 
-        M3NavigationItem navFirst = M3NavigationItem.withSelected("Home", true);
-        M3NavigationItem navSecond = M3NavigationItem.withSelected("Search", false);
+        M3NavigationItem navFirst = createNavigationItem("Home", true);
+        M3NavigationItem navSecond = createNavigationItem("Search", false);
         M3NavigationBar navigationBar = new M3NavigationBar(navFirst, navSecond);
         M3NavigationRail navigationRail = new M3NavigationRail(
-                M3NavigationItem.withSelected("Home", true),
-                M3NavigationItem.withSelected("Search", false)
+                createNavigationItem("Home", true),
+                createNavigationItem("Search", false)
         );
 
         assertEquals(navSecond, navigationBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
@@ -13919,7 +13923,7 @@ final class M3ControlStyleTest {
     /// Verifies that custom controls expose stable accessibility roles.
     @Test
     void controlsExposeAccessibilityRoles() {
-        M3Badge badge = M3Badge.withCount(1234);
+        M3Badge badge = new M3Badge(1234);
         M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
         M3Card passiveCard = new M3Card(new Label("Card"));
         M3Card actionCard = new M3Card(new Label("Action"));
@@ -15354,6 +15358,244 @@ final class M3ControlStyleTest {
     private static void assertColorNear(Color actual, Color expected, double maximumDistance, String description) {
         assertTrue(colorDistance(actual, expected) <= maximumDistance,
                 () -> description + ": actual=" + actual + ", expected=" + expected);
+    }
+
+    /// Creates a button with the requested variant.
+    private static M3Button createButton(String text, M3ButtonVariant variant) {
+        return new M3Button(text, variant);
+    }
+
+    /// Creates a button with the requested variant and action handler.
+    private static M3Button createButton(
+            String text,
+            M3ButtonVariant variant,
+            @Nullable javafx.event.EventHandler<ActionEvent> onAction
+    ) {
+        return new M3Button(text, variant, onAction);
+    }
+
+    /// Creates a split button with the requested variant and menu items.
+    private static M3SplitButton createSplitButton(String text, M3ButtonVariant variant, Node... items) {
+        M3SplitButton button = new M3SplitButton(text, items);
+        button.setVariant(variant);
+        return button;
+    }
+
+    /// Creates a split button with the requested variant, action handler, and menu items.
+    private static M3SplitButton createSplitButton(
+            String text,
+            M3ButtonVariant variant,
+            @Nullable javafx.event.EventHandler<ActionEvent> onAction,
+            Node... items
+    ) {
+        M3SplitButton button = createSplitButton(text, variant, items);
+        button.setOnAction(onAction);
+        return button;
+    }
+
+    /// Creates a floating action button with text, variant, and size.
+    private static M3FloatingActionButton createFab(
+            String text,
+            M3FloatingActionButtonVariant variant,
+            M3FloatingActionButtonSize size
+    ) {
+        return createFab(text, null, variant, size);
+    }
+
+    /// Creates a floating action button with text, graphic content, variant, and size.
+    private static M3FloatingActionButton createFab(
+            String text,
+            @Nullable Node graphic,
+            M3FloatingActionButtonVariant variant,
+            M3FloatingActionButtonSize size
+    ) {
+        M3FloatingActionButton button = new M3FloatingActionButton(text, graphic);
+        button.setVariant(variant);
+        button.setSize(size);
+        return button;
+    }
+
+    /// Creates a floating action button with graphic content, variant, and size.
+    private static M3FloatingActionButton createGraphicFab(
+            @Nullable Node graphic,
+            M3FloatingActionButtonVariant variant,
+            M3FloatingActionButtonSize size
+    ) {
+        M3FloatingActionButton button = new M3FloatingActionButton(graphic);
+        button.setVariant(variant);
+        button.setSize(size);
+        return button;
+    }
+
+    /// Creates a banner with a leading icon and trailing actions.
+    private static M3Banner createBanner(String text, Node icon, Node... actions) {
+        M3Banner banner = new M3Banner(text, actions);
+        banner.setIcon(Objects.requireNonNull(icon, "icon"));
+        return banner;
+    }
+
+    /// Creates a text field with the requested variant.
+    private static M3TextField createTextField(String text, M3TextInputVariant variant) {
+        M3TextField textField = new M3TextField(text);
+        textField.setVariant(variant);
+        return textField;
+    }
+
+    /// Creates a password field with the requested variant.
+    private static M3PasswordField createPasswordField(String text, M3TextInputVariant variant) {
+        M3PasswordField passwordField = new M3PasswordField(text);
+        passwordField.setVariant(variant);
+        return passwordField;
+    }
+
+    /// Creates a text area with the requested variant.
+    private static M3TextArea createTextArea(String text, M3TextInputVariant variant) {
+        M3TextArea textArea = new M3TextArea(text);
+        textArea.setVariant(variant);
+        return textArea;
+    }
+
+    /// Creates an avatar with the requested variant.
+    private static M3Avatar createAvatar(String text, M3AvatarVariant variant) {
+        M3Avatar avatar = new M3Avatar(text);
+        avatar.setVariant(variant);
+        return avatar;
+    }
+
+    /// Creates an avatar with graphic content and the requested variant.
+    private static M3Avatar createAvatar(@Nullable Node graphic, M3AvatarVariant variant) {
+        M3Avatar avatar = new M3Avatar(graphic);
+        avatar.setVariant(variant);
+        return avatar;
+    }
+
+    /// Creates an icon button with an M3FX icon label.
+    private static M3IconButton createIconButton(String iconText) {
+        return new M3IconButton(new M3Icon(iconText));
+    }
+
+    /// Creates an icon button with an M3FX icon label, size, and color variant.
+    private static M3IconButton createIconButton(String iconText, M3IconSize iconSize, M3IconVariant iconVariant) {
+        return new M3IconButton(new M3Icon(iconText, iconSize, iconVariant));
+    }
+
+    /// Creates a toggle icon button with graphic content, variant, and selected state.
+    private static M3IconToggleButton createIconToggleButton(
+            @Nullable Node graphic,
+            M3IconToggleButtonVariant variant,
+            boolean selected
+    ) {
+        M3IconToggleButton button = new M3IconToggleButton(graphic);
+        button.setVariant(variant);
+        button.setSelected(selected);
+        return button;
+    }
+
+    /// Creates a toggle icon button with an M3FX icon label, variant, and selected state.
+    private static M3IconToggleButton createIconToggleButton(
+            String iconText,
+            M3IconToggleButtonVariant variant,
+            boolean selected
+    ) {
+        return createIconToggleButton(new M3Icon(iconText), variant, selected);
+    }
+
+    /// Creates a toggle icon button with an M3FX icon label, icon size, icon variant, button variant, and state.
+    private static M3IconToggleButton createIconToggleButton(
+            String iconText,
+            M3IconSize iconSize,
+            M3IconVariant iconVariant,
+            M3IconToggleButtonVariant variant,
+            boolean selected
+    ) {
+        return createIconToggleButton(new M3Icon(iconText, iconSize, iconVariant), variant, selected);
+    }
+
+    /// Creates a chip with the requested variant and selected state.
+    private static M3Chip createChip(String text, M3ChipVariant variant, boolean selected) {
+        M3Chip chip = new M3Chip(text);
+        chip.setVariant(variant);
+        chip.setSelected(selected);
+        return chip;
+    }
+
+    /// Creates a chip with the requested variant.
+    private static M3Chip createChip(String text, M3ChipVariant variant) {
+        return createChip(text, variant, false);
+    }
+
+    /// Creates a chip with graphic content, variant, and selected state.
+    private static M3Chip createChip(String text, @Nullable Node graphic, M3ChipVariant variant, boolean selected) {
+        M3Chip chip = new M3Chip(text, graphic);
+        chip.setVariant(variant);
+        chip.setSelected(selected);
+        return chip;
+    }
+
+    /// Creates a chip with graphic content and the requested variant.
+    private static M3Chip createChip(String text, @Nullable Node graphic, M3ChipVariant variant) {
+        return createChip(text, graphic, variant, false);
+    }
+
+    /// Creates a segmented button with the requested selected state.
+    private static M3SegmentedButton createSegmentedButton(String text, boolean selected) {
+        M3SegmentedButton button = new M3SegmentedButton(text);
+        button.setSelected(selected);
+        return button;
+    }
+
+    /// Creates a tab with the requested selected state.
+    private static M3Tab createTab(String text, boolean selected) {
+        M3Tab tab = new M3Tab(text);
+        tab.setSelected(selected);
+        return tab;
+    }
+
+    /// Creates a checkbox with the requested selected state.
+    private static M3CheckBox createCheckBox(String text, boolean selected) {
+        M3CheckBox checkBox = new M3CheckBox(text);
+        checkBox.setSelected(selected);
+        return checkBox;
+    }
+
+    /// Creates a radio button with the requested selected state.
+    private static M3RadioButton createRadioButton(String text, boolean selected) {
+        M3RadioButton radioButton = new M3RadioButton(text);
+        radioButton.setSelected(selected);
+        return radioButton;
+    }
+
+    /// Creates a switch with the requested selected state.
+    private static M3Switch createSwitch(String text, boolean selected) {
+        M3Switch switchControl = new M3Switch(text);
+        switchControl.setSelected(selected);
+        return switchControl;
+    }
+
+    /// Creates a navigation item with the requested selected state.
+    private static M3NavigationItem createNavigationItem(String text, boolean selected) {
+        M3NavigationItem item = new M3NavigationItem(text);
+        item.setSelected(selected);
+        return item;
+    }
+
+    /// Creates a navigation item with graphic content and the requested selected state.
+    private static M3NavigationItem createNavigationItem(String text, @Nullable Node graphic, boolean selected) {
+        M3NavigationItem item = new M3NavigationItem(text, graphic);
+        item.setSelected(selected);
+        return item;
+    }
+
+    /// Creates a navigation item with graphic content, a badge, and the requested selected state.
+    private static M3NavigationItem createNavigationItem(
+            String text,
+            @Nullable Node graphic,
+            @Nullable M3Badge badge,
+            boolean selected
+    ) {
+        M3NavigationItem item = new M3NavigationItem(text, graphic, badge);
+        item.setSelected(selected);
+        return item;
     }
 
     /// Creates a primary mouse event for control behavior tests.

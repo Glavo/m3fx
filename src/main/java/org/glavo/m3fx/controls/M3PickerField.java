@@ -188,11 +188,11 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     ) {
         this.picker = Objects.requireNonNull(picker, "picker");
         this.pickerValue = Objects.requireNonNull(pickerValue, "pickerValue");
-        this.openButton = M3IconButton.withIcon(
+        this.openButton = new M3IconButton(new M3Icon(
                 Objects.requireNonNull(pickerIconText, "pickerIconText"),
                 M3IconSize.SMALL,
                 M3IconVariant.ON_SURFACE_VARIANT
-        );
+        ));
         this.formatter.set(Objects.requireNonNull(formatter, "formatter"));
         this.invalidTextErrorText.set(Objects.requireNonNull(invalidTextErrorText, "invalidTextErrorText"));
         this.rangeErrorText.set(Objects.requireNonNull(rangeErrorText, "rangeErrorText"));

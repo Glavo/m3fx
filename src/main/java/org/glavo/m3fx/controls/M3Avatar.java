@@ -90,28 +90,6 @@ public class M3Avatar extends Control {
         setGraphic(graphic);
     }
 
-    /// Creates an avatar with text and the requested color variant.
-    ///
-    /// @param text the text displayed when no graphic is set
-    /// @param variant the avatar color variant
-    /// @return a new avatar configured with the requested variant
-    public static M3Avatar withVariant(String text, M3AvatarVariant variant) {
-        M3Avatar avatar = new M3Avatar(text);
-        avatar.setVariant(variant);
-        return avatar;
-    }
-
-    /// Creates an avatar with a graphic node and the requested color variant.
-    ///
-    /// @param graphic the graphic node displayed by the avatar, or `null` for no graphic
-    /// @param variant the avatar color variant
-    /// @return a new avatar configured with the requested variant
-    public static M3Avatar withVariant(@Nullable Node graphic, M3AvatarVariant variant) {
-        M3Avatar avatar = new M3Avatar(graphic);
-        avatar.setVariant(variant);
-        return avatar;
-    }
-
     /// Returns the avatar text.
     ///
     /// @return the text displayed when no graphic is set

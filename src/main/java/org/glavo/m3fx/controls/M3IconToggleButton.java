@@ -111,56 +111,6 @@ public class M3IconToggleButton extends ButtonBase {
         this(new M3Icon(iconText, iconSize, iconVariant));
     }
 
-    /// Creates a toggle icon button with graphic content, variant, and selected state.
-    ///
-    /// @param graphic the graphic displayed by the toggle icon button, or `null`
-    /// @param variant the toggle icon button variant
-    /// @param selected whether the toggle icon button starts selected
-    /// @return a toggle icon button configured with the supplied graphic, variant, and state
-    public static M3IconToggleButton withVariant(
-            @Nullable Node graphic,
-            M3IconToggleButtonVariant variant,
-            boolean selected
-    ) {
-        M3IconToggleButton button = new M3IconToggleButton(graphic);
-        button.setVariant(variant);
-        button.setSelected(selected);
-        return button;
-    }
-
-    /// Creates a toggle icon button with an M3FX icon label, variant, and selected state.
-    ///
-    /// @param iconText the glyph text rendered by the icon
-    /// @param variant the toggle icon button variant
-    /// @param selected whether the toggle icon button starts selected
-    /// @return a toggle icon button configured with the supplied icon, variant, and state
-    public static M3IconToggleButton withIcon(
-            String iconText,
-            M3IconToggleButtonVariant variant,
-            boolean selected
-    ) {
-        return withVariant(new M3Icon(iconText), variant, selected);
-    }
-
-    /// Creates a toggle icon button with an M3FX icon label, icon size, icon color variant,
-    /// button variant, and selected state.
-    ///
-    /// @param iconText the glyph text rendered by the icon
-    /// @param iconSize the icon size role
-    /// @param iconVariant the icon color variant
-    /// @param variant the toggle icon button variant
-    /// @param selected whether the toggle icon button starts selected
-    /// @return a toggle icon button configured with the supplied icon, variant, and state
-    public static M3IconToggleButton withIcon(
-            String iconText,
-            M3IconSize iconSize,
-            M3IconVariant iconVariant,
-            M3IconToggleButtonVariant variant,
-            boolean selected
-    ) {
-        return withVariant(new M3Icon(iconText, iconSize, iconVariant), variant, selected);
-    }
-
     /// Returns the toggle icon button variant.
     ///
     /// @return the toggle icon button variant
