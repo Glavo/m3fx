@@ -14,6 +14,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -30,8 +31,12 @@ import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
+import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3Switch;
+import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
+import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.monetfx.Brightness;
@@ -154,6 +159,8 @@ final class M3FXDemoVisualSmokeTest {
                     assertSnapshotHasVisibleContent(image, pageTitle);
                     assertVisibleTextInsideScene(scene, pageTitle);
                     assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
+                    assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
+                    assertSelectionIndicatorsCentered(scene, pageTitle);
                 });
             }
         } finally {
@@ -216,6 +223,8 @@ final class M3FXDemoVisualSmokeTest {
                     assertSnapshotHasVisibleContent(image, pageTitle);
                     assertVisibleTextInsideScene(scene, pageTitle);
                     assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
+                    assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
+                    assertSelectionIndicatorsCentered(scene, pageTitle);
                 });
             }
         } finally {
@@ -276,6 +285,8 @@ final class M3FXDemoVisualSmokeTest {
                     assertSnapshotHasVisibleContent(image, pageTitle);
                     assertVisibleTextInsideScene(scene, pageTitle);
                     assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
+                    assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
+                    assertSelectionIndicatorsCentered(scene, pageTitle);
                 });
             }
         } finally {
@@ -801,6 +812,114 @@ final class M3FXDemoVisualSmokeTest {
         });
     }
 
+    /// Verifies that single-line text input glyphs have visible vertical room inside their field containers.
+    private static void assertSingleLineTextInputsHaveVerticalRoom(Scene scene, String pageTitle) {
+        Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
+        visitVisibleNodes(scene.getRoot(), node -> {
+            if (!(node instanceof M3TextInputLayout layout) || !hasRenderableBounds(layout)) {
+                return;
+            }
+
+            TextInputControl input = layout.getInput();
+            if (input == null || input instanceof M3TextArea || !input.isVisible() || !hasRenderableBounds(input)) {
+                return;
+            }
+
+            @Nullable Text text = firstVisibleText(input);
+            if (text == null || !hasRenderableBounds(text)) {
+                return;
+            }
+
+            Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
+            Bounds textBounds = text.localToScene(text.getBoundsInLocal());
+            if (!isVisibleWithinSceneViewport(text, textBounds, sceneBounds)) {
+                return;
+            }
+
+            double topRoom = textBounds.getMinY() - inputBounds.getMinY();
+            double bottomRoom = inputBounds.getMaxY() - textBounds.getMaxY();
+            double centerRatio = (textBounds.getCenterY() - inputBounds.getMinY()) / inputBounds.getHeight();
+            assertTrue(topRoom >= 3.0 && bottomRoom >= 3.0 && centerRatio >= 0.30 && centerRatio <= 0.75,
+                    () -> pageTitle + " text input glyph has unsafe vertical geometry: text="
+                            + text.getText() + ", topRoom=" + topRoom + ", bottomRoom=" + bottomRoom
+                            + ", centerRatio=" + centerRatio + ", inputBounds=" + inputBounds
+                            + ", textBounds=" + textBounds);
+        });
+    }
+
+    /// Verifies that selection-control indicators keep their active pieces centered in real rendered geometry.
+    private static void assertSelectionIndicatorsCentered(Scene scene, String pageTitle) {
+        Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
+        visitVisibleNodes(scene.getRoot(), node -> {
+            if (node instanceof M3RadioButton radioButton && hasRenderableBounds(radioButton)) {
+                assertNestedIndicatorCentered(
+                        radioButton,
+                        ".m3-radio-ring",
+                        ".m3-radio-dot",
+                        0.75,
+                        sceneBounds,
+                        pageTitle,
+                        "radio dot"
+                );
+            } else if (node instanceof M3Switch switchControl && hasRenderableBounds(switchControl)) {
+                assertSwitchThumbInsideTrack(
+                        switchControl,
+                        sceneBounds,
+                        pageTitle
+                );
+            }
+        });
+    }
+
+    /// Verifies that a nested visual indicator shares the same rendered center as its container.
+    private static void assertNestedIndicatorCentered(
+            Node root,
+            String containerStyleClass,
+            String indicatorStyleClass,
+            double tolerance,
+            Bounds sceneBounds,
+            String pageTitle,
+            String description
+    ) {
+        @Nullable Node container = root.lookup(containerStyleClass);
+        @Nullable Node indicator = root.lookup(indicatorStyleClass);
+        if (container == null || indicator == null || !hasRenderableBounds(container) || !hasRenderableBounds(indicator)) {
+            return;
+        }
+        Bounds containerBounds = container.localToScene(container.getBoundsInLocal());
+        Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
+        if (!isVisibleWithinSceneViewport(container, containerBounds, sceneBounds)) {
+            return;
+        }
+
+        double dx = Math.abs(containerBounds.getCenterX() - indicatorBounds.getCenterX());
+        double dy = Math.abs(containerBounds.getCenterY() - indicatorBounds.getCenterY());
+        assertTrue(dx <= tolerance && dy <= tolerance,
+                () -> pageTitle + " " + description + " is off-center: dx=" + dx + ", dy=" + dy
+                        + ", containerBounds=" + containerBounds + ", indicatorBounds=" + indicatorBounds);
+    }
+
+    /// Verifies that a switch thumb stays vertically centered and inside its track.
+    private static void assertSwitchThumbInsideTrack(Node root, Bounds sceneBounds, String pageTitle) {
+        @Nullable Node track = root.lookup(".m3-switch-track");
+        @Nullable Node thumb = root.lookup(".m3-switch-thumb");
+        if (track == null || thumb == null || !hasRenderableBounds(track) || !hasRenderableBounds(thumb)) {
+            return;
+        }
+        Bounds trackBounds = track.localToScene(track.getBoundsInLocal());
+        Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
+        if (!isVisibleWithinSceneViewport(track, trackBounds, sceneBounds)) {
+            return;
+        }
+
+        double dy = Math.abs(trackBounds.getCenterY() - thumbBounds.getCenterY());
+        assertTrue(dy <= 1.0
+                        && thumbBounds.getMinX() >= trackBounds.getMinX() - 0.75
+                        && thumbBounds.getMaxX() <= trackBounds.getMaxX() + 0.75,
+                () -> pageTitle + " switch thumb has unsafe geometry: dy=" + dy
+                        + ", trackBounds=" + trackBounds + ", thumbBounds=" + thumbBounds);
+    }
+
     /// Returns whether a node should have centered glyph content.
     private static boolean isCenteredTarget(Node node) {
         for (String styleClass : CENTERED_TARGET_STYLE_CLASSES) {
@@ -825,6 +944,21 @@ final class M3FXDemoVisualSmokeTest {
             }
         }
         return null;
+    }
+
+    /// Returns whether a node bounds intersects the scene and any active scroll viewport.
+    private static boolean isVisibleWithinSceneViewport(Node node, Bounds nodeBounds, Bounds sceneBounds) {
+        if (!sceneBounds.intersects(nodeBounds)
+                || !sceneBounds.contains(nodeBounds.getCenterX(), nodeBounds.getCenterY())) {
+            return false;
+        }
+        @Nullable Node scrollViewport = nearestScrollViewport(node);
+        if (scrollViewport == null) {
+            return true;
+        }
+        Bounds viewportBounds = scrollViewport.localToScene(scrollViewport.getBoundsInLocal());
+        return viewportBounds.intersects(nodeBounds)
+                && viewportBounds.contains(nodeBounds.getCenterX(), nodeBounds.getCenterY());
     }
 
     /// Returns the first visible M3 button with the requested text.
