@@ -16,7 +16,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - The demo app is a separate Gradle subproject.
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
 - M3 Expressive currently has profile-specific color, typography, shape, component sizing, semantic motion scheme tokens, and motion behavior timings.
-- M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens, and loading indicators use a dedicated animated shape sequence control with profile-specific metrics.
+- M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens, and loading indicators use a dedicated animated shape sequence control with profile-specific metrics and default/contained variants.
 - M3 Expressive action controls use profile-specific button padding, connected button padding and spacing, split button menu sizing, FAB extended padding and menu spacing, segmented button padding, icon toggle spacing, tab indicator metrics, icon sizes, chip padding, and chip group spacing.
 - M3 Expressive inputs, selection controls, and sliders use profile-specific input padding, touch target, track thickness, and thumb sizing.
 - M3 Expressive navigation and list components use profile-specific spacing, padding, and selected-container shape tokens.
@@ -66,7 +66,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Popup-hosted menus and pickers propagate theme context, profile and brightness style classes, animation settings, the active motion scheme, and motion behavior timings into their popup content roots.
 - Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.
 - JavaFX scroll panes styled through `M3ScrollPanes` and virtualized list view flows support smooth wheel, focus, and programmatic scrolling that resolve the active motion scheme and animation settings, including horizontal-only content such as carousel viewports.
-- Progress component tokens include wavy linear and circular amplitude, wavelength, track gap, and linear stop indicator metrics; loading indicator tokens include indicator size, shape size, and shape spacing. Applications can override them per control through CSS.
+- Progress component tokens include wavy linear and circular amplitude, wavelength, track gap, and linear stop indicator metrics; loading indicator tokens include container size and active indicator size. Applications can override them per control through CSS.
 - Button, FAB, icon, connected button group, segmented button group, icon toggle group, tab, chip, and chip group component tokens include Expressive-specific glyph sizing, horizontal padding, spacing, and tab active indicator metrics.
 - Connected button group and split button component tokens include Expressive-specific grouped action padding and split menu width.
 - Text input, text area, selection, and slider component tokens include Expressive-specific padding and interaction geometry.
@@ -86,7 +86,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, navigation drawer, and collapsible navigation drawer groups.
 - App bars: top app bar variants and bottom app bar with configurable FAB alignment.
 - Menus and search: menu, menu item, submenu item, menu sections, menu button, search bar, and search view.
-- Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, loading indicator, linear progress, and circular progress.
+- Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, loading indicator default and contained variants, linear progress, and circular progress.
 - Expressive progress indicators render wavy active paths, separated tracks, and linear stop indicators while baseline progress indicators retain flat line and arc geometry.
 - Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, and accessibility routing.
 
@@ -94,14 +94,14 @@ This file tracks product status and planning only. Repository rules, code style,
 
 - The demo app uses a Material navigation drawer sidebar with collapsible component groups aligned with the Material component organization.
 - Demo pages cover major control families, common variants, disabled states, selected states, error states, composite workflows, and animated progress examples.
-- Progress demo pages explicitly show standard geometry alongside expressive wavy geometry using per-control CSS token overrides; the loading indicator page shows indeterminate, determinate, size, and disabled states for the dedicated loading control.
+- Progress demo pages explicitly show standard geometry alongside expressive wavy geometry using per-control CSS token overrides; the loading indicator page shows the dedicated loading control in the official default and contained forms.
 - Unit tests cover style classes, token CSS metadata, skin creation, interaction events, state-layer/ripple behavior, accessibility attributes/actions, selection behavior, and packaging assumptions.
 - Snapshot-based visual tests render representative control families into report images and include automated checks for contrast, geometry, clipping, borders, and animation-state frames.
 - Recent visual regressions covered by tests include icon fallback glyph clipping, outlined text input notch geometry, segmented button selected borders, progress geometry, selection states, snackbar sizing, and trailing icon ripple behavior.
 - Expressive profile visual coverage checks real rendered component sizes, action-control padding, input padding, selection/slider geometry, tab indicators, profile root classes, fixed-target centering, date-cell alignment, menu/search/sheet metrics, card/snackbar metrics, and search bar height constraints in mixed-height layouts.
 - Dark expressive token-driven visual coverage renders representative action, input, selection, feedback, progress, date picker, and navigation controls without overriding generated dark theme colors.
 - Dark expressive popup visual coverage opens real menu and tooltip popups, checks inherited profile and brightness mode classes, and writes rendered snapshots for overlay review.
-- Expressive progress visual coverage writes a dedicated snapshot for determinate and indeterminate wavy linear and circular progress indicators.
+- Expressive progress visual coverage writes dedicated snapshots for determinate and indeterminate wavy linear and circular progress indicators, plus default and contained loading indicator presentation.
 
 ## Next Goals
 

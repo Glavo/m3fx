@@ -29,6 +29,7 @@ import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
+import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -380,6 +381,76 @@ final class M3FXDemoVisualSmokeTest {
                     Objects.requireNonNull(firstFrameReference.get(), "first progress frame"),
                     Objects.requireNonNull(secondFrameReference.get(), "second progress frame"),
                     "progress animation frames"
+            );
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that animated loading indicators visibly morph between real rendered frames.
+    @Test
+    void loadingIndicatorDemoAnimationProducesDistinctFrames() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> indicatorReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> firstFrameReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> secondFrameReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+                M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                app.showPageForTesting("Loading Indicator");
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                indicatorReference.set(Objects.requireNonNull(firstVisibleNodeWithStyle(
+                        scene.getRoot(),
+                        M3LoadingIndicator.STYLE_CLASS
+                ), "loading indicator"));
+            }, () -> {
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                firstFrameReference.set(snapshot(scene));
+                writeAnimationSnapshot(
+                        Objects.requireNonNull(firstFrameReference.get(), "first loading indicator frame"),
+                        "loading-indicator",
+                        "frame-a"
+                );
+            });
+
+            runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+            }, () -> {
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                secondFrameReference.set(snapshot(scene));
+                writeAnimationSnapshot(
+                        Objects.requireNonNull(secondFrameReference.get(), "second loading indicator frame"),
+                        "loading-indicator",
+                        "frame-b"
+                );
+            });
+
+            assertNodeAreaChanged(
+                    Objects.requireNonNull(indicatorReference.get(), "loading indicator"),
+                    Objects.requireNonNull(firstFrameReference.get(), "first loading indicator frame"),
+                    Objects.requireNonNull(secondFrameReference.get(), "second loading indicator frame"),
+                    "loading indicator animation frames"
             );
         } finally {
             runOnFxThread(() -> {
