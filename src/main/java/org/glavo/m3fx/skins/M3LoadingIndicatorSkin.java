@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
+import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -30,6 +31,18 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// The number of default indeterminate shape states.
     private static final int INDETERMINATE_SHAPE_COUNT = 7;
+
+    /// The duration of one indeterminate morph segment.
+    private static final Duration MORPH_INTERVAL = Duration.millis(650.0);
+
+    /// The duration of the independent global rotation loop.
+    private static final Duration GLOBAL_ROTATION_DURATION = Duration.millis(4666.0);
+
+    /// The rotation added by each morph segment.
+    private static final double QUARTER_ROTATION = 0.25;
+
+    /// The spring-like interpolator used for each morph segment.
+    private static final Interpolator MORPH_INTERPOLATOR = Interpolator.SPLINE(0.20, 0.00, 0.00, 1.00);
 
     /// The highest radial harmonic used by the generated shape sequence.
     private static final int HARMONIC_COUNT = 8;
@@ -66,6 +79,12 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The indeterminate animation timeline.
     private final Timeline indeterminateAnimation = new Timeline();
 
+    /// The independent global rotation animation value.
+    private final DoubleProperty globalRotation = new SimpleDoubleProperty(this, "globalRotation");
+
+    /// The independent global rotation animation timeline.
+    private final Timeline globalRotationAnimation = new Timeline();
+
     /// Requests layout after animation ticks.
     private final InvalidationListener animationInvalidation =
             observable -> getSkinnable().requestLayout();
@@ -88,7 +107,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
         displayedProgress.addListener(animationInvalidation);
         indeterminatePhase.addListener(animationInvalidation);
+        globalRotation.addListener(animationInvalidation);
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
+        globalRotationAnimation.setCycleCount(Animation.INDEFINITE);
 
         control.progressProperty().addListener(progressInvalidation);
         control.containerSizeProperty().addListener(layoutInvalidation);
@@ -102,8 +123,10 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         M3LoadingIndicator loadingIndicator = getSkinnable();
         determinateAnimation.stop();
         indeterminateAnimation.stop();
+        globalRotationAnimation.stop();
         displayedProgress.removeListener(animationInvalidation);
         indeterminatePhase.removeListener(animationInvalidation);
+        globalRotation.removeListener(animationInvalidation);
         loadingIndicator.progressProperty().removeListener(progressInvalidation);
         loadingIndicator.containerSizeProperty().removeListener(layoutInvalidation);
         loadingIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
@@ -134,29 +157,40 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             displayedProgress.set(0.0);
             if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
                 indeterminateAnimation.stop();
+                globalRotationAnimation.stop();
                 indeterminatePhase.set(0.0);
+                globalRotation.set(0.0);
             } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
                 configureIndeterminateAnimation();
                 indeterminateAnimation.play();
+                globalRotationAnimation.play();
             }
         } else {
             indeterminateAnimation.stop();
+            globalRotationAnimation.stop();
             indeterminatePhase.set(0.0);
+            globalRotation.set(0.0);
             animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
         }
     }
 
-    /// Configures the indeterminate phase loop with the current owner behavior timing.
+    /// Configures the indeterminate morph and global rotation loops.
     private void configureIndeterminateAnimation() {
-        indeterminateAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        Duration.ZERO,
-                        new KeyValue(indeterminatePhase, 0.0, M3Motion.LINEAR)
-                ),
-                new KeyFrame(
-                        M3Animation.motionBehavior(getSkinnable()).circularProgressIndeterminateCycleDuration(),
-                        new KeyValue(indeterminatePhase, INDETERMINATE_SHAPE_COUNT, M3Motion.LINEAR)
-                )
+        indeterminateAnimation.getKeyFrames().clear();
+        indeterminateAnimation.getKeyFrames().add(new KeyFrame(
+                Duration.ZERO,
+                new KeyValue(indeterminatePhase, 0.0, MORPH_INTERPOLATOR)
+        ));
+        for (int i = 1; i <= INDETERMINATE_SHAPE_COUNT; i++) {
+            indeterminateAnimation.getKeyFrames().add(new KeyFrame(
+                    MORPH_INTERVAL.multiply(i),
+                    new KeyValue(indeterminatePhase, i, MORPH_INTERPOLATOR)
+            ));
+        }
+
+        globalRotationAnimation.getKeyFrames().setAll(
+                new KeyFrame(Duration.ZERO, new KeyValue(globalRotation, 0.0, M3Motion.LINEAR)),
+                new KeyFrame(GLOBAL_ROTATION_DURATION, new KeyValue(globalRotation, 1.0, M3Motion.LINEAR))
         );
     }
 
@@ -191,8 +225,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             return;
         }
 
-        double rotationPhase = indeterminate ? easedIndeterminatePhase(phase) : phase;
-        double rotation = indeterminate ? rotationPhase / INDETERMINATE_SHAPE_COUNT : -phase * 0.5;
+        double rotation = indeterminate ? indeterminateRotationFor(phase) : -phase * 0.5;
         for (int i = 0; i < SAMPLE_COUNT; i++) {
             double angle = Math.PI * 2.0 * i / SAMPLE_COUNT;
             double rotatedAngle = angle + Math.PI * 2.0 * rotation;
@@ -216,27 +249,30 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                 : determinateRadiusFor(phase, angle);
     }
 
-    /// Returns a Catmull-Rom interpolated indeterminate radius multiplier.
+    /// Returns a morph interpolated indeterminate radius multiplier.
     private static double indeterminateRadiusFor(double phase, double angle) {
         double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
         int index = (int) Math.floor(normalized);
-        double fraction = smoothStep(normalized - index);
-        double radius = catmullCoefficient(INDETERMINATE_SHAPES, index, fraction, 0);
+        double fraction = normalized - index;
+        double[] current = INDETERMINATE_SHAPES[index];
+        double[] next = INDETERMINATE_SHAPES[(index + 1) % INDETERMINATE_SHAPE_COUNT];
+        double radius = interpolate(current[0], next[0], fraction);
         for (int harmonic = 1; harmonic <= HARMONIC_COUNT; harmonic++) {
             double harmonicAngle = harmonic * angle;
-            radius += catmullCoefficient(INDETERMINATE_SHAPES, index, fraction, harmonic)
+            radius += interpolate(current[harmonic], next[harmonic], fraction)
                     * Math.cos(harmonicAngle);
-            radius += catmullCoefficient(INDETERMINATE_SHAPES, index, fraction, HARMONIC_COUNT + harmonic)
+            radius += interpolate(current[HARMONIC_COUNT + harmonic], next[HARMONIC_COUNT + harmonic], fraction)
                     * Math.sin(harmonicAngle);
         }
         return clampRadius(radius);
     }
 
-    /// Returns an eased indeterminate phase that slows at each shape state.
-    private static double easedIndeterminatePhase(double phase) {
+    /// Returns the official-style indeterminate rotation phase for a morph segment.
+    private double indeterminateRotationFor(double phase) {
         double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
         int index = (int) Math.floor(normalized);
-        return index + smoothStep(normalized - index);
+        double progress = normalized - index;
+        return progress * QUARTER_ROTATION + index * QUARTER_ROTATION + globalRotation.get();
     }
 
     /// Returns a linearly interpolated determinate radius multiplier.
@@ -281,22 +317,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Interpolates between two scalar values.
     private static double interpolate(double start, double end, double fraction) {
         return start + (end - start) * fraction;
-    }
-
-    /// Returns one Catmull-Rom interpolated coefficient for the closed indeterminate sequence.
-    private static double catmullCoefficient(double[][] sequence, int index, double fraction, int coefficientIndex) {
-        int count = sequence.length;
-        double previous = sequence[(index + count - 1) % count][coefficientIndex];
-        double current = sequence[index][coefficientIndex];
-        double next = sequence[(index + 1) % count][coefficientIndex];
-        double following = sequence[(index + 2) % count][coefficientIndex];
-        double t2 = fraction * fraction;
-        double t3 = t2 * fraction;
-
-        return 0.5 * ((2.0 * current)
-                + (-previous + next) * fraction
-                + (2.0 * previous - 5.0 * current + 4.0 * next - following) * t2
-                + (-previous + 3.0 * current - 3.0 * next + following) * t3);
     }
 
     /// Returns a bounded radius multiplier to keep generated paths stable.
