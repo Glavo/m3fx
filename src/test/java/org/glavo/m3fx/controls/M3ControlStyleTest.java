@@ -10063,6 +10063,42 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that menus support printable-key type-ahead focus navigation.
+    @Test
+    void menuSupportsTypeAheadKeyboardNavigation() {
+        runOnFxThread(() -> {
+            M3MenuItem open = new M3MenuItem("Open");
+            M3MenuItem archive = new M3MenuItem("Archive");
+            M3MenuItem disabledSave = new M3MenuItem("Save");
+            M3MenuItem settings = new M3MenuItem("Settings");
+            disabledSave.setDisable(true);
+
+            M3Menu menu = new M3Menu(open, archive, disabledSave, settings);
+            menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+            menu.select(open);
+
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(new Pane(menu), 320.0, 220.0));
+                stage.show();
+                menu.applyCss();
+                menu.layout();
+
+                menu.fireEvent(keyTypedEvent("s"));
+                assertEquals(settings, menu.getSelectedItem());
+                assertTrue(settings.isFocused());
+                assertFalse(disabledSave.isFocused());
+
+                menu.fireEvent(keyTypedEvent("a"));
+                menu.fireEvent(keyTypedEvent("r"));
+                assertEquals(archive, menu.getSelectedItem());
+                assertTrue(archive.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that selection containers expose a focusable child through accessibility focus routing.
     @Test
     void selectionContainersExposeAccessibleFocusTargets() {
@@ -15772,5 +15808,10 @@ final class M3ControlStyleTest {
     /// Creates a key event for control behavior tests.
     private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
         return new KeyEvent(eventType, "", "", code, false, false, false, false);
+    }
+
+    /// Creates a typed key event for printable-key behavior tests.
+    private static KeyEvent keyTypedEvent(String character) {
+        return new KeyEvent(KeyEvent.KEY_TYPED, character, character, KeyCode.UNDEFINED, false, false, false, false);
     }
 }
