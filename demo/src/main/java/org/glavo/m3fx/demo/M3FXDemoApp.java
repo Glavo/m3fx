@@ -1333,20 +1333,30 @@ public final class M3FXDemoApp extends Application {
     /// Creates the loading indicator component page.
     private Node createLoadingIndicatorPage() {
         M3LoadingIndicator compactIndicator = new M3LoadingIndicator();
-        compactIndicator.setContainerSize(48.0);
-        compactIndicator.setIndicatorSize(32.0);
+        compactIndicator.setContainerSize(88.0);
+        compactIndicator.setIndicatorSize(66.0);
 
         M3LoadingIndicator regularIndicator = new M3LoadingIndicator();
+        regularIndicator.setContainerSize(112.0);
+        regularIndicator.setIndicatorSize(84.0);
 
         M3LoadingIndicator largeIndicator = new M3LoadingIndicator();
-        largeIndicator.setContainerSize(80.0);
-        largeIndicator.setIndicatorSize(56.0);
+        largeIndicator.setContainerSize(144.0);
+        largeIndicator.setIndicatorSize(108.0);
 
         M3LoadingIndicator quarterIndicator = new M3LoadingIndicator(0.25);
+        quarterIndicator.setContainerSize(112.0);
+        quarterIndicator.setIndicatorSize(84.0);
         M3LoadingIndicator halfIndicator = new M3LoadingIndicator(0.5);
+        halfIndicator.setContainerSize(112.0);
+        halfIndicator.setIndicatorSize(84.0);
         M3LoadingIndicator completeIndicator = new M3LoadingIndicator(1.0);
+        completeIndicator.setContainerSize(112.0);
+        completeIndicator.setIndicatorSize(84.0);
 
         M3LoadingIndicator disabledIndicator = new M3LoadingIndicator();
+        disabledIndicator.setContainerSize(112.0);
+        disabledIndicator.setIndicatorSize(84.0);
         disabledIndicator.setDisable(true);
 
         return createGallery(
