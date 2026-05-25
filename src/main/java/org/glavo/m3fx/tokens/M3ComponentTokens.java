@@ -148,6 +148,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the progress component tokens
     ProgressTokens progress();
 
+    /// Returns tokens used by loading indicators.
+    ///
+    /// @return the loading indicator component tokens
+    LoadingIndicatorTokens loadingIndicator();
+
     /// Returns tokens used by surfaces.
     ///
     /// @return the surface component tokens
@@ -256,6 +261,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param slider the slider component tokens
     /// @param chip the chip component tokens
     /// @param progress the progress component tokens
+    /// @param loadingIndicator the loading indicator component tokens
     /// @param surface the surface component tokens
     /// @param carousel the carousel component tokens
     /// @param card the card component tokens
@@ -300,6 +306,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             SliderTokens slider,
             ChipTokens chip,
             ProgressTokens progress,
+            LoadingIndicatorTokens loadingIndicator,
             SurfaceTokens surface,
             CarouselTokens carousel,
             CardTokens card,
@@ -344,6 +351,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 slider,
                 chip,
                 progress,
+                loadingIndicator,
                 surface,
                 carousel,
                 card,
@@ -423,6 +431,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double listSectionHeaderHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
         double progressLinearWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 3.0 : 0.0);
         double progressCircularWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 2.0 : 0.0);
+        double loadingIndicatorSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 48.0);
+        double loadingIndicatorShapeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 14.0);
+        double loadingIndicatorShapeSpacing = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 6.0 : 5.0);
         boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
         double navigationContentSpacing = density.apply(expressive ? 6.0 : 4.0);
         double navigationHorizontalPadding = density.apply(expressive ? 12.0 : 8.0);
@@ -683,6 +694,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         density.apply(15.0),
                         density.apply(4.0)
                 ),
+                new LoadingIndicatorTokens(
+                        loadingIndicatorSize,
+                        loadingIndicatorShapeSize,
+                        loadingIndicatorShapeSpacing
+                ),
                 new SurfaceTokens(surfaceContainerShape, surfaceContentPadding),
                 new CarouselTokens(
                         carouselTrackPadding,
@@ -811,6 +827,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, slider());
         append(builder, chip());
         append(builder, progress());
+        append(builder, loadingIndicator());
         append(builder, surface());
         append(builder, carousel());
         append(builder, card());
@@ -971,6 +988,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendProgressBarTrackRule(builder, ".m3-progress-bar .track", progress());
         appendProgressBarTrackRule(builder, ".m3-progress-bar .bar", progress());
         appendProgressIndicatorRule(builder, ".m3-progress-indicator", progress());
+        appendLoadingIndicatorRule(builder, ".m3-loading-indicator", loadingIndicator());
         appendSurfaceRule(builder, ".m3-surface", surface());
         appendCarouselTrackRule(builder, ".m3-carousel-track", carousel());
         appendCarouselItemRule(builder, ".m3-carousel-item", carousel());
@@ -1274,6 +1292,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-progress-circular-wave-amplitude", M3TokenCss.pixels(tokens.circularWaveAmplitude()));
         M3TokenCss.append(builder, "-m3-progress-circular-wavelength", M3TokenCss.pixels(tokens.circularWavelength()));
         M3TokenCss.append(builder, "-m3-progress-circular-track-gap", M3TokenCss.pixels(tokens.circularTrackGap()));
+    }
+
+    /// Appends loading indicator token declarations.
+    private static void append(StringBuilder builder, LoadingIndicatorTokens tokens) {
+        M3TokenCss.append(builder, "-m3-loading-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
+        M3TokenCss.append(builder, "-m3-loading-indicator-shape-size", M3TokenCss.pixels(tokens.shapeSize()));
+        M3TokenCss.append(builder, "-m3-loading-indicator-shape-spacing", M3TokenCss.pixels(tokens.shapeSpacing()));
     }
 
     /// Appends surface token declarations.
@@ -2269,6 +2294,19 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends a loading indicator token CSS rule.
+    private static void appendLoadingIndicatorRule(
+            StringBuilder builder,
+            String selector,
+            LoadingIndicatorTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
+        appendDeclaration(builder, "-m3-shape-size", M3TokenCss.pixels(tokens.shapeSize()));
+        appendDeclaration(builder, "-m3-shape-spacing", M3TokenCss.pixels(tokens.shapeSpacing()));
+        endRule(builder);
+    }
+
     /// Appends a surface token CSS rule.
     private static void appendSurfaceRule(StringBuilder builder, String selector, SurfaceTokens tokens) {
         beginRule(builder, selector);
@@ -3210,6 +3248,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(circularWaveAmplitude, "circularWaveAmplitude");
             validateNonNegative(circularWavelength, "circularWavelength");
             validateNonNegative(circularTrackGap, "circularTrackGap");
+        }
+    }
+
+    /// Tokens used by loading indicators.
+    ///
+    /// @param indicatorSize the preferred loading indicator layout size
+    /// @param shapeSize the size of each loading indicator shape
+    /// @param shapeSpacing the spacing between loading indicator shapes
+    @NotNullByDefault
+    record LoadingIndicatorTokens(
+            double indicatorSize,
+            double shapeSize,
+            double shapeSpacing
+    ) {
+        /// Creates loading indicator tokens.
+        public LoadingIndicatorTokens {
+            validateNonNegative(indicatorSize, "indicatorSize");
+            validateNonNegative(shapeSize, "shapeSize");
+            validateNonNegative(shapeSpacing, "shapeSpacing");
         }
     }
 

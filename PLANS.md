@@ -16,7 +16,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - The demo app is a separate Gradle subproject.
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
 - M3 Expressive currently has profile-specific color, typography, shape, component sizing, semantic motion scheme tokens, and motion behavior timings.
-- M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens, and loading indicators use a dedicated animated shape sequence control.
+- M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens, and loading indicators use a dedicated animated shape sequence control with profile-specific metrics.
 - M3 Expressive action controls use profile-specific button padding, connected button padding and spacing, split button menu sizing, FAB extended padding and menu spacing, segmented button padding, icon toggle spacing, tab indicator metrics, icon sizes, chip padding, and chip group spacing.
 - M3 Expressive inputs, selection controls, and sliders use profile-specific input padding, touch target, track thickness, and thumb sizing.
 - M3 Expressive navigation and list components use profile-specific spacing, padding, and selected-container shape tokens.
@@ -66,7 +66,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Popup-hosted menus and pickers propagate theme context, profile and brightness style classes, animation settings, the active motion scheme, and motion behavior timings into their popup content roots.
 - Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.
 - JavaFX scroll panes styled through `M3ScrollPanes` and virtualized list view flows support smooth wheel, focus, and programmatic scrolling that resolve the active motion scheme and animation settings, including horizontal-only content such as carousel viewports.
-- Progress component tokens include wavy linear and circular amplitude, wavelength, track gap, and linear stop indicator metrics; applications can override them per control through CSS.
+- Progress component tokens include wavy linear and circular amplitude, wavelength, track gap, and linear stop indicator metrics; loading indicator tokens include indicator size, shape size, and shape spacing. Applications can override them per control through CSS.
 - Button, FAB, icon, connected button group, segmented button group, icon toggle group, tab, chip, and chip group component tokens include Expressive-specific glyph sizing, horizontal padding, spacing, and tab active indicator metrics.
 - Connected button group and split button component tokens include Expressive-specific grouped action padding and split menu width.
 - Text input, text area, selection, and slider component tokens include Expressive-specific padding and interaction geometry.

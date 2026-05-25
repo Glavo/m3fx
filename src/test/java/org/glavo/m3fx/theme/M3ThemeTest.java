@@ -127,6 +127,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-indicator-size"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-content-padding"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-divider-thickness"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size"));
@@ -152,6 +153,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-tab-active-indicator"));
         assertTrue(theme.toControlStyleRules().contains(".m3-checkbox:hover"));
         assertTrue(theme.toControlStyleRules().contains(".m3-slider:pressed"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-loading-indicator"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item:disabled"));
         assertTrue(theme.toControlStyleRules().contains(".m3-slider:focus-visible .m3-state-layer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-card:focus-visible .m3-state-layer"));
@@ -182,6 +184,7 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().tab());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
+        assertNotNull(theme.tokens().componentTokens().loadingIndicator());
         assertNotNull(theme.tokens().componentTokens().divider());
         assertNotNull(theme.tokens().componentTokens().badge());
         assertNotNull(theme.tokens().componentTokens().topAppBar());
@@ -284,6 +287,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-menu-width: 52px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-toggle-button-group-spacing: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-menu-action-spacing: 14px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-size: 64px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-surface-content-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing: 16px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
@@ -301,6 +305,7 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().tab());
         assertNotNull(theme.tokens().componentTokens().slider());
         assertNotNull(theme.tokens().componentTokens().chip());
+        assertNotNull(theme.tokens().componentTokens().loadingIndicator());
         assertNotNull(theme.tokens().componentTokens().divider());
         assertNotNull(theme.tokens().componentTokens().badge());
         assertNotNull(theme.tokens().componentTokens().topAppBar());
@@ -329,6 +334,9 @@ final class M3ThemeTest {
         assertEquals(4.0, theme.tokens().componentTokens().tab().activeIndicatorHeight(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().chip().horizontalPadding(), 0.0001);
         assertEquals(10.0, theme.tokens().componentTokens().chip().groupHorizontalGap(), 0.0001);
+        assertEquals(64.0, theme.tokens().componentTokens().loadingIndicator().indicatorSize(), 0.0001);
+        assertEquals(18.0, theme.tokens().componentTokens().loadingIndicator().shapeSize(), 0.0001);
+        assertEquals(6.0, theme.tokens().componentTokens().loadingIndicator().shapeSpacing(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().field().horizontalPadding(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().textArea().verticalPadding(), 0.0001);
         assertEquals(48.0, theme.tokens().componentTokens().selection().touchTargetSize(), 0.0001);

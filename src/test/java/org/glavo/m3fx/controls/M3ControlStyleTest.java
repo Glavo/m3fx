@@ -6997,7 +6997,8 @@ final class M3ControlStyleTest {
     void expressiveProgressTokensApplyWavyDefaults() {
         M3ProgressBar progressBar = new M3ProgressBar(0.5);
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
-        Pane root = new Pane(progressBar, progressIndicator);
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+        Pane root = new Pane(progressBar, progressIndicator, loadingIndicator);
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.fromSeed(
@@ -7018,6 +7019,9 @@ final class M3ControlStyleTest {
         assertEquals(2.0, progressIndicator.getWaveAmplitude(), 0.0001);
         assertEquals(15.0, progressIndicator.getWavelength(), 0.0001);
         assertEquals(4.0, progressIndicator.getTrackGap(), 0.0001);
+        assertEquals(64.0, loadingIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(18.0, loadingIndicator.getShapeSize(), 0.0001);
+        assertEquals(6.0, loadingIndicator.getShapeSpacing(), 0.0001);
     }
 
     /// Verifies that m3fx progress controls create Material Design 3 skins.
