@@ -191,7 +191,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             return;
         }
 
-        double rotation = indeterminate ? phase / INDETERMINATE_SHAPE_COUNT : -phase * 0.5;
+        double rotationPhase = indeterminate ? easedIndeterminatePhase(phase) : phase;
+        double rotation = indeterminate ? rotationPhase / INDETERMINATE_SHAPE_COUNT : -phase * 0.5;
         for (int i = 0; i < SAMPLE_COUNT; i++) {
             double angle = Math.PI * 2.0 * i / SAMPLE_COUNT;
             double rotatedAngle = angle + Math.PI * 2.0 * rotation;
@@ -219,7 +220,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     private static double indeterminateRadiusFor(double phase, double angle) {
         double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
         int index = (int) Math.floor(normalized);
-        double fraction = normalized - index;
+        double fraction = smoothStep(normalized - index);
         double radius = catmullCoefficient(INDETERMINATE_SHAPES, index, fraction, 0);
         for (int harmonic = 1; harmonic <= HARMONIC_COUNT; harmonic++) {
             double harmonicAngle = harmonic * angle;
@@ -229,6 +230,13 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                     * Math.sin(harmonicAngle);
         }
         return clampRadius(radius);
+    }
+
+    /// Returns an eased indeterminate phase that slows at each shape state.
+    private static double easedIndeterminatePhase(double phase) {
+        double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
+        int index = (int) Math.floor(normalized);
+        return index + smoothStep(normalized - index);
     }
 
     /// Returns a linearly interpolated determinate radius multiplier.
