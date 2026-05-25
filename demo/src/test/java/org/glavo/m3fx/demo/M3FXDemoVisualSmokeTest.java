@@ -68,6 +68,7 @@ final class M3FXDemoVisualSmokeTest {
             "Button Groups",
             "Text Fields",
             "Date Pickers",
+            "Loading Indicator",
             "Progress",
             "Menus",
             "Navigation Drawer"

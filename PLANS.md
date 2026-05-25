@@ -16,7 +16,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - The demo app is a separate Gradle subproject.
 - Theme and token APIs are token-first and profile-aware, with baseline M3 and M3 Expressive profiles represented separately.
 - M3 Expressive currently has profile-specific color, typography, shape, component sizing, semantic motion scheme tokens, and motion behavior timings.
-- M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens.
+- M3 Expressive progress indicators use wavy linear and circular indicator geometry through profile-specific component tokens, and loading indicators use a dedicated animated shape sequence control.
 - M3 Expressive action controls use profile-specific button padding, connected button padding and spacing, split button menu sizing, FAB extended padding and menu spacing, segmented button padding, icon toggle spacing, tab indicator metrics, icon sizes, chip padding, and chip group spacing.
 - M3 Expressive inputs, selection controls, and sliders use profile-specific input padding, touch target, track thickness, and thumb sizing.
 - M3 Expressive navigation and list components use profile-specific spacing, padding, and selected-container shape tokens.
@@ -86,7 +86,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, navigation drawer, and collapsible navigation drawer groups.
 - App bars: top app bar variants and bottom app bar with configurable FAB alignment.
 - Menus and search: menu, menu item, submenu item, menu sections, menu button, search bar, and search view.
-- Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, linear progress, and circular progress.
+- Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, loading indicator, linear progress, and circular progress.
 - Expressive progress indicators render wavy active paths, separated tracks, and linear stop indicators while baseline progress indicators retain flat line and arc geometry.
 - Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, and accessibility routing.
 
@@ -94,7 +94,7 @@ This file tracks product status and planning only. Repository rules, code style,
 
 - The demo app uses a Material navigation drawer sidebar with collapsible component groups aligned with the Material component organization.
 - Demo pages cover major control families, common variants, disabled states, selected states, error states, composite workflows, and animated progress examples.
-- Progress and loading indicator demo pages explicitly show standard geometry alongside expressive wavy geometry using per-control CSS token overrides.
+- Progress demo pages explicitly show standard geometry alongside expressive wavy geometry using per-control CSS token overrides; the loading indicator page shows indeterminate, determinate, size, and disabled states for the dedicated loading control.
 - Unit tests cover style classes, token CSS metadata, skin creation, interaction events, state-layer/ripple behavior, accessibility attributes/actions, selection behavior, and packaging assumptions.
 - Snapshot-based visual tests render representative control families into report images and include automated checks for contrast, geometry, clipping, borders, and animation-state frames.
 - Recent visual regressions covered by tests include icon fallback glyph clipping, outlined text input notch geometry, segmented button selected borders, progress geometry, selection states, snackbar sizing, and trailing icon ripple behavior.

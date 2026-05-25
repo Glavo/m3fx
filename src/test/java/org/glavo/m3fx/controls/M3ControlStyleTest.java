@@ -89,6 +89,7 @@ import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
 import org.glavo.m3fx.skins.M3ListViewCellSkin;
 import org.glavo.m3fx.skins.M3ListViewSkin;
+import org.glavo.m3fx.skins.M3LoadingIndicatorSkin;
 import org.glavo.m3fx.skins.M3MenuSkin;
 import org.glavo.m3fx.skins.M3NavigationBarSkin;
 import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
@@ -6974,6 +6975,23 @@ final class M3ControlStyleTest {
         assertEquals(72.0, progressIndicator.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that loading indicator token properties are styleable from CSS.
+    @Test
+    void loadingIndicatorTokensAreStyleable() {
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+        loadingIndicator.setStyle("-m3-indicator-size: 72px; "
+                + "-m3-shape-size: 20px; "
+                + "-m3-shape-spacing: 8px;");
+
+        applyCss(loadingIndicator);
+
+        assertEquals(72.0, loadingIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(20.0, loadingIndicator.getShapeSize(), 0.0001);
+        assertEquals(8.0, loadingIndicator.getShapeSpacing(), 0.0001);
+        assertEquals(72.0, loadingIndicator.getPrefWidth(), 0.0001);
+        assertEquals(72.0, loadingIndicator.getPrefHeight(), 0.0001);
+    }
+
     /// Verifies that the expressive profile applies wavy progress defaults through generated CSS.
     @Test
     void expressiveProgressTokensApplyWavyDefaults() {
@@ -7007,12 +7025,15 @@ final class M3ControlStyleTest {
     void progressControlsCreateMaterialSkins() {
         M3ProgressBar progressBar = new M3ProgressBar(0.5);
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
 
         applyCss(progressBar);
         applyCss(progressIndicator);
+        applyCss(loadingIndicator);
 
         assertInstanceOf(M3ProgressBarSkin.class, progressBar.getSkin());
         assertInstanceOf(M3ProgressIndicatorSkin.class, progressIndicator.getSkin());
+        assertInstanceOf(M3LoadingIndicatorSkin.class, loadingIndicator.getSkin());
     }
 
     /// Verifies that progress controls expose accessible value, range, and indeterminate state.
@@ -7020,6 +7041,7 @@ final class M3ControlStyleTest {
     void progressControlsExposeAccessibleValues() {
         M3ProgressBar progressBar = new M3ProgressBar(0.42);
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.65);
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator(0.5);
         @Nullable AccessibleAttribute valueStringAttribute = M3Accessible.attribute("VALUE_STRING");
 
         assertEquals(false, progressBar.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
@@ -7039,8 +7061,17 @@ final class M3ControlStyleTest {
             assertEquals("65%", progressIndicator.queryAccessibleAttribute(valueStringAttribute));
         }
 
+        assertEquals(false, loadingIndicator.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
+        assertEquals(0.0, loadingIndicator.queryAccessibleAttribute(AccessibleAttribute.MIN_VALUE));
+        assertEquals(1.0, loadingIndicator.queryAccessibleAttribute(AccessibleAttribute.MAX_VALUE));
+        assertEquals(0.5, (Double) loadingIndicator.queryAccessibleAttribute(AccessibleAttribute.VALUE), 0.0001);
+        if (valueStringAttribute != null) {
+            assertEquals("50%", loadingIndicator.queryAccessibleAttribute(valueStringAttribute));
+        }
+
         progressBar.setProgress(-10.0);
         progressIndicator.setProgress(Double.NaN);
+        loadingIndicator.setProgress(-0.1);
 
         assertEquals(true, progressBar.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
         assertEquals(M3ProgressBar.INDETERMINATE_PROGRESS,
@@ -7056,6 +7087,32 @@ final class M3ControlStyleTest {
         if (valueStringAttribute != null) {
             assertEquals("Indeterminate", progressIndicator.queryAccessibleAttribute(valueStringAttribute));
         }
+        assertEquals(true, loadingIndicator.queryAccessibleAttribute(AccessibleAttribute.INDETERMINATE));
+        assertEquals(M3LoadingIndicator.INDETERMINATE_PROGRESS,
+                (Double) loadingIndicator.queryAccessibleAttribute(AccessibleAttribute.VALUE),
+                0.0001);
+        if (valueStringAttribute != null) {
+            assertEquals("Indeterminate", loadingIndicator.queryAccessibleAttribute(valueStringAttribute));
+        }
+    }
+
+    /// Verifies that the loading indicator skin lays out visible shape nodes.
+    @Test
+    void loadingIndicatorSkinLaysOutShapes() {
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator(0.5);
+        Pane root = new Pane(loadingIndicator);
+        Scene scene = new Scene(root, 120.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        loadingIndicator.resize(72.0, 72.0);
+        loadingIndicator.layout();
+
+        Set<Node> shapes = loadingIndicator.lookupAll(".m3-loading-indicator-shape");
+        assertEquals(4, shapes.size());
+        assertTrue(shapes.stream().allMatch(Node::isVisible));
+        assertTrue(shapes.stream().anyMatch(shape -> shape.getOpacity() >= 1.0));
+        assertTrue(shapes.stream().anyMatch(shape -> shape.getOpacity() < 1.0));
     }
 
     /// Verifies that the progress bar skin lays out determinate progress without Modena internals.
@@ -12451,6 +12508,8 @@ final class M3ControlStyleTest {
             indeterminateProgressBar.setPrefWidth(180.0);
             M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.72);
             M3ProgressIndicator indeterminateProgressIndicator = new M3ProgressIndicator();
+            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+            M3LoadingIndicator determinateLoadingIndicator = new M3LoadingIndicator(0.5);
 
             M3Surface surface = new M3Surface(visualLabel("Surface"));
             surface.setVariant(M3SurfaceVariant.SECONDARY_CONTAINER);
@@ -12641,7 +12700,9 @@ final class M3ControlStyleTest {
                             progressBar,
                             indeterminateProgressBar,
                             progressIndicator,
-                            indeterminateProgressIndicator
+                            indeterminateProgressIndicator,
+                            loadingIndicator,
+                            determinateLoadingIndicator
                     ),
                     visualSection("Surfaces", surface, filledCard, elevatedCard, outlinedCard, carousel),
                     visualSection("Feedback", banner, snackbar, snackbarHost, scrim, dialogPane),
@@ -12689,6 +12750,8 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, indeterminateProgressBar, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, progressIndicator, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, indeterminateProgressIndicator, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, loadingIndicator, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, determinateLoadingIndicator, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, surface, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, carousel, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(
@@ -13942,6 +14005,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.SLIDER, new M3Slider().getAccessibleRole());
         assertEquals(AccessibleRole.PROGRESS_INDICATOR, new M3ProgressBar().getAccessibleRole());
         assertEquals(AccessibleRole.PROGRESS_INDICATOR, new M3ProgressIndicator().getAccessibleRole());
+        assertEquals(AccessibleRole.PROGRESS_INDICATOR, new M3LoadingIndicator().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT_FIELD, new M3TextField().getAccessibleRole());
         assertEquals(AccessibleRole.PASSWORD_FIELD, new M3PasswordField().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT_AREA, new M3TextArea().getAccessibleRole());
@@ -14052,6 +14116,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3TabBar(), "/styles/controls/tab.css");
         assertUserAgentStylesheet(new M3ProgressBar(), "/styles/controls/progress.css");
         assertUserAgentStylesheet(new M3ProgressIndicator(), "/styles/controls/progress.css");
+        assertUserAgentStylesheet(new M3LoadingIndicator(), "/styles/controls/loading-indicator.css");
         assertUserAgentStylesheet(new M3Divider(), "/styles/controls/divider.css");
         assertUserAgentStylesheet(new M3Badge(), "/styles/controls/badge.css");
         assertUserAgentStylesheet(new M3TopAppBar(), "/styles/controls/top-app-bar.css");

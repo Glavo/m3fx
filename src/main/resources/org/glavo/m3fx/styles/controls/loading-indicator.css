@@ -1,0 +1,19 @@
+.m3-loading-indicator.m3-loading-indicator,
+.m3-loading-indicator.m3-loading-indicator:focused,
+.m3-loading-indicator.m3-loading-indicator:indeterminate {
+    -m3-indicator-size: 64px;
+    -m3-shape-size: 18px;
+    -m3-shape-spacing: 6px;
+}
+
+.m3-loading-indicator.m3-loading-indicator .m3-loading-indicator-shape,
+.m3-loading-indicator.m3-loading-indicator:focused .m3-loading-indicator-shape,
+.m3-loading-indicator.m3-loading-indicator:indeterminate .m3-loading-indicator-shape {
+    -fx-fill: -m3-color-primary;
+    -fx-stroke: transparent;
+    -fx-stroke-width: 0px;
+}
+
+.m3-loading-indicator:disabled {
+    -fx-opacity: 0.38;
+}

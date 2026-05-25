@@ -82,6 +82,7 @@ import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListSelectionMode;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3ListView;
+import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
@@ -1331,38 +1332,29 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the loading indicator component page.
     private Node createLoadingIndicatorPage() {
-        M3ProgressIndicator compactIndicator = new M3ProgressIndicator();
-        compactIndicator.setPrefSize(48.0, 48.0);
-        applyBaselineProgress(compactIndicator);
+        M3LoadingIndicator compactIndicator = new M3LoadingIndicator();
+        compactIndicator.setIndicatorSize(48.0);
+        compactIndicator.setShapeSize(14.0);
+        compactIndicator.setShapeSpacing(5.0);
 
-        M3ProgressIndicator regularIndicator = new M3ProgressIndicator();
-        regularIndicator.setPrefSize(64.0, 64.0);
-        applyBaselineProgress(regularIndicator);
+        M3LoadingIndicator regularIndicator = new M3LoadingIndicator();
 
-        M3ProgressBar indeterminateBar = new M3ProgressBar();
-        indeterminateBar.setPrefWidth(380.0);
-        applyBaselineProgress(indeterminateBar);
+        M3LoadingIndicator largeIndicator = new M3LoadingIndicator();
+        largeIndicator.setIndicatorSize(80.0);
+        largeIndicator.setShapeSize(22.0);
+        largeIndicator.setShapeSpacing(8.0);
 
-        M3ProgressIndicator expressiveCompactIndicator = new M3ProgressIndicator();
-        expressiveCompactIndicator.setPrefSize(48.0, 48.0);
-        applyExpressiveCircularProgress(expressiveCompactIndicator);
+        M3LoadingIndicator quarterIndicator = new M3LoadingIndicator(0.25);
+        M3LoadingIndicator halfIndicator = new M3LoadingIndicator(0.5);
+        M3LoadingIndicator completeIndicator = new M3LoadingIndicator(1.0);
 
-        M3ProgressIndicator expressiveRegularIndicator = new M3ProgressIndicator();
-        expressiveRegularIndicator.setPrefSize(64.0, 64.0);
-        applyExpressiveCircularProgress(expressiveRegularIndicator);
-
-        M3ProgressBar expressiveIndeterminateBar = new M3ProgressBar();
-        expressiveIndeterminateBar.setPrefWidth(380.0);
-        applyExpressiveLinearProgress(expressiveIndeterminateBar);
+        M3LoadingIndicator disabledIndicator = new M3LoadingIndicator();
+        disabledIndicator.setDisable(true);
 
         return createGallery(
-                createShowcaseGroup("Standard", compactIndicator, regularIndicator, indeterminateBar),
-                createShowcaseGroup(
-                        "Expressive Wavy",
-                        expressiveCompactIndicator,
-                        expressiveRegularIndicator,
-                        expressiveIndeterminateBar
-                )
+                createShowcaseGroup("Indeterminate", compactIndicator, regularIndicator, largeIndicator),
+                createShowcaseGroup("Determinate", quarterIndicator, halfIndicator, completeIndicator),
+                createShowcaseGroup("States", disabledIndicator)
         );
     }
 

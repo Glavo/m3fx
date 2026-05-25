@@ -234,6 +234,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Whether picker range synchronization has been queued for the next FX pulse.
     private boolean pickerSyncScheduled;
 
+    /// The generation used to ignore stale queued picker range synchronization.
+    private int pickerSyncGeneration;
+
     /// Whether editor text is currently being rewritten from selected dates.
     private boolean updatingEditorText;
 
@@ -962,9 +965,13 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             return;
         }
 
+        int generation = ++pickerSyncGeneration;
         pickerSyncScheduled = true;
         try {
             Platform.runLater(() -> {
+                if (generation != pickerSyncGeneration) {
+                    return;
+                }
                 pickerSyncScheduled = false;
                 if (!synchronizingPicker) {
                     syncRangeFromPicker();
@@ -978,6 +985,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Synchronizes field state from the popup picker.
     private void syncRangeFromPicker() {
+        pickerSyncGeneration++;
+        pickerSyncScheduled = false;
         boolean completeRange = picker.isRangeComplete();
         synchronizingFromPicker = true;
         try {
@@ -997,6 +1006,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         clearGeneratedErrorText();
 
         if (!synchronizingFromPicker) {
+            pickerSyncGeneration++;
+            pickerSyncScheduled = false;
             synchronizingPicker = true;
             try {
                 picker.setRange(getStartDate(), getEndDate());
