@@ -357,12 +357,15 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
         if (control instanceof M3SegmentedButton segmentedButton) {
             layoutSegmentedButtonStateLayer(segmentedButton, width, height);
+            stateLayer.animateOverlayOpacityFromOwnerState();
             return;
         }
         if (control instanceof M3Button button && layoutGroupedButtonStateLayer(button, width, height)) {
+            stateLayer.animateOverlayOpacityFromOwnerState();
             return;
         }
         stateLayer.layoutLayer(0.0, 0.0, width, height, stateLayerShapeRadius());
+        stateLayer.animateOverlayOpacityFromOwnerState();
     }
 
     /// Lays out segmented button feedback with position-specific corner radii.

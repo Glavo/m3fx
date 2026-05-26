@@ -108,6 +108,7 @@
     -fx-opacity: 0.10;
 }
 
+.m3-date-picker-day-cell:armed .m3-state-layer,
 .m3-date-picker-day-cell:pressed .m3-state-layer {
     -fx-opacity: 0.10;
 }

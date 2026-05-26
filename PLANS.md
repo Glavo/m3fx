@@ -63,6 +63,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Baseline and expressive profile hooks exist for shape and component token evolution.
 - Reusable Material motion constants, easing curves, semantic specs, standard/expressive motion schemes, and motion behavior timings exist for JavaFX animations and motion-adjacent interaction delays.
 - State layers, ripples, and CSS-resolved elevation transitions resolve the installed theme motion scheme when available.
+- State layer opacity is resolved from owner interaction properties and pseudo-classes so hover, focus-visible, pressed, and armed feedback remain consistent across custom controls and test-driven pseudo-class states.
 - Selection controls, indicators, text input details, popup surfaces, sheets, snackbars, search results, FAB menus, carousel scrolling, and determinate progress transitions now resolve semantic motion specs from the active motion scheme.
 - Popup-hosted menus and pickers propagate theme context, profile and brightness style classes, animation settings, the active motion scheme, and motion behavior timings into their popup content roots.
 - Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.
@@ -98,7 +99,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Progress demo pages explicitly show standard geometry alongside expressive wavy geometry using per-control CSS token overrides; the loading indicator page shows the dedicated loading control in the official default and contained forms.
 - Unit tests cover style classes, token CSS metadata, skin creation, interaction events, state-layer/ripple behavior, accessibility attributes/actions, selection behavior, and packaging assumptions.
 - Snapshot-based visual tests render representative control families into report images and include automated checks for contrast, geometry, clipping, borders, and animation-state frames.
-- Recent visual regressions covered by tests include icon fallback glyph clipping, outlined text input notch geometry, segmented button selected borders, progress geometry, selection states, snackbar sizing, and trailing icon ripple behavior.
+- Recent visual regressions covered by tests include icon fallback glyph clipping, outlined text input notch geometry, segmented button selected borders, progress geometry, selection states, snackbar sizing, trailing icon ripple behavior, and date picker day-cell state-layer feedback.
 - Expressive profile visual coverage checks real rendered component sizes, action-control padding, input padding, selection/slider geometry, tab indicators, profile root classes, fixed-target centering, date-cell alignment, menu/search/sheet metrics, card/snackbar metrics, and search bar height constraints in mixed-height layouts.
 - Dark expressive token-driven visual coverage renders representative action, input, selection, feedback, progress, date picker, and navigation controls without overriding generated dark theme colors.
 - Dark expressive popup visual coverage opens real menu and tooltip popups, checks inherited profile and brightness mode classes, and writes rendered snapshots for overlay review.

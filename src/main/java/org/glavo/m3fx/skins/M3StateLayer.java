@@ -8,7 +8,10 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.SetChangeListener;
+import javafx.css.PseudoClass;
 import javafx.scene.Node;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
@@ -27,6 +30,24 @@ import org.jetbrains.annotations.Nullable;
 /// A bounded Material Design 3 state layer with ripple animation support.
 @NotNullByDefault
 final class M3StateLayer extends Pane {
+    /// The pseudo-class used by button-like controls while their armed state is active.
+    private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
+
+    /// The pseudo-class used by JavaFX while a node is hovered.
+    private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
+
+    /// The pseudo-class used by JavaFX while a node has keyboard-visible focus.
+    private static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
+
+    /// The pseudo-class used by JavaFX while a node is pressed.
+    private static final PseudoClass PRESSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("pressed");
+
+    /// The state layer opacity used while a node is hovered.
+    private static final double HOVER_OVERLAY_OPACITY = 0.08;
+
+    /// The state layer opacity used while a node has focus-visible feedback.
+    private static final double FOCUS_OVERLAY_OPACITY = 0.10;
+
     /// The class applied to state layer containers.
     static final String STYLE_CLASS = "m3-state-layer-container";
 
@@ -38,6 +59,9 @@ final class M3StateLayer extends Pane {
 
     /// The opacity used by the animated ripple at the start of a press.
     private static final double RIPPLE_START_OPACITY = 0.18;
+
+    /// The state layer opacity used while a button-like control is armed.
+    private static final double ARMED_OVERLAY_OPACITY = 0.10;
 
     /// The persistent overlay node controlled by CSS pseudo-class rules.
     private final Region overlay = new Region();
@@ -54,12 +78,25 @@ final class M3StateLayer extends Pane {
     /// The overlay opacity animation timeline.
     private final Timeline overlayOpacityAnimation = new Timeline();
 
-    /// Handles interaction state changes that should animate CSS-resolved opacity.
-    private final ChangeListener<Boolean> interactionStateListener =
-            (observable, oldValue, newValue) -> animateOverlayOpacityFromCss();
-
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
+
+    /// Handles interaction state changes that should animate owner-state opacity.
+    private final ChangeListener<Boolean> interactionStateListener =
+            (observable, oldValue, newValue) -> animateOverlayOpacityFromOwnerState();
+
+    /// Handles owner pseudo-class changes that should animate owner-state opacity.
+    private final SetChangeListener<PseudoClass> pseudoClassStateListener =
+            change -> animateOverlayOpacityFromOwnerState();
+
+    /// Handles button armed changes that should expose the CSS armed pseudo-class.
+    private final ChangeListener<Boolean> buttonArmedStateListener = (observable, oldValue, newValue) -> {
+        Node owner = stateOwner;
+        if (owner != null) {
+            owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, newValue);
+        }
+        animateOverlayOpacityFromOwnerState();
+    };
 
     /// Tracks keyboard-visible focus state for the owner.
     private @Nullable M3FocusVisibleTracker focusVisibleTracker;
@@ -101,12 +138,17 @@ final class M3StateLayer extends Pane {
         }
         uninstallStateTransitions();
         stateOwner = owner;
-        focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateOverlayOpacityFromCss);
+        focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateOverlayOpacityFromOwnerState);
         focusVisibleTracker.install();
         owner.hoverProperty().addListener(interactionStateListener);
         owner.focusedProperty().addListener(interactionStateListener);
         owner.pressedProperty().addListener(interactionStateListener);
         owner.disabledProperty().addListener(interactionStateListener);
+        owner.getPseudoClassStates().addListener(pseudoClassStateListener);
+        if (owner instanceof ButtonBase button) {
+            owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, button.isArmed());
+            button.armedProperty().addListener(buttonArmedStateListener);
+        }
     }
 
     /// Removes opacity transition listeners from the current owner.
@@ -120,6 +162,11 @@ final class M3StateLayer extends Pane {
         owner.focusedProperty().removeListener(interactionStateListener);
         owner.pressedProperty().removeListener(interactionStateListener);
         owner.disabledProperty().removeListener(interactionStateListener);
+        owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
+        if (owner instanceof ButtonBase button) {
+            button.armedProperty().removeListener(buttonArmedStateListener);
+            owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, false);
+        }
         M3FocusVisibleTracker tracker = focusVisibleTracker;
         if (tracker != null) {
             tracker.uninstall();
@@ -291,8 +338,8 @@ final class M3StateLayer extends Pane {
         return rippleAnimation.getStatus() == Animation.Status.RUNNING;
     }
 
-    /// Animates from the current overlay opacity to the owner CSS-resolved opacity.
-    void animateOverlayOpacityFromCss() {
+    /// Animates from the current overlay opacity to the opacity resolved from the owner state.
+    void animateOverlayOpacityFromOwnerState() {
         Node owner = stateOwner;
         if (owner == null) {
             return;
@@ -300,8 +347,7 @@ final class M3StateLayer extends Pane {
 
         double startOpacity = overlay.getOpacity();
         overlayOpacityAnimation.stop();
-        owner.applyCss();
-        double targetOpacity = owner.isDisabled() ? 0.0 : overlay.getOpacity();
+        double targetOpacity = resolvedOverlayOpacity(owner);
         overlay.setOpacity(startOpacity);
 
         if (Double.compare(startOpacity, targetOpacity) == 0) {
@@ -326,6 +372,32 @@ final class M3StateLayer extends Pane {
                 )
         );
         M3Animation.playFromStart(owner, overlayOpacityAnimation);
+    }
+
+    /// Returns the target overlay opacity for the owner interaction state.
+    private double resolvedOverlayOpacity(Node owner) {
+        if (owner.isDisabled()) {
+            return 0.0;
+        }
+        if (isPressedLike(owner)) {
+            return ARMED_OVERLAY_OPACITY;
+        }
+        if (owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {
+            return FOCUS_OVERLAY_OPACITY;
+        }
+        if (owner.isHover() || owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)) {
+            return HOVER_OVERLAY_OPACITY;
+        }
+        return 0.0;
+    }
+
+    /// Returns whether the owner should show pressed-state feedback.
+    private static boolean isPressedLike(Node owner) {
+        if (owner.isPressed() || owner.getPseudoClassStates().contains(PRESSED_PSEUDO_CLASS)) {
+            return true;
+        }
+        return owner instanceof ButtonBase button
+                && (button.isArmed() || owner.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
     }
 
     /// Returns the node whose motion setting controls this state layer.

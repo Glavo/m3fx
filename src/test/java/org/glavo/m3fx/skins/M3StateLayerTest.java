@@ -41,9 +41,9 @@ final class M3StateLayerTest {
         assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
-    /// Verifies that CSS-resolved hover opacity is reached through an animation.
+    /// Verifies that owner-state hover opacity is reached through an animation.
     @Test
-    void stateLayerAnimatesCssResolvedHoverOpacity() {
+    void stateLayerAnimatesOwnerStateHoverOpacity() {
         runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
@@ -59,16 +59,16 @@ final class M3StateLayerTest {
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
 
             owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
-            stateLayer.animateOverlayOpacityFromCss();
+            stateLayer.animateOverlayOpacityFromOwnerState();
 
             assertEquals(0.0, overlay.getOpacity(), 0.0001);
             assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
         });
     }
 
-    /// Verifies that disabled motion applies CSS-resolved hover opacity without starting a transition.
+    /// Verifies that disabled motion applies owner-state hover opacity without starting a transition.
     @Test
-    void disabledMotionAppliesCssResolvedHoverOpacityImmediately() {
+    void disabledMotionAppliesOwnerStateHoverOpacityImmediately() {
         runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
@@ -83,7 +83,7 @@ final class M3StateLayerTest {
 
             Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
             owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
-            stateLayer.animateOverlayOpacityFromCss();
+            stateLayer.animateOverlayOpacityFromOwnerState();
 
             assertTrue(overlay.getOpacity() > 0.0);
             assertFalse(stateLayer.isOverlayOpacityAnimationRunning());
@@ -115,6 +115,7 @@ final class M3StateLayerTest {
         runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
+            M3MotionSettings.setAnimationsEnabled(owner, false);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
