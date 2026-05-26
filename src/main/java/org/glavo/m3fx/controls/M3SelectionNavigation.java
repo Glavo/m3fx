@@ -10,8 +10,10 @@ import javafx.scene.input.KeyEvent;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /// Shared child navigation helpers for M3FX selection containers.
 @NotNullByDefault
@@ -175,6 +177,42 @@ final class M3SelectionNavigation {
 
         @Nullable T anchor = focusAnchor(children, current, type);
         return anchor == null ? first(children, type) : anchor;
+    }
+
+    /// Returns the next enabled visible child whose normalized text starts with the supplied prefix.
+    static <T extends Node> @Nullable T typeAheadTarget(
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            String prefix,
+            Function<T, String> textProvider
+    ) {
+        Objects.requireNonNull(children, "children");
+        Objects.requireNonNull(type, "type");
+        Objects.requireNonNull(prefix, "prefix");
+        Objects.requireNonNull(textProvider, "textProvider");
+        if (prefix.isEmpty()) {
+            return null;
+        }
+
+        int childCount = children.size();
+        int currentIndex = current == null ? -1 : children.indexOf(current);
+        for (int offset = 1; offset <= childCount; offset++) {
+            @Nullable T selectable = selectable(
+                    children.get(Math.floorMod(currentIndex + offset, childCount)),
+                    type
+            );
+            if (selectable != null && normalizeTypeAheadText(textProvider.apply(selectable)).startsWith(prefix)) {
+                return selectable;
+            }
+        }
+        return null;
+    }
+
+    /// Returns text normalized for case-insensitive type-ahead matching.
+    static String normalizeTypeAheadText(String text) {
+        Objects.requireNonNull(text, "text");
+        return text.strip().toLowerCase(Locale.ROOT);
     }
 
     /// Returns the selection target implied by a navigation key.

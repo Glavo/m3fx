@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.PauseTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -22,6 +23,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -47,6 +49,9 @@ import java.util.Objects;
 public class M3NavigationDrawer extends Control {
     /// The base style class for M3FX navigation drawers.
     public static final String STYLE_CLASS = "m3-navigation-drawer";
+
+    /// The idle delay after which drawer type-ahead input starts a new search.
+    private static final Duration TYPE_AHEAD_RESET_DELAY = Duration.millis(1000.0);
 
     /// The mutable navigation drawer content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
@@ -87,6 +92,12 @@ public class M3NavigationDrawer extends Control {
     /// Handles item actions by selecting the fired item.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
+    /// The current printable-key prefix used for drawer type-ahead focus navigation.
+    private final StringBuilder typeAheadBuffer = new StringBuilder();
+
+    /// Clears the type-ahead prefix after the user stops typing.
+    private final PauseTransition typeAheadResetDelay = new PauseTransition(TYPE_AHEAD_RESET_DELAY);
+
     /// Updates installed item listeners when drawer content changes.
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
@@ -97,6 +108,7 @@ public class M3NavigationDrawer extends Control {
                 installChild(child);
             }
         }
+        clearTypeAheadBuffer();
         enforceSelectionPolicy();
         notifyDrawerContentChanged();
     };
@@ -321,7 +333,14 @@ public class M3NavigationDrawer extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
+        sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (newScene == null) {
+                clearTypeAheadBuffer();
+            }
+        });
+        typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
     }
 
     /// Applies keyboard navigation across enabled drawer items.
@@ -340,6 +359,67 @@ public class M3NavigationDrawer extends Control {
                 false,
                 true,
                 this::select
+        );
+    }
+
+    /// Moves focus to the next drawer item whose text matches the printable-key search prefix.
+    private void handleTypeAheadKeyTyped(KeyEvent event) {
+        Objects.requireNonNull(event, "event");
+        if (event.isAltDown() || event.isControlDown() || event.isMetaDown() || event.isShortcutDown()) {
+            return;
+        }
+
+        String character = event.getCharacter();
+        if (character.length() != 1 || Character.isISOControl(character.charAt(0)) || character.isBlank()) {
+            return;
+        }
+
+        appendTypeAheadCharacter(character);
+        typeAheadResetDelay.playFromStart();
+        @Nullable M3ListItem target = typeAheadTarget(typeAheadBuffer.toString());
+        if (target == null && typeAheadBuffer.length() > 1) {
+            resetTypeAheadBuffer(character);
+            target = typeAheadTarget(typeAheadBuffer.toString());
+        }
+        if (target == null) {
+            return;
+        }
+
+        if (target.isFocusTraversable()) {
+            target.requestFocus();
+        }
+        select(target);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        event.consume();
+    }
+
+    /// Appends one printable typed character to the current type-ahead prefix.
+    private void appendTypeAheadCharacter(String character) {
+        typeAheadBuffer.append(M3SelectionNavigation.normalizeTypeAheadText(character));
+    }
+
+    /// Replaces the current type-ahead prefix with one printable typed character.
+    private void resetTypeAheadBuffer(String character) {
+        clearTypeAheadBuffer();
+        appendTypeAheadCharacter(character);
+    }
+
+    /// Clears buffered type-ahead text and stops the pending reset timer.
+    private void clearTypeAheadBuffer() {
+        typeAheadBuffer.setLength(0);
+        typeAheadResetDelay.stop();
+    }
+
+    /// Returns the next enabled visible drawer item matching the normalized type-ahead prefix.
+    private @Nullable M3ListItem typeAheadTarget(String prefix) {
+        ObservableList<Node> content = flattenedContent();
+        @Nullable M3ListItem anchor = M3SelectionNavigation.focusAnchor(content, getSelectedItem(), M3ListItem.class);
+        return M3SelectionNavigation.typeAheadTarget(
+                content,
+                anchor,
+                M3ListItem.class,
+                prefix,
+                M3ListItem::getHeadlineText
         );
     }
 
@@ -540,6 +620,7 @@ public class M3NavigationDrawer extends Control {
                     installItem(item);
                 }
             }
+            clearTypeAheadBuffer();
             enforceSelectionPolicy();
             notifyDrawerContentChanged();
         };
@@ -547,6 +628,7 @@ public class M3NavigationDrawer extends Control {
         group.getItems().addListener(itemsListener);
 
         ChangeListener<Boolean> expandedListener = (observable, oldValue, newValue) -> {
+            clearTypeAheadBuffer();
             if (!newValue && group.getItems().contains(selectedItem.get())) {
                 selectItem(group.getHeaderItem());
             }

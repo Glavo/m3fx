@@ -34,7 +34,6 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -123,6 +122,7 @@ public class M3Menu extends Control {
                 }
             }
         }
+        clearTypeAheadBuffer();
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
@@ -508,7 +508,7 @@ public class M3Menu extends Control {
 
     /// Appends one printable typed character to the current type-ahead prefix.
     private void appendTypeAheadCharacter(String character) {
-        typeAheadBuffer.append(normalizeTypeAheadText(character));
+        typeAheadBuffer.append(M3SelectionNavigation.normalizeTypeAheadText(character));
     }
 
     /// Replaces the current type-ahead prefix with one printable typed character.
@@ -525,29 +525,15 @@ public class M3Menu extends Control {
 
     /// Returns the next enabled visible menu item matching the normalized type-ahead prefix.
     private @Nullable M3MenuItem typeAheadTarget(String prefix) {
-        if (prefix.isEmpty()) {
-            return null;
-        }
-
         @Nullable M3MenuItem anchor =
                 M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3MenuItem.class);
-        int childCount = getItems().size();
-        int currentIndex = anchor == null ? -1 : getItems().indexOf(anchor);
-        for (int offset = 1; offset <= childCount; offset++) {
-            Node child = getItems().get(Math.floorMod(currentIndex + offset, childCount));
-            if (child instanceof M3MenuItem item
-                    && !item.isDisabled()
-                    && item.isVisible()
-                    && normalizeTypeAheadText(item.getHeadlineText()).startsWith(prefix)) {
-                return item;
-            }
-        }
-        return null;
-    }
-
-    /// Returns text normalized for case-insensitive type-ahead matching.
-    private static String normalizeTypeAheadText(String text) {
-        return text.strip().toLowerCase(Locale.ROOT);
+        return M3SelectionNavigation.typeAheadTarget(
+                getItems(),
+                anchor,
+                M3MenuItem.class,
+                prefix,
+                M3MenuItem::getHeadlineText
+        );
     }
 
     /// Focuses a menu item and hides sibling submenu popups that no longer own focus.

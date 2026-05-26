@@ -4564,6 +4564,85 @@ final class M3ControlStyleTest {
                 .collect(Collectors.joining("\n")));
     }
 
+    /// Verifies that static lists support printable-key type-ahead focus and single selection.
+    @Test
+    void listPaneSupportsTypeAheadKeyboardNavigation() {
+        runOnFxThread(() -> {
+            M3ListItem archive = new M3ListItem("Archive");
+            M3ListItem settings = new M3ListItem("Settings");
+            M3ListItem search = new M3ListItem("Search");
+            settings.setDisable(true);
+            M3ListPane listPane = new M3ListPane(archive, settings, search);
+            listPane.setSelectionMode(M3ListSelectionMode.SINGLE);
+            Pane root = new Pane(listPane);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 320.0, 180.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                listPane.requestFocus();
+
+                listPane.fireEvent(keyTypedEvent("s"));
+
+                assertTrue(search.isFocused());
+                assertSame(search, listPane.getSelectedItem());
+                assertSame(search, listPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                listPane.fireEvent(keyTypedEvent("a"));
+
+                assertTrue(archive.isFocused());
+                assertSame(archive, listPane.getSelectedItem());
+                assertSame(archive, listPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that navigation drawers support printable-key type-ahead across expanded groups.
+    @Test
+    void navigationDrawerSupportsTypeAheadKeyboardNavigation() {
+        runOnFxThread(() -> {
+            M3ListItem overview = new M3ListItem("Overview");
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+            M3ListItem buttons = new M3ListItem("Buttons");
+            M3ListItem segmentedButtons = new M3ListItem("Segmented buttons");
+            M3ListItem splitButtons = new M3ListItem("Split buttons");
+            group.addItems(buttons, segmentedButtons, splitButtons);
+            group.setExpanded(true);
+            segmentedButtons.setDisable(true);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(overview, group);
+            Pane root = new Pane(drawer);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 360.0, 260.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                drawer.requestFocus();
+
+                drawer.fireEvent(keyTypedEvent("s"));
+
+                assertTrue(splitButtons.isFocused());
+                assertSame(splitButtons, drawer.getSelectedItem());
+                assertSame(splitButtons, drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                drawer.fireEvent(keyTypedEvent("o"));
+
+                assertTrue(overview.isFocused());
+                assertSame(overview, drawer.getSelectedItem());
+                assertSame(overview, drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that menu keyboard focus can land on submenu items without corrupting menu selection.
     @Test
     void menuKeyboardNavigationFocusesSubMenuItemsWithoutChangingSelection() {
