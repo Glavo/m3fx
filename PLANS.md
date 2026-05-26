@@ -83,12 +83,12 @@ This file tracks product status and planning only. Repository rules, code style,
 - Inputs and forms: text fields, password fields, text areas, text input layouts, validation helpers, validation summaries, form containers, supporting text, errors, counters, leading and trailing adornments, and clear buttons.
 - Selection: checkbox, radio button, switch, slider, chips, chip groups, segmented buttons, and segmented button groups.
 - Pickers: date picker, date range picker, time picker, picker fields, preset actions, dialogs, range constraints, keyboard adjustment, and accessibility actions.
-- Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, navigation drawer, and collapsible navigation drawer groups.
+- Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, navigation drawer, collapsible navigation drawer groups, and type-ahead drawer navigation.
 - App bars: top app bar variants and bottom app bar with configurable FAB alignment.
 - Menus and search: menu, menu item, submenu item, menu sections, menu button, type-ahead menu keyboard navigation, search bar, and search view.
 - Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, loading indicator default and contained variants, linear progress, and circular progress.
 - Expressive progress indicators render wavy active paths, separated tracks, and linear stop indicators while baseline progress indicators retain flat line and arc geometry.
-- Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, and accessibility routing.
+- Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, type-ahead navigation, and accessibility routing.
 
 ## Demo And Verification
 

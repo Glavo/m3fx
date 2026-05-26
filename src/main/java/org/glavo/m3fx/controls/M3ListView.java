@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.PauseTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -25,6 +26,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
+import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListViewSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -54,6 +56,9 @@ public class M3ListView<T> extends Control {
 
     /// The default fixed cell size hint, disabled by default.
     private static final double DEFAULT_FIXED_CELL_SIZE = 0.0;
+
+    /// The idle delay after which list view type-ahead input starts a new search.
+    private static final Duration TYPE_AHEAD_RESET_DELAY = Duration.millis(1000.0);
 
     /// The backing data items rendered by this view.
     private final ObservableList<T> items = FXCollections.observableArrayList();
@@ -134,8 +139,15 @@ public class M3ListView<T> extends Control {
     private final ReadOnlyObjectWrapper<@Nullable T> focusedItem =
             new ReadOnlyObjectWrapper<>(this, "focusedItem");
 
+    /// The current printable-key prefix used for list view type-ahead focus navigation.
+    private final StringBuilder typeAheadBuffer = new StringBuilder();
+
+    /// Clears the type-ahead prefix after the user stops typing.
+    private final PauseTransition typeAheadResetDelay = new PauseTransition(TYPE_AHEAD_RESET_DELAY);
+
     /// Updates selection and cells when data items change.
     private final ListChangeListener<T> itemsListener = change -> {
+        clearTypeAheadBuffer();
         trimSelectedIndices();
         trimFocusedIndex();
         if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE && selectedIndices.isEmpty()) {
@@ -621,7 +633,14 @@ public class M3ListView<T> extends Control {
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(true);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(itemsListener);
+        sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (newScene == null) {
+                clearTypeAheadBuffer();
+            }
+        });
+        typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
     }
 
     /// Applies the configured selection policy to a cell activation.
@@ -650,6 +669,82 @@ public class M3ListView<T> extends Control {
             default -> {
             }
         }
+    }
+
+    /// Moves focus to the next data item whose text matches the printable-key search prefix.
+    private void handleTypeAheadKeyTyped(KeyEvent event) {
+        Objects.requireNonNull(event, "event");
+        if (event.isAltDown() || event.isControlDown() || event.isMetaDown() || event.isShortcutDown()) {
+            return;
+        }
+
+        String character = event.getCharacter();
+        if (character.length() != 1 || Character.isISOControl(character.charAt(0)) || character.isBlank()) {
+            return;
+        }
+
+        appendTypeAheadCharacter(character);
+        typeAheadResetDelay.playFromStart();
+        int target = typeAheadTarget(typeAheadBuffer.toString());
+        if (target < 0 && typeAheadBuffer.length() > 1) {
+            resetTypeAheadBuffer(character);
+            target = typeAheadTarget(typeAheadBuffer.toString());
+        }
+        if (target < 0) {
+            return;
+        }
+
+        updateFocusedIndex(target, true);
+        if (getSelectionMode() == M3ListSelectionMode.SINGLE) {
+            selectOnly(target);
+        }
+        event.consume();
+    }
+
+    /// Appends one printable typed character to the current type-ahead prefix.
+    private void appendTypeAheadCharacter(String character) {
+        typeAheadBuffer.append(M3SelectionNavigation.normalizeTypeAheadText(character));
+    }
+
+    /// Replaces the current type-ahead prefix with one printable typed character.
+    private void resetTypeAheadBuffer(String character) {
+        clearTypeAheadBuffer();
+        appendTypeAheadCharacter(character);
+    }
+
+    /// Clears buffered type-ahead text and stops the pending reset timer.
+    private void clearTypeAheadBuffer() {
+        typeAheadBuffer.setLength(0);
+        typeAheadResetDelay.stop();
+    }
+
+    /// Returns the next data item index matching the normalized type-ahead prefix.
+    private int typeAheadTarget(String prefix) {
+        if (prefix.isEmpty() || getItems().isEmpty()) {
+            return -1;
+        }
+
+        int itemCount = getItems().size();
+        int anchor = navigationAnchorIndex();
+        for (int offset = 1; offset <= itemCount; offset++) {
+            int index = Math.floorMod(anchor + offset, itemCount);
+            T item = getItems().get(index);
+            if (isTypeAheadNavigable(item)
+                    && M3SelectionNavigation.normalizeTypeAheadText(typeAheadText(item)).startsWith(prefix)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /// Returns whether a data item can participate in list view type-ahead navigation.
+    private boolean isTypeAheadNavigable(T item) {
+        return !(item instanceof Node node) || !node.isDisabled() && node.isVisible();
+    }
+
+    /// Returns the text used for one data item's type-ahead matching.
+    private String typeAheadText(T item) {
+        return item instanceof M3ListItem listItem ? listItem.getHeadlineText() : String.valueOf(item);
     }
 
     /// Moves keyboard focus from a navigation event and selects rows in single-selection mode.

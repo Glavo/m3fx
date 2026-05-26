@@ -4602,6 +4602,78 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that virtualized lists support printable-key type-ahead focus and single selection.
+    @Test
+    void listViewSupportsTypeAheadKeyboardNavigation() {
+        runOnFxThread(() -> {
+            M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search", "Reports");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            Pane root = new Pane(listView);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 320.0, 180.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                listView.resize(280.0, 160.0);
+                root.applyCss();
+                root.layout();
+                listView.requestFocus();
+
+                listView.fireEvent(keyTypedEvent("s"));
+                listView.fireEvent(keyTypedEvent("e"));
+
+                assertEquals(2, listView.getFocusedIndex());
+                assertEquals(2, listView.getSelectedIndex());
+                assertEquals("Search", listView.getSelectedItem());
+
+                listView.fireEvent(keyTypedEvent("r"));
+
+                assertEquals(3, listView.getFocusedIndex());
+                assertEquals(3, listView.getSelectedIndex());
+                assertEquals("Reports", listView.getSelectedItem());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that virtualized list type-ahead uses M3ListItem headline text when data items are list items.
+    @Test
+    void listViewTypeAheadUsesListItemHeadlineText() {
+        runOnFxThread(() -> {
+            M3ListItem overview = new M3ListItem("Overview");
+            M3ListItem buttons = new M3ListItem("Buttons");
+            M3ListItem disabled = new M3ListItem("Search");
+            disabled.setDisable(true);
+            M3ListItem sheets = new M3ListItem("Sheets");
+            M3ListView<M3ListItem> listView = new M3ListView<>(overview, buttons, disabled, sheets);
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            Pane root = new Pane(listView);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 320.0, 220.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                listView.resize(280.0, 180.0);
+                root.applyCss();
+                root.layout();
+                listView.requestFocus();
+
+                listView.fireEvent(keyTypedEvent("s"));
+
+                assertEquals(3, listView.getFocusedIndex());
+                assertEquals(sheets, listView.getSelectedItem());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that navigation drawers support printable-key type-ahead across expanded groups.
     @Test
     void navigationDrawerSupportsTypeAheadKeyboardNavigation() {
