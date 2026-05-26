@@ -63,7 +63,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Baseline and expressive profile hooks exist for shape and component token evolution.
 - Reusable Material motion constants, easing curves, semantic specs, standard/expressive motion schemes, and motion behavior timings exist for JavaFX animations and motion-adjacent interaction delays.
 - State layers, ripples, and CSS-resolved elevation transitions resolve the installed theme motion scheme when available.
-- State layer opacity is resolved from owner interaction properties and pseudo-classes so hover, focus-visible, pressed, and armed feedback remain consistent across custom controls and test-driven pseudo-class states.
+- State layer opacity is resolved from installed state-layer tokens plus owner interaction properties and pseudo-classes so hover, focus-visible, pressed, and armed feedback remain consistent across custom controls, themed overrides, and test-driven pseudo-class states.
 - Selection controls, indicators, text input details, popup surfaces, sheets, snackbars, search results, FAB menus, carousel scrolling, and determinate progress transitions now resolve semantic motion specs from the active motion scheme.
 - Popup-hosted menus and pickers propagate theme context, profile and brightness style classes, animation settings, the active motion scheme, and motion behavior timings into their popup content roots.
 - Tooltip timing, submenu hover delays, and indeterminate progress cycle durations resolve profile-specific motion behavior timings where they are controlled by a scene owner.

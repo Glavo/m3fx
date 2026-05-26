@@ -11,6 +11,8 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -24,6 +26,9 @@ import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,11 +47,8 @@ final class M3StateLayer extends Pane {
     /// The pseudo-class used by JavaFX while a node is pressed.
     private static final PseudoClass PRESSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("pressed");
 
-    /// The state layer opacity used while a node is hovered.
-    private static final double HOVER_OVERLAY_OPACITY = 0.08;
-
-    /// The state layer opacity used while a node has focus-visible feedback.
-    private static final double FOCUS_OVERLAY_OPACITY = 0.10;
+    /// The fallback state layer tokens used when no theme is installed.
+    private static final M3StateLayerTokens FALLBACK_TOKENS = M3StateLayerTokens.baseline();
 
     /// The class applied to state layer containers.
     static final String STYLE_CLASS = "m3-state-layer-container";
@@ -59,9 +61,6 @@ final class M3StateLayer extends Pane {
 
     /// The opacity used by the animated ripple at the start of a press.
     private static final double RIPPLE_START_OPACITY = 0.18;
-
-    /// The state layer opacity used while a button-like control is armed.
-    private static final double ARMED_OVERLAY_OPACITY = 0.10;
 
     /// The persistent overlay node controlled by CSS pseudo-class rules.
     private final Region overlay = new Region();
@@ -379,16 +378,23 @@ final class M3StateLayer extends Pane {
         if (owner.isDisabled()) {
             return 0.0;
         }
+        M3StateLayerTokens tokens = stateLayerTokens(owner);
         if (isPressedLike(owner)) {
-            return ARMED_OVERLAY_OPACITY;
+            return tokens.pressedOpacity();
         }
         if (owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {
-            return FOCUS_OVERLAY_OPACITY;
+            return tokens.focusOpacity();
         }
         if (owner.isHover() || owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)) {
-            return HOVER_OVERLAY_OPACITY;
+            return tokens.hoverOpacity();
         }
         return 0.0;
+    }
+
+    /// Returns the state layer tokens for the owner node.
+    private static M3StateLayerTokens stateLayerTokens(Node owner) {
+        @Nullable M3Theme theme = findTheme(owner);
+        return theme == null ? FALLBACK_TOKENS : theme.tokens().stateLayerTokens();
     }
 
     /// Returns whether the owner should show pressed-state feedback.
@@ -398,6 +404,29 @@ final class M3StateLayer extends Pane {
         }
         return owner instanceof ButtonBase button
                 && (button.isArmed() || owner.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
+    }
+
+    /// Finds the installed theme that controls an owner node.
+    private static @Nullable M3Theme findTheme(Node owner) {
+        @Nullable Scene scene = owner.getScene();
+        if (scene != null) {
+            @Nullable M3Theme sceneTheme = M3ThemeManager.getTheme(scene);
+            if (sceneTheme != null) {
+                return sceneTheme;
+            }
+        }
+
+        @Nullable Node current = owner;
+        while (current != null) {
+            if (current instanceof Parent parent) {
+                @Nullable M3Theme parentTheme = M3ThemeManager.getTheme(parent);
+                if (parentTheme != null) {
+                    return parentTheme;
+                }
+            }
+            current = current.getParent();
+        }
+        return null;
     }
 
     /// Returns the node whose motion setting controls this state layer.

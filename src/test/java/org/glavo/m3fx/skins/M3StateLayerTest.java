@@ -13,6 +13,9 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3Density;
+import org.glavo.m3fx.tokens.M3StateLayerTokens;
+import org.glavo.m3fx.tokens.M3TokenSet;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -87,6 +90,50 @@ final class M3StateLayerTest {
 
             assertTrue(overlay.getOpacity() > 0.0);
             assertFalse(stateLayer.isOverlayOpacityAnimationRunning());
+        });
+    }
+
+    /// Verifies that installed theme tokens control runtime state layer opacity.
+    @Test
+    void stateLayerUsesInstalledThemeStateTokens() {
+        runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add("m3-button");
+            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+            M3Theme baseTheme = M3Theme.defaultTheme();
+            M3TokenSet baseTokens = baseTheme.tokens();
+            M3Theme tokenTheme = M3Theme.fromTokenSet(
+                    baseTheme.profile(),
+                    baseTheme.colorScheme(),
+                    M3Density.standard(),
+                    M3TokenSet.create(
+                            baseTokens.profile(),
+                            baseTokens.colorTokens(),
+                            baseTokens.typographyTokens(),
+                            baseTokens.shapeTokens(),
+                            baseTokens.elevationTokens(),
+                            baseTokens.motionTokens(),
+                            M3StateLayerTokens.create(0.21, 0.22, 0.23, 0.24, 0.25, 0.26),
+                            baseTokens.componentTokens()
+                    )
+            );
+
+            M3ThemeManager.install(scene, tokenTheme);
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+
+            Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            assertEquals(0.21, overlay.getOpacity(), 0.0001);
+
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
+            assertEquals(0.22, overlay.getOpacity(), 0.0001);
+
+            owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+            assertEquals(0.23, overlay.getOpacity(), 0.0001);
         });
     }
 
