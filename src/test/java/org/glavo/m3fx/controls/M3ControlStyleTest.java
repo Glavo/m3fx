@@ -4674,6 +4674,39 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that virtualized lists expose the visible focused row as their accessibility focus node.
+    @Test
+    void listViewReportsVisibleFocusedRowForAccessibility() {
+        runOnFxThread(() -> {
+            M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            Pane root = new Pane(listView);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 320.0, 220.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                listView.resize(280.0, 180.0);
+                root.applyCss();
+                root.layout();
+
+                listView.focusIndex(1);
+                root.applyCss();
+                root.layout();
+
+                Object focusNode = listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+
+                assertInstanceOf(M3ListItem.class, focusNode);
+                assertEquals("Settings", ((M3ListItem) focusNode).getHeadlineText());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that navigation drawers support printable-key type-ahead across expanded groups.
     @Test
     void navigationDrawerSupportsTypeAheadKeyboardNavigation() {

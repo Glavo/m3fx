@@ -224,6 +224,19 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         return cell.getListItem();
     }
 
+    /// Returns the rendered list item only when the requested index is currently attached to the scene.
+    ///
+    /// @param index the data item index to query
+    /// @return the attached rendered list item node, or `null` when the row is not currently materialized
+    public @Nullable Node getAttachedVisibleItem(int index) {
+        if (index < 0 || index >= getSkinnable().getItems().size()) {
+            return null;
+        }
+
+        @Nullable M3ListViewCell<T> cell = flow.findVisibleCell(index);
+        return cell == null ? null : cell.getListItem();
+    }
+
     /// Creates the virtual flow cell factory.
     private static <T> Callback<VirtualFlow<M3ListViewCell<T>>, M3ListViewCell<T>> createCellFactory(
             M3ListView<T> listView

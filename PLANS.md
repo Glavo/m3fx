@@ -88,7 +88,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Menus and search: menu, menu item, submenu item, menu sections, menu button, type-ahead menu keyboard navigation, search bar, and search view.
 - Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, loading indicator default and contained variants, linear progress, and circular progress.
 - Expressive progress indicators render wavy active paths, separated tracks, and linear stop indicators while baseline progress indicators retain flat line and arc geometry.
-- Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, type-ahead navigation, and accessibility routing.
+- Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, type-ahead navigation, visible-row accessibility focus, and accessibility routing.
 
 ## Demo And Verification
 

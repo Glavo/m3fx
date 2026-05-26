@@ -795,6 +795,16 @@ public class M3ListView<T> extends Control {
 
     /// Returns the current visible focus node for accessibility clients.
     private Node accessibleFocusNode() {
+        int index = focusedIndex.get();
+        if (index < 0) {
+            index = getSelectedIndex();
+        }
+        if (index >= 0 && getSkin() instanceof M3ListViewSkin<?> skin) {
+            @Nullable Node visibleItem = skin.getAttachedVisibleItem(index);
+            if (visibleItem != null) {
+                return visibleItem;
+            }
+        }
         return this;
     }
 
