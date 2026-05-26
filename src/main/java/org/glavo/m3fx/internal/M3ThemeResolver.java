@@ -51,6 +51,31 @@ public final class M3ThemeResolver {
         return null;
     }
 
+    /// Finds the root whose installed theme context should be copied into detached popup content.
+    ///
+    /// Scene-level installation is preferred so popup content receives the same root declarations as the owner
+    /// scene. If the scene has no installed theme, the owner and parent chain are searched for a locally installed
+    /// theme root.
+    ///
+    /// @param owner the node that owns the popup content
+    /// @return the root that supplies theme declarations, or `null` when no theme root is available
+    public static @Nullable Parent findThemeRoot(Node owner) {
+        Objects.requireNonNull(owner, "owner");
+        @Nullable Scene scene = owner.getScene();
+        if (scene != null && findTheme(scene) != null) {
+            return scene.getRoot();
+        }
+
+        @Nullable Node current = owner;
+        while (current != null) {
+            if (current instanceof Parent parent && M3ThemeManager.getTheme(parent) != null) {
+                return parent;
+            }
+            current = current.getParent();
+        }
+        return null;
+    }
+
     /// Finds the theme installed on a scene root.
     ///
     /// @param scene the scene whose root theme should be resolved

@@ -67,5 +67,40 @@ final class M3ThemeResolverTest {
         M3ThemeManager.install(root, theme);
 
         assertSame(theme, M3ThemeResolver.findTheme(child));
+        assertSame(root, M3ThemeResolver.findThemeRoot(child));
+    }
+
+    /// Verifies that scene roots are preferred as popup theme sources when a scene theme is installed.
+    @Test
+    void sceneRootSuppliesPopupThemeContext() {
+        Pane root = new Pane();
+        Pane localRoot = new Pane();
+        Pane child = new Pane();
+        root.getChildren().add(localRoot);
+        localRoot.getChildren().add(child);
+        Scene scene = new Scene(root);
+        M3Theme sceneTheme = M3Theme.defaultTheme();
+        M3Theme localTheme = M3Theme.fromSeed(Color.web("#006a6a"), M3Profile.EXPRESSIVE_2025, Brightness.DARK);
+
+        M3ThemeManager.install(scene, sceneTheme);
+        M3ThemeManager.install(localRoot, localTheme);
+
+        assertSame(root, M3ThemeResolver.findThemeRoot(child));
+    }
+
+    /// Verifies that local parent themes supply popup context when the scene has no installed theme.
+    @Test
+    void localParentSuppliesPopupThemeContextWithoutSceneTheme() {
+        Pane root = new Pane();
+        Pane localRoot = new Pane();
+        Pane child = new Pane();
+        root.getChildren().add(localRoot);
+        localRoot.getChildren().add(child);
+        Scene scene = new Scene(root);
+        M3Theme localTheme = M3Theme.defaultTheme();
+
+        M3ThemeManager.install(localRoot, localTheme);
+
+        assertSame(localRoot, M3ThemeResolver.findThemeRoot(child));
     }
 }

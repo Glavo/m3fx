@@ -28,6 +28,7 @@ import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -723,8 +724,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             popupContent.getStylesheets().add(fieldStylesheet);
         }
 
-        Parent root = scene.getRoot();
-        M3ThemeManager.copyThemeContext(root, popupContent);
+        @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(this);
+        if (themeRoot != null) {
+            M3ThemeManager.copyThemeContext(themeRoot, popupContent);
+        }
         M3Animation.copyResolvedMotionSettings(this, popupContent);
         double fieldWidth = Math.max(0.0, inputLayout.getWidth());
         popupContent.setMinWidth(Math.max(fieldWidth, popupContent.minWidth(-1.0)));

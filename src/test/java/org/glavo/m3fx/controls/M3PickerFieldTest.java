@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests [M3DatePickerField] and [M3TimePickerField] value editing, validation, and skin installation.
@@ -253,6 +255,36 @@ final class M3PickerFieldTest {
 
                 field.getPicker().setValue(LocalDate.of(2026, 5, 20));
                 assertEquals(LocalDate.of(2026, 5, 20), field.getValue());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that picker popup content inherits a locally installed parent theme.
+    @Test
+    void pickerFieldPopupInheritsLocalParentThemeContext() {
+        runOnFxThread(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+            Pane localRoot = new Pane(field);
+            Pane root = new Pane(localRoot);
+            Scene scene = new Scene(root, 420.0, 180.0);
+            Stage stage = new Stage();
+            M3Theme localTheme = M3Theme.defaultTheme();
+
+            try {
+                M3ThemeManager.install(localRoot, localTheme);
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                localRoot.resizeRelocate(0.0, 0.0, 420.0, 180.0);
+                field.resizeRelocate(24.0, 24.0, 320.0, 72.0);
+                root.layout();
+
+                field.showPicker();
+
+                Parent popupRoot = assertInstanceOf(Parent.class, field.getPicker().getParent());
+                assertSame(localTheme, M3ThemeManager.getTheme(popupRoot));
             } finally {
                 stage.close();
             }

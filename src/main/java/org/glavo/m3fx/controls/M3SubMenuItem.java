@@ -556,8 +556,13 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Returns the root that should supply looked-up theme tokens for the submenu popup.
     private Parent popupThemeSource(Scene scene) {
-        if (ownerMenu != null && M3ThemeResolver.findTheme(ownerMenu) != null) {
-            return ownerMenu;
+        @Nullable Parent ownerMenuThemeRoot = ownerMenu == null ? null : M3ThemeResolver.findThemeRoot(ownerMenu);
+        if (ownerMenuThemeRoot != null) {
+            return ownerMenuThemeRoot;
+        }
+        @Nullable Parent itemThemeRoot = M3ThemeResolver.findThemeRoot(this);
+        if (itemThemeRoot != null) {
+            return itemThemeRoot;
         }
         return scene.getRoot();
     }
