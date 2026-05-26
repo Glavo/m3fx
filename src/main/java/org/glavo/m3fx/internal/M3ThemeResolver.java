@@ -32,7 +32,7 @@ public final class M3ThemeResolver {
         Objects.requireNonNull(owner, "owner");
         @Nullable Scene scene = owner.getScene();
         if (scene != null) {
-            @Nullable M3Theme sceneTheme = M3ThemeManager.getTheme(scene);
+            @Nullable M3Theme sceneTheme = findTheme(scene);
             if (sceneTheme != null) {
                 return sceneTheme;
             }
@@ -49,5 +49,14 @@ public final class M3ThemeResolver {
             current = current.getParent();
         }
         return null;
+    }
+
+    /// Finds the theme installed on a scene root.
+    ///
+    /// @param scene the scene whose root theme should be resolved
+    /// @return the installed scene theme, or `null` when the scene has no theme metadata
+    public static @Nullable M3Theme findTheme(Scene scene) {
+        Objects.requireNonNull(scene, "scene");
+        return M3ThemeManager.getTheme(scene);
     }
 }

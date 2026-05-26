@@ -11,6 +11,7 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.stage.Window;
+import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -144,7 +145,7 @@ public class M3Dialog<R> extends Dialog<R> {
         }
 
         @Nullable Scene ownerScene = owner.getScene();
-        return ownerScene == null ? null : M3ThemeManager.getTheme(ownerScene);
+        return ownerScene == null ? null : M3ThemeResolver.findTheme(ownerScene);
     }
 
     /// Adds the shared M3FX stylesheet to the dialog pane.

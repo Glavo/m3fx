@@ -27,6 +27,7 @@ import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -555,7 +556,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Returns the root that should supply looked-up theme tokens for the submenu popup.
     private Parent popupThemeSource(Scene scene) {
-        if (ownerMenu != null && M3ThemeManager.getTheme(ownerMenu) != null) {
+        if (ownerMenu != null && M3ThemeResolver.findTheme(ownerMenu) != null) {
             return ownerMenu;
         }
         return scene.getRoot();

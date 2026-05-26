@@ -50,6 +50,7 @@ final class M3ThemeResolverTest {
         M3ThemeManager.install(root, parentTheme);
         M3ThemeManager.install(scene, sceneTheme);
 
+        assertSame(sceneTheme, M3ThemeResolver.findTheme(scene));
         assertSame(sceneTheme, M3ThemeResolver.findTheme(child));
     }
 

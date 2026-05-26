@@ -26,6 +26,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -458,7 +459,7 @@ public class M3Tooltip extends PopupControl {
             return;
         }
 
-        @Nullable M3Theme inheritedTheme = M3ThemeManager.getTheme(scene);
+        @Nullable M3Theme inheritedTheme = M3ThemeResolver.findTheme(scene);
         if (inheritedTheme != null) {
             setInheritedTheme(inheritedTheme);
         } else if (themeInherited) {

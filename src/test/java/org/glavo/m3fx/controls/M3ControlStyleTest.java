@@ -11197,6 +11197,7 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(root, false);
         checkBox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         slider.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         tab.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
