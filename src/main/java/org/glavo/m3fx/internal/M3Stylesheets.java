@@ -30,6 +30,13 @@ public final class M3Stylesheets {
         return stylesheet("base.css");
     }
 
+    /// Returns the fallback token stylesheet URL.
+    ///
+    /// @return the fallback token stylesheet URL
+    public static String fallbackStylesheet() {
+        return stylesheet("fallback.css");
+    }
+
     /// Returns a control-specific m3fx stylesheet URL.
     ///
     /// @param name the stylesheet file name under the bundled `controls` stylesheet directory

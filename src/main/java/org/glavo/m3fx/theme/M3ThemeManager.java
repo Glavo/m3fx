@@ -118,7 +118,7 @@ public final class M3ThemeManager {
 
         String stylesheet = stylesheetUrl();
         List<String> stylesheets = scene.getStylesheets();
-        moveOrAdd(stylesheets, stylesheet, 0);
+        moveOrAdd(stylesheets, stylesheet, baseStylesheetIndex(stylesheets));
     }
 
     /// Adds the generated theme stylesheet to a scene.
@@ -292,7 +292,13 @@ public final class M3ThemeManager {
     /// Returns the insertion index for the generated theme stylesheet.
     private static int themeStylesheetIndex(List<String> stylesheets) {
         int baseStylesheetIndex = stylesheets.indexOf(stylesheetUrl());
-        return baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : 0;
+        return baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : baseStylesheetIndex(stylesheets);
+    }
+
+    /// Returns the insertion index for the base stylesheet.
+    private static int baseStylesheetIndex(List<String> stylesheets) {
+        int fallbackStylesheetIndex = stylesheets.indexOf(M3Stylesheets.fallbackStylesheet());
+        return fallbackStylesheetIndex >= 0 ? fallbackStylesheetIndex + 1 : 0;
     }
 
     /// Merges existing root style declarations with generated theme declarations.

@@ -592,9 +592,10 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, theme);
         root.applyCss();
 
-        assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
-        assertEquals(M3ThemeManager.themeStylesheetUrl(theme), scene.getStylesheets().get(1));
-        assertEquals(applicationStylesheet, scene.getStylesheets().get(2));
+        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
+        assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(1));
+        assertEquals(M3ThemeManager.themeStylesheetUrl(theme), scene.getStylesheets().get(2));
+        assertEquals(applicationStylesheet, scene.getStylesheets().get(3));
         assertEquals(320.0, navigationDrawer.getMinWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getPrefWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getMaxWidth(), 0.0001);
@@ -632,9 +633,10 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, M3Theme.fromSeed(Color.web("#006a6a")));
         root.applyCss();
 
-        assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
-        assertEquals(M3ThemeManager.themeStylesheetUrl(M3Theme.fromSeed(Color.web("#006a6a"))), scene.getStylesheets().get(1));
-        assertEquals(applicationStylesheet, scene.getStylesheets().get(2));
+        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
+        assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(1));
+        assertEquals(M3ThemeManager.themeStylesheetUrl(M3Theme.fromSeed(Color.web("#006a6a"))), scene.getStylesheets().get(2));
+        assertEquals(applicationStylesheet, scene.getStylesheets().get(3));
         assertSeedButtonMetrics(button);
     }
 
@@ -943,7 +945,7 @@ final class M3ThemeTest {
         assertEquals(48.0, tab.getContainerHeight(), 0.0001);
         assertEquals(16.0, tab.getHorizontalPadding(), 0.0001);
         assertEquals(3.0, tab.getActiveIndicatorHeight(), 0.0001);
-        assertEquals(2, scene.getStylesheets().size());
+        assertEquals(3, scene.getStylesheets().size());
     }
 
     /// Verifies that generated component stylesheets apply utility component tokens.

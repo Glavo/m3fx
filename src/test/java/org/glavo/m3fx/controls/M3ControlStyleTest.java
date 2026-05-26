@@ -174,6 +174,55 @@ final class M3ControlStyleTest {
         Platform.setImplicitExit(false);
     }
 
+    /// Verifies that standalone control stylesheets provide fallback color tokens without requiring a theme.
+    @Test
+    void standaloneControlStylesheetsResolveFallbackColorTokens() {
+        Logger cssLogger = Logger.getLogger("javafx.css");
+        Logger cssStyleHelperLogger = Logger.getLogger("javafx.scene.CssStyleHelper");
+        List<LogRecord> cssWarnings = new ArrayList<>();
+        Handler handler = new Handler() {
+            /// Captures JavaFX CSS warnings emitted while fallback token styles are resolved.
+            @Override
+            public void publish(LogRecord record) {
+                if (record.getLevel().intValue() >= Level.WARNING.intValue()) {
+                    cssWarnings.add(record);
+                }
+            }
+
+            /// Flushes captured records.
+            @Override
+            public void flush() {
+            }
+
+            /// Closes this in-memory handler.
+            @Override
+            public void close() {
+            }
+        };
+        cssLogger.addHandler(handler);
+        cssStyleHelperLogger.addHandler(handler);
+        try {
+            runOnFxThread(() -> {
+                M3Button button = new M3Button("Button");
+                M3ListItem listItem = new M3ListItem("List item");
+                M3Menu menu = new M3Menu(new M3MenuItem("Menu item"));
+                FlowPane root = new FlowPane(12.0, 12.0, button, listItem, menu);
+                new Scene(root, 480.0, 220.0);
+
+                root.applyCss();
+                root.layout();
+            });
+        } finally {
+            cssLogger.removeHandler(handler);
+            cssStyleHelperLogger.removeHandler(handler);
+        }
+
+        assertTrue(cssWarnings.stream().noneMatch(M3ControlStyleTest::isColorTokenCssWarning),
+                () -> cssWarnings.stream()
+                        .map(record -> record.getLevel() + ": " + record.getMessage())
+                        .collect(Collectors.joining("\n")));
+    }
+
     /// Verifies that button variants update their style classes.
     @Test
     void buttonVariantUpdatesStyleClass() {
@@ -16029,6 +16078,14 @@ final class M3ControlStyleTest {
     /// Creates a key event for control behavior tests.
     private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
         return new KeyEvent(eventType, "", "", code, false, false, false, false);
+    }
+
+    /// Returns whether a JavaFX CSS warning indicates unresolved M3FX color tokens.
+    private static boolean isColorTokenCssWarning(LogRecord record) {
+        String message = record.getMessage();
+        return message != null
+                && (message.contains("-m3-color-")
+                || message.contains("ClassCastException") && message.contains("-fx-background-color"));
     }
 
     /// Creates a typed key event for printable-key behavior tests.
