@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -16,6 +17,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -46,6 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests [M3TimePicker] API behavior, skin interaction, and visual rendering.
 @NotNullByDefault
 final class M3TimePickerTest {
+    /// The pseudo-class used to verify pressed-like time cell feedback in visual tests.
+    private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
+
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -214,6 +219,45 @@ final class M3TimePickerTest {
         });
     }
 
+    /// Verifies that an armed time cell shows the Material state layer.
+    @Test
+    void timePickerCellShowsArmedStateLayer() {
+        runOnFxThread(() -> {
+            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            M3MotionSettings.setAnimationsEnabled(false);
+            try {
+                M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
+                picker.setMinuteStep(15);
+                Pane root = new Pane(picker);
+                root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+                Scene scene = new Scene(root, 560.0, 360.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                root.applyCss();
+                picker.resize(500.0, 320.0);
+                root.resize(560.0, 360.0);
+                root.layout();
+
+                ButtonBase targetCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "11");
+                WritableImage normalImage = snapshotImageOnFxThread(root);
+
+                targetCell.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, true);
+                assertTrue(targetCell.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
+                targetCell.applyCss();
+                targetCell.requestLayout();
+                root.layout();
+
+                Node stateLayer = targetCell.lookup(".m3-state-layer");
+                assertTrue(stateLayer.getOpacity() >= 0.09);
+
+                WritableImage armedImage = snapshotImageOnFxThread(root);
+                assertSnapshotAreaChanged(normalImage, armedImage, targetCell, 16);
+            } finally {
+                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            }
+        });
+    }
+
     /// Returns a time cell by style class and visible text.
     private static ButtonBase cellByText(M3TimePicker picker, String styleClass, String text) {
         for (Node node : picker.lookupAll("." + styleClass)) {
@@ -331,6 +375,33 @@ final class M3TimePickerTest {
                 reference,
                 minimumDistance
         ), () -> "No contrasting pixels found for " + node);
+    }
+
+    /// Verifies that a node's rendered bounds changed between two snapshots.
+    private static void assertSnapshotAreaChanged(
+            WritableImage before,
+            WritableImage after,
+            Node node,
+            int minimumChangedPixels
+    ) {
+        var bounds = node.localToScene(node.getBoundsInLocal());
+        int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
+        int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
+        int endX = Math.min((int) before.getWidth(), (int) Math.ceil(bounds.getMaxX()));
+        int endY = Math.min((int) before.getHeight(), (int) Math.ceil(bounds.getMaxY()));
+        int changedPixels = 0;
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                if (before.getPixelReader().getArgb(x, y) != after.getPixelReader().getArgb(x, y)) {
+                    changedPixels++;
+                }
+            }
+        }
+
+        int finalChangedPixels = changedPixels;
+        assertTrue(finalChangedPixels >= minimumChangedPixels,
+                () -> "changedPixels=" + finalChangedPixels + ", minimum=" + minimumChangedPixels);
     }
 
     /// Returns whether a snapshot area contains pixels that contrast with a reference color.

@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -13,6 +14,7 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -45,6 +47,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests [M3DateRangePicker] API behavior, skin layout, and visual rendering.
 @NotNullByDefault
 final class M3DateRangePickerTest {
+    /// The pseudo-class used to verify pressed-like day cell feedback in visual tests.
+    private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
+
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -201,6 +206,45 @@ final class M3DateRangePickerTest {
         });
     }
 
+    /// Verifies that an armed range-picker day cell shows the Material state layer.
+    @Test
+    void dateRangePickerDayCellShowsArmedStateLayer() {
+        runOnFxThread(() -> {
+            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            M3MotionSettings.setAnimationsEnabled(false);
+            try {
+                M3DateRangePicker picker = new M3DateRangePicker();
+                picker.setDisplayedMonth(YearMonth.of(2026, 5));
+                Pane root = new Pane(picker);
+                root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+                Scene scene = new Scene(root, 420.0, 360.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                root.applyCss();
+                picker.resize(360.0, 340.0);
+                root.resize(420.0, 360.0);
+                root.layout();
+
+                ButtonBase targetCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
+                WritableImage normalImage = snapshotImageOnFxThread(root);
+
+                targetCell.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, true);
+                assertTrue(targetCell.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
+                targetCell.applyCss();
+                targetCell.requestLayout();
+                root.layout();
+
+                Node stateLayer = targetCell.lookup(".m3-state-layer");
+                assertTrue(stateLayer.getOpacity() >= 0.09);
+
+                WritableImage armedImage = snapshotImageOnFxThread(root);
+                assertSnapshotAreaChanged(normalImage, armedImage, targetCell, 16);
+            } finally {
+                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            }
+        });
+    }
+
     /// Returns a day cell by date.
     private static ButtonBase dayCellForDate(M3DateRangePicker picker, LocalDate date) {
         for (Node node : picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)) {
@@ -318,6 +362,33 @@ final class M3DateRangePickerTest {
                 reference,
                 minimumDistance
         ), () -> "No contrasting pixels found for " + node);
+    }
+
+    /// Verifies that a node's rendered bounds changed between two snapshots.
+    private static void assertSnapshotAreaChanged(
+            WritableImage before,
+            WritableImage after,
+            Node node,
+            int minimumChangedPixels
+    ) {
+        var bounds = node.localToScene(node.getBoundsInLocal());
+        int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
+        int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
+        int endX = Math.min((int) before.getWidth(), (int) Math.ceil(bounds.getMaxX()));
+        int endY = Math.min((int) before.getHeight(), (int) Math.ceil(bounds.getMaxY()));
+        int changedPixels = 0;
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                if (before.getPixelReader().getArgb(x, y) != after.getPixelReader().getArgb(x, y)) {
+                    changedPixels++;
+                }
+            }
+        }
+
+        int finalChangedPixels = changedPixels;
+        assertTrue(finalChangedPixels >= minimumChangedPixels,
+                () -> "changedPixels=" + finalChangedPixels + ", minimum=" + minimumChangedPixels);
     }
 
     /// Returns whether a snapshot area contains pixels that contrast with a reference color.

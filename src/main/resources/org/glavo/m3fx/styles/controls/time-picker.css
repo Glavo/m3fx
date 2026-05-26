@@ -104,6 +104,7 @@
     -fx-opacity: 0.10;
 }
 
+.m3-time-picker-cell:armed .m3-state-layer,
 .m3-time-picker-cell:pressed .m3-state-layer {
     -fx-opacity: 0.10;
 }
