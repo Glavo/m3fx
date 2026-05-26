@@ -4459,6 +4459,36 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that menu button popups inherit a locally installed parent theme.
+    @Test
+    void menuButtonPopupInheritsLocalParentThemeContext() {
+        runOnFxThread(() -> {
+            M3MenuItem archive = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("More", archive);
+            M3Theme localTheme = M3Theme.defaultTheme();
+            Stage stage = new Stage();
+            try {
+                Pane localRoot = new Pane(menuButton);
+                Pane root = new Pane(localRoot);
+                M3ThemeManager.install(localRoot, localTheme);
+                stage.setScene(new Scene(root, 320.0, 160.0));
+                stage.show();
+                root.applyCss();
+                localRoot.resizeRelocate(0.0, 0.0, 320.0, 160.0);
+                menuButton.resizeRelocate(24.0, 24.0, 120.0, 40.0);
+                root.layout();
+
+                menuButton.showMenu();
+
+                assertTrue(menuButton.isShowing());
+                assertSame(localTheme, M3ThemeManager.getTheme(menuButton.getMenu()));
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that menu button accessibility focus requests follow the active popup focus branch.
     @Test
     void menuButtonRoutesAccessibleFocusAcrossPopupBranches() {
