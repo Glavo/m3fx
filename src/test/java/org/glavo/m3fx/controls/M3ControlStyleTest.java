@@ -2017,6 +2017,30 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that dialogs initialized from detached owner nodes resolve the window owner before showing.
+    @Test
+    void dialogRefreshesDetachedOwnerNodeWindowBeforeShowing() {
+        runOnFxThread(() -> {
+            Stage owner = new Stage();
+            try {
+                Label ownerNode = new Label("Open dialog");
+                Pane root = new Pane(ownerNode);
+                M3Dialog<Void> dialog = new M3Dialog<>();
+
+                dialog.initOwner(ownerNode);
+
+                assertNull(dialog.getOwner());
+
+                owner.setScene(new Scene(root));
+                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
+
+                assertSame(owner, dialog.getOwner());
+            } finally {
+                owner.close();
+            }
+        });
+    }
+
     /// Verifies that Material dialog pane access rejects a replaced plain pane.
     @Test
     void dialogRejectsReplacedPlainPane() {

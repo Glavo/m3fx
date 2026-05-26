@@ -55,7 +55,10 @@ public class M3Dialog<R> extends Dialog<R> {
     /// Creates a Material Design 3 dialog.
     public M3Dialog() {
         installDialogPane(new M3DialogPane());
-        addEventFilter(DialogEvent.DIALOG_SHOWING, event -> applyEffectiveTheme());
+        addEventFilter(DialogEvent.DIALOG_SHOWING, event -> {
+            refreshOwnerWindowFromNode();
+            applyEffectiveTheme();
+        });
     }
 
     /// Creates a Material Design 3 dialog with a title.
@@ -134,7 +137,21 @@ public class M3Dialog<R> extends Dialog<R> {
     /// @param owner the node that owns this dialog
     public final void initOwner(Node owner) {
         ownerNode = Objects.requireNonNull(owner, "owner");
-        @Nullable Scene scene = owner.getScene();
+        refreshOwnerWindowFromNode();
+    }
+
+    /// Initializes the JavaFX window owner from the recorded owner node when possible.
+    private void refreshOwnerWindowFromNode() {
+        if (getOwner() != null || isShowing()) {
+            return;
+        }
+
+        @Nullable Node node = ownerNode;
+        if (node == null) {
+            return;
+        }
+
+        @Nullable Scene scene = node.getScene();
         if (scene != null && scene.getWindow() != null) {
             initOwner(scene.getWindow());
         }
