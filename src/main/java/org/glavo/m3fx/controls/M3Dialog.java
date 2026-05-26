@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -47,6 +48,9 @@ public class M3Dialog<R> extends Dialog<R> {
             applyEffectiveTheme();
         }
     };
+
+    /// The node whose local hierarchy supplies inherited theme context.
+    private @Nullable Node ownerNode;
 
     /// Creates a Material Design 3 dialog.
     public M3Dialog() {
@@ -122,6 +126,20 @@ public class M3Dialog<R> extends Dialog<R> {
         return theme;
     }
 
+    /// Initializes this dialog with a node owner and inherits local theme context from that node.
+    ///
+    /// This overload is useful when a dialog is launched from a subtree with a locally installed M3FX theme. If
+    /// the node is already attached to a window, the JavaFX window owner is initialized from the node scene.
+    ///
+    /// @param owner the node that owns this dialog
+    public final void initOwner(Node owner) {
+        ownerNode = Objects.requireNonNull(owner, "owner");
+        @Nullable Scene scene = owner.getScene();
+        if (scene != null && scene.getWindow() != null) {
+            initOwner(scene.getWindow());
+        }
+    }
+
     /// Installs the Material dialog pane and its shared stylesheet.
     private void installDialogPane(M3DialogPane pane) {
         installStylesheet(pane);
@@ -139,6 +157,14 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Returns the theme installed on the owner scene when one is available.
     private @Nullable M3Theme getOwnerTheme() {
+        @Nullable Node node = ownerNode;
+        if (node != null) {
+            @Nullable M3Theme nodeTheme = M3ThemeResolver.findTheme(node);
+            if (nodeTheme != null) {
+                return nodeTheme;
+            }
+        }
+
         Window owner = getOwner();
         if (owner == null) {
             return null;

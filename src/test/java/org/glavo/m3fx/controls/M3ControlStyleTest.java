@@ -1991,6 +1991,29 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that Material dialogs inherit a local owner node theme when they are shown.
+    @Test
+    void dialogInheritsOwnerNodeLocalTheme() {
+        runOnFxThread(() -> {
+            Label ownerNode = new Label("Open dialog");
+            Pane localRoot = new Pane(ownerNode);
+            Pane root = new Pane(localRoot);
+            new Scene(root);
+            M3Theme localTheme = M3Theme.defaultTheme();
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            M3DialogPane pane = dialog.getM3DialogPane();
+
+            M3ThemeManager.install(localRoot, localTheme);
+            dialog.initOwner(ownerNode);
+            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
+
+            assertNull(dialog.getTheme());
+            assertTrue(pane.getStyle().contains("-m3-color-primary"));
+            assertSame(localTheme, M3ThemeManager.getTheme(localRoot));
+            assertEquals(M3ThemeManager.themeStylesheetUrl(localTheme), pane.getStylesheets().get(1));
+        });
+    }
+
     /// Verifies that Material dialog pane access rejects a replaced plain pane.
     @Test
     void dialogRejectsReplacedPlainPane() {
