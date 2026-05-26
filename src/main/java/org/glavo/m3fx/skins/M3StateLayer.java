@@ -11,8 +11,6 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
 import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -26,8 +24,8 @@ import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
-import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -393,7 +391,7 @@ final class M3StateLayer extends Pane {
 
     /// Returns the state layer tokens for the owner node.
     private static M3StateLayerTokens stateLayerTokens(Node owner) {
-        @Nullable M3Theme theme = findTheme(owner);
+        @Nullable M3Theme theme = M3ThemeResolver.findTheme(owner);
         return theme == null ? FALLBACK_TOKENS : theme.tokens().stateLayerTokens();
     }
 
@@ -404,29 +402,6 @@ final class M3StateLayer extends Pane {
         }
         return owner instanceof ButtonBase button
                 && (button.isArmed() || owner.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
-    }
-
-    /// Finds the installed theme that controls an owner node.
-    private static @Nullable M3Theme findTheme(Node owner) {
-        @Nullable Scene scene = owner.getScene();
-        if (scene != null) {
-            @Nullable M3Theme sceneTheme = M3ThemeManager.getTheme(scene);
-            if (sceneTheme != null) {
-                return sceneTheme;
-            }
-        }
-
-        @Nullable Node current = owner;
-        while (current != null) {
-            if (current instanceof Parent parent) {
-                @Nullable M3Theme parentTheme = M3ThemeManager.getTheme(parent);
-                if (parentTheme != null) {
-                    return parentTheme;
-                }
-            }
-            current = current.getParent();
-        }
-        return null;
     }
 
     /// Returns the node whose motion setting controls this state layer.

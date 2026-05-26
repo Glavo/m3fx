@@ -12,15 +12,12 @@ import javafx.beans.value.WritableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.theme.M3Theme;
-import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +52,7 @@ public final class M3Animation {
             return override;
         }
 
-        @Nullable M3Theme theme = findTheme(owner);
+        @Nullable M3Theme theme = M3ThemeResolver.findTheme(owner);
         return theme == null ? M3MotionSettings.getMotionScheme() : theme.tokens().motionTokens().scheme();
     }
 
@@ -70,7 +67,7 @@ public final class M3Animation {
             return override;
         }
 
-        @Nullable M3Theme theme = findTheme(owner);
+        @Nullable M3Theme theme = M3ThemeResolver.findTheme(owner);
         return theme == null ? M3MotionSettings.getMotionBehavior() : theme.tokens().motionTokens().behavior();
     }
 
@@ -252,26 +249,4 @@ public final class M3Animation {
         return null;
     }
 
-    /// Finds the theme that controls an owner node, when one was installed through [M3ThemeManager].
-    private static @Nullable M3Theme findTheme(Node owner) {
-        @Nullable Scene scene = owner.getScene();
-        if (scene != null) {
-            @Nullable M3Theme sceneTheme = M3ThemeManager.getTheme(scene);
-            if (sceneTheme != null) {
-                return sceneTheme;
-            }
-        }
-
-        @Nullable Node current = owner;
-        while (current != null) {
-            if (current instanceof Parent parent) {
-                @Nullable M3Theme parentTheme = M3ThemeManager.getTheme(parent);
-                if (parentTheme != null) {
-                    return parentTheme;
-                }
-            }
-            current = current.getParent();
-        }
-        return null;
-    }
 }

@@ -32,6 +32,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - `org.glavo.m3fx.tokens` owns color, typography, shape, elevation, motion, state-layer, density, profile, and component token groups.
 - Public theme and token abstractions use sealed interfaces; implementations live in internal packages.
 - `org.glavo.m3fx.animation` owns reusable Material motion durations and easing curves.
+- `org.glavo.m3fx.internal` owns shared runtime infrastructure such as theme resolution and generated stylesheet caching.
 - `org.glavo.m3fx.controls` owns public controls, foundation primitives, and composition containers.
 - `org.glavo.m3fx.skins` owns custom skins for layout, drawing, interaction, state layers, ripple, and animation behavior.
 - Foundation primitives such as `M3Icon` and `M3Text` support components but are not standalone Material component pages.

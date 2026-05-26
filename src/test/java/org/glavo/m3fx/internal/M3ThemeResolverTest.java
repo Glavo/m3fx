@@ -1,0 +1,70 @@
+// Copyright (c) 2026 Glavo
+// SPDX-License-Identifier: Apache-2.0
+
+package org.glavo.m3fx.internal;
+
+import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.monetfx.Brightness;
+import org.jetbrains.annotations.NotNullByDefault;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/// Tests installed theme resolution for scene-attached and detached nodes.
+@NotNullByDefault
+final class M3ThemeResolverTest {
+    /// Starts the JavaFX toolkit before scene-level theme tests create scenes.
+    @BeforeAll
+    static void startToolkit() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        try {
+            Platform.startup(latch::countDown);
+        } catch (IllegalStateException ignored) {
+            latch.countDown();
+        }
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
+    }
+
+    /// Verifies that a scene-installed theme controls scene-attached nodes.
+    @Test
+    void sceneThemeTakesPrecedenceForAttachedNodes() {
+        Pane root = new Pane();
+        Pane child = new Pane();
+        root.getChildren().add(child);
+        Scene scene = new Scene(root);
+        M3Theme parentTheme = M3Theme.fromSeed(Color.web("#6750a4"), M3Profile.BASELINE_2021, Brightness.LIGHT);
+        M3Theme sceneTheme = M3Theme.fromSeed(Color.web("#006a6a"), M3Profile.EXPRESSIVE_2025, Brightness.DARK);
+
+        M3ThemeManager.install(root, parentTheme);
+        M3ThemeManager.install(scene, sceneTheme);
+
+        assertSame(sceneTheme, M3ThemeResolver.findTheme(child));
+    }
+
+    /// Verifies that detached nodes resolve themes from their parent chain.
+    @Test
+    void detachedNodeResolvesThemeFromParentChain() {
+        Pane root = new Pane();
+        Pane child = new Pane();
+        root.getChildren().add(child);
+        M3Theme theme = M3Theme.defaultTheme();
+
+        assertNull(M3ThemeResolver.findTheme(child));
+
+        M3ThemeManager.install(root, theme);
+
+        assertSame(theme, M3ThemeResolver.findTheme(child));
+    }
+}
