@@ -145,7 +145,7 @@ public class M3Tooltip extends PopupControl {
     /// The tooltip style before theme declarations were added.
     private @Nullable String baseStyle;
 
-    /// Whether the current theme value was inherited from the target node scene.
+    /// Whether the current theme value was inherited from the target node hierarchy.
     private boolean themeInherited;
 
     /// Whether the current theme mutation is applying an inherited value.
@@ -441,25 +441,13 @@ public class M3Tooltip extends PopupControl {
         return defaultShowDuration(M3Animation.motionBehavior(owner));
     }
 
-    /// Applies the node's scene theme when this tooltip has no explicit theme.
+    /// Applies the node hierarchy theme when this tooltip has no explicit theme.
     private void inheritThemeFrom(Node node) {
-        inheritThemeFrom(node.getScene());
-    }
-
-    /// Applies the scene theme when this tooltip has no explicit theme.
-    private void inheritThemeFrom(@Nullable Scene scene) {
         if (getTheme() != null && !themeInherited) {
             return;
         }
 
-        if (scene == null) {
-            if (themeInherited) {
-                setInheritedTheme(null);
-            }
-            return;
-        }
-
-        @Nullable M3Theme inheritedTheme = M3ThemeResolver.findTheme(scene);
+        @Nullable M3Theme inheritedTheme = M3ThemeResolver.findTheme(node);
         if (inheritedTheme != null) {
             setInheritedTheme(inheritedTheme);
         } else if (themeInherited) {
@@ -467,7 +455,7 @@ public class M3Tooltip extends PopupControl {
         }
     }
 
-    /// Sets a theme value that came from the target node scene.
+    /// Sets a theme value that came from the target node hierarchy.
     private void setInheritedTheme(@Nullable M3Theme theme) {
         applyingInheritedTheme = true;
         try {
@@ -536,7 +524,7 @@ public class M3Tooltip extends PopupControl {
     private static void installThemeInheritance(Node node, M3Tooltip tooltip) {
         uninstallThemeInheritance(node);
 
-        SceneThemeListener listener = new SceneThemeListener(tooltip);
+        SceneThemeListener listener = new SceneThemeListener(node, tooltip);
         node.sceneProperty().addListener(listener);
         node.getProperties().put(THEME_INHERITANCE_LISTENER_KEY, listener);
     }
@@ -938,22 +926,26 @@ public class M3Tooltip extends PopupControl {
     /// Listens for target node scene changes and reapplies inherited tooltip themes.
     @NotNullByDefault
     private static final class SceneThemeListener implements ChangeListener<@Nullable Scene> {
+        /// The node whose hierarchy supplies inherited theme values.
+        private final Node node;
+
         /// The tooltip receiving inherited theme values.
         private final M3Tooltip tooltip;
 
         /// Creates a scene listener for a tooltip.
-        private SceneThemeListener(M3Tooltip tooltip) {
+        private SceneThemeListener(Node node, M3Tooltip tooltip) {
+            this.node = node;
             this.tooltip = tooltip;
         }
 
-        /// Applies the new scene theme when the target node enters a scene.
+        /// Reapplies the target node theme when the target node enters or leaves a scene.
         @Override
         public void changed(
                 ObservableValue<? extends @Nullable Scene> observable,
                 @Nullable Scene oldValue,
                 @Nullable Scene newValue
         ) {
-            tooltip.inheritThemeFrom(newValue);
+            tooltip.inheritThemeFrom(node);
         }
     }
 }

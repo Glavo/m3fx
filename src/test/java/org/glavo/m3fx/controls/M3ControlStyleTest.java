@@ -3178,6 +3178,45 @@ final class M3ControlStyleTest {
         assertNull(uninstalledTooltip.getTheme());
     }
 
+    /// Verifies that installed tooltips inherit local parent themes when the scene has no theme.
+    @Test
+    void tooltipInheritsLocalParentTheme() {
+        Label target = new Label("Target");
+        Pane localRoot = new Pane(target);
+        Pane root = new Pane(localRoot);
+        new Scene(root);
+        M3Theme localTheme = M3Theme.defaultTheme();
+
+        M3ThemeManager.install(localRoot, localTheme);
+
+        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+
+        assertSame(localTheme, tooltip.getTheme());
+        assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
+        assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+    }
+
+    /// Verifies that installed tooltips keep detached local themes after the target enters a scene.
+    @Test
+    void tooltipInheritsLocalParentThemeAfterSceneAttachment() {
+        Label target = new Label("Target");
+        Pane localRoot = new Pane(target);
+        M3Theme localTheme = M3Theme.defaultTheme();
+
+        M3ThemeManager.install(localRoot, localTheme);
+
+        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+
+        assertSame(localTheme, tooltip.getTheme());
+
+        Pane root = new Pane(localRoot);
+        new Scene(root);
+
+        assertSame(localTheme, tooltip.getTheme());
+        assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
+    }
+
     /// Verifies that avatars swap between text and graphic content.
     @Test
     void avatarOwnsTextAndGraphicContent() {
