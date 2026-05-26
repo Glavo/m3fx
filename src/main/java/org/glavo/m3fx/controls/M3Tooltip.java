@@ -798,6 +798,10 @@ public class M3Tooltip extends PopupControl {
             }
 
             tooltip.show(node, screenBounds.getMinX(), screenBounds.getMaxY() + POPUP_VERTICAL_OFFSET);
+            @Nullable Scene tooltipScene = tooltip.getScene();
+            if (tooltipScene != null) {
+                M3Animation.copyResolvedMotionSettings(node, tooltipScene.getRoot());
+            }
             installTooltipHoverHandlers();
             scheduleAutoHide();
         }

@@ -64,7 +64,10 @@ import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionBehavior;
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
@@ -2966,6 +2969,69 @@ final class M3ControlStyleTest {
 
                         assertFalse(tooltip.isShowing());
                     } finally {
+                        stage.close();
+                    }
+                }
+        );
+    }
+
+    /// Verifies that installed tooltip popups inherit the owner's local motion settings.
+    @Test
+    void tooltipPopupInheritsOwnerMotionSettings() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<M3Button> actionReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(80.0),
+                () -> {
+                    Stage stage = new Stage();
+                    Label target = new Label("Target");
+                    M3Button action = createButton("Action", M3ButtonVariant.TEXT);
+                    M3RichTooltip tooltip = M3RichTooltip.install(
+                            target,
+                            "Title",
+                            "Supporting text",
+                            action
+                    );
+                    tooltip.setShowDelay(Duration.ZERO);
+                    tooltip.setHideDelay(Duration.ZERO);
+                    tooltip.setShowDuration(Duration.INDEFINITE);
+
+                    Pane root = new Pane(target);
+                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    M3MotionSettings.setMotionScheme(root, M3MotionScheme.expressive());
+                    M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.expressive());
+                    stage.setScene(new Scene(root, 240.0, 120.0));
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+
+                    target.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_ENTERED, 4.0, 4.0, false));
+
+                    stageReference.set(stage);
+                    tooltipReference.set(tooltip);
+                    actionReference.set(action);
+                },
+                () -> {
+                    Stage stage = stageReference.get();
+                    M3RichTooltip tooltip = tooltipReference.get();
+                    M3Button action = actionReference.get();
+                    try {
+                        assertTrue(tooltip.isShowing());
+                        Node tooltipRoot = tooltip.getScene().getRoot();
+
+                        assertFalse(M3MotionSettings.areAnimationsEnabled(tooltipRoot));
+                        assertEquals(
+                                M3MotionScheme.expressive().defaultEffects().easing(),
+                                M3Animation.defaultEffects(action).easing()
+                        );
+                        assertEquals(
+                                M3MotionBehavior.expressive().richTooltipShowDuration(),
+                                M3Animation.motionBehavior(action).richTooltipShowDuration()
+                        );
+                    } finally {
+                        tooltip.hide();
                         stage.close();
                     }
                 }
