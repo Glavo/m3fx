@@ -23,7 +23,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.util.Duration;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -47,9 +47,6 @@ import java.util.Objects;
 public class M3ListPane extends Control {
     /// The base style class for M3FX static list panes.
     public static final String STYLE_CLASS = "m3-list-pane";
-
-    /// The idle delay after which list type-ahead input starts a new search.
-    private static final Duration TYPE_AHEAD_RESET_DELAY = Duration.millis(1000.0);
 
     /// The mutable list content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
@@ -100,7 +97,7 @@ public class M3ListPane extends Control {
     private final StringBuilder typeAheadBuffer = new StringBuilder();
 
     /// Clears the type-ahead prefix after the user stops typing.
-    private final PauseTransition typeAheadResetDelay = new PauseTransition(TYPE_AHEAD_RESET_DELAY);
+    private final PauseTransition typeAheadResetDelay = new PauseTransition();
 
     /// Updates item listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -411,6 +408,7 @@ public class M3ListPane extends Control {
         }
 
         appendTypeAheadCharacter(character);
+        typeAheadResetDelay.setDuration(M3Animation.motionBehavior(this).typeAheadResetDelay());
         typeAheadResetDelay.playFromStart();
         @Nullable M3ListItem target = typeAheadTarget(typeAheadBuffer.toString());
         if (target == null && typeAheadBuffer.length() > 1) {

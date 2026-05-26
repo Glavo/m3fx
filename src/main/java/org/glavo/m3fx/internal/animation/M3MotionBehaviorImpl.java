@@ -16,6 +16,7 @@ import java.util.Objects;
 /// @param tooltipShowDuration the plain tooltip visible duration
 /// @param richTooltipShowDuration the rich tooltip visible duration
 /// @param subMenuHoverOpenDelay the submenu hover open delay
+/// @param typeAheadResetDelay the type-ahead search reset delay
 /// @param subMenuHoverCloseDelay the submenu hover close delay
 /// @param linearProgressIndeterminateCycleDuration the indeterminate linear progress cycle duration
 /// @param circularProgressIndeterminateCycleDuration the indeterminate circular progress cycle duration
@@ -26,6 +27,7 @@ public record M3MotionBehaviorImpl(
         Duration tooltipShowDuration,
         Duration richTooltipShowDuration,
         Duration subMenuHoverOpenDelay,
+        Duration typeAheadResetDelay,
         Duration subMenuHoverCloseDelay,
         Duration linearProgressIndeterminateCycleDuration,
         Duration circularProgressIndeterminateCycleDuration
@@ -37,6 +39,7 @@ public record M3MotionBehaviorImpl(
         validate(tooltipShowDuration, "tooltipShowDuration");
         validate(richTooltipShowDuration, "richTooltipShowDuration");
         validate(subMenuHoverOpenDelay, "subMenuHoverOpenDelay");
+        validate(typeAheadResetDelay, "typeAheadResetDelay");
         validate(subMenuHoverCloseDelay, "subMenuHoverCloseDelay");
         validate(linearProgressIndeterminateCycleDuration, "linearProgressIndeterminateCycleDuration");
         validate(circularProgressIndeterminateCycleDuration, "circularProgressIndeterminateCycleDuration");

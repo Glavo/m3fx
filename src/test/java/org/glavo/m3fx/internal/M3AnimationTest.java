@@ -85,6 +85,7 @@ final class M3AnimationTest {
         assertEquals(M3MotionEasing.EMPHASIZED, M3Animation.defaultEffects(child).easing());
         assertEquals(400.0, M3Animation.defaultSpatial(child).duration().toMillis(), 0.0001);
         assertEquals(150.0, M3Animation.motionBehavior(child).subMenuHoverOpenDelay().toMillis(), 0.0001);
+        assertEquals(900.0, M3Animation.motionBehavior(child).typeAheadResetDelay().toMillis(), 0.0001);
     }
 
     /// Verifies that a node-local motion scheme override takes precedence over an installed theme.
@@ -116,5 +117,6 @@ final class M3AnimationTest {
         assertFalse(M3MotionSettings.areAnimationsEnabled(target));
         assertEquals(M3MotionEasing.EMPHASIZED, M3Animation.defaultEffects(target).easing());
         assertEquals(150.0, M3Animation.motionBehavior(target).subMenuHoverOpenDelay().toMillis(), 0.0001);
+        assertEquals(900.0, M3Animation.motionBehavior(target).typeAheadResetDelay().toMillis(), 0.0001);
     }
 }

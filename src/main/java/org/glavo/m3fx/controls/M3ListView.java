@@ -26,7 +26,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
-import javafx.util.Duration;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListViewSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -56,9 +56,6 @@ public class M3ListView<T> extends Control {
 
     /// The default fixed cell size hint, disabled by default.
     private static final double DEFAULT_FIXED_CELL_SIZE = 0.0;
-
-    /// The idle delay after which list view type-ahead input starts a new search.
-    private static final Duration TYPE_AHEAD_RESET_DELAY = Duration.millis(1000.0);
 
     /// The backing data items rendered by this view.
     private final ObservableList<T> items = FXCollections.observableArrayList();
@@ -143,7 +140,7 @@ public class M3ListView<T> extends Control {
     private final StringBuilder typeAheadBuffer = new StringBuilder();
 
     /// Clears the type-ahead prefix after the user stops typing.
-    private final PauseTransition typeAheadResetDelay = new PauseTransition(TYPE_AHEAD_RESET_DELAY);
+    private final PauseTransition typeAheadResetDelay = new PauseTransition();
 
     /// Updates selection and cells when data items change.
     private final ListChangeListener<T> itemsListener = change -> {
@@ -684,6 +681,7 @@ public class M3ListView<T> extends Control {
         }
 
         appendTypeAheadCharacter(character);
+        typeAheadResetDelay.setDuration(M3Animation.motionBehavior(this).typeAheadResetDelay());
         typeAheadResetDelay.playFromStart();
         int target = typeAheadTarget(typeAheadBuffer.toString());
         if (target < 0 && typeAheadBuffer.length() > 1) {

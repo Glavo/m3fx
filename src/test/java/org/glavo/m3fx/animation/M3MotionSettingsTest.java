@@ -102,10 +102,12 @@ final class M3MotionSettingsTest {
             M3MotionSettings.setMotionBehavior(M3MotionBehavior.expressive());
 
             assertEquals(150.0, M3MotionSettings.getMotionBehavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
+            assertEquals(900.0, M3MotionSettings.getMotionBehavior().typeAheadResetDelay().toMillis(), 0.0001);
 
             M3MotionSettings.setMotionBehavior(M3MotionBehavior.standard());
 
             assertEquals(200.0, M3MotionSettings.getMotionBehavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
+            assertEquals(1000.0, M3MotionSettings.getMotionBehavior().typeAheadResetDelay().toMillis(), 0.0001);
         } finally {
             M3MotionSettings.setMotionBehavior(previous);
         }
@@ -121,6 +123,7 @@ final class M3MotionSettingsTest {
         M3MotionSettings.setMotionBehavior(node, M3MotionBehavior.expressive());
 
         assertEquals(150.0, M3MotionSettings.getMotionBehavior(node).subMenuHoverOpenDelay().toMillis(), 0.0001);
+        assertEquals(900.0, M3MotionSettings.getMotionBehavior(node).typeAheadResetDelay().toMillis(), 0.0001);
 
         M3MotionSettings.clearMotionBehavior(node);
 
