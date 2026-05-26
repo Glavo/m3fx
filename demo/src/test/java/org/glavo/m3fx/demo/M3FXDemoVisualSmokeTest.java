@@ -322,6 +322,7 @@ final class M3FXDemoVisualSmokeTest {
             verifyButtonMouseFeedback(appReference, sceneReference);
             verifyTextFieldFocusFeedback(appReference, sceneReference);
             verifySidebarMouseFeedback(appReference, sceneReference);
+            verifyIconToggleButtonMouseFeedback(appReference, sceneReference);
             verifyDisabledAnimationInteractionFeedback(appReference, sceneReference);
         } finally {
             runOnFxThread(() -> {
@@ -664,6 +665,80 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(hoverReference.get(), "hover sidebar snapshot"),
                 Objects.requireNonNull(pressedReference.get(), "pressed sidebar snapshot"),
                 "sidebar pressed"
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a toggle icon button in the demo page.
+    private static void verifyIconToggleButtonMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Icon Buttons");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            Node target = Objects.requireNonNull(firstVisibleNodeWithStyle(
+                    scene.getRoot(),
+                    M3IconToggleButton.STYLE_CLASS
+            ), "toggle icon button");
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal toggle icon button snapshot"),
+                    "icon-toggle-button",
+                    "normal"
+            );
+            applyPseudoState(target, "hover");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            hoverReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(hoverReference.get(), "hover toggle icon button snapshot"),
+                    "icon-toggle-button",
+                    "hover"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), "toggle icon button");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            pressedReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed toggle icon button snapshot"),
+                    "icon-toggle-button",
+                    "pressed"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), "toggle icon button");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+            clearPseudoState(target, "hover");
+        });
+
+        Node target = Objects.requireNonNull(targetReference.get(), "toggle icon button");
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal toggle icon button snapshot"),
+                Objects.requireNonNull(hoverReference.get(), "hover toggle icon button snapshot"),
+                "toggle icon button hover"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(hoverReference.get(), "hover toggle icon button snapshot"),
+                Objects.requireNonNull(pressedReference.get(), "pressed toggle icon button snapshot"),
+                "toggle icon button pressed"
         );
     }
 
