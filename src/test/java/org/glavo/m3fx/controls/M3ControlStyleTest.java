@@ -7521,6 +7521,47 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3LoadingIndicatorSkin.class, loadingIndicator.getSkin());
     }
 
+    /// Verifies that indeterminate progress animations respond to runtime motion setting changes.
+    @Test
+    void indeterminateProgressAnimationsRefreshWhenMotionSettingsChange() {
+        runOnFxThreadAndWait(() -> {
+            M3ProgressBar progressBar = new M3ProgressBar();
+            M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
+            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+            Pane root = new Pane(progressBar, progressIndicator, loadingIndicator);
+            Scene scene = new Scene(root);
+
+            M3MotionSettings.setAnimationsEnabled(root, true);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+
+            Timeline progressBarAnimation = skinTimeline(progressBar.getSkin(), "indeterminateAnimation");
+            Timeline progressIndicatorAnimation = skinTimeline(progressIndicator.getSkin(), "indeterminateAnimation");
+            Timeline loadingIndicatorAnimation = skinTimeline(loadingIndicator.getSkin(), "indeterminateAnimation");
+            Timeline loadingIndicatorRotation = skinTimeline(loadingIndicator.getSkin(), "globalRotationAnimation");
+
+            assertEquals(javafx.animation.Animation.Status.RUNNING, progressBarAnimation.getStatus());
+            assertEquals(javafx.animation.Animation.Status.RUNNING, progressIndicatorAnimation.getStatus());
+            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorAnimation.getStatus());
+            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorRotation.getStatus());
+
+            M3MotionSettings.setAnimationsEnabled(root, false);
+
+            assertFalse(M3MotionSettings.areAnimationsEnabled(progressBar));
+            assertFalse(progressBarAnimation.getStatus() == javafx.animation.Animation.Status.RUNNING);
+            assertFalse(progressIndicatorAnimation.getStatus() == javafx.animation.Animation.Status.RUNNING);
+            assertFalse(loadingIndicatorAnimation.getStatus() == javafx.animation.Animation.Status.RUNNING);
+            assertFalse(loadingIndicatorRotation.getStatus() == javafx.animation.Animation.Status.RUNNING);
+
+            M3MotionSettings.setAnimationsEnabled(root, true);
+
+            assertEquals(javafx.animation.Animation.Status.RUNNING, progressBarAnimation.getStatus());
+            assertEquals(javafx.animation.Animation.Status.RUNNING, progressIndicatorAnimation.getStatus());
+            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorAnimation.getStatus());
+            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorRotation.getStatus());
+        });
+    }
+
     /// Verifies that progress controls expose accessible value, range, and indeterminate state.
     @Test
     void progressControlsExposeAccessibleValues() {
@@ -14956,6 +14997,36 @@ final class M3ControlStyleTest {
     /// Returns a private control timeline used by animation-focused tests.
     private static Timeline controlTimeline(Object control, String fieldName) {
         return reflectedTimeline(control, fieldName);
+    }
+
+    /// Runs a test action on the JavaFX application thread and waits for completion.
+    private static void runOnFxThreadAndWait(Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+            return;
+        }
+
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Platform.runLater(() -> {
+            try {
+                action.run();
+            } catch (Throwable e) {
+                failure.set(e);
+            } finally {
+                latch.countDown();
+            }
+        });
+        try {
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(e);
+        }
+        @Nullable Throwable throwable = failure.get();
+        if (throwable != null) {
+            throw new AssertionError(throwable);
+        }
     }
 
     /// Returns a private double property from a test target.

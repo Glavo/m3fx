@@ -3,8 +3,11 @@
 
 package org.glavo.m3fx.animation;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyLongProperty;
+import javafx.beans.property.ReadOnlyLongWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
@@ -12,6 +15,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /// Runtime settings for Material Design 3 motion in M3FX controls.
 ///
@@ -45,6 +49,23 @@ public final class M3MotionSettings {
     // The global motion behavior used when a node has no inherited override and no installed theme.
     private static final ObjectProperty<M3MotionBehavior> motionBehavior =
             new SimpleObjectProperty<>(M3MotionSettings.class, "motionBehavior", M3MotionBehavior.standard());
+
+    /// The revision incremented whenever any global or node-local motion setting changes.
+    private static final ReadOnlyLongWrapper settingsRevision =
+            new ReadOnlyLongWrapper(M3MotionSettings.class, "settingsRevision");
+
+    /// The read-only view of [settingsRevision].
+    private static final ReadOnlyLongProperty readOnlySettingsRevision = settingsRevision.getReadOnlyProperty();
+
+    /// Listeners notified whenever global or node-local motion settings change.
+    private static final CopyOnWriteArrayList<InvalidationListener> settingsChangeListeners =
+            new CopyOnWriteArrayList<>();
+
+    static {
+        animationsEnabled.addListener(observable -> markSettingsChanged());
+        motionScheme.addListener(observable -> markSettingsChanged());
+        motionBehavior.addListener(observable -> markSettingsChanged());
+    }
 
     /// Prevents instantiation.
     private M3MotionSettings() {
@@ -113,6 +134,34 @@ public final class M3MotionSettings {
         return motionBehavior;
     }
 
+    /// Returns a read-only revision property that changes when any global or node-local motion setting changes.
+    ///
+    /// Controls with long-running animations can observe this property and refresh their animation state when
+    /// applications change animation switches, motion schemes, or behavior timings at runtime.
+    ///
+    /// @return the read-only motion settings revision property
+    public static ReadOnlyLongProperty settingsRevisionProperty() {
+        return readOnlySettingsRevision;
+    }
+
+    /// Adds a listener that is called whenever global or node-local motion settings change.
+    ///
+    /// The listener is notified synchronously after [settingsRevisionProperty] increments. Unlike a JavaFX
+    /// invalidation listener attached directly to the property, this listener is called for every settings change
+    /// even when the property value has not been read between changes.
+    ///
+    /// @param listener the listener to add
+    public static void addSettingsChangeListener(InvalidationListener listener) {
+        settingsChangeListeners.add(Objects.requireNonNull(listener, "listener"));
+    }
+
+    /// Removes a listener previously added with [addSettingsChangeListener].
+    ///
+    /// @param listener the listener to remove
+    public static void removeSettingsChangeListener(InvalidationListener listener) {
+        settingsChangeListeners.remove(Objects.requireNonNull(listener, "listener"));
+    }
+
     /// Returns whether animations are enabled for a node after resolving inherited overrides.
     ///
     /// @param node the node used to resolve inherited motion settings
@@ -139,11 +188,16 @@ public final class M3MotionSettings {
     /// @param enabled the node-local animation override, or `null` to inherit
     public static void setAnimationsEnabled(Node node, @Nullable Boolean enabled) {
         Objects.requireNonNull(node, "node");
+        @Nullable Boolean previous = getAnimationsEnabled(node);
+        if (Objects.equals(previous, enabled)) {
+            return;
+        }
         if (enabled == null) {
             node.getProperties().remove(ANIMATIONS_ENABLED_KEY);
         } else {
             node.getProperties().put(ANIMATIONS_ENABLED_KEY, enabled);
         }
+        markSettingsChanged();
     }
 
     /// Clears the node-local animation override so the node inherits its setting.
@@ -169,11 +223,16 @@ public final class M3MotionSettings {
     /// @param scheme the node-local motion scheme override, or `null` to inherit
     public static void setMotionScheme(Node node, @Nullable M3MotionScheme scheme) {
         Objects.requireNonNull(node, "node");
+        @Nullable M3MotionScheme previous = getMotionScheme(node);
+        if (Objects.equals(previous, scheme)) {
+            return;
+        }
         if (scheme == null) {
             node.getProperties().remove(MOTION_SCHEME_KEY);
         } else {
             node.getProperties().put(MOTION_SCHEME_KEY, scheme);
         }
+        markSettingsChanged();
     }
 
     /// Clears the node-local motion scheme override so the node inherits its setting.
@@ -199,11 +258,16 @@ public final class M3MotionSettings {
     /// @param behavior the node-local motion behavior override, or `null` to inherit
     public static void setMotionBehavior(Node node, @Nullable M3MotionBehavior behavior) {
         Objects.requireNonNull(node, "node");
+        @Nullable M3MotionBehavior previous = getMotionBehavior(node);
+        if (Objects.equals(previous, behavior)) {
+            return;
+        }
         if (behavior == null) {
             node.getProperties().remove(MOTION_BEHAVIOR_KEY);
         } else {
             node.getProperties().put(MOTION_BEHAVIOR_KEY, behavior);
         }
+        markSettingsChanged();
     }
 
     /// Clears the node-local motion behavior override so the node inherits its setting.
@@ -224,5 +288,13 @@ public final class M3MotionSettings {
             current = current.getParent();
         }
         return null;
+    }
+
+    /// Increments the global settings revision.
+    private static void markSettingsChanged() {
+        settingsRevision.set(settingsRevision.get() + 1L);
+        for (InvalidationListener listener : settingsChangeListeners) {
+            listener.invalidated(readOnlySettingsRevision);
+        }
     }
 }

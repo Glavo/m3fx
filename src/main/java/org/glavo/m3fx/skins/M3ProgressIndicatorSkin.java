@@ -21,6 +21,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.internal.M3Animation;
@@ -70,6 +71,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// Updates animations when the public progress value changes.
     private final InvalidationListener progressInvalidation = observable -> updateProgressAnimation(true);
 
+    /// Updates indeterminate animation state when global or node-local motion settings change.
+    private final InvalidationListener motionSettingsInvalidation = observable -> updateProgressAnimation(false);
+
     /// Requests layout after size-related token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
 
@@ -103,6 +107,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
 
         control.progressProperty().addListener(progressInvalidation);
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.indicatorSizeProperty().addListener(layoutInvalidation);
         control.waveAmplitudeProperty().addListener(layoutInvalidation);
@@ -120,6 +125,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         displayedProgress.removeListener(animationInvalidation);
         indeterminatePhase.removeListener(animationInvalidation);
         progressIndicator.progressProperty().removeListener(progressInvalidation);
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         progressIndicator.trackThicknessProperty().removeListener(layoutInvalidation);
         progressIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
         progressIndicator.waveAmplitudeProperty().removeListener(layoutInvalidation);
@@ -224,7 +230,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
                 indeterminatePhase.set(INDETERMINATE_START_PHASE);
             } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
                 configureIndeterminateAnimation();
-                indeterminateAnimation.play();
+                indeterminateAnimation.playFromStart();
             }
         } else {
             indeterminateAnimation.stop();

@@ -20,6 +20,7 @@ import javafx.scene.shape.Path;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
@@ -119,6 +120,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Updates animations when the public progress value changes.
     private final InvalidationListener progressInvalidation = observable -> updateProgressAnimation(true);
 
+    /// Updates indeterminate animation state when global or node-local motion settings change.
+    private final InvalidationListener motionSettingsInvalidation = observable -> updateProgressAnimation(false);
+
     /// Requests layout after size-related token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
 
@@ -148,6 +152,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         globalRotationAnimation.setCycleCount(Animation.INDEFINITE);
 
         control.progressProperty().addListener(progressInvalidation);
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.variantProperty().addListener(layoutInvalidation);
         control.containerSizeProperty().addListener(layoutInvalidation);
         control.indicatorSizeProperty().addListener(layoutInvalidation);
@@ -165,6 +170,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         indeterminatePhase.removeListener(animationInvalidation);
         globalRotation.removeListener(animationInvalidation);
         loadingIndicator.progressProperty().removeListener(progressInvalidation);
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         loadingIndicator.variantProperty().removeListener(layoutInvalidation);
         loadingIndicator.containerSizeProperty().removeListener(layoutInvalidation);
         loadingIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
@@ -212,8 +218,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                 globalRotation.set(0.0);
             } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
                 configureIndeterminateAnimation();
-                indeterminateAnimation.play();
-                globalRotationAnimation.play();
+                indeterminateAnimation.playFromStart();
+                globalRotationAnimation.playFromStart();
             }
         } else {
             indeterminateAnimation.stop();

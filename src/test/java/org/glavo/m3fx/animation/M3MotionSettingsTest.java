@@ -3,9 +3,12 @@
 
 package org.glavo.m3fx.animation;
 
+import javafx.beans.InvalidationListener;
 import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,6 +62,64 @@ final class M3MotionSettingsTest {
         } finally {
             M3MotionSettings.setAnimationsEnabled(previous);
         }
+    }
+
+    /// Verifies that the settings revision changes when global or node-local motion settings change.
+    @Test
+    void settingsRevisionChangesWhenSettingsChange() {
+        boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+        M3MotionScheme previousScheme = M3MotionSettings.getMotionScheme();
+        M3MotionBehavior previousBehavior = M3MotionSettings.getMotionBehavior();
+        try {
+            Pane node = new Pane();
+            long revision = M3MotionSettings.settingsRevisionProperty().get();
+
+            M3MotionSettings.setAnimationsEnabled(!previousAnimationsEnabled);
+            long afterGlobalAnimations = M3MotionSettings.settingsRevisionProperty().get();
+            assertTrue(afterGlobalAnimations > revision);
+
+            M3MotionSettings.setMotionScheme(M3MotionScheme.expressive());
+            long afterGlobalScheme = M3MotionSettings.settingsRevisionProperty().get();
+            assertTrue(afterGlobalScheme > afterGlobalAnimations);
+
+            M3MotionSettings.setMotionBehavior(M3MotionBehavior.expressive());
+            long afterGlobalBehavior = M3MotionSettings.settingsRevisionProperty().get();
+            assertTrue(afterGlobalBehavior > afterGlobalScheme);
+
+            M3MotionSettings.setAnimationsEnabled(node, false);
+            long afterNodeAnimations = M3MotionSettings.settingsRevisionProperty().get();
+            assertTrue(afterNodeAnimations > afterGlobalBehavior);
+
+            M3MotionSettings.setAnimationsEnabled(node, false);
+
+            assertEquals(afterNodeAnimations, M3MotionSettings.settingsRevisionProperty().get());
+        } finally {
+            M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            M3MotionSettings.setMotionScheme(previousScheme);
+            M3MotionSettings.setMotionBehavior(previousBehavior);
+        }
+    }
+
+    /// Verifies that explicit settings change listeners are called for each effective settings change.
+    @Test
+    void settingsChangeListenerReportsEachSettingsChange() {
+        Pane node = new Pane();
+        AtomicInteger changes = new AtomicInteger();
+        InvalidationListener listener = observable -> changes.incrementAndGet();
+        M3MotionSettings.addSettingsChangeListener(listener);
+        try {
+            M3MotionSettings.setAnimationsEnabled(node, false);
+            M3MotionSettings.setAnimationsEnabled(node, false);
+            M3MotionSettings.clearAnimationsEnabled(node);
+
+            assertEquals(2, changes.get());
+        } finally {
+            M3MotionSettings.removeSettingsChangeListener(listener);
+        }
+
+        M3MotionSettings.setAnimationsEnabled(node, true);
+
+        assertEquals(2, changes.get());
     }
 
     /// Verifies the global motion scheme switch.

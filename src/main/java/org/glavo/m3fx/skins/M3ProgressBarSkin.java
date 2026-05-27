@@ -20,6 +20,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.internal.M3Animation;
@@ -75,6 +76,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Updates animations when the public progress value changes.
     private final InvalidationListener progressInvalidation = observable -> updateProgressAnimation(true);
 
+    /// Updates indeterminate animation state when global or node-local motion settings change.
+    private final InvalidationListener motionSettingsInvalidation = observable -> updateProgressAnimation(false);
+
     /// Requests layout after size-related token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
 
@@ -107,6 +111,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
 
         control.progressProperty().addListener(progressInvalidation);
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.trackShapeProperty().addListener(layoutInvalidation);
         control.waveAmplitudeProperty().addListener(layoutInvalidation);
@@ -125,6 +130,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         displayedProgress.removeListener(animationInvalidation);
         indeterminatePosition.removeListener(animationInvalidation);
         progressBar.progressProperty().removeListener(progressInvalidation);
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         progressBar.trackThicknessProperty().removeListener(layoutInvalidation);
         progressBar.trackShapeProperty().removeListener(layoutInvalidation);
         progressBar.waveAmplitudeProperty().removeListener(layoutInvalidation);
@@ -294,7 +300,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
                 indeterminatePosition.set(INDETERMINATE_START_POSITION);
             } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
                 configureIndeterminateAnimation();
-                indeterminateAnimation.play();
+                indeterminateAnimation.playFromStart();
             }
         } else {
             indeterminateAnimation.stop();
