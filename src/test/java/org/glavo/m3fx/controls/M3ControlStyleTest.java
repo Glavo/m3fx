@@ -8755,6 +8755,50 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that running virtualized list wheel scrolling settles when animations are disabled at runtime.
+    @Test
+    void listViewSmoothScrollingSettlesWhenAnimationsAreDisabledAtRuntime() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                M3MotionSettings.setAnimationsEnabled(listView, true);
+
+                ScrollEvent event = scrollEvent(listView, 0.0, -112.0);
+                listView.fireEvent(event);
+
+                assertTrue(event.isConsumed());
+                assertEquals(0.0, flow.getPosition(), 0.0001);
+
+                M3MotionSettings.setAnimationsEnabled(listView, false);
+
+                assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that disabled animation settings make virtualized list wheel scrolling finish synchronously.
     @Test
     void listViewSmoothScrollingHonorsDisabledAnimations() {
@@ -8831,6 +8875,48 @@ final class M3ControlStyleTest {
                 listView.setAnimatedScroll(false);
                 assertFalse(listView.isAnimatedScroll());
                 listView.scrollTo(80);
+
+                assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that running programmatic virtualized list scrolling settles when animations are disabled.
+    @Test
+    void listViewProgrammaticScrollSettlesWhenAnimationsAreDisabledAtRuntime() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                M3MotionSettings.setAnimationsEnabled(listView, true);
+
+                listView.scrollTo(80);
+
+                assertEquals(0.0, flow.getPosition(), 0.0001);
+
+                M3MotionSettings.setAnimationsEnabled(listView, false);
 
                 assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
             } finally {
@@ -14819,6 +14905,40 @@ final class M3ControlStyleTest {
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
         M3MotionSettings.clearAnimationsEnabled(scrollPane);
         assertFalse(M3ScrollPanes.isSmoothScrollingEnabled(scrollPane));
+    }
+
+    /// Verifies that a running smooth scroll settles when animations are disabled at runtime.
+    @Test
+    void scrollPaneSmoothScrollingSettlesWhenAnimationsAreDisabledAtRuntime() {
+        runOnFxThreadAndWait(() -> {
+            Region content = new Region();
+            content.setPrefSize(160.0, 480.0);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setPrefSize(160.0, 120.0);
+            StackPane root = new StackPane(scrollPane);
+            Scene scene = new Scene(root, 180.0, 140.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(180.0, 140.0);
+            root.layout();
+            M3ScrollPanes.enableSmoothScrolling(scrollPane);
+            M3MotionSettings.setAnimationsEnabled(scrollPane, true);
+            try {
+                ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
+                scrollPane.fireEvent(event);
+
+                assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+                assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
+
+                M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+
+                assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+            } finally {
+                M3ScrollPanes.disableSmoothScrolling(scrollPane);
+                M3MotionSettings.clearAnimationsEnabled(scrollPane);
+            }
+        });
     }
 
     /// Verifies that disabled animation settings make smooth scrolling finish synchronously.

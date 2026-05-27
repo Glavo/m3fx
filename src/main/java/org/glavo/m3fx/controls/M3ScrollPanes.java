@@ -7,6 +7,7 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.geometry.Bounds;
@@ -15,6 +16,7 @@ import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -102,6 +104,9 @@ public final class M3ScrollPanes {
         /// The scroll event filter installed on the scroll pane.
         private final EventHandler<ScrollEvent> scrollHandler = this::handleScroll;
 
+        /// Updates a running smooth scroll when motion settings change.
+        private final InvalidationListener motionSettingsInvalidation = observable -> refreshMotionSettings();
+
         /// The currently running scroll animation.
         private @Nullable Timeline animation;
 
@@ -117,10 +122,12 @@ public final class M3ScrollPanes {
             targetHValue = scrollPane.getHvalue();
             targetVValue = scrollPane.getVvalue();
             scrollPane.addEventFilter(ScrollEvent.SCROLL, scrollHandler);
+            M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         }
 
         /// Removes smooth wheel behavior and stops any running animation.
         private void dispose() {
+            M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
             stopAnimation();
             scrollPane.removeEventFilter(ScrollEvent.SCROLL, scrollHandler);
         }
@@ -192,6 +199,22 @@ public final class M3ScrollPanes {
             targetVValue = nextVValue;
             animateToTarget();
             event.consume();
+        }
+
+        /// Applies changed animation settings to the current smooth scroll operation.
+        private void refreshMotionSettings() {
+            Timeline currentAnimation = animation;
+            if (currentAnimation == null || currentAnimation.getStatus() != Animation.Status.RUNNING) {
+                return;
+            }
+
+            if (!M3Animation.areAnimationsEnabled(scrollPane)) {
+                scrollPane.setHvalue(targetHValue);
+                scrollPane.setVvalue(targetVValue);
+                stopAnimation();
+            } else {
+                animateToTarget();
+            }
         }
 
         /// Returns whether the event target belongs directly to this scroll pane rather than a nested scroll pane.
