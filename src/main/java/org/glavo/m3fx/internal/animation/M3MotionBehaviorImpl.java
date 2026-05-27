@@ -15,6 +15,7 @@ import java.util.Objects;
 /// @param tooltipHideDelay the tooltip hide delay
 /// @param tooltipShowDuration the plain tooltip visible duration
 /// @param richTooltipShowDuration the rich tooltip visible duration
+/// @param snackbarDisplayDuration the snackbar display duration
 /// @param subMenuHoverOpenDelay the submenu hover open delay
 /// @param typeAheadResetDelay the type-ahead search reset delay
 /// @param subMenuHoverCloseDelay the submenu hover close delay
@@ -28,6 +29,7 @@ public record M3MotionBehaviorImpl(
         Duration tooltipHideDelay,
         Duration tooltipShowDuration,
         Duration richTooltipShowDuration,
+        Duration snackbarDisplayDuration,
         Duration subMenuHoverOpenDelay,
         Duration typeAheadResetDelay,
         Duration subMenuHoverCloseDelay,
@@ -42,6 +44,7 @@ public record M3MotionBehaviorImpl(
         validate(tooltipHideDelay, "tooltipHideDelay");
         validate(tooltipShowDuration, "tooltipShowDuration");
         validate(richTooltipShowDuration, "richTooltipShowDuration");
+        validate(snackbarDisplayDuration, "snackbarDisplayDuration");
         validate(subMenuHoverOpenDelay, "subMenuHoverOpenDelay");
         validate(typeAheadResetDelay, "typeAheadResetDelay");
         validate(subMenuHoverCloseDelay, "subMenuHoverCloseDelay");

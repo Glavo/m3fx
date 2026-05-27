@@ -39,6 +39,11 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     /// @return the visible duration for rich tooltips
     Duration richTooltipShowDuration();
 
+    /// Returns the default display duration before a snackbar automatically dismisses.
+    ///
+    /// @return the default snackbar display duration
+    Duration snackbarDisplayDuration();
+
     /// Returns the delay before pointer hover opens a submenu.
     ///
     /// @return the delay before pointer hover opens a submenu
@@ -80,6 +85,7 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     /// @param tooltipHideDelay the delay before a tooltip closes
     /// @param tooltipShowDuration the visible duration for plain tooltips
     /// @param richTooltipShowDuration the visible duration for rich tooltips
+    /// @param snackbarDisplayDuration the default snackbar display duration
     /// @param subMenuHoverOpenDelay the delay before hover opens a submenu
     /// @param typeAheadResetDelay the idle delay after which type-ahead search resets
     /// @param subMenuHoverCloseDelay the delay before hover exit closes a submenu
@@ -93,6 +99,7 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
             Duration tooltipHideDelay,
             Duration tooltipShowDuration,
             Duration richTooltipShowDuration,
+            Duration snackbarDisplayDuration,
             Duration subMenuHoverOpenDelay,
             Duration typeAheadResetDelay,
             Duration subMenuHoverCloseDelay,
@@ -106,6 +113,7 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
                 Objects.requireNonNull(tooltipHideDelay, "tooltipHideDelay"),
                 Objects.requireNonNull(tooltipShowDuration, "tooltipShowDuration"),
                 Objects.requireNonNull(richTooltipShowDuration, "richTooltipShowDuration"),
+                Objects.requireNonNull(snackbarDisplayDuration, "snackbarDisplayDuration"),
                 Objects.requireNonNull(subMenuHoverOpenDelay, "subMenuHoverOpenDelay"),
                 Objects.requireNonNull(typeAheadResetDelay, "typeAheadResetDelay"),
                 Objects.requireNonNull(subMenuHoverCloseDelay, "subMenuHoverCloseDelay"),
@@ -137,6 +145,7 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
                 Duration.ZERO,
                 Duration.seconds(5.0),
                 Duration.seconds(10.0),
+                Duration.seconds(4.0),
                 M3Motion.SHORT4,
                 Duration.millis(1000.0),
                 M3Motion.SHORT4,
@@ -156,6 +165,7 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
                 Duration.ZERO,
                 Duration.seconds(5.0),
                 Duration.seconds(10.0),
+                Duration.seconds(4.0),
                 M3Motion.SHORT3,
                 Duration.millis(900.0),
                 M3Motion.SHORT3,

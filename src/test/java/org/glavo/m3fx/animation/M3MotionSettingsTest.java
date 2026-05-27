@@ -101,6 +101,7 @@ final class M3MotionSettingsTest {
         try {
             M3MotionSettings.setMotionBehavior(M3MotionBehavior.expressive());
 
+            assertEquals(4000.0, M3MotionSettings.getMotionBehavior().snackbarDisplayDuration().toMillis(), 0.0001);
             assertEquals(150.0, M3MotionSettings.getMotionBehavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
             assertEquals(900.0, M3MotionSettings.getMotionBehavior().typeAheadResetDelay().toMillis(), 0.0001);
             assertEquals(650.0, M3MotionSettings.getMotionBehavior().loadingIndicatorMorphInterval().toMillis(), 0.0001);
@@ -112,6 +113,7 @@ final class M3MotionSettingsTest {
 
             M3MotionSettings.setMotionBehavior(M3MotionBehavior.standard());
 
+            assertEquals(4000.0, M3MotionSettings.getMotionBehavior().snackbarDisplayDuration().toMillis(), 0.0001);
             assertEquals(200.0, M3MotionSettings.getMotionBehavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
             assertEquals(1000.0, M3MotionSettings.getMotionBehavior().typeAheadResetDelay().toMillis(), 0.0001);
             assertEquals(650.0, M3MotionSettings.getMotionBehavior().loadingIndicatorMorphInterval().toMillis(), 0.0001);
@@ -134,6 +136,7 @@ final class M3MotionSettingsTest {
 
         M3MotionSettings.setMotionBehavior(node, M3MotionBehavior.expressive());
 
+        assertEquals(4000.0, M3MotionSettings.getMotionBehavior(node).snackbarDisplayDuration().toMillis(), 0.0001);
         assertEquals(150.0, M3MotionSettings.getMotionBehavior(node).subMenuHoverOpenDelay().toMillis(), 0.0001);
         assertEquals(900.0, M3MotionSettings.getMotionBehavior(node).typeAheadResetDelay().toMillis(), 0.0001);
         assertEquals(650.0, M3MotionSettings.getMotionBehavior(node).loadingIndicatorMorphInterval().toMillis(), 0.0001);

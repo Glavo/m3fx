@@ -1780,6 +1780,38 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that snackbar host default display duration resolves from motion behavior.
+    @Test
+    void snackbarHostDisplayDurationUsesMotionBehaviorDefault() {
+        M3SnackbarHost host = new M3SnackbarHost();
+        M3MotionBehavior behavior = M3MotionBehavior.create(
+                Duration.millis(500.0),
+                Duration.ZERO,
+                Duration.seconds(5.0),
+                Duration.seconds(10.0),
+                Duration.millis(1234.0),
+                Duration.millis(200.0),
+                Duration.millis(1000.0),
+                Duration.millis(200.0),
+                Duration.millis(1400.0),
+                Duration.millis(1332.0),
+                Duration.millis(650.0),
+                Duration.millis(4666.0)
+        );
+
+        M3MotionSettings.setMotionBehavior(host, behavior);
+
+        assertEquals(Duration.millis(1234.0), host.getDisplayDuration());
+
+        host.setDisplayDuration(Duration.INDEFINITE);
+
+        assertEquals(Duration.INDEFINITE, host.getDisplayDuration());
+
+        host.displayDurationProperty().set(null);
+
+        assertEquals(Duration.millis(1234.0), host.getDisplayDuration());
+    }
+
     /// Verifies that dialog pane component token properties are styleable from CSS.
     @Test
     void dialogPaneTokensAreStyleable() {
@@ -11418,6 +11450,7 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(root, false);
         M3ThemeManager.uninstallThemeStylesheet(scene);
         button.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         tab.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);

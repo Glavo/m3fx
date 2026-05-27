@@ -49,9 +49,6 @@ public class M3SnackbarHost extends Control {
     /// The base style class for m3fx snackbar hosts.
     public static final String STYLE_CLASS = "m3-snackbar-host";
 
-    /// The default snackbar display duration.
-    private static final Duration DEFAULT_DISPLAY_DURATION = Duration.seconds(4.0);
-
     /// The initial vertical offset used by snackbar entrance and exit motion.
     private static final double TRANSITION_OFFSET_Y = 16.0;
 
@@ -68,12 +65,13 @@ public class M3SnackbarHost extends Control {
 
     // Backing property for the public display duration API.
     private final ObjectProperty<@Nullable Duration> displayDuration =
-            new SimpleObjectProperty<>(this, "displayDuration", DEFAULT_DISPLAY_DURATION) {
-                /// Restores the default duration when the property is set to null.
+            new SimpleObjectProperty<>(this, "displayDuration") {
+                /// Keeps explicit display durations non-negative.
                 @Override
                 protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_DISPLAY_DURATION);
+                    @Nullable Duration duration = get();
+                    if (duration != null && duration.lessThan(Duration.ZERO)) {
+                        set(Duration.ZERO);
                     }
                 }
             };
@@ -139,16 +137,19 @@ public class M3SnackbarHost extends Control {
 
     /// Returns the display duration before automatic dismissal.
     ///
-    /// A zero, unknown, or indefinite duration disables automatic dismissal.
+    /// A null value resolves from the active [org.glavo.m3fx.animation.M3MotionBehavior]. A zero, unknown, or
+    /// indefinite duration disables automatic dismissal.
     ///
     /// @return the display duration before automatic dismissal
     public final Duration getDisplayDuration() {
-        return Objects.requireNonNull(displayDuration.get(), "displayDuration");
+        @Nullable Duration duration = displayDuration.get();
+        return duration == null ? M3Animation.motionBehavior(this).snackbarDisplayDuration() : duration;
     }
 
     /// Sets the display duration before automatic dismissal.
     ///
-    /// A zero, unknown, or indefinite duration disables automatic dismissal.
+    /// A zero, unknown, or indefinite duration disables automatic dismissal. Set [displayDurationProperty] to
+    /// null to restore motion-behavior defaults.
     ///
     /// @param displayDuration the display duration before automatic dismissal
     public final void setDisplayDuration(Duration displayDuration) {
@@ -157,7 +158,8 @@ public class M3SnackbarHost extends Control {
 
     /// Returns the display duration property.
     ///
-    /// A zero, unknown, or indefinite duration disables automatic dismissal.
+    /// A null value resolves from the active [org.glavo.m3fx.animation.M3MotionBehavior]. A zero, unknown, or
+    /// indefinite duration disables automatic dismissal.
     ///
     /// @return the display duration property
     public final ObjectProperty<@Nullable Duration> displayDurationProperty() {
