@@ -87,6 +87,40 @@ final class M3CssEffectTransitionTest {
         });
     }
 
+    /// Verifies that a running CSS effect transition settles when animations are disabled at runtime.
+    @Test
+    void runningCssResolvedDropShadowSettlesWhenAnimationsAreDisabledAtRuntime() {
+        runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Region target = new Region();
+            owner.getChildren().add(target);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+            M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
+
+            owner.applyCss();
+            transition.install();
+            M3MotionSettings.setAnimationsEnabled(owner, true);
+            try {
+                target.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);");
+                transition.animateEffectFromCss();
+
+                DropShadow animated = assertInstanceOf(DropShadow.class, target.getEffect());
+                assertEquals(0.0, animated.getRadius(), 0.0001);
+                assertTrue(transition.isRunning());
+
+                M3MotionSettings.setAnimationsEnabled(owner, false);
+
+                DropShadow settled = assertInstanceOf(DropShadow.class, target.getEffect());
+                assertEquals(8.0, settled.getRadius(), 0.0001);
+                assertEquals(3.0, settled.getOffsetY(), 0.0001);
+                assertFalse(transition.isRunning());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(owner);
+                transition.uninstall();
+            }
+        });
+    }
+
     /// Runs a task on the FX application thread and propagates failures.
     private static void runOnFxThread(Runnable task) {
         if (Platform.isFxApplicationThread()) {

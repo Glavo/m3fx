@@ -7,12 +7,14 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -24,6 +26,9 @@ final class M3CssEffectTransition {
     /// Handles owner interaction state changes.
     private final ChangeListener<Boolean> interactionStateListener =
             (observable, oldValue, newValue) -> animateEffectFromCss();
+
+    /// Updates the running effect animation when runtime motion settings change.
+    private final InvalidationListener motionSettingsInvalidation = observable -> refreshMotionSettings();
 
     /// The animation timeline for drop shadow transitions.
     private final Timeline animation = new Timeline();
@@ -51,6 +56,7 @@ final class M3CssEffectTransition {
         owner.focusedProperty().addListener(interactionStateListener);
         owner.pressedProperty().addListener(interactionStateListener);
         owner.disabledProperty().addListener(interactionStateListener);
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
     }
 
     /// Uninstalls interaction listeners and stops active animation.
@@ -59,6 +65,7 @@ final class M3CssEffectTransition {
         owner.focusedProperty().removeListener(interactionStateListener);
         owner.pressedProperty().removeListener(interactionStateListener);
         owner.disabledProperty().removeListener(interactionStateListener);
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         focusVisibleTracker.uninstall();
         animation.stop();
     }
@@ -66,6 +73,13 @@ final class M3CssEffectTransition {
     /// Returns whether the effect transition is currently running.
     boolean isRunning() {
         return animation.getStatus() == Animation.Status.RUNNING;
+    }
+
+    /// Applies changed animation settings to the current effect transition.
+    private void refreshMotionSettings() {
+        if (animation.getStatus() == Animation.Status.RUNNING) {
+            animateEffectFromCss();
+        }
     }
 
     /// Animates from the current target effect to the CSS-resolved target effect.
