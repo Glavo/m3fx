@@ -19,6 +19,7 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
+import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
@@ -33,12 +34,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// The number of default indeterminate shape states.
     private static final int INDETERMINATE_SHAPE_COUNT = 7;
-
-    /// The duration of one indeterminate morph segment.
-    private static final Duration MORPH_INTERVAL = Duration.millis(650.0);
-
-    /// The duration of the independent global rotation loop.
-    private static final Duration GLOBAL_ROTATION_DURATION = Duration.millis(4666.0);
 
     /// The rotation added by each morph segment.
     private static final double QUARTER_ROTATION = 0.25;
@@ -231,6 +226,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// Configures the indeterminate morph and global rotation loops.
     private void configureIndeterminateAnimation() {
+        M3MotionBehavior behavior = M3Animation.motionBehavior(getSkinnable());
+        Duration morphInterval = behavior.loadingIndicatorMorphInterval();
         indeterminateAnimation.getKeyFrames().clear();
         indeterminateAnimation.getKeyFrames().add(new KeyFrame(
                 Duration.ZERO,
@@ -238,14 +235,17 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         ));
         for (int i = 1; i <= INDETERMINATE_SHAPE_COUNT; i++) {
             indeterminateAnimation.getKeyFrames().add(new KeyFrame(
-                    MORPH_INTERVAL.multiply(i),
+                    morphInterval.multiply(i),
                     new KeyValue(indeterminatePhase, i, MORPH_INTERPOLATOR)
             ));
         }
 
         globalRotationAnimation.getKeyFrames().setAll(
                 new KeyFrame(Duration.ZERO, new KeyValue(globalRotation, 0.0, M3Motion.LINEAR)),
-                new KeyFrame(GLOBAL_ROTATION_DURATION, new KeyValue(globalRotation, 1.0, M3Motion.LINEAR))
+                new KeyFrame(
+                        behavior.loadingIndicatorGlobalRotationDuration(),
+                        new KeyValue(globalRotation, 1.0, M3Motion.LINEAR)
+                )
         );
     }
 

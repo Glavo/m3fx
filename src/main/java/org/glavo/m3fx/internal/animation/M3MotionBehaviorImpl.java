@@ -20,6 +20,8 @@ import java.util.Objects;
 /// @param subMenuHoverCloseDelay the submenu hover close delay
 /// @param linearProgressIndeterminateCycleDuration the indeterminate linear progress cycle duration
 /// @param circularProgressIndeterminateCycleDuration the indeterminate circular progress cycle duration
+/// @param loadingIndicatorMorphInterval the loading indicator morph segment duration
+/// @param loadingIndicatorGlobalRotationDuration the loading indicator global rotation loop duration
 @NotNullByDefault
 public record M3MotionBehaviorImpl(
         Duration tooltipShowDelay,
@@ -30,7 +32,9 @@ public record M3MotionBehaviorImpl(
         Duration typeAheadResetDelay,
         Duration subMenuHoverCloseDelay,
         Duration linearProgressIndeterminateCycleDuration,
-        Duration circularProgressIndeterminateCycleDuration
+        Duration circularProgressIndeterminateCycleDuration,
+        Duration loadingIndicatorMorphInterval,
+        Duration loadingIndicatorGlobalRotationDuration
 ) implements M3MotionBehavior {
     /// Creates a motion behavior implementation.
     public M3MotionBehaviorImpl {
@@ -43,6 +47,8 @@ public record M3MotionBehaviorImpl(
         validate(subMenuHoverCloseDelay, "subMenuHoverCloseDelay");
         validate(linearProgressIndeterminateCycleDuration, "linearProgressIndeterminateCycleDuration");
         validate(circularProgressIndeterminateCycleDuration, "circularProgressIndeterminateCycleDuration");
+        validate(loadingIndicatorMorphInterval, "loadingIndicatorMorphInterval");
+        validate(loadingIndicatorGlobalRotationDuration, "loadingIndicatorGlobalRotationDuration");
     }
 
     /// Validates one behavior duration.

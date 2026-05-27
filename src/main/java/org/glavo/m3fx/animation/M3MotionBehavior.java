@@ -64,6 +64,16 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     /// @return the cycle duration for indeterminate circular progress
     Duration circularProgressIndeterminateCycleDuration();
 
+    /// Returns the duration of one loading indicator shape morph segment.
+    ///
+    /// @return the duration of one loading indicator shape morph segment
+    Duration loadingIndicatorMorphInterval();
+
+    /// Returns the duration of one loading indicator global rotation loop.
+    ///
+    /// @return the duration of one loading indicator global rotation loop
+    Duration loadingIndicatorGlobalRotationDuration();
+
     /// Creates finite non-negative motion behavior timings.
     ///
     /// @param tooltipShowDelay the delay before a tooltip opens
@@ -75,6 +85,8 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     /// @param subMenuHoverCloseDelay the delay before hover exit closes a submenu
     /// @param linearProgressIndeterminateCycleDuration the linear progress indeterminate cycle duration
     /// @param circularProgressIndeterminateCycleDuration the circular progress indeterminate cycle duration
+    /// @param loadingIndicatorMorphInterval the loading indicator morph segment duration
+    /// @param loadingIndicatorGlobalRotationDuration the loading indicator global rotation loop duration
     /// @return immutable motion behavior timings
     static M3MotionBehavior create(
             Duration tooltipShowDelay,
@@ -85,7 +97,9 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
             Duration typeAheadResetDelay,
             Duration subMenuHoverCloseDelay,
             Duration linearProgressIndeterminateCycleDuration,
-            Duration circularProgressIndeterminateCycleDuration
+            Duration circularProgressIndeterminateCycleDuration,
+            Duration loadingIndicatorMorphInterval,
+            Duration loadingIndicatorGlobalRotationDuration
     ) {
         return new M3MotionBehaviorImpl(
                 Objects.requireNonNull(tooltipShowDelay, "tooltipShowDelay"),
@@ -102,6 +116,14 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
                 Objects.requireNonNull(
                         circularProgressIndeterminateCycleDuration,
                         "circularProgressIndeterminateCycleDuration"
+                ),
+                Objects.requireNonNull(
+                        loadingIndicatorMorphInterval,
+                        "loadingIndicatorMorphInterval"
+                ),
+                Objects.requireNonNull(
+                        loadingIndicatorGlobalRotationDuration,
+                        "loadingIndicatorGlobalRotationDuration"
                 )
         );
     }
@@ -119,7 +141,9 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
                 Duration.millis(1000.0),
                 M3Motion.SHORT4,
                 Duration.millis(1400.0),
-                Duration.millis(1332.0)
+                Duration.millis(1332.0),
+                Duration.millis(650.0),
+                Duration.millis(4666.0)
         );
     }
 
@@ -136,7 +160,9 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
                 Duration.millis(900.0),
                 M3Motion.SHORT3,
                 Duration.millis(1400.0),
-                Duration.millis(1332.0)
+                Duration.millis(1332.0),
+                Duration.millis(650.0),
+                Duration.millis(4666.0)
         );
     }
 }
