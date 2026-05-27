@@ -93,6 +93,39 @@ final class M3StateLayerTest {
         });
     }
 
+    /// Verifies that running owner-state opacity animation settles when animations are disabled at runtime.
+    @Test
+    void stateLayerSettlesOwnerStateOpacityWhenAnimationsAreDisabledAtRuntime() {
+        runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add("m3-button");
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+            M3MotionSettings.setAnimationsEnabled(owner, true);
+            try {
+                Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
+                owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+                stateLayer.animateOverlayOpacityFromOwnerState();
+
+                assertEquals(0.0, overlay.getOpacity(), 0.0001);
+                assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
+
+                M3MotionSettings.setAnimationsEnabled(owner, false);
+
+                assertTrue(overlay.getOpacity() > 0.0);
+                assertFalse(stateLayer.isOverlayOpacityAnimationRunning());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(owner);
+                stateLayer.uninstallStateTransitions();
+            }
+        });
+    }
+
     /// Verifies that installed theme tokens control runtime state layer opacity.
     @Test
     void stateLayerUsesInstalledThemeStateTokens() {
@@ -153,6 +186,36 @@ final class M3StateLayerTest {
             Region ripple = lookupRegion(stateLayer, ".m3-ripple");
             assertEquals(0.0, ripple.getOpacity(), 0.0001);
             assertFalse(stateLayer.isRippleAnimationRunning());
+        });
+    }
+
+    /// Verifies that a running ripple is cleared when animations are disabled at runtime.
+    @Test
+    void stateLayerClearsRippleWhenAnimationsAreDisabledAtRuntime() {
+        runOnFxThread(() -> {
+            Pane owner = new Pane();
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            stateLayer.installStateTransitions(owner);
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            M3MotionSettings.setAnimationsEnabled(owner, true);
+            try {
+                stateLayer.playRipple(20.0, 20.0);
+
+                Region ripple = lookupRegion(stateLayer, ".m3-ripple");
+                assertTrue(ripple.getOpacity() > 0.0);
+                assertTrue(stateLayer.isRippleAnimationRunning());
+
+                M3MotionSettings.setAnimationsEnabled(owner, false);
+
+                assertEquals(0.0, ripple.getOpacity(), 0.0001);
+                assertEquals(0.0, ripple.getScaleX(), 0.0001);
+                assertEquals(0.0, ripple.getScaleY(), 0.0001);
+                assertFalse(stateLayer.isRippleAnimationRunning());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(owner);
+                stateLayer.uninstallStateTransitions();
+            }
         });
     }
 

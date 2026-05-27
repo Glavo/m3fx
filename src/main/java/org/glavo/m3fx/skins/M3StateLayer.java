@@ -7,6 +7,7 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
@@ -22,6 +23,7 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ThemeResolver;
@@ -95,6 +97,9 @@ final class M3StateLayer extends Pane {
         animateOverlayOpacityFromOwnerState();
     };
 
+    /// Settles running state-layer animations when runtime motion settings change.
+    private final InvalidationListener motionSettingsInvalidation = observable -> refreshMotionSettings();
+
     /// Tracks keyboard-visible focus state for the owner.
     private @Nullable M3FocusVisibleTracker focusVisibleTracker;
 
@@ -142,6 +147,7 @@ final class M3StateLayer extends Pane {
         owner.pressedProperty().addListener(interactionStateListener);
         owner.disabledProperty().addListener(interactionStateListener);
         owner.getPseudoClassStates().addListener(pseudoClassStateListener);
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         if (owner instanceof ButtonBase button) {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, button.isArmed());
             button.armedProperty().addListener(buttonArmedStateListener);
@@ -160,6 +166,7 @@ final class M3StateLayer extends Pane {
         owner.pressedProperty().removeListener(interactionStateListener);
         owner.disabledProperty().removeListener(interactionStateListener);
         owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         if (owner instanceof ButtonBase button) {
             button.armedProperty().removeListener(buttonArmedStateListener);
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, false);
@@ -204,9 +211,7 @@ final class M3StateLayer extends Pane {
         Node owner = animationOwner();
         if (!M3Animation.areAnimationsEnabled(owner)) {
             rippleAnimation.stop();
-            ripple.setOpacity(0.0);
-            ripple.setScaleX(0.0);
-            ripple.setScaleY(0.0);
+            clearRipple();
             return;
         }
 
@@ -250,9 +255,7 @@ final class M3StateLayer extends Pane {
         Node owner = animationOwner();
         if (!M3Animation.areAnimationsEnabled(owner)) {
             rippleAnimation.stop();
-            ripple.setOpacity(0.0);
-            ripple.setScaleX(1.0);
-            ripple.setScaleY(1.0);
+            clearRipple();
             return;
         }
 
@@ -320,6 +323,11 @@ final class M3StateLayer extends Pane {
         overlayOpacityAnimation.stop();
         overlay.setOpacity(0.0);
         rippleAnimation.stop();
+        clearRipple();
+    }
+
+    /// Clears transient ripple visual state.
+    private void clearRipple() {
         ripple.setOpacity(0.0);
         ripple.setScaleX(0.0);
         ripple.setScaleY(0.0);
@@ -333,6 +341,30 @@ final class M3StateLayer extends Pane {
     /// Returns whether the ripple is currently animating.
     boolean isRippleAnimationRunning() {
         return rippleAnimation.getStatus() == Animation.Status.RUNNING;
+    }
+
+    /// Applies changed animation settings to currently running state-layer animations.
+    private void refreshMotionSettings() {
+        Node owner = stateOwner;
+        if (owner == null) {
+            return;
+        }
+
+        if (!M3Animation.areAnimationsEnabled(owner)) {
+            if (overlayOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+                overlayOpacityAnimation.stop();
+                overlay.setOpacity(resolvedOverlayOpacity(owner));
+            }
+            if (rippleAnimation.getStatus() == Animation.Status.RUNNING) {
+                rippleAnimation.stop();
+                clearRipple();
+            }
+            return;
+        }
+
+        if (overlayOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+            animateOverlayOpacityFromOwnerState();
+        }
     }
 
     /// Animates from the current overlay opacity to the opacity resolved from the owner state.
