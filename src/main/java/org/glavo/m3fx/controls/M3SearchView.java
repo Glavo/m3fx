@@ -319,7 +319,7 @@ public class M3SearchView extends Control {
         return switch (attribute) {
             case EXPANDED -> isActive();
             case TEXT -> getText();
-            case FOCUS_NODE -> getEditor();
+            case FOCUS_NODE -> accessibleFocusNode();
             case ITEM_COUNT -> getResults().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getResults(), parameters);
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -342,6 +342,7 @@ public class M3SearchView extends Control {
             case REQUEST_FOCUS -> {
                 activate();
                 getEditor().requestFocus();
+                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             }
             case FIRE -> fire();
             case EXPAND -> activate();
@@ -492,6 +493,7 @@ public class M3SearchView extends Control {
         }
         if (currentIndex == 0) {
             getEditor().requestFocus();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             return true;
         }
         return focusResultAt(currentIndex - 1);
@@ -508,7 +510,23 @@ public class M3SearchView extends Control {
             return false;
         }
         M3Accessible.showItem(result);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         return true;
+    }
+
+    /// Returns the current accessibility focus node.
+    ///
+    /// @return the focused result item when focus is inside results, otherwise the search editor
+    private Node accessibleFocusNode() {
+        int resultIndex = focusedResultIndex();
+        if (resultIndex >= 0) {
+            @Nullable Node result = getResults().get(resultIndex);
+            @Nullable Node focusTarget = M3Accessible.focusTarget(result);
+            if (focusTarget != null) {
+                return focusTarget;
+            }
+        }
+        return getEditor();
     }
 
     /// Returns the index of the result containing current keyboard focus.

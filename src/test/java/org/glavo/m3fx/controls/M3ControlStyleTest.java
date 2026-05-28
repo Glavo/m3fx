@@ -5660,24 +5660,31 @@ final class M3ControlStyleTest {
 
                 searchView.getEditor().requestFocus();
                 assertTrue(searchView.getEditor().isFocused());
+                assertSame(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 assertTrue(first.isFocused());
+                assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 assertTrue(second.isFocused());
+                assertSame(second, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
                 assertTrue(first.isFocused());
+                assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
                 assertTrue(searchView.getEditor().isFocused());
+                assertSame(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
                 assertTrue(first.isFocused());
+                assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, second);
                 assertTrue(second.isFocused());
+                assertSame(second, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
                 assertFalse(searchView.isActive());
@@ -5759,7 +5766,7 @@ final class M3ControlStyleTest {
                 sideSheet.show();
                 sideAction.requestFocus();
                 KeyEvent sideEscape = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE);
-                sideSheet.fireEvent(sideEscape);
+                sideAction.fireEvent(sideEscape);
 
                 assertFalse(sideSheet.isShown());
                 assertTrue(trigger.isFocused());
@@ -5768,7 +5775,7 @@ final class M3ControlStyleTest {
                 bottomSheet.show();
                 bottomAction.requestFocus();
                 KeyEvent bottomEscape = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE);
-                bottomSheet.fireEvent(bottomEscape);
+                bottomAction.fireEvent(bottomEscape);
 
                 assertFalse(bottomSheet.isShown());
                 assertTrue(trigger.isFocused());
