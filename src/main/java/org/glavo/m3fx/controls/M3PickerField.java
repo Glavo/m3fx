@@ -153,6 +153,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// The picker popup exit animation.
     private final Timeline hideAnimation = new Timeline();
 
+    /// Reports popup picker focus changes through this field's accessibility node.
+    private final M3AccessibleFocusNotifier popupFocusNotifier =
+            new M3AccessibleFocusNotifier(this, popupContent, this::focusNode);
+
     /// Whether value listeners are currently synchronizing the field and picker.
     private boolean synchronizingValue;
 
@@ -436,6 +440,8 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         popup.show(this, placement.x(), placement.y());
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        popupFocusNotifier.refresh();
         playShowAnimation();
     }
 
@@ -472,7 +478,11 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> editor.requestFocus();
+            case REQUEST_FOCUS -> {
+                editor.requestFocus();
+                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                popupFocusNotifier.refresh();
+            }
             case SHOW_MENU, EXPAND -> showPicker();
             case COLLAPSE -> hidePicker(true);
             case SHOW_ITEM -> showPickerAndForwardAccessibleAction(action, parameters);
@@ -560,6 +570,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             }
         });
         picker.addEventHandler(KeyEvent.KEY_PRESSED, this::handlePickerKeyPressed);
+        popupFocusNotifier.start();
     }
 
     /// Handles editor action commits.
@@ -706,6 +717,8 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         }
 
         focusNode().requestFocus();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        popupFocusNotifier.refresh();
     }
 
     /// Clears generated parse or range errors after user edits.
@@ -771,6 +784,8 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     private void handlePopupHidden() {
         showing.set(false);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        popupFocusNotifier.refresh();
         resetPopupAnimationState();
         if (focusEditorOnHidden) {
             focusEditorOnHidden = false;

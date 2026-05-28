@@ -79,6 +79,10 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The submenu popup exit animation.
     private final Timeline hideAnimation = new Timeline();
 
+    /// Reports popup submenu focus changes through this item's accessibility node.
+    private final M3AccessibleFocusNotifier popupFocusNotifier =
+            new M3AccessibleFocusNotifier(this, subMenu, this::focusNode);
+
     /// The pointer-hover open delay.
     private final PauseTransition hoverOpenDelay = new PauseTransition();
 
@@ -218,6 +222,7 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenuShowing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        popupFocusNotifier.refresh();
         playShowAnimation();
     }
 
@@ -328,6 +333,7 @@ public class M3SubMenuItem extends M3MenuItem {
             subMenuShowing.set(false);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            popupFocusNotifier.refresh();
             resetSubMenuAnimationState();
         });
         addEventFilter(ActionEvent.ACTION, this::handleOwnActionEvent);
@@ -338,6 +344,7 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.addEventHandler(ActionEvent.ACTION, this::handleSubMenuAction);
         subMenu.addEventHandler(MouseEvent.MOUSE_ENTERED, this::handleSubMenuMouseEntered);
         subMenu.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleSubMenuMouseExited);
+        popupFocusNotifier.start();
     }
 
     /// Returns the current submenu focus node for accessibility clients.
@@ -354,6 +361,7 @@ public class M3SubMenuItem extends M3MenuItem {
         if (!isSubMenuShowing()) {
             requestFocus();
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            popupFocusNotifier.refresh();
             return;
         }
 
@@ -361,6 +369,7 @@ public class M3SubMenuItem extends M3MenuItem {
         if (focusNode instanceof Node node && node != this) {
             M3Accessible.showItem(node);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            popupFocusNotifier.refresh();
             return;
         }
 
@@ -370,6 +379,7 @@ public class M3SubMenuItem extends M3MenuItem {
             requestFocus();
         }
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        popupFocusNotifier.refresh();
     }
 
     /// Handles this item's own action event by opening the submenu.
@@ -467,6 +477,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
         subMenu.focusFirstItem();
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        popupFocusNotifier.refresh();
         return true;
     }
 

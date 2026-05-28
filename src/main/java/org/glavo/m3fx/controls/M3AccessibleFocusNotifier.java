@@ -18,11 +18,12 @@ import java.util.function.Supplier;
 /// `M3AccessibleFocusNotifier` is used by composite controls whose public `FOCUS_NODE` query can point at
 /// whichever child currently owns focus. JavaFX accessibility clients only learn about that change when the
 /// owner control calls [Node#notifyAccessibleAttributeChanged(AccessibleAttribute)], so this helper centralizes
-/// the scene listener and change detection needed by app bars, groups, sheets, and other slot containers.
+/// the scene listener and change detection needed by app bars, groups, sheets, popup owners, and other slot
+/// containers.
 @NotNullByDefault
 final class M3AccessibleFocusNotifier {
-    /// The control or container node that owns the accessibility attribute.
-    private final Node owner;
+    /// The node whose scene focus owner should be observed.
+    private final Node sceneOwner;
 
     /// Supplies the currently focused child node, or `null` when focus is outside the owner content.
     private final Supplier<@Nullable Node> focusNodeSupplier;
@@ -30,7 +31,7 @@ final class M3AccessibleFocusNotifier {
     /// Runs when the focused accessibility child changes.
     private final Runnable focusNodeChangedNotifier;
 
-    /// Observes owner scene changes so the focus owner listener follows the attached scene.
+    /// Observes scene-owner changes so the focus owner listener follows the attached scene.
     private final ChangeListener<@Nullable Scene> sceneListener =
             (observable, oldScene, newScene) -> updateScene(newScene);
 
@@ -48,8 +49,32 @@ final class M3AccessibleFocusNotifier {
     private boolean started;
 
     /// Creates a notifier for one owner node.
+    ///
+    /// @param owner the node that owns and observes the `FOCUS_NODE` attribute
+    /// @param focusNodeSupplier the supplier that returns the current accessible focus node
     M3AccessibleFocusNotifier(Node owner, Supplier<@Nullable Node> focusNodeSupplier) {
-        this(owner, focusNodeSupplier, () -> owner.notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE));
+        this(owner, owner, focusNodeSupplier);
+    }
+
+    /// Creates a notifier whose owner and observed scene node differ.
+    ///
+    /// This overload is intended for popup-backed controls whose public owner remains in the application scene
+    /// while popup content receives focus in a separate popup scene.
+    ///
+    /// @param notificationOwner the node that owns the `FOCUS_NODE` attribute
+    /// @param sceneOwner the node whose scene focus owner is observed
+    /// @param focusNodeSupplier the supplier that returns the current accessible focus node
+    M3AccessibleFocusNotifier(
+            Node notificationOwner,
+            Node sceneOwner,
+            Supplier<@Nullable Node> focusNodeSupplier
+    ) {
+        this(
+                notificationOwner,
+                sceneOwner,
+                focusNodeSupplier,
+                () -> notificationOwner.notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE)
+        );
     }
 
     /// Creates a notifier for one owner node with a custom notification callback.
@@ -58,19 +83,30 @@ final class M3AccessibleFocusNotifier {
             Supplier<@Nullable Node> focusNodeSupplier,
             Runnable focusNodeChangedNotifier
     ) {
-        this.owner = Objects.requireNonNull(owner, "owner");
+        this(owner, owner, focusNodeSupplier, focusNodeChangedNotifier);
+    }
+
+    /// Creates a notifier with a custom notification callback and observed scene node.
+    M3AccessibleFocusNotifier(
+            Node notificationOwner,
+            Node sceneOwner,
+            Supplier<@Nullable Node> focusNodeSupplier,
+            Runnable focusNodeChangedNotifier
+    ) {
+        Objects.requireNonNull(notificationOwner, "notificationOwner");
+        this.sceneOwner = Objects.requireNonNull(sceneOwner, "sceneOwner");
         this.focusNodeSupplier = Objects.requireNonNull(focusNodeSupplier, "focusNodeSupplier");
         this.focusNodeChangedNotifier = Objects.requireNonNull(focusNodeChangedNotifier, "focusNodeChangedNotifier");
     }
 
-    /// Starts listening to the owner's current and future scenes.
+    /// Starts listening to the observed node's current and future scenes.
     void start() {
         if (started) {
             return;
         }
         started = true;
-        owner.sceneProperty().addListener(sceneListener);
-        updateScene(owner.getScene());
+        sceneOwner.sceneProperty().addListener(sceneListener);
+        updateScene(sceneOwner.getScene());
     }
 
     /// Stops listening and clears cached focus state.
@@ -79,7 +115,7 @@ final class M3AccessibleFocusNotifier {
             return;
         }
         started = false;
-        owner.sceneProperty().removeListener(sceneListener);
+        sceneOwner.sceneProperty().removeListener(sceneListener);
         updateScene(null);
     }
 

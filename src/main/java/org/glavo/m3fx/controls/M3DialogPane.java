@@ -14,6 +14,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonBase;
@@ -59,6 +60,10 @@ public class M3DialogPane extends DialogPane {
     // The styleable dialog content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
+    /// Reports focused dialog content or action changes to accessibility clients.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::currentOrFirstFocusableItem);
+
     /// Creates a dialog pane.
     public M3DialogPane() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -67,6 +72,7 @@ public class M3DialogPane extends DialogPane {
         contentTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
         contentProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         getButtonTypes().addListener((ListChangeListener<ButtonType>) change -> notifyAccessibleItemsChanged());
+        focusNotifier.start();
         updateMetrics();
         updateAccessibleText();
     }
@@ -187,7 +193,7 @@ public class M3DialogPane extends DialogPane {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case CONTENTS -> getContent();
-            case FOCUS_NODE -> firstFocusableItem();
+            case FOCUS_NODE -> currentOrFirstFocusableItem();
             case ITEM_COUNT -> accessibleItemCount();
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
             case TEXT -> {
@@ -203,8 +209,16 @@ public class M3DialogPane extends DialogPane {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(firstFocusableItem());
-            case SHOW_ITEM -> M3Accessible.showItem(accessibleActionItem(parameters));
+            case REQUEST_FOCUS -> {
+                M3Accessible.showItem(firstFocusableItem());
+                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                focusNotifier.refresh();
+            }
+            case SHOW_ITEM -> {
+                M3Accessible.showItem(accessibleActionItem(parameters));
+                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                focusNotifier.refresh();
+            }
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -272,6 +286,7 @@ public class M3DialogPane extends DialogPane {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        focusNotifier.refresh();
     }
 
     /// Returns the indexed accessibility item count for content and action buttons.
@@ -376,6 +391,44 @@ public class M3DialogPane extends DialogPane {
             }
         }
         return null;
+    }
+
+    /// Returns the currently focused dialog item, falling back to the preferred dialog focus target.
+    private @Nullable Node currentOrFirstFocusableItem() {
+        @Nullable Node focusedItem = currentFocusableItem();
+        return focusedItem == null ? firstFocusableItem() : focusedItem;
+    }
+
+    /// Returns the dialog content or action that currently contains scene focus.
+    private @Nullable Node currentFocusableItem() {
+        @Nullable Scene scene = getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        if (focusOwner == null) {
+            return null;
+        }
+
+        @Nullable Node content = getContent();
+        @Nullable Node contentFocusTarget = containedFocusTarget(content, focusOwner);
+        if (contentFocusTarget != null) {
+            return contentFocusTarget;
+        }
+
+        for (ButtonType buttonType : getButtonTypes()) {
+            @Nullable Node buttonFocusTarget = containedFocusTarget(lookupButton(buttonType), focusOwner);
+            if (buttonFocusTarget != null) {
+                return buttonFocusTarget;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the focus owner when it is inside one dialog item, falling back to the item's focus target.
+    private static @Nullable Node containedFocusTarget(@Nullable Node item, Node focusOwner) {
+        @Nullable Node itemFocusTarget = M3Accessible.focusTarget(item);
+        if (itemFocusTarget == null || !M3Accessible.containsNode(item, focusOwner)) {
+            return null;
+        }
+        return M3Accessible.canReach(focusOwner) ? focusOwner : itemFocusTarget;
     }
 
     /// Returns the action button at an index in button type order.

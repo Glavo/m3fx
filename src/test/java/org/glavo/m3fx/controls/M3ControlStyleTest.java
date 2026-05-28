@@ -1953,19 +1953,26 @@ final class M3ControlStyleTest {
                 assertEquals(cancelButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
                 assertEquals(okButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
                 assertNull(dialogPane.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, -1));
-                assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                Object initialFocusNode = dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+                assertTrue(initialFocusNode == contentAction
+                        || initialFocusNode == cancelButton
+                        || initialFocusNode == okButton);
 
                 dialogPane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
                 assertTrue(contentAction.isFocused());
+                assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, ButtonType.OK);
                 assertTrue(okButton.isFocused());
+                assertEquals(okButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
                 assertTrue(cancelButton.isFocused());
+                assertEquals(cancelButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, contentAction);
                 assertTrue(contentAction.isFocused());
+                assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
             }
@@ -15116,6 +15123,62 @@ final class M3ControlStyleTest {
                 assertEquals(3, notifications.get());
             } finally {
                 notifier.stop();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that accessible focus notifications can observe popup-hosted content for a separate owner.
+    @Test
+    void accessibleFocusNotifierReportsSeparateSceneFocusChanges() {
+        runOnFxThread(() -> {
+            M3Button owner = new M3Button("Owner");
+            M3Button first = new M3Button("First");
+            M3Button second = new M3Button("Second");
+            M3Surface popupSurface = new M3Surface(first, second);
+            AtomicInteger notifications = new AtomicInteger();
+            M3AccessibleFocusNotifier notifier = new M3AccessibleFocusNotifier(
+                    owner,
+                    popupSurface,
+                    () -> M3Accessible.currentFocusTarget(popupSurface, popupSurface.getContent()),
+                    notifications::incrementAndGet
+            );
+            Stage stage = new Stage();
+            javafx.stage.Popup popup = new javafx.stage.Popup();
+            try {
+                notifier.start();
+                VBox root = new VBox(8.0, owner);
+                Scene scene = new Scene(root, 320.0, 160.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                popup.getContent().add(popupSurface);
+                popup.show(stage);
+                root.applyCss();
+                root.layout();
+                popupSurface.applyCss();
+                popupSurface.layout();
+                notifier.refresh();
+                notifications.set(0);
+
+                first.requestFocus();
+
+                assertTrue(first.isFocused());
+                assertEquals(1, notifications.get());
+
+                second.requestFocus();
+
+                assertTrue(second.isFocused());
+                assertEquals(2, notifications.get());
+
+                notifier.stop();
+                first.requestFocus();
+
+                assertTrue(first.isFocused());
+                assertEquals(2, notifications.get());
+            } finally {
+                notifier.stop();
+                popup.hide();
                 stage.close();
             }
         });

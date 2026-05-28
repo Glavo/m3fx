@@ -290,11 +290,16 @@ final class M3PickerFieldTest {
                 field.showPicker();
                 field.getPicker().requestFocus();
                 assertTrue(field.isShowing());
+                Node popupFocusNode =
+                        assertInstanceOf(Node.class, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(popupFocusNode == field.getPicker()
+                        || M3Accessible.containsNode(field.getPicker(), popupFocusNode));
 
                 field.getPicker().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
 
                 assertFalse(field.isShowing());
                 assertTrue(field.getEditor().isFocused());
+                assertSame(field.getEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
                 M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);

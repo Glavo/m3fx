@@ -101,6 +101,10 @@ public class M3Menu extends Control {
     /// Clears the type-ahead prefix after the user stops typing.
     private final PauseTransition typeAheadResetDelay = new PauseTransition();
 
+    /// Reports focused menu-item changes to accessibility clients.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::focusedAccessibleNode);
+
     /// Updates item listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
@@ -123,6 +127,8 @@ public class M3Menu extends Control {
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     };
 
     /// Whether the menu is currently synchronizing selected states.
@@ -396,6 +402,7 @@ public class M3Menu extends Control {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
+        focusNotifier.start();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
                 clearTypeAheadBuffer();
@@ -548,6 +555,7 @@ public class M3Menu extends Control {
             item.requestFocus();
         }
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
         return true;
     }
 
@@ -608,6 +616,7 @@ public class M3Menu extends Control {
                     && focusMenuItem(subMenuItem)) {
                 subMenuItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
                 notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                focusNotifier.refresh();
                 return true;
             }
         }
