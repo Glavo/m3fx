@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -154,6 +155,23 @@ final class M3TimePickerTest {
 
         picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
         assertEquals(LocalTime.of(10, 30), picker.getValue());
+    }
+
+    /// Verifies that horizontal keyboard navigation follows visual order in right-to-left layouts.
+    @Test
+    void timePickerMirrorsHorizontalKeyboardNavigationInRightToLeftLayouts() {
+        M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
+        picker.setMinuteStep(15);
+        picker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertEquals(LocalTime.of(9, 30), picker.getValue());
+
+        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+        assertEquals(LocalTime.of(10, 30), picker.getValue());
+
+        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+        assertEquals(LocalTime.of(10, 45), picker.getValue());
     }
 
     /// Verifies that accessibility adjustment actions mirror time picker keyboard navigation.

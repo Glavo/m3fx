@@ -4,13 +4,17 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.event.EventType;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -251,6 +255,46 @@ final class M3DateRangePickerFieldTest {
         });
     }
 
+    /// Verifies that keyboard dismissal from range popup picker content returns focus to the start editor.
+    @Test
+    void dateRangePickerFieldRestoresStartEditorFocusAfterKeyboardDismissal() {
+        runOnFxThread(() -> {
+            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            M3MotionSettings.setAnimationsEnabled(false);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 18),
+                    LocalDate.of(2026, 5, 22)
+            );
+            Pane root = new Pane(field);
+            Scene scene = new Scene(root, 760.0, 220.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
+                root.layout();
+
+                field.getStartEditor().requestFocus();
+                assertTrue(field.getStartEditor().isFocused());
+
+                field.showPicker();
+                field.getPicker().requestFocus();
+                assertTrue(field.isShowing());
+
+                field.getPicker().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getStartEditor().isFocused());
+            } finally {
+                stage.close();
+                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            }
+        });
+    }
+
     /// Verifies that the range field popup inherits a locally installed parent theme.
     @Test
     void dateRangePickerFieldPopupInheritsLocalParentThemeContext() {
@@ -328,5 +372,10 @@ final class M3DateRangePickerFieldTest {
             }
         }
         throw new AssertionError("Missing preset button: " + text);
+    }
+
+    /// Creates a key event for range picker field keyboard tests.
+    private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
+        return new KeyEvent(eventType, "", "", code, false, false, false, false);
     }
 }

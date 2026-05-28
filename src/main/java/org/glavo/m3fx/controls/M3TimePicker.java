@@ -339,11 +339,11 @@ public class M3TimePicker extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         boolean handled = switch (event.getCode()) {
             case LEFT -> {
-                moveByHours(-1);
+                moveHorizontally(false);
                 yield true;
             }
             case RIGHT -> {
-                moveByHours(1);
+                moveHorizontally(true);
                 yield true;
             }
             case UP -> {
@@ -368,6 +368,12 @@ public class M3TimePicker extends Control {
         if (handled) {
             event.consume();
         }
+    }
+
+    /// Moves the selected or implied time in the visual horizontal arrow direction.
+    private void moveHorizontally(boolean rightKey) {
+        boolean forward = M3SelectionNavigation.isRightToLeft(this) != rightKey;
+        moveByHours(forward ? 1 : -1);
     }
 
     /// Moves the selected or implied time by a number of hours.

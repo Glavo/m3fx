@@ -4,14 +4,18 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.event.EventType;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -261,6 +265,43 @@ final class M3PickerFieldTest {
         });
     }
 
+    /// Verifies that keyboard dismissal from popup picker content returns focus to the editor.
+    @Test
+    void pickerFieldRestoresEditorFocusAfterKeyboardDismissal() {
+        runOnFxThread(() -> {
+            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            M3MotionSettings.setAnimationsEnabled(false);
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+            Pane root = new Pane(field);
+            Scene scene = new Scene(root, 420.0, 180.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                field.resizeRelocate(24.0, 24.0, 320.0, 72.0);
+                root.layout();
+
+                field.getEditor().requestFocus();
+                assertTrue(field.getEditor().isFocused());
+
+                field.showPicker();
+                field.getPicker().requestFocus();
+                assertTrue(field.isShowing());
+
+                field.getPicker().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getEditor().isFocused());
+            } finally {
+                stage.close();
+                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            }
+        });
+    }
+
     /// Verifies that picker popup content inherits a locally installed parent theme.
     @Test
     void pickerFieldPopupInheritsLocalParentThemeContext() {
@@ -345,5 +386,10 @@ final class M3PickerFieldTest {
             }
         }
         throw new AssertionError("Missing preset button: " + text);
+    }
+
+    /// Creates a key event for picker field keyboard tests.
+    private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
+        return new KeyEvent(eventType, "", "", code, false, false, false, false);
     }
 }
