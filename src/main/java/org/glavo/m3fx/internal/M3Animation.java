@@ -161,13 +161,23 @@ public final class M3Animation {
     ///
     /// @param animation the animation to settle at its final state
     public static void finish(Animation animation) {
+        finish(animation, true);
+    }
+
+    /// Finishes an animation, optionally skipping `stop()` for animations embedded in a parent transition.
+    ///
+    /// @param animation the animation to settle at its final state
+    /// @param stop whether to stop the animation before applying final values
+    private static void finish(Animation animation, boolean stop) {
         Objects.requireNonNull(animation, "animation");
-        animation.stop();
+        if (stop) {
+            animation.stop();
+        }
         if (animation instanceof Timeline timeline) {
             finishTimeline(timeline);
         } else if (animation instanceof ParallelTransition parallelTransition) {
             for (Animation child : parallelTransition.getChildren()) {
-                finish(child);
+                finish(child, false);
             }
         } else {
             Duration totalDuration = animation.getTotalDuration();

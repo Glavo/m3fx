@@ -25,6 +25,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -92,6 +93,9 @@ public class M3FabMenu extends Control {
 
     /// Handles detached action item activation before the default skin attaches the item.
     private final EventHandler<ActionEvent> actionItemActionHandler = this::handleActionItemAction;
+
+    /// Handles keyboard navigation from the menu root and action items.
+    private final EventHandler<KeyEvent> navigationKeyHandler = this::handleNavigationKeyPressed;
 
     /// Updates item styles and visibility when action items change.
     private final ListChangeListener<Node> actionsListener = change -> {
@@ -312,7 +316,7 @@ public class M3FabMenu extends Control {
         actions.getChildren().addListener(actionsListener);
         addEventHandler(ActionEvent.ACTION, this::handleActionItemAction);
         toggleButton.addEventHandler(ActionEvent.ACTION, event -> toggle());
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventHandler(KeyEvent.KEY_PRESSED, navigationKeyHandler);
         applyCollapsedState();
     }
 
@@ -326,6 +330,12 @@ public class M3FabMenu extends Control {
 
     /// Applies keyboard focus navigation across visible action items and the toggle button.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (event.getCode() == KeyCode.ESCAPE && isExpanded()) {
+            hide();
+            event.consume();
+            return;
+        }
+
         List<Node> targets = focusTargets();
         if (targets.isEmpty()) {
             return;
@@ -376,6 +386,7 @@ public class M3FabMenu extends Control {
 
     /// Applies expanded state, using animation only after the control is attached to a scene.
     private void setExpandedState(boolean expanded) {
+        boolean restoreToggleFocus = !expanded && isFocusInsideActionItems();
         stopAnimation();
         if (getScene() == null) {
             if (expanded) {
@@ -383,6 +394,7 @@ public class M3FabMenu extends Control {
             } else {
                 applyCollapsedState();
             }
+            restoreToggleFocusAfterCollapse(restoreToggleFocus);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             return;
         }
@@ -392,6 +404,7 @@ public class M3FabMenu extends Control {
         } else {
             playCollapseAnimation();
         }
+        restoreToggleFocusAfterCollapse(restoreToggleFocus);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
@@ -405,6 +418,32 @@ public class M3FabMenu extends Control {
 
         int currentIndex = focusedTargetIndex(targets);
         return M3Accessible.focusTarget(targets.get(currentIndex));
+    }
+
+    /// Returns whether keyboard focus is currently inside one of the expanded action items.
+    private boolean isFocusInsideActionItems() {
+        if (getScene() == null) {
+            return false;
+        }
+
+        @Nullable Node focusOwner = getScene().getFocusOwner();
+        if (focusOwner == null) {
+            return false;
+        }
+
+        for (Node item : getItems()) {
+            if (M3Accessible.containsNode(item, focusOwner)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Moves focus back to the toggle button after collapsing hidden action items.
+    private void restoreToggleFocusAfterCollapse(boolean restoreToggleFocus) {
+        if (restoreToggleFocus && M3Accessible.canReach(toggleButton)) {
+            toggleButton.requestFocus();
+        }
     }
 
     /// Plays the action item expand animation.
@@ -504,6 +543,7 @@ public class M3FabMenu extends Control {
     private void installAction(Node item) {
         M3ControlStyles.add(item, ACTION_STYLE_CLASS);
         item.addEventHandler(ActionEvent.ACTION, actionItemActionHandler);
+        item.addEventFilter(KeyEvent.KEY_PRESSED, navigationKeyHandler);
         if (isExpanded()) {
             item.setVisible(true);
             item.setManaged(true);
@@ -530,6 +570,7 @@ public class M3FabMenu extends Control {
     private void clearActionStyle(Node item) {
         item.getStyleClass().remove(ACTION_STYLE_CLASS);
         item.removeEventHandler(ActionEvent.ACTION, actionItemActionHandler);
+        item.removeEventFilter(KeyEvent.KEY_PRESSED, navigationKeyHandler);
         item.setVisible(true);
         item.setManaged(true);
         item.setOpacity(1.0);

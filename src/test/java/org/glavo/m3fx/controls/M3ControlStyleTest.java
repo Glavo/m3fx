@@ -1029,6 +1029,58 @@ final class M3ControlStyleTest {
         assertFalse(menu.isExpanded());
     }
 
+    /// Verifies that FAB menu keyboard navigation, dismissal, and actions keep focus reachable.
+    @Test
+    void fabMenuRestoresToggleFocusWhenCollapsedFromFocusedAction() {
+        runOnFxThread(() -> {
+            M3FloatingActionButton firstAction = new M3FloatingActionButton("A");
+            M3FloatingActionButton secondAction = new M3FloatingActionButton("B");
+            M3FabMenu menu = new M3FabMenu();
+            menu.addItems(firstAction, secondAction);
+            Pane root = new Pane(menu);
+            Stage stage = new Stage();
+
+            try {
+                M3MotionSettings.setAnimationsEnabled(menu, false);
+                Scene scene = new Scene(root, 220.0, 220.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                menu.resizeRelocate(24.0, 24.0, 120.0, 160.0);
+                root.layout();
+
+                menu.show();
+                firstAction.requestFocus();
+                assertTrue(firstAction.isFocused());
+
+                firstAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(secondAction.isFocused());
+                secondAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+                assertTrue(menu.getToggleButton().isFocused());
+                menu.getToggleButton().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(secondAction.isFocused());
+
+                secondAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                assertFalse(menu.isExpanded());
+                assertTrue(menu.getToggleButton().isFocused());
+
+                menu.show();
+                firstAction.requestFocus();
+                assertTrue(firstAction.isFocused());
+
+                firstAction.fire();
+
+                assertFalse(menu.isExpanded());
+                assertTrue(menu.getToggleButton().isFocused());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(menu);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that FAB menu action spacing is styleable from CSS.
     @Test
     void fabMenuActionSpacingTokenIsStyleable() {
