@@ -7,6 +7,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -162,6 +163,133 @@ final class M3Accessible {
     static @Nullable Node firstFocusTarget(@Nullable Node first, @Nullable Node second) {
         @Nullable Node firstTarget = focusTarget(first);
         return firstTarget != null ? firstTarget : focusTarget(second);
+    }
+
+    /// Returns the current focus target inside the supplied item list, or the first focusable item.
+    static @Nullable Node currentOrFirstFocusTarget(Node owner, ObservableList<? extends Node> items) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        @Nullable Node currentTarget = currentFocusTarget(owner, items);
+        return currentTarget != null ? currentTarget : firstFocusTarget(items);
+    }
+
+    /// Returns the current focus target inside a leading item or item list, or the first focusable item.
+    static @Nullable Node currentOrFirstFocusTarget(
+            Node owner,
+            @Nullable Node leading,
+            ObservableList<? extends Node> items
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        @Nullable Node currentTarget = currentFocusTarget(owner, leading, items);
+        return currentTarget != null ? currentTarget : firstFocusTarget(leading, items);
+    }
+
+    /// Returns the current focus target inside an item list or trailing item, or the first focusable item.
+    static @Nullable Node currentOrFirstFocusTarget(
+            Node owner,
+            ObservableList<? extends Node> items,
+            @Nullable Node trailing
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        @Nullable Node currentTarget = currentFocusTarget(owner, items, trailing);
+        return currentTarget != null ? currentTarget : firstFocusTarget(items, trailing);
+    }
+
+    /// Returns the current focus target inside either optional child node, or the first focusable item.
+    static @Nullable Node currentOrFirstFocusTarget(Node owner, @Nullable Node first, @Nullable Node second) {
+        Objects.requireNonNull(owner, "owner");
+        @Nullable Node currentTarget = currentFocusTarget(owner, first, second);
+        return currentTarget != null ? currentTarget : firstFocusTarget(first, second);
+    }
+
+    /// Returns the current focus owner when it belongs to one item in the supplied list.
+    private static @Nullable Node currentFocusTarget(Node owner, ObservableList<? extends Node> items) {
+        @Nullable Node focusOwner = focusOwner(owner);
+        if (focusOwner == null) {
+            return null;
+        }
+
+        for (Node item : items) {
+            @Nullable Node target = containedFocusTarget(item, focusOwner);
+            if (target != null) {
+                return target;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the current focus owner when it belongs to a leading item or one item in the supplied list.
+    private static @Nullable Node currentFocusTarget(
+            Node owner,
+            @Nullable Node leading,
+            ObservableList<? extends Node> items
+    ) {
+        @Nullable Node focusOwner = focusOwner(owner);
+        if (focusOwner == null) {
+            return null;
+        }
+
+        @Nullable Node leadingTarget = containedFocusTarget(leading, focusOwner);
+        if (leadingTarget != null) {
+            return leadingTarget;
+        }
+
+        for (Node item : items) {
+            @Nullable Node target = containedFocusTarget(item, focusOwner);
+            if (target != null) {
+                return target;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the current focus owner when it belongs to one item in the supplied list or a trailing item.
+    private static @Nullable Node currentFocusTarget(
+            Node owner,
+            ObservableList<? extends Node> items,
+            @Nullable Node trailing
+    ) {
+        @Nullable Node focusOwner = focusOwner(owner);
+        if (focusOwner == null) {
+            return null;
+        }
+
+        for (Node item : items) {
+            @Nullable Node target = containedFocusTarget(item, focusOwner);
+            if (target != null) {
+                return target;
+            }
+        }
+
+        return containedFocusTarget(trailing, focusOwner);
+    }
+
+    /// Returns the current focus owner when it belongs to either optional child node.
+    private static @Nullable Node currentFocusTarget(Node owner, @Nullable Node first, @Nullable Node second) {
+        @Nullable Node focusOwner = focusOwner(owner);
+        if (focusOwner == null) {
+            return null;
+        }
+
+        @Nullable Node firstTarget = containedFocusTarget(first, focusOwner);
+        return firstTarget != null ? firstTarget : containedFocusTarget(second, focusOwner);
+    }
+
+    /// Returns the current scene focus owner for an owner node.
+    private static @Nullable Node focusOwner(Node owner) {
+        @Nullable Scene scene = owner.getScene();
+        return scene == null ? null : scene.getFocusOwner();
+    }
+
+    /// Returns a focus owner when it is contained by an item that can expose focus.
+    private static @Nullable Node containedFocusTarget(@Nullable Node item, Node focusOwner) {
+        @Nullable Node itemFocusTarget = focusTarget(item);
+        if (itemFocusTarget == null || !containsNode(item, focusOwner)) {
+            return null;
+        }
+        return canReach(focusOwner) ? focusOwner : itemFocusTarget;
     }
 
     /// Returns whether a node can receive a direct or descendant focus request.

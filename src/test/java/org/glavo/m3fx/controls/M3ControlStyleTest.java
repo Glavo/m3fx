@@ -14927,6 +14927,142 @@ final class M3ControlStyleTest {
         assertNull(bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
     }
 
+    /// Verifies that slot and container controls report the currently focused accessible child.
+    @Test
+    void slotContainersReportCurrentFocusedAccessibleChild() {
+        runOnFxThread(() -> {
+            M3Button topNavigation = new M3Button("Menu");
+            M3Button topSearch = new M3Button("Search");
+            M3Button topAccount = new M3Button("Account");
+            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topSearch, topAccount);
+
+            M3Button bottomSearch = new M3Button("Search");
+            M3Button bottomMore = new M3Button("More");
+            M3Button bottomCreate = new M3Button("Create");
+            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                    M3BottomAppBarFloatingActionAlignment.END,
+                    bottomCreate,
+                    bottomSearch,
+                    bottomMore
+            );
+
+            M3Button bannerDismiss = new M3Button("Dismiss");
+            M3Button bannerAction = new M3Button("Action");
+            M3Banner banner = new M3Banner("Message", bannerDismiss, bannerAction);
+
+            M3Button surfacePrimary = new M3Button("Primary");
+            M3Button surfaceSecondary = new M3Button("Secondary");
+            M3Surface surface = new M3Surface(surfacePrimary, surfaceSecondary);
+
+            M3Button badgedContent = new M3Button("Inbox");
+            M3Badge badge = new M3Badge("3");
+            badge.setFocusTraversable(true);
+            M3BadgedBox badgedBox = new M3BadgedBox(badgedContent, badge);
+
+            M3Button rowContent = new M3Button("Row content");
+            M3Button rowTrailing = new M3Button("Row trailing");
+            M3FormRow formRow = new M3FormRow("Name", "", rowContent, rowTrailing);
+
+            M3Button paneFirst = new M3Button("Pane first");
+            M3Button paneSecond = new M3Button("Pane second");
+            M3FormPane formPane = new M3FormPane(paneFirst, paneSecond);
+
+            M3Button sectionFirst = new M3Button("Section first");
+            M3Button sectionSecond = new M3Button("Section second");
+            M3FormSection formSection = new M3FormSection("Settings", sectionFirst, sectionSecond);
+
+            M3Button groupFirst = new M3Button("Group first");
+            M3Button groupSecond = new M3Button("Group second");
+            M3ButtonGroup buttonGroup = new M3ButtonGroup(groupFirst, groupSecond);
+
+            M3SplitButton splitButton = new M3SplitButton("Create");
+
+            M3Button sideContent = new M3Button("Side content");
+            M3Button sideAction = new M3Button("Side action");
+            M3SideSheet sideSheet = new M3SideSheet("Side", sideContent, sideAction);
+
+            M3Button bottomContent = new M3Button("Bottom content");
+            M3Button bottomAction = new M3Button("Bottom action");
+            M3BottomSheet bottomSheet = new M3BottomSheet("Bottom", bottomContent, bottomAction);
+
+            VBox root = new VBox(
+                    8.0,
+                    topAppBar,
+                    bottomAppBar,
+                    banner,
+                    surface,
+                    badgedBox,
+                    formRow,
+                    formPane,
+                    formSection,
+                    buttonGroup,
+                    splitButton,
+                    sideSheet,
+                    bottomSheet
+            );
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 760.0, 960.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                topAccount.requestFocus();
+                assertTrue(topAccount.isFocused());
+                assertSame(topAccount, topAppBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                bottomCreate.requestFocus();
+                assertTrue(bottomCreate.isFocused());
+                assertSame(bottomCreate, bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                bannerAction.requestFocus();
+                assertTrue(bannerAction.isFocused());
+                assertSame(bannerAction, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                surfaceSecondary.requestFocus();
+                assertTrue(surfaceSecondary.isFocused());
+                assertSame(surfaceSecondary, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                badge.requestFocus();
+                assertTrue(badge.isFocused());
+                assertSame(badge, badgedBox.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                rowTrailing.requestFocus();
+                assertTrue(rowTrailing.isFocused());
+                assertSame(rowTrailing, formRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                paneSecond.requestFocus();
+                assertTrue(paneSecond.isFocused());
+                assertSame(paneSecond, formPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sectionSecond.requestFocus();
+                assertTrue(sectionSecond.isFocused());
+                assertSame(sectionSecond, formSection.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                groupSecond.requestFocus();
+                assertTrue(groupSecond.isFocused());
+                assertSame(groupSecond, buttonGroup.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                splitButton.getMenuButton().requestFocus();
+                assertTrue(splitButton.getMenuButton().isFocused());
+                assertSame(splitButton.getMenuButton(),
+                        splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sideAction.requestFocus();
+                assertTrue(sideAction.isFocused());
+                assertSame(sideAction, sideSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                bottomAction.requestFocus();
+                assertTrue(bottomAction.isFocused());
+                assertSame(bottomAction, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that custom controls expose stable accessibility roles.
     @Test
     void controlsExposeAccessibilityRoles() {

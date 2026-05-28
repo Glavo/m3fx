@@ -307,7 +307,7 @@ public class M3BottomSheet extends Control {
         return switch (attribute) {
             case CONTENTS -> getContent();
             case EXPANDED -> isShown();
-            case FOCUS_NODE -> M3Accessible.focusTarget(M3Accessible.itemAt(getContent(), getActions(), 0));
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getContent(), getActions());
             case ITEM_COUNT -> M3Accessible.itemCount(getContent(), getActions());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), getActions(), parameters);
             case TEXT -> getHeadline();

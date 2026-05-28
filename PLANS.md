@@ -95,6 +95,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, loading indicator default and contained variants, linear progress, and circular progress.
 - Expressive progress indicators render wavy active paths, separated tracks, and linear stop indicators while baseline progress indicators retain flat line and arc geometry.
 - Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, type-ahead navigation, visible-row accessibility focus, and accessibility routing.
+- Slot and container controls route accessibility focus to the currently focused child when focus is inside their indexed content, falling back to the first reachable focus target for default focus requests.
 - Right-to-left horizontal keyboard traversal mirrors the rendered visual direction for connected button groups, icon toggle groups, chip groups, segmented button groups, tab bars, navigation bars, split buttons, carousels, date pickers, and time pickers.
 
 ## Demo And Verification
@@ -110,7 +111,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Dark expressive popup visual coverage opens real menu and tooltip popups, checks inherited profile and brightness mode classes, and writes rendered snapshots for overlay review.
 - Expressive progress visual coverage writes dedicated snapshots for determinate and indeterminate wavy linear and circular progress indicators, plus default and contained loading indicator presentation.
 - Demo interaction visual coverage checks hover and pressed-state snapshots for buttons, sidebar destinations, and toggle icon buttons, plus focus feedback for text fields and no-motion state changes.
-- Keyboard traversal tests cover right-to-left horizontal focus and selection behavior across action groups, selection groups, tabs, navigation bars, split buttons, carousels, date pickers, and time pickers. Search control tests cover editor, result, and trailing action focus routing. Picker field popup and modal sheet tests cover Escape dismissal and focus restoration from real child focus targets. Navigation drawer tests cover collapsible group disclosure keys and focus restoration in left-to-right and right-to-left layouts. FAB menu tests cover action-item focus traversal, Escape dismissal, and toggle focus restoration after collapse.
+- Keyboard traversal tests cover right-to-left horizontal focus and selection behavior across action groups, selection groups, tabs, navigation bars, split buttons, carousels, date pickers, and time pickers. Search control tests cover editor, result, and trailing action focus routing. Slot/container tests cover current-child accessibility focus routing for app bars, banners, surfaces, forms, sheets, split buttons, button groups, and badged boxes. Picker field popup and modal sheet tests cover Escape dismissal and focus restoration from real child focus targets. Navigation drawer tests cover collapsible group disclosure keys and focus restoration in left-to-right and right-to-left layouts. FAB menu tests cover action-item focus traversal, Escape dismissal, and toggle focus restoration after collapse.
 
 ## Next Goals
 

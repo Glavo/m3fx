@@ -383,7 +383,7 @@ public class M3SplitButton extends Control {
             case EXPANDED -> isShowing();
             case ITEM_COUNT -> buttonParts.size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(buttonParts, parameters);
-            case FOCUS_NODE -> M3Accessible.firstFocusTarget(buttonParts);
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, buttonParts);
             case SUBMENU -> getMenu();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };

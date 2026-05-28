@@ -439,7 +439,7 @@ public class M3FormRow extends Control {
             case CONTENTS -> getContent();
             case ITEM_COUNT -> accessibleItemCount();
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
-            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getContent(), getTrailing());
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getContent(), getTrailing());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }

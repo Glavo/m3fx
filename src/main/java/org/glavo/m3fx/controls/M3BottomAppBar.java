@@ -186,7 +186,7 @@ public class M3BottomAppBar extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> M3Accessible.itemCount(getActions(), getFloatingAction());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getActions(), getFloatingAction(), parameters);
-            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getActions(), getFloatingAction());
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getActions(), getFloatingAction());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }

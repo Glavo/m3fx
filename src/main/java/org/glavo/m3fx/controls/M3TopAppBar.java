@@ -195,7 +195,7 @@ public class M3TopAppBar extends Control {
             case TEXT -> getTitle();
             case ITEM_COUNT -> M3Accessible.itemCount(getNavigation(), getActions());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getNavigation(), getActions(), parameters);
-            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getNavigation(), getActions());
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getNavigation(), getActions());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }

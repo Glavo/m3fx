@@ -215,7 +215,7 @@ public class M3BadgedBox extends Control {
             case CONTENTS -> getContent();
             case ITEM_COUNT -> accessibleItemCount();
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
-            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getContent(), getBadge());
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getContent(), getBadge());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }

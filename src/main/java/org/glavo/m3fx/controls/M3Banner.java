@@ -168,7 +168,7 @@ public class M3Banner extends Control {
             case TEXT -> getText();
             case ITEM_COUNT -> M3Accessible.itemCount(getIcon(), getActions());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getIcon(), getActions(), parameters);
-            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getActions());
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getActions());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }

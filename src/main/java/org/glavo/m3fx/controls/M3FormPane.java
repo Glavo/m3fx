@@ -226,7 +226,7 @@ public class M3FormPane extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
-            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getItems());
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getItems());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }

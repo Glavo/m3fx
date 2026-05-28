@@ -272,7 +272,7 @@ public class M3Surface extends Control {
             case CONTENTS -> accessibleContents();
             case ITEM_COUNT -> getContent().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), parameters);
-            case FOCUS_NODE -> M3Accessible.firstFocusTarget(getContent());
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getContent());
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
