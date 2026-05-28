@@ -5469,14 +5469,17 @@ final class M3ControlStyleTest {
 
                 assertTrue(searchBar.isActive());
                 assertTrue(searchBar.getEditor().isFocused());
+                assertSame(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
 
                 assertTrue(searchBar.getEditor().isFocused());
+                assertSame(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, filter);
 
                 assertTrue(filter.isFocused());
+                assertSame(filter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 searchBar.executeAccessibleAction(AccessibleAction.COLLAPSE);
                 assertFalse(searchBar.isActive());

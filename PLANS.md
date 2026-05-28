@@ -91,7 +91,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Pickers: date picker, date range picker, time picker, picker fields, preset actions, dialogs, range constraints, keyboard adjustment, and accessibility actions.
 - Navigation: tabs, tab bar, navigation item, navigation bar, navigation rail, navigation drawer, collapsible navigation drawer groups, and type-ahead drawer navigation.
 - App bars: top app bar variants and bottom app bar with configurable FAB alignment.
-- Menus and search: menu, menu item, submenu item, menu sections, menu button, type-ahead menu keyboard navigation, search bar, and search view with editor/result focus routing.
+- Menus and search: menu, menu item, submenu item, menu sections, menu button, type-ahead menu keyboard navigation, search bar, and search view with editor, result, and action focus routing.
 - Feedback and progress: banner, snackbar, snackbar host, plain tooltip, rich tooltip, loading indicator default and contained variants, linear progress, and circular progress.
 - Expressive progress indicators render wavy active paths, separated tracks, and linear stop indicators while baseline progress indicators retain flat line and arc geometry.
 - Lists: static list/list item support and `VirtualFlow`-backed list views with row reuse, selection, focus navigation, type-ahead navigation, visible-row accessibility focus, and accessibility routing.
@@ -110,7 +110,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Dark expressive popup visual coverage opens real menu and tooltip popups, checks inherited profile and brightness mode classes, and writes rendered snapshots for overlay review.
 - Expressive progress visual coverage writes dedicated snapshots for determinate and indeterminate wavy linear and circular progress indicators, plus default and contained loading indicator presentation.
 - Demo interaction visual coverage checks hover and pressed-state snapshots for buttons, sidebar destinations, and toggle icon buttons, plus focus feedback for text fields and no-motion state changes.
-- Keyboard traversal tests cover right-to-left horizontal focus and selection behavior across action groups, selection groups, tabs, navigation bars, split buttons, carousels, date pickers, and time pickers. Search view tests cover editor/result focus routing. Picker field popup and modal sheet tests cover Escape dismissal and focus restoration from real child focus targets. Navigation drawer tests cover collapsible group disclosure keys and focus restoration in left-to-right and right-to-left layouts. FAB menu tests cover action-item focus traversal, Escape dismissal, and toggle focus restoration after collapse.
+- Keyboard traversal tests cover right-to-left horizontal focus and selection behavior across action groups, selection groups, tabs, navigation bars, split buttons, carousels, date pickers, and time pickers. Search control tests cover editor, result, and trailing action focus routing. Picker field popup and modal sheet tests cover Escape dismissal and focus restoration from real child focus targets. Navigation drawer tests cover collapsible group disclosure keys and focus restoration in left-to-right and right-to-left layouts. FAB menu tests cover action-item focus traversal, Escape dismissal, and toggle focus restoration after collapse.
 
 ## Next Goals
 

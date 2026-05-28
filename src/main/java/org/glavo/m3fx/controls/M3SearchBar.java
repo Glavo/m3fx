@@ -311,7 +311,7 @@ public class M3SearchBar extends Control {
         return switch (attribute) {
             case CONTENTS -> editor;
             case EXPANDED -> isActive();
-            case FOCUS_NODE -> editor;
+            case FOCUS_NODE -> accessibleFocusNode();
             case ITEM_COUNT -> accessibleItemCount();
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
             case TEXT -> getText();
@@ -401,6 +401,7 @@ public class M3SearchBar extends Control {
     private void focusEditor() {
         activate();
         editor.requestFocus();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
     }
 
     /// Returns the number of indexed child items exposed by the search bar.
@@ -489,9 +490,33 @@ public class M3SearchBar extends Control {
         activate();
         if (M3Accessible.focusTarget(item) == null) {
             editor.requestFocus();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             return;
         }
         M3Accessible.showItem(item);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+    }
+
+    /// Returns the current accessibility focus node.
+    ///
+    /// @return the focused indexed item when one owns focus, otherwise the embedded editor
+    private Node accessibleFocusNode() {
+        if (getScene() != null) {
+            @Nullable Node focusOwner = getScene().getFocusOwner();
+            if (focusOwner != null) {
+                int count = accessibleItemCount();
+                for (int index = 0; index < count; index++) {
+                    @Nullable Node item = accessibleItemAt(index);
+                    if (item != null && M3Accessible.containsNode(item, focusOwner)) {
+                        @Nullable Node focusTarget = M3Accessible.focusTarget(item);
+                        if (focusTarget != null) {
+                            return focusTarget;
+                        }
+                    }
+                }
+            }
+        }
+        return editor;
     }
 
     /// Notifies accessibility clients that indexed child items changed.
