@@ -69,6 +69,14 @@ public class M3TopAppBar extends Control {
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between navigation and action children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
+                    this,
+                    getNavigation(),
+                    getActions()
+            ));
+
     /// Creates an empty top app bar.
     public M3TopAppBar() {
         this("");
@@ -183,6 +191,7 @@ public class M3TopAppBar extends Control {
         title.addListener(observable -> updateAccessibleText());
         navigation.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        focusNotifier.start();
         updateAccessibleText();
         updateVariantStyle();
         updateVariantMetrics();
@@ -236,6 +245,7 @@ public class M3TopAppBar extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Updates the active variant style class.

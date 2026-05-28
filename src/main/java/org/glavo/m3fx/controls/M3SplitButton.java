@@ -67,6 +67,10 @@ public class M3SplitButton extends Control {
     /// The focusable button parts exposed to accessibility and keyboard navigation.
     private final ObservableList<Node> buttonParts = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between split button parts.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, buttonParts));
+
     /// Updates physical edge style classes when the effective layout direction changes.
     private final ChangeListener<NodeOrientation> effectiveNodeOrientationListener =
             (observable, oldValue, newValue) -> updateNodeOrientationStyle();
@@ -419,6 +423,7 @@ public class M3SplitButton extends Control {
                 notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED));
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
+        focusNotifier.start();
         updateVariant();
         updateNodeOrientationStyle();
     }

@@ -52,6 +52,10 @@ public class M3Surface extends Control {
     /// The mutable content nodes displayed inside the surface.
     private final ObservableList<Node> content = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between content children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getContent()));
+
     // Backing property for the public surface color variant API.
     private final ObjectProperty<M3SurfaceVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SurfaceVariant.CONTAINER) {
@@ -311,6 +315,7 @@ public class M3Surface extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         getContent().addListener((ListChangeListener<Node>) change -> handleContentChanged());
+        focusNotifier.start();
         updateVariantStyle();
         updateElevationStyle();
         updatePadding();
@@ -327,6 +332,7 @@ public class M3Surface extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Requests layout and notifies accessibility clients after content changes.

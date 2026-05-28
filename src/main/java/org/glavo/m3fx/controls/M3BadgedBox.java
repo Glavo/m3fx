@@ -69,6 +69,14 @@ public class M3BadgedBox extends Control {
         }
     };
 
+    /// Notifies accessibility clients when focus moves between content and badge children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
+                    this,
+                    getContent(),
+                    getBadge()
+            ));
+
     /// Creates an empty badged box.
     public M3BadgedBox() {
         this(null, null);
@@ -237,6 +245,7 @@ public class M3BadgedBox extends Control {
         setAccessibleRole(AccessibleRole.PARENT);
         content.addListener(observable -> handleContentChanged());
         badge.addListener(observable -> handleContentChanged());
+        focusNotifier.start();
     }
 
     /// Notifies accessibility clients that content or badge children changed.
@@ -245,6 +254,7 @@ public class M3BadgedBox extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Returns the number of indexed content and badge nodes exposed to accessibility clients.

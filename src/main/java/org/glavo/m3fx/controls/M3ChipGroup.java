@@ -61,6 +61,10 @@ public class M3ChipGroup extends Control {
     /// The mutable chip group content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between chips.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getItems()));
+
     // The preferred wrapping width used by the internal flow layout.
     private final DoubleProperty prefWrapLength = new SimpleDoubleProperty(this, "prefWrapLength", 400.0) {
         /// Validates updated preferred wrap length values.
@@ -134,6 +138,7 @@ public class M3ChipGroup extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     };
 
     /// Whether the group is currently synchronizing selected states.
@@ -510,6 +515,7 @@ public class M3ChipGroup extends Control {
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(childrenListener);
+        focusNotifier.start();
     }
 
     /// Applies keyboard navigation across enabled chips.
@@ -659,6 +665,7 @@ public class M3ChipGroup extends Control {
         if (!selectedChips.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
     }
 

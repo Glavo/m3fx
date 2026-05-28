@@ -63,6 +63,10 @@ public class M3ButtonGroup extends Control {
     /// The mutable button group content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between grouped buttons.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getItems()));
+
     // The styleable spacing between grouped buttons.
     private @Nullable StyleableDoubleProperty spacing;
 
@@ -79,6 +83,7 @@ public class M3ButtonGroup extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     };
 
     /// Updates physical edge style classes when the effective layout direction changes.
@@ -230,6 +235,7 @@ public class M3ButtonGroup extends Control {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
         getItems().addListener(childrenListener);
+        focusNotifier.start();
         updateButtonStyles();
     }
 

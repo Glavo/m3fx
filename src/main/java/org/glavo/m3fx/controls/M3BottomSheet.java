@@ -109,6 +109,14 @@ public class M3BottomSheet extends Control {
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between sheet content and action children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
+                    this,
+                    getContent(),
+                    getActions()
+            ));
+
     /// The sheet show and hide animation.
     private final Timeline visibilityAnimation = new Timeline();
 
@@ -346,9 +354,12 @@ public class M3BottomSheet extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         });
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        focusNotifier.start();
         updateVariantStyle();
         updateAccessibleText();
     }
@@ -393,6 +404,8 @@ public class M3BottomSheet extends Control {
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Stores the current scene focus owner before a modal sheet takes interaction.

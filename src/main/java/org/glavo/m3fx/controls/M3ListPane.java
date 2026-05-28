@@ -51,6 +51,10 @@ public class M3ListPane extends Control {
     /// The mutable list content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between list items.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getItems()));
+
     // The list item selection mode.
     private final ObjectProperty<@Nullable M3ListSelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3ListSelectionMode.NONE) {
@@ -119,6 +123,7 @@ public class M3ListPane extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     };
 
     /// Whether the list is currently synchronizing selected states.
@@ -361,6 +366,7 @@ public class M3ListPane extends Control {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
+        focusNotifier.start();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
                 clearTypeAheadBuffer();
@@ -462,6 +468,7 @@ public class M3ListPane extends Control {
             item.requestFocus();
         }
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Applies selected list items supplied by an accessibility client.
@@ -620,6 +627,7 @@ public class M3ListPane extends Control {
         if (!selectedItems.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
     }
 

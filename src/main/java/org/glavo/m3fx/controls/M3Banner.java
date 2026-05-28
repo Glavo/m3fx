@@ -56,6 +56,10 @@ public class M3Banner extends Control {
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between action children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getActions()));
+
     /// Creates an empty banner.
     public M3Banner() {
         this("");
@@ -197,6 +201,7 @@ public class M3Banner extends Control {
         text.addListener(observable -> updateAccessibleText());
         icon.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        focusNotifier.start();
         updateAccessibleText();
     }
 
@@ -219,5 +224,6 @@ public class M3Banner extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 }

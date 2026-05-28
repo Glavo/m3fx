@@ -205,7 +205,9 @@ final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to one item in the supplied list.
-    private static @Nullable Node currentFocusTarget(Node owner, ObservableList<? extends Node> items) {
+    static @Nullable Node currentFocusTarget(Node owner, ObservableList<? extends Node> items) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
         @Nullable Node focusOwner = focusOwner(owner);
         if (focusOwner == null) {
             return null;
@@ -221,11 +223,13 @@ final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to a leading item or one item in the supplied list.
-    private static @Nullable Node currentFocusTarget(
+    static @Nullable Node currentFocusTarget(
             Node owner,
             @Nullable Node leading,
             ObservableList<? extends Node> items
     ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
         @Nullable Node focusOwner = focusOwner(owner);
         if (focusOwner == null) {
             return null;
@@ -246,11 +250,13 @@ final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to one item in the supplied list or a trailing item.
-    private static @Nullable Node currentFocusTarget(
+    static @Nullable Node currentFocusTarget(
             Node owner,
             ObservableList<? extends Node> items,
             @Nullable Node trailing
     ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
         @Nullable Node focusOwner = focusOwner(owner);
         if (focusOwner == null) {
             return null;
@@ -267,7 +273,8 @@ final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to either optional child node.
-    private static @Nullable Node currentFocusTarget(Node owner, @Nullable Node first, @Nullable Node second) {
+    static @Nullable Node currentFocusTarget(Node owner, @Nullable Node first, @Nullable Node second) {
+        Objects.requireNonNull(owner, "owner");
         @Nullable Node focusOwner = focusOwner(owner);
         if (focusOwner == null) {
             return null;

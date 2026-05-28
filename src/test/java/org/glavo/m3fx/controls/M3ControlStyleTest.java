@@ -15063,6 +15063,64 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that composite controls actively notify when their accessible focus child changes.
+    @Test
+    void accessibleFocusNotifierReportsSceneFocusChanges() {
+        runOnFxThread(() -> {
+            M3Button first = new M3Button("First");
+            M3Button second = new M3Button("Second");
+            M3Surface surface = new M3Surface(first, second);
+            M3Button outside = new M3Button("Outside");
+            AtomicInteger notifications = new AtomicInteger();
+            M3AccessibleFocusNotifier notifier = new M3AccessibleFocusNotifier(
+                    surface,
+                    () -> M3Accessible.currentFocusTarget(surface, surface.getContent()),
+                    notifications::incrementAndGet
+            );
+            Stage stage = new Stage();
+            try {
+                notifier.start();
+                VBox root = new VBox(8.0, surface, outside);
+                Scene scene = new Scene(root, 320.0, 160.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                notifier.refresh();
+                notifications.set(0);
+
+                first.requestFocus();
+
+                assertTrue(first.isFocused());
+                assertEquals(1, notifications.get());
+
+                first.requestFocus();
+
+                assertEquals(1, notifications.get());
+
+                second.requestFocus();
+
+                assertTrue(second.isFocused());
+                assertEquals(2, notifications.get());
+
+                outside.requestFocus();
+
+                assertTrue(outside.isFocused());
+                assertEquals(3, notifications.get());
+
+                notifier.stop();
+                first.requestFocus();
+
+                assertTrue(first.isFocused());
+                assertEquals(3, notifications.get());
+            } finally {
+                notifier.stop();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that custom controls expose stable accessibility roles.
     @Test
     void controlsExposeAccessibilityRoles() {

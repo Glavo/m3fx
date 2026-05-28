@@ -56,6 +56,10 @@ public class M3IconToggleButtonGroup extends Control {
     /// The mutable toggle icon button group content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between toggle icon buttons.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getItems()));
+
     // The styleable spacing between toggle icon buttons.
     private @Nullable StyleableDoubleProperty spacing;
 
@@ -117,6 +121,7 @@ public class M3IconToggleButtonGroup extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     };
 
     /// Whether the group is currently synchronizing selected states.
@@ -419,6 +424,7 @@ public class M3IconToggleButtonGroup extends Control {
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(childrenListener);
+        focusNotifier.start();
     }
 
     /// Applies keyboard navigation across enabled toggle icon buttons.
@@ -581,6 +587,7 @@ public class M3IconToggleButtonGroup extends Control {
         if (!selectedButtons.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
     }
 

@@ -55,6 +55,10 @@ public class M3FormPane extends Control {
     /// The listener used to refresh accessibility state when form items change.
     private final ListChangeListener<Node> itemsListener = change -> handleItemsChanged();
 
+    /// Notifies accessibility clients when focus moves between form items.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getItems()));
+
     // The styleable content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
@@ -260,6 +264,7 @@ public class M3FormPane extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         getItems().addListener(itemsListener);
+        focusNotifier.start();
     }
 
     /// Notifies accessibility clients that indexed form items changed.
@@ -268,6 +273,7 @@ public class M3FormPane extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Validates a varargs item array before mutation.

@@ -60,6 +60,14 @@ public class M3BottomAppBar extends Control {
     /// The mutable regular action node list.
     private final ObservableList<Node> actions = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between action children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
+                    this,
+                    getActions(),
+                    getFloatingAction()
+            ));
+
     /// Creates an empty bottom app bar.
     public M3BottomAppBar() {
         initialize();
@@ -177,6 +185,7 @@ public class M3BottomAppBar extends Control {
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         floatingAction.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        focusNotifier.start();
         updateFloatingActionAlignmentStyle();
     }
 
@@ -224,6 +233,7 @@ public class M3BottomAppBar extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Updates the active floating action alignment style class.

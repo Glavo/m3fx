@@ -70,6 +70,10 @@ public class M3SegmentedButtonGroup extends Control {
     /// The mutable segmented button group content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between segmented buttons.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getItems()));
+
     // Backing property for the styleable segment spacing token.
     private @Nullable StyleableDoubleProperty spacing;
 
@@ -133,6 +137,7 @@ public class M3SegmentedButtonGroup extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     };
 
     /// Updates physical edge style classes when the effective layout direction changes.
@@ -451,6 +456,7 @@ public class M3SegmentedButtonGroup extends Control {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
         getItems().addListener(childrenListener);
+        focusNotifier.start();
         updateSegmentStyles();
     }
 
@@ -614,6 +620,7 @@ public class M3SegmentedButtonGroup extends Control {
         if (!selectedButtons.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
     }
 

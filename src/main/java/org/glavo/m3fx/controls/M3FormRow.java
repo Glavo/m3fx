@@ -114,6 +114,7 @@ public class M3FormRow extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
             requestLayout();
         }
     };
@@ -133,9 +134,18 @@ public class M3FormRow extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
             requestLayout();
         }
     };
+
+    /// Notifies accessibility clients when focus moves between row content and trailing children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
+                    this,
+                    getContent(),
+                    getTrailing()
+            ));
 
     // The styleable label width token.
     private @Nullable StyleableDoubleProperty labelWidth;
@@ -472,6 +482,7 @@ public class M3FormRow extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        focusNotifier.start();
     }
 
     /// Returns the number of content nodes exposed through indexed accessibility queries.

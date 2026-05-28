@@ -53,6 +53,13 @@ public class M3NavigationDrawer extends Control {
     /// The mutable navigation drawer content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between visible drawer rows.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
+                    this,
+                    flattenedContent()
+            ));
+
     // The currently selected navigation drawer item.
     private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
@@ -332,6 +339,7 @@ public class M3NavigationDrawer extends Control {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
+        focusNotifier.start();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
                 clearTypeAheadBuffer();
@@ -388,6 +396,7 @@ public class M3NavigationDrawer extends Control {
         }
         select(target);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
         event.consume();
     }
 
@@ -771,6 +780,7 @@ public class M3NavigationDrawer extends Control {
         if (!selectedItems.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
     }
 
@@ -853,6 +863,7 @@ public class M3NavigationDrawer extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Creates the default Material Design 3 navigation drawer skin.

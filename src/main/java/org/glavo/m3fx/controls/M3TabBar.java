@@ -44,6 +44,10 @@ public class M3TabBar extends Control {
     /// The mutable tab content.
     private final ObservableList<Node> tabs = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between tabs.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getTabs()));
+
     /// The currently selected tab.
     private final ReadOnlyObjectWrapper<@Nullable M3Tab> selectedTab =
             new ReadOnlyObjectWrapper<>(this, "selectedTab");
@@ -88,6 +92,7 @@ public class M3TabBar extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     };
 
     /// Whether the tab bar is currently synchronizing selected states.
@@ -274,6 +279,7 @@ public class M3TabBar extends Control {
         setAccessibleRole(AccessibleRole.TAB_PANE);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getTabs().addListener(childrenListener);
+        focusNotifier.start();
     }
 
     /// Applies keyboard navigation across enabled tabs.
@@ -382,6 +388,7 @@ public class M3TabBar extends Control {
         if (!selectedTabs.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
     }
 

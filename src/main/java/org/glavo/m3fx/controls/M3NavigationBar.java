@@ -45,6 +45,10 @@ public class M3NavigationBar extends Control {
     /// The mutable navigation bar content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
+    /// Notifies accessibility clients when focus moves between navigation items.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getItems()));
+
     // The currently selected navigation item.
     private final ReadOnlyObjectWrapper<@Nullable M3NavigationItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
@@ -89,6 +93,7 @@ public class M3NavigationBar extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     };
 
     /// Whether the navigation bar is currently synchronizing selected states.
@@ -312,6 +317,7 @@ public class M3NavigationBar extends Control {
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(childrenListener);
+        focusNotifier.start();
     }
 
     /// Applies keyboard navigation across enabled navigation items.
@@ -421,6 +427,7 @@ public class M3NavigationBar extends Control {
         if (!selectedItems.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
     }
 

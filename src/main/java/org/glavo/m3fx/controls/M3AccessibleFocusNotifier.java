@@ -1,0 +1,121 @@
+// Copyright (c) 2026 Glavo
+// SPDX-License-Identifier: Apache-2.0
+
+package org.glavo.m3fx.controls;
+
+import javafx.beans.value.ChangeListener;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
+import java.util.function.Supplier;
+
+/// Tracks scene focus owner changes and reports changed accessibility focus nodes.
+///
+/// `M3AccessibleFocusNotifier` is used by composite controls whose public `FOCUS_NODE` query can point at
+/// whichever child currently owns focus. JavaFX accessibility clients only learn about that change when the
+/// owner control calls [Node#notifyAccessibleAttributeChanged(AccessibleAttribute)], so this helper centralizes
+/// the scene listener and change detection needed by app bars, groups, sheets, and other slot containers.
+@NotNullByDefault
+final class M3AccessibleFocusNotifier {
+    /// The control or container node that owns the accessibility attribute.
+    private final Node owner;
+
+    /// Supplies the currently focused child node, or `null` when focus is outside the owner content.
+    private final Supplier<@Nullable Node> focusNodeSupplier;
+
+    /// Runs when the focused accessibility child changes.
+    private final Runnable focusNodeChangedNotifier;
+
+    /// Observes owner scene changes so the focus owner listener follows the attached scene.
+    private final ChangeListener<@Nullable Scene> sceneListener =
+            (observable, oldScene, newScene) -> updateScene(newScene);
+
+    /// Observes scene focus owner changes.
+    private final ChangeListener<@Nullable Node> focusOwnerListener =
+            (observable, oldFocusOwner, newFocusOwner) -> notifyIfFocusNodeChanged();
+
+    /// The scene that currently has `focusOwnerListener` installed.
+    private @Nullable Scene scene;
+
+    /// The previously reported current focus node.
+    private @Nullable Node lastFocusNode;
+
+    /// Whether this notifier is installed on the owner.
+    private boolean started;
+
+    /// Creates a notifier for one owner node.
+    M3AccessibleFocusNotifier(Node owner, Supplier<@Nullable Node> focusNodeSupplier) {
+        this(owner, focusNodeSupplier, () -> owner.notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE));
+    }
+
+    /// Creates a notifier for one owner node with a custom notification callback.
+    M3AccessibleFocusNotifier(
+            Node owner,
+            Supplier<@Nullable Node> focusNodeSupplier,
+            Runnable focusNodeChangedNotifier
+    ) {
+        this.owner = Objects.requireNonNull(owner, "owner");
+        this.focusNodeSupplier = Objects.requireNonNull(focusNodeSupplier, "focusNodeSupplier");
+        this.focusNodeChangedNotifier = Objects.requireNonNull(focusNodeChangedNotifier, "focusNodeChangedNotifier");
+    }
+
+    /// Starts listening to the owner's current and future scenes.
+    void start() {
+        if (started) {
+            return;
+        }
+        started = true;
+        owner.sceneProperty().addListener(sceneListener);
+        updateScene(owner.getScene());
+    }
+
+    /// Stops listening and clears cached focus state.
+    void stop() {
+        if (!started) {
+            return;
+        }
+        started = false;
+        owner.sceneProperty().removeListener(sceneListener);
+        updateScene(null);
+    }
+
+    /// Refreshes cached focus state after child content changes already notified accessibility clients.
+    void refresh() {
+        lastFocusNode = currentFocusNode();
+    }
+
+    /// Reattaches the focus owner listener to a new scene.
+    private void updateScene(@Nullable Scene newScene) {
+        if (scene == newScene) {
+            refresh();
+            return;
+        }
+        if (scene != null) {
+            scene.focusOwnerProperty().removeListener(focusOwnerListener);
+        }
+        scene = newScene;
+        if (scene != null) {
+            scene.focusOwnerProperty().addListener(focusOwnerListener);
+        }
+        refresh();
+    }
+
+    /// Notifies the owner when the focused accessibility child changes.
+    private void notifyIfFocusNodeChanged() {
+        @Nullable Node focusNode = currentFocusNode();
+        if (focusNode == lastFocusNode) {
+            return;
+        }
+        lastFocusNode = focusNode;
+        focusNodeChangedNotifier.run();
+    }
+
+    /// Returns the current focus node supplied by the owner.
+    private @Nullable Node currentFocusNode() {
+        return focusNodeSupplier.get();
+    }
+}

@@ -93,6 +93,10 @@ public class M3FormSection extends Control {
     /// The listener used to refresh accessibility state when section content changes.
     private final ListChangeListener<Node> contentListener = change -> handleContentChanged();
 
+    /// Notifies accessibility clients when focus moves between section content children.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getContent()));
+
     // The styleable content spacing token.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
@@ -303,6 +307,7 @@ public class M3FormSection extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         getContent().addListener(contentListener);
+        focusNotifier.start();
     }
 
     /// Notifies accessibility clients that indexed section content changed.
@@ -311,6 +316,7 @@ public class M3FormSection extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Validates a varargs content array before mutation.
