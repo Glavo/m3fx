@@ -5065,6 +5065,64 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that drawer group disclosure keys keep focus on visible rows.
+    @Test
+    void navigationDrawerGroupDisclosureKeysRestoreHeaderFocus() {
+        runOnFxThread(() -> {
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+            M3ListItem buttons = new M3ListItem("Buttons");
+            M3ListItem iconButtons = new M3ListItem("Icon buttons");
+            group.addItems(buttons, iconButtons);
+            group.setExpanded(true);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            Pane root = new Pane(drawer);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 360.0, 260.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                iconButtons.requestFocus();
+                assertTrue(iconButtons.isFocused());
+
+                iconButtons.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertFalse(group.isExpanded());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                assertTrue(group.getHeaderItem().isFocused());
+                assertSame(group.getHeaderItem(), drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                group.getHeaderItem().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(group.isExpanded());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                assertTrue(group.getHeaderItem().isFocused());
+
+                drawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                iconButtons.requestFocus();
+                drawer.select(iconButtons);
+
+                iconButtons.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertFalse(group.isExpanded());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                assertTrue(group.getHeaderItem().isFocused());
+
+                group.getHeaderItem().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertTrue(group.isExpanded());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                assertTrue(group.getHeaderItem().isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that menu keyboard focus can land on submenu items without corrupting menu selection.
     @Test
     void menuKeyboardNavigationFocusesSubMenuItemsWithoutChangingSelection() {

@@ -442,7 +442,7 @@ public class M3NavigationDrawer extends Control {
             @Nullable M3NavigationDrawerGroup headerGroup = groupForHeader(anchor);
             if (headerGroup != null && !headerGroup.isExpanded()) {
                 headerGroup.setExpanded(true);
-                selectItem(headerGroup.getHeaderItem());
+                selectAndFocusItem(headerGroup.getHeaderItem());
                 event.consume();
                 return true;
             }
@@ -456,7 +456,7 @@ public class M3NavigationDrawer extends Control {
         @Nullable M3NavigationDrawerGroup headerGroup = groupForHeader(anchor);
         if (headerGroup != null && headerGroup.isExpanded()) {
             headerGroup.setExpanded(false);
-            selectItem(headerGroup.getHeaderItem());
+            selectAndFocusItem(headerGroup.getHeaderItem());
             event.consume();
             return true;
         }
@@ -464,7 +464,7 @@ public class M3NavigationDrawer extends Control {
         @Nullable M3NavigationDrawerGroup childGroup = groupForChild(anchor);
         if (childGroup != null && childGroup.isExpanded()) {
             childGroup.setExpanded(false);
-            selectItem(childGroup.getHeaderItem());
+            selectAndFocusItem(childGroup.getHeaderItem());
             event.consume();
             return true;
         }
@@ -627,8 +627,14 @@ public class M3NavigationDrawer extends Control {
 
         ChangeListener<Boolean> expandedListener = (observable, oldValue, newValue) -> {
             clearTypeAheadBuffer();
-            if (!newValue && group.getItems().contains(selectedItem.get())) {
-                selectItem(group.getHeaderItem());
+            if (!newValue) {
+                boolean restoreFocus = isFocusInsideGroupItems(group);
+                if (group.getItems().contains(selectedItem.get())) {
+                    selectItem(group.getHeaderItem());
+                }
+                if (restoreFocus) {
+                    focusItem(group.getHeaderItem());
+                }
             }
             notifyDrawerContentChanged();
         };
@@ -699,6 +705,45 @@ public class M3NavigationDrawer extends Control {
             updatingSelection = false;
         }
         refreshSelectedItems();
+    }
+
+    /// Selects the supplied drawer item and moves keyboard focus to it when it is reachable.
+    ///
+    /// @param item the drawer item to select and focus
+    private void selectAndFocusItem(M3ListItem item) {
+        selectItem(item);
+        focusItem(item);
+    }
+
+    /// Moves keyboard focus to one drawer item when it is reachable.
+    ///
+    /// @param item the drawer item to focus
+    private void focusItem(M3ListItem item) {
+        if (M3Accessible.canReach(item) && item.isFocusTraversable()) {
+            item.requestFocus();
+        }
+    }
+
+    /// Returns whether keyboard focus is currently inside one expanded group child item.
+    ///
+    /// @param group the navigation drawer group to inspect
+    /// @return `true` when scene focus is inside one child item owned by the group
+    private boolean isFocusInsideGroupItems(M3NavigationDrawerGroup group) {
+        if (getScene() == null) {
+            return false;
+        }
+
+        @Nullable Node focusOwner = getScene().getFocusOwner();
+        if (focusOwner == null) {
+            return false;
+        }
+
+        for (M3ListItem item : group.getItems()) {
+            if (M3Accessible.containsNode(item, focusOwner)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Enforces single-selection and non-empty selection invariants.

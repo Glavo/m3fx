@@ -110,7 +110,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - Dark expressive popup visual coverage opens real menu and tooltip popups, checks inherited profile and brightness mode classes, and writes rendered snapshots for overlay review.
 - Expressive progress visual coverage writes dedicated snapshots for determinate and indeterminate wavy linear and circular progress indicators, plus default and contained loading indicator presentation.
 - Demo interaction visual coverage checks hover and pressed-state snapshots for buttons, sidebar destinations, and toggle icon buttons, plus focus feedback for text fields and no-motion state changes.
-- Keyboard traversal tests cover right-to-left horizontal focus and selection behavior across action groups, selection groups, tabs, navigation bars, split buttons, carousels, date pickers, and time pickers. Picker field popup tests cover Escape dismissal and editor focus restoration. FAB menu tests cover action-item focus traversal, Escape dismissal, and toggle focus restoration after collapse.
+- Keyboard traversal tests cover right-to-left horizontal focus and selection behavior across action groups, selection groups, tabs, navigation bars, split buttons, carousels, date pickers, and time pickers. Picker field popup tests cover Escape dismissal and editor focus restoration. Navigation drawer tests cover collapsible group disclosure keys and focus restoration in left-to-right and right-to-left layouts. FAB menu tests cover action-item focus traversal, Escape dismissal, and toggle focus restoration after collapse.
 
 ## Next Goals
 
