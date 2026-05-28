@@ -241,7 +241,8 @@ public class M3ButtonGroup extends Control {
                 M3SelectionNavigation.focused(getItems(), M3Button.class),
                 M3Button.class,
                 true,
-                false
+                false,
+                M3SelectionNavigation.isRightToLeft(this)
         );
     }
 

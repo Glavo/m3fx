@@ -431,7 +431,8 @@ public class M3SplitButton extends Control {
                 M3SelectionNavigation.focused(buttonParts, M3Button.class),
                 M3Button.class,
                 true,
-                false
+                false,
+                M3SelectionNavigation.isRightToLeft(this)
         );
     }
 

@@ -10583,6 +10583,149 @@ final class M3ControlStyleTest {
         assertNull(menuWithoutSelection.getSelectedItem());
     }
 
+    /// Verifies that right-to-left controls mirror horizontal keyboard focus and selection.
+    @Test
+    void horizontalKeyboardNavigationMirrorsForRightToLeftLayouts() {
+        runOnFxThread(() -> {
+            M3Button groupFirst = new M3Button("First");
+            M3Button groupSecond = new M3Button("Second");
+            M3Button groupThird = new M3Button("Third");
+            M3ButtonGroup buttonGroup = new M3ButtonGroup(groupFirst, groupSecond, groupThird);
+            buttonGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            M3IconToggleButton iconFirst = new M3IconToggleButton("A");
+            M3IconToggleButton iconSecond = new M3IconToggleButton("B");
+            M3IconToggleButton iconThird = new M3IconToggleButton("C");
+            M3IconToggleButtonGroup iconGroup =
+                    new M3IconToggleButtonGroup(iconFirst, iconSecond, iconThird);
+            iconGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            iconGroup.select(iconSecond);
+
+            M3SegmentedButton segmentFirst = new M3SegmentedButton("Day");
+            M3SegmentedButton segmentSecond = new M3SegmentedButton("Week");
+            M3SegmentedButton segmentThird = new M3SegmentedButton("Month");
+            M3SegmentedButtonGroup segmentedGroup =
+                    new M3SegmentedButtonGroup(segmentFirst, segmentSecond, segmentThird);
+            segmentedGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            segmentedGroup.select(segmentSecond);
+
+            M3Chip chipFirst = new M3Chip("Input");
+            M3Chip chipSecond = new M3Chip("Filter");
+            M3Chip chipThird = new M3Chip("Assist");
+            M3ChipGroup chipGroup = new M3ChipGroup(chipFirst, chipSecond, chipThird);
+            chipGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
+            chipGroup.select(chipSecond);
+
+            M3Tab tabFirst = new M3Tab("Overview");
+            M3Tab tabSecond = new M3Tab("Details");
+            M3Tab tabThird = new M3Tab("Activity");
+            M3TabBar tabBar = new M3TabBar(tabFirst, tabSecond, tabThird);
+            tabBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            tabBar.select(tabSecond);
+
+            M3NavigationItem navFirst = new M3NavigationItem("Home");
+            M3NavigationItem navSecond = new M3NavigationItem("Search");
+            M3NavigationItem navThird = new M3NavigationItem("Inbox");
+            M3NavigationBar navigationBar = new M3NavigationBar(navFirst, navSecond, navThird);
+            navigationBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            navigationBar.select(navSecond);
+
+            M3SplitButton splitButton = new M3SplitButton("Create", new M3MenuItem("Draft"));
+            splitButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            Label carouselFirst = new Label("First");
+            Label carouselSecond = new Label("Second");
+            Label carouselThird = new Label("Third");
+            M3Carousel carousel = new M3Carousel(carouselFirst, carouselSecond, carouselThird);
+            carousel.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            carousel.select(carouselSecond);
+
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 15));
+            datePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            M3DateRangePicker dateRangePicker = new M3DateRangePicker(
+                    LocalDate.of(2026, 5, 15),
+                    LocalDate.of(2026, 5, 15)
+            );
+            dateRangePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            Stage stage = new Stage();
+            try {
+                VBox root = new VBox(
+                        buttonGroup,
+                        iconGroup,
+                        segmentedGroup,
+                        chipGroup,
+                        tabBar,
+                        navigationBar,
+                        splitButton,
+                        carousel,
+                        datePicker,
+                        dateRangePicker
+                );
+                Scene scene = new Scene(root, 760.0, 640.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                groupSecond.requestFocus();
+                buttonGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(groupFirst.isFocused());
+                buttonGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(groupSecond.isFocused());
+
+                iconGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(iconFirst, iconGroup.getSelectedButton());
+                iconGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertEquals(iconSecond, iconGroup.getSelectedButton());
+
+                segmentedGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(segmentFirst, segmentedGroup.getSelectedButton());
+                segmentedGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertEquals(segmentSecond, segmentedGroup.getSelectedButton());
+
+                chipGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(chipFirst, chipGroup.getSelectedChip());
+                chipGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertEquals(chipSecond, chipGroup.getSelectedChip());
+
+                tabBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(tabFirst, tabBar.getSelectedTab());
+                tabBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertEquals(tabSecond, tabBar.getSelectedTab());
+
+                navigationBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(navFirst, navigationBar.getSelectedItem());
+                navigationBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertEquals(navSecond, navigationBar.getSelectedItem());
+
+                splitButton.getMenuButton().requestFocus();
+                splitButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(splitButton.getActionButton().isFocused());
+                splitButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(splitButton.getMenuButton().isFocused());
+
+                carousel.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertSame(carouselFirst, carousel.getSelectedItem());
+                carousel.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertSame(carouselSecond, carousel.getSelectedItem());
+
+                datePicker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(LocalDate.of(2026, 5, 14), datePicker.getValue());
+                datePicker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertEquals(LocalDate.of(2026, 5, 15), datePicker.getValue());
+
+                dateRangePicker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertEquals(LocalDate.of(2026, 5, 14), dateRangePicker.getStartDate());
+                assertNull(dateRangePicker.getEndDate());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that single-selection containers use the focused child as their keyboard navigation anchor.
     @Test
     void singleSelectionContainersUseFocusedChildAsKeyboardAnchor() {

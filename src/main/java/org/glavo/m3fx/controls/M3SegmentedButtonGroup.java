@@ -467,7 +467,8 @@ public class M3SegmentedButtonGroup extends Control {
                     ),
                     M3SegmentedButton.class,
                     true,
-                    false
+                    false,
+                    M3SelectionNavigation.isRightToLeft(this)
             );
             return;
         }
@@ -479,6 +480,7 @@ public class M3SegmentedButtonGroup extends Control {
                 M3SegmentedButton.class,
                 true,
                 false,
+                M3SelectionNavigation.isRightToLeft(this),
                 this::select
         );
     }

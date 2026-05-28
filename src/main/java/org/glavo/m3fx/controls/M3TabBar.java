@@ -285,6 +285,7 @@ public class M3TabBar extends Control {
                 M3Tab.class,
                 true,
                 false,
+                M3SelectionNavigation.isRightToLeft(this),
                 this::select
         );
     }

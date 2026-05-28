@@ -405,11 +405,11 @@ public class M3DatePicker extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         boolean handled = switch (event.getCode()) {
             case LEFT -> {
-                moveSelectionByDays(-1);
+                moveSelectionHorizontally(false);
                 yield true;
             }
             case RIGHT -> {
-                moveSelectionByDays(1);
+                moveSelectionHorizontally(true);
                 yield true;
             }
             case UP -> {
@@ -442,6 +442,12 @@ public class M3DatePicker extends Control {
         if (handled) {
             event.consume();
         }
+    }
+
+    /// Moves keyboard selection horizontally in the visual direction of the pressed arrow key.
+    private void moveSelectionHorizontally(boolean rightKey) {
+        boolean forward = M3SelectionNavigation.isRightToLeft(this) != rightKey;
+        moveSelectionByDays(forward ? 1 : -1);
     }
 
     /// Moves keyboard selection by a number of days.

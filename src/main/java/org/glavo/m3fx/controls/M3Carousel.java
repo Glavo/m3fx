@@ -365,11 +365,11 @@ public class M3Carousel extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         boolean handled = switch (event.getCode()) {
             case LEFT -> {
-                selectPrevious();
+                selectHorizontal(false);
                 yield true;
             }
             case RIGHT -> {
-                selectNext();
+                selectHorizontal(true);
                 yield true;
             }
             case HOME -> {
@@ -385,6 +385,25 @@ public class M3Carousel extends Control {
         if (handled) {
             requestFocusOnSelectedItem();
             event.consume();
+        }
+    }
+
+    /// Selects the visually previous or next carousel item for horizontal arrow keys.
+    private void selectHorizontal(boolean rightKey) {
+        if (getSelectedIndex() < 0) {
+            if (rightKey) {
+                selectFirst();
+            } else {
+                selectLast();
+            }
+            return;
+        }
+
+        boolean forward = M3SelectionNavigation.isRightToLeft(this) != rightKey;
+        if (forward) {
+            selectNext();
+        } else {
+            selectPrevious();
         }
     }
 

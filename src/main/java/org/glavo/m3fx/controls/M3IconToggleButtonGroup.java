@@ -434,7 +434,8 @@ public class M3IconToggleButtonGroup extends Control {
                     ),
                     M3IconToggleButton.class,
                     true,
-                    false
+                    false,
+                    M3SelectionNavigation.isRightToLeft(this)
             );
             return;
         }
@@ -446,6 +447,7 @@ public class M3IconToggleButtonGroup extends Control {
                 M3IconToggleButton.class,
                 true,
                 false,
+                M3SelectionNavigation.isRightToLeft(this),
                 this::select
         );
     }

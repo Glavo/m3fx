@@ -521,7 +521,8 @@ public class M3ChipGroup extends Control {
                     M3SelectionNavigation.focusAnchor(getItems(), getSelectedChip(), M3Chip.class),
                     M3Chip.class,
                     true,
-                    true
+                    true,
+                    M3SelectionNavigation.isRightToLeft(this)
             );
             return;
         }
@@ -533,6 +534,7 @@ public class M3ChipGroup extends Control {
                 M3Chip.class,
                 true,
                 true,
+                M3SelectionNavigation.isRightToLeft(this),
                 this::select
         );
     }

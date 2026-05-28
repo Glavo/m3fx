@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.collections.ObservableList;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -92,12 +93,29 @@ final class M3SelectionNavigation {
             boolean vertical,
             Consumer<T> selector
     ) {
+        return handleKeySelection(event, children, current, type, horizontal, vertical, false, selector);
+    }
+
+    /// Handles a navigation key event and selects the matching child when a key applies.
+    ///
+    /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus and
+    /// selection move in the same visual direction as the rendered row.
+    static <T extends Node> boolean handleKeySelection(
+            KeyEvent event,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean horizontal,
+            boolean vertical,
+            boolean rightToLeft,
+            Consumer<T> selector
+    ) {
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(children, "children");
         Objects.requireNonNull(type, "type");
         Objects.requireNonNull(selector, "selector");
 
-        @Nullable T target = targetFromKey(event.getCode(), children, current, type, horizontal, vertical);
+        @Nullable T target = targetFromKey(event.getCode(), children, current, type, horizontal, vertical, rightToLeft);
         if (target == null) {
             return false;
         }
@@ -119,11 +137,27 @@ final class M3SelectionNavigation {
             boolean horizontal,
             boolean vertical
     ) {
+        return handleKeyFocus(event, children, current, type, horizontal, vertical, false);
+    }
+
+    /// Handles a navigation key event and focuses the matching child when a key applies.
+    ///
+    /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus moves in the
+    /// same visual direction as the rendered row.
+    static <T extends Node> boolean handleKeyFocus(
+            KeyEvent event,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean horizontal,
+            boolean vertical,
+            boolean rightToLeft
+    ) {
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(children, "children");
         Objects.requireNonNull(type, "type");
 
-        @Nullable T target = targetFromKey(event.getCode(), children, current, type, horizontal, vertical);
+        @Nullable T target = targetFromKey(event.getCode(), children, current, type, horizontal, vertical, rightToLeft);
         if (target == null) {
             return false;
         }
@@ -215,6 +249,12 @@ final class M3SelectionNavigation {
         return text.strip().toLowerCase(Locale.ROOT);
     }
 
+    /// Returns whether a node currently resolves to right-to-left orientation.
+    static boolean isRightToLeft(Node owner) {
+        Objects.requireNonNull(owner, "owner");
+        return owner.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+    }
+
     /// Returns the selection target implied by a navigation key.
     private static <T extends Node> @Nullable T targetFromKey(
             KeyCode keyCode,
@@ -222,17 +262,34 @@ final class M3SelectionNavigation {
             @Nullable T current,
             Class<T> type,
             boolean horizontal,
-            boolean vertical
+            boolean vertical,
+            boolean rightToLeft
     ) {
         return switch (keyCode) {
-            case LEFT -> horizontal ? previous(children, current, type) : null;
-            case RIGHT -> horizontal ? next(children, current, type) : null;
+            case LEFT -> horizontal ? horizontalTarget(children, current, type, false, rightToLeft) : null;
+            case RIGHT -> horizontal ? horizontalTarget(children, current, type, true, rightToLeft) : null;
             case UP -> vertical ? previous(children, current, type) : null;
             case DOWN -> vertical ? next(children, current, type) : null;
             case HOME -> first(children, type);
             case END -> last(children, type);
             default -> null;
         };
+    }
+
+    /// Returns a horizontal navigation target, mirroring anchored movement in right-to-left layouts.
+    private static <T extends Node> @Nullable T horizontalTarget(
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean rightKey,
+            boolean rightToLeft
+    ) {
+        if (current == null) {
+            return rightKey ? first(children, type) : last(children, type);
+        }
+
+        boolean forward = rightToLeft != rightKey;
+        return forward ? next(children, current, type) : previous(children, current, type);
     }
 
     /// Returns the child when it is an enabled visible instance of the requested type.

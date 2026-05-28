@@ -323,6 +323,7 @@ public class M3NavigationBar extends Control {
                 M3NavigationItem.class,
                 true,
                 false,
+                M3SelectionNavigation.isRightToLeft(this),
                 this::select
         );
     }
