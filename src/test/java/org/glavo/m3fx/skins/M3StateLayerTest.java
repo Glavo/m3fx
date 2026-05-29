@@ -4,12 +4,11 @@
 package org.glavo.m3fx.skins;
 
 import javafx.application.Platform;
-import javafx.animation.PauseTransition;
+import javafx.animation.Timeline;
 import javafx.css.PseudoClass;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -247,158 +246,74 @@ final class M3StateLayerTest {
 
     /// Verifies that ripples remain visible until explicitly released.
     @Test
-    void rippleHoldsUntilReleaseThenFades() throws InterruptedException {
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
+    void rippleHoldsUntilReleaseThenFades() {
+        runOnFxThread(() -> {
+            Pane root = new Pane();
+            M3StateLayer stateLayer = new M3StateLayer();
+            root.getChildren().add(stateLayer);
+            Scene scene = new Scene(root, 100.0, 40.0);
 
-        Platform.runLater(() -> {
-            try {
-                Pane root = new Pane();
-                M3StateLayer stateLayer = new M3StateLayer();
-                root.getChildren().add(stateLayer);
-                Scene scene = new Scene(root, 100.0, 40.0);
+            root.applyCss();
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            stateLayer.playRipple(20.0, 20.0);
 
-                root.applyCss();
-                stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
-                stateLayer.playRipple(20.0, 20.0);
+            Region ripple = lookupRegion(stateLayer, ".m3-ripple");
+            Timeline expansionAnimation = reflectedTimeline(stateLayer, "rippleAnimation");
+            expansionAnimation.jumpTo(expansionAnimation.getTotalDuration());
 
-                PauseTransition expansionPause = new PauseTransition(Duration.millis(430.0));
-                expansionPause.setOnFinished(event -> verifyRippleRelease(stateLayer, failure, latch));
-                expansionPause.play();
-            } catch (Throwable e) {
-                failure.set(e);
-                latch.countDown();
-            }
+            assertTrue(ripple.getOpacity() > 0.1);
+            assertEquals(1.0, ripple.getScaleX(), 0.0001);
+            assertEquals(1.0, ripple.getScaleY(), 0.0001);
+
+            stateLayer.releaseRipple();
+            Timeline releaseAnimation = reflectedTimeline(stateLayer, "rippleAnimation");
+            assertTrue(ripple.getOpacity() > 0.1);
+            assertTrue(stateLayer.isRippleAnimationRunning());
+
+            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration().divide(2.0));
+
+            assertTrue(ripple.getOpacity() > 0.0);
+
+            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration());
+
+            assertEquals(0.0, ripple.getOpacity(), 0.0001);
         });
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
-        Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
     }
 
     /// Verifies that an early release lets the ripple expand while it fades.
     @Test
-    void rippleReleasedBeforeExpansionCompletesStillExpandsWhileFading() throws InterruptedException {
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
+    void rippleReleasedBeforeExpansionCompletesStillExpandsWhileFading() {
+        runOnFxThread(() -> {
+            Pane root = new Pane();
+            M3StateLayer stateLayer = new M3StateLayer();
+            root.getChildren().add(stateLayer);
+            Scene scene = new Scene(root, 100.0, 40.0);
 
-        Platform.runLater(() -> {
-            try {
-                Pane root = new Pane();
-                M3StateLayer stateLayer = new M3StateLayer();
-                root.getChildren().add(stateLayer);
-                Scene scene = new Scene(root, 100.0, 40.0);
+            root.applyCss();
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            stateLayer.playRipple(12.0, 20.0);
 
-                root.applyCss();
-                stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
-                stateLayer.playRipple(12.0, 20.0);
-
-                Region ripple = lookupRegion(stateLayer, ".m3-ripple");
-                double startScale = Math.max(ripple.getScaleX(), ripple.getScaleY());
-                double startOpacity = ripple.getOpacity();
-                stateLayer.releaseRipple();
-
-                assertTrue(ripple.getOpacity() > 0.1);
-                assertTrue(stateLayer.isRippleAnimationRunning());
-
-                PauseTransition expansionPause = new PauseTransition(Duration.millis(160.0));
-                expansionPause.setOnFinished(event -> verifyEarlyReleaseExpansion(
-                        ripple,
-                        startScale,
-                        startOpacity,
-                        failure,
-                        latch
-                ));
-                expansionPause.play();
-            } catch (Throwable e) {
-                failure.set(e);
-                latch.countDown();
-            }
-        });
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
-        Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
-    }
-
-    /// Verifies the visible part of a ripple that was released immediately after press.
-    private static void verifyEarlyReleaseExpansion(
-            Region ripple,
-            double startScale,
-            double startOpacity,
-            AtomicReference<Throwable> failure,
-            CountDownLatch latch
-    ) {
-        try {
-            assertTrue(Math.max(ripple.getScaleX(), ripple.getScaleY()) > startScale);
-            assertTrue(ripple.getOpacity() > 0.0);
-            assertTrue(ripple.getOpacity() < startOpacity);
-
-            PauseTransition completionPause = new PauseTransition(Duration.millis(560.0));
-            completionPause.setOnFinished(event -> {
-                try {
-                    assertEquals(0.0, ripple.getOpacity(), 0.0001);
-                    assertEquals(1.0, ripple.getScaleX(), 0.0001);
-                    assertEquals(1.0, ripple.getScaleY(), 0.0001);
-                } catch (Throwable e) {
-                    failure.set(e);
-                } finally {
-                    latch.countDown();
-                }
-            });
-            completionPause.play();
-        } catch (Throwable e) {
-            failure.set(e);
-            latch.countDown();
-        }
-    }
-
-    /// Verifies release behavior after the expansion phase has had time to complete.
-    private static void verifyRippleRelease(
-            M3StateLayer stateLayer,
-            AtomicReference<Throwable> failure,
-            CountDownLatch latch
-    ) {
-        try {
             Region ripple = lookupRegion(stateLayer, ".m3-ripple");
-            assertTrue(ripple.getOpacity() > 0.1);
-
+            double startScale = Math.max(ripple.getScaleX(), ripple.getScaleY());
+            double startOpacity = ripple.getOpacity();
             stateLayer.releaseRipple();
+            Timeline releaseAnimation = reflectedTimeline(stateLayer, "rippleAnimation");
 
             assertTrue(ripple.getOpacity() > 0.1);
             assertTrue(stateLayer.isRippleAnimationRunning());
 
-            PauseTransition releasePause = new PauseTransition(Duration.millis(280.0));
-            releasePause.setOnFinished(event -> {
-                try {
-                    assertEquals(0.0, ripple.getOpacity(), 0.0001);
-                } catch (Throwable e) {
-                    failure.set(e);
-                } finally {
-                    latch.countDown();
-                }
-            });
-            releasePause.play();
-        } catch (Throwable e) {
-            failure.set(e);
-            latch.countDown();
-        }
+            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration().divide(2.0));
+
+            assertTrue(Math.max(ripple.getScaleX(), ripple.getScaleY()) > startScale);
+            assertTrue(ripple.getOpacity() > 0.0);
+            assertTrue(ripple.getOpacity() < startOpacity);
+
+            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration());
+
+            assertEquals(0.0, ripple.getOpacity(), 0.0001);
+            assertEquals(1.0, ripple.getScaleX(), 0.0001);
+            assertEquals(1.0, ripple.getScaleY(), 0.0001);
+        });
     }
 
     /// Returns a region looked up below a node.
@@ -406,6 +321,17 @@ final class M3StateLayerTest {
         javafx.scene.Node child = node.lookup(selector);
         assertInstanceOf(Region.class, child);
         return (Region) child;
+    }
+
+    /// Returns a private timeline field from a state layer.
+    private static Timeline reflectedTimeline(M3StateLayer stateLayer, String fieldName) {
+        try {
+            java.lang.reflect.Field field = M3StateLayer.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return assertInstanceOf(Timeline.class, field.get(stateLayer));
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
     }
 
     /// Runs a task on the FX application thread and propagates failures.

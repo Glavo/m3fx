@@ -12079,29 +12079,35 @@ final class M3ControlStyleTest {
 
     /// Verifies that a real button ripple remains visible after release and fades out through animation.
     @Test
-    void buttonRippleReleaseAnimationFadesAfterPointerRelease() throws InterruptedException {
-        M3Button button = createButton("Ripple", M3ButtonVariant.FILLED);
-        Pane root = new Pane(button);
+    void buttonRippleReleaseAnimationFadesAfterPointerRelease() {
+        runOnFxThread(() -> {
+            M3Button button = createButton("Ripple", M3ButtonVariant.FILLED);
+            Pane root = new Pane(button);
+            Scene scene = new Scene(root, 200.0, 100.0);
 
-        runOnFxThreadAfterDelay(
-                Duration.millis(520.0),
-                () -> {
-                    Scene scene = new Scene(root, 200.0, 100.0);
-                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                    root.applyCss();
-                    button.resize(120.0, 40.0);
-                    button.layout();
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            button.resize(120.0, 40.0);
+            button.layout();
 
-                    button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 24.0, 20.0, true));
-                    Region ripple = lookupRegion(button, ".m3-ripple");
-                    assertTrue(ripple.getOpacity() > 0.0);
+            button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 24.0, 20.0, true));
+            Region ripple = lookupRegion(button, ".m3-ripple");
+            Region stateLayer = lookupRegion(button, ".m3-state-layer-container");
+            Timeline expansionAnimation = controlTimeline(stateLayer, "rippleAnimation");
+            expansionAnimation.jumpTo(expansionAnimation.getTotalDuration());
 
-                    button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
-                    assertTrue(ripple.getOpacity() > 0.0);
-                    assertFalse(button.isArmed());
-                },
-                () -> assertEquals(0.0, lookupRegion(button, ".m3-ripple").getOpacity(), 0.0001)
-        );
+            assertTrue(ripple.getOpacity() > 0.0);
+
+            button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
+            Timeline releaseAnimation = controlTimeline(stateLayer, "rippleAnimation");
+
+            assertTrue(ripple.getOpacity() > 0.0);
+            assertFalse(button.isArmed());
+
+            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration());
+
+            assertEquals(0.0, ripple.getOpacity(), 0.0001);
+        });
     }
 
     /// Verifies that ripple opacity starts fading immediately when a quick pointer click is released.
