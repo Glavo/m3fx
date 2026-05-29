@@ -5780,6 +5780,91 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that search view result navigation skips unreachable results and supports boundary keys.
+    @Test
+    void searchViewKeyboardNavigationSkipsUnreachableResultsAndSupportsPageKeys() {
+        runOnFxThread(() -> {
+            M3ListItem first = new M3ListItem("First");
+            M3ListItem disabled = new M3ListItem("Disabled");
+            M3ListItem hidden = new M3ListItem("Hidden");
+            Label staticResult = new Label("Static");
+            M3ListItem fourth = new M3ListItem("Fourth");
+            M3ListItem fifth = new M3ListItem("Fifth");
+            M3ListItem sixth = new M3ListItem("Sixth");
+            M3ListItem seventh = new M3ListItem("Seventh");
+            disabled.setDisable(true);
+            hidden.setVisible(false);
+            M3SearchView searchView = new M3SearchView(
+                    "Search",
+                    first,
+                    disabled,
+                    hidden,
+                    staticResult,
+                    fourth,
+                    fifth,
+                    sixth,
+                    seventh
+            );
+            searchView.setManaged(false);
+            Pane root = new Pane(searchView);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 420.0, 260.0));
+                stage.show();
+                root.applyCss();
+                searchView.resizeRelocate(0.0, 0.0, 320.0, 176.0);
+                root.layout();
+                searchView.layout();
+                resizeRow(first);
+                resizeRow(disabled);
+                resizeRow(hidden);
+                resizeRow(fourth);
+                resizeRow(fifth);
+                resizeRow(sixth);
+                resizeRow(seventh);
+
+                searchView.getEditor().requestFocus();
+                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+                assertTrue(searchView.getEditor().isFocused());
+
+                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(first.isFocused());
+                assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(fourth.isFocused());
+                assertSame(fourth, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                fourth.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+                assertTrue(seventh.isFocused());
+                assertSame(seventh, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                seventh.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+                assertTrue(seventh.isFocused());
+
+                seventh.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_UP));
+                assertTrue(fourth.isFocused());
+
+                fourth.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+                assertTrue(seventh.isFocused());
+
+                seventh.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+                assertTrue(first.isFocused());
+
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_UP));
+                assertTrue(first.isFocused());
+
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(searchView.getEditor().isFocused());
+
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(first.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that sheet controls own content, actions, and variants.
     @Test
     void sheetControlsOwnContentActionsAndVariants() {

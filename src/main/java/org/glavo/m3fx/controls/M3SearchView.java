@@ -22,6 +22,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
@@ -49,6 +50,12 @@ public class M3SearchView extends Control {
 
     /// The vertical offset used while search results are hidden.
     private static final double HIDDEN_RESULTS_TRANSLATE_Y = -8.0;
+
+    /// The fallback result row height used for page navigation before results have been measured.
+    private static final double DEFAULT_RESULT_PAGE_ROW_HEIGHT = 56.0;
+
+    /// The fallback result page step used before the search view has a measured result viewport.
+    private static final int DEFAULT_RESULT_PAGE_STEP = 5;
 
     /// The embedded search bar.
     private final M3SearchBar searchBar = new M3SearchBar();
@@ -396,6 +403,26 @@ public class M3SearchView extends Control {
                     event.consume();
                 }
             }
+            case HOME -> {
+                if (focusBoundaryResult(false)) {
+                    event.consume();
+                }
+            }
+            case END -> {
+                if (focusBoundaryResult(true)) {
+                    event.consume();
+                }
+            }
+            case PAGE_UP -> {
+                if (focusPagedResult(false)) {
+                    event.consume();
+                }
+            }
+            case PAGE_DOWN -> {
+                if (focusPagedResult(true)) {
+                    event.consume();
+                }
+            }
             case ESCAPE -> {
                 if (isActive()) {
                     deactivate();
@@ -412,7 +439,7 @@ public class M3SearchView extends Control {
     private void showAccessibleResult(Object... parameters) {
         activate();
         if (parameters.length == 0) {
-            if (!focusResultAt(0)) {
+            if (!focusFirstResult()) {
                 getEditor().requestFocus();
             }
             return;
@@ -480,9 +507,9 @@ public class M3SearchView extends Control {
 
         int currentIndex = focusedResultIndex();
         if (currentIndex < 0) {
-            return focusResultAt(0);
+            return focusReachableResultFrom(0, 1);
         }
-        return focusResultAt(currentIndex + 1);
+        return focusReachableResultFrom(currentIndex + 1, 1);
     }
 
     /// Focuses the previous result or returns focus to the editor from the first result.
@@ -491,27 +518,164 @@ public class M3SearchView extends Control {
         if (currentIndex < 0) {
             return false;
         }
-        if (currentIndex == 0) {
+
+        int previousIndex = reachableResultIndexFrom(currentIndex - 1, -1);
+        if (previousIndex < 0) {
             getEditor().requestFocus();
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             return true;
         }
-        return focusResultAt(currentIndex - 1);
+        return focusResultAt(previousIndex);
+    }
+
+    /// Focuses the first reachable result.
+    private boolean focusFirstResult() {
+        if (!isActive()) {
+            activate();
+        }
+        return focusReachableResultFrom(0, 1);
+    }
+
+    /// Focuses the last reachable result.
+    private boolean focusLastResult() {
+        if (!isActive()) {
+            activate();
+        }
+        return focusReachableResultFrom(getResults().size() - 1, -1);
+    }
+
+    /// Focuses the first or last result when keyboard focus is already inside the result list.
+    private boolean focusBoundaryResult(boolean last) {
+        if (focusedResultIndex() < 0) {
+            return false;
+        }
+        return last ? focusLastResult() : focusFirstResult();
+    }
+
+    /// Focuses the reachable result one page before or after the current focused result.
+    private boolean focusPagedResult(boolean forward) {
+        int currentIndex = focusedResultIndex();
+        if (currentIndex < 0) {
+            return false;
+        }
+
+        int targetIndex = pagedResultIndex(currentIndex, forward);
+        return targetIndex >= 0 && focusResultAt(targetIndex);
     }
 
     /// Focuses a result at an index when it can be reached.
     private boolean focusResultAt(int index) {
-        if (index < 0 || index >= getResults().size()) {
+        @Nullable Node focusTarget = focusTargetAt(index);
+        if (focusTarget == null) {
             return false;
         }
-
-        @Nullable Node result = getResults().get(index);
-        if (M3Accessible.focusTarget(result) == null) {
-            return false;
-        }
-        M3Accessible.showItem(result);
+        focusTarget.requestFocus();
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         return true;
+    }
+
+    /// Focuses the first reachable result found from an index in the requested direction.
+    private boolean focusReachableResultFrom(int startIndex, int direction) {
+        int targetIndex = reachableResultIndexFrom(startIndex, direction);
+        return targetIndex >= 0 && focusResultAt(targetIndex);
+    }
+
+    /// Returns the first reachable result index found from an index in the requested direction.
+    private int reachableResultIndexFrom(int startIndex, int direction) {
+        ObservableList<Node> results = getResults();
+        int resultCount = results.size();
+        if (resultCount == 0) {
+            return -1;
+        }
+
+        int index = direction > 0
+                ? Math.max(0, startIndex)
+                : Math.min(resultCount - 1, startIndex);
+        while (index >= 0 && index < resultCount) {
+            if (focusTargetAt(index) != null) {
+                return index;
+            }
+            index += direction;
+        }
+        return -1;
+    }
+
+    /// Returns the reachable result index for a page navigation step.
+    private int pagedResultIndex(int currentIndex, boolean forward) {
+        int direction = forward ? 1 : -1;
+        int targetIndex = currentIndex;
+        int step = resultPageStep();
+        for (int offset = 0; offset < step; offset++) {
+            int nextIndex = reachableResultIndexFrom(targetIndex + direction, direction);
+            if (nextIndex < 0) {
+                return targetIndex;
+            }
+            targetIndex = nextIndex;
+        }
+        return targetIndex;
+    }
+
+    /// Returns the number of reachable results covered by one page navigation key press.
+    private int resultPageStep() {
+        double viewportHeight = getHeight() - measuredSearchBarHeight();
+        if (viewportHeight <= 0.0) {
+            viewportHeight = getLayoutBounds().getHeight() - measuredSearchBarHeight();
+        }
+        if (viewportHeight <= 0.0) {
+            viewportHeight = resultsBox.getLayoutBounds().getHeight();
+        }
+
+        double rowHeight = estimatedResultRowHeight();
+        if (viewportHeight <= 0.0 || rowHeight <= 0.0) {
+            return DEFAULT_RESULT_PAGE_STEP;
+        }
+        return Math.max(1, (int) Math.floor(viewportHeight / rowHeight));
+    }
+
+    /// Returns the best available measured or preferred height for the embedded search bar.
+    private double measuredSearchBarHeight() {
+        double height = searchBar.getHeight();
+        if (height <= 0.0) {
+            height = searchBar.getLayoutBounds().getHeight();
+        }
+        if (height <= 0.0 && searchBar.getPrefHeight() > 0.0) {
+            height = searchBar.getPrefHeight();
+        }
+        if (height <= 0.0) {
+            height = searchBar.prefHeight(-1.0);
+        }
+        return height;
+    }
+
+    /// Returns the best available measured or preferred height for one result row.
+    private double estimatedResultRowHeight() {
+        ObservableList<Node> results = getResults();
+        for (int index = 0; index < results.size(); index++) {
+            if (focusTargetAt(index) == null) {
+                continue;
+            }
+
+            Node result = results.get(index);
+            double height = result instanceof Region region ? region.getHeight() : 0.0;
+            if (height <= 0.0) {
+                height = result.getLayoutBounds().getHeight();
+            }
+            if (height <= 0.0 && result instanceof Region region) {
+                height = region.prefHeight(-1.0);
+            }
+            if (height > 0.0) {
+                return height;
+            }
+        }
+        return DEFAULT_RESULT_PAGE_ROW_HEIGHT;
+    }
+
+    /// Returns the focus target for the indexed result when it can be reached.
+    private @Nullable Node focusTargetAt(int index) {
+        if (index < 0 || index >= getResults().size()) {
+            return null;
+        }
+        return M3Accessible.focusTarget(getResults().get(index));
     }
 
     /// Returns the current accessibility focus node.
