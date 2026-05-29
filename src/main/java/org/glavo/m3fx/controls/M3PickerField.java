@@ -155,7 +155,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Reports popup picker focus changes through this field's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
-            new M3AccessibleFocusNotifier(this, popupContent, this::focusNode);
+            new M3AccessibleFocusNotifier(this, popupContent, this::focusNode, this::notifyFocusNodeChanged);
 
     /// Whether value listeners are currently synchronizing the field and picker.
     private boolean synchronizingValue;
@@ -440,7 +440,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         popup.show(this, placement.x(), placement.y());
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
         popupFocusNotifier.refresh();
         playShowAnimation();
     }
@@ -480,7 +480,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         switch (action) {
             case REQUEST_FOCUS -> {
                 editor.requestFocus();
-                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                notifyFocusNodeChanged();
                 popupFocusNotifier.refresh();
             }
             case SHOW_MENU, EXPAND -> showPicker();
@@ -569,7 +569,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 clearGeneratedErrorText();
             }
         });
-        picker.addEventHandler(KeyEvent.KEY_PRESSED, this::handlePickerKeyPressed);
+        popupContent.addEventHandler(KeyEvent.KEY_PRESSED, this::handlePickerKeyPressed);
         popupFocusNotifier.start();
     }
 
@@ -656,7 +656,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
     }
 
     /// Updates editor text from the currently selected value.
@@ -694,8 +694,24 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             return editor;
         }
 
+        @Nullable Node popupFocusOwner = popupFocusOwner();
+        if (popupFocusOwner != null) {
+            return popupFocusOwner;
+        }
+
         @Nullable Object focusNode = picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
-        return focusNode instanceof Node node ? node : picker;
+        return focusNode instanceof Node node && M3Accessible.canReach(node) ? node : picker;
+    }
+
+    /// Returns the current focus owner inside popup content when it belongs to the popup scene.
+    private @Nullable Node popupFocusOwner() {
+        @Nullable Scene popupScene = popupContent.getScene();
+        @Nullable Node focusOwner = popupScene == null ? null : popupScene.getFocusOwner();
+        if (focusOwner != null && M3Accessible.containsNode(popupContent, focusOwner)
+                && M3Accessible.canReach(focusOwner)) {
+            return focusOwner;
+        }
+        return null;
     }
 
     /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
@@ -717,8 +733,14 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         }
 
         focusNode().requestFocus();
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
         popupFocusNotifier.refresh();
+    }
+
+    /// Notifies accessibility clients and owner containers about the exposed focus target.
+    private void notifyFocusNodeChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChangedInAncestors(this);
     }
 
     /// Clears generated parse or range errors after user edits.
@@ -784,7 +806,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     private void handlePopupHidden() {
         showing.set(false);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
         popupFocusNotifier.refresh();
         resetPopupAnimationState();
         if (focusEditorOnHidden) {

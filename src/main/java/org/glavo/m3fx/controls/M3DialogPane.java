@@ -372,7 +372,7 @@ public class M3DialogPane extends DialogPane {
     /// Returns the preferred focus target for the dialog pane.
     private @Nullable Node firstFocusableItem() {
         @Nullable Node content = getContent();
-        @Nullable Node contentFocusTarget = M3Accessible.focusTarget(content);
+        @Nullable Node contentFocusTarget = M3Accessible.accessibleFocusTarget(content);
         if (contentFocusTarget != null) {
             return contentFocusTarget;
         }
@@ -403,11 +403,15 @@ public class M3DialogPane extends DialogPane {
     private @Nullable Node currentFocusableItem() {
         @Nullable Scene scene = getScene();
         @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        @Nullable Node content = getContent();
+        @Nullable Node externalContentFocusTarget = activeExternalContentFocusTarget(content);
+        if (externalContentFocusTarget != null) {
+            return externalContentFocusTarget;
+        }
         if (focusOwner == null) {
             return null;
         }
 
-        @Nullable Node content = getContent();
         @Nullable Node contentFocusTarget = containedFocusTarget(content, focusOwner);
         if (contentFocusTarget != null) {
             return contentFocusTarget;
@@ -418,6 +422,20 @@ public class M3DialogPane extends DialogPane {
             if (buttonFocusTarget != null) {
                 return buttonFocusTarget;
             }
+        }
+        return null;
+    }
+
+    /// Returns an actively focused popup target exposed by dialog content when it lives outside this pane.
+    private @Nullable Node activeExternalContentFocusTarget(@Nullable Node content) {
+        @Nullable Node contentFocusTarget = M3Accessible.accessibleFocusTarget(content);
+        if (contentFocusTarget == null || M3Accessible.containsNode(this, contentFocusTarget)) {
+            return null;
+        }
+        @Nullable Scene focusTargetScene = contentFocusTarget.getScene();
+        @Nullable Node focusOwner = focusTargetScene == null ? null : focusTargetScene.getFocusOwner();
+        if (focusOwner != null && M3Accessible.containsNode(contentFocusTarget, focusOwner)) {
+            return contentFocusTarget;
         }
         return null;
     }

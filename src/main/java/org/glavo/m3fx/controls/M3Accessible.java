@@ -120,6 +120,18 @@ final class M3Accessible {
         }
     }
 
+    /// Returns a node's currently exposed accessibility focus target when available.
+    static @Nullable Node accessibleFocusTarget(@Nullable Node item) {
+        if (!canReach(item)) {
+            return null;
+        }
+        @Nullable Object focusNode = item.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        if (focusNode instanceof Node node && canReach(node)) {
+            return node;
+        }
+        return focusTarget(item);
+    }
+
     /// Returns the focusable item or descendant used for accessibility focus requests.
     static @Nullable Node focusTarget(@Nullable Node item) {
         if (!canReach(item)) {
@@ -302,6 +314,16 @@ final class M3Accessible {
     /// Returns whether a node can receive a direct or descendant focus request.
     static boolean canReach(@Nullable Node node) {
         return node != null && node.isVisible() && !node.isDisabled() && node.getScene() != null;
+    }
+
+    /// Notifies ancestor nodes that a descendant's accessible focus target changed.
+    static void notifyFocusNodeChangedInAncestors(Node node) {
+        Objects.requireNonNull(node, "node");
+        @Nullable Parent parent = node.getParent();
+        while (parent != null) {
+            parent.notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            parent = parent.getParent();
+        }
     }
 
     /// Returns whether the possible ancestor contains the requested descendant node.

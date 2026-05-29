@@ -10,6 +10,7 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -300,6 +301,98 @@ final class M3PickerFieldTest {
                 assertFalse(field.isShowing());
                 assertTrue(field.getEditor().isFocused());
                 assertSame(field.getEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            }
+        });
+    }
+
+    /// Verifies that preset popup actions expose focus and support keyboard dismissal.
+    @Test
+    void pickerFieldPresetFocusIsExposedAndDismissibleFromPopupContent() {
+        runOnFxThread(() -> {
+            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            M3MotionSettings.setAnimationsEnabled(false);
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DatePickerField field = new M3DatePickerField(anchor);
+            field.setCommonPresets(anchor);
+            Pane root = new Pane(field);
+            Scene scene = new Scene(root, 640.0, 360.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                field.resizeRelocate(24.0, 24.0, 320.0, 72.0);
+                root.layout();
+
+                field.showPicker();
+                Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+                M3Button today = findPresetButton(presetContent, "Today");
+
+                today.requestFocus();
+
+                assertTrue(today.isFocused());
+                assertSame(today, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                today.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getEditor().isFocused());
+                assertSame(field.getEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            }
+        });
+    }
+
+    /// Verifies that dialog panes route focus to popup content exposed by a nested picker field.
+    @Test
+    void dialogPaneRoutesFocusToNestedPickerPopupContent() {
+        runOnFxThread(() -> {
+            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            M3MotionSettings.setAnimationsEnabled(false);
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DatePickerField field = new M3DatePickerField(anchor);
+            field.setCommonPresets(anchor);
+            M3DialogPane pane = new M3DialogPane();
+            pane.setContent(field);
+            pane.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
+            Pane root = new Pane(pane);
+            Scene scene = new Scene(root, 720.0, 480.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                pane.resizeRelocate(24.0, 24.0, 560.0, 360.0);
+                root.layout();
+
+                field.showPicker();
+                Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+                M3Button tomorrow = findPresetButton(presetContent, "Tomorrow");
+
+                tomorrow.requestFocus();
+
+                assertTrue(tomorrow.isFocused());
+                assertSame(tomorrow, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(tomorrow, pane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                pane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(tomorrow.isFocused());
+
+                tomorrow.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getEditor().isFocused());
+                assertSame(field.getEditor(), pane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
                 M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
