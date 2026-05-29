@@ -272,12 +272,12 @@ final class M3StateLayer extends Pane {
         ripple.setScaleY(startScaleY);
 
         M3MotionSpec expansionSpec = M3Animation.defaultSpatial(owner);
-        M3MotionSpec fadeSpec = M3Animation.fastEffects(owner);
+        M3MotionSpec fadeSpec = M3Animation.defaultEffects(owner);
         Duration remainingExpansion = remainingRippleExpansionDuration(
                 expansionSpec.duration(),
                 Math.max(startScaleX, startScaleY)
         );
-        Duration fadeEnd = Duration.millis(remainingExpansion.toMillis() + fadeSpec.duration().toMillis());
+        Duration fadeEnd = laterDuration(remainingExpansion, fadeSpec.duration());
         if (remainingExpansion.greaterThan(Duration.ZERO)) {
             rippleAnimation.getKeyFrames().setAll(
                     new KeyFrame(
@@ -289,8 +289,7 @@ final class M3StateLayer extends Pane {
                     new KeyFrame(
                             remainingExpansion,
                             new KeyValue(ripple.scaleXProperty(), 1.0, expansionSpec.interpolator()),
-                            new KeyValue(ripple.scaleYProperty(), 1.0, expansionSpec.interpolator()),
-                            new KeyValue(ripple.opacityProperty(), startOpacity, fadeSpec.interpolator())
+                            new KeyValue(ripple.scaleYProperty(), 1.0, expansionSpec.interpolator())
                     ),
                     new KeyFrame(
                             fadeEnd,
@@ -456,6 +455,11 @@ final class M3StateLayer extends Pane {
     private static Duration remainingRippleExpansionDuration(Duration fullDuration, double currentScale) {
         double clampedScale = Math.max(0.0, Math.min(1.0, currentScale));
         return Duration.millis(fullDuration.toMillis() * (1.0 - clampedScale));
+    }
+
+    /// Returns the later finite duration.
+    private static Duration laterDuration(Duration first, Duration second) {
+        return first.greaterThan(second) ? first : second;
     }
 
     /// Resolves a token radius to a radius that can be represented within the current bounds.

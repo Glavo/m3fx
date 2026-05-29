@@ -284,9 +284,9 @@ final class M3StateLayerTest {
         }
     }
 
-    /// Verifies that an early release still lets the ripple expand before it fades.
+    /// Verifies that an early release lets the ripple expand while it fades.
     @Test
-    void rippleReleasedBeforeExpansionCompletesStillExpandsBeforeFade() throws InterruptedException {
+    void rippleReleasedBeforeExpansionCompletesStillExpandsWhileFading() throws InterruptedException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -303,6 +303,7 @@ final class M3StateLayerTest {
 
                 Region ripple = lookupRegion(stateLayer, ".m3-ripple");
                 double startScale = Math.max(ripple.getScaleX(), ripple.getScaleY());
+                double startOpacity = ripple.getOpacity();
                 stateLayer.releaseRipple();
 
                 assertTrue(ripple.getOpacity() > 0.1);
@@ -312,6 +313,7 @@ final class M3StateLayerTest {
                 expansionPause.setOnFinished(event -> verifyEarlyReleaseExpansion(
                         ripple,
                         startScale,
+                        startOpacity,
                         failure,
                         latch
                 ));
@@ -339,12 +341,14 @@ final class M3StateLayerTest {
     private static void verifyEarlyReleaseExpansion(
             Region ripple,
             double startScale,
+            double startOpacity,
             AtomicReference<Throwable> failure,
             CountDownLatch latch
     ) {
         try {
             assertTrue(Math.max(ripple.getScaleX(), ripple.getScaleY()) > startScale);
-            assertTrue(ripple.getOpacity() > 0.1);
+            assertTrue(ripple.getOpacity() > 0.0);
+            assertTrue(ripple.getOpacity() < startOpacity);
 
             PauseTransition completionPause = new PauseTransition(Duration.millis(560.0));
             completionPause.setOnFinished(event -> {

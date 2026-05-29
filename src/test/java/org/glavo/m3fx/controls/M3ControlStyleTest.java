@@ -12104,6 +12104,40 @@ final class M3ControlStyleTest {
         );
     }
 
+    /// Verifies that ripple opacity starts fading immediately when a quick pointer click is released.
+    @Test
+    void buttonRippleReleaseAnimationFadesDuringExpansionAfterQuickClick() {
+        runOnFxThread(() -> {
+            M3Button button = createButton("Ripple", M3ButtonVariant.FILLED);
+            Pane root = new Pane(button);
+            Scene scene = new Scene(root, 200.0, 100.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            button.resize(120.0, 40.0);
+            button.layout();
+
+            button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 24.0, 20.0, true));
+            Region ripple = lookupRegion(button, ".m3-ripple");
+            Region stateLayer = lookupRegion(button, ".m3-state-layer-container");
+            double releaseStartOpacity = ripple.getOpacity();
+
+            button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
+            Timeline releaseAnimation = controlTimeline(stateLayer, "rippleAnimation");
+
+            releaseAnimation.jumpTo(Duration.millis(100.0));
+
+            double midReleaseOpacity = ripple.getOpacity();
+            assertTrue(midReleaseOpacity > 0.0, () -> "midReleaseOpacity=" + midReleaseOpacity);
+            assertTrue(midReleaseOpacity < releaseStartOpacity, () ->
+                    "midReleaseOpacity=" + midReleaseOpacity + ", releaseStartOpacity=" + releaseStartOpacity);
+
+            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration());
+
+            assertEquals(0.0, ripple.getOpacity(), 0.0001);
+        });
+    }
+
     /// Verifies that a representative control set renders non-blank visible output.
     @Test
     void visualSmokeSnapshotRendersCoreControlsWithContrast() {
