@@ -57,6 +57,9 @@ public class M3ListView<T> extends Control {
     /// The default fixed cell size hint, disabled by default.
     private static final double DEFAULT_FIXED_CELL_SIZE = 0.0;
 
+    /// The fallback row height used when no fixed cell size or measured cell height is available.
+    private static final double DEFAULT_ROW_HEIGHT = 56.0;
+
     /// The backing data items rendered by this view.
     private final ObservableList<T> items = FXCollections.observableArrayList();
 
@@ -660,6 +663,8 @@ public class M3ListView<T> extends Control {
             case DOWN -> moveKeyboardFocus(nextIndex(navigationAnchorIndex()), event);
             case HOME -> moveKeyboardFocus(firstIndex(), event);
             case END -> moveKeyboardFocus(lastIndex(), event);
+            case PAGE_UP -> moveKeyboardFocus(pageIndex(navigationAnchorIndex(), false), event);
+            case PAGE_DOWN -> moveKeyboardFocus(pageIndex(navigationAnchorIndex(), true), event);
             case ENTER, SPACE -> activateFocusedIndex(event);
             default -> {
             }
@@ -1085,6 +1090,57 @@ public class M3ListView<T> extends Control {
             }
         }
         return -1;
+    }
+
+    /// Returns the index reached by one page-navigation operation.
+    private int pageIndex(int currentIndex, boolean forward) {
+        if (getItems().isEmpty()) {
+            return -1;
+        }
+        if (!isIndexNavigable(currentIndex)) {
+            return forward ? firstIndex() : lastIndex();
+        }
+
+        int target = currentIndex;
+        int step = pageStep();
+        for (int offset = 0; offset < step; offset++) {
+            int next = forward ? nextIndexWithoutWrap(target) : previousIndexWithoutWrap(target);
+            if (next < 0) {
+                return target;
+            }
+            target = next;
+        }
+        return target;
+    }
+
+    /// Returns the next enabled visible index after the current index without wrapping.
+    private int nextIndexWithoutWrap(int currentIndex) {
+        for (int index = Math.max(0, currentIndex + 1); index < getItems().size(); index++) {
+            if (isIndexNavigable(index)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /// Returns the previous enabled visible index before the current index without wrapping.
+    private int previousIndexWithoutWrap(int currentIndex) {
+        for (int index = Math.min(currentIndex - 1, getItems().size() - 1); index >= 0; index--) {
+            if (isIndexNavigable(index)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /// Returns the number of rows used by page-up and page-down keyboard navigation.
+    private int pageStep() {
+        double rowHeight = getFixedCellSize() > 0.0 ? getFixedCellSize() : DEFAULT_ROW_HEIGHT;
+        double viewportHeight = getHeight();
+        if (viewportHeight <= 0.0) {
+            viewportHeight = prefHeight(getWidth());
+        }
+        return Math.max(1, (int) Math.floor(viewportHeight / rowHeight));
     }
 
     /// Returns whether a data item index can receive list keyboard navigation.

@@ -9331,6 +9331,68 @@ final class M3ControlStyleTest {
         assertSame(first, listView.getSelectedItem());
     }
 
+    /// Verifies that virtualized list page navigation moves by visible rows without wrapping.
+    @Test
+    void listViewPageNavigationUsesVisibleRowSteps() {
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem second = new M3ListItem("Second");
+        M3ListItem disabled = new M3ListItem("Disabled");
+        M3ListItem fourth = new M3ListItem("Fourth");
+        M3ListItem fifth = new M3ListItem("Fifth");
+        M3ListItem hidden = new M3ListItem("Hidden");
+        M3ListItem seventh = new M3ListItem("Seventh");
+        M3ListItem eighth = new M3ListItem("Eighth");
+        M3ListItem ninth = new M3ListItem("Ninth");
+        disabled.setDisable(true);
+        hidden.setVisible(false);
+
+        M3ListView<M3ListItem> listView = new M3ListView<>(
+                first,
+                second,
+                disabled,
+                fourth,
+                fifth,
+                hidden,
+                seventh,
+                eighth,
+                ninth
+        );
+        listView.setFixedCellSize(56.0);
+        listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+        listView.resize(280.0, 168.0);
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+
+        assertEquals(0, listView.getFocusedIndex());
+        assertSame(first, listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+
+        assertEquals(4, listView.getFocusedIndex());
+        assertSame(fifth, listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+
+        assertEquals(8, listView.getFocusedIndex());
+        assertSame(ninth, listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+
+        assertEquals(8, listView.getFocusedIndex());
+        assertSame(ninth, listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_UP));
+
+        assertEquals(4, listView.getFocusedIndex());
+        assertSame(fifth, listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_UP));
+
+        assertEquals(0, listView.getFocusedIndex());
+        assertSame(first, listView.getSelectedItem());
+    }
+
     /// Verifies that virtualized list view keyboard and accessibility focus scrolls rows into view.
     @Test
     void listViewFocusesVirtualizedRowsFromKeyboardAndAccessibility() {
