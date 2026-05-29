@@ -8,6 +8,7 @@ import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Region;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,6 +20,12 @@ import java.util.function.Function;
 /// Shared child navigation helpers for M3FX selection containers.
 @NotNullByDefault
 final class M3SelectionNavigation {
+    /// The fallback row height used for page navigation before rows have been measured.
+    private static final double DEFAULT_PAGE_ROW_HEIGHT = 56.0;
+
+    /// The fallback page step used before the owner has a measured viewport height.
+    private static final int DEFAULT_PAGE_STEP = 5;
+
     /// Prevents utility class instantiation.
     private M3SelectionNavigation() {
     }
@@ -83,6 +90,43 @@ final class M3SelectionNavigation {
         return null;
     }
 
+    /// Returns the enabled visible child reached by page navigation without wrapping around list edges.
+    static <T extends Node> @Nullable T page(
+            Node owner,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean forward
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(children, "children");
+        Objects.requireNonNull(type, "type");
+
+        int childCount = children.size();
+        if (childCount == 0) {
+            return null;
+        }
+
+        @Nullable T target = current != null && children.contains(current) && selectable(current, type) != null
+                ? current
+                : null;
+        if (target == null) {
+            return forward ? first(children, type) : last(children, type);
+        }
+
+        int step = pageStep(owner, children, type);
+        for (int offset = 0; offset < step; offset++) {
+            @Nullable T next = forward
+                    ? nextWithoutWrap(children, target, type)
+                    : previousWithoutWrap(children, target, type);
+            if (next == null) {
+                return target;
+            }
+            target = next;
+        }
+        return target;
+    }
+
     /// Handles a navigation key event and selects the matching child when a key applies.
     static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
@@ -128,6 +172,30 @@ final class M3SelectionNavigation {
         return true;
     }
 
+    /// Handles a page navigation key event and selects the matching child when a key applies.
+    static <T extends Node> boolean handlePageKeySelection(
+            KeyEvent event,
+            Node owner,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            Consumer<T> selector
+    ) {
+        Objects.requireNonNull(event, "event");
+        Objects.requireNonNull(selector, "selector");
+        @Nullable T target = pageTargetFromKey(event.getCode(), owner, children, current, type);
+        if (target == null) {
+            return false;
+        }
+
+        selector.accept(target);
+        if (target.isFocusTraversable()) {
+            target.requestFocus();
+        }
+        event.consume();
+        return true;
+    }
+
     /// Handles a navigation key event and focuses the matching child when a key applies.
     static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
@@ -158,6 +226,25 @@ final class M3SelectionNavigation {
         Objects.requireNonNull(type, "type");
 
         @Nullable T target = targetFromKey(event.getCode(), children, current, type, horizontal, vertical, rightToLeft);
+        if (target == null) {
+            return false;
+        }
+
+        target.requestFocus();
+        event.consume();
+        return true;
+    }
+
+    /// Handles a page navigation key event and focuses the matching child when a key applies.
+    static <T extends Node> boolean handlePageKeyFocus(
+            KeyEvent event,
+            Node owner,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type
+    ) {
+        Objects.requireNonNull(event, "event");
+        @Nullable T target = pageTargetFromKey(event.getCode(), owner, children, current, type);
         if (target == null) {
             return false;
         }
@@ -290,6 +377,82 @@ final class M3SelectionNavigation {
 
         boolean forward = rightToLeft != rightKey;
         return forward ? next(children, current, type) : previous(children, current, type);
+    }
+
+    /// Returns the page navigation target implied by a key.
+    private static <T extends Node> @Nullable T pageTargetFromKey(
+            KeyCode keyCode,
+            Node owner,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type
+    ) {
+        return switch (keyCode) {
+            case PAGE_UP -> page(owner, children, current, type, false);
+            case PAGE_DOWN -> page(owner, children, current, type, true);
+            default -> null;
+        };
+    }
+
+    /// Returns the next enabled visible child after the current child without wrapping.
+    private static <T extends Node> @Nullable T nextWithoutWrap(
+            ObservableList<Node> children,
+            T current,
+            Class<T> type
+    ) {
+        int currentIndex = children.indexOf(current);
+        for (int index = Math.max(0, currentIndex + 1); index < children.size(); index++) {
+            @Nullable T selectable = selectable(children.get(index), type);
+            if (selectable != null) {
+                return selectable;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the previous enabled visible child before the current child without wrapping.
+    private static <T extends Node> @Nullable T previousWithoutWrap(
+            ObservableList<Node> children,
+            T current,
+            Class<T> type
+    ) {
+        int currentIndex = children.indexOf(current);
+        for (int index = Math.min(currentIndex - 1, children.size() - 1); index >= 0; index--) {
+            @Nullable T selectable = selectable(children.get(index), type);
+            if (selectable != null) {
+                return selectable;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the page navigation step for a list-like owner and its visible child rows.
+    private static <T extends Node> int pageStep(Node owner, ObservableList<Node> children, Class<T> type) {
+        double viewportHeight = owner.getLayoutBounds().getHeight();
+        double rowHeight = estimatedRowHeight(children, type);
+        if (viewportHeight <= 0.0 || rowHeight <= 0.0) {
+            return DEFAULT_PAGE_STEP;
+        }
+        return Math.max(1, (int) Math.floor(viewportHeight / rowHeight));
+    }
+
+    /// Returns the best available row height estimate for a child list.
+    private static <T extends Node> double estimatedRowHeight(ObservableList<Node> children, Class<T> type) {
+        for (Node child : children) {
+            @Nullable T selectable = selectable(child, type);
+            if (selectable == null) {
+                continue;
+            }
+
+            double height = selectable.getLayoutBounds().getHeight();
+            if (height <= 0.0 && selectable instanceof Region region) {
+                height = region.prefHeight(-1.0);
+            }
+            if (height > 0.0) {
+                return height;
+            }
+        }
+        return DEFAULT_PAGE_ROW_HEIGHT;
     }
 
     /// Returns the child when it is an enabled visible instance of the requested type.

@@ -9393,6 +9393,100 @@ final class M3ControlStyleTest {
         assertSame(first, listView.getSelectedItem());
     }
 
+    /// Verifies that static list-style containers support page keyboard navigation.
+    @Test
+    void listStyleContainersSupportPageKeyboardNavigation() {
+        M3ListItem listFirst = new M3ListItem("First");
+        M3ListItem listDisabled = new M3ListItem("Disabled");
+        M3ListItem listHidden = new M3ListItem("Hidden");
+        M3ListItem listFourth = new M3ListItem("Fourth");
+        M3ListItem listFifth = new M3ListItem("Fifth");
+        M3ListItem listSixth = new M3ListItem("Sixth");
+        listDisabled.setDisable(true);
+        listHidden.setVisible(false);
+        resizeRow(listFirst);
+        resizeRow(listDisabled);
+        resizeRow(listHidden);
+        resizeRow(listFourth);
+        resizeRow(listFifth);
+        resizeRow(listSixth);
+        M3ListPane listPane = new M3ListPane(
+                listFirst,
+                listDisabled,
+                listHidden,
+                listFourth,
+                listFifth,
+                listSixth
+        );
+        listPane.setSelectionMode(M3ListSelectionMode.SINGLE);
+        listPane.resize(240.0, 120.0);
+
+        listPane.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+        assertSame(listFirst, listPane.getSelectedItem());
+
+        listPane.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+        assertSame(listSixth, listPane.getSelectedItem());
+
+        listPane.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+        assertSame(listSixth, listPane.getSelectedItem());
+
+        listPane.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_UP));
+        assertSame(listFirst, listPane.getSelectedItem());
+
+        M3MenuItem menuFirst = new M3MenuItem("First");
+        M3MenuItem menuDisabled = new M3MenuItem("Disabled");
+        M3MenuItem menuHidden = new M3MenuItem("Hidden");
+        M3MenuItem menuFourth = new M3MenuItem("Fourth");
+        M3MenuItem menuFifth = new M3MenuItem("Fifth");
+        M3MenuItem menuSixth = new M3MenuItem("Sixth");
+        menuDisabled.setDisable(true);
+        menuHidden.setVisible(false);
+        resizeRow(menuFirst);
+        resizeRow(menuDisabled);
+        resizeRow(menuHidden);
+        resizeRow(menuFourth);
+        resizeRow(menuFifth);
+        resizeRow(menuSixth);
+        M3Menu menu = new M3Menu(menuFirst, menuDisabled, menuHidden, menuFourth, menuFifth, menuSixth);
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.resize(240.0, 120.0);
+
+        menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+        assertSame(menuFirst, menu.getSelectedItem());
+
+        menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+        assertSame(menuSixth, menu.getSelectedItem());
+
+        menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_UP));
+        assertSame(menuFirst, menu.getSelectedItem());
+
+        M3ListItem drawerFirst = new M3ListItem("First");
+        M3ListItem drawerChildFirst = new M3ListItem("Child first");
+        M3ListItem drawerChildDisabled = new M3ListItem("Disabled child");
+        M3ListItem drawerChildThird = new M3ListItem("Child third");
+        M3ListItem drawerLast = new M3ListItem("Last");
+        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Group");
+        group.setExpanded(true);
+        drawerChildDisabled.setDisable(true);
+        resizeRow(drawerFirst);
+        resizeRow(group.getHeaderItem());
+        resizeRow(drawerChildFirst);
+        resizeRow(drawerChildDisabled);
+        resizeRow(drawerChildThird);
+        resizeRow(drawerLast);
+        group.addItems(drawerChildFirst, drawerChildDisabled, drawerChildThird);
+        M3NavigationDrawer drawer = new M3NavigationDrawer(drawerFirst, group, drawerLast);
+        drawer.resize(240.0, 120.0);
+
+        assertSame(drawerFirst, drawer.getSelectedItem());
+
+        drawer.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN));
+        assertSame(drawerChildThird, drawer.getSelectedItem());
+
+        drawer.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_UP));
+        assertSame(drawerFirst, drawer.getSelectedItem());
+    }
+
     /// Verifies that virtualized list view keyboard and accessibility focus scrolls rows into view.
     @Test
     void listViewFocusesVirtualizedRowsFromKeyboardAndAccessibility() {
@@ -16712,6 +16806,11 @@ final class M3ControlStyleTest {
         region.resize(width, height);
         region.applyCss();
         region.layout();
+    }
+
+    /// Resizes a synthetic row to deterministic dimensions for keyboard page-step tests.
+    private static void resizeRow(Region row) {
+        row.resize(240.0, 40.0);
     }
 
     /// Verifies that a rendered snapshot contains enough distinct visible colors.

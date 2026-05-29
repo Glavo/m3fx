@@ -471,6 +471,8 @@ public class M3Menu extends Control {
             case DOWN -> M3SelectionNavigation.next(getItems(), anchor, M3MenuItem.class);
             case HOME -> M3SelectionNavigation.first(getItems(), M3MenuItem.class);
             case END -> M3SelectionNavigation.last(getItems(), M3MenuItem.class);
+            case PAGE_UP -> M3SelectionNavigation.page(this, getItems(), anchor, M3MenuItem.class, false);
+            case PAGE_DOWN -> M3SelectionNavigation.page(this, getItems(), anchor, M3MenuItem.class, true);
             default -> null;
         };
     }

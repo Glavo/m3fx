@@ -379,24 +379,43 @@ public class M3ListPane extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         if (getSelectionMode() == M3ListSelectionMode.NONE
                 || getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
-            M3SelectionNavigation.handleKeyFocus(
+            if (M3SelectionNavigation.handleKeyFocus(
                     event,
                     getItems(),
                     M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
                     M3ListItem.class,
                     false,
                     true
+            )) {
+                return;
+            }
+            M3SelectionNavigation.handlePageKeyFocus(
+                    event,
+                    this,
+                    getItems(),
+                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
+                    M3ListItem.class
             );
             return;
         }
 
-        M3SelectionNavigation.handleKeySelection(
+        if (M3SelectionNavigation.handleKeySelection(
                 event,
                 getItems(),
                 M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
                 M3ListItem.class,
                 false,
                 true,
+                this::select
+        )) {
+            return;
+        }
+        M3SelectionNavigation.handlePageKeySelection(
+                event,
+                this,
+                getItems(),
+                M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
+                M3ListItem.class,
                 this::select
         );
     }

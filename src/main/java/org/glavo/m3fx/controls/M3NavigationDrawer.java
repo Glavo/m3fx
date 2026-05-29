@@ -356,13 +356,23 @@ public class M3NavigationDrawer extends Control {
 
         ObservableList<Node> content = flattenedContent();
         @Nullable M3ListItem anchor = M3SelectionNavigation.focusAnchor(content, getSelectedItem(), M3ListItem.class);
-        M3SelectionNavigation.handleKeySelection(
+        if (M3SelectionNavigation.handleKeySelection(
                 event,
                 content,
                 anchor,
                 M3ListItem.class,
                 false,
                 true,
+                this::select
+        )) {
+            return;
+        }
+        M3SelectionNavigation.handlePageKeySelection(
+                event,
+                this,
+                content,
+                anchor,
+                M3ListItem.class,
                 this::select
         );
     }
