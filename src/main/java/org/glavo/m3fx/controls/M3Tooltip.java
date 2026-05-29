@@ -619,11 +619,17 @@ public class M3Tooltip extends PopupControl {
         /// The popup root node that currently has tooltip hover handlers installed.
         private @Nullable Node tooltipRoot;
 
+        /// The popup scene that currently has a focus owner listener installed.
+        private @Nullable Scene tooltipScene;
+
         /// Whether the pointer is currently inside the target node.
         private boolean ownerContainsPointer;
 
         /// Whether the pointer is currently inside the tooltip popup.
         private boolean tooltipContainsPointer;
+
+        /// Whether keyboard focus is currently inside the tooltip popup.
+        private boolean tooltipContainsFocus;
 
         /// Handles pointer entry.
         private final javafx.event.EventHandler<MouseEvent> enteredHandler = this::handleEntered;
@@ -639,6 +645,13 @@ public class M3Tooltip extends PopupControl {
 
         /// Handles pointer exit from an interactive tooltip popup.
         private final javafx.event.EventHandler<MouseEvent> tooltipExitedHandler = this::handleTooltipExited;
+
+        /// Handles keyboard dismissal while focus is inside an interactive tooltip popup.
+        private final javafx.event.EventHandler<KeyEvent> tooltipKeyPressedHandler = this::handleTooltipKeyPressed;
+
+        /// Handles focus changes inside an interactive tooltip popup.
+        private final ChangeListener<@Nullable Node> tooltipFocusOwnerListener =
+                this::handleTooltipFocusOwnerChanged;
 
         /// Handles keyboard dismissal while the target owns focus.
         private final javafx.event.EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
@@ -679,6 +692,7 @@ public class M3Tooltip extends PopupControl {
             uninstallTooltipHoverHandlers();
             ownerContainsPointer = false;
             tooltipContainsPointer = false;
+            tooltipContainsFocus = false;
             showTimer.stop();
             hideTimer.stop();
             durationTimer.stop();
@@ -729,6 +743,34 @@ public class M3Tooltip extends PopupControl {
             scheduleHide();
         }
 
+        /// Hides the tooltip from the Escape key while focus is inside its popup.
+        private void handleTooltipKeyPressed(KeyEvent event) {
+            if (event.getCode() == KeyCode.ESCAPE && tooltip.isShowing()) {
+                hideImmediately();
+                if (M3Accessible.canReach(node)) {
+                    node.requestFocus();
+                }
+                event.consume();
+            }
+        }
+
+        /// Keeps interactive tooltip popups open while focus is inside popup content.
+        private void handleTooltipFocusOwnerChanged(
+                ObservableValue<? extends @Nullable Node> observable,
+                @Nullable Node oldValue,
+                @Nullable Node newValue
+        ) {
+            tooltipContainsFocus = newValue != null
+                    && tooltipRoot != null
+                    && M3Accessible.containsNode(tooltipRoot, newValue);
+            if (tooltipContainsFocus) {
+                hideTimer.stop();
+                durationTimer.stop();
+            } else if (tooltip.isShowing()) {
+                scheduleHide();
+            }
+        }
+
         /// Installs or removes popup hover handlers as the tooltip is shown or hidden.
         private void handleTooltipShowingChanged(
                 ObservableValue<? extends Boolean> observable,
@@ -739,6 +781,7 @@ public class M3Tooltip extends PopupControl {
                 installTooltipHoverHandlers();
             } else {
                 tooltipContainsPointer = false;
+                tooltipContainsFocus = false;
                 uninstallTooltipHoverHandlers();
             }
         }
@@ -767,6 +810,9 @@ public class M3Tooltip extends PopupControl {
         private void scheduleHide() {
             showTimer.stop();
             durationTimer.stop();
+            if (tooltip.isInteractive() && isTooltipActive()) {
+                return;
+            }
             if (tooltip.isShowing()) {
                 hideTimer.setDuration(effectiveHideDelay());
                 hideTimer.playFromStart();
@@ -780,6 +826,7 @@ public class M3Tooltip extends PopupControl {
             durationTimer.stop();
             ownerContainsPointer = false;
             tooltipContainsPointer = false;
+            tooltipContainsFocus = false;
             if (tooltip.isShowing()) {
                 tooltip.hide();
             }
@@ -838,13 +885,18 @@ public class M3Tooltip extends PopupControl {
 
         /// Hides the tooltip when neither the target nor interactive popup contains the pointer.
         private void hideIfPointerOutside() {
-            if (tooltip.isInteractive() && (ownerContainsPointer || tooltipContainsPointer)) {
+            if (tooltip.isInteractive() && isTooltipActive()) {
                 return;
             }
             tooltip.hide();
         }
 
-        /// Adds hover handlers to the current popup root node.
+        /// Returns whether an interactive tooltip still has pointer or keyboard focus ownership.
+        private boolean isTooltipActive() {
+            return ownerContainsPointer || node.isFocused() || tooltipContainsPointer || tooltipContainsFocus;
+        }
+
+        /// Adds popup interaction handlers to the current popup root node.
         private void installTooltipHoverHandlers() {
             if (!tooltip.isInteractive() || !tooltip.isShowing() || tooltip.getScene() == null) {
                 return;
@@ -858,18 +910,32 @@ public class M3Tooltip extends PopupControl {
             tooltipRoot = root;
             root.addEventHandler(MouseEvent.MOUSE_ENTERED, tooltipEnteredHandler);
             root.addEventHandler(MouseEvent.MOUSE_EXITED, tooltipExitedHandler);
+            root.addEventHandler(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
+            tooltipScene = root.getScene();
+            if (tooltipScene != null) {
+                tooltipScene.focusOwnerProperty().addListener(tooltipFocusOwnerListener);
+                handleTooltipFocusOwnerChanged(
+                        tooltipScene.focusOwnerProperty(),
+                        null,
+                        tooltipScene.getFocusOwner()
+                );
+            }
         }
 
-        /// Removes hover handlers from the current popup root node.
+        /// Removes popup interaction handlers from the current popup root node.
         private void uninstallTooltipHoverHandlers() {
             Node root = tooltipRoot;
-            if (root == null) {
-                return;
+            if (root != null) {
+                root.removeEventHandler(MouseEvent.MOUSE_ENTERED, tooltipEnteredHandler);
+                root.removeEventHandler(MouseEvent.MOUSE_EXITED, tooltipExitedHandler);
+                root.removeEventHandler(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
+                tooltipRoot = null;
             }
-
-            root.removeEventHandler(MouseEvent.MOUSE_ENTERED, tooltipEnteredHandler);
-            root.removeEventHandler(MouseEvent.MOUSE_EXITED, tooltipExitedHandler);
-            tooltipRoot = null;
+            if (tooltipScene != null) {
+                tooltipScene.focusOwnerProperty().removeListener(tooltipFocusOwnerListener);
+                tooltipScene = null;
+            }
+            tooltipContainsFocus = false;
         }
     }
 

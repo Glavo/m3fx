@@ -88,16 +88,24 @@ public class M3SnackbarHost extends Control {
     /// The active hide animation.
     private final Timeline hideAnimation = new Timeline();
 
+    /// Reports hosted snackbar focus changes to accessibility clients.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::currentFocusNode);
+
     /// Creates an empty snackbar host.
     public M3SnackbarHost() {
         getStyleClass().add(STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setPickOnBounds(false);
-        showing.addListener((observable, oldValue, newValue) ->
-                notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED));
+        showing.addListener((observable, oldValue, newValue) -> {
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
+        });
         queue.addListener((ListChangeListener<M3Snackbar>) change ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT));
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        focusNotifier.start();
     }
 
     /// Returns the currently hosted snackbar.
@@ -255,6 +263,8 @@ public class M3SnackbarHost extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
 
         snackbar.setManaged(true);
@@ -326,7 +336,11 @@ public class M3SnackbarHost extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case COLLAPSE -> dismiss();
-            case REQUEST_FOCUS -> M3Accessible.showItem(currentFocusNode());
+            case REQUEST_FOCUS -> {
+                M3Accessible.showItem(currentFocusNode());
+                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                focusNotifier.refresh();
+            }
             case SHOW_ITEM -> showAccessibleSnackbar(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -408,6 +422,8 @@ public class M3SnackbarHost extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
         showNextQueuedSnackbar();
     }
 
@@ -469,11 +485,16 @@ public class M3SnackbarHost extends Control {
         }
 
         if (target == getSnackbar()) {
-            M3Accessible.showItem(target);
+            M3Accessible.showItem(currentFocusNode());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
             return;
         }
         if (queue.remove(target)) {
             show(target);
+            M3Accessible.showItem(currentFocusNode());
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
     }
 

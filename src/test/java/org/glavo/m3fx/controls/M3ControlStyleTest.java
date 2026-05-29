@@ -1822,10 +1822,15 @@ final class M3ControlStyleTest {
                 host.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
                 assertTrue(actionButton.isFocused());
 
+                actionButton.getScene().getRoot().requestFocus();
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, snackbar);
+                assertTrue(actionButton.isFocused());
+
                 actionButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
 
                 assertFalse(host.isShowing());
                 assertEquals(false, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+                assertNull(host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
             }
@@ -3316,6 +3321,72 @@ final class M3ControlStyleTest {
                     M3RichTooltip tooltip = tooltipReference.get();
                     try {
                         assertTrue(tooltip.isShowing());
+                    } finally {
+                        tooltip.hide();
+                        stage.close();
+                    }
+                }
+        );
+    }
+
+    /// Verifies that rich tooltip popup focus keeps action content reachable from the keyboard.
+    @Test
+    void richTooltipStaysOpenWhilePopupActionHasKeyboardFocus() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<Label> targetReference = new AtomicReference<>();
+        AtomicReference<M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<M3Button> actionReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(360.0),
+                () -> {
+                    Stage stage = new Stage();
+                    Label target = new Label("Target");
+                    target.setFocusTraversable(true);
+                    M3Button action = createButton("Action", M3ButtonVariant.TEXT);
+                    M3RichTooltip tooltip = M3RichTooltip.install(
+                            target,
+                            "Title",
+                            "Supporting text",
+                            action
+                    );
+                    tooltip.setShowDelay(Duration.ZERO);
+                    tooltip.setHideDelay(Duration.ZERO);
+                    tooltip.setShowDuration(Duration.INDEFINITE);
+
+                    Pane root = new Pane(target);
+                    stage.setScene(new Scene(root, 240.0, 120.0));
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+                    target.requestFocus();
+
+                    PauseTransition focusActionDelay = new PauseTransition(Duration.millis(80.0));
+                    focusActionDelay.setOnFinished(event -> {
+                        if (tooltip.isShowing()) {
+                            action.requestFocus();
+                        }
+                    });
+                    focusActionDelay.play();
+
+                    stageReference.set(stage);
+                    targetReference.set(target);
+                    tooltipReference.set(tooltip);
+                    actionReference.set(action);
+                },
+                () -> {
+                    Stage stage = stageReference.get();
+                    Label target = targetReference.get();
+                    M3RichTooltip tooltip = tooltipReference.get();
+                    M3Button action = actionReference.get();
+                    try {
+                        assertTrue(tooltip.isShowing());
+                        assertTrue(action.isFocused());
+
+                        action.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                        assertFalse(tooltip.isShowing());
+                        assertTrue(target.isFocused());
                     } finally {
                         tooltip.hide();
                         stage.close();
