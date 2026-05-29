@@ -480,39 +480,36 @@ public class M3ListView<T> extends Control {
         setIndexSelected(index, false);
     }
 
-    /// Selects the first data item when one exists.
+    /// Selects the first enabled visible data item when one exists.
     public final void selectFirst() {
-        if (!getItems().isEmpty()) {
-            selectIndex(0);
+        int target = firstIndex();
+        if (target >= 0) {
+            selectIndex(target);
         }
     }
 
-    /// Selects the last data item when one exists.
+    /// Selects the last enabled visible data item when one exists.
     public final void selectLast() {
-        int lastIndex = getItems().size() - 1;
-        if (lastIndex >= 0) {
-            selectIndex(lastIndex);
+        int target = lastIndex();
+        if (target >= 0) {
+            selectIndex(target);
         }
     }
 
-    /// Selects the next item after the first selected item, wrapping at the end.
+    /// Selects the next enabled visible item after the first selected item, wrapping at the end.
     public final void selectNext() {
-        int size = getItems().size();
-        if (size == 0) {
-            return;
+        int target = nextIndex(getSelectedIndex());
+        if (target >= 0) {
+            selectIndex(target);
         }
-        int index = getSelectedIndex();
-        selectIndex(index < 0 || index + 1 >= size ? 0 : index + 1);
     }
 
-    /// Selects the previous item before the first selected item, wrapping at the start.
+    /// Selects the previous enabled visible item before the first selected item, wrapping at the start.
     public final void selectPrevious() {
-        int size = getItems().size();
-        if (size == 0) {
-            return;
+        int target = previousIndex(getSelectedIndex());
+        if (target >= 0) {
+            selectIndex(target);
         }
-        int index = getSelectedIndex();
-        selectIndex(index <= 0 ? size - 1 : index - 1);
     }
 
     /// Moves list keyboard focus to the supplied item index and scrolls it into view.
@@ -528,22 +525,23 @@ public class M3ListView<T> extends Control {
         updateFocusedIndex(-1, false);
     }
 
-    /// Moves list keyboard focus to the first data item when one exists.
+    /// Moves list keyboard focus to the first enabled visible data item when one exists.
     public final void focusFirst() {
-        if (!getItems().isEmpty()) {
-            focusIndex(0);
+        int target = firstIndex();
+        if (target >= 0) {
+            focusIndex(target);
         }
     }
 
-    /// Moves list keyboard focus to the last data item when one exists.
+    /// Moves list keyboard focus to the last enabled visible data item when one exists.
     public final void focusLast() {
-        int lastIndex = getItems().size() - 1;
-        if (lastIndex >= 0) {
-            focusIndex(lastIndex);
+        int target = lastIndex();
+        if (target >= 0) {
+            focusIndex(target);
         }
     }
 
-    /// Moves list keyboard focus to the next item, wrapping at the end.
+    /// Moves list keyboard focus to the next enabled visible item, wrapping at the end.
     public final void focusNext() {
         int target = nextIndex(navigationAnchorIndex());
         if (target >= 0) {
@@ -551,7 +549,7 @@ public class M3ListView<T> extends Control {
         }
     }
 
-    /// Moves list keyboard focus to the previous item, wrapping at the start.
+    /// Moves list keyboard focus to the previous enabled visible item, wrapping at the start.
     public final void focusPrevious() {
         int target = previousIndex(navigationAnchorIndex());
         if (target >= 0) {
@@ -727,17 +725,12 @@ public class M3ListView<T> extends Control {
         for (int offset = 1; offset <= itemCount; offset++) {
             int index = Math.floorMod(anchor + offset, itemCount);
             T item = getItems().get(index);
-            if (isTypeAheadNavigable(item)
+            if (isItemNavigable(item)
                     && M3SelectionNavigation.normalizeTypeAheadText(typeAheadText(item)).startsWith(prefix)) {
                 return index;
             }
         }
         return -1;
-    }
-
-    /// Returns whether a data item can participate in list view type-ahead navigation.
-    private boolean isTypeAheadNavigable(T item) {
-        return !(item instanceof Node node) || !node.isDisabled() && node.isVisible();
     }
 
     /// Returns the text used for one data item's type-ahead matching.
@@ -794,8 +787,11 @@ public class M3ListView<T> extends Control {
     /// Returns the current visible focus node for accessibility clients.
     private Node accessibleFocusNode() {
         int index = focusedIndex.get();
-        if (index < 0) {
+        if (!isIndexNavigable(index)) {
             index = getSelectedIndex();
+        }
+        if (!isIndexNavigable(index)) {
+            index = firstIndex();
         }
         if (index >= 0 && getSkin() instanceof M3ListViewSkin<?> skin) {
             @Nullable Node visibleItem = skin.getAttachedVisibleItem(index);
@@ -812,8 +808,8 @@ public class M3ListView<T> extends Control {
         if (index < 0) {
             index = getSelectedIndex();
         }
-        if (index < 0 && !getItems().isEmpty()) {
-            index = 0;
+        if (!isIndexNavigable(index)) {
+            index = firstIndex();
         }
         if (index >= 0) {
             focusIndex(index);
@@ -942,7 +938,10 @@ public class M3ListView<T> extends Control {
         if (!selectedIndices.isEmpty() || getItems().isEmpty() || getSelectionMode() == M3ListSelectionMode.NONE) {
             return;
         }
-        selectIndex(0);
+        int firstIndex = firstIndex();
+        if (firstIndex >= 0) {
+            selectIndex(firstIndex);
+        }
     }
 
     /// Selects one index and clears selection from the remaining items.
@@ -1027,39 +1026,75 @@ public class M3ListView<T> extends Control {
     /// Returns the current navigation anchor index.
     private int navigationAnchorIndex() {
         int focused = focusedIndex.get();
-        if (focused >= 0 && focused < getItems().size()) {
+        if (isIndexNavigable(focused)) {
             return focused;
         }
         int selected = getSelectedIndex();
-        return selected >= 0 && selected < getItems().size() ? selected : -1;
+        return isIndexNavigable(selected) ? selected : -1;
     }
 
-    /// Returns the first data item index.
+    /// Returns the first enabled visible data item index.
     private int firstIndex() {
-        return getItems().isEmpty() ? -1 : 0;
+        int size = getItems().size();
+        for (int index = 0; index < size; index++) {
+            if (isIndexNavigable(index)) {
+                return index;
+            }
+        }
+        return -1;
     }
 
-    /// Returns the last data item index.
+    /// Returns the last enabled visible data item index.
     private int lastIndex() {
-        return getItems().size() - 1;
+        for (int index = getItems().size() - 1; index >= 0; index--) {
+            if (isIndexNavigable(index)) {
+                return index;
+            }
+        }
+        return -1;
     }
 
-    /// Returns the next data item index, wrapping at the end.
+    /// Returns the next enabled visible data item index, wrapping at the end.
     private int nextIndex(int currentIndex) {
         int size = getItems().size();
         if (size == 0) {
             return -1;
         }
-        return currentIndex < 0 || currentIndex + 1 >= size ? 0 : currentIndex + 1;
+
+        for (int offset = 1; offset <= size; offset++) {
+            int index = Math.floorMod(currentIndex + offset, size);
+            if (isIndexNavigable(index)) {
+                return index;
+            }
+        }
+        return -1;
     }
 
-    /// Returns the previous data item index, wrapping at the start.
+    /// Returns the previous enabled visible data item index, wrapping at the start.
     private int previousIndex(int currentIndex) {
         int size = getItems().size();
         if (size == 0) {
             return -1;
         }
-        return currentIndex <= 0 ? size - 1 : currentIndex - 1;
+
+        int anchor = currentIndex < 0 ? size : currentIndex;
+        for (int offset = 1; offset <= size; offset++) {
+            int index = Math.floorMod(anchor - offset, size);
+            if (isIndexNavigable(index)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /// Returns whether a data item index can receive list keyboard navigation.
+    private boolean isIndexNavigable(int index) {
+        return index >= 0 && index < getItems().size() && isItemNavigable(getItems().get(index));
+    }
+
+    /// Returns whether a data item can receive list keyboard navigation.
+    private boolean isItemNavigable(T item) {
+        return !(item instanceof Node node) || !node.isDisabled() && node.isVisible();
     }
 
     /// Requests visible cell state updates from the installed skin.

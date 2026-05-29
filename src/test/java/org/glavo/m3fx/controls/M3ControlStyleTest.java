@@ -9266,6 +9266,71 @@ final class M3ControlStyleTest {
         assertEquals(java.util.List.of(0), listView.getSelectedIndices());
     }
 
+    /// Verifies that virtualized list keyboard navigation skips disabled and hidden node data items.
+    @Test
+    void listViewKeyboardNavigationSkipsDisabledAndHiddenNodeItems() {
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem disabled = new M3ListItem("Disabled");
+        M3ListItem hidden = new M3ListItem("Hidden");
+        M3ListItem fourth = new M3ListItem("Fourth");
+        disabled.setDisable(true);
+        hidden.setVisible(false);
+
+        M3ListView<M3ListItem> listView = new M3ListView<>(first, disabled, hidden, fourth);
+        listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+        assertEquals(0, listView.getFocusedIndex());
+        assertSame(first, listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+        assertEquals(3, listView.getFocusedIndex());
+        assertSame(fourth, listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+        assertEquals(0, listView.getFocusedIndex());
+        assertSame(first, listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+        assertEquals(3, listView.getFocusedIndex());
+        assertSame(fourth, listView.getSelectedItem());
+
+        listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+
+        assertEquals(0, listView.getFocusedIndex());
+        assertSame(first, listView.getSelectedItem());
+
+        listView.clearFocus();
+        listView.focusLast();
+
+        assertEquals(3, listView.getFocusedIndex());
+
+        listView.focusNext();
+
+        assertEquals(0, listView.getFocusedIndex());
+
+        listView.focusPrevious();
+
+        assertEquals(3, listView.getFocusedIndex());
+
+        listView.clearSelection();
+        listView.selectFirst();
+
+        assertSame(first, listView.getSelectedItem());
+
+        listView.selectPrevious();
+
+        assertSame(fourth, listView.getSelectedItem());
+
+        listView.selectNext();
+
+        assertSame(first, listView.getSelectedItem());
+    }
+
     /// Verifies that virtualized list view keyboard and accessibility focus scrolls rows into view.
     @Test
     void listViewFocusesVirtualizedRowsFromKeyboardAndAccessibility() {
