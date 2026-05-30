@@ -112,6 +112,17 @@ final class M3Accessible {
         showItem(actionItem(leading, items, parameters));
     }
 
+    /// Requests focus for one of the indexed items or the trailing item.
+    static void showItem(ObservableList<? extends Node> items, @Nullable Node trailing, Object... parameters) {
+        Objects.requireNonNull(items, "items");
+        showItem(actionItem(items, trailing, parameters));
+    }
+
+    /// Requests focus for one of two optional indexed items.
+    static void showItem(@Nullable Node first, @Nullable Node second, Object... parameters) {
+        showItem(actionItem(first, second, parameters));
+    }
+
     /// Requests focus for an accessibility item when it can be reached.
     static void showItem(@Nullable Node item) {
         @Nullable Node focusTarget = focusTarget(item);
@@ -387,7 +398,7 @@ final class M3Accessible {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            return null;
+            return firstFocusableItem(items);
         }
         @Nullable Object firstParameter = parameters[0];
         if (firstParameter instanceof Number) {
@@ -439,7 +450,15 @@ final class M3Accessible {
             if (node == leading) {
                 return node;
             }
-            return items.contains(node) ? node : null;
+            if (leading != null && containsNode(leading, node)) {
+                return node;
+            }
+            for (Node item : items) {
+                if (node == item || containsNode(item, node)) {
+                    return node;
+                }
+            }
+            return null;
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
@@ -453,6 +472,124 @@ final class M3Accessible {
         if (parameter instanceof Object[] values) {
             for (Object value : values) {
                 @Nullable Node item = actionItem(leading, items, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the child or trailing item referenced by accessibility action parameters.
+    private static @Nullable Node actionItem(
+            ObservableList<? extends Node> items,
+            @Nullable Node trailing,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            @Nullable Node item = firstFocusableItem(items);
+            return item != null ? item : (focusTarget(trailing) == null ? null : trailing);
+        }
+        @Nullable Object firstParameter = parameters[0];
+        if (firstParameter instanceof Number) {
+            return itemAt(items, trailing, parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = actionItem(items, trailing, parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the child or trailing item referenced by one accessibility action parameter.
+    private static @Nullable Node actionItem(
+            ObservableList<? extends Node> items,
+            @Nullable Node trailing,
+            @Nullable Object parameter
+    ) {
+        if (parameter instanceof Number number) {
+            return itemAt(items, trailing, number);
+        }
+        if (parameter instanceof Node node) {
+            for (Node item : items) {
+                if (node == item || containsNode(item, node)) {
+                    return node;
+                }
+            }
+            if (trailing != null && (node == trailing || containsNode(trailing, node))) {
+                return node;
+            }
+            return null;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(items, trailing, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(items, trailing, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first or second optional item referenced by accessibility action parameters.
+    private static @Nullable Node actionItem(@Nullable Node first, @Nullable Node second, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return focusTarget(first) != null ? first : (focusTarget(second) == null ? null : second);
+        }
+        @Nullable Object firstParameter = parameters[0];
+        if (firstParameter instanceof Number) {
+            return itemAt(first, second, firstParameter);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = actionItem(first, second, parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first or second optional item referenced by one accessibility action parameter.
+    private static @Nullable Node actionItem(@Nullable Node first, @Nullable Node second, @Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return itemAt(first, second, number);
+        }
+        if (parameter instanceof Node node) {
+            if (first != null && (node == first || containsNode(first, node))) {
+                return node;
+            }
+            if (second != null && (node == second || containsNode(second, node))) {
+                return node;
+            }
+            return null;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(first, second, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(first, second, value);
                 if (item != null) {
                     return item;
                 }
@@ -477,7 +614,12 @@ final class M3Accessible {
             return itemAt(items, number);
         }
         if (parameter instanceof Node node) {
-            return items.contains(node) ? node : null;
+            for (Node item : items) {
+                if (node == item || containsNode(item, node)) {
+                    return node;
+                }
+            }
+            return null;
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
@@ -497,6 +639,21 @@ final class M3Accessible {
             }
         }
         return null;
+    }
+
+    /// Returns the indexed first or second optional item.
+    private static @Nullable Node itemAt(@Nullable Node first, @Nullable Node second, Object... parameters) {
+        int index = indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+        if (first != null) {
+            if (index == 0) {
+                return first;
+            }
+            index--;
+        }
+        return index == 0 ? second : null;
     }
 
     /// Returns this node's index in its parent child list, or `-1` when it is detached.

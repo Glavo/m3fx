@@ -183,7 +183,13 @@ public class M3Banner extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getActions()));
-            case SHOW_ITEM -> M3Accessible.showItem(M3Accessible.itemAt(getIcon(), getActions(), parameters));
+            case SHOW_ITEM -> {
+                if (parameters.length == 0) {
+                    M3Accessible.showItem(M3Accessible.firstFocusTarget(getActions()));
+                } else {
+                    M3Accessible.showItem(getIcon(), getActions(), parameters);
+                }
+            }
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

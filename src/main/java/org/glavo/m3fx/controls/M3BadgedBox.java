@@ -234,7 +234,7 @@ public class M3BadgedBox extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getContent(), getBadge()));
-            case SHOW_ITEM -> M3Accessible.showItem(accessibleItemAt(parameters));
+            case SHOW_ITEM -> M3Accessible.showItem(getContent(), getBadge(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

@@ -209,7 +209,7 @@ public class M3BottomAppBar extends Control {
                     getActions(),
                     getFloatingAction()
             ));
-            case SHOW_ITEM -> M3Accessible.showItem(M3Accessible.itemAt(getActions(), getFloatingAction(), parameters));
+            case SHOW_ITEM -> M3Accessible.showItem(getActions(), getFloatingAction(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

@@ -11997,16 +11997,32 @@ final class M3ControlStyleTest {
             M3Button first = new M3Button("First");
             M3Button second = new M3Button("Second");
             M3ButtonGroup group = new M3ButtonGroup(first, second);
+            M3Button listTrailing = new M3Button("More");
+            M3ListItem listItem = new M3ListItem("Row");
+            listItem.setTrailing(listTrailing);
+            M3ListPane listPane = new M3ListPane(listItem);
             Stage stage = new Stage();
             try {
-                stage.setScene(new Scene(new Pane(group), 240.0, 80.0));
+                VBox root = new VBox(group, listPane);
+                stage.setScene(new Scene(root, 240.0, 180.0));
                 stage.show();
+                root.applyCss();
+                root.layout();
+
+                group.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(first.isFocused());
 
                 group.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
                 assertTrue(second.isFocused());
 
                 group.executeAccessibleAction(AccessibleAction.SHOW_ITEM, first);
                 assertTrue(first.isFocused());
+
+                listPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(listItem.isFocused());
+
+                listPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, listTrailing);
+                assertTrue(listTrailing.isFocused());
             } finally {
                 stage.close();
             }
@@ -12063,17 +12079,44 @@ final class M3ControlStyleTest {
                 stage.setScene(new Scene(root, 560.0, 560.0));
                 stage.show();
 
+                topAppBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(navigation.isFocused());
+
+                topAppBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, topAction);
+                assertTrue(topAction.isFocused());
+
                 topAppBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
                 assertTrue(topAction.isFocused());
+
+                bottomAppBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(bottomAction.isFocused());
+
+                bottomAppBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, floatingAction);
+                assertTrue(floatingAction.isFocused());
 
                 bottomAppBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
                 assertTrue(floatingAction.isFocused());
 
+                banner.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(bannerAction.isFocused());
+
+                banner.executeAccessibleAction(AccessibleAction.SHOW_ITEM, bannerAction);
+                assertTrue(bannerAction.isFocused());
+
                 banner.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
                 assertTrue(bannerAction.isFocused());
 
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(surfaceAction.isFocused());
+
                 surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
                 assertTrue(surfaceAction.isFocused());
+
+                badgedBox.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(badgedContent.isFocused());
+
+                badgedBox.executeAccessibleAction(AccessibleAction.SHOW_ITEM, badgedContent);
+                assertTrue(badgedContent.isFocused());
 
                 badgedBox.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
                 assertTrue(badgedContent.isFocused());

@@ -302,7 +302,7 @@ public class M3FabMenu extends Control {
             case EXPAND -> show();
             case SHOW_ITEM -> {
                 show();
-                M3Accessible.showItem(accessibleActionItem(parameters));
+                M3Accessible.showItem(getItems(), parameters);
                 notifyFocusNodeChanged();
             }
             case COLLAPSE -> hide();
@@ -428,68 +428,6 @@ public class M3FabMenu extends Control {
 
         int currentIndex = focusedTargetIndex(targets);
         return M3Accessible.focusTarget(targets.get(currentIndex));
-    }
-
-    /// Returns the action item requested by accessibility action parameters.
-    private @Nullable Node accessibleActionItem(Object... parameters) {
-        Objects.requireNonNull(parameters, "parameters");
-        if (parameters.length == 0) {
-            return firstFocusableActionItem();
-        }
-        if (parameters[0] instanceof Number) {
-            return M3Accessible.itemAt(getItems(), parameters);
-        }
-
-        for (Object parameter : parameters) {
-            @Nullable Node item = accessibleActionItem(parameter);
-            if (item != null) {
-                return item;
-            }
-        }
-        return null;
-    }
-
-    /// Returns the action item requested by one accessibility action parameter.
-    private @Nullable Node accessibleActionItem(@Nullable Object parameter) {
-        if (parameter instanceof Number number) {
-            return M3Accessible.itemAt(getItems(), number);
-        }
-        if (parameter instanceof Node node) {
-            for (Node item : getItems()) {
-                if (node == item || M3Accessible.containsNode(item, node)) {
-                    return node;
-                }
-            }
-            return null;
-        }
-        if (parameter instanceof Iterable<?> values) {
-            for (Object value : values) {
-                @Nullable Node item = accessibleActionItem(value);
-                if (item != null) {
-                    return item;
-                }
-            }
-            return null;
-        }
-        if (parameter instanceof Object[] values) {
-            for (Object value : values) {
-                @Nullable Node item = accessibleActionItem(value);
-                if (item != null) {
-                    return item;
-                }
-            }
-        }
-        return null;
-    }
-
-    /// Returns the first action item with a reachable focus target.
-    private @Nullable Node firstFocusableActionItem() {
-        for (Node item : getItems()) {
-            if (M3Accessible.focusTarget(item) != null) {
-                return item;
-            }
-        }
-        return null;
     }
 
     /// Returns whether keyboard focus is currently inside one of the expanded action items.

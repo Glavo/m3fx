@@ -215,7 +215,7 @@ public class M3TopAppBar extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getNavigation(), getActions()));
-            case SHOW_ITEM -> M3Accessible.showItem(M3Accessible.itemAt(getNavigation(), getActions(), parameters));
+            case SHOW_ITEM -> M3Accessible.showItem(getNavigation(), getActions(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
