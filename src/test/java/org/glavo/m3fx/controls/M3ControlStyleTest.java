@@ -1117,27 +1117,80 @@ final class M3ControlStyleTest {
                 menu.show();
                 firstAction.requestFocus();
                 assertTrue(firstAction.isFocused());
+                assertSame(firstAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 firstAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 assertTrue(secondAction.isFocused());
+                assertSame(secondAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 secondAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
                 assertTrue(menu.getToggleButton().isFocused());
+                assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 menu.getToggleButton().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
                 assertTrue(secondAction.isFocused());
+                assertSame(secondAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 secondAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
 
                 assertFalse(menu.isExpanded());
                 assertTrue(menu.getToggleButton().isFocused());
+                assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 menu.show();
                 firstAction.requestFocus();
                 assertTrue(firstAction.isFocused());
+                assertSame(firstAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 firstAction.fire();
 
                 assertFalse(menu.isExpanded());
                 assertTrue(menu.getToggleButton().isFocused());
+                assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(menu);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that FAB menu accessibility actions route focus through visible action items.
+    @Test
+    void fabMenuRoutesAccessibleFocusThroughActionItems() {
+        runOnFxThread(() -> {
+            M3FloatingActionButton firstAction = new M3FloatingActionButton("A");
+            M3FloatingActionButton secondAction = new M3FloatingActionButton("B");
+            M3FabMenu menu = new M3FabMenu();
+            menu.addItems(firstAction, secondAction);
+            Pane root = new Pane(menu);
+            Stage stage = new Stage();
+
+            try {
+                M3MotionSettings.setAnimationsEnabled(menu, false);
+                Scene scene = new Scene(root, 220.0, 220.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                menu.resizeRelocate(24.0, 24.0, 120.0, 160.0);
+                root.layout();
+
+                assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, secondAction);
+
+                assertTrue(menu.isExpanded());
+                assertTrue(secondAction.isFocused());
+                assertSame(secondAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menu.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(secondAction.isFocused());
+                assertSame(secondAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menu.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(menu.isExpanded());
+                assertTrue(menu.getToggleButton().isFocused());
+                assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 M3MotionSettings.clearAnimationsEnabled(menu);
                 stage.close();

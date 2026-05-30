@@ -107,10 +107,12 @@ public class M3FabMenu extends Control {
                 installAction(added);
             }
         }
-        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyAccessibleItemsChanged();
     };
+
+    /// Notifies accessibility clients when focus moves between visible FAB menu targets.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
     /// Creates a floating action button menu with a default toggle button.
     public M3FabMenu() {
@@ -300,9 +302,13 @@ public class M3FabMenu extends Control {
             case SHOW_ITEM -> {
                 show();
                 M3Accessible.showItem(getItems(), parameters);
+                notifyFocusNodeChanged();
             }
             case COLLAPSE -> hide();
-            case REQUEST_FOCUS -> M3Accessible.showItem(accessibleFocusNode());
+            case REQUEST_FOCUS -> {
+                M3Accessible.showItem(accessibleFocusNode());
+                notifyFocusNodeChanged();
+            }
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -318,6 +324,7 @@ public class M3FabMenu extends Control {
         toggleButton.addEventHandler(ActionEvent.ACTION, event -> toggle());
         addEventHandler(KeyEvent.KEY_PRESSED, navigationKeyHandler);
         applyCollapsedState();
+        focusNotifier.start();
     }
 
     /// Collapses the menu after an action item fires.
@@ -355,6 +362,7 @@ public class M3FabMenu extends Control {
 
         if (target.isFocusTraversable()) {
             target.requestFocus();
+            notifyFocusNodeChanged();
         }
         event.consume();
     }
@@ -396,6 +404,7 @@ public class M3FabMenu extends Control {
             }
             restoreToggleFocusAfterCollapse(restoreToggleFocus);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            notifyFocusNodeChanged();
             return;
         }
 
@@ -406,7 +415,7 @@ public class M3FabMenu extends Control {
         }
         restoreToggleFocusAfterCollapse(restoreToggleFocus);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
     }
 
     /// Returns the current focusable menu target for accessibility clients.
@@ -444,6 +453,19 @@ public class M3FabMenu extends Control {
         if (restoreToggleFocus && M3Accessible.canReach(toggleButton)) {
             toggleButton.requestFocus();
         }
+    }
+
+    /// Notifies accessibility clients that visible FAB menu targets changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyFocusNodeChanged();
+    }
+
+    /// Notifies and refreshes cached accessibility focus state.
+    private void notifyFocusNodeChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Plays the action item expand animation.
