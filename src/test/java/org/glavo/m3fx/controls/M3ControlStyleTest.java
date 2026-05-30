@@ -792,6 +792,70 @@ final class M3ControlStyleTest {
         assertFalse(splitButton.isShowing());
     }
 
+    /// Verifies that split buttons route accessibility focus through their attached popup menu.
+    @Test
+    void splitButtonRoutesAccessibleFocusThroughPopupMenu() {
+        runOnFxThread(() -> {
+            M3MenuItem draft = new M3MenuItem("Draft");
+            M3MenuItem publish = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draft, publish);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setAnimationsEnabled(splitButton.getMenuButton(), false);
+                Pane root = new Pane(splitButton);
+                stage.setScene(new Scene(root, 320.0, 160.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, publish);
+
+                assertTrue(splitButton.isShowing());
+                assertTrue(publish.isFocused());
+                assertSame(publish, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                splitButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(publish.isFocused());
+                assertSame(publish, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                splitButton.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(splitButton.isShowing());
+                assertTrue(splitButton.getMenuButton().isFocused());
+                assertSame(
+                        splitButton.getMenuButton(),
+                        splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+
+                splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+                assertTrue(splitButton.getActionButton().isFocused());
+
+                splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                assertTrue(splitButton.getMenuButton().isFocused());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(splitButton.getMenuButton());
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that split button accessibility selection actions operate on the attached menu.
+    @Test
+    void splitButtonDelegatesAccessibleSelectionToPopupMenu() {
+        M3MenuItem draft = new M3MenuItem("Draft");
+        M3MenuItem publish = new M3MenuItem("Publish");
+        M3SplitButton splitButton = new M3SplitButton("Create", draft, publish);
+
+        splitButton.setSelectionMode(M3MenuSelectionMode.MULTIPLE);
+        splitButton.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, java.util.List.of(draft, publish));
+
+        assertEquals(Boolean.TRUE, splitButton.queryAccessibleAttribute(AccessibleAttribute.MULTIPLE_SELECTION));
+        assertEquals(java.util.List.of(draft, publish),
+                splitButton.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+    }
+
     /// Verifies that split buttons apply stable part style classes and internal edge pseudo-classes.
     @Test
     void splitButtonAppliesPartStyleClasses() {
