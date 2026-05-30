@@ -128,6 +128,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         iconContainer.setAlignment(Pos.CENTER);
         graphicContainer.setAlignment(Pos.CENTER);
         updateNodeOrientationLayout();
+        badgeContainer.setManaged(false);
         badgeContainer.setMouseTransparent(true);
         indicator.setManaged(false);
         indicator.setMouseTransparent(true);
@@ -188,6 +189,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         iconContainer.setPrefSize(indicatorWidth, indicatorHeight);
         iconContainer.setMaxSize(indicatorWidth, indicatorHeight);
         indicator.resizeRelocate(0.0, 0.0, indicatorWidth, indicatorHeight);
+        badgeContainer.resizeRelocate(0.0, 0.0, indicatorWidth, indicatorHeight);
         indicator.setStyle("-fx-background-radius: " + indicatorShape + "px;");
         content.resizeRelocate(x, y, width, height);
         layoutStateLayer();
@@ -332,6 +334,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
             if (!badge.getStyleClass().contains("m3-navigation-item-badge")) {
                 badge.getStyleClass().add("m3-navigation-item-badge");
             }
+            badge.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
             StackPane.setAlignment(badge, badgeAlignment());
             badgeContainer.getChildren().add(badge);
         }

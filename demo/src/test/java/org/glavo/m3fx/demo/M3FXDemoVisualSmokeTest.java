@@ -27,6 +27,7 @@ import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerField;
@@ -35,10 +36,15 @@ import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
+import org.glavo.m3fx.controls.M3MenuButton;
+import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
+import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3SplitButton;
+import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
@@ -374,6 +380,114 @@ final class M3FXDemoVisualSmokeTest {
         try {
             verifySplitButtonPopupAnimation(appReference, sceneReference);
             verifyDatePickerFieldPopupAnimation(appReference, sceneReference);
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that nested popup menu stacks expose visible motion and sane screen placement.
+    @Test
+    void nestedMenuPopupStackProducesDistinctFrames() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            verifyNestedMenuPopupStackAnimation(appReference, sceneReference);
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that navigation selection and drawer disclosure animations expose visible intermediate frames.
+    @Test
+    void navigationDemoAnimationsProduceDistinctFrames() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            verifyNavigationItemSelectionAnimation(
+                    appReference,
+                    sceneReference,
+                    "Navigation",
+                    "Search",
+                    "navigation-bar-selection"
+            );
+            verifyNavigationItemSelectionAnimation(
+                    appReference,
+                    sceneReference,
+                    "Navigation Rail",
+                    "Search",
+                    "navigation-rail-selection"
+            );
+            verifySidebarDrawerGroupExpansionAnimation(appReference, sceneReference);
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that sheet visibility changes expose animated intermediate frames in the demo.
+    @Test
+    void sheetDemoAnimationsProduceDistinctFrames() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            verifyBottomSheetVisibilityAnimation(appReference, sceneReference);
+            verifySideSheetVisibilityAnimation(appReference, sceneReference);
         } finally {
             runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -904,6 +1018,132 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
+    /// Verifies nested menu popup enter and exit motion with side-by-side popup placement.
+    private static void verifyNestedMenuPopupStackAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> ownerMenuReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> openingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Menus");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3MenuButton menuButton = Objects.requireNonNull(firstVisibleMenuButtonWithText(
+                    scene.getRoot(),
+                    "Open menu"
+            ), "menu button");
+            M3MotionSettings.setMotionScheme(menuButton, visualPopupMotionScheme());
+            menuButton.showMenu();
+            assertTrue(menuButton.isShowing());
+            menuButtonReference.set(menuButton);
+        }, () -> {
+            M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
+            layoutPopupRoot(menuButton.getMenu());
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
+            assertTrue(menuButton.isShowing());
+            layoutPopupRoot(menuButton.getMenu());
+            ownerMenuReference.set(snapshotNode(menuButton.getMenu()));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(ownerMenuReference.get(), "owner menu snapshot"),
+                    "nested-menu-owner",
+                    "settled"
+            );
+
+            M3SubMenuItem subMenuItem = Objects.requireNonNull(firstVisibleSubMenuItemWithText(
+                    menuButton.getMenu(),
+                    "Move to"
+            ), "submenu item");
+            M3MotionSettings.setMotionScheme(subMenuItem, visualPopupMotionScheme());
+            subMenuItem.showSubMenu();
+            assertTrue(subMenuItem.isSubMenuShowing());
+            subMenuItemReference.set(subMenuItem);
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+        }, () -> {
+            M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
+            layoutPopupRoot(subMenuItem.getSubMenu());
+            openingReference.set(snapshotNode(subMenuItem.getSubMenu()));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(openingReference.get(), "opening submenu snapshot"),
+                    "nested-submenu",
+                    "opening"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
+            M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
+            assertTrue(menuButton.isShowing());
+            assertTrue(subMenuItem.isSubMenuShowing());
+            layoutPopupRoot(menuButton.getMenu());
+            layoutPopupRoot(subMenuItem.getSubMenu());
+            settledReference.set(snapshotNode(subMenuItem.getSubMenu()));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(settledReference.get(), "settled submenu snapshot"),
+                    "nested-submenu",
+                    "settled"
+            );
+            assertSnapshotHasVisibleContent(
+                    Objects.requireNonNull(ownerMenuReference.get(), "owner menu snapshot"),
+                    "nested owner menu"
+            );
+            assertSnapshotHasVisibleContent(
+                    Objects.requireNonNull(settledReference.get(), "settled submenu snapshot"),
+                    "nested submenu"
+            );
+            assertPopupStackSideBySide(menuButton.getMenu(), subMenuItem.getSubMenu());
+            subMenuItem.hideSubMenu();
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        }, () -> {
+            M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
+            layoutPopupRoot(subMenuItem.getSubMenu());
+            hidingReference.set(snapshotNode(subMenuItem.getSubMenu()));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(hidingReference.get(), "hiding submenu snapshot"),
+                    "nested-submenu",
+                    "hiding"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        }, () -> {
+            M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
+            M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
+            assertFalse(subMenuItem.isSubMenuShowing());
+            menuButton.hideMenu();
+            M3MotionSettings.clearMotionScheme(subMenuItem);
+            M3MotionSettings.clearMotionScheme(menuButton);
+        });
+
+        assertSnapshotChanged(
+                Objects.requireNonNull(openingReference.get(), "opening submenu snapshot"),
+                Objects.requireNonNull(settledReference.get(), "settled submenu snapshot"),
+                "nested submenu enter motion"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(settledReference.get(), "settled submenu snapshot"),
+                Objects.requireNonNull(hidingReference.get(), "hiding submenu snapshot"),
+                "nested submenu exit motion"
+        );
+    }
+
     /// Verifies popup enter and exit motion on the demo date picker field.
     private static void verifyDatePickerFieldPopupAnimation(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -1003,6 +1243,424 @@ final class M3FXDemoVisualSmokeTest {
                 standard.slowEffects(),
                 M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR),
                 standard.defaultSpatial(),
+                standard.slowSpatial()
+        );
+    }
+
+    /// Verifies selected-indicator motion on a demo navigation item.
+    private static void verifyNavigationItemSelectionAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference,
+            String pageTitle,
+            String itemText,
+            String snapshotName
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3NavigationItem> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> intermediateReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting(pageTitle);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3NavigationItem target = Objects.requireNonNull(firstVisibleNavigationItemWithText(
+                    scene.getRoot(),
+                    itemText
+            ), "navigation item");
+            assertFalse(target.isSelected());
+            M3MotionSettings.setMotionScheme(target, visualNavigationMotionScheme());
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal navigation snapshot"),
+                    snapshotName,
+                    "normal"
+            );
+            target.fire();
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            assertTrue(target.isSelected());
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            intermediateReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(intermediateReference.get(), "intermediate navigation snapshot"),
+                    snapshotName,
+                    "intermediate"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            settledReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(settledReference.get(), "settled navigation snapshot"),
+                    snapshotName,
+                    "settled"
+            );
+            M3MotionSettings.clearMotionScheme(Objects.requireNonNull(targetReference.get(), "navigation item"));
+        });
+
+        M3NavigationItem target = Objects.requireNonNull(targetReference.get(), "navigation item");
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal navigation snapshot"),
+                Objects.requireNonNull(intermediateReference.get(), "intermediate navigation snapshot"),
+                snapshotName + " intermediate frame"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(intermediateReference.get(), "intermediate navigation snapshot"),
+                Objects.requireNonNull(settledReference.get(), "settled navigation snapshot"),
+                snapshotName + " settling frame"
+        );
+    }
+
+    /// Verifies expand and collapse motion on the demo sidebar's visible drawer group.
+    private static void verifySidebarDrawerGroupExpansionAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3NavigationDrawerGroup> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> collapsedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> expandingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> expandedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> collapsingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Buttons");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3NavigationDrawerGroup target = Objects.requireNonNull(firstVisibleDrawerGroupWithTitle(
+                    scene.getRoot(),
+                    "Buttons"
+            ), "sidebar drawer group");
+            M3MotionSettings.setAnimationsEnabled(target, false);
+            target.setExpanded(false);
+            M3MotionSettings.clearAnimationsEnabled(target);
+            M3MotionSettings.setMotionScheme(target, visualNavigationMotionScheme());
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            targetReference.set(target);
+            collapsedReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(collapsedReference.get(), "collapsed drawer group snapshot"),
+                    "sidebar-drawer-group",
+                    "collapsed"
+            );
+            target.setExpanded(true);
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            expandingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(expandingReference.get(), "expanding drawer group snapshot"),
+                    "sidebar-drawer-group",
+                    "expanding"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3NavigationDrawerGroup target = Objects.requireNonNull(targetReference.get(), "sidebar drawer group");
+            expandedReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(expandedReference.get(), "expanded drawer group snapshot"),
+                    "sidebar-drawer-group",
+                    "expanded"
+            );
+            assertTrue(target.isExpanded());
+            target.setExpanded(false);
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            collapsingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(collapsingReference.get(), "collapsing drawer group snapshot"),
+                    "sidebar-drawer-group",
+                    "collapsing"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3NavigationDrawerGroup target = Objects.requireNonNull(targetReference.get(), "sidebar drawer group");
+            settledReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(settledReference.get(), "settled drawer group snapshot"),
+                    "sidebar-drawer-group",
+                    "settled"
+            );
+            assertFalse(target.isExpanded());
+            M3MotionSettings.clearMotionScheme(target);
+        });
+
+        assertSnapshotChanged(
+                Objects.requireNonNull(collapsedReference.get(), "collapsed drawer group snapshot"),
+                Objects.requireNonNull(expandingReference.get(), "expanding drawer group snapshot"),
+                "sidebar drawer group expand intermediate frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(expandingReference.get(), "expanding drawer group snapshot"),
+                Objects.requireNonNull(expandedReference.get(), "expanded drawer group snapshot"),
+                "sidebar drawer group expand settling frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(expandedReference.get(), "expanded drawer group snapshot"),
+                Objects.requireNonNull(collapsingReference.get(), "collapsing drawer group snapshot"),
+                "sidebar drawer group collapse intermediate frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(collapsingReference.get(), "collapsing drawer group snapshot"),
+                Objects.requireNonNull(settledReference.get(), "settled drawer group snapshot"),
+                "sidebar drawer group collapse settling frame"
+        );
+    }
+
+    /// Returns a navigation-specific motion scheme that makes selection and disclosure frames observable.
+    private static M3MotionScheme visualNavigationMotionScheme() {
+        M3MotionScheme standard = M3MotionScheme.standard();
+        M3MotionSpec observableSpec = M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR);
+        return M3MotionScheme.create(
+                standard.fastEffects(),
+                observableSpec,
+                standard.slowEffects(),
+                observableSpec,
+                observableSpec,
+                standard.slowSpatial()
+        );
+    }
+
+    /// Verifies bottom sheet hide and show motion in the demo page.
+    private static void verifyBottomSheetVisibilityAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3BottomSheet> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> shownReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hiddenReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> showingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> resettledReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Bottom Sheets");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3BottomSheet target = Objects.requireNonNull(firstVisibleBottomSheetWithHeadline(
+                    scene.getRoot(),
+                    "Now playing"
+            ), "bottom sheet");
+            M3MotionSettings.setMotionScheme(target, visualSheetMotionScheme());
+            targetReference.set(target);
+            shownReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(shownReference.get(), "shown bottom sheet snapshot"),
+                    "bottom-sheet",
+                    "shown"
+            );
+            target.hide();
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            hidingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(hidingReference.get(), "hiding bottom sheet snapshot"),
+                    "bottom-sheet",
+                    "hiding"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3BottomSheet target = Objects.requireNonNull(targetReference.get(), "bottom sheet");
+            hiddenReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(hiddenReference.get(), "hidden bottom sheet snapshot"),
+                    "bottom-sheet",
+                    "hidden"
+            );
+            assertFalse(target.isVisible());
+            target.show();
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            showingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(showingReference.get(), "showing bottom sheet snapshot"),
+                    "bottom-sheet",
+                    "showing"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3BottomSheet target = Objects.requireNonNull(targetReference.get(), "bottom sheet");
+            resettledReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(resettledReference.get(), "resettled bottom sheet snapshot"),
+                    "bottom-sheet",
+                    "resettled"
+            );
+            assertTrue(target.isShown());
+            assertTrue(target.isVisible());
+            M3MotionSettings.clearMotionScheme(target);
+        });
+
+        assertSnapshotChanged(
+                Objects.requireNonNull(shownReference.get(), "shown bottom sheet snapshot"),
+                Objects.requireNonNull(hidingReference.get(), "hiding bottom sheet snapshot"),
+                "bottom sheet hide intermediate frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(hidingReference.get(), "hiding bottom sheet snapshot"),
+                Objects.requireNonNull(hiddenReference.get(), "hidden bottom sheet snapshot"),
+                "bottom sheet hide settling frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(hiddenReference.get(), "hidden bottom sheet snapshot"),
+                Objects.requireNonNull(showingReference.get(), "showing bottom sheet snapshot"),
+                "bottom sheet show intermediate frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(showingReference.get(), "showing bottom sheet snapshot"),
+                Objects.requireNonNull(resettledReference.get(), "resettled bottom sheet snapshot"),
+                "bottom sheet show settling frame"
+        );
+    }
+
+    /// Verifies side sheet hide and show motion in the demo page.
+    private static void verifySideSheetVisibilityAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3SideSheet> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> shownReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hiddenReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> showingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> resettledReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Side Sheets");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3SideSheet target = Objects.requireNonNull(firstVisibleSideSheetWithHeadline(
+                    scene.getRoot(),
+                    "Details"
+            ), "side sheet");
+            M3MotionSettings.setMotionScheme(target, visualSheetMotionScheme());
+            targetReference.set(target);
+            shownReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(shownReference.get(), "shown side sheet snapshot"),
+                    "side-sheet",
+                    "shown"
+            );
+            target.hide();
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            hidingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(hidingReference.get(), "hiding side sheet snapshot"),
+                    "side-sheet",
+                    "hiding"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3SideSheet target = Objects.requireNonNull(targetReference.get(), "side sheet");
+            hiddenReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(hiddenReference.get(), "hidden side sheet snapshot"),
+                    "side-sheet",
+                    "hidden"
+            );
+            assertFalse(target.isVisible());
+            target.show();
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            showingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(showingReference.get(), "showing side sheet snapshot"),
+                    "side-sheet",
+                    "showing"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3SideSheet target = Objects.requireNonNull(targetReference.get(), "side sheet");
+            resettledReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(resettledReference.get(), "resettled side sheet snapshot"),
+                    "side-sheet",
+                    "resettled"
+            );
+            assertTrue(target.isShown());
+            assertTrue(target.isVisible());
+            M3MotionSettings.clearMotionScheme(target);
+        });
+
+        assertSnapshotChanged(
+                Objects.requireNonNull(shownReference.get(), "shown side sheet snapshot"),
+                Objects.requireNonNull(hidingReference.get(), "hiding side sheet snapshot"),
+                "side sheet hide intermediate frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(hidingReference.get(), "hiding side sheet snapshot"),
+                Objects.requireNonNull(hiddenReference.get(), "hidden side sheet snapshot"),
+                "side sheet hide settling frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(hiddenReference.get(), "hidden side sheet snapshot"),
+                Objects.requireNonNull(showingReference.get(), "showing side sheet snapshot"),
+                "side sheet show intermediate frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(showingReference.get(), "showing side sheet snapshot"),
+                Objects.requireNonNull(resettledReference.get(), "resettled side sheet snapshot"),
+                "side sheet show settling frame"
+        );
+    }
+
+    /// Returns a sheet-specific motion scheme that makes visibility motion frames observable.
+    private static M3MotionScheme visualSheetMotionScheme() {
+        M3MotionScheme standard = M3MotionScheme.standard();
+        M3MotionSpec observableSpec = M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR);
+        return M3MotionScheme.create(
+                standard.fastEffects(),
+                standard.defaultEffects(),
+                standard.slowEffects(),
+                observableSpec,
+                observableSpec,
                 standard.slowSpatial()
         );
     }
@@ -1300,6 +1958,7 @@ final class M3FXDemoVisualSmokeTest {
         assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
         assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
         assertSelectionIndicatorsCentered(scene, pageTitle);
+        assertNavigationBadgesStayCompact(scene, pageTitle);
     }
 
     /// Verifies that visible text nodes intersecting the scene are not clipped by the scene viewport.
@@ -1470,6 +2129,35 @@ final class M3FXDemoVisualSmokeTest {
         });
     }
 
+    /// Verifies that navigation badges stay compact and anchored instead of stretching over the selected indicator.
+    private static void assertNavigationBadgesStayCompact(Scene scene, String pageTitle) {
+        Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
+        visitVisibleNodes(scene.getRoot(), node -> {
+            if (!(node instanceof M3NavigationItem item) || !hasRenderableBounds(item)) {
+                return;
+            }
+
+            @Nullable Node badge = item.lookup(".m3-navigation-item-badge");
+            @Nullable Node indicator = item.lookup(".m3-navigation-item-indicator");
+            if (badge == null || indicator == null || !hasRenderableBounds(badge) || !hasRenderableBounds(indicator)) {
+                return;
+            }
+
+            Bounds badgeBounds = badge.localToScene(badge.getBoundsInLocal());
+            Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
+            if (!isVisibleWithinSceneViewport(badge, badgeBounds, sceneBounds)) {
+                return;
+            }
+
+            double maximumBadgeWidth = Math.max(24.0, indicatorBounds.getWidth() * 0.65);
+            double minimumCenterOffset = Math.max(6.0, indicatorBounds.getWidth() * 0.16);
+            double centerOffset = Math.abs(badgeBounds.getCenterX() - indicatorBounds.getCenterX());
+            assertTrue(badgeBounds.getWidth() <= maximumBadgeWidth && centerOffset >= minimumCenterOffset,
+                    () -> pageTitle + " navigation badge has unsafe indicator geometry: badgeBounds="
+                            + badgeBounds + ", indicatorBounds=" + indicatorBounds + ", centerOffset=" + centerOffset);
+        });
+    }
+
     /// Verifies that a nested visual indicator shares the same rendered center as its container.
     private static void assertNestedIndicatorCentered(
             Node root,
@@ -1634,6 +2322,25 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
+    /// Returns the first visible M3 menu button with the requested text.
+    private static @Nullable M3MenuButton firstVisibleMenuButtonWithText(Node root, String text) {
+        if (root instanceof M3MenuButton menuButton
+                && menuButton.isVisible()
+                && text.equals(menuButton.getText())
+                && hasRenderableBounds(menuButton)) {
+            return menuButton;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3MenuButton result = firstVisibleMenuButtonWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
     /// Returns the first visible M3 date picker field.
     private static @Nullable M3DatePickerField firstVisibleDatePickerField(Node root) {
         if (root instanceof M3DatePickerField field && field.isVisible() && hasRenderableBounds(field)) {
@@ -1642,6 +2349,101 @@ final class M3FXDemoVisualSmokeTest {
         if (root instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 @Nullable M3DatePickerField result = firstVisibleDatePickerField(child);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible M3 submenu item with the requested text.
+    private static @Nullable M3SubMenuItem firstVisibleSubMenuItemWithText(Node root, String text) {
+        if (root instanceof M3SubMenuItem subMenuItem
+                && subMenuItem.isVisible()
+                && text.equals(subMenuItem.getHeadlineText())
+                && hasRenderableBounds(subMenuItem)) {
+            return subMenuItem;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3SubMenuItem result = firstVisibleSubMenuItemWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible M3 navigation item with the requested text.
+    private static @Nullable M3NavigationItem firstVisibleNavigationItemWithText(Node root, String text) {
+        if (root instanceof M3NavigationItem item
+                && item.isVisible()
+                && text.equals(item.getText())
+                && hasRenderableBounds(item)) {
+            return item;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3NavigationItem result = firstVisibleNavigationItemWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible navigation drawer group with the requested title.
+    private static @Nullable M3NavigationDrawerGroup firstVisibleDrawerGroupWithTitle(Node root, String title) {
+        if (root instanceof M3NavigationDrawerGroup group
+                && group.isVisible()
+                && title.equals(group.getTitle())
+                && hasRenderableBounds(group)) {
+            return group;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3NavigationDrawerGroup result = firstVisibleDrawerGroupWithTitle(child, title);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible bottom sheet with the requested headline.
+    private static @Nullable M3BottomSheet firstVisibleBottomSheetWithHeadline(Node root, String headline) {
+        if (root instanceof M3BottomSheet sheet
+                && sheet.isVisible()
+                && headline.equals(sheet.getHeadline())
+                && hasRenderableBounds(sheet)) {
+            return sheet;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3BottomSheet result = firstVisibleBottomSheetWithHeadline(child, headline);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible side sheet with the requested headline.
+    private static @Nullable M3SideSheet firstVisibleSideSheetWithHeadline(Node root, String headline) {
+        if (root instanceof M3SideSheet sheet
+                && sheet.isVisible()
+                && headline.equals(sheet.getHeadline())
+                && hasRenderableBounds(sheet)) {
+            return sheet;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3SideSheet result = firstVisibleSideSheetWithHeadline(child, headline);
                 if (result != null) {
                     return result;
                 }
@@ -1668,6 +2470,31 @@ final class M3FXDemoVisualSmokeTest {
         if (popupRoot instanceof Parent parent) {
             parent.layout();
         }
+    }
+
+    /// Verifies that an owning popup and nested popup are positioned beside each other on screen.
+    private static void assertPopupStackSideBySide(Node ownerPopupRoot, Node childPopupRoot) {
+        @Nullable Bounds ownerBounds = ownerPopupRoot.localToScreen(ownerPopupRoot.getBoundsInLocal());
+        @Nullable Bounds childBounds = childPopupRoot.localToScreen(childPopupRoot.getBoundsInLocal());
+        assertNotNull(ownerBounds, "owner popup screen bounds");
+        assertNotNull(childBounds, "child popup screen bounds");
+
+        double horizontalOverlap = Math.max(
+                0.0,
+                Math.min(ownerBounds.getMaxX(), childBounds.getMaxX())
+                        - Math.max(ownerBounds.getMinX(), childBounds.getMinX())
+        );
+        double verticalOverlap = Math.max(
+                0.0,
+                Math.min(ownerBounds.getMaxY(), childBounds.getMaxY())
+                        - Math.max(ownerBounds.getMinY(), childBounds.getMinY())
+        );
+        double maximumHorizontalOverlap = Math.max(24.0, Math.min(ownerBounds.getWidth(), childBounds.getWidth()) * 0.16);
+        double minimumVerticalOverlap = Math.min(ownerBounds.getHeight(), childBounds.getHeight()) * 0.25;
+        assertTrue(horizontalOverlap <= maximumHorizontalOverlap && verticalOverlap >= minimumVerticalOverlap,
+                () -> "Nested popup stack has unsafe placement: ownerBounds=" + ownerBounds
+                        + ", childBounds=" + childBounds + ", horizontalOverlap=" + horizontalOverlap
+                        + ", verticalOverlap=" + verticalOverlap);
     }
 
     /// Verifies that an interaction visibly changes the snapshot region occupied by a node.
