@@ -13344,6 +13344,87 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that validation summaries route accessibility focus to the current invalid input.
+    @Test
+    void validationSummaryRoutesAccessibleFocusAcrossInvalidInputs() {
+        runOnFxThread(() -> {
+            M3TextField nameField = new M3TextField();
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Name", "Required");
+            nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
+
+            M3TextField emailField = new M3TextField();
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Required");
+            emailLayout.setValidator(M3TextInputValidators.required("Email is required"));
+
+            M3Button outside = new M3Button("Outside");
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            assertFalse(validator.validate());
+
+            VBox root = new VBox(8.0, nameLayout, emailLayout, summary, outside);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 520.0, 320.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertEquals(2, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertSame(nameLayout, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(emailLayout, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                VBox items = assertInstanceOf(
+                        VBox.class,
+                        summary.lookup("." + M3ValidationSummary.ITEMS_STYLE_CLASS)
+                );
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, emailLayout);
+
+                assertTrue(emailField.isFocused());
+                assertSame(emailField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, List.of(nameField));
+
+                assertTrue(nameField.isFocused());
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                Node emailSummaryItem = items.getChildren().get(1);
+                emailSummaryItem.requestFocus();
+                assertTrue(emailSummaryItem.isFocused());
+
+                emailSummaryItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+
+                assertTrue(emailField.isFocused());
+                assertSame(emailField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+
+                assertTrue(emailField.isFocused());
+                assertSame(emailField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                emailField.setText("support@example.com");
+
+                assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertSame(nameLayout, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                outside.requestFocus();
+
+                assertTrue(outside.isFocused());
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                nameField.setText("Ada");
+
+                assertEquals(0, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertNull(summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that selection controls render selected, indeterminate, and disabled states.
     @Test
     void selectionSnapshotRendersStateMatrix() {

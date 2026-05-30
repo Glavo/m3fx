@@ -87,6 +87,10 @@ public class M3ValidationSummary extends Control {
     /// Updates summary state when the validator invalid input list changes.
     private final ListChangeListener<M3TextInputLayout> invalidInputsListener = change -> updateSummaryState();
 
+    /// Notifies accessibility clients when focus moves between invalid input layouts.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::currentFocusNode);
+
     /// Creates a validation summary with no validator.
     public M3ValidationSummary() {
         initialize();
@@ -189,10 +193,12 @@ public class M3ValidationSummary extends Control {
         @Nullable TextInputControl textInput = validatedInput.getInput();
         if (textInput != null && !textInput.isDisabled()) {
             textInput.requestFocus();
+            notifyFocusNodeChanged();
             return true;
         }
         if (!validatedInput.isDisabled()) {
             validatedInput.requestFocus();
+            notifyFocusNodeChanged();
             return true;
         }
         return false;
@@ -218,7 +224,7 @@ public class M3ValidationSummary extends Control {
             case TEXT -> accessibleText();
             case ITEM_COUNT -> getInvalidInputCount();
             case ITEM_AT_INDEX -> getInvalidInput(M3Accessible.indexParameter(parameters));
-            case FOCUS_NODE -> firstInvalidFocusNode();
+            case FOCUS_NODE -> accessibleFocusNode();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -230,7 +236,7 @@ public class M3ValidationSummary extends Control {
         switch (action) {
             case REQUEST_FOCUS -> focusFirstInvalidInput();
             case SHOW_ITEM -> {
-                @Nullable M3TextInputLayout input = getInvalidInput(M3Accessible.indexParameter(parameters));
+                @Nullable M3TextInputLayout input = accessibleActionInput(parameters);
                 if (input != null) {
                     focusInput(input);
                 }
@@ -247,6 +253,7 @@ public class M3ValidationSummary extends Control {
         titleText.addListener(observable -> updateSummaryState());
         emptyText.addListener(observable -> updateSummaryState());
         showWhenValid.addListener(observable -> updateSummaryState());
+        focusNotifier.start();
         updateSummaryState();
     }
 
@@ -269,8 +276,35 @@ public class M3ValidationSummary extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
         requestLayout();
+    }
+
+    /// Returns the current accessibility focus node.
+    private @Nullable Node accessibleFocusNode() {
+        @Nullable Node focusNode = currentFocusNode();
+        return focusNode == null ? firstInvalidFocusNode() : focusNode;
+    }
+
+    /// Returns the currently focused invalid input target, or `null` when focus is outside the invalid input list.
+    private @Nullable Node currentFocusNode() {
+        @Nullable M3FormValidator validator = getValidator();
+        if (validator == null || getScene() == null) {
+            return null;
+        }
+
+        @Nullable Node focusOwner = getScene().getFocusOwner();
+        if (focusOwner == null) {
+            return null;
+        }
+
+        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+            if (M3Accessible.containsNode(invalidInput, focusOwner)) {
+                @Nullable Node focusTarget = M3Accessible.accessibleFocusTarget(invalidInput);
+                return focusTarget == null ? invalidFocusNode(invalidInput) : focusTarget;
+            }
+        }
+        return null;
     }
 
     /// Returns the focus target for the first invalid input.
@@ -285,6 +319,11 @@ public class M3ValidationSummary extends Control {
             return null;
         }
 
+        return invalidFocusNode(invalidInput);
+    }
+
+    /// Returns the preferred focus target for one invalid input layout.
+    private @Nullable Node invalidFocusNode(M3TextInputLayout invalidInput) {
         @Nullable TextInputControl textInput = invalidInput.getInput();
         @Nullable Node textInputFocusTarget = M3Accessible.focusTarget(textInput);
         return textInputFocusTarget != null ? textInputFocusTarget : M3Accessible.focusTarget(invalidInput);
@@ -293,7 +332,87 @@ public class M3ValidationSummary extends Control {
     /// Requests focus for the first invalid input through the current validator.
     private boolean focusFirstInvalidInput() {
         @Nullable M3FormValidator validator = getValidator();
-        return validator != null && validator.focusFirstInvalidInput();
+        @Nullable M3TextInputLayout invalidInput = validator == null ? null : validator.getFirstInvalidInput();
+        return invalidInput != null && focusInput(invalidInput);
+    }
+
+    /// Returns the invalid input referenced by accessibility action parameters.
+    private @Nullable M3TextInputLayout accessibleActionInput(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            @Nullable M3FormValidator validator = getValidator();
+            return validator == null ? null : validator.getFirstInvalidInput();
+        }
+        if (parameters[0] instanceof Number) {
+            return getInvalidInput(M3Accessible.indexParameter(parameters));
+        }
+        for (Object parameter : parameters) {
+            @Nullable M3TextInputLayout input = accessibleActionInput(parameter);
+            if (input != null) {
+                return input;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the invalid input referenced by one accessibility action parameter.
+    private @Nullable M3TextInputLayout accessibleActionInput(@Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return getInvalidInput(number.intValue());
+        }
+        if (parameter instanceof M3TextInputLayout input && containsInvalidInput(input)) {
+            return input;
+        }
+        if (parameter instanceof Node node) {
+            return invalidInputContaining(node);
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable M3TextInputLayout input = accessibleActionInput(value);
+                if (input != null) {
+                    return input;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable M3TextInputLayout input = accessibleActionInput(value);
+                if (input != null) {
+                    return input;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether the supplied input is in the current invalid input list.
+    private boolean containsInvalidInput(M3TextInputLayout input) {
+        @Nullable M3FormValidator validator = getValidator();
+        return validator != null && validator.getInvalidInputs().contains(input);
+    }
+
+    /// Returns the invalid input that owns or contains the supplied node.
+    private @Nullable M3TextInputLayout invalidInputContaining(Node node) {
+        @Nullable M3FormValidator validator = getValidator();
+        if (validator == null) {
+            return null;
+        }
+
+        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+            if (node == invalidInput
+                    || node == invalidInput.getInput()
+                    || M3Accessible.containsNode(invalidInput, node)) {
+                return invalidInput;
+            }
+        }
+        return null;
+    }
+
+    /// Notifies and refreshes cached accessibility focus state.
+    private void notifyFocusNodeChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Returns the current accessibility summary text.
