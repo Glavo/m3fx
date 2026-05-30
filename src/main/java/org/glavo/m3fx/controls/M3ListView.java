@@ -848,6 +848,11 @@ public class M3ListView<T> extends Control {
 
     /// Scrolls the item referenced by accessibility parameters into view.
     private void showAccessibleItem(Object... parameters) {
+        if (parameters.length == 0) {
+            focusAccessibleNode();
+            return;
+        }
+
         int index = firstSelectionIndex(parameters);
         if (index >= 0) {
             focusIndex(index);

@@ -421,6 +421,12 @@ public class M3Carousel extends Control {
 
     /// Shows an item requested by an accessibility client.
     private void showAccessibleItem(Object... parameters) {
+        if (parameters.length == 0) {
+            focusAccessibleNode();
+            scrollSelectedItemIntoView();
+            return;
+        }
+
         @Nullable Node target = accessibleTarget(parameters);
         if (target != null) {
             select(target);

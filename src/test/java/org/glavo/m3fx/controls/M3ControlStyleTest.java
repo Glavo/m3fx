@@ -1393,30 +1393,44 @@ final class M3ControlStyleTest {
             carousel.setPrefSize(260.0, 100.0);
             Pane root = new Pane(carousel);
             Scene scene = new Scene(root, 280.0, 120.0);
+            Stage stage = new Stage();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            carousel.resizeRelocate(0.0, 0.0, 260.0, 100.0);
-            root.layout();
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                carousel.resizeRelocate(0.0, 0.0, 260.0, 100.0);
+                root.layout();
 
-            assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
+                assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
 
-            carousel.selectIndex(4);
-            root.layout();
+                carousel.selectIndex(4);
+                root.layout();
 
-            ScrollPane viewport = assertInstanceOf(ScrollPane.class, carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS));
-            assertTrue(viewport.getHvalue() > 0.5, () -> "hvalue=" + viewport.getHvalue());
-            assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
+                ScrollPane viewport = assertInstanceOf(
+                        ScrollPane.class,
+                        carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS)
+                );
+                assertTrue(viewport.getHvalue() > 0.5, () -> "hvalue=" + viewport.getHvalue());
+                assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
 
-            viewport.setHvalue(0.0);
-            M3MotionSettings.setAnimationsEnabled(viewport, false);
-            ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
-            viewport.fireEvent(event);
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
 
-            assertTrue(event.isConsumed());
-            assertTrue(viewport.getHvalue() > 0.0, () -> "hvalue=" + viewport.getHvalue());
+                assertTrue(carousel.isFocused());
 
-            M3MotionSettings.clearAnimationsEnabled(viewport);
+                viewport.setHvalue(0.0);
+                M3MotionSettings.setAnimationsEnabled(viewport, false);
+                ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
+                viewport.fireEvent(event);
+
+                assertTrue(event.isConsumed());
+                assertTrue(viewport.getHvalue() > 0.0, () -> "hvalue=" + viewport.getHvalue());
+
+                M3MotionSettings.clearAnimationsEnabled(viewport);
+            } finally {
+                stage.close();
+            }
         });
     }
 
@@ -10055,6 +10069,15 @@ final class M3ControlStyleTest {
                 assertEquals("Row 99", lastItem.getHeadlineText());
                 assertSame(listView, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertTrue(listView.isFocused());
+
+                listView.clearFocus();
+
+                assertEquals(-1, listView.getFocusedIndex());
+
+                listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                root.layout();
+
+                assertEquals(99, listView.getFocusedIndex());
 
                 listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 40);
                 root.layout();
