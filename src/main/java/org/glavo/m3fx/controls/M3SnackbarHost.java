@@ -270,6 +270,7 @@ public class M3SnackbarHost extends Control {
         snackbar.setManaged(true);
         snackbar.setVisible(true);
         showing.set(true);
+        refreshAccessibleFocusNode();
         playShowAnimation(snackbar);
     }
 
@@ -477,6 +478,16 @@ public class M3SnackbarHost extends Control {
         return focusNode instanceof Node node ? node : null;
     }
 
+    /// Refreshes the current snackbar skin before reporting its focus node to accessibility clients.
+    private void refreshAccessibleFocusNode() {
+        @Nullable M3Snackbar currentSnackbar = getSnackbar();
+        if (currentSnackbar != null) {
+            currentSnackbar.applyCss();
+        }
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
+    }
+
     /// Shows or focuses the snackbar referenced by accessibility action parameters.
     private void showAccessibleSnackbar(Object... parameters) {
         @Nullable M3Snackbar target = accessibleSnackbar(parameters);
@@ -485,21 +496,25 @@ public class M3SnackbarHost extends Control {
         }
 
         if (target == getSnackbar()) {
+            refreshAccessibleFocusNode();
             M3Accessible.showItem(currentFocusNode());
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-            focusNotifier.refresh();
+            refreshAccessibleFocusNode();
             return;
         }
         if (queue.remove(target)) {
             show(target);
             M3Accessible.showItem(currentFocusNode());
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-            focusNotifier.refresh();
+            refreshAccessibleFocusNode();
         }
     }
 
     /// Returns the snackbar referenced by accessibility action parameters.
     private @Nullable M3Snackbar accessibleSnackbar(Object... parameters) {
+        if (parameters.length == 0) {
+            @Nullable M3Snackbar currentSnackbar = getSnackbar();
+            return currentSnackbar != null ? currentSnackbar : (queue.isEmpty() ? null : queue.get(0));
+        }
+
         int index = M3Accessible.indexParameter(parameters);
         if (index >= 0) {
             Node item = snackbarAt(parameters);

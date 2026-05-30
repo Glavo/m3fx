@@ -1175,6 +1175,12 @@ final class M3ControlStyleTest {
 
                 assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                menu.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(menu.isExpanded());
+                assertTrue(firstAction.isFocused());
+                assertSame(firstAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 menu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, secondAction);
 
                 assertTrue(menu.isExpanded());
@@ -1940,10 +1946,25 @@ final class M3ControlStyleTest {
                 assertTrue(actionButton.isFocused());
 
                 actionButton.getScene().getRoot().requestFocus();
-                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, snackbar);
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
                 assertTrue(actionButton.isFocused());
 
-                actionButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+                M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+                host.enqueue(queuedSnackbar);
+                actionButton.getScene().getRoot().requestFocus();
+
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
+
+                assertSame(queuedSnackbar, host.getSnackbar());
+                assertTrue(host.getQueue().isEmpty());
+                M3Button queuedActionButton = assertInstanceOf(
+                        M3Button.class,
+                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                assertTrue(queuedActionButton.isFocused());
+                assertEquals(queuedActionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                queuedActionButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
 
                 assertFalse(host.isShowing());
                 assertEquals(false, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
