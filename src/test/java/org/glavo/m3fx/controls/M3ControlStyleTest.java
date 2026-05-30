@@ -2629,6 +2629,64 @@ final class M3ControlStyleTest {
         assertEquals(64.0, widePaddingField.getPadding().getRight(), 0.0001);
     }
 
+    /// Verifies that text input layouts route accessibility focus through input and adornment targets.
+    @Test
+    void textInputLayoutRoutesAccessibleFocusAcrossInputAndAdornments() {
+        runOnFxThread(() -> {
+            M3TextField textField = new M3TextField("abc");
+            M3Button leading = new M3Button("Lead");
+            M3IconButton trailing = createIconButton("T");
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            layout.setLeading(leading);
+            layout.setTrailing(trailing);
+
+            Pane root = new Pane(layout);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 420.0, 160.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertSame(textField, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                leading.requestFocus();
+                assertTrue(leading.isFocused());
+                assertSame(leading, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, trailing);
+                assertTrue(trailing.isFocused());
+                assertSame(trailing, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                layout.setTrailing(null);
+                assertTrue(textField.isFocused());
+                assertSame(textField, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                layout.setClearButtonEnabled(true);
+                M3IconButton clearButton = layout.getClearButton();
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, clearButton);
+                assertTrue(clearButton.isFocused());
+                assertSame(clearButton, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                clearButton.fire();
+
+                assertEquals("", textField.getText());
+                assertTrue(textField.isFocused());
+                assertSame(textField, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(2, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+                assertTrue(leading.isFocused());
+
+                layout.setLeading(null);
+                assertTrue(textField.isFocused());
+                assertSame(textField, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that text input layouts mirror logical adornments and floating label geometry in right-to-left mode.
     @Test
     void textInputLayoutMirrorsAdornmentsAndFloatingLabelForRightToLeft() {

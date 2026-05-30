@@ -420,6 +420,10 @@ public class M3TextInputLayout extends Control {
             M3IconVariant.ON_SURFACE_VARIANT
     ));
 
+    /// Notifies accessibility clients when focus moves between the input and adornment slots.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::currentFocusNode);
+
     /// The animation used when the label changes between resting and floating states.
     private final Timeline labelAnimation = new Timeline();
 
@@ -750,7 +754,12 @@ public class M3TextInputLayout extends Control {
     public final void clearText() {
         TextInputControl input = getInput();
         if (input != null) {
+            boolean restoreInputFocus = isFocusInside(effectiveTrailing());
             input.clear();
+            if (restoreInputFocus) {
+                input.requestFocus();
+            }
+            notifyFocusNodeChanged();
         }
     }
 
@@ -802,7 +811,7 @@ public class M3TextInputLayout extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
-            case FOCUS_NODE -> getInput();
+            case FOCUS_NODE -> accessibleFocusNode();
             case ITEM_COUNT -> accessibleItemCount();
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
             case TEXT -> accessibleText();
@@ -815,21 +824,12 @@ public class M3TextInputLayout extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> {
-                TextInputControl input = getInput();
-                if (input != null) {
-                    input.requestFocus();
-                    return;
-                }
-            }
-            case SHOW_ITEM -> {
-                M3Accessible.showItem(accessibleItemAt(parameters));
-                return;
-            }
+            case REQUEST_FOCUS -> focusAccessibleItem(defaultFocusItem());
+            case SHOW_ITEM -> focusAccessibleItem(accessibleActionItem(parameters));
             default -> {
+                super.executeAccessibleAction(action, parameters);
             }
         }
-        super.executeAccessibleAction(action, parameters);
     }
 
     /// Adds base style classes and supporting row children.
@@ -865,6 +865,7 @@ public class M3TextInputLayout extends Control {
         clearButton.setAccessibleText("Clear text");
         clearButton.setOnAction(event -> clearText());
         validators.addListener(validatorsListener);
+        focusNotifier.start();
 
         HBox.setHgrow(supportingSpacer, Priority.ALWAYS);
         supportingRow.getChildren().setAll(supportingLabel, supportingSpacer, counterLabel);
@@ -886,6 +887,7 @@ public class M3TextInputLayout extends Control {
     /// Installs the current input node and removes state from the previous input.
     private void updateInput() {
         TextInputControl oldInput = installedInput;
+        boolean restoreInputFocus = isFocusInside(oldInput);
         supportingRow.disableProperty().unbind();
         outlinePath.disableProperty().unbind();
         label.disableProperty().unbind();
@@ -952,11 +954,16 @@ public class M3TextInputLayout extends Control {
         updateTrailing();
         updateInputErrorState();
         updateSupportingRow();
+        if (restoreInputFocus && newInput != null) {
+            newInput.requestFocus();
+        }
+        notifyAccessibleItemsChanged();
     }
 
     /// Updates floating label state and optionally validates when focus leaves the input.
     private void handleInputFocusChanged(boolean focused) {
         updateLabel();
+        notifyFocusNodeChanged();
         if (!focused && isValidateOnFocusLost()) {
             validate();
         }
@@ -1011,7 +1018,9 @@ public class M3TextInputLayout extends Control {
 
     /// Updates the leading adornment slot.
     private void updateLeading() {
-        Node leading = getLeading();
+        @Nullable Node previousLeading = installedLeading();
+        @Nullable Node leading = getLeading();
+        boolean restoreInputFocus = previousLeading != leading && isFocusInside(previousLeading);
         leadingSlot.getChildren().clear();
         if (leading != null) {
             leadingSlot.getChildren().add(leading);
@@ -1019,12 +1028,19 @@ public class M3TextInputLayout extends Control {
         updateAdornmentSlot(leadingSlot, leading);
         updateLabelPadding();
         updateInputPadding();
+        if (restoreInputFocus) {
+            restoreInputFocus();
+        }
+        if (previousLeading != leading) {
+            notifyAccessibleItemsChanged();
+        }
     }
 
     /// Updates the trailing adornment slot.
     private void updateTrailing() {
         @Nullable Node trailing = effectiveTrailing();
         @Nullable Node previousTrailing = installedTrailing;
+        boolean restoreInputFocus = previousTrailing != trailing && isFocusInside(previousTrailing);
         installedTrailing = trailing;
         trailingSlot.getChildren().clear();
         if (trailing != null) {
@@ -1034,9 +1050,11 @@ public class M3TextInputLayout extends Control {
         updateTrailingMotion(previousTrailing, trailing);
         updateLabelPadding();
         updateInputPadding();
+        if (restoreInputFocus) {
+            restoreInputFocus();
+        }
         if (previousTrailing != trailing) {
-            notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+            notifyAccessibleItemsChanged();
         }
     }
 
@@ -1047,6 +1065,11 @@ public class M3TextInputLayout extends Control {
             return trailing;
         }
         return isClearButtonActive() ? clearButton : null;
+    }
+
+    /// Returns the node that currently occupies the leading adornment slot.
+    private @Nullable Node installedLeading() {
+        return leadingSlot.getChildren().isEmpty() ? null : leadingSlot.getChildren().get(0);
     }
 
     /// Returns whether the built-in clear button should be visible.
@@ -1602,6 +1625,138 @@ public class M3TextInputLayout extends Control {
         }
 
         return index == 0 ? effectiveTrailing() : null;
+    }
+
+    /// Returns the current accessibility focus node.
+    private @Nullable Node accessibleFocusNode() {
+        @Nullable Node focusNode = currentFocusNode();
+        return focusNode == null ? defaultFocusItem() : focusNode;
+    }
+
+    /// Returns the current focused input or adornment target, or `null` when focus is outside this layout.
+    private @Nullable Node currentFocusNode() {
+        if (getScene() == null) {
+            return null;
+        }
+
+        @Nullable Node focusOwner = getScene().getFocusOwner();
+        if (focusOwner == null) {
+            return null;
+        }
+        if (focusOwner == this) {
+            return this;
+        }
+
+        int count = accessibleItemCount();
+        for (int index = 0; index < count; index++) {
+            @Nullable Node item = accessibleItemAt(index);
+            if (item != null && M3Accessible.containsNode(item, focusOwner)) {
+                @Nullable Node focusTarget = M3Accessible.focusTarget(item);
+                if (focusTarget != null) {
+                    return focusTarget;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the preferred focus item for this layout.
+    private @Nullable Node defaultFocusItem() {
+        TextInputControl input = getInput();
+        if (input != null) {
+            return input;
+        }
+
+        @Nullable Node leading = getLeading();
+        return leading != null ? leading : effectiveTrailing();
+    }
+
+    /// Focuses an accessible child item and reports the changed focus target.
+    private void focusAccessibleItem(@Nullable Node item) {
+        M3Accessible.showItem(item);
+        notifyFocusNodeChanged();
+    }
+
+    /// Returns the child item referenced by accessibility action parameters.
+    private @Nullable Node accessibleActionItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return defaultFocusItem();
+        }
+        if (parameters[0] instanceof Number) {
+            return accessibleItemAt(parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = accessibleActionItem(parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the child item referenced by one accessibility action parameter.
+    private @Nullable Node accessibleActionItem(@Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return accessibleItemAt(number);
+        }
+        if (parameter instanceof Node node && containsAccessibleItem(node)) {
+            return node;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleActionItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleActionItem(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether the node is an input, leading, or effective trailing accessibility item.
+    private boolean containsAccessibleItem(Node node) {
+        return node == getLeading() || node == getInput() || node == effectiveTrailing();
+    }
+
+    /// Returns whether keyboard focus belongs to the supplied node or one of its descendants.
+    private boolean isFocusInside(@Nullable Node node) {
+        if (node == null || getScene() == null) {
+            return false;
+        }
+
+        @Nullable Node focusOwner = getScene().getFocusOwner();
+        return focusOwner != null && M3Accessible.containsNode(node, focusOwner);
+    }
+
+    /// Restores keyboard focus to the wrapped input when it can be reached.
+    private void restoreInputFocus() {
+        TextInputControl input = getInput();
+        if (M3Accessible.canReach(input)) {
+            input.requestFocus();
+        }
+    }
+
+    /// Notifies accessibility clients that indexed child items changed.
+    private void notifyAccessibleItemsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyFocusNodeChanged();
+    }
+
+    /// Notifies and refreshes cached accessibility focus state.
+    private void notifyFocusNodeChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Validates that a wrapped input can render Material text input error state.
