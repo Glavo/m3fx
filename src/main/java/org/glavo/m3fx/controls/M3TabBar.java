@@ -268,7 +268,11 @@ public class M3TabBar extends Control {
                     M3Tab.class
             ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItem(getTabs(), parameters);
+            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3SelectionNavigation.focusTarget(
+                    getTabs(),
+                    getSelectedTab(),
+                    M3Tab.class
+            ), getTabs(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

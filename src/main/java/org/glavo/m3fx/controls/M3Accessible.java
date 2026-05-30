@@ -123,6 +123,20 @@ final class M3Accessible {
         showItem(actionItem(first, second, parameters));
     }
 
+    /// Requests focus for the default item when no parameter is supplied, or for the requested indexed item.
+    static void showItemOrDefault(
+            @Nullable Node defaultItem,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        @Nullable Node item = parameters.length == 0
+                ? (focusTarget(defaultItem) == null ? firstFocusableItem(items) : defaultItem)
+                : actionItem(items, parameters);
+        showItem(item);
+    }
+
     /// Requests focus for an accessibility item when it can be reached.
     static void showItem(@Nullable Node item) {
         @Nullable Node focusTarget = focusTarget(item);

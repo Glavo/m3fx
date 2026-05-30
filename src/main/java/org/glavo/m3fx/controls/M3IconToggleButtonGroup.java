@@ -413,7 +413,11 @@ public class M3IconToggleButtonGroup extends Control {
                     M3IconToggleButton.class
             ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
+            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3SelectionNavigation.focusTarget(
+                    getItems(),
+                    getSelectedButton(),
+                    M3IconToggleButton.class
+            ), getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

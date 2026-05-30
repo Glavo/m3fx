@@ -354,7 +354,11 @@ public class M3ListPane extends Control {
                     M3ListItem.class
             ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
+            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3SelectionNavigation.focusTarget(
+                    getItems(),
+                    getSelectedItem(),
+                    M3ListItem.class
+            ), getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

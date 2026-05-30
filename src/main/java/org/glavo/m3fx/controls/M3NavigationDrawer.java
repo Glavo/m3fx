@@ -503,9 +503,19 @@ public class M3NavigationDrawer extends Control {
 
     /// Focuses the drawer item supplied by an accessibility client, expanding a group when needed.
     private void showAccessibleItem(Object... parameters) {
+        ObservableList<Node> content = flattenedContent();
+        if (parameters.length == 0) {
+            M3Accessible.showItem(M3SelectionNavigation.focusTarget(
+                    content,
+                    getSelectedItem(),
+                    M3ListItem.class
+            ));
+            return;
+        }
+
         @Nullable Node item = accessibleActionItem(parameters);
         if (item == null) {
-            M3Accessible.showItem(flattenedContent(), parameters);
+            M3Accessible.showItem(content, parameters);
         } else {
             M3Accessible.showItem(item);
         }

@@ -444,7 +444,11 @@ public class M3SegmentedButtonGroup extends Control {
                     M3SegmentedButton.class
             ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
+            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3SelectionNavigation.focusTarget(
+                    getItems(),
+                    getSelectedButton(),
+                    M3SegmentedButton.class
+            ), getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

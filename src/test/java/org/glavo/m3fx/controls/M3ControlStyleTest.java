@@ -11907,9 +11907,11 @@ final class M3ControlStyleTest {
             M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(drawerFirst, drawerSecond);
             navigationDrawer.select(drawerSecond);
 
+            M3Button outsideFocus = new M3Button("Outside");
             Stage stage = new Stage();
             try {
                 VBox root = new VBox(
+                        outsideFocus,
                         iconGroup,
                         segmentedGroup,
                         chipGroup,
@@ -11937,8 +11939,19 @@ final class M3ControlStyleTest {
                 assertAccessibleFocus(navigationRail, railSecond);
                 assertAccessibleFocus(navigationDrawer, drawerSecond);
 
+                assertAccessibleShowItemFocus(outsideFocus, iconGroup, iconSecond);
+                assertAccessibleShowItemFocus(outsideFocus, segmentedGroup, segmentSecond);
+                assertAccessibleShowItemFocus(outsideFocus, chipGroup, chipSecond);
+                assertAccessibleShowItemFocus(outsideFocus, list, listSecond);
+                assertAccessibleShowItemFocus(outsideFocus, passiveList, passiveListFirst);
+                assertAccessibleShowItemFocus(outsideFocus, tabBar, tabSecond);
+                assertAccessibleShowItemFocus(outsideFocus, navigationBar, barSecond);
+                assertAccessibleShowItemFocus(outsideFocus, navigationRail, railSecond);
+                assertAccessibleShowItemFocus(outsideFocus, navigationDrawer, drawerSecond);
+
                 iconSecond.setDisable(true);
                 assertAccessibleFocus(iconGroup, iconFirst);
+                assertAccessibleShowItemFocus(outsideFocus, iconGroup, iconFirst);
             } finally {
                 stage.close();
             }
@@ -17303,6 +17316,17 @@ final class M3ControlStyleTest {
         control.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
 
         assertTrue(expectedFocusNode.isFocused());
+    }
+
+    /// Verifies that a parameterless show-item action focuses the expected accessibility item.
+    private static void assertAccessibleShowItemFocus(Node outsideFocusNode, Node control, Node expectedFocusNode) {
+        outsideFocusNode.requestFocus();
+        assertTrue(outsideFocusNode.isFocused());
+
+        control.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+        assertTrue(expectedFocusNode.isFocused());
+        assertSame(expectedFocusNode, control.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
     }
 
     /// Runs a task on the FX application thread and propagates failures.

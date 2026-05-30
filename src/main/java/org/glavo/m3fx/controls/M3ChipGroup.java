@@ -504,7 +504,11 @@ public class M3ChipGroup extends Control {
                     M3Chip.class
             ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
+            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3SelectionNavigation.focusTarget(
+                    getItems(),
+                    getSelectedChip(),
+                    M3Chip.class
+            ), getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
