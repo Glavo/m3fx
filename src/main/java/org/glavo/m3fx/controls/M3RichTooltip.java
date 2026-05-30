@@ -11,7 +11,6 @@ import javafx.scene.Node;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionBehavior;
@@ -47,7 +46,7 @@ public class M3RichTooltip extends M3Tooltip {
     public static final String ACTIONS_STYLE_CLASS = "m3-rich-tooltip-actions";
 
     /// The minimum rich tooltip height when actions are visible.
-    private static final double ACTION_CONTENT_MIN_HEIGHT = 136.0;
+    private static final double ACTION_CONTENT_MIN_HEIGHT = 160.0;
 
     /// The action button property key used to store the caller-provided inline style.
     private static final String ACTION_BUTTON_BASE_STYLE_KEY =
@@ -59,9 +58,6 @@ public class M3RichTooltip extends M3Tooltip {
     // Backing property for the public supporting text API.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
 
-    /// The root graphic node rendered by the tooltip skin.
-    private final VBox container = new VBox();
-
     /// The title label.
     private final Label titleLabel = new Label();
 
@@ -70,6 +66,9 @@ public class M3RichTooltip extends M3Tooltip {
 
     /// The action node row.
     private final HBox actions = new HBox();
+
+    /// The root graphic node rendered by the tooltip skin.
+    private final VBox container = new RichTooltipContainer();
 
     /// Creates an empty rich tooltip.
     public M3RichTooltip() {
@@ -266,7 +265,7 @@ public class M3RichTooltip extends M3Tooltip {
         boolean visible = !actions.getChildren().isEmpty();
         actions.setVisible(visible);
         actions.setManaged(visible);
-        container.setMinHeight(visible ? ACTION_CONTENT_MIN_HEIGHT : Region.USE_COMPUTED_SIZE);
+        container.requestLayout();
     }
 
     /// Returns the text exposed by the inherited tooltip accessible help binding.
@@ -383,5 +382,22 @@ public class M3RichTooltip extends M3Tooltip {
             return Long.toString((long) value) + "px";
         }
         return Double.toString(value) + "px";
+    }
+
+    /// Rich tooltip content container that preserves the action minimum height without clipping longer content.
+    @NotNullByDefault
+    private final class RichTooltipContainer extends VBox {
+        /// Computes the preferred height from content and the Material action minimum height.
+        @Override
+        protected double computePrefHeight(double width) {
+            double computedHeight = super.computePrefHeight(width);
+            return actions.isManaged() ? Math.max(computedHeight, ACTION_CONTENT_MIN_HEIGHT) : computedHeight;
+        }
+
+        /// Computes the minimum height from the preferred height so popup sizing does not compress actions.
+        @Override
+        protected double computeMinHeight(double width) {
+            return computePrefHeight(width);
+        }
     }
 }

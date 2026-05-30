@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Scene;
@@ -110,6 +111,7 @@ public final class M3TooltipSkin implements Skin<M3Tooltip> {
 
         @Nullable M3Theme theme = tooltip.getTheme();
         if (theme == null || newScene == null) {
+            resizeShowingPopup();
             return;
         }
 
@@ -118,5 +120,17 @@ public final class M3TooltipSkin implements Skin<M3Tooltip> {
             newScene.getStylesheets().add(themeStylesheet);
         }
         installedThemeStylesheet = themeStylesheet;
+        resizeShowingPopup();
+        Platform.runLater(this::resizeShowingPopup);
+    }
+
+    /// Resizes an already visible popup after theme CSS changes its preferred content size.
+    private void resizeShowingPopup() {
+        if (!tooltip.isShowing()) {
+            return;
+        }
+        root.applyCss();
+        root.autosize();
+        tooltip.sizeToScene();
     }
 }

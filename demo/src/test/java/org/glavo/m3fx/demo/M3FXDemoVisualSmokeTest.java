@@ -12,6 +12,7 @@ import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextInputControl;
@@ -31,6 +32,8 @@ import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerField;
+import org.glavo.m3fx.controls.M3Dialog;
+import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
@@ -41,8 +44,11 @@ import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SideSheet;
+import org.glavo.m3fx.controls.M3Snackbar;
+import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Switch;
@@ -74,9 +80,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Visual smoke tests for the demo application's real JavaFX window hierarchy.
@@ -488,6 +495,40 @@ final class M3FXDemoVisualSmokeTest {
         try {
             verifyBottomSheetVisibilityAnimation(appReference, sceneReference);
             verifySideSheetVisibilityAnimation(appReference, sceneReference);
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that overlay surfaces render compactly and expose their expected interactive motion.
+    @Test
+    void overlayDemoSurfacesRenderAndAnimate() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            verifySnackbarHostAnimation(appReference, sceneReference);
+            verifyFabMenuExpansionAnimation(appReference, sceneReference);
+            verifyRichTooltipInteractiveLifetime(appReference, sceneReference);
+            verifyDialogPopupSurface(sceneReference);
         } finally {
             runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -1665,6 +1706,350 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
+    /// Verifies snackbar entrance and dismissal motion on the demo host.
+    private static void verifySnackbarHostAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> openingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hiddenReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Snackbars");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3SnackbarHost host = Objects.requireNonNull(firstVisibleSnackbarHost(scene.getRoot()), "snackbar host");
+            M3MotionSettings.setMotionScheme(host, visualOverlayMotionScheme());
+            host.setDisplayDuration(Duration.INDEFINITE);
+            host.show("Theme-aware snackbar", "Action", event -> {
+            });
+            hostReference.set(host);
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
+            M3Snackbar snackbar = Objects.requireNonNull(host.getSnackbar(), "opening snackbar");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            assertSnackbarStaysCompact(scene, snackbar);
+            openingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(openingReference.get(), "opening snackbar snapshot"),
+                    "snackbar-host",
+                    "opening"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
+            M3Snackbar snackbar = Objects.requireNonNull(host.getSnackbar(), "settled snackbar");
+            assertTrue(host.isShowing());
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            assertSnackbarStaysCompact(scene, snackbar);
+            settledReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(settledReference.get(), "settled snackbar snapshot"),
+                    "snackbar-host",
+                    "settled"
+            );
+            host.dismiss();
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
+            assertNotNull(host.getSnackbar(), "hiding snackbar");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            hidingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(hidingReference.get(), "hiding snackbar snapshot"),
+                    "snackbar-host",
+                    "hiding"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
+            assertFalse(host.isShowing());
+            assertNull(host.getSnackbar(), "hidden snackbar");
+            hiddenReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(hiddenReference.get(), "hidden snackbar snapshot"),
+                    "snackbar-host",
+                    "hidden"
+            );
+            M3MotionSettings.clearMotionScheme(host);
+        });
+
+        assertSnapshotChanged(
+                Objects.requireNonNull(openingReference.get(), "opening snackbar snapshot"),
+                Objects.requireNonNull(settledReference.get(), "settled snackbar snapshot"),
+                "snackbar host enter motion"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(settledReference.get(), "settled snackbar snapshot"),
+                Objects.requireNonNull(hidingReference.get(), "hiding snackbar snapshot"),
+                "snackbar host exit motion"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(hidingReference.get(), "hiding snackbar snapshot"),
+                Objects.requireNonNull(hiddenReference.get(), "hidden snackbar snapshot"),
+                "snackbar host hidden frame"
+        );
+    }
+
+    /// Verifies floating action button menu expand and collapse motion.
+    private static void verifyFabMenuExpansionAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3FabMenu> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> collapsedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> expandingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> expandedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> collapsingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> recollapsedReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("FAB Menu");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3FabMenu target = Objects.requireNonNull(firstVisibleFabMenu(scene.getRoot(), false), "collapsed FAB menu");
+            M3MotionSettings.setMotionScheme(target, visualOverlayMotionScheme());
+            targetReference.set(target);
+            collapsedReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(collapsedReference.get(), "collapsed FAB menu snapshot"),
+                    "fab-menu",
+                    "collapsed"
+            );
+            target.show();
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            expandingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(expandingReference.get(), "expanding FAB menu snapshot"),
+                    "fab-menu",
+                    "expanding"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3FabMenu target = Objects.requireNonNull(targetReference.get(), "FAB menu");
+            assertTrue(target.isExpanded());
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            assertFabMenuActionsStayInsideShowcase(target);
+            expandedReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(expandedReference.get(), "expanded FAB menu snapshot"),
+                    "fab-menu",
+                    "expanded"
+            );
+            target.hide();
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            collapsingReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(collapsingReference.get(), "collapsing FAB menu snapshot"),
+                    "fab-menu",
+                    "collapsing"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3FabMenu target = Objects.requireNonNull(targetReference.get(), "FAB menu");
+            assertFalse(target.isExpanded());
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            recollapsedReference.set(snapshot(scene));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(recollapsedReference.get(), "recollapsed FAB menu snapshot"),
+                    "fab-menu",
+                    "recollapsed"
+            );
+            M3MotionSettings.clearMotionScheme(target);
+        });
+
+        assertSnapshotChanged(
+                Objects.requireNonNull(collapsedReference.get(), "collapsed FAB menu snapshot"),
+                Objects.requireNonNull(expandingReference.get(), "expanding FAB menu snapshot"),
+                "FAB menu expanding frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(expandingReference.get(), "expanding FAB menu snapshot"),
+                Objects.requireNonNull(expandedReference.get(), "expanded FAB menu snapshot"),
+                "FAB menu expanded frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(expandedReference.get(), "expanded FAB menu snapshot"),
+                Objects.requireNonNull(collapsingReference.get(), "collapsing FAB menu snapshot"),
+                "FAB menu collapsing frame"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(collapsingReference.get(), "collapsing FAB menu snapshot"),
+                Objects.requireNonNull(recollapsedReference.get(), "recollapsed FAB menu snapshot"),
+                "FAB menu recollapsed frame"
+        );
+    }
+
+    /// Verifies that a rich tooltip remains interactive while pointer focus transfers into its popup.
+    private static void verifyRichTooltipInteractiveLifetime(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3Button> ownerReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> popupRootReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> popupReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Tooltips");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3Button owner = Objects.requireNonNull(firstVisibleButtonWithText(
+                    scene.getRoot(),
+                    "Rich action"
+            ), "rich tooltip owner");
+            M3Button action = new M3Button("Open");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    owner,
+                    "Generated theme",
+                    "The tooltip keeps its action surface available while pointer focus moves into the popup.",
+                    action
+            );
+            tooltip.setShowDelay(Duration.ZERO);
+            tooltip.setHideDelay(Duration.millis(160.0));
+            tooltip.setShowDuration(Duration.INDEFINITE);
+            ownerReference.set(owner);
+            tooltipReference.set(tooltip);
+            firePrimaryMouseEvent(owner, MouseEvent.MOUSE_ENTERED, false);
+        }, () -> {
+            M3Button owner = Objects.requireNonNull(ownerReference.get(), "rich tooltip owner");
+            M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "rich tooltip");
+            assertTrue(tooltip.isShowing());
+            Node popupRoot = Objects.requireNonNull(tooltip.getScene(), "rich tooltip scene").getRoot();
+            layoutPopupRoot(popupRoot);
+            assertTooltipNearOwner(owner, popupRoot);
+            assertRichTooltipActionInsidePopup(popupRoot);
+            popupRootReference.set(popupRoot);
+            popupReference.set(snapshotNode(popupRoot));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(popupReference.get(), "rich tooltip snapshot"),
+                    "rich-tooltip",
+                    "shown"
+            );
+            assertSnapshotHasVisibleContent(
+                    Objects.requireNonNull(popupReference.get(), "rich tooltip snapshot"),
+                    "rich tooltip"
+            );
+            firePrimaryMouseEvent(owner, MouseEvent.MOUSE_EXITED, false);
+            firePrimaryMouseEvent(popupRoot, MouseEvent.MOUSE_ENTERED, false);
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+        }, () -> {
+            M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "rich tooltip");
+            assertTrue(tooltip.isShowing());
+            tooltip.hide();
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(80.0), () -> {
+        }, () -> {
+            M3Button owner = Objects.requireNonNull(ownerReference.get(), "rich tooltip owner");
+            M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "rich tooltip");
+            assertFalse(tooltip.isShowing());
+            M3RichTooltip.uninstall(owner, tooltip);
+        });
+    }
+
+    /// Verifies that the real dialog window uses a compact Material dialog pane.
+    private static void verifyDialogPopupSurface(
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> dialogSnapshotReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3Dialog<ButtonType> dialog = new M3Dialog<>(
+                    "M3FX Demo Dialog",
+                    "Dialog title",
+                    "The active theme is applied to this dialog pane.",
+                    ButtonType.CANCEL,
+                    ButtonType.OK
+            );
+            dialog.initOwner(scene.getRoot());
+            dialog.getDialogPane().setPrefWidth(420.0);
+            dialog.show();
+            dialogReference.set(dialog);
+        }, () -> {
+            Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
+            assertTrue(dialog.isShowing());
+            Node dialogPane = dialog.getDialogPane();
+            dialogPane.applyCss();
+            if (dialogPane instanceof Parent parent) {
+                parent.layout();
+            }
+            assertDialogPaneStaysCompact(ownerScene, dialogPane);
+            dialogSnapshotReference.set(snapshotNode(dialogPane));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(dialogSnapshotReference.get(), "dialog popup snapshot"),
+                    "dialog-popup",
+                    "shown"
+            );
+            assertSnapshotHasVisibleContent(
+                    Objects.requireNonNull(dialogSnapshotReference.get(), "dialog popup snapshot"),
+                    "dialog popup"
+            );
+            dialog.close();
+        });
+    }
+
+    /// Returns an overlay-specific motion scheme that makes popup and surface transitions observable.
+    private static M3MotionScheme visualOverlayMotionScheme() {
+        M3MotionScheme standard = M3MotionScheme.standard();
+        M3MotionSpec observableSpec = M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR);
+        return M3MotionScheme.create(
+                observableSpec,
+                observableSpec,
+                standard.slowEffects(),
+                observableSpec,
+                observableSpec,
+                standard.slowSpatial()
+        );
+    }
+
     /// Verifies focus feedback on a populated text field in the demo page.
     private static void verifyTextFieldFocusFeedback(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -2452,6 +2837,41 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
+    /// Returns the first visible snackbar host.
+    private static @Nullable M3SnackbarHost firstVisibleSnackbarHost(Node root) {
+        if (root instanceof M3SnackbarHost host && host.isVisible() && hasRenderableBounds(host)) {
+            return host;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3SnackbarHost result = firstVisibleSnackbarHost(child);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible FAB menu with the requested expanded state.
+    private static @Nullable M3FabMenu firstVisibleFabMenu(Node root, boolean expanded) {
+        if (root instanceof M3FabMenu menu
+                && menu.isVisible()
+                && menu.isExpanded() == expanded
+                && hasRenderableBounds(menu)) {
+            return menu;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3FabMenu result = firstVisibleFabMenu(child, expanded);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
     /// Returns the popup root that hosts a picker field's popup picker.
     private static @Nullable Node pickerPopupRoot(M3DatePickerField field) {
         @Nullable Parent parent = field.getPicker().getParent();
@@ -2495,6 +2915,70 @@ final class M3FXDemoVisualSmokeTest {
                 () -> "Nested popup stack has unsafe placement: ownerBounds=" + ownerBounds
                         + ", childBounds=" + childBounds + ", horizontalOverlap=" + horizontalOverlap
                         + ", verticalOverlap=" + verticalOverlap);
+    }
+
+    /// Verifies that a snackbar occupies its compact message surface instead of the whole overlay.
+    private static void assertSnackbarStaysCompact(Scene scene, M3Snackbar snackbar) {
+        Bounds bounds = snackbar.localToScene(snackbar.getBoundsInLocal());
+        assertTrue(bounds.getWidth() >= 160.0 && bounds.getWidth() <= scene.getWidth() * 0.75,
+                () -> "Snackbar width is not compact: bounds=" + bounds + ", sceneWidth=" + scene.getWidth());
+        assertTrue(bounds.getHeight() >= 40.0 && bounds.getHeight() <= 96.0,
+                () -> "Snackbar height is not compact: bounds=" + bounds);
+    }
+
+    /// Verifies that a tooltip popup appears near its owner and stays at tooltip scale.
+    private static void assertTooltipNearOwner(Node owner, Node popupRoot) {
+        @Nullable Bounds ownerBounds = owner.localToScreen(owner.getBoundsInLocal());
+        @Nullable Bounds popupBounds = popupRoot.localToScreen(popupRoot.getBoundsInLocal());
+        assertNotNull(ownerBounds, "tooltip owner screen bounds");
+        assertNotNull(popupBounds, "tooltip popup screen bounds");
+        assertTrue(popupBounds.getMinY() >= ownerBounds.getMaxY() - 2.0,
+                () -> "Tooltip popup is not below its owner: ownerBounds=" + ownerBounds
+                        + ", popupBounds=" + popupBounds);
+        assertTrue(popupBounds.getWidth() <= 420.0 && popupBounds.getHeight() <= 220.0,
+                () -> "Tooltip popup is not compact: popupBounds=" + popupBounds);
+    }
+
+    /// Verifies that a rich tooltip action button is fully contained by the popup root.
+    private static void assertRichTooltipActionInsidePopup(Node popupRoot) {
+        M3Button action = Objects.requireNonNull(firstVisibleButtonWithText(popupRoot, "Open"), "rich tooltip action");
+        Bounds popupBounds = popupRoot.localToScene(popupRoot.getBoundsInLocal());
+        Bounds actionBounds = action.localToScene(action.getBoundsInLocal());
+        assertTrue(containsBoundsWithTolerance(popupBounds, actionBounds, CONTROL_EDGE_TOLERANCE),
+                () -> "Rich tooltip action is clipped: popupBounds=" + popupBounds
+                        + ", actionBounds=" + actionBounds);
+        assertTrue(popupBounds.getMaxY() - actionBounds.getMaxY() >= 4.0,
+                () -> "Rich tooltip action has no safe bottom padding: popupBounds=" + popupBounds
+                        + ", actionBounds=" + actionBounds);
+    }
+
+    /// Verifies that a dialog pane remains a compact dialog surface.
+    private static void assertDialogPaneStaysCompact(Scene ownerScene, Node dialogPane) {
+        Bounds bounds = dialogPane.getBoundsInLocal();
+        assertTrue(bounds.getWidth() >= 280.0 && bounds.getWidth() <= ownerScene.getWidth() * 0.70,
+                () -> "Dialog pane width is not compact: bounds=" + bounds
+                        + ", ownerWidth=" + ownerScene.getWidth());
+        assertTrue(bounds.getHeight() >= 120.0 && bounds.getHeight() <= ownerScene.getHeight() * 0.70,
+                () -> "Dialog pane height is not compact: bounds=" + bounds
+                        + ", ownerHeight=" + ownerScene.getHeight());
+    }
+
+    /// Verifies that expanded FAB menu action items remain within the owning demo showcase surface.
+    private static void assertFabMenuActionsStayInsideShowcase(M3FabMenu menu) {
+        Node showcase = Objects.requireNonNull(
+                nearestAncestorWithStyle(menu, "demo-flow"),
+                "FAB menu showcase flow"
+        );
+        Bounds showcaseBounds = showcase.localToScene(showcase.getBoundsInLocal());
+        for (Node item : menu.getItems()) {
+            if (!item.isVisible() || !hasRenderableBounds(item)) {
+                continue;
+            }
+            Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
+            assertTrue(containsBoundsWithTolerance(showcaseBounds, itemBounds, CONTROL_EDGE_TOLERANCE),
+                    () -> "FAB menu action item escaped its showcase: showcaseBounds=" + showcaseBounds
+                            + ", itemBounds=" + itemBounds);
+        }
     }
 
     /// Verifies that an interaction visibly changes the snapshot region occupied by a node.
@@ -2654,6 +3138,18 @@ final class M3FXDemoVisualSmokeTest {
     private static boolean touchesVerticalViewportEdge(Bounds inner, Bounds viewport, double tolerance) {
         return inner.getMinY() < viewport.getMinY() + tolerance
                 || inner.getMaxY() > viewport.getMaxY() - tolerance;
+    }
+
+    /// Returns the nearest ancestor with the requested style class.
+    private static @Nullable Node nearestAncestorWithStyle(Node node, String styleClass) {
+        @Nullable Parent parent = node.getParent();
+        while (parent != null) {
+            if (parent.getStyleClass().contains(styleClass)) {
+                return parent;
+            }
+            parent = parent.getParent();
+        }
+        return null;
     }
 
     /// Visits visible descendants in a rendered hierarchy.

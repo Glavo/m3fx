@@ -23,6 +23,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
@@ -539,6 +540,7 @@ public class M3FabMenu extends Control {
             item.setVisible(true);
             item.setManaged(true);
         }
+        requestMenuLayout();
     }
 
     /// Applies the final expanded item state.
@@ -559,6 +561,7 @@ public class M3FabMenu extends Control {
         for (Node item : getItems()) {
             prepareCollapsedAction(item);
         }
+        requestMenuLayout();
     }
 
     /// Adds style classes and current visibility to an action item.
@@ -575,6 +578,17 @@ public class M3FabMenu extends Control {
             item.setTranslateY(0.0);
         } else {
             prepareCollapsedAction(item);
+        }
+        requestMenuLayout();
+    }
+
+    /// Requests this menu and its layout parent to recompute bounds after action visibility changes.
+    private void requestMenuLayout() {
+        actions.requestLayout();
+        requestLayout();
+        @Nullable Parent parent = getParent();
+        if (parent != null) {
+            parent.requestLayout();
         }
     }
 
