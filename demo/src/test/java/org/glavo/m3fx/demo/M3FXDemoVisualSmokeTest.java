@@ -23,7 +23,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.animation.M3MotionEasing;
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
@@ -330,8 +333,10 @@ final class M3FXDemoVisualSmokeTest {
             verifyButtonRippleReleaseAnimation(appReference, sceneReference);
             verifyTextFieldFocusFeedback(appReference, sceneReference);
             verifySidebarMouseFeedback(appReference, sceneReference);
+            verifySidebarRippleReleaseAnimation(appReference, sceneReference);
             verifyIconToggleButtonMouseFeedback(appReference, sceneReference);
             verifyIconToggleButtonRippleReleaseAnimation(appReference, sceneReference);
+            verifySwitchSelectionAnimation(appReference, sceneReference);
             verifyDisabledAnimationInteractionFeedback(appReference, sceneReference);
         } finally {
             runOnFxThread(() -> {
@@ -586,6 +591,21 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
+    /// Verifies that sidebar navigation item ripple release remains visible for an intermediate fade-out frame.
+    private static void verifySidebarRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Buttons",
+                "sidebar-ripple",
+                "sidebar item",
+                root -> firstVisibleNodeWithStyle(root, "demo-sidebar-child-item")
+        );
+    }
+
     /// Verifies that a target's ripple release includes a visible intermediate fade-out frame.
     private static void verifyRippleReleaseAnimation(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -671,6 +691,89 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(releaseReference.get(), "released ripple target snapshot"),
                 Objects.requireNonNull(settledReference.get(), "settled ripple target snapshot"),
                 targetName + " ripple release fade-out"
+        );
+    }
+
+    /// Verifies that switch selection produces visible thumb animation intermediate frames.
+    private static void verifySwitchSelectionAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3Switch> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> intermediateReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Switches");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3Switch target = Objects.requireNonNull(firstVisibleSwitchWithText(
+                    scene.getRoot(),
+                    "Off"
+            ), "switch");
+            M3MotionSettings.setMotionScheme(target, visualSwitchMotionScheme());
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal switch snapshot"),
+                    "switch-selection",
+                    "normal"
+            );
+            target.fire();
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            assertTrue(target.isSelected());
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            intermediateReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(intermediateReference.get(), "intermediate switch snapshot"),
+                    "switch-selection",
+                    "intermediate"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            settledReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(settledReference.get(), "settled switch snapshot"),
+                    "switch-selection",
+                    "settled"
+            );
+            M3MotionSettings.clearMotionScheme(Objects.requireNonNull(targetReference.get(), "switch"));
+        });
+
+        M3Switch target = Objects.requireNonNull(targetReference.get(), "switch");
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal switch snapshot"),
+                Objects.requireNonNull(intermediateReference.get(), "intermediate switch snapshot"),
+                "switch selection intermediate frame"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(intermediateReference.get(), "intermediate switch snapshot"),
+                Objects.requireNonNull(settledReference.get(), "settled switch snapshot"),
+                "switch selection settling frame"
+        );
+    }
+
+    /// Returns a switch-specific motion scheme that makes real visual intermediate frames observable.
+    private static M3MotionScheme visualSwitchMotionScheme() {
+        M3MotionScheme standard = M3MotionScheme.standard();
+        return M3MotionScheme.create(
+                standard.fastEffects(),
+                standard.defaultEffects(),
+                standard.slowEffects(),
+                M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR),
+                standard.defaultSpatial(),
+                standard.slowSpatial()
         );
     }
 
@@ -1243,6 +1346,25 @@ final class M3FXDemoVisualSmokeTest {
         if (root instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 @Nullable M3Button result = firstVisibleButtonWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible M3 switch with the requested text.
+    private static @Nullable M3Switch firstVisibleSwitchWithText(Node root, String text) {
+        if (root instanceof M3Switch switchControl
+                && switchControl.isVisible()
+                && text.equals(switchControl.getText())
+                && hasRenderableBounds(switchControl)) {
+            return switchControl;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3Switch result = firstVisibleSwitchWithText(child, text);
                 if (result != null) {
                     return result;
                 }
