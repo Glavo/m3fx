@@ -29,13 +29,16 @@ import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3DatePicker;
+import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
+import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
+import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
@@ -67,6 +70,7 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Visual smoke tests for the demo application's real JavaFX window hierarchy.
@@ -338,6 +342,38 @@ final class M3FXDemoVisualSmokeTest {
             verifyIconToggleButtonRippleReleaseAnimation(appReference, sceneReference);
             verifySwitchSelectionAnimation(appReference, sceneReference);
             verifyDisabledAnimationInteractionFeedback(appReference, sceneReference);
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that popup-backed demo controls expose visible enter and exit motion frames.
+    @Test
+    void popupDemoAnimationsProduceDistinctFrames() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            verifySplitButtonPopupAnimation(appReference, sceneReference);
+            verifyDatePickerFieldPopupAnimation(appReference, sceneReference);
         } finally {
             runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -777,6 +813,200 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
+    /// Verifies popup enter and exit motion on the demo split button menu.
+    private static void verifySplitButtonPopupAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3SplitButton> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> popupRootReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> openingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Split Buttons");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3SplitButton target = Objects.requireNonNull(firstVisibleSplitButtonWithText(
+                    scene.getRoot(),
+                    "Create"
+            ), "split button");
+            M3MotionSettings.setMotionScheme(target, visualPopupMotionScheme());
+            target.showMenu();
+            assertTrue(target.isShowing());
+
+            Node popupRoot = target.getMenu();
+            layoutPopupRoot(popupRoot);
+            targetReference.set(target);
+            popupRootReference.set(popupRoot);
+        }, () -> {
+            Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "split button popup");
+            layoutPopupRoot(popupRoot);
+            openingReference.set(snapshotNode(popupRoot));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(openingReference.get(), "opening split button popup snapshot"),
+                    "split-button-popup",
+                    "opening"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            M3SplitButton target = Objects.requireNonNull(targetReference.get(), "split button");
+            assertTrue(target.isShowing());
+            Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "split button popup");
+            layoutPopupRoot(popupRoot);
+            settledReference.set(snapshotNode(popupRoot));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(settledReference.get(), "settled split button popup snapshot"),
+                    "split-button-popup",
+                    "settled"
+            );
+            assertSnapshotHasVisibleContent(
+                    Objects.requireNonNull(settledReference.get(), "settled split button popup snapshot"),
+                    "split button popup"
+            );
+            target.hideMenu();
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        }, () -> {
+            Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "split button popup");
+            layoutPopupRoot(popupRoot);
+            hidingReference.set(snapshotNode(popupRoot));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(hidingReference.get(), "hiding split button popup snapshot"),
+                    "split-button-popup",
+                    "hiding"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        }, () -> {
+            M3SplitButton target = Objects.requireNonNull(targetReference.get(), "split button");
+            assertFalse(target.isShowing());
+            M3MotionSettings.clearMotionScheme(target);
+        });
+
+        assertSnapshotChanged(
+                Objects.requireNonNull(openingReference.get(), "opening split button popup snapshot"),
+                Objects.requireNonNull(settledReference.get(), "settled split button popup snapshot"),
+                "split button popup enter motion"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(settledReference.get(), "settled split button popup snapshot"),
+                Objects.requireNonNull(hidingReference.get(), "hiding split button popup snapshot"),
+                "split button popup exit motion"
+        );
+    }
+
+    /// Verifies popup enter and exit motion on the demo date picker field.
+    private static void verifyDatePickerFieldPopupAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3DatePickerField> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> popupRootReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> openingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Date Pickers");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3DatePickerField target = Objects.requireNonNull(firstVisibleDatePickerField(
+                    scene.getRoot()
+            ), "date picker field");
+            M3MotionSettings.setMotionScheme(target, visualPopupMotionScheme());
+            target.showPicker();
+            assertTrue(target.isShowing());
+
+            Node popupRoot = Objects.requireNonNull(pickerPopupRoot(target), "date picker field popup");
+            layoutPopupRoot(popupRoot);
+            targetReference.set(target);
+            popupRootReference.set(popupRoot);
+        }, () -> {
+            Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "date picker field popup");
+            layoutPopupRoot(popupRoot);
+            openingReference.set(snapshotNode(popupRoot));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(openingReference.get(), "opening date picker popup snapshot"),
+                    "date-picker-field-popup",
+                    "opening"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        }, () -> {
+            M3DatePickerField target = Objects.requireNonNull(targetReference.get(), "date picker field");
+            assertTrue(target.isShowing());
+            Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "date picker field popup");
+            layoutPopupRoot(popupRoot);
+            settledReference.set(snapshotNode(popupRoot));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(settledReference.get(), "settled date picker popup snapshot"),
+                    "date-picker-field-popup",
+                    "settled"
+            );
+            assertSnapshotHasVisibleContent(
+                    Objects.requireNonNull(settledReference.get(), "settled date picker popup snapshot"),
+                    "date picker field popup"
+            );
+            target.hidePicker();
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        }, () -> {
+            Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "date picker field popup");
+            layoutPopupRoot(popupRoot);
+            hidingReference.set(snapshotNode(popupRoot));
+            writeAnimationSnapshot(
+                    Objects.requireNonNull(hidingReference.get(), "hiding date picker popup snapshot"),
+                    "date-picker-field-popup",
+                    "hiding"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        }, () -> {
+            M3DatePickerField target = Objects.requireNonNull(targetReference.get(), "date picker field");
+            assertFalse(target.isShowing());
+            M3MotionSettings.clearMotionScheme(target);
+        });
+
+        assertSnapshotChanged(
+                Objects.requireNonNull(openingReference.get(), "opening date picker popup snapshot"),
+                Objects.requireNonNull(settledReference.get(), "settled date picker popup snapshot"),
+                "date picker field popup enter motion"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(settledReference.get(), "settled date picker popup snapshot"),
+                Objects.requireNonNull(hidingReference.get(), "hiding date picker popup snapshot"),
+                "date picker field popup exit motion"
+        );
+    }
+
+    /// Returns a popup-specific motion scheme that makes real visual intermediate frames observable.
+    private static M3MotionScheme visualPopupMotionScheme() {
+        M3MotionScheme standard = M3MotionScheme.standard();
+        return M3MotionScheme.create(
+                standard.fastEffects(),
+                standard.defaultEffects(),
+                standard.slowEffects(),
+                M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR),
+                standard.defaultSpatial(),
+                standard.slowSpatial()
+        );
+    }
+
     /// Verifies focus feedback on a populated text field in the demo page.
     private static void verifyTextFieldFocusFeedback(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -1033,6 +1263,16 @@ final class M3FXDemoVisualSmokeTest {
         int height = Math.max(1, (int) Math.ceil(scene.getHeight()));
         WritableImage image = new WritableImage(width, height);
         scene.getRoot().snapshot(null, image);
+        return image;
+    }
+
+    /// Captures one standalone node as a writable image.
+    private static WritableImage snapshotNode(Node node) {
+        Bounds bounds = node.getLayoutBounds();
+        int width = Math.max(1, (int) Math.ceil(bounds.getWidth()));
+        int height = Math.max(1, (int) Math.ceil(bounds.getHeight()));
+        WritableImage image = new WritableImage(width, height);
+        node.snapshot(null, image);
         return image;
     }
 
@@ -1297,8 +1537,10 @@ final class M3FXDemoVisualSmokeTest {
                 || node instanceof M3IconButton
                 || node instanceof M3IconToggleButton
                 || node instanceof M3LoadingIndicator
+                || node instanceof M3PickerField<?, ?>
                 || node instanceof M3RadioButton
                 || node instanceof M3SegmentedButton
+                || node instanceof M3SplitButton
                 || node instanceof M3Switch
                 || node instanceof M3TextField
                 || node instanceof M3TextInputLayout;
@@ -1373,6 +1615,61 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
+    /// Returns the first visible M3 split button with the requested text.
+    private static @Nullable M3SplitButton firstVisibleSplitButtonWithText(Node root, String text) {
+        if (root instanceof M3SplitButton splitButton
+                && splitButton.isVisible()
+                && text.equals(splitButton.getText())
+                && hasRenderableBounds(splitButton)) {
+            return splitButton;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3SplitButton result = firstVisibleSplitButtonWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible M3 date picker field.
+    private static @Nullable M3DatePickerField firstVisibleDatePickerField(Node root) {
+        if (root instanceof M3DatePickerField field && field.isVisible() && hasRenderableBounds(field)) {
+            return field;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3DatePickerField result = firstVisibleDatePickerField(child);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the popup root that hosts a picker field's popup picker.
+    private static @Nullable Node pickerPopupRoot(M3DatePickerField field) {
+        @Nullable Parent parent = field.getPicker().getParent();
+        while (parent != null) {
+            if (parent.getStyleClass().contains(M3PickerField.POPUP_STYLE_CLASS)) {
+                return parent;
+            }
+            parent = parent.getParent();
+        }
+        return null;
+    }
+
+    /// Applies CSS and layout to a popup root before capturing it.
+    private static void layoutPopupRoot(Node popupRoot) {
+        popupRoot.applyCss();
+        if (popupRoot instanceof Parent parent) {
+            parent.layout();
+        }
+    }
+
     /// Verifies that an interaction visibly changes the snapshot region occupied by a node.
     private static void assertNodeAreaChanged(Node node, WritableImage before, WritableImage after, String description) {
         Bounds bounds = node.localToScene(node.getBoundsInLocal());
@@ -1394,6 +1691,28 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(finalChangedPixels >= minimumChangedPixels,
                 () -> description + " produced too little visual change: changed="
                         + finalChangedPixels + ", minimum=" + minimumChangedPixels + ", bounds=" + bounds);
+    }
+
+    /// Verifies that two standalone snapshots differ by more than antialiasing noise.
+    private static void assertSnapshotChanged(WritableImage before, WritableImage after, String description) {
+        int width = (int) Math.min(before.getWidth(), after.getWidth());
+        int height = (int) Math.min(before.getHeight(), after.getHeight());
+        int changedPixels = 0;
+        int totalPixels = Math.max(1, width * height);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (pixelDistance(before.getPixelReader().getColor(x, y), after.getPixelReader().getColor(x, y)) > 0.02) {
+                    changedPixels++;
+                }
+            }
+        }
+        int minimumChangedPixels = Math.max(8, totalPixels / 250);
+        int finalChangedPixels = changedPixels;
+        assertTrue(finalChangedPixels >= minimumChangedPixels,
+                () -> description + " produced too little visual change: changed="
+                        + finalChangedPixels + ", minimum=" + minimumChangedPixels
+                        + ", before=" + before.getWidth() + "x" + before.getHeight()
+                        + ", after=" + after.getWidth() + "x" + after.getHeight());
     }
 
     /// Writes a named interaction-state visual snapshot to the build report directory.
@@ -1563,6 +1882,11 @@ final class M3FXDemoVisualSmokeTest {
         return Math.abs(first.getRed() - second.getRed())
                 + Math.abs(first.getGreen() - second.getGreen())
                 + Math.abs(first.getBlue() - second.getBlue());
+    }
+
+    /// Returns an RGBA distance between two pixels.
+    private static double pixelDistance(Color first, Color second) {
+        return colorDistance(first, second) + Math.abs(first.getOpacity() - second.getOpacity());
     }
 
     /// Runs a task on the JavaFX application thread and propagates failures.
