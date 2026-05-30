@@ -5404,6 +5404,48 @@ final class M3ControlStyleTest {
         }
     }
 
+    /// Verifies that accessible popup collapse actions restore focus to the owning popup control.
+    @Test
+    void popupAccessibleCollapseRestoresOwnerFocus() {
+        runOnFxThread(() -> {
+            M3MenuItem pdf = new M3MenuItem("PDF");
+            M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
+            M3MenuButton menuButton = new M3MenuButton("More", export);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setAnimationsEnabled(menuButton, false);
+                M3MotionSettings.setAnimationsEnabled(export, false);
+                Pane root = new Pane(menuButton);
+                stage.setScene(new Scene(root, 280.0, 160.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                menuButton.showMenu();
+                assertTrue(export.showSubMenuAndFocusFirstItem());
+                assertTrue(pdf.isFocused());
+
+                export.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertTrue(menuButton.isShowing());
+                assertFalse(export.isSubMenuShowing());
+                assertTrue(export.isFocused());
+                assertEquals(export, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menuButton.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertEquals(menuButton, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(menuButton);
+                M3MotionSettings.clearAnimationsEnabled(export);
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that submenu actions close the owning popup menu and return focus to the menu button.
     @Test
     void subMenuActionClosesMenuButtonPopup() throws InterruptedException {

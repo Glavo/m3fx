@@ -95,6 +95,9 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Whether an action from the submenu is being forwarded to this item's parent menu.
     private boolean forwardingSubMenuAction = false;
 
+    /// Whether focus should return to this item after the submenu popup hides.
+    private boolean focusOwnerOnHidden = false;
+
     /// Whether the pointer is currently over this menu item.
     private boolean pointerInsideOwner = false;
 
@@ -228,10 +231,20 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Hides the submenu popup.
     public final void hideSubMenu() {
+        hideSubMenu(false);
+    }
+
+    /// Hides the submenu popup and optionally returns focus to this item.
+    private void hideSubMenu(boolean focusOwner) {
         hoverOpenDelay.stop();
         hoverCloseDelay.stop();
         subMenu.hideSubMenusExcept(null);
+        focusOwnerOnHidden = focusOwner;
         if (!popup.isShowing()) {
+            if (focusOwner) {
+                requestFocus();
+            }
+            focusOwnerOnHidden = false;
             return;
         }
 
@@ -280,7 +293,7 @@ public class M3SubMenuItem extends M3MenuItem {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case SHOW_MENU, EXPAND -> showSubMenu();
-            case COLLAPSE -> hideSubMenu();
+            case COLLAPSE -> hideSubMenu(true);
             case REQUEST_FOCUS -> focusAccessibleNode();
             case SET_SELECTED_ITEMS -> subMenu.executeAccessibleAction(action, parameters);
             case SHOW_ITEM -> {
@@ -335,6 +348,10 @@ public class M3SubMenuItem extends M3MenuItem {
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             popupFocusNotifier.refresh();
             resetSubMenuAnimationState();
+            if (focusOwnerOnHidden) {
+                focusOwnerOnHidden = false;
+                requestFocus();
+            }
         });
         addEventFilter(ActionEvent.ACTION, this::handleOwnActionEvent);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
@@ -432,8 +449,7 @@ public class M3SubMenuItem extends M3MenuItem {
             }
         } else if (code == KeyCode.ESCAPE || isCloseSubMenuKey(code)) {
             if (popup.isShowing()) {
-                hideSubMenu();
-                requestFocus();
+                hideSubMenu(true);
                 event.consume();
             }
         }
@@ -444,8 +460,7 @@ public class M3SubMenuItem extends M3MenuItem {
         KeyCode code = event.getCode();
         if (code == KeyCode.ESCAPE || isCloseSubMenuKey(code)) {
             if (popup.isShowing()) {
-                hideSubMenu();
-                requestFocus();
+                hideSubMenu(true);
                 event.consume();
             }
         }
