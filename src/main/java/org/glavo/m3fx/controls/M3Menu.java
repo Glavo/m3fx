@@ -232,6 +232,20 @@ public class M3Menu extends Control {
         return focusMenuItem(lastItem);
     }
 
+    /// Focuses the current, selected, or first enabled visible menu item.
+    final boolean focusDefaultItem() {
+        @Nullable Node focusNode = focusedAccessibleNode();
+        if (focusNode != null) {
+            M3Accessible.showItem(focusNode);
+            notifyFocusNodeChanged();
+            return true;
+        }
+
+        @Nullable M3MenuItem item =
+                M3SelectionNavigation.focusTarget(getItems(), getSelectedItem(), M3MenuItem.class);
+        return item != null && focusMenuItem(item);
+    }
+
     /// Returns the menu selection mode.
     ///
     /// @return the active menu selection mode
@@ -408,7 +422,7 @@ public class M3Menu extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> {
-                if (!focusFirstItem()) {
+                if (!focusDefaultItem()) {
                     requestFocus();
                 }
             }
@@ -617,6 +631,10 @@ public class M3Menu extends Control {
 
     /// Focuses the item supplied by an accessibility action parameter.
     private void focusAccessibleItem(Object... parameters) {
+        if (parameters.length == 0 && focusDefaultItem()) {
+            return;
+        }
+
         @Nullable Node item = M3Accessible.actionItem(getItems(), parameters);
         if (item instanceof M3MenuItem menuItem && focusMenuItem(menuItem)) {
             return;

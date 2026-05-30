@@ -5054,6 +5054,65 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that popup menus prefer selected items for default accessibility focus requests.
+    @Test
+    void popupMenusPreferSelectedAccessibleFocusTargets() {
+        runOnFxThread(() -> {
+            M3MenuItem menuOpen = new M3MenuItem("Open");
+            M3MenuItem menuSave = new M3MenuItem("Save");
+            M3Menu menu = new M3Menu(menuOpen, menuSave);
+            menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+            menu.select(menuSave);
+
+            M3MenuItem buttonOpen = new M3MenuItem("Button open");
+            M3MenuItem buttonSave = new M3MenuItem("Button save");
+            M3MenuButton menuButton = new M3MenuButton("More", buttonOpen, buttonSave);
+            menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
+            menuButton.select(buttonSave);
+
+            M3MenuItem pdf = new M3MenuItem("PDF");
+            M3MenuItem html = new M3MenuItem("HTML");
+            M3SubMenuItem export = new M3SubMenuItem("Export", pdf, html);
+            export.getSubMenu().setSelectionMode(M3MenuSelectionMode.SINGLE);
+            export.getSubMenu().select(html);
+
+            M3Button outsideFocus = new M3Button("Outside");
+            Stage stage = new Stage();
+            try {
+                VBox root = new VBox(outsideFocus, menu, menuButton, export);
+                stage.setScene(new Scene(root, 360.0, 260.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                outsideFocus.requestFocus();
+                menu.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(menuSave.isFocused());
+                assertSame(menuSave, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                outsideFocus.requestFocus();
+                menu.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(menuSave.isFocused());
+
+                outsideFocus.requestFocus();
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(menuButton.isShowing());
+                assertTrue(buttonSave.isFocused());
+                assertSame(buttonSave, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                outsideFocus.requestFocus();
+                export.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(export.isSubMenuShowing());
+                assertTrue(html.isFocused());
+                assertSame(html, export.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                menuButton.hideMenu();
+                export.hideSubMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that accessibility item requests can open nested menu branches and focus descendants.
     @Test
     void popupMenusOpenNestedBranchesForAccessibleTargets() {
