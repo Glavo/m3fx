@@ -430,6 +430,7 @@ public class M3SplitButton extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyFocusNodeChanged();
         });
+        menuButton.addPopupFocusNodeListener(this::notifyFocusNodeChanged);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
         focusNotifier.start();

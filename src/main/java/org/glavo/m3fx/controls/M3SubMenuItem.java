@@ -32,6 +32,8 @@ import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 menu item that opens a nested menu.
@@ -81,7 +83,10 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Reports popup submenu focus changes through this item's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
-            new M3AccessibleFocusNotifier(this, subMenu, this::focusNode);
+            new M3AccessibleFocusNotifier(this, subMenu, this::focusNode, this::notifyFocusNodeChanged);
+
+    /// Notifies popup owners when this item's reported focus node changes.
+    private final List<Runnable> focusNodeListeners = new ArrayList<>();
 
     /// The pointer-hover open delay.
     private final PauseTransition hoverOpenDelay = new PauseTransition();
@@ -224,14 +229,30 @@ public class M3SubMenuItem extends M3MenuItem {
         popup.show(this, placement.x(), placement.y());
         subMenuShowing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-        popupFocusNotifier.refresh();
+        notifyFocusNodeChanged();
         playShowAnimation();
     }
 
     /// Hides the submenu popup.
     public final void hideSubMenu() {
         hideSubMenu(false);
+    }
+
+    /// Adds a listener that runs when this submenu item's accessible focus node changes.
+    ///
+    /// @param listener the listener to add
+    final void addAccessibleFocusNodeListener(Runnable listener) {
+        Objects.requireNonNull(listener, "listener");
+        if (!focusNodeListeners.contains(listener)) {
+            focusNodeListeners.add(listener);
+        }
+    }
+
+    /// Removes an accessible focus-node listener.
+    ///
+    /// @param listener the listener to remove
+    final void removeAccessibleFocusNodeListener(Runnable listener) {
+        focusNodeListeners.remove(Objects.requireNonNull(listener, "listener"));
     }
 
     /// Hides the submenu popup and optionally returns focus to this item.
@@ -299,7 +320,7 @@ public class M3SubMenuItem extends M3MenuItem {
             case SHOW_ITEM -> {
                 showSubMenu();
                 subMenu.executeAccessibleAction(action, parameters);
-                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                notifyFocusNodeChanged();
             }
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -345,8 +366,7 @@ public class M3SubMenuItem extends M3MenuItem {
             pointerInsideSubMenu = false;
             subMenuShowing.set(false);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-            popupFocusNotifier.refresh();
+            notifyFocusNodeChanged();
             resetSubMenuAnimationState();
             if (focusOwnerOnHidden) {
                 focusOwnerOnHidden = false;
@@ -361,6 +381,7 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.addEventHandler(ActionEvent.ACTION, this::handleSubMenuAction);
         subMenu.addEventHandler(MouseEvent.MOUSE_ENTERED, this::handleSubMenuMouseEntered);
         subMenu.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleSubMenuMouseExited);
+        subMenu.addAccessibleFocusNodeListener(this::notifyFocusNodeChanged);
         popupFocusNotifier.start();
     }
 
@@ -377,16 +398,14 @@ public class M3SubMenuItem extends M3MenuItem {
     private void focusAccessibleNode() {
         if (!isSubMenuShowing()) {
             requestFocus();
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-            popupFocusNotifier.refresh();
+            notifyFocusNodeChanged();
             return;
         }
 
         @Nullable Object focusNode = subMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         if (focusNode instanceof Node node && node != this) {
             M3Accessible.showItem(node);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-            popupFocusNotifier.refresh();
+            notifyFocusNodeChanged();
             return;
         }
 
@@ -395,8 +414,7 @@ public class M3SubMenuItem extends M3MenuItem {
         if (!(nextFocusNode instanceof Node node) || node == this) {
             requestFocus();
         }
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-        popupFocusNotifier.refresh();
+        notifyFocusNodeChanged();
     }
 
     /// Handles this item's own action event by opening the submenu.
@@ -491,9 +509,17 @@ public class M3SubMenuItem extends M3MenuItem {
         }
 
         subMenu.focusFirstItem();
+        notifyFocusNodeChanged();
+        return true;
+    }
+
+    /// Notifies clients and popup owners that the current accessible focus node changed.
+    private void notifyFocusNodeChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         popupFocusNotifier.refresh();
-        return true;
+        for (Runnable listener : List.copyOf(focusNodeListeners)) {
+            listener.run();
+        }
     }
 
     /// Applies initial visual state before the submenu is shown.

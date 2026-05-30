@@ -5053,6 +5053,96 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that nested popup focus changes propagate through menu and split-button owners.
+    @Test
+    void nestedPopupMenuFocusPropagatesThroughOwners() {
+        runOnFxThread(() -> {
+            M3MenuItem pdf = new M3MenuItem("PDF");
+            M3MenuItem html = new M3MenuItem("HTML");
+            M3SubMenuItem recent = new M3SubMenuItem("Recent", pdf, html);
+            M3SubMenuItem export = new M3SubMenuItem("Export", recent);
+            M3MenuButton menuButton = new M3MenuButton("More", export);
+
+            M3MenuItem splitPdf = new M3MenuItem("PDF");
+            M3MenuItem splitHtml = new M3MenuItem("HTML");
+            M3SubMenuItem splitRecent = new M3SubMenuItem("Recent", splitPdf, splitHtml);
+            M3SubMenuItem splitExport = new M3SubMenuItem("Export", splitRecent);
+            M3SplitButton splitButton = new M3SplitButton("Create", splitExport);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setAnimationsEnabled(menuButton, false);
+                M3MotionSettings.setAnimationsEnabled(export, false);
+                M3MotionSettings.setAnimationsEnabled(recent, false);
+                M3MotionSettings.setAnimationsEnabled(splitButton, false);
+                M3MotionSettings.setAnimationsEnabled(splitExport, false);
+                M3MotionSettings.setAnimationsEnabled(splitRecent, false);
+
+                Pane root = new Pane(menuButton, splitButton);
+                stage.setScene(new Scene(root, 360.0, 220.0));
+                stage.show();
+                root.applyCss();
+                menuButton.resizeRelocate(24.0, 24.0, 120.0, 40.0);
+                splitButton.resizeRelocate(24.0, 96.0, 160.0, 40.0);
+                root.layout();
+
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, html);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(export.isSubMenuShowing());
+                assertTrue(recent.isSubMenuShowing());
+                assertTrue(html.isFocused());
+                assertSame(html, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                pdf.requestFocus();
+
+                assertTrue(pdf.isFocused());
+                assertSame(pdf, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                recent.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertTrue(export.isSubMenuShowing());
+                assertFalse(recent.isSubMenuShowing());
+                assertTrue(recent.isFocused());
+                assertSame(recent, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                export.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(export.isSubMenuShowing());
+                assertTrue(export.isFocused());
+                assertSame(export, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menuButton.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, splitHtml);
+
+                assertTrue(splitButton.isShowing());
+                assertTrue(splitExport.isSubMenuShowing());
+                assertTrue(splitRecent.isSubMenuShowing());
+                assertTrue(splitHtml.isFocused());
+                assertSame(splitHtml, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                splitPdf.requestFocus();
+
+                assertTrue(splitPdf.isFocused());
+                assertSame(splitPdf, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(menuButton);
+                M3MotionSettings.clearAnimationsEnabled(export);
+                M3MotionSettings.clearAnimationsEnabled(recent);
+                M3MotionSettings.clearAnimationsEnabled(splitButton);
+                M3MotionSettings.clearAnimationsEnabled(splitExport);
+                M3MotionSettings.clearAnimationsEnabled(splitRecent);
+                menuButton.hideMenu();
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that popup menu branches inherit theme color lookups without CSS conversion warnings.
     @Test
     void popupMenuBranchesResolveThemeColorLookups() {

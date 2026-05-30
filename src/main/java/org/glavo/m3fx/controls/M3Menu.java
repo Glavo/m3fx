@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +96,9 @@ public class M3Menu extends Control {
     /// The action listeners installed on menu items.
     private final Map<M3MenuItem, EventHandler<ActionEvent>> actionListeners = new HashMap<>();
 
+    /// The focus listeners installed on submenu items.
+    private final Map<M3SubMenuItem, Runnable> subMenuFocusListeners = new HashMap<>();
+
     /// The current printable-key prefix used for menu type-ahead focus navigation.
     private final StringBuilder typeAheadBuffer = new StringBuilder();
 
@@ -103,7 +107,10 @@ public class M3Menu extends Control {
 
     /// Reports focused menu-item changes to accessibility clients.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, this::focusedAccessibleNode);
+            new M3AccessibleFocusNotifier(this, this::focusedAccessibleNode, this::notifyFocusNodeChanged);
+
+    /// Notifies popup owners when this menu's reported focus node changes.
+    private final List<Runnable> focusNodeListeners = new ArrayList<>();
 
     /// Updates item listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -127,8 +134,7 @@ public class M3Menu extends Control {
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-        focusNotifier.refresh();
+        notifyFocusNodeChanged();
     };
 
     /// Whether the menu is currently synchronizing selected states.
@@ -189,6 +195,23 @@ public class M3Menu extends Control {
                 subMenuItem.hideSubMenu();
             }
         }
+    }
+
+    /// Adds a listener that runs when this menu's accessible focus node changes.
+    ///
+    /// @param listener the listener to add
+    final void addAccessibleFocusNodeListener(Runnable listener) {
+        Objects.requireNonNull(listener, "listener");
+        if (!focusNodeListeners.contains(listener)) {
+            focusNodeListeners.add(listener);
+        }
+    }
+
+    /// Removes an accessible focus-node listener.
+    ///
+    /// @param listener the listener to remove
+    final void removeAccessibleFocusNodeListener(Runnable listener) {
+        focusNodeListeners.remove(Objects.requireNonNull(listener, "listener"));
     }
 
     /// Focuses the first enabled visible menu item when one exists.
@@ -556,8 +579,7 @@ public class M3Menu extends Control {
         if (item.isFocusTraversable()) {
             item.requestFocus();
         }
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-        focusNotifier.refresh();
+        notifyFocusNodeChanged();
         return true;
     }
 
@@ -617,8 +639,7 @@ public class M3Menu extends Control {
                     && containsNestedAccessibleTarget(subMenuItem.getItems(), parameters)
                     && focusMenuItem(subMenuItem)) {
                 subMenuItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
-                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-                focusNotifier.refresh();
+                notifyFocusNodeChanged();
                 return true;
             }
         }
@@ -652,6 +673,9 @@ public class M3Menu extends Control {
         M3Accessible.setIndexOwner(item, getItems());
         if (item instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.setOwnerMenu(this);
+            Runnable focusListener = this::notifyFocusNodeChanged;
+            subMenuFocusListeners.put(subMenuItem, focusListener);
+            subMenuItem.addAccessibleFocusNodeListener(focusListener);
         }
         EventHandler<ActionEvent> actionHandler = event -> handleItemAction(item, event);
         actionListeners.put(item, actionHandler);
@@ -666,6 +690,10 @@ public class M3Menu extends Control {
     private void uninstallItem(M3MenuItem item) {
         M3Accessible.clearIndexOwner(item);
         if (item instanceof M3SubMenuItem subMenuItem) {
+            Runnable focusListener = subMenuFocusListeners.remove(subMenuItem);
+            if (focusListener != null) {
+                subMenuItem.removeAccessibleFocusNodeListener(focusListener);
+            }
             subMenuItem.setOwnerMenu(null);
         }
         EventHandler<ActionEvent> actionHandler = actionListeners.remove(item);
@@ -886,6 +914,15 @@ public class M3Menu extends Control {
         }
 
         return focusedOpenSubMenuNode(false);
+    }
+
+    /// Notifies clients and popup owners that the current accessible focus node changed.
+    private void notifyFocusNodeChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
+        for (Runnable listener : List.copyOf(focusNodeListeners)) {
+            listener.run();
+        }
     }
 
     /// Returns the focus node reported by an open submenu.
