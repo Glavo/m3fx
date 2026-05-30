@@ -60,6 +60,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -326,9 +327,11 @@ final class M3FXDemoVisualSmokeTest {
 
         try {
             verifyButtonMouseFeedback(appReference, sceneReference);
+            verifyButtonRippleReleaseAnimation(appReference, sceneReference);
             verifyTextFieldFocusFeedback(appReference, sceneReference);
             verifySidebarMouseFeedback(appReference, sceneReference);
             verifyIconToggleButtonMouseFeedback(appReference, sceneReference);
+            verifyIconToggleButtonRippleReleaseAnimation(appReference, sceneReference);
             verifyDisabledAnimationInteractionFeedback(appReference, sceneReference);
         } finally {
             runOnFxThread(() -> {
@@ -550,6 +553,124 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(hoverReference.get(), "hover button snapshot"),
                 Objects.requireNonNull(pressedReference.get(), "pressed button snapshot"),
                 "button pressed"
+        );
+    }
+
+    /// Verifies that button ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyButtonRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Buttons",
+                "button-ripple",
+                "button",
+                root -> firstVisibleButtonWithText(root, "Filled")
+        );
+    }
+
+    /// Verifies that toggle icon button ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyIconToggleButtonRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Icon Buttons",
+                "icon-toggle-button-ripple",
+                "toggle icon button",
+                root -> firstVisibleNodeWithStyle(root, M3IconToggleButton.STYLE_CLASS)
+        );
+    }
+
+    /// Verifies that a target's ripple release includes a visible intermediate fade-out frame.
+    private static void verifyRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference,
+            String pageTitle,
+            String snapshotName,
+            String targetName,
+            Function<Node, @Nullable Node> targetLookup
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> releaseReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting(pageTitle);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            Node target = Objects.requireNonNull(targetLookup.apply(scene.getRoot()), targetName);
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal ripple target snapshot"),
+                    snapshotName,
+                    "normal"
+            );
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            pressedReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed ripple target snapshot"),
+                    snapshotName,
+                    "pressed"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), targetName);
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(70.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            releaseReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(releaseReference.get(), "released ripple target snapshot"),
+                    snapshotName,
+                    "released"
+            );
+        });
+
+        runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            settledReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(settledReference.get(), "settled ripple target snapshot"),
+                    snapshotName,
+                    "settled"
+            );
+        });
+
+        Node target = Objects.requireNonNull(targetReference.get(), targetName);
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal ripple target snapshot"),
+                Objects.requireNonNull(pressedReference.get(), "pressed ripple target snapshot"),
+                targetName + " ripple pressed frame"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal ripple target snapshot"),
+                Objects.requireNonNull(releaseReference.get(), "released ripple target snapshot"),
+                targetName + " ripple release intermediate frame"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(releaseReference.get(), "released ripple target snapshot"),
+                Objects.requireNonNull(settledReference.get(), "settled ripple target snapshot"),
+                targetName + " ripple release fade-out"
         );
     }
 
