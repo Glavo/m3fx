@@ -6057,6 +6057,61 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that accessible modal sheet collapse restores focus and hides sheet focus targets.
+    @Test
+    void modalSheetsAccessibleCollapseRestoresFocusAndClearsFocusNode() {
+        runOnFxThread(() -> {
+            M3Button trigger = new M3Button("Open");
+            M3Button sideAction = new M3Button("Side action");
+            M3Button bottomAction = new M3Button("Bottom action");
+            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side"), sideAction);
+            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom"), bottomAction);
+            VBox root = new VBox(trigger, sideSheet, bottomSheet);
+            Stage stage = new Stage();
+            try {
+                sideSheet.setVariant(M3SheetVariant.MODAL);
+                bottomSheet.setVariant(M3SheetVariant.MODAL);
+                sideSheet.hide();
+                bottomSheet.hide();
+                M3MotionSettings.setAnimationsEnabled(root, false);
+                stage.setScene(new Scene(root, 480.0, 360.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertNull(sideSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertNull(bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                trigger.requestFocus();
+                sideSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, sideAction);
+                assertTrue(sideSheet.isShown());
+                assertTrue(sideAction.isFocused());
+                assertSame(sideAction, sideSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sideSheet.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(sideSheet.isShown());
+                assertTrue(trigger.isFocused());
+                assertNull(sideSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                trigger.requestFocus();
+                bottomSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, bottomAction);
+                assertTrue(bottomSheet.isShown());
+                assertTrue(bottomAction.isFocused());
+                assertSame(bottomAction, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                bottomSheet.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(bottomSheet.isShown());
+                assertTrue(trigger.isFocused());
+                assertNull(bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that sheets expose accessible state, content, and visibility actions.
     @Test
     void sheetsExposeAccessibleStateAndActions() {
@@ -6119,8 +6174,8 @@ final class M3ControlStyleTest {
                 stage.setScene(new Scene(new VBox(sideSheet, bottomSheet), 480.0, 360.0));
                 stage.show();
 
-                assertEquals(sideContent, sideSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertEquals(bottomContent, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertNull(sideSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertNull(bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 sideSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
                 assertTrue(sideSheet.isShown());
@@ -10840,6 +10895,48 @@ final class M3ControlStyleTest {
         group.executeAccessibleAction(AccessibleAction.EXPAND);
 
         assertTrue(group.isExpanded());
+    }
+
+    /// Verifies that navigation drawer groups route focus to visible rows and restore it after collapse.
+    @Test
+    void navigationDrawerGroupRoutesAccessibleFocusAcrossExpandedRows() {
+        runOnFxThread(() -> {
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+            M3ListItem commonButtons = new M3ListItem("Common buttons");
+            M3ListItem floatingActions = new M3ListItem("Floating actions");
+            group.addItems(commonButtons, floatingActions);
+            group.setExpanded(true);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(group);
+                stage.setScene(new Scene(root, 320.0, 240.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+                group.layout();
+
+                commonButtons.requestFocus();
+
+                assertTrue(commonButtons.isFocused());
+                assertSame(commonButtons, group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                group.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(group.isExpanded());
+                assertTrue(group.getHeaderItem().isFocused());
+                assertSame(group.getHeaderItem(), group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(1, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+                group.executeAccessibleAction(AccessibleAction.SHOW_ITEM, floatingActions);
+
+                assertTrue(group.isExpanded());
+                assertTrue(floatingActions.isFocused());
+                assertSame(floatingActions, group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertEquals(3, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that navigation drawer groups expose their skin and visible child structure.

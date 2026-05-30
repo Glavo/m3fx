@@ -84,6 +84,7 @@ public class M3SideSheet extends Control {
         protected void invalidated() {
             handleShownChanged(get());
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            notifyFocusNodeChanged();
         }
     };
 
@@ -285,7 +286,9 @@ public class M3SideSheet extends Control {
         return switch (attribute) {
             case CONTENTS -> getContent();
             case EXPANDED -> isShown();
-            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getContent(), getActions());
+            case FOCUS_NODE -> isShown()
+                    ? M3Accessible.currentOrFirstFocusTarget(this, getContent(), getActions())
+                    : null;
             case ITEM_COUNT -> M3Accessible.itemCount(getContent(), getActions());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), getActions(), parameters);
             case TEXT -> getHeadline();
@@ -302,10 +305,11 @@ public class M3SideSheet extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case EXPAND -> show();
-            case REQUEST_FOCUS -> M3Accessible.showItem(getContent(), getActions());
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> {
                 show();
                 M3Accessible.showItem(getContent(), getActions(), parameters);
+                notifyFocusNodeChanged();
             }
             case COLLAPSE -> hide();
             default -> super.executeAccessibleAction(action, parameters);
@@ -329,8 +333,7 @@ public class M3SideSheet extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-            focusNotifier.refresh();
+            notifyFocusNodeChanged();
         });
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
@@ -379,6 +382,19 @@ public class M3SideSheet extends Control {
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyFocusNodeChanged();
+    }
+
+    /// Requests focus for the current accessible focus target when this sheet is visible.
+    private void focusAccessibleNode() {
+        if (isShown()) {
+            M3Accessible.showItem(getContent(), getActions());
+            notifyFocusNodeChanged();
+        }
+    }
+
+    /// Notifies and refreshes cached accessibility focus state.
+    private void notifyFocusNodeChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         focusNotifier.refresh();
     }

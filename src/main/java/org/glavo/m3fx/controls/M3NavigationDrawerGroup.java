@@ -15,6 +15,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -47,11 +48,14 @@ public final class M3NavigationDrawerGroup extends Control {
         /// Updates expanded pseudo-class state.
         @Override
         protected void invalidated() {
-            pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, get());
+            boolean expanded = get();
+            boolean restoreHeaderFocus = !expanded && isFocusInsideChildItems();
+            pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, expanded);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-            requestLayout();
+            notifyAccessibleContentChanged();
+            if (restoreHeaderFocus) {
+                focusHeaderItem();
+            }
         }
     };
 
@@ -74,8 +78,12 @@ public final class M3NavigationDrawerGroup extends Control {
                 item.getStyleClass().remove(CHILD_STYLE_CLASS);
             }
         }
-        requestLayout();
+        notifyAccessibleContentChanged();
     };
+
+    /// Notifies accessibility clients when focus moves between visible group rows.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, accessibleContent()));
 
     /// Creates an empty navigation drawer group.
     public M3NavigationDrawerGroup() {
@@ -185,7 +193,7 @@ public final class M3NavigationDrawerGroup extends Control {
         ObservableList<Node> content = accessibleContent();
         return switch (attribute) {
             case EXPANDED -> isExpanded();
-            case FOCUS_NODE -> headerItem;
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, content);
             case ITEM_COUNT -> content.size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(content, parameters);
             case TEXT -> getTitle();
@@ -204,7 +212,10 @@ public final class M3NavigationDrawerGroup extends Control {
             case FIRE -> setExpanded(!isExpanded());
             case EXPAND -> setExpanded(true);
             case COLLAPSE -> setExpanded(false);
-            case REQUEST_FOCUS -> headerItem.requestFocus();
+            case REQUEST_FOCUS -> {
+                focusHeaderItem();
+                notifyFocusNodeChanged();
+            }
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -233,10 +244,14 @@ public final class M3NavigationDrawerGroup extends Control {
         headerItem.setOnAction(event -> setExpanded(!isExpanded()));
         disclosureIcon.expandedProperty().bind(expanded);
         items.addListener(itemsListener);
-        title.addListener((observable, oldValue, newValue) -> setAccessibleText(newValue));
+        title.addListener((observable, oldValue, newValue) -> {
+            setAccessibleText(newValue);
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+        });
         setAccessibleRole(AccessibleRole.NODE);
         setAccessibleText(getTitle());
         setFocusTraversable(false);
+        focusNotifier.start();
     }
 
     /// Returns the header row and currently visible child rows for accessibility indexing.
@@ -253,6 +268,43 @@ public final class M3NavigationDrawerGroup extends Control {
     private void showAccessibleItem(Object... parameters) {
         setExpanded(true);
         M3Accessible.showItem(accessibleContent(), parameters);
+        notifyFocusNodeChanged();
+    }
+
+    /// Returns whether keyboard focus is currently inside a child destination row.
+    private boolean isFocusInsideChildItems() {
+        @Nullable Scene scene = getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        if (focusOwner == null) {
+            return false;
+        }
+        for (M3ListItem item : getItems()) {
+            if (M3Accessible.containsNode(item, focusOwner)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Moves focus to the header row when it can receive focus.
+    private void focusHeaderItem() {
+        if (M3Accessible.canReach(headerItem) && headerItem.isFocusTraversable()) {
+            headerItem.requestFocus();
+        }
+    }
+
+    /// Notifies accessibility clients that visible group rows changed.
+    private void notifyAccessibleContentChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyFocusNodeChanged();
+        requestLayout();
+    }
+
+    /// Notifies and refreshes cached accessibility focus state.
+    private void notifyFocusNodeChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Validates a child destination item array.
