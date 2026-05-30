@@ -99,6 +99,21 @@ final class M3FXDemoVisualSmokeTest {
             M3SegmentedButton.STYLE_CLASS
     );
 
+    /// The edge tolerance used when comparing text bounds against scene and viewport bounds.
+    private static final double TEXT_EDGE_TOLERANCE = 1.0;
+
+    /// The edge tolerance used when comparing visible control bounds against scene and viewport bounds.
+    private static final double CONTROL_EDGE_TOLERANCE = 2.0;
+
+    /// The minimum safe vertical room for single-line input text inside its editable area.
+    private static final double INPUT_TEXT_MINIMUM_VERTICAL_ROOM = 4.0;
+
+    /// The lowest acceptable vertical center ratio for single-line input text.
+    private static final double INPUT_TEXT_MINIMUM_CENTER_RATIO = 0.33;
+
+    /// The highest acceptable vertical center ratio for single-line input text.
+    private static final double INPUT_TEXT_MAXIMUM_CENTER_RATIO = 0.70;
+
     /// Starts the JavaFX toolkit before creating the demo stage.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -157,10 +172,7 @@ final class M3FXDemoVisualSmokeTest {
                             "demo-" + snapshotFileName(pageTitle) + ".png"
                     ));
                     assertSnapshotHasVisibleContent(image, pageTitle);
-                    assertVisibleTextInsideScene(scene, pageTitle);
-                    assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
-                    assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
-                    assertSelectionIndicatorsCentered(scene, pageTitle);
+                    assertDemoPageVisualGeometry(scene, pageTitle);
                 });
             }
         } finally {
@@ -221,10 +233,7 @@ final class M3FXDemoVisualSmokeTest {
                             "demo-dark-expressive-" + snapshotFileName(pageTitle) + ".png"
                     ));
                     assertSnapshotHasVisibleContent(image, pageTitle);
-                    assertVisibleTextInsideScene(scene, pageTitle);
-                    assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
-                    assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
-                    assertSelectionIndicatorsCentered(scene, pageTitle);
+                    assertDemoPageVisualGeometry(scene, pageTitle);
                 });
             }
         } finally {
@@ -283,10 +292,7 @@ final class M3FXDemoVisualSmokeTest {
                             "demo-rtl-" + snapshotFileName(pageTitle) + ".png"
                     ));
                     assertSnapshotHasVisibleContent(image, pageTitle);
-                    assertVisibleTextInsideScene(scene, pageTitle);
-                    assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
-                    assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
-                    assertSelectionIndicatorsCentered(scene, pageTitle);
+                    assertDemoPageVisualGeometry(scene, pageTitle);
                 });
             }
         } finally {
@@ -823,6 +829,15 @@ final class M3FXDemoVisualSmokeTest {
                 () -> pageTitle + " snapshot has too little visible content: " + visiblePixels);
     }
 
+    /// Verifies the shared page-level geometry checks for a rendered demo page.
+    private static void assertDemoPageVisualGeometry(Scene scene, String pageTitle) {
+        assertVisibleTextInsideScene(scene, pageTitle);
+        assertVisibleMaterialControlsInsideScene(scene, pageTitle);
+        assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
+        assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
+        assertSelectionIndicatorsCentered(scene, pageTitle);
+    }
+
     /// Verifies that visible text nodes intersecting the scene are not clipped by the scene viewport.
     private static void assertVisibleTextInsideScene(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
@@ -838,17 +853,59 @@ final class M3FXDemoVisualSmokeTest {
             @Nullable Node scrollViewport = nearestScrollViewport(text);
             if (scrollViewport != null) {
                 Bounds viewportBounds = scrollViewport.localToScene(scrollViewport.getBoundsInLocal());
-                if (!viewportBounds.contains(textBounds)) {
+                if (!viewportBounds.intersects(textBounds)
+                        || !viewportBounds.contains(textBounds.getCenterX(), textBounds.getCenterY())) {
                     return;
                 }
+                assertTrue(containsHorizontalBoundsWithTolerance(viewportBounds, textBounds, TEXT_EDGE_TOLERANCE),
+                        () -> pageTitle + " visible text leaves its scroll viewport horizontally: text="
+                                + text.getText() + ", bounds=" + textBounds + ", viewport=" + viewportBounds);
+                if (touchesVerticalViewportEdge(textBounds, viewportBounds, TEXT_EDGE_TOLERANCE)) {
+                    return;
+                }
+                assertTrue(containsBoundsWithTolerance(viewportBounds, textBounds, TEXT_EDGE_TOLERANCE),
+                        () -> pageTitle + " visible text leaves its scroll viewport: text="
+                                + text.getText() + ", bounds=" + textBounds + ", viewport=" + viewportBounds);
+                return;
             }
 
-            assertTrue(textBounds.getMinX() >= sceneBounds.getMinX() - 1.0
-                            && textBounds.getMinY() >= sceneBounds.getMinY() - 1.0
-                            && textBounds.getMaxX() <= sceneBounds.getMaxX() + 1.0
-                            && textBounds.getMaxY() <= sceneBounds.getMaxY() + 1.0,
+            assertTrue(containsBoundsWithTolerance(sceneBounds, textBounds, TEXT_EDGE_TOLERANCE),
                     () -> pageTitle + " visible text leaves the scene viewport: text="
                             + text.getText() + ", bounds=" + textBounds + ", scene=" + sceneBounds);
+        });
+    }
+
+    /// Verifies that visible Material controls stay inside the visible scene and scroll viewport.
+    private static void assertVisibleMaterialControlsInsideScene(Scene scene, String pageTitle) {
+        Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
+        visitVisibleNodes(scene.getRoot(), node -> {
+            if (!isPageLevelMaterialControl(node) || !hasRenderableBounds(node)) {
+                return;
+            }
+
+            Bounds controlBounds = node.localToScene(node.getBoundsInLocal());
+            if (!isVisibleWithinSceneViewport(node, controlBounds, sceneBounds)) {
+                return;
+            }
+
+            @Nullable Node scrollViewport = nearestScrollViewport(node);
+            if (scrollViewport != null) {
+                Bounds viewportBounds = scrollViewport.localToScene(scrollViewport.getBoundsInLocal());
+                assertTrue(containsHorizontalBoundsWithTolerance(viewportBounds, controlBounds, CONTROL_EDGE_TOLERANCE),
+                        () -> pageTitle + " visible control leaves its scroll viewport horizontally: node="
+                                + node + ", bounds=" + controlBounds + ", viewport=" + viewportBounds);
+                if (touchesVerticalViewportEdge(controlBounds, viewportBounds, CONTROL_EDGE_TOLERANCE)) {
+                    return;
+                }
+                assertTrue(containsBoundsWithTolerance(viewportBounds, controlBounds, CONTROL_EDGE_TOLERANCE),
+                        () -> pageTitle + " visible control leaves its scroll viewport: node="
+                                + node + ", bounds=" + controlBounds + ", viewport=" + viewportBounds);
+                return;
+            }
+
+            assertTrue(containsBoundsWithTolerance(sceneBounds, controlBounds, CONTROL_EDGE_TOLERANCE),
+                    () -> pageTitle + " visible control leaves the scene viewport: node="
+                            + node + ", bounds=" + controlBounds + ", scene=" + sceneBounds);
         });
     }
 
@@ -914,7 +971,10 @@ final class M3FXDemoVisualSmokeTest {
             double topRoom = textBounds.getMinY() - inputBounds.getMinY();
             double bottomRoom = inputBounds.getMaxY() - textBounds.getMaxY();
             double centerRatio = (textBounds.getCenterY() - inputBounds.getMinY()) / inputBounds.getHeight();
-            assertTrue(topRoom >= 3.0 && bottomRoom >= 3.0 && centerRatio >= 0.30 && centerRatio <= 0.75,
+            assertTrue(topRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
+                            && bottomRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
+                            && centerRatio >= INPUT_TEXT_MINIMUM_CENTER_RATIO
+                            && centerRatio <= INPUT_TEXT_MAXIMUM_CENTER_RATIO,
                     () -> pageTitle + " text input glyph has unsafe vertical geometry: text="
                             + text.getText() + ", topRoom=" + topRoom + ", bottomRoom=" + bottomRoom
                             + ", centerRatio=" + centerRatio + ", inputBounds=" + inputBounds
@@ -1003,6 +1063,21 @@ final class M3FXDemoVisualSmokeTest {
             }
         }
         return false;
+    }
+
+    /// Returns whether a node is a demo-level Material control whose visible bounds should fit the viewport.
+    private static boolean isPageLevelMaterialControl(Node node) {
+        return node instanceof M3Button
+                || node instanceof M3DatePicker
+                || node instanceof M3FloatingActionButton
+                || node instanceof M3IconButton
+                || node instanceof M3IconToggleButton
+                || node instanceof M3LoadingIndicator
+                || node instanceof M3RadioButton
+                || node instanceof M3SegmentedButton
+                || node instanceof M3Switch
+                || node instanceof M3TextField
+                || node instanceof M3TextInputLayout;
     }
 
     /// Returns the first visible descendant with the requested style class.
@@ -1170,6 +1245,26 @@ final class M3FXDemoVisualSmokeTest {
     private static boolean hasRenderableBounds(Node node) {
         Bounds bounds = node.getBoundsInLocal();
         return bounds.getWidth() > 0.5 && bounds.getHeight() > 0.5;
+    }
+
+    /// Returns whether `outer` fully contains `inner` after applying a small edge tolerance.
+    private static boolean containsBoundsWithTolerance(Bounds outer, Bounds inner, double tolerance) {
+        return inner.getMinX() >= outer.getMinX() - tolerance
+                && inner.getMinY() >= outer.getMinY() - tolerance
+                && inner.getMaxX() <= outer.getMaxX() + tolerance
+                && inner.getMaxY() <= outer.getMaxY() + tolerance;
+    }
+
+    /// Returns whether `outer` contains the horizontal span of `inner` after applying a small edge tolerance.
+    private static boolean containsHorizontalBoundsWithTolerance(Bounds outer, Bounds inner, double tolerance) {
+        return inner.getMinX() >= outer.getMinX() - tolerance
+                && inner.getMaxX() <= outer.getMaxX() + tolerance;
+    }
+
+    /// Returns whether a node bounds touches a scroll viewport edge where partial vertical visibility is expected.
+    private static boolean touchesVerticalViewportEdge(Bounds inner, Bounds viewport, double tolerance) {
+        return inner.getMinY() < viewport.getMinY() + tolerance
+                || inner.getMaxY() > viewport.getMaxY() - tolerance;
     }
 
     /// Visits visible descendants in a rendered hierarchy.
