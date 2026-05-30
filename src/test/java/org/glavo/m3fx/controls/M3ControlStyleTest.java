@@ -14273,6 +14273,81 @@ final class M3ControlStyleTest {
         }
     }
 
+    /// Verifies that date range picker fields route popup accessibility focus through real popup children.
+    @Test
+    void dateRangePickerFieldRoutesPopupAccessibilityFocus() {
+        runOnFxThread(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 19),
+                    LocalDate.of(2026, 5, 25)
+            );
+            field.setCommonPresets(LocalDate.of(2026, 5, 19));
+            field.setPrefWidth(680.0);
+
+            M3Button outsideFocus = new M3Button("Outside");
+            Pane root = new Pane(outsideFocus, field);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setAnimationsEnabled(field, false);
+                Scene scene = new Scene(root, 760.0, 220.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                outsideFocus.resizeRelocate(24.0, 132.0, 120.0, 40.0);
+                field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
+                root.applyCss();
+                root.layout();
+
+                outsideFocus.requestFocus();
+                field.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(field.getStartEditor().isFocused());
+                assertSame(field.getStartEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                field.getEndEditor().requestFocus();
+                assertTrue(field.getEndEditor().isFocused());
+                field.executeAccessibleAction(AccessibleAction.EXPAND);
+
+                assertTrue(field.isShowing());
+                Node pickerFocusNode = assertInstanceOf(
+                        Node.class,
+                        field.getPicker().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+
+                field.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(pickerFocusNode.isFocused());
+                assertSame(pickerFocusNode, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+                Node popupRoot = assertInstanceOf(Node.class, presetContent.getParent());
+                popupRoot.applyCss();
+                if (popupRoot instanceof Region region) {
+                    region.layout();
+                }
+                Node presetButton = assertInstanceOf(
+                        Node.class,
+                        presetContent.lookup("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS)
+                );
+
+                presetButton.requestFocus();
+
+                assertTrue(presetButton.isFocused());
+                assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                presetButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getEndEditor().isFocused());
+                assertSame(field.getEndEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(field);
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that date pickers expose rendered day cells to accessibility clients.
     @Test
     void datePickerExposesAccessibleDayCellsAndActions() {

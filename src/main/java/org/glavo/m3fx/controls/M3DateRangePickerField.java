@@ -223,6 +223,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The picker popup exit animation.
     private final Timeline hideAnimation = new Timeline();
 
+    /// Reports popup picker focus changes through this field's accessibility node.
+    private final M3AccessibleFocusNotifier popupFocusNotifier =
+            new M3AccessibleFocusNotifier(this, popupContent, this::focusNode, this::notifyFocusNodeChanged);
+
     /// Whether both field endpoints are currently being assigned through [setRange].
     private boolean applyingRange;
 
@@ -241,8 +245,11 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Whether editor text is currently being rewritten from selected dates.
     private boolean updatingEditorText;
 
-    /// Whether focus should return to the start editor after the popup hides.
-    private boolean focusStartEditorOnHidden;
+    /// The editor that opened the current popup session.
+    private @Nullable M3TextField popupOwnerEditor;
+
+    /// The editor that should receive focus after the popup hides.
+    private @Nullable M3TextField focusEditorOnHidden;
 
     /// The vertical offset used by the current popup hide animation.
     private double popupTransitionOffsetY = -POPUP_TRANSITION_OFFSET_Y;
@@ -750,6 +757,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             return;
         }
 
+        if (popupOwnerEditor == null) {
+            popupOwnerEditor = currentEditor();
+        }
         preparePopupForShow(scene);
         @Nullable M3PopupPositioning.Placement placement =
                 M3PopupPositioning.menuBelowOrAbove(this, popupContent, POPUP_OFFSET_Y);
@@ -762,6 +772,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         popup.show(this, placement.x(), placement.y());
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+        notifyFocusNodeChanged();
+        popupFocusNotifier.refresh();
         playShowAnimation();
     }
 
@@ -804,7 +816,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> startEditor.requestFocus();
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_MENU, EXPAND -> showPicker();
             case COLLAPSE -> hidePicker(true);
             case SHOW_ITEM -> showPickerAndForwardAccessibleAction(action, parameters);
@@ -848,13 +860,19 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         popup.getContent().add(popupContent);
         popup.setOnHidden(event -> handlePopupHidden());
 
-        startOpenButton.setOnAction(event -> togglePicker());
-        endOpenButton.setOnAction(event -> togglePicker());
+        startOpenButton.setOnAction(event -> {
+            popupOwnerEditor = startEditor;
+            togglePicker();
+        });
+        endOpenButton.setOnAction(event -> {
+            popupOwnerEditor = endEditor;
+            togglePicker();
+        });
         startEditor.addEventHandler(ActionEvent.ACTION, this::handleEditorAction);
         endEditor.addEventHandler(ActionEvent.ACTION, this::handleEditorAction);
         startEditor.addEventHandler(KeyEvent.KEY_PRESSED, this::handleEditorKeyPressed);
         endEditor.addEventHandler(KeyEvent.KEY_PRESSED, this::handleEditorKeyPressed);
-        picker.addEventHandler(KeyEvent.KEY_PRESSED, this::handlePickerKeyPressed);
+        popupContent.addEventHandler(KeyEvent.KEY_PRESSED, this::handlePickerKeyPressed);
         startEditor.focusedProperty().addListener((observable, oldValue, focused) -> handleEditorFocusChanged());
         endEditor.focusedProperty().addListener((observable, oldValue, focused) -> handleEditorFocusChanged());
         startEditor.textProperty().addListener((observable, oldValue, newValue) -> handleEditorTextChanged());
@@ -864,6 +882,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         picker.minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         picker.maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         presets.addListener(presetsListener);
+        popupFocusNotifier.start();
     }
 
     /// Creates one popup open button.
@@ -886,6 +905,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private void handleEditorKeyPressed(KeyEvent event) {
         switch (event.getCode()) {
             case DOWN, F4 -> {
+                popupOwnerEditor = event.getSource() == endEditor ? endEditor : startEditor;
                 showPicker();
                 focusPicker();
                 event.consume();
@@ -951,6 +971,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         if (!startEditor.isFocused() && !endEditor.isFocused() && !popup.isShowing()) {
             commitEditorText();
         }
+        notifyFocusNodeChanged();
     }
 
     /// Clears generated error text after user edits.
@@ -1126,10 +1147,26 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Returns the current keyboard focus node for accessibility clients.
     private Node focusNode() {
         if (popup.isShowing()) {
+            @Nullable Node popupFocusOwner = popupFocusOwner();
+            if (popupFocusOwner != null) {
+                return popupFocusOwner;
+            }
+
             @Nullable Object focusNode = picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
-            return focusNode instanceof Node node ? node : picker;
+            return focusNode instanceof Node node && M3Accessible.canReach(node) ? node : picker;
         }
         return endEditor.isFocused() ? endEditor : startEditor;
+    }
+
+    /// Returns the current focus owner inside popup content when it belongs to the popup scene.
+    private @Nullable Node popupFocusOwner() {
+        @Nullable Scene popupScene = popupContent.getScene();
+        @Nullable Node focusOwner = popupScene == null ? null : popupScene.getFocusOwner();
+        if (focusOwner != null && M3Accessible.containsNode(popupContent, focusOwner)
+                && M3Accessible.canReach(focusOwner)) {
+            return focusOwner;
+        }
+        return null;
     }
 
     /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
@@ -1153,9 +1190,46 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Focuses the preferred node inside the popup picker.
     private void focusPicker() {
-        if (popup.isShowing()) {
-            focusNode().requestFocus();
+        if (!popup.isShowing()) {
+            return;
         }
+
+        M3Accessible.showItem(focusNode());
+        notifyFocusNodeChanged();
+        popupFocusNotifier.refresh();
+    }
+
+    /// Requests focus for the field's current editor or popup focus target.
+    private void focusAccessibleNode() {
+        if (popup.isShowing()) {
+            focusPicker();
+            return;
+        }
+
+        focusEditor(currentEditor());
+    }
+
+    /// Requests focus for one editor and notifies accessibility clients.
+    private void focusEditor(M3TextField editor) {
+        editor.requestFocus();
+        notifyFocusNodeChanged();
+        popupFocusNotifier.refresh();
+    }
+
+    /// Returns the editor currently focused by the user, or the start editor by default.
+    private M3TextField currentEditor() {
+        return endEditor.isFocused() ? endEditor : startEditor;
+    }
+
+    /// Returns the editor that should regain focus when the current popup session ends.
+    private M3TextField popupOwnerEditorOrDefault() {
+        return popupOwnerEditor == null ? currentEditor() : popupOwnerEditor;
+    }
+
+    /// Notifies accessibility clients and owner containers about the exposed focus target.
+    private void notifyFocusNodeChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChangedInAncestors(this);
     }
 
     /// Copies scene styles and theme declarations into the popup-hosted picker.
@@ -1200,12 +1274,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     }
 
     /// Hides the popup picker and optionally restores editor focus.
-    private void hidePicker(boolean focusStartEditor) {
+    private void hidePicker(boolean focusEditor) {
         if (!popup.isShowing()) {
             return;
         }
 
-        focusStartEditorOnHidden = focusStartEditor;
+        focusEditorOnHidden = focusEditor ? popupOwnerEditorOrDefault() : null;
         showAnimation.stop();
         if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
@@ -1227,10 +1301,14 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         showing.set(false);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         resetPopupAnimationState();
-        if (focusStartEditorOnHidden) {
-            focusStartEditorOnHidden = false;
-            startEditor.requestFocus();
+        @Nullable M3TextField editor = focusEditorOnHidden;
+        focusEditorOnHidden = null;
+        popupOwnerEditor = null;
+        if (editor != null) {
+            editor.requestFocus();
         }
+        notifyFocusNodeChanged();
+        popupFocusNotifier.refresh();
     }
 
     /// Resets transient popup picker animation transforms.
