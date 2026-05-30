@@ -5728,6 +5728,56 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that search controls route direct child focus and restore focus when results collapse.
+    @Test
+    void searchControlsRouteDirectChildFocusAndRestoreCollapseFocus() {
+        runOnFxThread(() -> {
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            M3Button barFilter = new M3Button("Filter");
+            searchBar.setTrailingActions(barFilter);
+
+            M3Button viewFilter = new M3Button("Filter");
+            M3ListItem result = new M3ListItem("Result");
+            M3SearchView searchView = new M3SearchView("Search", result);
+            searchView.setTrailingActions(viewFilter);
+
+            Pane root = new Pane(searchBar, searchView);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 520.0, 260.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                barFilter.requestFocus();
+                assertTrue(barFilter.isFocused());
+                assertSame(barFilter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchBar.requestFocus();
+                assertTrue(searchBar.isFocused());
+                assertSame(searchBar, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                viewFilter.requestFocus();
+                assertTrue(viewFilter.isFocused());
+                assertSame(viewFilter, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                result.requestFocus();
+                assertTrue(result.isFocused());
+                assertSame(result, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchView.executeAccessibleAction(AccessibleAction.COLLAPSE);
+                assertFalse(searchView.isActive());
+                assertTrue(searchView.getSearchBar().isFocused());
+                assertSame(
+                        searchView.getSearchBar(),
+                        searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search component token metrics apply through the active theme.
     @Test
     void searchComponentsApplyTokenMetrics() {

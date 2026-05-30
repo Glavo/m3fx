@@ -66,6 +66,10 @@ public class M3SearchView extends Control {
     /// The search result visibility animation.
     private final Timeline resultsVisibilityAnimation = new Timeline();
 
+    /// Notifies accessibility clients when focus moves between the search bar and results.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::currentFocusNode);
+
     /// Creates an empty search view.
     public M3SearchView() {
         initialize();
@@ -349,7 +353,7 @@ public class M3SearchView extends Control {
             case REQUEST_FOCUS -> {
                 activate();
                 getEditor().requestFocus();
-                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                notifyFocusNodeChanged();
             }
             case FIRE -> fire();
             case EXPAND -> activate();
@@ -373,20 +377,25 @@ public class M3SearchView extends Control {
         setAccessibleRole(AccessibleRole.PARENT);
         resultsBox.getStyleClass().add(RESULTS_STYLE_CLASS);
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
+            boolean restoreSearchBarFocus = !newValue && isFocusInsideResults();
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            if (restoreSearchBarFocus) {
+                restoreSearchBarFocus();
+            }
+            notifyFocusNodeChanged();
             updateResultsVisibility();
         });
         searchBar.textProperty().addListener((observable, oldValue, newValue) ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT));
         resultsBox.getChildren().addListener((ListChangeListener<Node>) change -> {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+            notifyFocusNodeChanged();
         });
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         setActive(true);
         applyResultsVisibilityImmediately(isActive());
+        focusNotifier.start();
     }
 
     /// Handles keyboard movement between the search editor and result items.
@@ -441,6 +450,7 @@ public class M3SearchView extends Control {
         if (parameters.length == 0) {
             if (!focusFirstResult()) {
                 getEditor().requestFocus();
+                notifyFocusNodeChanged();
             }
             return;
         }
@@ -448,9 +458,11 @@ public class M3SearchView extends Control {
         @Nullable Node item = accessibleResultActionItem(parameters);
         if (item == null || M3Accessible.focusTarget(item) == null) {
             getEditor().requestFocus();
+            notifyFocusNodeChanged();
             return;
         }
         M3Accessible.showItem(item);
+        notifyFocusNodeChanged();
     }
 
     /// Returns the result referenced by accessibility action parameters.
@@ -522,7 +534,7 @@ public class M3SearchView extends Control {
         int previousIndex = reachableResultIndexFrom(currentIndex - 1, -1);
         if (previousIndex < 0) {
             getEditor().requestFocus();
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            notifyFocusNodeChanged();
             return true;
         }
         return focusResultAt(previousIndex);
@@ -570,7 +582,7 @@ public class M3SearchView extends Control {
             return false;
         }
         focusTarget.requestFocus();
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
         return true;
     }
 
@@ -680,8 +692,14 @@ public class M3SearchView extends Control {
 
     /// Returns the current accessibility focus node.
     ///
-    /// @return the focused result item when focus is inside results, otherwise the search editor
+    /// @return the focused result or search bar item when focus is inside this view, otherwise the search editor
     private Node accessibleFocusNode() {
+        @Nullable Node focusNode = currentFocusNode();
+        return focusNode == null ? getEditor() : focusNode;
+    }
+
+    /// Returns the current focused child target, or `null` when focus is outside this search view.
+    private @Nullable Node currentFocusNode() {
         int resultIndex = focusedResultIndex();
         if (resultIndex >= 0) {
             @Nullable Node result = getResults().get(resultIndex);
@@ -690,7 +708,22 @@ public class M3SearchView extends Control {
                 return focusTarget;
             }
         }
-        return getEditor();
+        return currentSearchBarFocusNode();
+    }
+
+    /// Returns the embedded search bar's current focus target when focus is inside it.
+    private @Nullable Node currentSearchBarFocusNode() {
+        if (getScene() == null) {
+            return null;
+        }
+
+        @Nullable Node focusOwner = getScene().getFocusOwner();
+        if (focusOwner == null || !M3Accessible.containsNode(searchBar, focusOwner)) {
+            return null;
+        }
+
+        @Nullable Object focusNode = searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        return focusNode instanceof Node node && M3Accessible.canReach(node) ? node : searchBar;
     }
 
     /// Returns the index of the result containing current keyboard focus.
@@ -712,6 +745,24 @@ public class M3SearchView extends Control {
             }
         }
         return -1;
+    }
+
+    /// Returns whether focus currently belongs to a result that will be hidden after collapse.
+    private boolean isFocusInsideResults() {
+        return focusedResultIndex() >= 0;
+    }
+
+    /// Moves focus back to the search bar when result content is being collapsed.
+    private void restoreSearchBarFocus() {
+        if (M3Accessible.canReach(searchBar)) {
+            searchBar.requestFocus();
+        }
+    }
+
+    /// Notifies and refreshes cached accessibility focus state.
+    private void notifyFocusNodeChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Updates result container visibility from the active state, using motion when attached to a scene.

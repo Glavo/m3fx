@@ -90,10 +90,10 @@ public class M3SearchBar extends Control {
             boolean active = get();
             pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, active);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
             if (active) {
                 editor.requestFocus();
             }
+            notifyFocusNodeChanged();
         }
     };
 
@@ -102,6 +102,10 @@ public class M3SearchBar extends Control {
 
     /// The mutable trailing action list.
     private final ObservableList<Node> trailingActions = FXCollections.observableArrayList();
+
+    /// Notifies accessibility clients when focus moves between search bar slots.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
     /// Creates an empty search bar.
     public M3SearchBar() {
@@ -375,6 +379,7 @@ public class M3SearchBar extends Control {
         editor.setOnAction(event -> fire());
         setOnMouseClicked(event -> activate());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        focusNotifier.start();
     }
 
     /// Handles keyboard shortcuts owned by the search bar container.
@@ -401,7 +406,7 @@ public class M3SearchBar extends Control {
     private void focusEditor() {
         activate();
         editor.requestFocus();
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
     }
 
     /// Returns the number of indexed child items exposed by the search bar.
@@ -490,20 +495,30 @@ public class M3SearchBar extends Control {
         activate();
         if (M3Accessible.focusTarget(item) == null) {
             editor.requestFocus();
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            notifyFocusNodeChanged();
             return;
         }
         M3Accessible.showItem(item);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
     }
 
     /// Returns the current accessibility focus node.
     ///
     /// @return the focused indexed item when one owns focus, otherwise the embedded editor
     private Node accessibleFocusNode() {
+        @Nullable Node focusNode = currentFocusNode();
+        return focusNode == null ? editor : focusNode;
+    }
+
+    /// Returns the current focused slot target, or `null` when focus is outside the search bar.
+    private @Nullable Node currentFocusNode() {
         if (getScene() != null) {
             @Nullable Node focusOwner = getScene().getFocusOwner();
             if (focusOwner != null) {
+                if (focusOwner == this) {
+                    return this;
+                }
+
                 int count = accessibleItemCount();
                 for (int index = 0; index < count; index++) {
                     @Nullable Node item = accessibleItemAt(index);
@@ -516,14 +531,20 @@ public class M3SearchBar extends Control {
                 }
             }
         }
-        return editor;
+        return null;
     }
 
     /// Notifies accessibility clients that indexed child items changed.
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyFocusNodeChanged();
+    }
+
+    /// Notifies and refreshes cached accessibility focus state.
+    private void notifyFocusNodeChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     }
 
     /// Validates a trailing action array.
