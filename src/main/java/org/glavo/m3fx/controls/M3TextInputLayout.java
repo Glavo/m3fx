@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -1490,20 +1489,7 @@ public class M3TextInputLayout extends Control {
 
     /// Applies changed runtime motion settings to currently running text input animations.
     private void refreshMotionSettings() {
-        if (M3Animation.areAnimationsEnabled(this)) {
-            return;
-        }
-
-        finishRunningAnimation(labelAnimation);
-        finishRunningAnimation(trailingAnimation);
-        finishRunningAnimation(supportingRowAnimation);
-    }
-
-    /// Finishes a running timeline without replaying stale stopped key frames.
-    private static void finishRunningAnimation(Timeline timeline) {
-        if (timeline.getStatus() == Animation.Status.RUNNING) {
-            M3Animation.finish(timeline);
-        }
+        M3Animation.finishRunningAnimationsIfDisabled(this, labelAnimation, trailingAnimation, supportingRowAnimation);
     }
 
     /// Returns the supporting row text that should be visible.

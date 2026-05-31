@@ -6,12 +6,14 @@ package org.glavo.m3fx.skins;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
@@ -33,6 +35,10 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// The selected container appearance animation.
     private final Timeline selectionAnimation = new Timeline();
 
+    /// Settles running selected-container transitions when runtime motion settings change.
+    private final InvalidationListener motionSettingsInvalidation =
+            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation);
+
     /// Animates the selected container when selection changes.
     private final ChangeListener<Boolean> selectedListener =
             (observable, oldValue, newValue) -> animateSelectionContainer(newValue);
@@ -51,6 +57,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         getChildren().add(0, selectionContainer);
 
         updateSelectionContainerImmediate(control.isSelected());
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.selectedProperty().addListener(selectedListener);
         control.getStyleClass().addListener(styleClassListener);
     }
@@ -60,6 +67,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     public void dispose() {
         M3SegmentedButton button = getSkinnable();
         selectionAnimation.stop();
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         button.selectedProperty().removeListener(selectedListener);
         button.getStyleClass().removeListener(styleClassListener);
         super.dispose();

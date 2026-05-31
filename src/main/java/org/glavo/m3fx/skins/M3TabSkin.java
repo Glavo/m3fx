@@ -9,6 +9,7 @@ import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.internal.M3Animation;
@@ -29,6 +30,10 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     /// The active indicator animation timeline.
     private final Timeline indicatorAnimation = new Timeline();
 
+    /// Settles running active-indicator transitions when runtime motion settings change.
+    private final InvalidationListener motionSettingsInvalidation =
+            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), indicatorAnimation);
+
     /// Animates the active indicator when selection changes.
     private final ChangeListener<Boolean> selectedListener =
             (observable, oldValue, newValue) -> animateActiveIndicator(newValue);
@@ -45,6 +50,7 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
         getChildren().add(activeIndicator);
 
         updateActiveIndicatorImmediate(control.isSelected());
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.selectedProperty().addListener(selectedListener);
         control.activeIndicatorHeightProperty().addListener(indicatorMetricsInvalidation);
         control.activeIndicatorShapeProperty().addListener(indicatorMetricsInvalidation);
@@ -55,6 +61,7 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     public void dispose() {
         M3Tab tab = getSkinnable();
         indicatorAnimation.stop();
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         tab.selectedProperty().removeListener(selectedListener);
         tab.activeIndicatorHeightProperty().removeListener(indicatorMetricsInvalidation);
         tab.activeIndicatorShapeProperty().removeListener(indicatorMetricsInvalidation);

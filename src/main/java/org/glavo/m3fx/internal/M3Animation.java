@@ -164,6 +164,36 @@ public final class M3Animation {
         finish(animation, true);
     }
 
+    /// Finishes an animation only when it is currently running.
+    ///
+    /// @param animation the animation to inspect
+    /// @return `true` when the animation was running and has been finished
+    public static boolean finishIfRunning(Animation animation) {
+        Objects.requireNonNull(animation, "animation");
+        if (animation.getStatus() != Animation.Status.RUNNING) {
+            return false;
+        }
+        finish(animation);
+        return true;
+    }
+
+    /// Finishes running animations when the owner currently resolves animations as disabled.
+    ///
+    /// This is used by finite component-state transitions that already honor disabled motion when starting,
+    /// but also need to settle when an application disables motion while the transition is in flight.
+    ///
+    /// @param owner the node whose inherited animation switch should be resolved
+    /// @param animations the animations to settle when disabled
+    public static void finishRunningAnimationsIfDisabled(Node owner, Animation... animations) {
+        Objects.requireNonNull(animations, "animations");
+        if (areAnimationsEnabled(owner)) {
+            return;
+        }
+        for (Animation animation : animations) {
+            finishIfRunning(animation);
+        }
+    }
+
     /// Finishes an animation, optionally skipping `stop()` for animations embedded in a parent transition.
     ///
     /// @param animation the animation to settle at its final state

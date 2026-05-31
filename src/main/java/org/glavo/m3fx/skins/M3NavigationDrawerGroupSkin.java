@@ -6,6 +6,7 @@ package org.glavo.m3fx.skins;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
@@ -15,6 +16,7 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
@@ -54,6 +56,10 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     /// The expansion and collapse animation for child rows.
     private final Timeline expansionAnimation = new Timeline();
 
+    /// Settles running child-row expansion transitions when runtime motion settings change.
+    private final InvalidationListener motionSettingsInvalidation =
+            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), expansionAnimation);
+
     /// Mirrors child destination item changes into the skin container.
     private final ListChangeListener<M3ListItem> itemsListener = change -> updateChildItems();
 
@@ -78,6 +84,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         childViewport.getChildren().add(childrenContainer);
         getChildren().addAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.expandedProperty().addListener(expandedListener);
         setExpandedState(control.isExpanded(), false);
     }
@@ -87,6 +94,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     public void dispose() {
         expansionAnimation.stop();
         getSkinnable().getItems().removeListener(itemsListener);
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         getSkinnable().expandedProperty().removeListener(expandedListener);
         childViewport.nodeOrientationProperty().unbind();
         childrenContainer.nodeOrientationProperty().unbind();

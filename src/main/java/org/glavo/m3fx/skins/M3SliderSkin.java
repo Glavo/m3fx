@@ -19,6 +19,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.internal.M3Animation;
@@ -72,6 +73,10 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Clears transient interaction state when the slider becomes disabled.
     private final InvalidationListener disabledInvalidation = observable -> resetDisabledInteractionState();
 
+    /// Settles running value transitions when runtime motion settings change.
+    private final InvalidationListener motionSettingsInvalidation =
+            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), valueAnimation);
+
     /// Creates a slider skin.
     ///
     /// @param control the slider controlled by this skin
@@ -95,6 +100,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.thumbSizeProperty().addListener(layoutInvalidation);
         control.touchTargetSizeProperty().addListener(layoutInvalidation);
         control.disabledProperty().addListener(disabledInvalidation);
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
 
         control.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.addEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
@@ -116,6 +122,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.trackThicknessProperty().removeListener(layoutInvalidation);
         control.thumbSizeProperty().removeListener(layoutInvalidation);
         control.touchTargetSizeProperty().removeListener(layoutInvalidation);
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);

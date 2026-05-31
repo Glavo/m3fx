@@ -11,6 +11,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.StrokeType;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.internal.M3Animation;
@@ -43,6 +44,10 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     /// Applies touch target token changes to radio geometry.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
+    /// Settles running dot transitions when runtime motion settings change.
+    private final InvalidationListener motionSettingsInvalidation =
+            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation);
+
     /// Animates the selected dot after selection changes.
     private final ChangeListener<Boolean> selectedListener =
             (observable, oldValue, newValue) -> animateSelectedState(newValue);
@@ -64,6 +69,7 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         applySelectedState(control.isSelected());
         updateMetrics();
         control.touchTargetSizeProperty().addListener(metricsInvalidation);
+        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.selectedProperty().addListener(selectedListener);
     }
 
@@ -72,6 +78,7 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     public void dispose() {
         selectionAnimation.stop();
         getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
         getSkinnable().selectedProperty().removeListener(selectedListener);
         super.dispose();
     }

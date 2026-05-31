@@ -13087,6 +13087,134 @@ final class M3ControlStyleTest {
         assertEquals(0.38, disabledCard.getOpacity(), 0.0001);
     }
 
+    /// Verifies that finite skin-owned state transitions settle when runtime motion is disabled.
+    @Test
+    void skinOwnedStateTransitionsSettleWhenMotionIsDisabled() {
+        runOnFxThread(() -> {
+            M3CheckBox checkBox = new M3CheckBox("Check");
+            M3RadioButton radioButton = new M3RadioButton("Radio");
+            M3Switch switchControl = new M3Switch("Switch");
+            M3SegmentedButton segmentedButton = new M3SegmentedButton("Segment");
+            M3Slider slider = new M3Slider(0.0, 100.0, 25.0);
+            M3Tab tab = new M3Tab("Tab");
+            M3NavigationItem navigationItem = new M3NavigationItem("Home");
+            M3ListItem listItem = new M3ListItem("List item");
+            M3DisclosureIcon disclosureIcon = new M3DisclosureIcon();
+            M3Badge badge = new M3Badge("1");
+            VBox root = new VBox(
+                    checkBox,
+                    radioButton,
+                    switchControl,
+                    segmentedButton,
+                    slider,
+                    tab,
+                    navigationItem,
+                    listItem,
+                    disclosureIcon,
+                    badge
+            );
+            Scene scene = new Scene(root, 360.0, 520.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(360.0, 520.0);
+            root.layout();
+
+            Timeline checkBoxAnimation = skinTimeline(checkBox.getSkin(), "selectionAnimation");
+            Timeline radioAnimation = skinTimeline(radioButton.getSkin(), "selectionAnimation");
+            Timeline switchAnimation = skinTimeline(switchControl.getSkin(), "selectionAnimation");
+            Timeline segmentedAnimation = skinTimeline(segmentedButton.getSkin(), "selectionAnimation");
+            Timeline sliderAnimation = skinTimeline(slider.getSkin(), "valueAnimation");
+            Timeline tabAnimation = skinTimeline(tab.getSkin(), "indicatorAnimation");
+            Timeline navigationAnimation = skinTimeline(navigationItem.getSkin(), "indicatorAnimation");
+            Timeline listItemAnimation = skinTimeline(listItem.getSkin(), "selectionAnimation");
+            Timeline disclosureAnimation = skinTimeline(disclosureIcon.getSkin(), "rotationAnimation");
+            Timeline badgeAnimation = skinTimeline(badge.getSkin(), "contentAnimation");
+
+            try {
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                checkBox.setSelected(true);
+                radioButton.setSelected(true);
+                switchControl.setSelected(true);
+                segmentedButton.setSelected(true);
+                slider.setValue(75.0);
+                tab.setSelected(true);
+                navigationItem.setSelected(true);
+                listItem.setSelected(true);
+                disclosureIcon.setExpanded(true);
+                badge.setText("2");
+
+                Timeline[] animations = {
+                        checkBoxAnimation,
+                        radioAnimation,
+                        switchAnimation,
+                        segmentedAnimation,
+                        sliderAnimation,
+                        tabAnimation,
+                        navigationAnimation,
+                        listItemAnimation,
+                        disclosureAnimation,
+                        badgeAnimation
+                };
+                for (Timeline animation : animations) {
+                    animation.jumpTo(Duration.millis(50.0));
+                    assertEquals(Animation.Status.RUNNING, animation.getStatus());
+                }
+
+                M3MotionSettings.setAnimationsEnabled(root, false);
+
+                for (Timeline animation : animations) {
+                    assertEquals(Animation.Status.STOPPED, animation.getStatus());
+                }
+                Region checkMark = lookupRegion(checkBox, ".m3-checkbox-mark");
+                assertEquals(1.0, checkMark.getOpacity(), 0.0001);
+                assertEquals(1.0, checkMark.getScaleX(), 0.0001);
+                Shape radioDot = assertInstanceOf(Shape.class, radioButton.lookup(".m3-radio-dot"));
+                assertEquals(1.0, radioDot.getOpacity(), 0.0001);
+                assertEquals(1.0, radioDot.getScaleX(), 0.0001);
+                assertEquals(1.0, reflectedDoubleProperty(switchControl.getSkin(), "thumbPosition").get(), 0.0001);
+                Region segmentSelection = lookupRegion(
+                        segmentedButton,
+                        "." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS
+                );
+                assertEquals(1.0, segmentSelection.getOpacity(), 0.0001);
+                assertEquals(1.0, segmentSelection.getScaleX(), 0.0001);
+                assertEquals(0.75, reflectedDoubleProperty(slider.getSkin(), "displayedPosition").get(), 0.0001);
+                Region tabIndicator = lookupRegion(tab, "." + M3TabSkin.ACTIVE_INDICATOR_STYLE_CLASS);
+                assertEquals(1.0, tabIndicator.getOpacity(), 0.0001);
+                assertEquals(1.0, tabIndicator.getScaleX(), 0.0001);
+                Region navigationIndicator = lookupRegion(navigationItem, ".m3-navigation-item-indicator");
+                assertEquals(1.0, navigationIndicator.getOpacity(), 0.0001);
+                assertEquals(1.0, navigationIndicator.getScaleX(), 0.0001);
+                Region listSelection = lookupRegion(listItem, ".m3-list-item-selection-container");
+                assertEquals(1.0, listSelection.getOpacity(), 0.0001);
+                assertEquals(1.0, listSelection.getScaleX(), 0.0001);
+                SVGPath disclosureArrow = assertInstanceOf(
+                        SVGPath.class,
+                        disclosureIcon.lookup(".m3-disclosure-icon-shape")
+                );
+                assertEquals(0.0, disclosureArrow.getRotate(), 0.0001);
+                Label badgeLabel = assertInstanceOf(Label.class, badge.lookup(".m3-badge-label"));
+                assertEquals(1.0, badgeLabel.getOpacity(), 0.0001);
+                assertEquals(1.0, badgeLabel.getScaleX(), 0.0001);
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                stopTimelines(
+                        checkBoxAnimation,
+                        radioAnimation,
+                        switchAnimation,
+                        segmentedAnimation,
+                        sliderAnimation,
+                        tabAnimation,
+                        navigationAnimation,
+                        listItemAnimation,
+                        disclosureAnimation,
+                        badgeAnimation
+                );
+            }
+        });
+    }
+
     /// Verifies that the base stylesheet provides visible default state layer feedback.
     @Test
     void baseStylesheetProvidesDefaultStateLayerOpacity() {
