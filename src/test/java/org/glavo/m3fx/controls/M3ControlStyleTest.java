@@ -8671,10 +8671,10 @@ final class M3ControlStyleTest {
             morphAnimation.jumpTo(Duration.millis(100.0));
             assertEquals(0.527, phase.get(), 0.04);
 
-            morphAnimation.jumpTo(Duration.millis(250.0));
-            assertTrue(phase.get() > 1.04, () -> "phase=" + phase.get());
+            morphAnimation.jumpTo(Duration.millis(200.0));
+            assertEquals(1.0, phase.get(), 0.001);
 
-            morphAnimation.jumpTo(Duration.millis(350.0));
+            morphAnimation.jumpTo(Duration.millis(500.0));
             assertEquals(1.0, phase.get(), 0.001);
         });
     }
@@ -8857,9 +8857,9 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that spring overshoot contributes to loading indicator rotation.
+    /// Verifies that settled morph segments keep rotating through the global rotation phase.
     @Test
-    void loadingIndicatorIndeterminateRotationUsesRawSpringProgress() {
+    void loadingIndicatorIndeterminateMorphTargetKeepsRotating() {
         runOnFxThreadAndWait(() -> {
             M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
             loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
@@ -8882,15 +8882,17 @@ final class M3ControlStyleTest {
             );
 
             phase.set(1.0);
+            reflectedDoubleProperty(skin, "globalRotation").set(0.0);
             loadingIndicator.layout();
-            Point2D targetPoint = firstPathPoint(indicator);
+            Point2D initialPoint = firstPathPoint(indicator);
 
-            phase.set(1.08);
+            phase.set(1.0);
+            reflectedDoubleProperty(skin, "globalRotation").set(0.03);
             loadingIndicator.layout();
-            Point2D overshootPoint = firstPathPoint(indicator);
+            Point2D rotatedPoint = firstPathPoint(indicator);
 
-            assertTrue(targetPoint.distance(overshootPoint) > 2.0,
-                    () -> "targetPoint=" + targetPoint + ", overshootPoint=" + overshootPoint);
+            assertTrue(initialPoint.distance(rotatedPoint) > 4.0,
+                    () -> "initialPoint=" + initialPoint + ", rotatedPoint=" + rotatedPoint);
         });
     }
 

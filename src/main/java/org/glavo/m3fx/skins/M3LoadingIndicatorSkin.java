@@ -48,9 +48,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The AndroidX loading indicator spring stiffness.
     private static final double MORPH_SPRING_STIFFNESS = 200.0;
 
-    /// The AndroidX loading indicator morph spring visibility threshold.
-    private static final double MORPH_SPRING_VISIBILITY_THRESHOLD = 0.1;
-
     /// The maximum active-shape scale added while an indeterminate morph segment is in flight.
     private static final double MORPH_SCALE_AMPLITUDE = 0.12;
 
@@ -357,15 +354,15 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         /// The duration of one morph segment in seconds.
         private final double durationSeconds;
 
-        /// The AndroidX spring finish time inside one morph segment, in seconds.
-        private final double springFinishTimeSeconds;
+        /// The first time at which the spring reaches the target, in seconds.
+        private final double targetReachTimeSeconds;
 
         /// Creates a spring interpolator for one loading indicator morph segment.
         ///
         /// @param durationSeconds the segment duration in seconds
         private LoadingIndicatorSpringInterpolator(double durationSeconds) {
             this.durationSeconds = Math.max(0.0, durationSeconds);
-            this.springFinishTimeSeconds = findSpringFinishTime(this.durationSeconds);
+            this.targetReachTimeSeconds = findTargetReachTime(this.durationSeconds);
         }
 
         /// Computes the spring progress for the supplied normalized time.
@@ -376,31 +373,46 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             }
 
             double elapsedSeconds = clamp(t) * durationSeconds;
-            if (elapsedSeconds >= springFinishTimeSeconds) {
+            if (elapsedSeconds >= targetReachTimeSeconds) {
                 return 1.0;
             }
-            return springResponse(elapsedSeconds);
+            return clamp(springResponse(elapsedSeconds));
         }
 
-        /// Returns the AndroidX spring finish time for one morph segment.
+        /// Returns the first time at which the spring reaches the target.
         ///
         /// @param durationSeconds the segment duration in seconds
-        /// @return the spring finish time in seconds
-        private static double findSpringFinishTime(double durationSeconds) {
+        /// @return the first target reach time in seconds
+        private static double findTargetReachTime(double durationSeconds) {
             if (durationSeconds <= 0.0) {
                 return 0.0;
             }
 
-            double naturalFrequency = Math.sqrt(MORPH_SPRING_STIFFNESS);
-            double decayRate = MORPH_SPRING_DAMPING_RATIO * naturalFrequency;
-            double undamped = Math.sqrt(1.0 - MORPH_SPRING_DAMPING_RATIO * MORPH_SPRING_DAMPING_RATIO);
-            double envelopeAmplitude = 1.0 / undamped;
-            if (envelopeAmplitude <= MORPH_SPRING_VISIBILITY_THRESHOLD) {
-                return 0.0;
+            double low = 0.0;
+            double high = durationSeconds;
+            boolean found = false;
+            for (int i = 1; i <= 64; i++) {
+                double sample = durationSeconds * i / 64.0;
+                if (springResponse(sample) >= 1.0) {
+                    high = sample;
+                    found = true;
+                    break;
+                }
+                low = sample;
+            }
+            if (!found) {
+                return durationSeconds;
             }
 
-            double finishSeconds = Math.log(envelopeAmplitude / MORPH_SPRING_VISIBILITY_THRESHOLD) / decayRate;
-            return Math.min(durationSeconds, finishSeconds);
+            for (int i = 0; i < 32; i++) {
+                double middle = (low + high) / 2.0;
+                if (springResponse(middle) >= 1.0) {
+                    high = middle;
+                } else {
+                    low = middle;
+                }
+            }
+            return high;
         }
 
         /// Returns the unit step response for the AndroidX spring parameters.
