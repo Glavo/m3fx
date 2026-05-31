@@ -423,6 +423,30 @@ public class M3Tooltip extends PopupControl {
         return false;
     }
 
+    /// Returns the first focusable node in the interactive popup content.
+    ///
+    /// @return the first focusable interactive node, or `null` when the popup has no interactive target
+    protected @Nullable Node firstInteractiveFocusTarget() {
+        return null;
+    }
+
+    /// Returns the last focusable node in the interactive popup content.
+    ///
+    /// @return the last focusable interactive node, or `null` when the popup has no interactive target
+    protected @Nullable Node lastInteractiveFocusTarget() {
+        return firstInteractiveFocusTarget();
+    }
+
+    /// Returns the next focusable node in the interactive popup content.
+    ///
+    /// @param currentFocus the current popup focus owner
+    /// @param backward whether traversal moves backward
+    /// @return the next focusable interactive node, or `null` when traversal should leave the popup
+    protected @Nullable Node nextInteractiveFocusTarget(Node currentFocus, boolean backward) {
+        Objects.requireNonNull(currentFocus, "currentFocus");
+        return null;
+    }
+
     /// Returns the effective show delay for an installed target node.
     private Duration effectiveShowDelay(Node owner) {
         return showDelayExplicit ? getShowDelay() : M3Animation.motionBehavior(owner).tooltipShowDelay();
@@ -598,6 +622,41 @@ public class M3Tooltip extends PopupControl {
         return !duration.isUnknown() && !duration.isIndefinite();
     }
 
+    /// Requests focus for the first interactive popup target.
+    boolean focusFirstInteractiveTarget() {
+        return focusInteractiveTarget(firstInteractiveFocusTarget());
+    }
+
+    /// Moves focus inside interactive popup content or back to the owner node.
+    boolean traverseInteractiveFocus(
+            @Nullable Node currentFocus,
+            Node owner,
+            boolean backward
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        @Nullable Node nextFocus = currentFocus == null
+                ? (backward ? lastInteractiveFocusTarget() : firstInteractiveFocusTarget())
+                : nextInteractiveFocusTarget(currentFocus, backward);
+        if (nextFocus != null) {
+            return focusInteractiveTarget(nextFocus);
+        }
+        if (M3Accessible.canReach(owner)) {
+            owner.requestFocus();
+            return true;
+        }
+        return false;
+    }
+
+    /// Requests focus for one interactive popup target.
+    private static boolean focusInteractiveTarget(@Nullable Node target) {
+        @Nullable Node focusTarget = M3Accessible.focusTarget(target);
+        if (focusTarget == null) {
+            return false;
+        }
+        focusTarget.requestFocus();
+        return true;
+    }
+
     /// Stores pointer handlers installed on a tooltip target node.
     @NotNullByDefault
     private static final class TooltipInstallation {
@@ -621,6 +680,9 @@ public class M3Tooltip extends PopupControl {
 
         /// The popup scene that currently has a focus owner listener installed.
         private @Nullable Scene tooltipScene;
+
+        /// The owner scene that currently has keyboard traversal filtering installed.
+        private @Nullable Scene ownerScene;
 
         /// Whether the pointer is currently inside the target node.
         private boolean ownerContainsPointer;
@@ -656,6 +718,9 @@ public class M3Tooltip extends PopupControl {
         /// Handles keyboard dismissal while the target owns focus.
         private final javafx.event.EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
 
+        /// Handles owner node scene changes.
+        private final ChangeListener<@Nullable Scene> ownerSceneListener = this::handleOwnerSceneChanged;
+
         /// Handles focus changes on the target node.
         private final ChangeListener<Boolean> focusListener = this::handleFocusedChanged;
 
@@ -676,9 +741,12 @@ public class M3Tooltip extends PopupControl {
             node.addEventHandler(MouseEvent.MOUSE_ENTERED, enteredHandler);
             node.addEventHandler(MouseEvent.MOUSE_EXITED, exitedHandler);
             node.addEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
+            node.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().addListener(focusListener);
+            node.sceneProperty().addListener(ownerSceneListener);
             tooltip.showingProperty().addListener(showingListener);
+            installOwnerSceneFilter(node.getScene());
         }
 
         /// Removes event handlers and stops pending timers.
@@ -686,9 +754,12 @@ public class M3Tooltip extends PopupControl {
             node.removeEventHandler(MouseEvent.MOUSE_ENTERED, enteredHandler);
             node.removeEventHandler(MouseEvent.MOUSE_EXITED, exitedHandler);
             node.removeEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
+            node.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().removeListener(focusListener);
+            node.sceneProperty().removeListener(ownerSceneListener);
             tooltip.showingProperty().removeListener(showingListener);
+            uninstallOwnerSceneFilter();
             uninstallTooltipHoverHandlers();
             ownerContainsPointer = false;
             tooltipContainsPointer = false;
@@ -699,6 +770,16 @@ public class M3Tooltip extends PopupControl {
             if (tooltip.isShowing()) {
                 tooltip.hide();
             }
+        }
+
+        /// Updates scene-level keyboard handling when the owner node moves between scenes.
+        private void handleOwnerSceneChanged(
+                ObservableValue<? extends @Nullable Scene> observable,
+                @Nullable Scene oldValue,
+                @Nullable Scene newValue
+        ) {
+            uninstallOwnerSceneFilter();
+            installOwnerSceneFilter(newValue);
         }
 
         /// Schedules tooltip display after pointer entry.
@@ -745,12 +826,20 @@ public class M3Tooltip extends PopupControl {
 
         /// Hides the tooltip from the Escape key while focus is inside its popup.
         private void handleTooltipKeyPressed(KeyEvent event) {
+            if (event.isConsumed()) {
+                return;
+            }
             if (event.getCode() == KeyCode.ESCAPE && tooltip.isShowing()) {
                 hideImmediately();
                 if (M3Accessible.canReach(node)) {
                     node.requestFocus();
                 }
                 event.consume();
+            } else if (event.getCode() == KeyCode.TAB && tooltip.isInteractive()) {
+                @Nullable Node focusOwner = tooltipScene == null ? null : tooltipScene.getFocusOwner();
+                if (tooltip.traverseInteractiveFocus(focusOwner, node, event.isShiftDown())) {
+                    event.consume();
+                }
             }
         }
 
@@ -788,10 +877,31 @@ public class M3Tooltip extends PopupControl {
 
         /// Hides the tooltip from the Escape key.
         private void handleKeyPressed(KeyEvent event) {
+            if (event.isConsumed()) {
+                return;
+            }
+            if (!ownerHasKeyboardFocus()) {
+                return;
+            }
             if (event.getCode() == KeyCode.ESCAPE && tooltip.isShowing()) {
                 hideImmediately();
                 event.consume();
+            } else if ((event.getCode() == KeyCode.TAB || event.getCode() == KeyCode.F6)
+                    && tooltip.isInteractive()
+                    && tooltip.isShowing()
+                    && !event.isShiftDown()
+                    && tooltip.focusFirstInteractiveTarget()) {
+                event.consume();
             }
+        }
+
+        /// Returns whether keyboard focus is currently owned by the target node.
+        private boolean ownerHasKeyboardFocus() {
+            if (node.isFocused()) {
+                return true;
+            }
+            @Nullable Scene scene = node.getScene();
+            return scene != null && scene.getFocusOwner() == node;
         }
 
         /// Schedules tooltip display after the configured show delay.
@@ -838,6 +948,7 @@ public class M3Tooltip extends PopupControl {
                 return;
             }
 
+            installOwnerSceneFilter(node.getScene());
             tooltip.inheritThemeFrom(node);
             Bounds screenBounds = node.localToScreen(node.getBoundsInLocal());
             if (screenBounds == null) {
@@ -896,6 +1007,28 @@ public class M3Tooltip extends PopupControl {
             return ownerContainsPointer || node.isFocused() || tooltipContainsPointer || tooltipContainsFocus;
         }
 
+        /// Installs scene-level owner keyboard handling.
+        private void installOwnerSceneFilter(@Nullable Scene scene) {
+            if (ownerScene == scene) {
+                return;
+            }
+            uninstallOwnerSceneFilter();
+            ownerScene = scene;
+            if (ownerScene != null) {
+                ownerScene.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+                ownerScene.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+            }
+        }
+
+        /// Removes scene-level owner keyboard handling.
+        private void uninstallOwnerSceneFilter() {
+            if (ownerScene != null) {
+                ownerScene.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+                ownerScene.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+                ownerScene = null;
+            }
+        }
+
         /// Adds popup interaction handlers to the current popup root node.
         private void installTooltipHoverHandlers() {
             if (!tooltip.isInteractive() || !tooltip.isShowing() || tooltip.getScene() == null) {
@@ -910,6 +1043,7 @@ public class M3Tooltip extends PopupControl {
             tooltipRoot = root;
             root.addEventHandler(MouseEvent.MOUSE_ENTERED, tooltipEnteredHandler);
             root.addEventHandler(MouseEvent.MOUSE_EXITED, tooltipExitedHandler);
+            root.addEventFilter(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
             root.addEventHandler(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
             tooltipScene = root.getScene();
             if (tooltipScene != null) {
@@ -928,6 +1062,7 @@ public class M3Tooltip extends PopupControl {
             if (root != null) {
                 root.removeEventHandler(MouseEvent.MOUSE_ENTERED, tooltipEnteredHandler);
                 root.removeEventHandler(MouseEvent.MOUSE_EXITED, tooltipExitedHandler);
+                root.removeEventFilter(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
                 root.removeEventHandler(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
                 tooltipRoot = null;
             }

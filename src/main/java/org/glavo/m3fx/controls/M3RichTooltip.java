@@ -298,10 +298,65 @@ public class M3RichTooltip extends M3Tooltip {
         return true;
     }
 
+    /// Returns the first action focus target inside the rich tooltip popup.
+    @Override
+    protected @Nullable Node firstInteractiveFocusTarget() {
+        return interactiveFocusTarget(false);
+    }
+
+    /// Returns the last action focus target inside the rich tooltip popup.
+    @Override
+    protected @Nullable Node lastInteractiveFocusTarget() {
+        return interactiveFocusTarget(true);
+    }
+
+    /// Returns the next action focus target inside the rich tooltip popup.
+    @Override
+    protected @Nullable Node nextInteractiveFocusTarget(Node currentFocus, boolean backward) {
+        Objects.requireNonNull(currentFocus, "currentFocus");
+        int currentIndex = interactiveFocusIndex(currentFocus);
+        int nextIndex = currentIndex < 0
+                ? (backward ? actions.getChildren().size() - 1 : 0)
+                : currentIndex + (backward ? -1 : 1);
+        while (nextIndex >= 0 && nextIndex < actions.getChildren().size()) {
+            Node action = actions.getChildren().get(nextIndex);
+            if (M3Accessible.focusTarget(action) != null) {
+                return action;
+            }
+            nextIndex += backward ? -1 : 1;
+        }
+        return null;
+    }
+
     /// Returns whether the tooltip root should receive plain tooltip container metrics.
     @Override
     protected boolean usesPlainContainerStyle() {
         return false;
+    }
+
+    /// Returns the first or last reachable action node for keyboard traversal.
+    private @Nullable Node interactiveFocusTarget(boolean backward) {
+        int index = backward ? actions.getChildren().size() - 1 : 0;
+        while (index >= 0 && index < actions.getChildren().size()) {
+            Node action = actions.getChildren().get(index);
+            if (M3Accessible.focusTarget(action) != null) {
+                return action;
+            }
+            index += backward ? -1 : 1;
+        }
+        return null;
+    }
+
+    /// Returns the action index that contains the current popup focus owner.
+    private int interactiveFocusIndex(Node currentFocus) {
+        Objects.requireNonNull(currentFocus, "currentFocus");
+        for (int index = 0; index < actions.getChildren().size(); index++) {
+            Node action = actions.getChildren().get(index);
+            if (action == currentFocus || M3Accessible.containsNode(action, currentFocus)) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     /// Applies profile-specific rich tooltip metrics to internal content nodes.

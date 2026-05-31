@@ -3605,6 +3605,96 @@ final class M3ControlStyleTest {
         );
     }
 
+    /// Verifies that rich tooltip keyboard traversal connects the owner and popup actions.
+    @Test
+    void richTooltipKeyboardTraversalConnectsOwnerAndActions() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<Label> targetReference = new AtomicReference<>();
+        AtomicReference<M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<M3Button> firstActionReference = new AtomicReference<>();
+        AtomicReference<M3Button> disabledActionReference = new AtomicReference<>();
+        AtomicReference<M3Button> secondActionReference = new AtomicReference<>();
+
+        runOnFxThreadAfterDelay(
+                Duration.millis(120.0),
+                () -> {
+                    Stage stage = new Stage();
+                    Label target = new Label("Target");
+                    target.setFocusTraversable(true);
+                    M3Button firstAction = createButton("First", M3ButtonVariant.TEXT);
+                    M3Button disabledAction = createButton("Disabled", M3ButtonVariant.TEXT);
+                    M3Button secondAction = createButton("Second", M3ButtonVariant.TEXT);
+                    disabledAction.setDisable(true);
+                    M3RichTooltip tooltip = M3RichTooltip.install(
+                            target,
+                            "Title",
+                            "Supporting text",
+                            firstAction,
+                            disabledAction,
+                            secondAction
+                    );
+                    tooltip.setShowDelay(Duration.ZERO);
+                    tooltip.setHideDelay(Duration.ZERO);
+                    tooltip.setShowDuration(Duration.INDEFINITE);
+
+                    Pane root = new Pane(target);
+                    stage.setScene(new Scene(root, 260.0, 140.0));
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+                    target.requestFocus();
+
+                    stageReference.set(stage);
+                    targetReference.set(target);
+                    tooltipReference.set(tooltip);
+                    firstActionReference.set(firstAction);
+                    disabledActionReference.set(disabledAction);
+                    secondActionReference.set(secondAction);
+                },
+                () -> {
+                    Stage stage = stageReference.get();
+                    Label target = targetReference.get();
+                    M3RichTooltip tooltip = tooltipReference.get();
+                    M3Button firstAction = firstActionReference.get();
+                    M3Button disabledAction = disabledActionReference.get();
+                    M3Button secondAction = secondActionReference.get();
+                    try {
+                        assertTrue(tooltip.isShowing());
+                        assertTrue(target.isFocused());
+
+                        assertTrue(tooltip.focusFirstInteractiveTarget());
+                        assertTrue(firstAction.isFocused());
+                        assertTrue(tooltip.isShowing());
+
+                        assertTrue(tooltip.traverseInteractiveFocus(firstAction, target, false));
+
+                        assertFalse(disabledAction.isFocused());
+                        assertTrue(secondAction.isFocused());
+
+                        assertTrue(tooltip.traverseInteractiveFocus(secondAction, target, true));
+
+                        assertTrue(firstAction.isFocused());
+
+                        assertTrue(tooltip.traverseInteractiveFocus(firstAction, target, true));
+
+                        assertTrue(target.isFocused());
+                        assertTrue(tooltip.isShowing());
+
+                        assertTrue(tooltip.focusFirstInteractiveTarget());
+                        assertTrue(firstAction.isFocused());
+
+                        firstAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                        assertFalse(tooltip.isShowing());
+                        assertTrue(target.isFocused());
+                    } finally {
+                        tooltip.hide();
+                        stage.close();
+                    }
+                }
+        );
+    }
+
     /// Verifies that tooltips can apply and clear inline theme declarations.
     @Test
     void tooltipAppliesAndClearsTheme() {
