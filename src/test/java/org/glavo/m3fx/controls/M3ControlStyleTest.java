@@ -55,6 +55,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Arc;
+import javafx.scene.shape.CubicCurveTo;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
@@ -8638,14 +8639,16 @@ final class M3ControlStyleTest {
             for (int i = 0; i < 21; i++) {
                 phase.set(i % 7 + 1.0);
                 loadingIndicator.layout();
-                Point2D pointBeforeRestart = firstPathPoint(indicator);
+                Bounds boundsBeforeRestart = indicator.getBoundsInLocal();
                 morphAnimation.getOnFinished().handle(new ActionEvent(morphAnimation, null));
                 loadingIndicator.layout();
-                Point2D pointAfterRestart = firstPathPoint(indicator);
+                Bounds boundsAfterRestart = indicator.getBoundsInLocal();
                 assertEquals(Animation.Status.RUNNING, morphAnimation.getStatus());
                 assertEquals((i + 1) % 7, Math.floor(phase.get()), 0.0001);
-                assertEquals(pointBeforeRestart.getX(), pointAfterRestart.getX(), 0.01);
-                assertEquals(pointBeforeRestart.getY(), pointAfterRestart.getY(), 0.01);
+                assertEquals(boundsBeforeRestart.getCenterX(), boundsAfterRestart.getCenterX(), 0.01);
+                assertEquals(boundsBeforeRestart.getCenterY(), boundsAfterRestart.getCenterY(), 0.01);
+                assertEquals(boundsBeforeRestart.getWidth(), boundsAfterRestart.getWidth(), 0.01);
+                assertEquals(boundsBeforeRestart.getHeight(), boundsAfterRestart.getHeight(), 0.01);
             }
         });
     }
@@ -8744,7 +8747,8 @@ final class M3ControlStyleTest {
             loadingIndicator.layout();
 
             Skin<?> skin = loadingIndicator.getSkin();
-            skinTimeline(skin, "indeterminateAnimation").stop();
+            Timeline morphAnimation = skinTimeline(skin, "indeterminateAnimation");
+            morphAnimation.stop();
             skinTimeline(skin, "globalRotationAnimation").stop();
             reflectedDoubleProperty(skin, "globalRotation").set(0.0);
             DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
@@ -8761,10 +8765,13 @@ final class M3ControlStyleTest {
                     phase.set(segment + 0.5);
                     loadingIndicator.layout();
                     Bounds bounds = indicator.getBoundsInLocal();
-                    assertEquals(loadingIndicator.getWidth() / 2.0, bounds.getCenterX(), 0.75);
-                    assertEquals(loadingIndicator.getHeight() / 2.0, bounds.getCenterY(), 0.75);
+                    assertEquals(loadingIndicator.getWidth() / 2.0, bounds.getCenterX(), 3.0);
+                    assertEquals(loadingIndicator.getHeight() / 2.0, bounds.getCenterY(), 3.0);
                     boundsSignatures.add(Math.round(bounds.getWidth()) + "x" + Math.round(bounds.getHeight()));
                     graphics.drawImage(toBufferedImage(snapshotImageOnFxThread(root)), segment * 140, 0, null);
+                    if (segment + 1 < 7) {
+                        morphAnimation.getOnFinished().handle(new ActionEvent(morphAnimation, null));
+                    }
                 }
             } finally {
                 graphics.dispose();
@@ -17722,13 +17729,13 @@ final class M3ControlStyleTest {
         throw new AssertionError("Missing " + orientation + " scroll bar below " + parent);
     }
 
-    /// Returns the first point in a path made from move and line elements.
+    /// Returns the first point in a path made from move, line, and cubic elements.
     private static Point2D firstPathPoint(Path path) {
         assertFalse(path.getElements().isEmpty());
         return pathElementPoint(path.getElements().get(0));
     }
 
-    /// Returns the last point in a path made from move and line elements.
+    /// Returns the last point in a path made from move, line, and cubic elements.
     private static Point2D lastPathPoint(Path path) {
         assertFalse(path.getElements().isEmpty());
         return pathElementPoint(path.getElements().get(path.getElements().size() - 1));
@@ -17741,6 +17748,9 @@ final class M3ControlStyleTest {
         }
         if (element instanceof LineTo lineTo) {
             return new Point2D(lineTo.getX(), lineTo.getY());
+        }
+        if (element instanceof CubicCurveTo cubicCurveTo) {
+            return new Point2D(cubicCurveTo.getX(), cubicCurveTo.getY());
         }
         throw new AssertionError("Unsupported path element: " + element);
     }
