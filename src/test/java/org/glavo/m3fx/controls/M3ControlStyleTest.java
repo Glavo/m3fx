@@ -2558,6 +2558,101 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that a focused outlined text input layout keeps text visually centered in a shown window.
+    @Test
+    void focusedOutlinedTextInputLayoutKeepsTextCenteredInWindowAfterEdits() {
+        runOnFxThread(() -> {
+            M3TextField textField = createTextField("", M3TextInputVariant.OUTLINED);
+            textField.setPrefWidth(360.0);
+
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
+            layout.setLabelText("Outlined with text");
+            layout.setLeading(new M3Icon("T"));
+            layout.setClearButtonEnabled(true);
+            layout.setCharacterCounterVisible(true);
+            layout.setCharacterLimit(24);
+            layout.setPrefWidth(360.0);
+
+            Color surface = Color.rgb(248, 240, 249);
+            StackPane root = new StackPane(layout);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 430.0, 150.0);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(scene);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.resize(430.0, 150.0);
+                root.layout();
+
+                textField.requestFocus();
+                assertTrue(textField.isFocused());
+                textField.setText("M3FX");
+                textField.positionCaret(textField.getText().length());
+
+                Timeline labelAnimation = controlTimeline(layout, "labelAnimation");
+                Timeline trailingAnimation = controlTimeline(layout, "trailingAnimation");
+                labelAnimation.jumpTo(Duration.seconds(1.0));
+                trailingAnimation.jumpTo(Duration.seconds(1.0));
+                root.applyCss();
+                root.layout();
+                layout.layout();
+
+                Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
+                Label label = assertInstanceOf(
+                        Label.class,
+                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                );
+                Text inputText = renderedTextNode(textField, "M3FX");
+                Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+
+                Bounds fieldBounds = textField.localToScene(textField.getBoundsInLocal());
+                Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
+                Bounds inputTextBounds = inputText.localToScene(inputText.getBoundsInLocal());
+                Bounds containerBounds = inputContainer.localToScene(inputContainer.getBoundsInLocal());
+
+                assertTrue(layout.isLabelFloating());
+                assertTrue(outlineNotchGap(outline) >= labelBounds.getWidth() - 1.0,
+                        () -> "outline gap is narrower than the floating label: gap="
+                                + outlineNotchGap(outline) + ", label=" + labelBounds);
+                assertTrue(labelBounds.getMaxY() < inputTextBounds.getMinY(),
+                        () -> "labelBounds=" + labelBounds + ", inputTextBounds=" + inputTextBounds);
+                assertTrue(inputTextBounds.getMaxY() <= containerBounds.getMaxY() - 6.0,
+                        () -> "inputTextBounds=" + inputTextBounds + ", containerBounds=" + containerBounds);
+                assertOutlinedTextInputsKeepTextCentered(root);
+
+                WritableImage image = snapshotImageOnFxThread(root);
+                Rectangle2D inkBounds = contrastingPixelBounds(image, inputText, surface, 0.04);
+                double fieldCenterY = (fieldBounds.getMinY() + fieldBounds.getMaxY()) / 2.0;
+                double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
+                assertEquals(fieldCenterY, inkCenterY, 4.0,
+                        () -> "outlined input rendered ink is vertically misaligned: field="
+                                + fieldBounds + ", ink=" + inkBounds);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-text-field-focused-outlined-alignment.png"
+                ));
+
+                layout.getClearButton().fire();
+
+                assertEquals("", textField.getText());
+                assertTrue(textField.isFocused());
+                assertTrue(layout.isLabelFloating());
+                assertEquals(2, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertEquals(textField, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertEquals(16.0, textField.getPadding().getRight(), 0.0001);
+                stopTimelines(labelAnimation, trailingAnimation);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that text input layout presentation changes use Material motion timelines.
     @Test
     void textInputLayoutAnimatesLabelClearButtonAndSupportingRow() {
@@ -17929,6 +18024,39 @@ final class M3ControlStyleTest {
 
         assertTrue(totalWeight > 0.0, () -> "No contrasting pixels found for " + node);
         return new Point2D(weightedX / totalWeight, weightedY / totalWeight);
+    }
+
+    /// Returns the bounds of rendered pixels inside a node that contrast with the reference color.
+    private static Rectangle2D contrastingPixelBounds(
+            WritableImage image,
+            Node node,
+            Color reference,
+            double minimumDistance
+    ) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
+        int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
+        int endX = Math.min((int) image.getWidth(), (int) Math.ceil(bounds.getMaxX()));
+        int endY = Math.min((int) image.getHeight(), (int) Math.ceil(bounds.getMaxY()));
+        int minX = endX;
+        int minY = endY;
+        int maxX = startX - 1;
+        int maxY = startY - 1;
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                if (color.getOpacity() > 0.1 && colorDistance(color, reference) >= minimumDistance) {
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+        }
+
+        assertTrue(maxX >= minX && maxY >= minY, () -> "No contrasting pixels found for " + node);
+        return new Rectangle2D(minX, minY, maxX - minX + 1.0, maxY - minY + 1.0);
     }
 
     /// Returns the icon text rendered by a picker header navigation button.
