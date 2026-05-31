@@ -50,6 +50,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The optional contained loading indicator container.
     private final Region container = new Region();
 
+    /// The reusable shape morph scratch storage.
+    private final M3ShapeMorph.Scratch shapeScratch = new M3ShapeMorph.Scratch();
+
     /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
@@ -287,7 +290,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                     indicatorSize,
                     INDETERMINATE_SEQUENCE.scaleFactor(),
                     shapeScaleFor(segmentProgress, true),
-                    indeterminateRotationFor(segmentProgress)
+                    indeterminateRotationFor(segmentProgress),
+                    shapeScratch
             );
         } else {
             double progress = smoothStep(clamp(phase));
@@ -299,7 +303,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                     indicatorSize,
                     DETERMINATE_SEQUENCE.scaleFactor(),
                     1.0,
-                    -phase * 0.5
+                    -phase * 0.5,
+                    shapeScratch
             );
         }
     }

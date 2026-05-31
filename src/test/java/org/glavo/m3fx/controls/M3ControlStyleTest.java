@@ -8760,6 +8760,41 @@ final class M3ControlStyleTest {
         assertTrue(indicator.getElements().size() > 24);
     }
 
+    /// Verifies that loading indicator morph frames reuse their path elements.
+    @Test
+    void loadingIndicatorMorphFramesReusePathElements() {
+        runOnFxThreadAndWait(() -> {
+            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+            Pane root = new Pane(loadingIndicator);
+            Scene scene = new Scene(root, 120.0, 80.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            loadingIndicator.resize(72.0, 72.0);
+            loadingIndicator.layout();
+
+            Skin<?> skin = loadingIndicator.getSkin();
+            skinTimeline(skin, "indeterminateAnimation").stop();
+            skinTimeline(skin, "globalRotationAnimation").stop();
+            reflectedDoubleProperty(skin, "globalRotation").set(0.0);
+            DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
+            Path indicator = assertInstanceOf(
+                    Path.class,
+                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
+            );
+            Object[] elements = indicator.getElements().toArray();
+
+            for (int i = 0; i < 12; i++) {
+                phase.set(i / 3.0);
+                loadingIndicator.layout();
+                assertEquals(elements.length, indicator.getElements().size());
+                for (int j = 0; j < elements.length; j++) {
+                    assertSame(elements[j], indicator.getElements().get(j));
+                }
+            }
+        });
+    }
+
     /// Verifies that sampled indeterminate loading indicator frames stay centered.
     @Test
     void loadingIndicatorIndeterminateMorphFramesStayCentered() {
