@@ -170,8 +170,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             displayedProgress.set(0.0);
             if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
                 indeterminateAnimation.stop();
-                globalRotationAnimation.stop();
                 resetIndeterminateAnimationState();
+                startBasicIndeterminateAnimation();
             } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING
                     || globalRotationAnimation.getStatus() != Animation.Status.RUNNING) {
                 startIndeterminateAnimation();
@@ -186,10 +186,19 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// Starts the indeterminate morph and global rotation loops.
     private void startIndeterminateAnimation() {
+        indeterminateAnimation.stop();
+        globalRotationAnimation.stop();
         resetIndeterminateAnimationState();
         configureIndeterminateMorphSegment();
         configureGlobalRotationAnimation();
         indeterminateAnimation.playFromStart();
+        globalRotationAnimation.playFromStart();
+    }
+
+    /// Starts the reduced indeterminate loop used when full motion is disabled.
+    private void startBasicIndeterminateAnimation() {
+        globalRotationAnimation.stop();
+        configureGlobalRotationAnimation();
         globalRotationAnimation.playFromStart();
     }
 
@@ -280,6 +289,21 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         }
 
         if (indeterminate) {
+            if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
+                INDETERMINATE_SEQUENCE.morphAt(0).writeTo(
+                        indicator,
+                        0.0,
+                        centerX,
+                        centerY,
+                        indicatorSize,
+                        INDETERMINATE_SEQUENCE.scaleFactor(),
+                        1.0,
+                        globalRotation.get(),
+                        shapeScratch
+                );
+                return;
+            }
+
             double segmentProgress = phase - currentMorphIndex;
             double progress = clamp(segmentProgress);
             INDETERMINATE_SEQUENCE.morphAt(currentMorphIndex).writeTo(

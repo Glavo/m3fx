@@ -36,6 +36,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The longest visible sweep used by indeterminate progress.
     private static final double INDETERMINATE_MAX_SWEEP = 96.0;
 
+    /// The fixed sweep used by reduced indeterminate progress.
+    private static final double BASIC_INDETERMINATE_SWEEP = 72.0;
+
     /// The phase used at both ends of an indeterminate progress cycle.
     private static final double INDETERMINATE_START_PHASE = 0.0;
 
@@ -173,7 +176,10 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
         double progress = progressIndicator.getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
-            double sweepFraction = indeterminateSweep(indeterminatePhase.get()) / 360.0;
+            double sweepFraction = indeterminateSweep(
+                    indeterminatePhase.get(),
+                    M3Animation.areAnimationsEnabled(progressIndicator)
+            ) / 360.0;
             double start = indeterminatePhase.get();
             layoutCircularTrackPath(waveTrack, centerX, centerY, radius, strokeWidth, start, start + sweepFraction);
             layoutCircularWavePath(
@@ -211,7 +217,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             track.setVisible(false);
             indicator.setStartAngle(indeterminateStartAngle(indeterminatePhase.get()));
-            indicator.setLength(-indeterminateSweep(indeterminatePhase.get()));
+            indicator.setLength(-indeterminateSweep(indeterminatePhase.get(), M3Animation.areAnimationsEnabled(getSkinnable())));
             return;
         }
 
@@ -225,18 +231,20 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
-            if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
-                indeterminateAnimation.stop();
-                indeterminatePhase.set(INDETERMINATE_START_PHASE);
-            } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
-                configureIndeterminateAnimation();
-                indeterminateAnimation.playFromStart();
-            }
+            startIndeterminateAnimation();
+            getSkinnable().requestLayout();
         } else {
             indeterminateAnimation.stop();
             indeterminatePhase.set(INDETERMINATE_START_PHASE);
             animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
         }
+    }
+
+    /// Starts the indeterminate linear phase loop.
+    private void startIndeterminateAnimation() {
+        indeterminateAnimation.stop();
+        configureIndeterminateAnimation();
+        indeterminateAnimation.playFromStart();
     }
 
     /// Configures the indeterminate sweep with the current owner behavior timing.
@@ -282,7 +290,11 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     }
 
     /// Returns the animated sweep for an indeterminate progress phase.
-    private static double indeterminateSweep(double phase) {
+    private static double indeterminateSweep(double phase, boolean fullMotion) {
+        if (!fullMotion) {
+            return BASIC_INDETERMINATE_SWEEP;
+        }
+
         double wave = 0.5 - Math.cos(phase * Math.PI * 2.0) / 2.0;
         return INDETERMINATE_MIN_SWEEP
                 + (INDETERMINATE_MAX_SWEEP - INDETERMINATE_MIN_SWEEP) * wave;

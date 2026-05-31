@@ -295,18 +295,20 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
-            if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
-                indeterminateAnimation.stop();
-                indeterminatePosition.set(INDETERMINATE_START_POSITION);
-            } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
-                configureIndeterminateAnimation();
-                indeterminateAnimation.playFromStart();
-            }
+            startIndeterminateAnimation();
+            getSkinnable().requestLayout();
         } else {
             indeterminateAnimation.stop();
             indeterminatePosition.set(INDETERMINATE_START_POSITION);
             animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
         }
+    }
+
+    /// Starts the indeterminate linear segment loop.
+    private void startIndeterminateAnimation() {
+        indeterminateAnimation.stop();
+        configureIndeterminateAnimation();
+        indeterminateAnimation.playFromStart();
     }
 
     /// Configures the indeterminate sweep with the current owner behavior timing.

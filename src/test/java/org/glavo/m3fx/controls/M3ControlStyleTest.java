@@ -8600,10 +8600,10 @@ final class M3ControlStyleTest {
             M3MotionSettings.setAnimationsEnabled(root, false);
 
             assertFalse(M3MotionSettings.areAnimationsEnabled(progressBar));
-            assertFalse(progressBarAnimation.getStatus() == javafx.animation.Animation.Status.RUNNING);
-            assertFalse(progressIndicatorAnimation.getStatus() == javafx.animation.Animation.Status.RUNNING);
+            assertEquals(javafx.animation.Animation.Status.RUNNING, progressBarAnimation.getStatus());
+            assertEquals(javafx.animation.Animation.Status.RUNNING, progressIndicatorAnimation.getStatus());
             assertFalse(loadingIndicatorAnimation.getStatus() == javafx.animation.Animation.Status.RUNNING);
-            assertFalse(loadingIndicatorRotation.getStatus() == javafx.animation.Animation.Status.RUNNING);
+            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorRotation.getStatus());
 
             M3MotionSettings.setAnimationsEnabled(root, true);
 
@@ -8933,6 +8933,58 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that disabled full motion keeps a basic loading indicator rotation without morphing.
+    @Test
+    void loadingIndicatorUsesBasicRotationWhenAnimationsDisabled() {
+        runOnFxThreadAndWait(() -> {
+            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+            loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
+            Pane root = new Pane(loadingIndicator);
+            Scene scene = new Scene(root, 140.0, 140.0);
+
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            loadingIndicator.resize(112.0, 112.0);
+            loadingIndicator.layout();
+
+            Skin<?> skin = loadingIndicator.getSkin();
+            Timeline morphAnimation = skinTimeline(skin, "indeterminateAnimation");
+            Timeline rotationAnimation = skinTimeline(skin, "globalRotationAnimation");
+            DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
+            DoubleProperty rotation = reflectedDoubleProperty(skin, "globalRotation");
+            Path indicator = assertInstanceOf(
+                    Path.class,
+                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
+            );
+
+            assertEquals(Animation.Status.STOPPED, morphAnimation.getStatus());
+            assertEquals(Animation.Status.RUNNING, rotationAnimation.getStatus());
+
+            phase.set(0.0);
+            rotation.set(0.0);
+            loadingIndicator.layout();
+            Point2D initialPoint = firstPathPoint(indicator);
+            Bounds initialBounds = indicator.getBoundsInLocal();
+
+            phase.set(0.75);
+            rotation.set(0.0);
+            loadingIndicator.layout();
+            Point2D changedPhasePoint = firstPathPoint(indicator);
+            Bounds changedPhaseBounds = indicator.getBoundsInLocal();
+
+            rotation.set(0.03);
+            loadingIndicator.layout();
+            Point2D rotatedPoint = firstPathPoint(indicator);
+
+            assertEquals(0.0, initialPoint.distance(changedPhasePoint), 0.001);
+            assertEquals(initialBounds.getWidth(), changedPhaseBounds.getWidth(), 0.001);
+            assertEquals(initialBounds.getHeight(), changedPhaseBounds.getHeight(), 0.001);
+            assertTrue(initialPoint.distance(rotatedPoint) > 4.0,
+                    () -> "initialPoint=" + initialPoint + ", rotatedPoint=" + rotatedPoint);
+        });
+    }
+
     /// Verifies that the contained loading indicator aligns the active shape with its container.
     @Test
     void containedLoadingIndicatorCentersShapeInContainer() {
@@ -9078,6 +9130,36 @@ final class M3ControlStyleTest {
                     assertTrue(Math.abs(bar.getX() - initialX.get()) > 0.1);
                 }
         );
+    }
+
+    /// Verifies that disabled full motion keeps a basic indeterminate progress bar loop.
+    @Test
+    void progressBarUsesBasicIndeterminateLoopWhenAnimationsDisabled() {
+        runOnFxThreadAndWait(() -> {
+            M3ProgressBar progressBar = new M3ProgressBar();
+            Pane root = new Pane(progressBar);
+            Scene scene = new Scene(root, 240.0, 40.0);
+
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            progressBar.resize(200.0, 16.0);
+            progressBar.layout();
+
+            Timeline animation = skinTimeline(progressBar.getSkin(), "indeterminateAnimation");
+            DoubleProperty position = reflectedDoubleProperty(progressBar.getSkin(), "indeterminatePosition");
+            Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
+
+            assertEquals(Animation.Status.RUNNING, animation.getStatus());
+
+            position.set(0.20);
+            progressBar.layout();
+            double initialX = bar.getX();
+
+            position.set(0.70);
+            progressBar.layout();
+            assertTrue(Math.abs(bar.getX() - initialX) > 10.0);
+        });
     }
 
     /// Verifies that expressive progress bars render a wavy active path with separated track and stop indicator.
@@ -9296,6 +9378,40 @@ final class M3ControlStyleTest {
                     assertTrue(indicator.getLength() >= -96.0);
                 }
         );
+    }
+
+    /// Verifies that disabled full motion keeps a basic indeterminate circular progress loop.
+    @Test
+    void progressIndicatorUsesBasicIndeterminateLoopWhenAnimationsDisabled() {
+        runOnFxThreadAndWait(() -> {
+            M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
+            Pane root = new Pane(progressIndicator);
+            Scene scene = new Scene(root, 80.0, 80.0);
+
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            progressIndicator.resize(48.0, 48.0);
+            progressIndicator.layout();
+
+            Timeline animation = skinTimeline(progressIndicator.getSkin(), "indeterminateAnimation");
+            DoubleProperty phase = reflectedDoubleProperty(progressIndicator.getSkin(), "indeterminatePhase");
+            Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
+
+            assertEquals(Animation.Status.RUNNING, animation.getStatus());
+
+            phase.set(0.0);
+            progressIndicator.layout();
+            double initialStartAngle = indicator.getStartAngle();
+            double initialLength = indicator.getLength();
+
+            phase.set(0.5);
+            progressIndicator.layout();
+
+            assertTrue(Math.abs(indicator.getStartAngle() - initialStartAngle) > 100.0);
+            assertEquals(initialLength, indicator.getLength(), 0.0001);
+            assertEquals(-72.0, indicator.getLength(), 0.0001);
+        });
     }
 
     /// Verifies that indeterminate circular progress uses a seamless phase cycle.
