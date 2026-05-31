@@ -8590,6 +8590,8 @@ final class M3ControlStyleTest {
             Timeline loadingIndicatorAnimation = skinTimeline(loadingIndicator.getSkin(), "indeterminateAnimation");
             Timeline loadingIndicatorRotation = skinTimeline(loadingIndicator.getSkin(), "globalRotationAnimation");
 
+            assertEquals(Animation.INDEFINITE, loadingIndicatorAnimation.getCycleCount());
+            assertEquals(Animation.INDEFINITE, loadingIndicatorRotation.getCycleCount());
             assertEquals(javafx.animation.Animation.Status.RUNNING, progressBarAnimation.getStatus());
             assertEquals(javafx.animation.Animation.Status.RUNNING, progressIndicatorAnimation.getStatus());
             assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorAnimation.getStatus());
@@ -8714,10 +8716,16 @@ final class M3ControlStyleTest {
                     Path.class,
                     loadingIndicator.lookup(".m3-loading-indicator-indicator")
             );
+            Set<String> radialSignatures = new HashSet<>();
 
             for (int segment = 0; segment < 7; segment++) {
                 phase.set(segment + 0.5);
                 loadingIndicator.layout();
+                radialSignatures.add(loadingIndicatorRadialSignature(
+                        indicator,
+                        loadingIndicator.getWidth() / 2.0,
+                        loadingIndicator.getHeight() / 2.0
+                ));
                 assertLoadingIndicatorPathRadiallyBalanced(
                         indicator,
                         loadingIndicator.getWidth() / 2.0,
@@ -8732,6 +8740,11 @@ final class M3ControlStyleTest {
                     ));
                 }
             }
+            assertTrue(
+                    radialSignatures.size() >= 5,
+                    () -> "loading indicator morph sequence collapsed to "
+                            + radialSignatures.size() + " distinct midpoint shapes"
+            );
         });
     }
 
@@ -17448,6 +17461,17 @@ final class M3ControlStyleTest {
                             + sampleIndex + ": first=" + first + ", opposite=" + opposite
             );
         }
+    }
+
+    /// Returns a coarse radial signature for one loading-indicator morph frame.
+    private static String loadingIndicatorRadialSignature(Path path, double centerX, double centerY) {
+        int sampleCount = path.getElements().size() - 1;
+        StringBuilder signature = new StringBuilder();
+        for (int i = 0; i < sampleCount; i += 8) {
+            Point2D point = pathPoint(path, i);
+            signature.append(Math.round(point.distance(centerX, centerY))).append(',');
+        }
+        return signature.toString();
     }
 
     /// Returns a sampled point from a path made of one move and line segments.

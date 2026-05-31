@@ -36,8 +36,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The number of default indeterminate shape states.
     private static final int INDETERMINATE_SHAPE_COUNT = 7;
 
-    /// The rotation added by each morph segment.
-    private static final double QUARTER_ROTATION = 0.25;
+    /// The rotation applied across one full morph cycle.
+    private static final double MORPH_CYCLE_ROTATION = 1.0;
 
     /// The spring-like interpolator used for each morph segment.
     private static final Interpolator MORPH_INTERPOLATOR = Interpolator.SPLINE(0.20, 0.00, 0.00, 1.00);
@@ -50,15 +50,15 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// Shape coefficient states used by the indeterminate morphing loop.
     ///
-    /// The states intentionally share one even harmonic so interpolated frames remain radially balanced.
+    /// The states intentionally use only even harmonics so interpolated frames remain radially balanced.
     private static final double[][] INDETERMINATE_SHAPES = {
-            coefficients(8, 0.08, 0.00),
-            coefficients(8, 0.18, 0.03),
-            coefficients(8, 0.12, 0.06),
-            coefficients(8, 0.20, 0.09),
-            coefficients(8, 0.11, 0.12),
-            coefficients(8, 0.17, 0.15),
-            coefficients(8, 0.10, 0.18)
+            mixedCoefficients(2, 0.10, 0.00, 6, 0.06, 0.08),
+            mixedCoefficients(4, 0.15, 0.04, 8, 0.05, 0.11),
+            mixedCoefficients(6, 0.14, 0.10, 2, 0.07, 0.22),
+            mixedCoefficients(8, 0.17, 0.16, 4, 0.08, 0.00),
+            mixedCoefficients(2, 0.16, 0.25, 6, 0.05, 0.02),
+            mixedCoefficients(4, 0.13, 0.20, 8, 0.08, 0.06),
+            mixedCoefficients(6, 0.12, 0.27, 2, 0.08, 0.12)
     };
 
     /// The determinate starting shape.
@@ -351,9 +351,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Returns the official-style indeterminate rotation phase for a morph segment.
     private double indeterminateRotationFor(double phase) {
         double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
-        int index = (int) Math.floor(normalized);
-        double progress = normalized - index;
-        return progress * QUARTER_ROTATION + index * QUARTER_ROTATION + globalRotation.get();
+        return normalized / INDETERMINATE_SHAPE_COUNT * MORPH_CYCLE_ROTATION + globalRotation.get();
     }
 
     /// Returns a linearly interpolated determinate radius multiplier.
@@ -407,14 +405,32 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// Creates harmonic coefficients for a radial shape.
     private static double[] coefficients(int lobes, double amplitude, double phaseOffset) {
+        return mixedCoefficients(lobes, amplitude, phaseOffset);
+    }
+
+    /// Creates harmonic coefficients from lobe, amplitude, and phase-offset triples.
+    private static double[] mixedCoefficients(double... terms) {
+        if (terms.length % 3 != 0) {
+            throw new IllegalArgumentException("terms must contain lobe, amplitude, and phase-offset triples");
+        }
+
         double[] coefficients = new double[HARMONIC_COUNT * 2 + 1];
         coefficients[0] = 1.0;
-        if (lobes > 0 && lobes <= HARMONIC_COUNT && amplitude > 0.0) {
+        double amplitudeSum = 0.0;
+        for (int i = 0; i < terms.length; i += 3) {
+            int lobes = (int) terms[i];
+            double amplitude = terms[i + 1];
+            double phaseOffset = terms[i + 2];
+            if (lobes <= 0 || lobes > HARMONIC_COUNT || amplitude <= 0.0) {
+                continue;
+            }
+
             double harmonicPhase = lobes * Math.PI * 2.0 * phaseOffset;
-            coefficients[0] -= amplitude * 0.5;
-            coefficients[lobes] = amplitude * 0.5 * Math.cos(harmonicPhase);
-            coefficients[HARMONIC_COUNT + lobes] = -amplitude * 0.5 * Math.sin(harmonicPhase);
+            amplitudeSum += amplitude;
+            coefficients[lobes] += amplitude * 0.5 * Math.cos(harmonicPhase);
+            coefficients[HARMONIC_COUNT + lobes] -= amplitude * 0.5 * Math.sin(harmonicPhase);
         }
+        coefficients[0] -= amplitudeSum * 0.5;
         return coefficients;
     }
 }
