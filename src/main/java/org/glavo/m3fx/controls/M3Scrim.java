@@ -23,6 +23,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -82,6 +83,10 @@ public class M3Scrim extends Region {
 
     /// The scrim show and hide animation.
     private final Timeline visibilityAnimation = new Timeline();
+
+    /// Observes runtime motion settings while this scrim is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Creates a scrim.
     public M3Scrim() {
@@ -300,6 +305,11 @@ public class M3Scrim extends Region {
         setVisible(shown);
         setManaged(shown);
         setOpacity(shown ? getVisibleOpacity() : 0.0);
+    }
+
+    /// Applies changed runtime motion settings to the active visibility animation.
+    private void refreshMotionSettings() {
+        M3Animation.finishRunningAnimationsIfDisabled(this, visibilityAnimation);
     }
 
     /// Validates a normalized opacity value.

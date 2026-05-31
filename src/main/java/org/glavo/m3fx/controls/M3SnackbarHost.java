@@ -28,6 +28,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SnackbarHostSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -87,6 +88,10 @@ public class M3SnackbarHost extends Control {
 
     /// The active hide animation.
     private final Timeline hideAnimation = new Timeline();
+
+    /// Observes runtime motion settings while this host is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Reports hosted snackbar focus changes to accessibility clients.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -390,6 +395,11 @@ public class M3SnackbarHost extends Control {
         );
         hideAnimation.setOnFinished(event -> removeSnackbar(target));
         M3Animation.playFromStart(this, hideAnimation);
+    }
+
+    /// Applies changed runtime motion settings to the active snackbar animations.
+    private void refreshMotionSettings() {
+        M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
     }
 
     /// Schedules automatic dismissal for the target snackbar.

@@ -13215,6 +13215,176 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that finite overlay and container-owned animations settle when runtime motion is disabled.
+    @Test
+    void overlayOwnedStateTransitionsSettleWhenMotionIsDisabled() {
+        runOnFxThread(() -> {
+            M3Scrim scrim = new M3Scrim();
+            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side content"));
+            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom content"));
+            M3SearchView searchView = new M3SearchView("Search", new M3ListItem("Result"));
+            M3SnackbarHost snackbarHost = new M3SnackbarHost();
+            M3FloatingActionButton action = new M3FloatingActionButton("A");
+            M3FabMenu fabMenu = new M3FabMenu();
+            fabMenu.addItem(action);
+            snackbarHost.setDisplayDuration(Duration.INDEFINITE);
+            VBox root = new VBox(12.0, scrim, sideSheet, bottomSheet, searchView, snackbarHost, fabMenu);
+            Scene scene = new Scene(root, 520.0, 680.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(520.0, 680.0);
+            root.layout();
+
+            Timeline scrimAnimation = controlTimeline(scrim, "visibilityAnimation");
+            Timeline sideSheetAnimation = controlTimeline(sideSheet, "visibilityAnimation");
+            Timeline bottomSheetAnimation = controlTimeline(bottomSheet, "visibilityAnimation");
+            Timeline searchAnimation = controlTimeline(searchView, "resultsVisibilityAnimation");
+            Timeline snackbarAnimation = controlTimeline(snackbarHost, "showAnimation");
+
+            try {
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                scrim.hide();
+                sideSheet.hide();
+                bottomSheet.hide();
+                searchView.deactivate();
+                snackbarHost.show("Saved");
+                fabMenu.show();
+
+                Animation fabAnimation = controlAnimation(fabMenu, "animation");
+                Timeline[] timelines = {
+                        scrimAnimation,
+                        sideSheetAnimation,
+                        bottomSheetAnimation,
+                        searchAnimation,
+                        snackbarAnimation
+                };
+                for (Timeline animation : timelines) {
+                    animation.jumpTo(Duration.millis(50.0));
+                    assertEquals(Animation.Status.RUNNING, animation.getStatus());
+                }
+                fabAnimation.jumpTo(Duration.millis(50.0));
+                assertEquals(Animation.Status.RUNNING, fabAnimation.getStatus());
+
+                M3MotionSettings.setAnimationsEnabled(root, false);
+
+                for (Timeline animation : timelines) {
+                    assertEquals(Animation.Status.STOPPED, animation.getStatus());
+                }
+                assertEquals(Animation.Status.STOPPED, fabAnimation.getStatus());
+                assertFalse(scrim.isVisible());
+                assertFalse(scrim.isManaged());
+                assertEquals(0.0, scrim.getOpacity(), 0.0001);
+                assertFalse(sideSheet.isVisible());
+                assertFalse(sideSheet.isManaged());
+                assertEquals(0.0, sideSheet.getOpacity(), 0.0001);
+                assertFalse(bottomSheet.isVisible());
+                assertFalse(bottomSheet.isManaged());
+                assertEquals(0.0, bottomSheet.getOpacity(), 0.0001);
+                assertFalse(searchView.getResultsContainer().isVisible());
+                assertFalse(searchView.getResultsContainer().isManaged());
+                assertEquals(0.0, searchView.getResultsContainer().getOpacity(), 0.0001);
+
+                M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, snackbarHost.getSnackbar());
+                assertTrue(snackbar.isVisible());
+                assertTrue(snackbar.isManaged());
+                assertEquals(1.0, snackbar.getOpacity(), 0.0001);
+                assertEquals(0.0, snackbar.getTranslateY(), 0.0001);
+                assertTrue(action.isVisible());
+                assertTrue(action.isManaged());
+                assertEquals(1.0, action.getOpacity(), 0.0001);
+                assertEquals(1.0, action.getScaleX(), 0.0001);
+                assertEquals(1.0, action.getScaleY(), 0.0001);
+                assertEquals(0.0, action.getTranslateY(), 0.0001);
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                stopTimelines(
+                        scrimAnimation,
+                        sideSheetAnimation,
+                        bottomSheetAnimation,
+                        searchAnimation,
+                        snackbarAnimation
+                );
+            }
+        });
+    }
+
+    /// Verifies that detached popup surface animations settle and inherit updated motion settings.
+    @Test
+    void popupSurfaceTransitionsSettleWhenMotionIsDisabled() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
+            M3MenuButton menuButton = new M3MenuButton("Open menu", new M3MenuItem("Duplicate"), subMenuItem);
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
+            M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 18),
+                    LocalDate.of(2026, 5, 25)
+            );
+            VBox root = new VBox(16.0, menuButton, dateField, rangeField);
+
+            try {
+                Scene scene = new Scene(root, 820.0, 620.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(820.0, 620.0);
+                root.layout();
+
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                menuButton.showMenu();
+                Timeline menuShowAnimation = controlTimeline(menuButton, "showAnimation");
+                menuShowAnimation.jumpTo(Duration.millis(50.0));
+                assertEquals(Animation.Status.RUNNING, menuShowAnimation.getStatus());
+
+                M3MotionSettings.setAnimationsEnabled(root, false);
+
+                assertStoppedWithIdentityTransform(menuShowAnimation, menuButton.getMenu());
+
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                subMenuItem.showSubMenu();
+                Timeline subMenuShowAnimation = controlTimeline(subMenuItem, "showAnimation");
+                subMenuShowAnimation.jumpTo(Duration.millis(50.0));
+                assertEquals(Animation.Status.RUNNING, subMenuShowAnimation.getStatus());
+
+                M3MotionSettings.setAnimationsEnabled(root, false);
+
+                assertStoppedWithIdentityTransform(subMenuShowAnimation, subMenuItem.getSubMenu());
+                menuButton.hideMenu();
+
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                dateField.showPicker();
+                Timeline dateShowAnimation = controlTimeline(dateField, "showAnimation");
+                Parent datePopupContent = assertInstanceOf(Parent.class, dateField.getPicker().getParent());
+                dateShowAnimation.jumpTo(Duration.millis(50.0));
+                assertEquals(Animation.Status.RUNNING, dateShowAnimation.getStatus());
+
+                M3MotionSettings.setAnimationsEnabled(root, false);
+
+                assertStoppedWithIdentityTransform(dateShowAnimation, datePopupContent);
+                dateField.hidePicker();
+
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                rangeField.showPicker();
+                Timeline rangeShowAnimation = controlTimeline(rangeField, "showAnimation");
+                Parent rangePopupContent = assertInstanceOf(Parent.class, rangeField.getPicker().getParent());
+                rangeShowAnimation.jumpTo(Duration.millis(50.0));
+                assertEquals(Animation.Status.RUNNING, rangeShowAnimation.getStatus());
+
+                M3MotionSettings.setAnimationsEnabled(root, false);
+
+                assertStoppedWithIdentityTransform(rangeShowAnimation, rangePopupContent);
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                menuButton.hideMenu();
+                dateField.hidePicker();
+                rangeField.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that the base stylesheet provides visible default state layer feedback.
     @Test
     void baseStylesheetProvidesDefaultStateLayerOpacity() {
@@ -17197,6 +17367,16 @@ final class M3ControlStyleTest {
         return assertInstanceOf(DropShadow.class, node.getEffect());
     }
 
+    /// Verifies that an animation stopped with a popup or overlay surface at its identity transform.
+    private static void assertStoppedWithIdentityTransform(Animation animation, Node surface) {
+        assertEquals(Animation.Status.STOPPED, animation.getStatus());
+        assertEquals(1.0, surface.getOpacity(), 0.0001);
+        assertEquals(1.0, surface.getScaleX(), 0.0001);
+        assertEquals(1.0, surface.getScaleY(), 0.0001);
+        assertEquals(0.0, surface.getTranslateX(), 0.0001);
+        assertEquals(0.0, surface.getTranslateY(), 0.0001);
+    }
+
     /// Returns a region looked up below a node.
     private static Region lookupRegion(Node node, String selector) {
         Node child = node.lookup(selector);
@@ -17212,6 +17392,11 @@ final class M3ControlStyleTest {
     /// Returns a private control timeline used by animation-focused tests.
     private static Timeline controlTimeline(Object control, String fieldName) {
         return reflectedTimeline(control, fieldName);
+    }
+
+    /// Returns a private control animation used by animation-focused tests.
+    private static Animation controlAnimation(Object control, String fieldName) {
+        return reflectedAnimation(control, fieldName);
     }
 
     /// Runs a test action on the JavaFX application thread and waits for completion.
@@ -17261,6 +17446,17 @@ final class M3ControlStyleTest {
             java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
             field.setAccessible(true);
             return assertInstanceOf(Timeline.class, field.get(target));
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /// Returns a private animation field from a test target.
+    private static Animation reflectedAnimation(Object target, String fieldName) {
+        try {
+            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
+            field.setAccessible(true);
+            return assertInstanceOf(Animation.class, field.get(target));
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }

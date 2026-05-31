@@ -25,6 +25,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BottomSheetSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -120,6 +121,10 @@ public class M3BottomSheet extends Control {
 
     /// The sheet show and hide animation.
     private final Timeline visibilityAnimation = new Timeline();
+
+    /// Observes runtime motion settings while this sheet is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// The node focused before this modal sheet was shown.
     private @Nullable Node focusOwnerBeforeShown;
@@ -492,6 +497,11 @@ public class M3BottomSheet extends Control {
         setManaged(shown);
         setOpacity(shown ? 1.0 : 0.0);
         setTranslateY(shown ? 0.0 : hiddenTranslateY());
+    }
+
+    /// Applies changed runtime motion settings to the active visibility animation.
+    private void refreshMotionSettings() {
+        M3Animation.finishRunningAnimationsIfDisabled(this, visibilityAnimation);
     }
 
     /// Returns the off-screen vertical translation used when the sheet is hidden.

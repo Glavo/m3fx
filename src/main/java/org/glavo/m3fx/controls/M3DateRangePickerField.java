@@ -35,6 +35,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
@@ -222,6 +223,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// The picker popup exit animation.
     private final Timeline hideAnimation = new Timeline();
+
+    /// Observes runtime motion settings while this field is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Reports popup picker focus changes through this field's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
@@ -1319,6 +1324,14 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         popupContent.setScaleX(1.0);
         popupContent.setScaleY(1.0);
         popupContent.setTranslateY(0.0);
+    }
+
+    /// Applies changed runtime motion settings to active picker popup animations.
+    private void refreshMotionSettings() {
+        if (popup.isShowing()) {
+            M3Animation.copyResolvedMotionSettings(this, popupContent);
+        }
+        M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
     }
 
     /// Validates a date range preset array.

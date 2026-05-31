@@ -26,6 +26,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -80,6 +81,10 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// The submenu popup exit animation.
     private final Timeline hideAnimation = new Timeline();
+
+    /// Observes runtime motion settings while this item is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Reports popup submenu focus changes through this item's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
@@ -553,6 +558,14 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.setScaleX(1.0);
         subMenu.setScaleY(1.0);
         subMenu.setTranslateX(0.0);
+    }
+
+    /// Applies changed runtime motion settings to active submenu popup animations.
+    private void refreshMotionSettings() {
+        if (popup.isShowing()) {
+            M3Animation.copyResolvedMotionSettings(this, subMenu);
+        }
+        M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
     }
 
     /// Returns whether a key opens the submenu for the current node orientation.

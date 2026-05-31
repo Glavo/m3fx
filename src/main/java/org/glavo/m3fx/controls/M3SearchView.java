@@ -26,6 +26,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -65,6 +66,10 @@ public class M3SearchView extends Control {
 
     /// The search result visibility animation.
     private final Timeline resultsVisibilityAnimation = new Timeline();
+
+    /// Observes runtime motion settings while this search view is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Notifies accessibility clients when focus moves between the search bar and results.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -805,6 +810,11 @@ public class M3SearchView extends Control {
         resultsBox.setManaged(active);
         resultsBox.setOpacity(active ? 1.0 : 0.0);
         resultsBox.setTranslateY(active ? 0.0 : HIDDEN_RESULTS_TRANSLATE_Y);
+    }
+
+    /// Applies changed runtime motion settings to the active results visibility animation.
+    private void refreshMotionSettings() {
+        M3Animation.finishRunningAnimationsIfDisabled(this, resultsVisibilityAnimation);
     }
 
     /// Validates a result node array.

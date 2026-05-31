@@ -31,6 +31,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -91,6 +92,10 @@ public class M3FabMenu extends Control {
 
     /// The currently running expand or collapse animation.
     private @Nullable Animation animation;
+
+    /// Observes runtime motion settings while this menu is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Handles detached action item activation before the default skin attaches the item.
     private final EventHandler<ActionEvent> actionItemActionHandler = this::handleActionItemAction;
@@ -528,6 +533,18 @@ public class M3FabMenu extends Control {
         Animation currentAnimation = animation;
         if (currentAnimation != null) {
             currentAnimation.stop();
+            animation = null;
+        }
+    }
+
+    /// Applies changed runtime motion settings to the active expand or collapse animation.
+    private void refreshMotionSettings() {
+        if (M3Animation.areAnimationsEnabled(this)) {
+            return;
+        }
+
+        @Nullable Animation currentAnimation = animation;
+        if (currentAnimation != null && M3Animation.finishIfRunning(currentAnimation)) {
             animation = null;
         }
     }

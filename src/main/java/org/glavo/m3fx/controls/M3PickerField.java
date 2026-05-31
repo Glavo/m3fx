@@ -27,6 +27,7 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -152,6 +153,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// The picker popup exit animation.
     private final Timeline hideAnimation = new Timeline();
+
+    /// Observes runtime motion settings while this field is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Reports popup picker focus changes through this field's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
@@ -800,6 +805,14 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         popupContent.setScaleX(1.0);
         popupContent.setScaleY(1.0);
         popupContent.setTranslateY(0.0);
+    }
+
+    /// Applies changed runtime motion settings to active picker popup animations.
+    private void refreshMotionSettings() {
+        if (popup.isShowing()) {
+            M3Animation.copyResolvedMotionSettings(this, popupContent);
+        }
+        M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
     }
 
     /// Handles popup hidden cleanup and optional focus return.
