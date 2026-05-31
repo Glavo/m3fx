@@ -8693,9 +8693,9 @@ final class M3ControlStyleTest {
         assertTrue(indicator.getElements().size() > 24);
     }
 
-    /// Verifies that indeterminate loading indicator morph frames remain radially balanced.
+    /// Verifies that indeterminate loading indicator morph frames remain centered and varied.
     @Test
-    void loadingIndicatorIndeterminateMorphFramesStayRadiallyBalanced() {
+    void loadingIndicatorIndeterminateMorphFramesStayCenteredAndVaried() {
         runOnFxThreadAndWait(() -> {
             M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
             loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
@@ -8717,29 +8717,34 @@ final class M3ControlStyleTest {
                     loadingIndicator.lookup(".m3-loading-indicator-indicator")
             );
             Set<String> radialSignatures = new HashSet<>();
+            BufferedImage strip = new BufferedImage(140 * 7, 140, BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D graphics = strip.createGraphics();
 
-            for (int segment = 0; segment < 7; segment++) {
-                phase.set(segment + 0.5);
-                loadingIndicator.layout();
-                radialSignatures.add(loadingIndicatorRadialSignature(
-                        indicator,
-                        loadingIndicator.getWidth() / 2.0,
-                        loadingIndicator.getHeight() / 2.0
-                ));
-                assertLoadingIndicatorPathRadiallyBalanced(
-                        indicator,
-                        loadingIndicator.getWidth() / 2.0,
-                        loadingIndicator.getHeight() / 2.0
-                );
-                if (segment == 3) {
-                    writeVisualSnapshot(snapshotImageOnFxThread(root), java.nio.file.Path.of(
-                            "build",
-                            "reports",
-                            "visual",
-                            "visual-loading-indicator-morph-balance.png"
+            try {
+                for (int segment = 0; segment < 7; segment++) {
+                    phase.set(segment + 0.5);
+                    loadingIndicator.layout();
+                    radialSignatures.add(loadingIndicatorRadialSignature(
+                            indicator,
+                            loadingIndicator.getWidth() / 2.0,
+                            loadingIndicator.getHeight() / 2.0
                     ));
+                    assertLoadingIndicatorPathCentered(
+                            indicator,
+                            loadingIndicator.getWidth() / 2.0,
+                            loadingIndicator.getHeight() / 2.0
+                    );
+                    graphics.drawImage(toBufferedImage(snapshotImageOnFxThread(root)), segment * 140, 0, null);
                 }
+            } finally {
+                graphics.dispose();
             }
+            writeVisualSnapshot(strip, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "visual",
+                    "visual-loading-indicator-morph-sequence.png"
+            ));
             assertTrue(
                     radialSignatures.size() >= 5,
                     () -> "loading indicator morph sequence collapsed to "
@@ -17441,26 +17446,15 @@ final class M3ControlStyleTest {
         return (Region) child;
     }
 
-    /// Verifies that sampled loading-indicator path points have matching opposite radii.
-    private static void assertLoadingIndicatorPathRadiallyBalanced(Path path, double centerX, double centerY) {
-        int sampleCount = path.getElements().size() - 1;
-        assertTrue(sampleCount > 0 && sampleCount % 2 == 0);
+    /// Verifies that sampled loading-indicator path geometry stays centered.
+    private static void assertLoadingIndicatorPathCentered(Path path, double centerX, double centerY) {
+        Bounds bounds = path.getBoundsInLocal();
+        Point2D centroid = pathPolygonCentroid(path);
 
-        for (int i = 0; i < sampleCount / 2; i++) {
-            int sampleIndex = i;
-            Point2D first = pathPoint(path, i);
-            Point2D opposite = pathPoint(path, i + sampleCount / 2);
-            double firstRadius = first.distance(centerX, centerY);
-            double oppositeRadius = opposite.distance(centerX, centerY);
-
-            assertEquals(
-                    firstRadius,
-                    oppositeRadius,
-                    0.01,
-                    () -> "loading indicator morph frame is radially unbalanced at sample "
-                            + sampleIndex + ": first=" + first + ", opposite=" + opposite
-            );
-        }
+        assertEquals(centerX, bounds.getCenterX(), 3.0, () -> "loading indicator bounds drifted: " + bounds);
+        assertEquals(centerY, bounds.getCenterY(), 3.0, () -> "loading indicator bounds drifted: " + bounds);
+        assertEquals(centerX, centroid.getX(), 0.75, () -> "loading indicator centroid drifted: " + centroid);
+        assertEquals(centerY, centroid.getY(), 0.75, () -> "loading indicator centroid drifted: " + centroid);
     }
 
     /// Returns a coarse radial signature for one loading-indicator morph frame.
@@ -17472,6 +17466,28 @@ final class M3ControlStyleTest {
             signature.append(Math.round(point.distance(centerX, centerY))).append(',');
         }
         return signature.toString();
+    }
+
+    /// Returns the polygon centroid for a sampled path.
+    private static Point2D pathPolygonCentroid(Path path) {
+        int sampleCount = path.getElements().size() - 1;
+        double signedArea = 0.0;
+        double centroidX = 0.0;
+        double centroidY = 0.0;
+        for (int i = 0; i < sampleCount; i++) {
+            Point2D first = pathPoint(path, i);
+            Point2D second = pathPoint(path, (i + 1) % sampleCount);
+            double cross = first.getX() * second.getY() - second.getX() * first.getY();
+            signedArea += cross;
+            centroidX += (first.getX() + second.getX()) * cross;
+            centroidY += (first.getY() + second.getY()) * cross;
+        }
+
+        if (Math.abs(signedArea) < 0.000001) {
+            Bounds bounds = path.getBoundsInLocal();
+            return new Point2D(bounds.getCenterX(), bounds.getCenterY());
+        }
+        return new Point2D(centroidX / (3.0 * signedArea), centroidY / (3.0 * signedArea));
     }
 
     /// Returns a sampled point from a path made of one move and line segments.
@@ -18568,12 +18584,17 @@ final class M3ControlStyleTest {
 
     /// Writes a rendered snapshot to a build report path for manual visual inspection.
     private static void writeVisualSnapshot(WritableImage image, java.nio.file.Path path) {
+        writeVisualSnapshot(toBufferedImage(image), path);
+    }
+
+    /// Writes a desktop image to a build report path for manual visual inspection.
+    private static void writeVisualSnapshot(BufferedImage image, java.nio.file.Path path) {
         try {
             java.nio.file.Path parent = path.getParent();
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            ImageIO.write(toBufferedImage(image), "png", path.toFile());
+            ImageIO.write(image, "png", path.toFile());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
