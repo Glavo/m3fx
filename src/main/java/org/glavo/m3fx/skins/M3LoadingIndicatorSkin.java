@@ -36,30 +36,37 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The number of default indeterminate shape states.
     private static final int INDETERMINATE_SHAPE_COUNT = 7;
 
+    /// The rotation added by each morph segment.
+    private static final double QUARTER_ROTATION = 0.25;
+
     /// The spring-like interpolator used for each morph segment.
     private static final Interpolator MORPH_INTERPOLATOR = Interpolator.SPLINE(0.20, 0.00, 0.00, 1.00);
 
-    /// Shape states used by the indeterminate morphing loop.
+    /// The highest radial harmonic used by the generated shape sequence.
+    private static final int HARMONIC_COUNT = 10;
+
+    /// The maximum generated radius multiplier used to normalize the visible active size.
+    private static final double MAX_RADIUS_MULTIPLIER = 1.18;
+
+    /// Shape coefficient states used by the indeterminate morphing loop.
     ///
-    /// The order follows the Material 3 Expressive default polygon sequence: soft burst, cookie 9-sided,
-    /// pentagon, pill, sunny, cookie 4-sided, and oval.
-    private static final double[][][] INDETERMINATE_SHAPES = {
-            sampledRoundedStar(10, 0.65, 1.0 / 20.0, 2),
-            sampledRoundedStar(9, 0.80, -0.25, 4),
-            sampledRoundedPolygon(5, -1.0 / 20.0, 4),
-            sampledSuperellipse(1.25, 1.0, 4.5, -0.125),
-            sampledRoundedStar(8, 0.80, 0.0, 3),
-            sampledRoundedStar(4, 0.50, -0.125, 4),
-            sampledEllipse(1.0, 0.70, -0.125)
+    /// The order follows the Compose Material 3 sequence: soft burst, cookie 9-sided, pentagon,
+    /// pill, sunny, cookie 4-sided, and oval.
+    private static final double[][] INDETERMINATE_SHAPES = {
+            coefficients(10, 0.20, 0.05),
+            coefficients(9, 0.16, -0.25),
+            coefficients(5, 0.14, -0.05),
+            coefficients(2, 0.20, -0.125),
+            coefficients(8, 0.12, 0.00),
+            coefficients(4, 0.20, -0.125),
+            coefficients(2, 0.16, -0.125)
     };
 
     /// The determinate starting shape.
-    private static final double[][] DETERMINATE_START_SHAPE =
-            sampledEllipse(1.0, 1.0, 0.0);
+    private static final double[] DETERMINATE_START_SHAPE = coefficients(0, 0.0, 0.0);
 
     /// The determinate completed shape.
-    private static final double[][] DETERMINATE_END_SHAPE =
-            sampledRoundedStar(10, 0.65, 1.0 / 20.0, 2);
+    private static final double[] DETERMINATE_END_SHAPE = coefficients(10, 0.20, 0.05);
 
     /// The single active loading shape.
     private final Path indicator = new Path();
@@ -91,12 +98,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The maximum y-coordinate of the current sampled polygon bounds.
     private double sampledMaxY;
 
-    /// The x-coordinate of the current sampled polygon centroid.
-    private double sampledCentroidX;
-
-    /// The y-coordinate of the current sampled polygon centroid.
-    private double sampledCentroidY;
-
     /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
@@ -114,6 +115,12 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// The independent global rotation animation timeline.
     private final Timeline globalRotationAnimation = new Timeline();
+
+    /// The active morph segment index.
+    private int currentMorphIndex;
+
+    /// The target rotation at the beginning of the active morph segment.
+    private double morphRotationTarget = QUARTER_ROTATION;
 
     /// Requests layout after animation ticks.
     private final InvalidationListener animationInvalidation =
@@ -151,8 +158,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         displayedProgress.addListener(animationInvalidation);
         indeterminatePhase.addListener(animationInvalidation);
         globalRotation.addListener(animationInvalidation);
-        indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
         globalRotationAnimation.setCycleCount(Animation.INDEFINITE);
+        indeterminateAnimation.setOnFinished(event -> finishIndeterminateMorphSegment());
 
         control.progressProperty().addListener(progressInvalidation);
         control.variantProperty().addListener(layoutInvalidation);
@@ -198,7 +205,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         rebuildIndicatorPath(
                 centerX,
                 centerY,
-                indicatorSize / 2.0,
+                indicatorSize / (2.0 * MAX_RADIUS_MULTIPLIER),
                 phase,
                 loadingIndicator.isIndeterminate()
         );
@@ -216,38 +223,55 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
                 indeterminateAnimation.stop();
                 globalRotationAnimation.stop();
-                indeterminatePhase.set(0.0);
-                globalRotation.set(0.0);
-            } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
-                configureIndeterminateAnimation();
-                indeterminateAnimation.playFromStart();
-                globalRotationAnimation.playFromStart();
+                resetIndeterminateAnimationState();
+            } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING
+                    || globalRotationAnimation.getStatus() != Animation.Status.RUNNING) {
+                startIndeterminateAnimation();
             }
         } else {
             indeterminateAnimation.stop();
             globalRotationAnimation.stop();
-            indeterminatePhase.set(0.0);
-            globalRotation.set(0.0);
+            resetIndeterminateAnimationState();
             animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
         }
     }
 
-    /// Configures the indeterminate morph and global rotation loops.
-    private void configureIndeterminateAnimation() {
+    /// Starts the indeterminate morph and global rotation loops.
+    private void startIndeterminateAnimation() {
+        resetIndeterminateAnimationState();
+        configureIndeterminateMorphSegment();
+        configureGlobalRotationAnimation();
+        indeterminateAnimation.playFromStart();
+        globalRotationAnimation.playFromStart();
+    }
+
+    /// Resets indeterminate animation state to the first Compose morph segment.
+    private void resetIndeterminateAnimationState() {
+        currentMorphIndex = 0;
+        morphRotationTarget = QUARTER_ROTATION;
+        indeterminatePhase.set(0.0);
+        globalRotation.set(0.0);
+    }
+
+    /// Configures the active indeterminate morph segment.
+    private void configureIndeterminateMorphSegment() {
         M3MotionBehavior behavior = M3Animation.motionBehavior(getSkinnable());
         Duration morphInterval = behavior.loadingIndicatorMorphInterval();
-        indeterminateAnimation.getKeyFrames().clear();
-        indeterminateAnimation.getKeyFrames().add(new KeyFrame(
-                Duration.ZERO,
-                new KeyValue(indeterminatePhase, 0.0, MORPH_INTERPOLATOR)
-        ));
-        for (int i = 1; i <= INDETERMINATE_SHAPE_COUNT; i++) {
-            indeterminateAnimation.getKeyFrames().add(new KeyFrame(
-                    morphInterval.multiply(i),
-                    new KeyValue(indeterminatePhase, i, MORPH_INTERPOLATOR)
-            ));
-        }
+        indeterminateAnimation.getKeyFrames().setAll(
+                new KeyFrame(
+                        Duration.ZERO,
+                        new KeyValue(indeterminatePhase, currentMorphIndex, MORPH_INTERPOLATOR)
+                ),
+                new KeyFrame(
+                        morphInterval,
+                        new KeyValue(indeterminatePhase, currentMorphIndex + 1.0, MORPH_INTERPOLATOR)
+                )
+        );
+    }
 
+    /// Configures the independent global rotation loop.
+    private void configureGlobalRotationAnimation() {
+        M3MotionBehavior behavior = M3Animation.motionBehavior(getSkinnable());
         globalRotationAnimation.getKeyFrames().setAll(
                 new KeyFrame(Duration.ZERO, new KeyValue(globalRotation, 0.0, M3Motion.LINEAR)),
                 new KeyFrame(
@@ -255,6 +279,20 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                         new KeyValue(globalRotation, 1.0, M3Motion.LINEAR)
                 )
         );
+    }
+
+    /// Advances to the next indeterminate morph segment and keeps the loop running.
+    private void finishIndeterminateMorphSegment() {
+        M3LoadingIndicator loadingIndicator = getSkinnable();
+        if (!loadingIndicator.isIndeterminate() || !M3Animation.areAnimationsEnabled(loadingIndicator)) {
+            return;
+        }
+
+        currentMorphIndex = (currentMorphIndex + 1) % INDETERMINATE_SHAPE_COUNT;
+        morphRotationTarget = positiveModulo(morphRotationTarget + QUARTER_ROTATION, 1.0);
+        indeterminatePhase.set(currentMorphIndex);
+        configureIndeterminateMorphSegment();
+        indeterminateAnimation.playFromStart();
     }
 
     /// Animates the displayed determinate progress value.
@@ -288,20 +326,17 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         }
 
         double rotation = indeterminate ? indeterminateRotationFor(phase) : -phase * 0.5;
-        double rotationRadians = Math.PI * 2.0 * rotation;
-        double rotationCos = Math.cos(rotationRadians);
-        double rotationSin = Math.sin(rotationRadians);
         for (int i = 0; i < SAMPLE_COUNT; i++) {
-            double shapeX = shapeXFor(phase, i, indeterminate) * radius;
-            double shapeY = shapeYFor(phase, i, indeterminate) * radius;
-            sampledX[i] = centerX + rotationCos * shapeX - rotationSin * shapeY;
-            sampledY[i] = centerY + rotationSin * shapeX + rotationCos * shapeY;
+            double angle = Math.PI * 2.0 * i / SAMPLE_COUNT;
+            double rotatedAngle = angle + Math.PI * 2.0 * rotation;
+            double shapeRadius = radiusFor(phase, angle, indeterminate) * radius;
+            sampledX[i] = centerX + Math.cos(rotatedAngle) * shapeRadius;
+            sampledY[i] = centerY + Math.sin(rotatedAngle) * shapeRadius;
         }
 
         updatePolygonBounds();
-        updatePolygonCentroid();
-        double offsetX = centerX - sampledCentroidX;
-        double offsetY = centerY - sampledCentroidY;
+        double offsetX = centerX - (sampledMinX + sampledMaxX) / 2.0;
+        double offsetY = centerY - (sampledMinY + sampledMaxY) / 2.0;
         firstPoint.setX(sampledX[0] + offsetX);
         firstPoint.setY(sampledY[0] + offsetY);
         for (int i = 1; i < SAMPLE_COUNT; i++) {
@@ -309,28 +344,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             point.setX(sampledX[i] + offsetX);
             point.setY(sampledY[i] + offsetY);
         }
-    }
-
-    /// Updates the centroid of the currently sampled polygon.
-    private void updatePolygonCentroid() {
-        double signedArea = 0.0;
-        double centroidX = 0.0;
-        double centroidY = 0.0;
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            int next = (i + 1) % SAMPLE_COUNT;
-            double cross = sampledX[i] * sampledY[next] - sampledX[next] * sampledY[i];
-            signedArea += cross;
-            centroidX += (sampledX[i] + sampledX[next]) * cross;
-            centroidY += (sampledY[i] + sampledY[next]) * cross;
-        }
-
-        if (Math.abs(signedArea) < 0.000001) {
-            sampledCentroidX = (sampledMinX + sampledMaxX) / 2.0;
-            sampledCentroidY = (sampledMinY + sampledMaxY) / 2.0;
-            return;
-        }
-        sampledCentroidX = centroidX / (3.0 * signedArea);
-        sampledCentroidY = centroidY / (3.0 * signedArea);
     }
 
     /// Updates the visual bounds of the currently sampled polygon.
@@ -348,40 +361,52 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         }
     }
 
-    /// Returns a morph interpolated x-coordinate for one sampled point.
-    private static double shapeXFor(double phase, int sampleIndex, boolean indeterminate) {
+    /// Returns a sampled radius multiplier for the current animation state.
+    private static double radiusFor(double phase, double angle, boolean indeterminate) {
         return indeterminate
-                ? indeterminatePointFor(phase, sampleIndex, 0)
-                : determinatePointFor(phase, sampleIndex, 0);
+                ? indeterminateRadiusFor(phase, angle)
+                : determinateRadiusFor(phase, angle);
     }
 
-    /// Returns a morph interpolated y-coordinate for one sampled point.
-    private static double shapeYFor(double phase, int sampleIndex, boolean indeterminate) {
-        return indeterminate
-                ? indeterminatePointFor(phase, sampleIndex, 1)
-                : determinatePointFor(phase, sampleIndex, 1);
-    }
-
-    /// Returns an interpolated indeterminate point coordinate.
-    private static double indeterminatePointFor(double phase, int sampleIndex, int axis) {
+    /// Returns a morph interpolated indeterminate radius multiplier.
+    private static double indeterminateRadiusFor(double phase, double angle) {
         double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
         int index = (int) Math.floor(normalized);
         double fraction = normalized - index;
-        double[][] current = INDETERMINATE_SHAPES[index];
-        double[][] next = INDETERMINATE_SHAPES[(index + 1) % INDETERMINATE_SHAPE_COUNT];
-        return interpolate(current[axis][sampleIndex], next[axis][sampleIndex], fraction);
+        double[] current = INDETERMINATE_SHAPES[index];
+        double[] next = INDETERMINATE_SHAPES[(index + 1) % INDETERMINATE_SHAPE_COUNT];
+        double radius = interpolate(current[0], next[0], fraction);
+        for (int harmonic = 1; harmonic <= HARMONIC_COUNT; harmonic++) {
+            double harmonicAngle = harmonic * angle;
+            radius += interpolate(current[harmonic], next[harmonic], fraction)
+                    * Math.cos(harmonicAngle);
+            radius += interpolate(current[HARMONIC_COUNT + harmonic], next[HARMONIC_COUNT + harmonic], fraction)
+                    * Math.sin(harmonicAngle);
+        }
+        return clampRadius(radius);
     }
 
     /// Returns the official-style indeterminate rotation phase for a morph segment.
     private double indeterminateRotationFor(double phase) {
-        double normalized = positiveModulo(phase, INDETERMINATE_SHAPE_COUNT);
-        return (normalized + 1.0) * 0.25 + globalRotation.get();
+        double progress = clamp(phase - currentMorphIndex);
+        return progress * QUARTER_ROTATION + morphRotationTarget + globalRotation.get();
     }
 
-    /// Returns an interpolated determinate point coordinate.
-    private static double determinatePointFor(double progress, int sampleIndex, int axis) {
+    /// Returns a linearly interpolated determinate radius multiplier.
+    private static double determinateRadiusFor(double progress, double angle) {
         double fraction = smoothStep(clamp(progress));
-        return interpolate(DETERMINATE_START_SHAPE[axis][sampleIndex], DETERMINATE_END_SHAPE[axis][sampleIndex], fraction);
+        double radius = interpolate(DETERMINATE_START_SHAPE[0], DETERMINATE_END_SHAPE[0], fraction);
+        for (int harmonic = 1; harmonic <= HARMONIC_COUNT; harmonic++) {
+            double harmonicAngle = harmonic * angle;
+            radius += interpolate(DETERMINATE_START_SHAPE[harmonic], DETERMINATE_END_SHAPE[harmonic], fraction)
+                    * Math.cos(harmonicAngle);
+            radius += interpolate(
+                    DETERMINATE_START_SHAPE[HARMONIC_COUNT + harmonic],
+                    DETERMINATE_END_SHAPE[HARMONIC_COUNT + harmonic],
+                    fraction
+            ) * Math.sin(harmonicAngle);
+        }
+        return clampRadius(radius);
     }
 
     /// Returns a smooth interpolation fraction with zero velocity at both ends.
@@ -411,171 +436,21 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         return start + (end - start) * fraction;
     }
 
-    /// Creates a smoothed sampled star shape.
-    private static double[][] sampledRoundedStar(
-            int lobes,
-            double innerRadius,
-            double rotationTurns,
-            int smoothingPasses
-    ) {
-        double[][] points = new double[lobes * 2][2];
-        for (int i = 0; i < points.length; i++) {
-            double angle = Math.PI * 2.0 * i / points.length + rotationTurns * Math.PI * 2.0;
-            double radius = i % 2 == 0 ? 1.0 : innerRadius;
-            points[i][0] = Math.cos(angle) * radius;
-            points[i][1] = Math.sin(angle) * radius;
-        }
-        return sampledSmoothedClosedPolyline(points, smoothingPasses);
+    /// Returns a bounded radius multiplier to keep generated paths stable.
+    private static double clampRadius(double radius) {
+        return Math.max(0.70, Math.min(MAX_RADIUS_MULTIPLIER, radius));
     }
 
-    /// Creates a smoothed sampled regular polygon shape.
-    private static double[][] sampledRoundedPolygon(int vertices, double rotationTurns, int smoothingPasses) {
-        double[][] points = new double[vertices][2];
-        for (int i = 0; i < vertices; i++) {
-            double angle = Math.PI * 2.0 * i / vertices + rotationTurns * Math.PI * 2.0;
-            points[i][0] = Math.cos(angle);
-            points[i][1] = Math.sin(angle);
+    /// Creates harmonic coefficients for a radial shape.
+    private static double[] coefficients(int lobes, double amplitude, double phaseOffset) {
+        double[] coefficients = new double[HARMONIC_COUNT * 2 + 1];
+        coefficients[0] = 1.0;
+        if (lobes > 0 && lobes <= HARMONIC_COUNT && amplitude > 0.0) {
+            double harmonicPhase = lobes * Math.PI * 2.0 * phaseOffset;
+            coefficients[0] -= amplitude * 0.5;
+            coefficients[lobes] = amplitude * 0.5 * Math.cos(harmonicPhase);
+            coefficients[HARMONIC_COUNT + lobes] = -amplitude * 0.5 * Math.sin(harmonicPhase);
         }
-        return sampledSmoothedClosedPolyline(points, smoothingPasses);
-    }
-
-    /// Creates a sampled ellipse shape.
-    private static double[][] sampledEllipse(double scaleX, double scaleY, double rotationTurns) {
-        return sampledSuperellipse(scaleX, scaleY, 2.0, rotationTurns);
-    }
-
-    /// Creates a sampled superellipse shape.
-    private static double[][] sampledSuperellipse(
-            double scaleX,
-            double scaleY,
-            double exponent,
-            double rotationTurns
-    ) {
-        double[][] shape = new double[2][SAMPLE_COUNT];
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            double angle = Math.PI * 2.0 * i / SAMPLE_COUNT;
-            double cosine = Math.cos(angle);
-            double sine = Math.sin(angle);
-            double radius = Math.pow(
-                    Math.pow(Math.abs(cosine) / scaleX, exponent)
-                            + Math.pow(Math.abs(sine) / scaleY, exponent),
-                    -1.0 / exponent
-            );
-            shape[0][i] = cosine * radius;
-            shape[1][i] = sine * radius;
-        }
-        rotateShape(shape, rotationTurns);
-        normalizeShape(shape);
-        return shape;
-    }
-
-    /// Creates a sampled shape from a Chaikin-smoothed closed polyline.
-    private static double[][] sampledSmoothedClosedPolyline(double[][] points, int smoothingPasses) {
-        double[][] smoothedPoints = points;
-        for (int i = 0; i < smoothingPasses; i++) {
-            smoothedPoints = chaikinSmooth(smoothedPoints);
-        }
-        double[][] shape = resampleRadialClosedPolyline(smoothedPoints);
-        normalizeShape(shape);
-        return shape;
-    }
-
-    /// Returns one Chaikin smoothing pass for a closed polyline.
-    private static double[][] chaikinSmooth(double[][] points) {
-        double[][] smoothed = new double[points.length * 2][2];
-        for (int i = 0; i < points.length; i++) {
-            double[] current = points[i];
-            double[] next = points[(i + 1) % points.length];
-            smoothed[i * 2][0] = current[0] * 0.75 + next[0] * 0.25;
-            smoothed[i * 2][1] = current[1] * 0.75 + next[1] * 0.25;
-            smoothed[i * 2 + 1][0] = current[0] * 0.25 + next[0] * 0.75;
-            smoothed[i * 2 + 1][1] = current[1] * 0.25 + next[1] * 0.75;
-        }
-        return smoothed;
-    }
-
-    /// Resamples a star-shaped closed polyline by fixed center-ray angles.
-    private static double[][] resampleRadialClosedPolyline(double[][] points) {
-        double[][] shape = new double[2][SAMPLE_COUNT];
-        for (int sampleIndex = 0; sampleIndex < SAMPLE_COUNT; sampleIndex++) {
-            double angle = Math.PI * 2.0 * sampleIndex / SAMPLE_COUNT;
-            double directionX = Math.cos(angle);
-            double directionY = Math.sin(angle);
-            double radius = radialIntersection(points, directionX, directionY);
-            shape[0][sampleIndex] = directionX * radius;
-            shape[1][sampleIndex] = directionY * radius;
-        }
-        return shape;
-    }
-
-    /// Returns the positive ray intersection radius for a closed polyline.
-    private static double radialIntersection(double[][] points, double directionX, double directionY) {
-        double bestRadius = Double.POSITIVE_INFINITY;
-        for (int i = 0; i < points.length; i++) {
-            double[] current = points[i];
-            double[] next = points[(i + 1) % points.length];
-            double edgeX = next[0] - current[0];
-            double edgeY = next[1] - current[1];
-            double denominator = cross(directionX, directionY, edgeX, edgeY);
-            if (Math.abs(denominator) < 0.000001) {
-                continue;
-            }
-
-            double rayRadius = cross(current[0], current[1], edgeX, edgeY) / denominator;
-            double edgeFraction = cross(current[0], current[1], directionX, directionY) / denominator;
-            if (rayRadius >= 0.0 && edgeFraction >= -0.000001 && edgeFraction <= 1.000001) {
-                bestRadius = Math.min(bestRadius, rayRadius);
-            }
-        }
-
-        if (Double.isFinite(bestRadius)) {
-            return bestRadius;
-        }
-
-        double fallbackRadius = 0.0;
-        for (double[] point : points) {
-            fallbackRadius = Math.max(fallbackRadius, point[0] * directionX + point[1] * directionY);
-        }
-        return Math.max(0.0, fallbackRadius);
-    }
-
-    /// Returns the two-dimensional cross product for two vectors.
-    private static double cross(double firstX, double firstY, double secondX, double secondY) {
-        return firstX * secondY - firstY * secondX;
-    }
-
-    /// Rotates a sampled shape in place.
-    private static void rotateShape(double[][] shape, double rotationTurns) {
-        double radians = rotationTurns * Math.PI * 2.0;
-        double cosine = Math.cos(radians);
-        double sine = Math.sin(radians);
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            double x = shape[0][i];
-            double y = shape[1][i];
-            shape[0][i] = cosine * x - sine * y;
-            shape[1][i] = sine * x + cosine * y;
-        }
-    }
-
-    /// Normalizes a sampled shape so its visual bounds are centered and fit a unit radius box.
-    private static void normalizeShape(double[][] shape) {
-        double minX = shape[0][0];
-        double maxX = shape[0][0];
-        double minY = shape[1][0];
-        double maxY = shape[1][0];
-        for (int i = 1; i < SAMPLE_COUNT; i++) {
-            minX = Math.min(minX, shape[0][i]);
-            maxX = Math.max(maxX, shape[0][i]);
-            minY = Math.min(minY, shape[1][i]);
-            maxY = Math.max(maxY, shape[1][i]);
-        }
-
-        double centerX = (minX + maxX) / 2.0;
-        double centerY = (minY + maxY) / 2.0;
-        double scale = 2.0 / Math.max(maxX - minX, maxY - minY);
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            shape[0][i] = (shape[0][i] - centerX) * scale;
-            shape[1][i] = (shape[1][i] - centerY) * scale;
-        }
+        return coefficients;
     }
 }

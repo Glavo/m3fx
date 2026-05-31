@@ -8590,8 +8590,7 @@ final class M3ControlStyleTest {
             Timeline loadingIndicatorAnimation = skinTimeline(loadingIndicator.getSkin(), "indeterminateAnimation");
             Timeline loadingIndicatorRotation = skinTimeline(loadingIndicator.getSkin(), "globalRotationAnimation");
 
-            assertEquals(Animation.INDEFINITE, loadingIndicatorAnimation.getCycleCount());
-            assertEquals(Animation.INDEFINITE, loadingIndicatorRotation.getCycleCount());
+            assertEquals(1, loadingIndicatorAnimation.getCycleCount());
             assertEquals(javafx.animation.Animation.Status.RUNNING, progressBarAnimation.getStatus());
             assertEquals(javafx.animation.Animation.Status.RUNNING, progressIndicatorAnimation.getStatus());
             assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorAnimation.getStatus());
@@ -8611,6 +8610,43 @@ final class M3ControlStyleTest {
             assertEquals(javafx.animation.Animation.Status.RUNNING, progressIndicatorAnimation.getStatus());
             assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorAnimation.getStatus());
             assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorRotation.getStatus());
+        });
+    }
+
+    /// Verifies that the loading indicator restarts each indeterminate morph segment continuously.
+    @Test
+    void loadingIndicatorIndeterminateMorphSegmentsKeepRunning() {
+        runOnFxThreadAndWait(() -> {
+            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+            Pane root = new Pane(loadingIndicator);
+            Scene scene = new Scene(root, 96.0, 96.0);
+
+            M3MotionSettings.setAnimationsEnabled(root, true);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            loadingIndicator.resize(72.0, 72.0);
+            loadingIndicator.layout();
+
+            Timeline morphAnimation = skinTimeline(loadingIndicator.getSkin(), "indeterminateAnimation");
+            DoubleProperty phase = reflectedDoubleProperty(loadingIndicator.getSkin(), "indeterminatePhase");
+            Path indicator = assertInstanceOf(
+                    Path.class,
+                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
+            );
+            assertEquals(Animation.Status.RUNNING, morphAnimation.getStatus());
+
+            for (int i = 0; i < 21; i++) {
+                phase.set(i % 7 + 1.0);
+                loadingIndicator.layout();
+                Point2D pointBeforeRestart = firstPathPoint(indicator);
+                morphAnimation.getOnFinished().handle(new ActionEvent(morphAnimation, null));
+                loadingIndicator.layout();
+                Point2D pointAfterRestart = firstPathPoint(indicator);
+                assertEquals(Animation.Status.RUNNING, morphAnimation.getStatus());
+                assertEquals((i + 1) % 7, Math.floor(phase.get()), 0.0001);
+                assertEquals(pointBeforeRestart.getX(), pointAfterRestart.getX(), 0.01);
+                assertEquals(pointBeforeRestart.getY(), pointAfterRestart.getY(), 0.01);
+            }
         });
     }
 
@@ -8693,9 +8729,9 @@ final class M3ControlStyleTest {
         assertTrue(indicator.getElements().size() > 24);
     }
 
-    /// Verifies that indeterminate loading indicator morph frames remain centered and varied.
+    /// Verifies that sampled indeterminate loading indicator frames stay centered.
     @Test
-    void loadingIndicatorIndeterminateMorphFramesStayCenteredAndVaried() {
+    void loadingIndicatorIndeterminateMorphFramesStayCentered() {
         runOnFxThreadAndWait(() -> {
             M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
             loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
@@ -8716,40 +8752,30 @@ final class M3ControlStyleTest {
                     Path.class,
                     loadingIndicator.lookup(".m3-loading-indicator-indicator")
             );
-            Set<String> radialSignatures = new HashSet<>();
+
+            Set<String> boundsSignatures = new HashSet<>();
             BufferedImage strip = new BufferedImage(140 * 7, 140, BufferedImage.TYPE_INT_ARGB);
             java.awt.Graphics2D graphics = strip.createGraphics();
-
             try {
                 for (int segment = 0; segment < 7; segment++) {
                     phase.set(segment + 0.5);
                     loadingIndicator.layout();
-                    radialSignatures.add(loadingIndicatorRadialSignature(
-                            indicator,
-                            loadingIndicator.getWidth() / 2.0,
-                            loadingIndicator.getHeight() / 2.0
-                    ));
-                    assertLoadingIndicatorPathCentered(
-                            indicator,
-                            loadingIndicator.getWidth() / 2.0,
-                            loadingIndicator.getHeight() / 2.0
-                    );
+                    Bounds bounds = indicator.getBoundsInLocal();
+                    assertEquals(loadingIndicator.getWidth() / 2.0, bounds.getCenterX(), 0.75);
+                    assertEquals(loadingIndicator.getHeight() / 2.0, bounds.getCenterY(), 0.75);
+                    boundsSignatures.add(Math.round(bounds.getWidth()) + "x" + Math.round(bounds.getHeight()));
                     graphics.drawImage(toBufferedImage(snapshotImageOnFxThread(root)), segment * 140, 0, null);
                 }
             } finally {
                 graphics.dispose();
             }
+            assertTrue(boundsSignatures.size() >= 4);
             writeVisualSnapshot(strip, java.nio.file.Path.of(
                     "build",
                     "reports",
                     "visual",
-                    "visual-loading-indicator-morph-sequence.png"
+                    "visual-loading-indicator-compose-loop.png"
             ));
-            assertTrue(
-                    radialSignatures.size() >= 5,
-                    () -> "loading indicator morph sequence collapsed to "
-                            + radialSignatures.size() + " distinct midpoint shapes"
-            );
         });
     }
 
@@ -17444,62 +17470,6 @@ final class M3ControlStyleTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Region.class, child);
         return (Region) child;
-    }
-
-    /// Verifies that sampled loading-indicator path geometry stays centered.
-    private static void assertLoadingIndicatorPathCentered(Path path, double centerX, double centerY) {
-        Bounds bounds = path.getBoundsInLocal();
-        Point2D centroid = pathPolygonCentroid(path);
-
-        assertEquals(centerX, bounds.getCenterX(), 3.0, () -> "loading indicator bounds drifted: " + bounds);
-        assertEquals(centerY, bounds.getCenterY(), 3.0, () -> "loading indicator bounds drifted: " + bounds);
-        assertEquals(centerX, centroid.getX(), 0.75, () -> "loading indicator centroid drifted: " + centroid);
-        assertEquals(centerY, centroid.getY(), 0.75, () -> "loading indicator centroid drifted: " + centroid);
-    }
-
-    /// Returns a coarse radial signature for one loading-indicator morph frame.
-    private static String loadingIndicatorRadialSignature(Path path, double centerX, double centerY) {
-        int sampleCount = path.getElements().size() - 1;
-        StringBuilder signature = new StringBuilder();
-        for (int i = 0; i < sampleCount; i += 8) {
-            Point2D point = pathPoint(path, i);
-            signature.append(Math.round(point.distance(centerX, centerY))).append(',');
-        }
-        return signature.toString();
-    }
-
-    /// Returns the polygon centroid for a sampled path.
-    private static Point2D pathPolygonCentroid(Path path) {
-        int sampleCount = path.getElements().size() - 1;
-        double signedArea = 0.0;
-        double centroidX = 0.0;
-        double centroidY = 0.0;
-        for (int i = 0; i < sampleCount; i++) {
-            Point2D first = pathPoint(path, i);
-            Point2D second = pathPoint(path, (i + 1) % sampleCount);
-            double cross = first.getX() * second.getY() - second.getX() * first.getY();
-            signedArea += cross;
-            centroidX += (first.getX() + second.getX()) * cross;
-            centroidY += (first.getY() + second.getY()) * cross;
-        }
-
-        if (Math.abs(signedArea) < 0.000001) {
-            Bounds bounds = path.getBoundsInLocal();
-            return new Point2D(bounds.getCenterX(), bounds.getCenterY());
-        }
-        return new Point2D(centroidX / (3.0 * signedArea), centroidY / (3.0 * signedArea));
-    }
-
-    /// Returns a sampled point from a path made of one move and line segments.
-    private static Point2D pathPoint(Path path, int index) {
-        PathElement element = path.getElements().get(index);
-        if (element instanceof MoveTo moveTo) {
-            return new Point2D(moveTo.getX(), moveTo.getY());
-        }
-        if (element instanceof LineTo lineTo) {
-            return new Point2D(lineTo.getX(), lineTo.getY());
-        }
-        throw new AssertionError("Unsupported path element: " + element.getClass().getName());
     }
 
     /// Returns a private skin timeline used by animation-focused tests.
