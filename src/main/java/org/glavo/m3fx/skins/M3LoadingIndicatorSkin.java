@@ -48,6 +48,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The maximum generated radius multiplier used to normalize the visible active size.
     private static final double MAX_RADIUS_MULTIPLIER = 1.18;
 
+    /// The maximum active-shape scale added while an indeterminate morph segment is in flight.
+    private static final double MORPH_SCALE_AMPLITUDE = 0.12;
+
     /// Shape coefficient states used by the indeterminate morphing loop.
     ///
     /// The order follows the Compose Material 3 sequence: soft burst, cookie 9-sided, pentagon,
@@ -205,7 +208,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         rebuildIndicatorPath(
                 centerX,
                 centerY,
-                indicatorSize / (2.0 * MAX_RADIUS_MULTIPLIER),
+                indicatorSize / (2.0 * MAX_RADIUS_MULTIPLIER)
+                        * shapeScaleFor(phase, loadingIndicator.isIndeterminate()),
                 phase,
                 loadingIndicator.isIndeterminate()
         );
@@ -366,6 +370,17 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         return indeterminate
                 ? indeterminateRadiusFor(phase, angle)
                 : determinateRadiusFor(phase, angle);
+    }
+
+    /// Returns the active shape scale for the current animation state.
+    private static double shapeScaleFor(double phase, boolean indeterminate) {
+        if (!indeterminate) {
+            return 1.0;
+        }
+
+        double fraction = positiveModulo(phase, 1.0);
+        double envelope = Math.sin(Math.PI * fraction);
+        return 1.0 + MORPH_SCALE_AMPLITUDE * envelope * envelope;
     }
 
     /// Returns a morph interpolated indeterminate radius multiplier.

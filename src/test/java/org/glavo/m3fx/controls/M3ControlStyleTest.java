@@ -8779,6 +8779,51 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that indeterminate loading indicator morphs scale the active shape between segment endpoints.
+    @Test
+    void loadingIndicatorIndeterminateMorphScalesWithinSegment() {
+        runOnFxThreadAndWait(() -> {
+            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+            loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
+            Pane root = new Pane(loadingIndicator);
+            Scene scene = new Scene(root, 140.0, 140.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            loadingIndicator.resize(112.0, 112.0);
+            loadingIndicator.layout();
+
+            Skin<?> skin = loadingIndicator.getSkin();
+            skinTimeline(skin, "indeterminateAnimation").stop();
+            skinTimeline(skin, "globalRotationAnimation").stop();
+            reflectedDoubleProperty(skin, "globalRotation").set(0.0);
+            DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
+            Path indicator = assertInstanceOf(
+                    Path.class,
+                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
+            );
+
+            phase.set(0.0);
+            loadingIndicator.layout();
+            Bounds startBounds = indicator.getBoundsInLocal();
+
+            phase.set(0.5);
+            loadingIndicator.layout();
+            Bounds middleBounds = indicator.getBoundsInLocal();
+
+            phase.set(1.0);
+            loadingIndicator.layout();
+            Bounds endBounds = indicator.getBoundsInLocal();
+
+            assertEquals(loadingIndicator.getWidth() / 2.0, middleBounds.getCenterX(), 0.75);
+            assertEquals(loadingIndicator.getHeight() / 2.0, middleBounds.getCenterY(), 0.75);
+            assertTrue(middleBounds.getWidth() > Math.max(startBounds.getWidth(), endBounds.getWidth()) * 1.04,
+                    () -> "start=" + startBounds + ", middle=" + middleBounds + ", end=" + endBounds);
+            assertTrue(middleBounds.getHeight() > Math.max(startBounds.getHeight(), endBounds.getHeight()) * 1.04,
+                    () -> "start=" + startBounds + ", middle=" + middleBounds + ", end=" + endBounds);
+        });
+    }
+
     /// Verifies that the contained loading indicator aligns the active shape with its container.
     @Test
     void containedLoadingIndicatorCentersShapeInContainer() {
