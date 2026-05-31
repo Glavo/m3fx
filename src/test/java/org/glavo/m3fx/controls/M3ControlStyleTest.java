@@ -8653,28 +8653,30 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that the loading indicator morph phase follows the AndroidX spring timing.
+    /// Verifies that the loading indicator morph phase follows the active Material motion scheme.
     @Test
-    void loadingIndicatorIndeterminateMorphUsesAndroidXSpringTiming() {
+    void loadingIndicatorIndeterminateMorphUsesMotionSchemeTiming() {
         runOnFxThreadAndWait(() -> {
             M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
             Pane root = new Pane(loadingIndicator);
             Scene scene = new Scene(root, 96.0, 96.0);
 
             M3MotionSettings.setAnimationsEnabled(root, true);
+            M3MotionSettings.setMotionScheme(root, M3MotionScheme.expressive());
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
 
             Timeline morphAnimation = skinTimeline(loadingIndicator.getSkin(), "indeterminateAnimation");
             DoubleProperty phase = reflectedDoubleProperty(loadingIndicator.getSkin(), "indeterminatePhase");
+            var interpolator = M3MotionScheme.expressive().defaultSpatial().interpolator();
 
             morphAnimation.jumpTo(Duration.millis(100.0));
-            assertEquals(0.527, phase.get(), 0.04);
+            assertEquals(interpolator.interpolate(0.0, 1.0, 100.0 / 650.0), phase.get(), 0.001);
 
-            morphAnimation.jumpTo(Duration.millis(200.0));
-            assertEquals(1.0, phase.get(), 0.001);
+            morphAnimation.jumpTo(Duration.millis(325.0));
+            assertEquals(interpolator.interpolate(0.0, 1.0, 325.0 / 650.0), phase.get(), 0.001);
 
-            morphAnimation.jumpTo(Duration.millis(500.0));
+            morphAnimation.jumpTo(Duration.millis(650.0));
             assertEquals(1.0, phase.get(), 0.001);
         });
     }

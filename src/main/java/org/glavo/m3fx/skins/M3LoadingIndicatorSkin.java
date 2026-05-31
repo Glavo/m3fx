@@ -4,7 +4,6 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -41,12 +40,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// The rotation added by each morph segment.
     private static final double QUARTER_ROTATION = 0.25;
-
-    /// The AndroidX loading indicator spring damping ratio.
-    private static final double MORPH_SPRING_DAMPING_RATIO = 0.6;
-
-    /// The AndroidX loading indicator spring stiffness.
-    private static final double MORPH_SPRING_STIFFNESS = 200.0;
 
     /// The maximum active-shape scale added while an indeterminate morph segment is in flight.
     private static final double MORPH_SCALE_AMPLITUDE = 0.12;
@@ -208,6 +201,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Configures the active indeterminate morph segment.
     private void configureIndeterminateMorphSegment() {
         M3MotionBehavior behavior = M3Animation.motionBehavior(getSkinnable());
+        M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
         Duration morphInterval = behavior.loadingIndicatorMorphInterval();
         indeterminateAnimation.getKeyFrames().setAll(
                 new KeyFrame(
@@ -219,7 +213,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                         new KeyValue(
                                 indeterminatePhase,
                                 currentMorphIndex + 1.0,
-                                new LoadingIndicatorSpringInterpolator(morphInterval.toSeconds())
+                                spec.interpolator()
                         )
                 )
         );
@@ -346,88 +340,5 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Clamps a progress value to the visible range.
     private static double clamp(double value) {
         return Math.max(0.0, Math.min(1.0, value));
-    }
-
-    /// Interpolates the AndroidX loading indicator morph spring over one segment interval.
-    @NotNullByDefault
-    private static final class LoadingIndicatorSpringInterpolator extends Interpolator {
-        /// The duration of one morph segment in seconds.
-        private final double durationSeconds;
-
-        /// The first time at which the spring reaches the target, in seconds.
-        private final double targetReachTimeSeconds;
-
-        /// Creates a spring interpolator for one loading indicator morph segment.
-        ///
-        /// @param durationSeconds the segment duration in seconds
-        private LoadingIndicatorSpringInterpolator(double durationSeconds) {
-            this.durationSeconds = Math.max(0.0, durationSeconds);
-            this.targetReachTimeSeconds = findTargetReachTime(this.durationSeconds);
-        }
-
-        /// Computes the spring progress for the supplied normalized time.
-        @Override
-        protected double curve(double t) {
-            if (durationSeconds == 0.0) {
-                return 1.0;
-            }
-
-            double elapsedSeconds = clamp(t) * durationSeconds;
-            if (elapsedSeconds >= targetReachTimeSeconds) {
-                return 1.0;
-            }
-            return clamp(springResponse(elapsedSeconds));
-        }
-
-        /// Returns the first time at which the spring reaches the target.
-        ///
-        /// @param durationSeconds the segment duration in seconds
-        /// @return the first target reach time in seconds
-        private static double findTargetReachTime(double durationSeconds) {
-            if (durationSeconds <= 0.0) {
-                return 0.0;
-            }
-
-            double low = 0.0;
-            double high = durationSeconds;
-            boolean found = false;
-            for (int i = 1; i <= 64; i++) {
-                double sample = durationSeconds * i / 64.0;
-                if (springResponse(sample) >= 1.0) {
-                    high = sample;
-                    found = true;
-                    break;
-                }
-                low = sample;
-            }
-            if (!found) {
-                return durationSeconds;
-            }
-
-            for (int i = 0; i < 32; i++) {
-                double middle = (low + high) / 2.0;
-                if (springResponse(middle) >= 1.0) {
-                    high = middle;
-                } else {
-                    low = middle;
-                }
-            }
-            return high;
-        }
-
-        /// Returns the unit step response for the AndroidX spring parameters.
-        ///
-        /// @param elapsedSeconds the elapsed time in seconds
-        /// @return the spring response
-        private static double springResponse(double elapsedSeconds) {
-            double naturalFrequency = Math.sqrt(MORPH_SPRING_STIFFNESS);
-            double dampedFrequency = naturalFrequency * Math.sqrt(1.0 - MORPH_SPRING_DAMPING_RATIO
-                    * MORPH_SPRING_DAMPING_RATIO);
-            double decay = Math.exp(-MORPH_SPRING_DAMPING_RATIO * naturalFrequency * elapsedSeconds);
-            double phase = dampedFrequency * elapsedSeconds;
-            double sineScale = MORPH_SPRING_DAMPING_RATIO
-                    / Math.sqrt(1.0 - MORPH_SPRING_DAMPING_RATIO * MORPH_SPRING_DAMPING_RATIO);
-            return 1.0 - decay * (Math.cos(phase) + sineScale * Math.sin(phase));
-        }
     }
 }
