@@ -21,11 +21,11 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,8 +84,11 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
 
     /// Settles running indicator transitions when runtime motion settings change.
-    private final InvalidationListener motionSettingsInvalidation =
-            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), indicatorAnimation);
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(
+                    getSkinnable(),
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), indicatorAnimation)
+            );
 
     /// Updates the displayed label text.
     private final ChangeListener<@Nullable String> textListener =
@@ -156,7 +159,6 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         control.heightProperty().addListener(stateLayerLayoutInvalidation);
         control.layoutBoundsProperty().addListener(stateLayerLayoutInvalidation);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
         layoutStateLayer();
@@ -175,7 +177,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         item.heightProperty().removeListener(stateLayerLayoutInvalidation);
         item.layoutBoundsProperty().removeListener(stateLayerLayoutInvalidation);
         item.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
         uninstallInteractionHandlers(item);

@@ -18,11 +18,11 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
 import javafx.util.Callback;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3ListViewCell;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +59,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     private final EventHandler<ScrollEvent> smoothScrollHandler = this::handleSmoothScroll;
 
     /// Updates running smooth scroll when global or node-local motion settings change.
-    private final InvalidationListener motionSettingsInvalidation = observable -> refreshMotionSettings();
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(getSkinnable(), this::refreshMotionSettings);
 
     // The currently running virtual flow scroll animation.
     private @Nullable Timeline smoothScrollAnimation;
@@ -87,7 +88,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.setCellFactory(createCellFactory(control));
         flow.fixedCellSizeProperty().bind(control.fixedCellSizeProperty());
         control.addEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         getChildren().add(flow);
 
         control.getItems().addListener(itemsListener);
@@ -101,7 +101,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     @Override
     public void dispose() {
         M3ListView<T> listView = getSkinnable();
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         stopSmoothScrollAnimation();
         listView.removeEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
         listView.getItems().removeListener(itemsListener);
@@ -328,7 +328,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             flow.setPosition(smoothScrollTargetPosition);
             flow.requestLayout();
         }
-            event.consume();
+        event.consume();
     }
 
     /// Applies changed animation settings to the current smooth scroll operation.

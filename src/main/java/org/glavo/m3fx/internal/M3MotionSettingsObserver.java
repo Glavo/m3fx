@@ -32,6 +32,9 @@ public final class M3MotionSettingsObserver {
     /// Whether [settingsListener] is currently registered with [M3MotionSettings].
     private boolean settingsListenerRegistered;
 
+    /// Whether this observer has been disposed.
+    private boolean disposed;
+
     /// Creates an observer for one owner node.
     ///
     /// @param owner the node whose scene attachment controls listener lifetime
@@ -50,8 +53,24 @@ public final class M3MotionSettingsObserver {
         refreshAction.run();
     }
 
+    /// Stops observing scene and runtime motion setting changes.
+    public void dispose() {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
+        owner.sceneProperty().removeListener(sceneListener);
+        if (settingsListenerRegistered) {
+            M3MotionSettings.removeSettingsChangeListener(settingsListener);
+            settingsListenerRegistered = false;
+        }
+    }
+
     /// Updates whether the observer is registered for global motion setting changes.
     private void updateRegistration() {
+        if (disposed) {
+            return;
+        }
         if (owner.getScene() == null) {
             if (settingsListenerRegistered) {
                 M3MotionSettings.removeSettingsChangeListener(settingsListener);

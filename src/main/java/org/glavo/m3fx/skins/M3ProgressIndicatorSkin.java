@@ -21,10 +21,10 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3ProgressIndicator].
@@ -72,7 +72,8 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     private final InvalidationListener progressInvalidation = observable -> updateProgressAnimation(true);
 
     /// Updates indeterminate animation state when global or node-local motion settings change.
-    private final InvalidationListener motionSettingsInvalidation = observable -> updateProgressAnimation(false);
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(getSkinnable(), () -> updateProgressAnimation(false));
 
     /// Requests layout after size-related token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
@@ -107,7 +108,6 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
 
         control.progressProperty().addListener(progressInvalidation);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.indicatorSizeProperty().addListener(layoutInvalidation);
         control.waveAmplitudeProperty().addListener(layoutInvalidation);
@@ -125,7 +125,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         displayedProgress.removeListener(animationInvalidation);
         indeterminatePhase.removeListener(animationInvalidation);
         progressIndicator.progressProperty().removeListener(progressInvalidation);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         progressIndicator.trackThicknessProperty().removeListener(layoutInvalidation);
         progressIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
         progressIndicator.waveAmplitudeProperty().removeListener(layoutInvalidation);

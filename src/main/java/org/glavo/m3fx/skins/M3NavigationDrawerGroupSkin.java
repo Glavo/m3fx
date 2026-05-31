@@ -16,11 +16,11 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3NavigationDrawerGroup].
@@ -57,8 +57,11 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private final Timeline expansionAnimation = new Timeline();
 
     /// Settles running child-row expansion transitions when runtime motion settings change.
-    private final InvalidationListener motionSettingsInvalidation =
-            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), expansionAnimation);
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(
+                    getSkinnable(),
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), expansionAnimation)
+            );
 
     /// Mirrors child destination item changes into the skin container.
     private final ListChangeListener<M3ListItem> itemsListener = change -> updateChildItems();
@@ -84,7 +87,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         childViewport.getChildren().add(childrenContainer);
         getChildren().addAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.expandedProperty().addListener(expandedListener);
         setExpandedState(control.isExpanded(), false);
     }
@@ -94,7 +96,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     public void dispose() {
         expansionAnimation.stop();
         getSkinnable().getItems().removeListener(itemsListener);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         getSkinnable().expandedProperty().removeListener(expandedListener);
         childViewport.nodeOrientationProperty().unbind();
         childrenContainer.nodeOrientationProperty().unbind();

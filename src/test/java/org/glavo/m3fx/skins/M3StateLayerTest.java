@@ -195,6 +195,7 @@ final class M3StateLayerTest {
             Pane owner = new Pane();
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
             stateLayer.installStateTransitions(owner);
             stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
             M3MotionSettings.setAnimationsEnabled(owner, true);

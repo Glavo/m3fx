@@ -11,10 +11,10 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.StackPane;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Switch].
@@ -63,8 +63,11 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     private final InvalidationListener trackShapeInvalidation = observable -> updateTrackStyle();
 
     /// Settles running thumb transitions when runtime motion settings change.
-    private final InvalidationListener motionSettingsInvalidation =
-            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation);
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(
+                    getSkinnable(),
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation)
+            );
 
     /// Animates the thumb after selection changes.
     private final ChangeListener<Boolean> selectedListener =
@@ -84,7 +87,6 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         updateMetrics();
         control.touchTargetSizeProperty().addListener(metricsInvalidation);
         control.trackShapeProperty().addListener(trackShapeInvalidation);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.selectedProperty().addListener(selectedListener);
     }
 
@@ -95,7 +97,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         thumbPosition.removeListener(thumbPositionListener);
         getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
         getSkinnable().trackShapeProperty().removeListener(trackShapeInvalidation);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         getSkinnable().selectedProperty().removeListener(selectedListener);
         super.dispose();
     }

@@ -10,10 +10,10 @@ import javafx.beans.InvalidationListener;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Badge].
@@ -35,8 +35,11 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
     /// Settles running content-change transitions when runtime motion settings change.
-    private final InvalidationListener motionSettingsInvalidation =
-            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), contentAnimation);
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(
+                    getSkinnable(),
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), contentAnimation)
+            );
 
     /// The currently rendered display text.
     private String currentDisplayText = "";
@@ -55,7 +58,6 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         control.textProperty().addListener(textInvalidation);
         control.maxCharacterCountProperty().addListener(textInvalidation);
         control.smallSizeProperty().addListener(metricsInvalidation);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.largeHeightProperty().addListener(metricsInvalidation);
         control.largeMinWidthProperty().addListener(metricsInvalidation);
         control.containerShapeProperty().addListener(metricsInvalidation);
@@ -70,7 +72,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         badge.textProperty().removeListener(textInvalidation);
         badge.maxCharacterCountProperty().removeListener(textInvalidation);
         badge.smallSizeProperty().removeListener(metricsInvalidation);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         badge.largeHeightProperty().removeListener(metricsInvalidation);
         badge.largeMinWidthProperty().removeListener(metricsInvalidation);
         badge.containerShapeProperty().removeListener(metricsInvalidation);

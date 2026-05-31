@@ -31,8 +31,8 @@ import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SplitButton;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,8 +73,11 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     private final InvalidationListener stateLayerLayoutInvalidation = observable -> layoutStateLayer();
 
     /// Settles running pressed-scale transitions when runtime motion settings change.
-    private final InvalidationListener motionSettingsInvalidation =
-            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), animation);
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(
+                    getSkinnable(),
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), animation)
+            );
 
     /// Whether the current interaction was started by a primary mouse press.
     private boolean mousePressed;
@@ -107,7 +110,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.heightProperty().addListener(stateLayerLayoutInvalidation);
         control.layoutBoundsProperty().addListener(stateLayerLayoutInvalidation);
         control.armedProperty().addListener(armedListener);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.disabledProperty().addListener(disabledListener);
         layoutStateLayer();
     }
@@ -119,7 +121,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         getSkinnable().heightProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().layoutBoundsProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().armedProperty().removeListener(armedListener);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         getSkinnable().disabledProperty().removeListener(disabledListener);
         resetInteractionState();
         stateLayer.uninstallStateTransitions();

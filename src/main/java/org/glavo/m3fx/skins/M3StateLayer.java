@@ -7,7 +7,6 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
-import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
@@ -23,9 +22,9 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
@@ -97,11 +96,11 @@ final class M3StateLayer extends Pane {
         animateOverlayOpacityFromOwnerState();
     };
 
-    /// Settles running state-layer animations when runtime motion settings change.
-    private final InvalidationListener motionSettingsInvalidation = observable -> refreshMotionSettings();
-
     /// Tracks keyboard-visible focus state for the owner.
     private @Nullable M3FocusVisibleTracker focusVisibleTracker;
+
+    /// Observes runtime motion settings while the owner is attached to a scene.
+    private @Nullable M3MotionSettingsObserver motionSettingsObserver;
 
     /// The radius currently applied to the overlay background.
     private double overlayTopLeftRadius = Double.NaN;
@@ -147,7 +146,7 @@ final class M3StateLayer extends Pane {
         owner.pressedProperty().addListener(interactionStateListener);
         owner.disabledProperty().addListener(interactionStateListener);
         owner.getPseudoClassStates().addListener(pseudoClassStateListener);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings);
         if (owner instanceof ButtonBase button) {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, button.isArmed());
             button.armedProperty().addListener(buttonArmedStateListener);
@@ -166,7 +165,11 @@ final class M3StateLayer extends Pane {
         owner.pressedProperty().removeListener(interactionStateListener);
         owner.disabledProperty().removeListener(interactionStateListener);
         owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        M3MotionSettingsObserver observer = motionSettingsObserver;
+        if (observer != null) {
+            observer.dispose();
+            motionSettingsObserver = null;
+        }
         if (owner instanceof ButtonBase button) {
             button.armedProperty().removeListener(buttonArmedStateListener);
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, false);

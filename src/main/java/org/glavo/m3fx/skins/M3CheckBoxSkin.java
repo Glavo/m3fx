@@ -10,10 +10,10 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3CheckBox].
@@ -53,8 +53,11 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
     /// Settles running mark transitions when runtime motion settings change.
-    private final InvalidationListener motionSettingsInvalidation =
-            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation);
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(
+                    getSkinnable(),
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation)
+            );
 
     /// Animates the mark after selection changes.
     private final ChangeListener<Boolean> selectedListener =
@@ -77,7 +80,6 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         applyMarkState(control.isSelected() || control.isIndeterminate());
         updateMetrics();
         control.touchTargetSizeProperty().addListener(metricsInvalidation);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.selectedProperty().addListener(selectedListener);
         control.indeterminateProperty().addListener(indeterminateListener);
     }
@@ -87,7 +89,7 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     public void dispose() {
         selectionAnimation.stop();
         getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         getSkinnable().selectedProperty().removeListener(selectedListener);
         getSkinnable().indeterminateProperty().removeListener(indeterminateListener);
         super.dispose();

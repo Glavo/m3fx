@@ -45,9 +45,9 @@ import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.QuadCurveTo;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -377,8 +377,9 @@ public class M3TextInputLayout extends Control {
     /// The listener used to mirror logical leading and trailing geometry when layout direction changes.
     private final InvalidationListener nodeOrientationListener = observable -> updateNodeOrientationLayout();
 
-    /// The listener used to settle finite input animations when runtime motion settings change.
-    private final InvalidationListener motionSettingsListener = observable -> refreshMotionSettings();
+    /// Observes runtime motion settings while this layout is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// The container that overlays leading and trailing adornments over the input.
     private final StackPane inputContainer = new StackPane();
@@ -463,9 +464,6 @@ public class M3TextInputLayout extends Control {
 
     /// Whether supporting row motion has been initialized.
     private boolean supportingRowMotionInitialized = false;
-
-    /// Whether this layout is currently observing runtime motion settings.
-    private boolean motionSettingsListenerRegistered = false;
 
     /// Creates an empty text input layout.
     public M3TextInputLayout() {
@@ -862,7 +860,6 @@ public class M3TextInputLayout extends Control {
         label.boundsInParentProperty().addListener(outlineGeometryListener);
         outlinePath.strokeWidthProperty().addListener(outlineGeometryListener);
         effectiveNodeOrientationProperty().addListener(nodeOrientationListener);
-        sceneProperty().addListener(observable -> updateMotionSettingsListener());
         inputContainer.getChildren().setAll(outlinePath, label, leadingSlot, trailingSlot);
 
         supportingRow.getStyleClass().add(SUPPORTING_ROW_STYLE_CLASS);
@@ -884,7 +881,6 @@ public class M3TextInputLayout extends Control {
         updateLeading();
         updateTrailing();
         updateSupportingRow();
-        updateMotionSettingsListener();
     }
 
     /// Creates the default Material Design 3 text input layout skin.
@@ -1468,23 +1464,6 @@ public class M3TextInputLayout extends Control {
                 new KeyValue(supportingRow.translateYProperty(), 0.0, spec.interpolator())
         ));
         M3Animation.playFromStart(this, supportingRowAnimation);
-    }
-
-    /// Updates whether this layout observes runtime motion settings.
-    private void updateMotionSettingsListener() {
-        if (getScene() == null) {
-            if (motionSettingsListenerRegistered) {
-                M3MotionSettings.removeSettingsChangeListener(motionSettingsListener);
-                motionSettingsListenerRegistered = false;
-            }
-            return;
-        }
-
-        if (!motionSettingsListenerRegistered) {
-            M3MotionSettings.addSettingsChangeListener(motionSettingsListener);
-            motionSettingsListenerRegistered = true;
-        }
-        refreshMotionSettings();
     }
 
     /// Applies changed runtime motion settings to currently running text input animations.

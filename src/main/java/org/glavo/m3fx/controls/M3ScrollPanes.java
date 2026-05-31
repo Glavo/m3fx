@@ -7,7 +7,6 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
-import javafx.beans.InvalidationListener;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.geometry.Bounds;
@@ -16,9 +15,9 @@ import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,7 +104,7 @@ public final class M3ScrollPanes {
         private final EventHandler<ScrollEvent> scrollHandler = this::handleScroll;
 
         /// Updates a running smooth scroll when motion settings change.
-        private final InvalidationListener motionSettingsInvalidation = observable -> refreshMotionSettings();
+        private final M3MotionSettingsObserver motionSettingsObserver;
 
         /// The currently running scroll animation.
         private @Nullable Timeline animation;
@@ -122,12 +121,12 @@ public final class M3ScrollPanes {
             targetHValue = scrollPane.getHvalue();
             targetVValue = scrollPane.getVvalue();
             scrollPane.addEventFilter(ScrollEvent.SCROLL, scrollHandler);
-            M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
+            motionSettingsObserver = new M3MotionSettingsObserver(scrollPane, this::refreshMotionSettings);
         }
 
         /// Removes smooth wheel behavior and stops any running animation.
         private void dispose() {
-            M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+            motionSettingsObserver.dispose();
             stopAnimation();
             scrollPane.removeEventFilter(ScrollEvent.SCROLL, scrollHandler);
         }

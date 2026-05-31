@@ -11,10 +11,10 @@ import javafx.beans.value.ChangeListener;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.control.SkinBase;
 import javafx.scene.shape.SVGPath;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3DisclosureIcon].
@@ -42,8 +42,11 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     private final Timeline rotationAnimation = new Timeline();
 
     /// Settles running rotation transitions when runtime motion settings change.
-    private final InvalidationListener motionSettingsInvalidation =
-            observable -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), rotationAnimation);
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(
+                    getSkinnable(),
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), rotationAnimation)
+            );
 
     /// Applies expanded-state changes to the arrow rotation.
     private final ChangeListener<Boolean> expandedListener =
@@ -64,7 +67,6 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
         arrow.setMouseTransparent(true);
         arrow.setRotate(rotationFor(control.isExpanded(), isRightToLeft()));
         getChildren().add(arrow);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
         control.expandedProperty().addListener(expandedListener);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
@@ -73,7 +75,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     @Override
     public void dispose() {
         rotationAnimation.stop();
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         getSkinnable().expandedProperty().removeListener(expandedListener);
         getSkinnable().effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         super.dispose();

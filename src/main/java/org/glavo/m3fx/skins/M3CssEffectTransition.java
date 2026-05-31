@@ -7,16 +7,15 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
-import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,9 +25,6 @@ final class M3CssEffectTransition {
     /// Handles owner interaction state changes.
     private final ChangeListener<Boolean> interactionStateListener =
             (observable, oldValue, newValue) -> animateEffectFromCss();
-
-    /// Updates the running effect animation when runtime motion settings change.
-    private final InvalidationListener motionSettingsInvalidation = observable -> refreshMotionSettings();
 
     /// The animation timeline for drop shadow transitions.
     private final Timeline animation = new Timeline();
@@ -42,11 +38,15 @@ final class M3CssEffectTransition {
     /// Tracks keyboard-visible focus state for the owner.
     private final M3FocusVisibleTracker focusVisibleTracker;
 
+    /// Observes runtime motion settings while the owner is attached to a scene.
+    private final M3MotionSettingsObserver motionSettingsObserver;
+
     /// Creates an effect transition.
     M3CssEffectTransition(Node owner, Node target) {
         this.owner = owner;
         this.target = target;
         this.focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateEffectFromCss);
+        this.motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings);
     }
 
     /// Installs interaction listeners.
@@ -56,7 +56,6 @@ final class M3CssEffectTransition {
         owner.focusedProperty().addListener(interactionStateListener);
         owner.pressedProperty().addListener(interactionStateListener);
         owner.disabledProperty().addListener(interactionStateListener);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsInvalidation);
     }
 
     /// Uninstalls interaction listeners and stops active animation.
@@ -65,7 +64,7 @@ final class M3CssEffectTransition {
         owner.focusedProperty().removeListener(interactionStateListener);
         owner.pressedProperty().removeListener(interactionStateListener);
         owner.disabledProperty().removeListener(interactionStateListener);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsInvalidation);
+        motionSettingsObserver.dispose();
         focusVisibleTracker.uninstall();
         animation.stop();
     }
