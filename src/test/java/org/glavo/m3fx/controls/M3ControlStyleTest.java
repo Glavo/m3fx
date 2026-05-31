@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.Animation;
 import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -2702,6 +2703,79 @@ final class M3ControlStyleTest {
             assertBetween(supportingRow.getOpacity(), 0.0, 1.0, "supporting row opacity");
             assertBetween(Math.abs(supportingRow.getTranslateY()), 0.0, 4.0, "supporting row translateY");
             stopTimelines(labelAnimation, trailingAnimation, supportingRowAnimation);
+        });
+    }
+
+    /// Verifies that runtime motion changes settle active text input presentation animations.
+    @Test
+    void textInputLayoutSettlesRunningPresentationAnimationsWhenMotionIsDisabled() {
+        runOnFxThread(() -> {
+            M3TextField textField = createTextField("", M3TextInputVariant.OUTLINED);
+            textField.setPrefWidth(260.0);
+            M3TextInputLayout layout = new M3TextInputLayout(textField);
+            layout.setLabelText("Email");
+            layout.setClearButtonEnabled(true);
+            layout.setPrefWidth(260.0);
+
+            Pane root = new Pane(layout);
+            layout.resizeRelocate(20.0, 20.0, 260.0, 96.0);
+            Scene scene = new Scene(root, 320.0, 140.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+
+            Timeline labelAnimation = controlTimeline(layout, "labelAnimation");
+            Timeline trailingAnimation = controlTimeline(layout, "trailingAnimation");
+            Timeline supportingRowAnimation = controlTimeline(layout, "supportingRowAnimation");
+
+            try {
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                textField.setText("alpha");
+                layout.setSupportingText("Helper text");
+
+                labelAnimation.jumpTo(Duration.millis(50.0));
+                trailingAnimation.jumpTo(Duration.millis(50.0));
+                supportingRowAnimation.jumpTo(Duration.millis(50.0));
+
+                assertEquals(Animation.Status.RUNNING, labelAnimation.getStatus());
+                assertEquals(Animation.Status.RUNNING, trailingAnimation.getStatus());
+                assertEquals(Animation.Status.RUNNING, supportingRowAnimation.getStatus());
+
+                Label label = assertInstanceOf(
+                        Label.class,
+                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                );
+                Path outline = assertInstanceOf(
+                        Path.class,
+                        layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                );
+                M3IconButton clearButton = layout.getClearButton();
+                HBox supportingRow = assertInstanceOf(
+                        HBox.class,
+                        layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+                );
+
+                assertBetween(label.getOpacity(), 0.72, 1.0, "floating label opacity before disabled motion");
+                assertBetween(clearButton.getScaleX(), 0.86, 1.0, "clear button scale before disabled motion");
+                assertBetween(supportingRow.getOpacity(), 0.0, 1.0, "supporting row opacity before disabled motion");
+
+                M3MotionSettings.setAnimationsEnabled(root, false);
+
+                assertEquals(Animation.Status.STOPPED, labelAnimation.getStatus());
+                assertEquals(Animation.Status.STOPPED, trailingAnimation.getStatus());
+                assertEquals(Animation.Status.STOPPED, supportingRowAnimation.getStatus());
+                assertEquals(1.0, label.getOpacity(), 0.0001);
+                assertEquals(0.0, label.getTranslateY(), 0.0001);
+                assertTrue(outlineNotchGap(outline) > 0.5, () -> "outlineNotchGap=" + outlineNotchGap(outline));
+                assertEquals(1.0, clearButton.getOpacity(), 0.0001);
+                assertEquals(1.0, clearButton.getScaleX(), 0.0001);
+                assertEquals(1.0, clearButton.getScaleY(), 0.0001);
+                assertEquals(1.0, supportingRow.getOpacity(), 0.0001);
+                assertEquals(0.0, supportingRow.getTranslateY(), 0.0001);
+            } finally {
+                stopTimelines(labelAnimation, trailingAnimation, supportingRowAnimation);
+                M3MotionSettings.clearAnimationsEnabled(root);
+            }
         });
     }
 
