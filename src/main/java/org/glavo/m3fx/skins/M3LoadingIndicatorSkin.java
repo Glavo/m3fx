@@ -49,21 +49,23 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     private static final double MAX_RADIUS_MULTIPLIER = 1.18;
 
     /// Shape coefficient states used by the indeterminate morphing loop.
+    ///
+    /// The states intentionally share one even harmonic so interpolated frames remain radially balanced.
     private static final double[][] INDETERMINATE_SHAPES = {
-            coefficients(8, 0.20, 0.00),
-            coefficients(7, 0.16, 0.08),
-            coefficients(5, 0.14, 0.21),
-            coefficients(2, 0.20, 0.25),
-            coefficients(8, 0.18, 0.47),
-            coefficients(4, 0.16, 0.59),
-            coefficients(2, 0.16, 0.00)
+            coefficients(8, 0.08, 0.00),
+            coefficients(8, 0.18, 0.03),
+            coefficients(8, 0.12, 0.06),
+            coefficients(8, 0.20, 0.09),
+            coefficients(8, 0.11, 0.12),
+            coefficients(8, 0.17, 0.15),
+            coefficients(8, 0.10, 0.18)
     };
 
     /// The determinate starting shape.
     private static final double[] DETERMINATE_START_SHAPE = coefficients(0, 0.0, 0.0);
 
     /// The determinate completed shape.
-    private static final double[] DETERMINATE_END_SHAPE = coefficients(7, 0.16, 0.25);
+    private static final double[] DETERMINATE_END_SHAPE = coefficients(8, 0.16, 0.06);
 
     /// The single active loading shape.
     private final Path indicator = new Path();

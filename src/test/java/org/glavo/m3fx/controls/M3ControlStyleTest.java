@@ -8691,6 +8691,50 @@ final class M3ControlStyleTest {
         assertTrue(indicator.getElements().size() > 24);
     }
 
+    /// Verifies that indeterminate loading indicator morph frames remain radially balanced.
+    @Test
+    void loadingIndicatorIndeterminateMorphFramesStayRadiallyBalanced() {
+        runOnFxThreadAndWait(() -> {
+            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+            loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
+            Pane root = new Pane(loadingIndicator);
+            Scene scene = new Scene(root, 140.0, 140.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            loadingIndicator.resize(112.0, 112.0);
+            loadingIndicator.layout();
+
+            Skin<?> skin = loadingIndicator.getSkin();
+            skinTimeline(skin, "indeterminateAnimation").stop();
+            skinTimeline(skin, "globalRotationAnimation").stop();
+            reflectedDoubleProperty(skin, "globalRotation").set(0.0);
+            DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
+            Path indicator = assertInstanceOf(
+                    Path.class,
+                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
+            );
+
+            for (int segment = 0; segment < 7; segment++) {
+                phase.set(segment + 0.5);
+                loadingIndicator.layout();
+                assertLoadingIndicatorPathRadiallyBalanced(
+                        indicator,
+                        loadingIndicator.getWidth() / 2.0,
+                        loadingIndicator.getHeight() / 2.0
+                );
+                if (segment == 3) {
+                    writeVisualSnapshot(snapshotImageOnFxThread(root), java.nio.file.Path.of(
+                            "build",
+                            "reports",
+                            "visual",
+                            "visual-loading-indicator-morph-balance.png"
+                    ));
+                }
+            }
+        });
+    }
+
     /// Verifies that the contained loading indicator aligns the active shape with its container.
     @Test
     void containedLoadingIndicatorCentersShapeInContainer() {
@@ -17382,6 +17426,40 @@ final class M3ControlStyleTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Region.class, child);
         return (Region) child;
+    }
+
+    /// Verifies that sampled loading-indicator path points have matching opposite radii.
+    private static void assertLoadingIndicatorPathRadiallyBalanced(Path path, double centerX, double centerY) {
+        int sampleCount = path.getElements().size() - 1;
+        assertTrue(sampleCount > 0 && sampleCount % 2 == 0);
+
+        for (int i = 0; i < sampleCount / 2; i++) {
+            int sampleIndex = i;
+            Point2D first = pathPoint(path, i);
+            Point2D opposite = pathPoint(path, i + sampleCount / 2);
+            double firstRadius = first.distance(centerX, centerY);
+            double oppositeRadius = opposite.distance(centerX, centerY);
+
+            assertEquals(
+                    firstRadius,
+                    oppositeRadius,
+                    0.01,
+                    () -> "loading indicator morph frame is radially unbalanced at sample "
+                            + sampleIndex + ": first=" + first + ", opposite=" + opposite
+            );
+        }
+    }
+
+    /// Returns a sampled point from a path made of one move and line segments.
+    private static Point2D pathPoint(Path path, int index) {
+        PathElement element = path.getElements().get(index);
+        if (element instanceof MoveTo moveTo) {
+            return new Point2D(moveTo.getX(), moveTo.getY());
+        }
+        if (element instanceof LineTo lineTo) {
+            return new Point2D(lineTo.getX(), lineTo.getY());
+        }
+        throw new AssertionError("Unsupported path element: " + element.getClass().getName());
     }
 
     /// Returns a private skin timeline used by animation-focused tests.
