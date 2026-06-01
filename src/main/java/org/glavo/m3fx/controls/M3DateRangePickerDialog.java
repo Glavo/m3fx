@@ -9,6 +9,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAction;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
 import javafx.scene.layout.HBox;
@@ -372,6 +373,8 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetList.setAlignment(Pos.TOP_LEFT);
+        M3PresetNavigation.install(presetList, pane, () ->
+                picker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS));
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
         setResultConverter(this::convertResult);
         picker.startDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());

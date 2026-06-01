@@ -4,11 +4,15 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -401,6 +405,115 @@ final class M3PickerDialogTest {
         });
     }
 
+    /// Verifies that dialog preset action columns support keyboard traversal and picker handoff.
+    @Test
+    void pickerDialogPresetKeyboardNavigationMovesWithinColumnAndToPicker() {
+        runOnFxThread(() -> {
+            LocalDate dateAnchor = LocalDate.of(2026, 5, 19);
+            LocalTime timeAnchor = LocalTime.of(10, 30);
+            M3DatePickerDialog dateDialog = new M3DatePickerDialog(dateAnchor);
+            M3DateRangePickerDialog rangeDialog = new M3DateRangePickerDialog(
+                    dateAnchor,
+                    dateAnchor.plusDays(6)
+            );
+            M3TimePickerDialog timeDialog = new M3TimePickerDialog(timeAnchor);
+            dateDialog.setCommonPresets(dateAnchor);
+            rangeDialog.setCommonPresets(dateAnchor);
+            timeDialog.setCommonPresets(timeAnchor);
+
+            M3DialogPane datePane = dateDialog.getM3DialogPane();
+            M3DialogPane rangePane = rangeDialog.getM3DialogPane();
+            M3DialogPane timePane = timeDialog.getM3DialogPane();
+            rangePane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            Pane root = new Pane(datePane, rangePane, timePane);
+            Scene scene = new Scene(root, 920.0, 860.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                datePane.resizeRelocate(24.0, 24.0, 680.0, 240.0);
+                rangePane.resizeRelocate(24.0, 292.0, 780.0, 260.0);
+                timePane.resizeRelocate(24.0, 580.0, 680.0, 240.0);
+                root.layout();
+
+                M3Button today = presetButton(datePane, M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Today");
+                M3Button tomorrow = presetButton(
+                        datePane,
+                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Tomorrow"
+                );
+                M3Button nextMonth = presetButton(
+                        datePane,
+                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Next month"
+                );
+
+                today.requestFocus();
+                today.fireEvent(keyPressed(KeyCode.DOWN));
+
+                assertTrue(tomorrow.isFocused());
+
+                tomorrow.fireEvent(keyPressed(KeyCode.END));
+
+                assertTrue(nextMonth.isFocused());
+
+                nextMonth.fireEvent(keyPressed(KeyCode.RIGHT));
+
+                assertFocusInsidePicker(scene, dateDialog.getPicker());
+
+                M3Button rangeToday = presetButton(
+                        rangePane,
+                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Today"
+                );
+                M3Button rangeTomorrow = presetButton(
+                        rangePane,
+                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Tomorrow"
+                );
+
+                rangeToday.requestFocus();
+                rangeToday.fireEvent(keyPressed(KeyCode.DOWN));
+
+                assertTrue(rangeTomorrow.isFocused());
+
+                rangeTomorrow.fireEvent(keyPressed(KeyCode.LEFT));
+
+                assertFocusInsidePicker(scene, rangeDialog.getPicker());
+
+                M3Button now = presetButton(timePane, M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Now");
+                M3Button inFifteenMinutes = presetButton(
+                        timePane,
+                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "In 15 min"
+                );
+                M3Button evening = presetButton(timePane, M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Evening");
+
+                now.requestFocus();
+                now.fireEvent(keyPressed(KeyCode.DOWN));
+
+                assertTrue(inFifteenMinutes.isFocused());
+
+                inFifteenMinutes.fireEvent(keyPressed(KeyCode.END));
+
+                assertTrue(evening.isFocused());
+
+                evening.fireEvent(keyPressed(KeyCode.PAGE_UP));
+
+                assertTrue(now.isFocused());
+
+                now.fireEvent(keyPressed(KeyCode.RIGHT));
+
+                assertFocusInsidePicker(scene, timeDialog.getPicker());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Applies the M3FX theme to a dialog pane and creates its content skin.
     private static void applyCss(M3DialogPane pane) {
         Pane root = new Pane(pane);
@@ -428,6 +541,17 @@ final class M3PickerDialogTest {
             }
         }
         throw new AssertionError("Preset button not found: " + text);
+    }
+
+    /// Verifies that the current scene focus is on a picker or one of its focusable descendants.
+    private static void assertFocusInsidePicker(Scene scene, Node picker) {
+        @Nullable Node focusOwner = scene.getFocusOwner();
+        assertTrue(focusOwner != null && (focusOwner == picker || M3Accessible.containsNode(picker, focusOwner)));
+    }
+
+    /// Creates a key press event for picker dialog keyboard tests.
+    private static KeyEvent keyPressed(KeyCode code) {
+        return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
     }
 
     /// Runs one assertion block on the JavaFX application thread.
