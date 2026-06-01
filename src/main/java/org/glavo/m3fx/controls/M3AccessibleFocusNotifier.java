@@ -25,7 +25,7 @@ final class M3AccessibleFocusNotifier {
     /// The node whose scene focus owner should be observed.
     private final Node sceneOwner;
 
-    /// Supplies the currently focused child node, or `null` when focus is outside the owner content.
+    /// Supplies the accessibility focus node currently exposed by the owner.
     private final Supplier<@Nullable Node> focusNodeSupplier;
 
     /// Runs when the focused accessibility child changes.

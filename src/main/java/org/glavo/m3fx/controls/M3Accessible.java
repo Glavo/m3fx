@@ -149,6 +149,63 @@ final class M3Accessible {
         showItem(item);
     }
 
+    /// Requests focus for the current focus target in an indexed container, or for the requested item.
+    static void showCurrentOrItem(Node owner, ObservableList<? extends Node> items, Object... parameters) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            showItem(currentOrFirstFocusTarget(owner, items));
+        } else {
+            showItem(items, parameters);
+        }
+    }
+
+    /// Requests focus for the current focus target in a leading/list container, or for the requested item.
+    static void showCurrentOrItem(
+            Node owner,
+            @Nullable Node leading,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            showItem(currentOrFirstFocusTarget(owner, leading, items));
+        } else {
+            showItem(leading, items, parameters);
+        }
+    }
+
+    /// Requests focus for the current focus target in a list/trailing container, or for the requested item.
+    static void showCurrentOrItem(
+            Node owner,
+            ObservableList<? extends Node> items,
+            @Nullable Node trailing,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            showItem(currentOrFirstFocusTarget(owner, items, trailing));
+        } else {
+            showItem(items, trailing, parameters);
+        }
+    }
+
+    /// Requests focus for the current focus target among two optional children, or for the requested item.
+    static void showCurrentOrItem(Node owner, @Nullable Node first, @Nullable Node second, Object... parameters) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            showItem(currentOrFirstFocusTarget(owner, first, second));
+        } else {
+            showItem(first, second, parameters);
+        }
+    }
+
     /// Requests focus for an accessibility item when it can be reached.
     static void showItem(@Nullable Node item) {
         @Nullable Node focusTarget = focusTarget(item);

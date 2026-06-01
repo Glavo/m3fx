@@ -98,7 +98,7 @@ public class M3SideSheet extends Control {
 
     /// Notifies accessibility clients when focus moves between sheet content and action children.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(
                     this,
                     getContent(),
                     getActions()
@@ -313,7 +313,7 @@ public class M3SideSheet extends Control {
             case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> {
                 show();
-                M3Accessible.showItem(getContent(), getActions(), parameters);
+                M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters);
                 notifyFocusNodeChanged();
             }
             case COLLAPSE -> hide();
@@ -393,7 +393,7 @@ public class M3SideSheet extends Control {
     /// Requests focus for the current accessible focus target when this sheet is visible.
     private void focusAccessibleNode() {
         if (isShown()) {
-            M3Accessible.showItem(getContent(), getActions());
+            M3Accessible.showCurrentOrItem(this, getContent(), getActions());
             notifyFocusNodeChanged();
         }
     }

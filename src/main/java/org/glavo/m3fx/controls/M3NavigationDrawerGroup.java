@@ -55,7 +55,7 @@ public final class M3NavigationDrawerGroup extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyAccessibleContentChanged();
             if (restoreHeaderFocus) {
-                focusHeaderItem();
+                focusAccessibleNode();
             }
         }
     };
@@ -84,7 +84,10 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Notifies accessibility clients when focus moves between visible group rows.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, accessibleContent()));
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(
+                    this,
+                    accessibleContent()
+            ));
 
     /// Creates an empty navigation drawer group.
     public M3NavigationDrawerGroup() {
@@ -213,10 +216,7 @@ public final class M3NavigationDrawerGroup extends Control {
             case FIRE -> setExpanded(!isExpanded());
             case EXPAND -> setExpanded(true);
             case COLLAPSE -> setExpanded(false);
-            case REQUEST_FOCUS -> {
-                focusHeaderItem();
-                notifyFocusNodeChanged();
-            }
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -268,7 +268,13 @@ public final class M3NavigationDrawerGroup extends Control {
     /// Expands the group when needed and focuses the requested accessible row.
     private void showAccessibleItem(Object... parameters) {
         expandForAccessibleReveal();
-        M3Accessible.showItem(accessibleContent(), parameters);
+        M3Accessible.showCurrentOrItem(this, accessibleContent(), parameters);
+        notifyFocusNodeChanged();
+    }
+
+    /// Requests focus for the current accessible row, or the header row when no child owns focus.
+    private void focusAccessibleNode() {
+        M3Accessible.showCurrentOrItem(this, accessibleContent());
         notifyFocusNodeChanged();
     }
 
@@ -305,13 +311,6 @@ public final class M3NavigationDrawerGroup extends Control {
             }
         }
         return false;
-    }
-
-    /// Moves focus to the header row when it can receive focus.
-    private void focusHeaderItem() {
-        if (M3Accessible.canReach(headerItem) && headerItem.isFocusTraversable()) {
-            headerItem.requestFocus();
-        }
     }
 
     /// Notifies accessibility clients that visible group rows changed.

@@ -65,7 +65,7 @@ public class M3ButtonGroup extends Control {
 
     /// Notifies accessibility clients when focus moves between grouped buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getItems()));
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
     // The styleable spacing between grouped buttons.
     private @Nullable StyleableDoubleProperty spacing;
@@ -222,8 +222,8 @@ public class M3ButtonGroup extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getItems()));
-            case SHOW_ITEM -> M3Accessible.showItem(getItems(), parameters);
+            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getItems());
+            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getItems(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

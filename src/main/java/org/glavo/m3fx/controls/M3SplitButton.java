@@ -69,7 +69,7 @@ public class M3SplitButton extends Control {
 
     /// Notifies accessibility clients when focus moves between split button parts.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, buttonParts));
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, buttonParts));
 
     /// Notifies accessibility clients when focus moves inside the popup-hosted menu.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
@@ -456,13 +456,23 @@ public class M3SplitButton extends Control {
         if (isShowing()) {
             menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
         } else {
-            M3Accessible.showItem(M3Accessible.firstFocusTarget(buttonParts));
+            M3Accessible.showCurrentOrItem(this, buttonParts);
         }
         notifyFocusNodeChanged();
     }
 
     /// Focuses a requested split button part or delegates menu-item targets to the popup menu.
     private void showAccessibleItem(Object... parameters) {
+        if (parameters.length == 0) {
+            if (isShowing()) {
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+            } else {
+                M3Accessible.showCurrentOrItem(this, buttonParts);
+            }
+            notifyFocusNodeChanged();
+            return;
+        }
+
         @Nullable Node buttonPart = M3Accessible.actionItem(buttonParts, parameters);
         if (buttonPart != null) {
             M3Accessible.showItem(buttonPart);

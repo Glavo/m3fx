@@ -17291,6 +17291,11 @@ final class M3ControlStyleTest {
 
             M3SplitButton splitButton = new M3SplitButton("Create");
 
+            M3NavigationDrawerGroup drawerGroup = new M3NavigationDrawerGroup("Group");
+            M3ListItem drawerChild = new M3ListItem("Child");
+            drawerGroup.addItem(drawerChild);
+            drawerGroup.setExpanded(true);
+
             M3Button sideContent = new M3Button("Side content");
             M3Button sideAction = new M3Button("Side action");
             M3SideSheet sideSheet = new M3SideSheet("Side", sideContent, sideAction);
@@ -17311,6 +17316,7 @@ final class M3ControlStyleTest {
                     formSection,
                     buttonGroup,
                     splitButton,
+                    drawerGroup,
                     sideSheet,
                     bottomSheet
             );
@@ -17323,54 +17329,19 @@ final class M3ControlStyleTest {
                 root.applyCss();
                 root.layout();
 
-                topAccount.requestFocus();
-                assertTrue(topAccount.isFocused());
-                assertSame(topAccount, topAppBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                bottomCreate.requestFocus();
-                assertTrue(bottomCreate.isFocused());
-                assertSame(bottomCreate, bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                bannerAction.requestFocus();
-                assertTrue(bannerAction.isFocused());
-                assertSame(bannerAction, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                surfaceSecondary.requestFocus();
-                assertTrue(surfaceSecondary.isFocused());
-                assertSame(surfaceSecondary, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                badge.requestFocus();
-                assertTrue(badge.isFocused());
-                assertSame(badge, badgedBox.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                rowTrailing.requestFocus();
-                assertTrue(rowTrailing.isFocused());
-                assertSame(rowTrailing, formRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                paneSecond.requestFocus();
-                assertTrue(paneSecond.isFocused());
-                assertSame(paneSecond, formPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                sectionSecond.requestFocus();
-                assertTrue(sectionSecond.isFocused());
-                assertSame(sectionSecond, formSection.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                groupSecond.requestFocus();
-                assertTrue(groupSecond.isFocused());
-                assertSame(groupSecond, buttonGroup.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                splitButton.getMenuButton().requestFocus();
-                assertTrue(splitButton.getMenuButton().isFocused());
-                assertSame(splitButton.getMenuButton(),
-                        splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                sideAction.requestFocus();
-                assertTrue(sideAction.isFocused());
-                assertSame(sideAction, sideSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
-                bottomAction.requestFocus();
-                assertTrue(bottomAction.isFocused());
-                assertSame(bottomAction, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertCurrentAccessibleFocus(topAppBar, topAccount);
+                assertCurrentAccessibleFocus(bottomAppBar, bottomCreate);
+                assertCurrentAccessibleFocus(banner, bannerAction);
+                assertCurrentAccessibleFocus(surface, surfaceSecondary);
+                assertCurrentAccessibleFocus(badgedBox, badge);
+                assertCurrentAccessibleFocus(formRow, rowTrailing);
+                assertCurrentAccessibleFocus(formPane, paneSecond);
+                assertCurrentAccessibleFocus(formSection, sectionSecond);
+                assertCurrentAccessibleFocus(buttonGroup, groupSecond);
+                assertCurrentAccessibleFocus(splitButton, splitButton.getMenuButton());
+                assertCurrentAccessibleFocus(drawerGroup, drawerChild);
+                assertCurrentAccessibleFocus(sideSheet, sideAction);
+                assertCurrentAccessibleFocus(bottomSheet, bottomAction);
             } finally {
                 stage.close();
             }
@@ -18602,7 +18573,7 @@ final class M3ControlStyleTest {
         assertTrue(expectedFocusNode.isFocused());
     }
 
-    /// Verifies that a selection container reports the child that currently owns scene focus.
+    /// Verifies that a container keeps the child that currently owns scene focus for default focus actions.
     private static void assertCurrentAccessibleFocus(Node control, Node focusedChild) {
         focusedChild.requestFocus();
         assertTrue(focusedChild.isFocused());
@@ -18611,6 +18582,11 @@ final class M3ControlStyleTest {
         control.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
 
         assertTrue(focusedChild.isFocused());
+
+        control.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+        assertTrue(focusedChild.isFocused());
+        assertSame(focusedChild, control.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
     }
 
     /// Verifies that a parameterless show-item action focuses the expected accessibility item.

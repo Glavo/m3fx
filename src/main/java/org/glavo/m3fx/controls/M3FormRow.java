@@ -141,7 +141,7 @@ public class M3FormRow extends Control {
 
     /// Notifies accessibility clients when focus moves between row content and trailing children.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(
                     this,
                     getContent(),
                     getTrailing()
@@ -459,8 +459,14 @@ public class M3FormRow extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getContent(), getTrailing()));
-            case SHOW_ITEM -> M3Accessible.showItem(accessibleActionItem(parameters));
+            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getContent(), getTrailing());
+            case SHOW_ITEM -> {
+                if (parameters.length == 0) {
+                    M3Accessible.showCurrentOrItem(this, getContent(), getTrailing());
+                } else {
+                    M3Accessible.showItem(accessibleActionItem(parameters));
+                }
+            }
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -511,8 +517,7 @@ public class M3FormRow extends Control {
     /// Returns the row node referenced by accessibility action parameters.
     private @Nullable Node accessibleActionItem(Object... parameters) {
         if (parameters.length == 0) {
-            @Nullable Node currentContent = getContent();
-            return currentContent != null ? currentContent : getTrailing();
+            return M3Accessible.currentOrFirstFocusTarget(this, getContent(), getTrailing());
         }
 
         @Nullable Object firstParameter = parameters[0];

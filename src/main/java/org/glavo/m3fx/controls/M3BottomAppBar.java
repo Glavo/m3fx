@@ -62,7 +62,7 @@ public class M3BottomAppBar extends Control {
 
     /// Notifies accessibility clients when focus moves between action children.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(
                     this,
                     getActions(),
                     getFloatingAction()
@@ -205,11 +205,8 @@ public class M3BottomAppBar extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(
-                    getActions(),
-                    getFloatingAction()
-            ));
-            case SHOW_ITEM -> M3Accessible.showItem(getActions(), getFloatingAction(), parameters);
+            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getActions(), getFloatingAction());
+            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getActions(), getFloatingAction(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }

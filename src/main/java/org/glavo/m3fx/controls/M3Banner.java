@@ -58,7 +58,7 @@ public class M3Banner extends Control {
 
     /// Notifies accessibility clients when focus moves between action children.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getActions()));
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getActions()));
 
     /// Creates an empty banner.
     public M3Banner() {
@@ -182,10 +182,10 @@ public class M3Banner extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getActions()));
+            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getActions());
             case SHOW_ITEM -> {
                 if (parameters.length == 0) {
-                    M3Accessible.showItem(M3Accessible.firstFocusTarget(getActions()));
+                    M3Accessible.showCurrentOrItem(this, getActions());
                 } else {
                     M3Accessible.showItem(getIcon(), getActions(), parameters);
                 }

@@ -95,7 +95,7 @@ public class M3FormSection extends Control {
 
     /// Notifies accessibility clients when focus moves between section content children.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getContent()));
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getContent()));
 
     // The styleable content spacing token.
     private @Nullable StyleableDoubleProperty contentSpacing;
@@ -283,8 +283,8 @@ public class M3FormSection extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.firstFocusTarget(getContent()));
-            case SHOW_ITEM -> M3Accessible.showItem(getContent(), parameters);
+            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getContent());
+            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getContent(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
