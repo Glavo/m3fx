@@ -1663,7 +1663,7 @@ public class M3TextInputLayout extends Control {
             if (item != null && M3Accessible.containsNode(item, focusOwner)) {
                 @Nullable Node focusTarget = M3Accessible.focusTarget(item);
                 if (focusTarget != null) {
-                    return focusTarget;
+                    return M3Accessible.canReach(focusOwner) ? focusOwner : focusTarget;
                 }
             }
         }
@@ -1735,7 +1735,15 @@ public class M3TextInputLayout extends Control {
 
     /// Returns whether the node is an input, leading, or effective trailing accessibility item.
     private boolean containsAccessibleItem(Node node) {
-        return node == getLeading() || node == getInput() || node == effectiveTrailing();
+        @Nullable Node leading = getLeading();
+        @Nullable Node input = getInput();
+        @Nullable Node trailing = effectiveTrailing();
+        return node == leading
+                || node == input
+                || node == trailing
+                || leading != null && M3Accessible.containsNode(leading, node)
+                || input != null && M3Accessible.containsNode(input, node)
+                || trailing != null && M3Accessible.containsNode(trailing, node);
     }
 
     /// Returns whether keyboard focus belongs to the supplied node or one of its descendants.

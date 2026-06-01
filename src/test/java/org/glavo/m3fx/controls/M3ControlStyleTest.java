@@ -2892,6 +2892,49 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that text input layouts expose focused descendants inside compound adornment slots.
+    @Test
+    void textInputLayoutRoutesAccessibleFocusToDescendantAdornments() {
+        runOnFxThread(() -> {
+            M3TextField textField = new M3TextField("abc");
+            M3Button leadingPrimary = new M3Button("Leading primary");
+            M3Button leadingSecondary = new M3Button("Leading secondary");
+            M3Button trailingPrimary = new M3Button("Trailing primary");
+            M3Button trailingSecondary = new M3Button("Trailing secondary");
+            HBox leadingGroup = new HBox(leadingPrimary, leadingSecondary);
+            HBox trailingGroup = new HBox(trailingPrimary, trailingSecondary);
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            layout.setLeading(leadingGroup);
+            layout.setTrailing(trailingGroup);
+
+            Pane root = new Pane(layout);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 560.0, 180.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, leadingSecondary);
+
+                assertTrue(leadingSecondary.isFocused());
+                assertSame(leadingSecondary, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                trailingPrimary.requestFocus();
+
+                assertTrue(trailingPrimary.isFocused());
+                assertSame(trailingPrimary, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, trailingSecondary);
+
+                assertTrue(trailingSecondary.isFocused());
+                assertSame(trailingSecondary, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that text input layouts mirror logical adornments and floating label geometry in right-to-left mode.
     @Test
     void textInputLayoutMirrorsAdornmentsAndFloatingLabelForRightToLeft() {
@@ -12818,6 +12861,17 @@ final class M3ControlStyleTest {
             M3TextInputLayout inputLayout = new M3TextInputLayout(textField, "Helper text");
             inputLayout.setLeading(leading);
 
+            M3Button rowContentPrimary = new M3Button("Row primary");
+            M3Button rowContentSecondary = new M3Button("Row secondary");
+            M3Button rowTrailingPrimary = new M3Button("Row trailing primary");
+            M3Button rowTrailingSecondary = new M3Button("Row trailing secondary");
+            M3FormRow formRow = new M3FormRow(
+                    "Row",
+                    "",
+                    new HBox(rowContentPrimary, rowContentSecondary),
+                    new HBox(rowTrailingPrimary, rowTrailingSecondary)
+            );
+
             M3ListItem firstResult = new M3ListItem("First result");
             M3ListItem secondResult = new M3ListItem("Second result");
             M3SearchView searchView = new M3SearchView("Search", firstResult, secondResult);
@@ -12832,6 +12886,7 @@ final class M3ControlStyleTest {
                     surface,
                     badgedBox,
                     inputLayout,
+                    formRow,
                     searchView,
                     fabMenu
             );
@@ -12884,6 +12939,12 @@ final class M3ControlStyleTest {
 
                 inputLayout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
                 assertTrue(textField.isFocused());
+
+                formRow.executeAccessibleAction(AccessibleAction.SHOW_ITEM, rowContentSecondary);
+                assertTrue(rowContentSecondary.isFocused());
+
+                formRow.executeAccessibleAction(AccessibleAction.SHOW_ITEM, rowTrailingSecondary);
+                assertTrue(rowTrailingSecondary.isFocused());
 
                 searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
                 assertTrue(searchView.isActive());

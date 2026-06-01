@@ -536,8 +536,15 @@ public class M3FormRow extends Control {
         if (parameter instanceof Number number) {
             return accessibleItemAt(number);
         }
-        if (parameter == currentContent || parameter == currentTrailing) {
-            return (Node) parameter;
+        if (parameter instanceof Node node) {
+            if (node == currentContent || node == currentTrailing) {
+                return node;
+            }
+            if ((currentContent != null && M3Accessible.containsNode(currentContent, node))
+                    || (currentTrailing != null && M3Accessible.containsNode(currentTrailing, node))) {
+                return node;
+            }
+            return null;
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
