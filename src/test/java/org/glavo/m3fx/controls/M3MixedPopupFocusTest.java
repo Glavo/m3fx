@@ -4,9 +4,9 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
-import javafx.event.EventType;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
@@ -21,11 +21,14 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -83,14 +86,14 @@ final class M3MixedPopupFocusTest {
                 assertTrue(detailsItem.isFocused());
                 assertSame(detailsItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                detailsItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.F6));
+                detailsItem.fireEvent(keyPressed(KeyCode.F6));
 
                 assertTrue(action.isFocused());
                 assertTrue(tooltip.isShowing());
                 assertTrue(menuButton.isShowing());
                 assertSame(detailsItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                action.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+                action.fireEvent(keyPressed(KeyCode.ESCAPE));
 
                 assertFalse(tooltip.isShowing());
                 assertTrue(detailsItem.isFocused());
@@ -138,11 +141,66 @@ final class M3MixedPopupFocusTest {
                 assertTrue(secondItem.isFocused());
                 assertSame(secondItem, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                secondItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+                secondItem.fireEvent(keyPressed(KeyCode.ESCAPE));
 
                 assertFalse(menuButton.isShowing());
                 assertTrue(menuButton.isFocused());
                 assertSame(menuButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog panes expose nested picker popup focus through ordinary content containers.
+    @Test
+    void dialogPaneRoutesFocusThroughNestedPickerPopupInContentContainer() {
+        runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+            Pane content = new Pane(field);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 720.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 560.0, 280.0);
+                content.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                field.resizeRelocate(0.0, 0.0, 320.0, 72.0);
+                root.layout();
+
+                field.showPicker();
+                field.getPicker().requestFocus();
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+                assertSame(pickerFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(pickerFocusNode.isFocused());
+                assertSame(pickerFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(pickerFocusNode.isFocused());
+                assertSame(pickerFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                field.getPicker().fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getEditor().isFocused());
+                assertSame(field.getEditor(), dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
             }
@@ -198,8 +256,8 @@ final class M3MixedPopupFocusTest {
         }
     }
 
-    /// Creates a key event for popup keyboard tests.
-    private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
-        return new KeyEvent(eventType, "", "", code, false, false, false, false);
+    /// Creates a key press event for popup keyboard tests.
+    private static KeyEvent keyPressed(KeyCode code) {
+        return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
     }
 }
