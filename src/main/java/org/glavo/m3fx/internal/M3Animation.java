@@ -41,6 +41,18 @@ public final class M3Animation {
         return M3MotionSettings.areAnimationsEnabled(Objects.requireNonNull(owner, "owner"));
     }
 
+    /// Returns whether an owner should use reduced motion behavior.
+    ///
+    /// Reduced motion disables finite visual transitions, shape morphs, easing-based state changes, and entrance or
+    /// exit motion. Activity indicators may still run simple linear motion so indeterminate progress remains visibly
+    /// alive without playing the full Material motion treatment.
+    ///
+    /// @param owner the node whose local, inherited, or global motion settings should be resolved
+    /// @return `true` when finite transitions should be settled and activity indicators should use reduced motion
+    public static boolean shouldReduceMotion(Node owner) {
+        return !areAnimationsEnabled(owner);
+    }
+
     /// Returns the semantic motion scheme for an owner node.
     ///
     /// @param owner the node whose local, theme, or global motion scheme should be resolved

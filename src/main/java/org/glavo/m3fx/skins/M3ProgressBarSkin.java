@@ -328,7 +328,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Animates the displayed determinate progress value.
     private void animateDisplayedProgress(double targetProgress, boolean animate) {
         determinateAnimation.stop();
-        if (!animate || !M3Animation.areAnimationsEnabled(getSkinnable())) {
+        if (!animate || M3Animation.shouldReduceMotion(getSkinnable())) {
             displayedProgress.set(targetProgress);
             return;
         }

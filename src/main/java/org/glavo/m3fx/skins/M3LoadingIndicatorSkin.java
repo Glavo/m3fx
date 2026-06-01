@@ -168,7 +168,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         if (progress == M3LoadingIndicator.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
             displayedProgress.set(0.0);
-            if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
+            if (M3Animation.shouldReduceMotion(getSkinnable())) {
                 indeterminateAnimation.stop();
                 resetIndeterminateAnimationState();
                 startBasicIndeterminateAnimation();
@@ -246,7 +246,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Advances to the next indeterminate morph segment and keeps the loop running.
     private void finishIndeterminateMorphSegment() {
         M3LoadingIndicator loadingIndicator = getSkinnable();
-        if (!loadingIndicator.isIndeterminate() || !M3Animation.areAnimationsEnabled(loadingIndicator)) {
+        if (!loadingIndicator.isIndeterminate() || M3Animation.shouldReduceMotion(loadingIndicator)) {
             return;
         }
 
@@ -260,7 +260,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Animates the displayed determinate progress value.
     private void animateDisplayedProgress(double targetProgress, boolean animate) {
         determinateAnimation.stop();
-        if (!animate || !M3Animation.areAnimationsEnabled(getSkinnable())) {
+        if (!animate || M3Animation.shouldReduceMotion(getSkinnable())) {
             displayedProgress.set(targetProgress);
             return;
         }
@@ -289,7 +289,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         }
 
         if (indeterminate) {
-            if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
+            if (M3Animation.shouldReduceMotion(getSkinnable())) {
                 INDETERMINATE_SEQUENCE.morphAt(0).writeTo(
                         indicator,
                         0.0,

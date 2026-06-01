@@ -178,7 +178,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             double sweepFraction = indeterminateSweep(
                     indeterminatePhase.get(),
-                    M3Animation.areAnimationsEnabled(progressIndicator)
+                    !M3Animation.shouldReduceMotion(progressIndicator)
             ) / 360.0;
             double start = indeterminatePhase.get();
             layoutCircularTrackPath(waveTrack, centerX, centerY, radius, strokeWidth, start, start + sweepFraction);
@@ -217,7 +217,10 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             track.setVisible(false);
             indicator.setStartAngle(indeterminateStartAngle(indeterminatePhase.get()));
-            indicator.setLength(-indeterminateSweep(indeterminatePhase.get(), M3Animation.areAnimationsEnabled(getSkinnable())));
+            indicator.setLength(-indeterminateSweep(
+                    indeterminatePhase.get(),
+                    !M3Animation.shouldReduceMotion(getSkinnable())
+            ));
             return;
         }
 
@@ -264,7 +267,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// Animates the displayed determinate progress value.
     private void animateDisplayedProgress(double targetProgress, boolean animate) {
         determinateAnimation.stop();
-        if (!animate || !M3Animation.areAnimationsEnabled(getSkinnable())) {
+        if (!animate || M3Animation.shouldReduceMotion(getSkinnable())) {
             displayedProgress.set(targetProgress);
             return;
         }

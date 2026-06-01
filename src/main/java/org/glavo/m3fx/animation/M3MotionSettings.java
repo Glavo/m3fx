@@ -24,8 +24,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /// or replace the motion scheme used by one feature area without rewriting control skins.
 ///
 /// Controls use these settings for state-layer fades, ripple release, popup entrance and exit, smooth scrolling,
-/// and determinate or indeterminate progress motion. The defaults follow the Material Design 3 motion guidance;
-/// see [Material motion](https://m3.material.io/styles/motion/overview) and
+/// and progress motion. Disabling animations requests reduced motion: finite transitions settle immediately,
+/// while indeterminate activity indicators keep simple linear movement so loading and progress states remain
+/// visibly active without playing the full Material motion treatment. The defaults follow the Material Design 3
+/// motion guidance; see [Material motion](https://m3.material.io/styles/motion/overview) and
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public final class M3MotionSettings {
@@ -71,23 +73,23 @@ public final class M3MotionSettings {
     private M3MotionSettings() {
     }
 
-    /// Returns whether animations are globally enabled.
+    /// Returns whether full Material motion is globally enabled.
     ///
-    /// @return `true` when global animations are enabled
+    /// @return `true` when global full-motion animations are enabled
     public static boolean areAnimationsEnabled() {
         return animationsEnabled.get();
     }
 
-    /// Sets whether animations are globally enabled.
+    /// Sets whether full Material motion is globally enabled.
     ///
-    /// @param enabled whether global animations should be enabled
+    /// @param enabled whether global full-motion animations should be enabled
     public static void setAnimationsEnabled(boolean enabled) {
         animationsEnabled.set(enabled);
     }
 
-    /// Returns the global animation switch property.
+    /// Returns the global full-motion animation switch property.
     ///
-    /// @return the writable global animation switch property
+    /// @return the writable global full-motion animation switch property
     public static BooleanProperty animationsEnabledProperty() {
         return animationsEnabled;
     }
@@ -162,30 +164,30 @@ public final class M3MotionSettings {
         settingsChangeListeners.remove(Objects.requireNonNull(listener, "listener"));
     }
 
-    /// Returns whether animations are enabled for a node after resolving inherited overrides.
+    /// Returns whether full Material motion is enabled for a node after resolving inherited overrides.
     ///
     /// @param node the node used to resolve inherited motion settings
-    /// @return `true` when animations are enabled for the node
+    /// @return `true` when full-motion animations are enabled for the node
     public static boolean areAnimationsEnabled(Node node) {
         Objects.requireNonNull(node, "node");
         @Nullable Boolean override = findInheritedAnimationsEnabled(node);
         return override == null ? areAnimationsEnabled() : override;
     }
 
-    /// Returns the node-local animation override, or `null` when the node inherits its setting.
+    /// Returns the node-local full-motion animation override, or `null` when the node inherits its setting.
     ///
     /// @param node the node to query
-    /// @return the node-local animation override, or `null` when the node inherits its setting
+    /// @return the node-local full-motion animation override, or `null` when the node inherits its setting
     public static @Nullable Boolean getAnimationsEnabled(Node node) {
         Objects.requireNonNull(node, "node");
         @Nullable Object value = node.getProperties().get(ANIMATIONS_ENABLED_KEY);
         return value instanceof Boolean booleanValue ? booleanValue : null;
     }
 
-    /// Sets the node-local animation override, or clears it when `null` is supplied.
+    /// Sets the node-local full-motion animation override, or clears it when `null` is supplied.
     ///
     /// @param node the node to update
-    /// @param enabled the node-local animation override, or `null` to inherit
+    /// @param enabled the node-local full-motion animation override, or `null` to inherit
     public static void setAnimationsEnabled(Node node, @Nullable Boolean enabled) {
         Objects.requireNonNull(node, "node");
         @Nullable Boolean previous = getAnimationsEnabled(node);
@@ -200,9 +202,9 @@ public final class M3MotionSettings {
         markSettingsChanged();
     }
 
-    /// Clears the node-local animation override so the node inherits its setting.
+    /// Clears the node-local full-motion animation override so the node inherits its setting.
     ///
-    /// @param node the node whose local animation override should be cleared
+    /// @param node the node whose local full-motion animation override should be cleared
     public static void clearAnimationsEnabled(Node node) {
         setAnimationsEnabled(node, null);
     }
