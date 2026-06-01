@@ -483,11 +483,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> {
-                editor.requestFocus();
-                notifyFocusNodeChanged();
-                popupFocusNotifier.refresh();
-            }
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_MENU, EXPAND -> showPicker();
             case COLLAPSE -> hidePicker(true);
             case SHOW_ITEM -> showPickerAndForwardAccessibleAction(action, parameters);
@@ -696,7 +692,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// Returns the current keyboard focus node for accessibility clients.
     private Node focusNode() {
         if (!popup.isShowing()) {
-            return editor;
+            return fieldFocusNode();
         }
 
         @Nullable Node popupFocusOwner = popupFocusOwner();
@@ -706,6 +702,21 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
         @Nullable Object focusNode = picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         return focusNode instanceof Node node && M3Accessible.canReach(node) ? node : picker;
+    }
+
+    /// Returns the current focus target inside the closed field.
+    private Node fieldFocusNode() {
+        @Nullable Scene scene = getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        if (focusOwner != null) {
+            if (M3Accessible.containsNode(editor, focusOwner)) {
+                return editor;
+            }
+            if (M3Accessible.containsNode(openButton, focusOwner)) {
+                return openButton;
+            }
+        }
+        return editor;
     }
 
     /// Returns the current focus owner inside popup content when it belongs to the popup scene.
@@ -721,8 +732,11 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
     private void showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
+        boolean preservePopupFocus = popup.isShowing() && parameters.length == 0 && popupFocusOwner() != null;
         showPicker();
-        forwardPickerAccessibleAction(action, parameters);
+        if (!preservePopupFocus) {
+            forwardPickerAccessibleAction(action, parameters);
+        }
         focusPicker();
     }
 
@@ -737,7 +751,14 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             return;
         }
 
-        focusNode().requestFocus();
+        M3Accessible.showItem(focusNode());
+        notifyFocusNodeChanged();
+        popupFocusNotifier.refresh();
+    }
+
+    /// Requests focus for the current editor, open button, or popup focus target.
+    private void focusAccessibleNode() {
+        M3Accessible.showItem(focusNode());
         notifyFocusNodeChanged();
         popupFocusNotifier.refresh();
     }

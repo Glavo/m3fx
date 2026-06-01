@@ -1160,7 +1160,28 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             @Nullable Object focusNode = picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
             return focusNode instanceof Node node && M3Accessible.canReach(node) ? node : picker;
         }
-        return endEditor.isFocused() ? endEditor : startEditor;
+        return fieldFocusNode();
+    }
+
+    /// Returns the current focus target inside the closed range field.
+    private Node fieldFocusNode() {
+        @Nullable Scene scene = getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        if (focusOwner != null) {
+            if (M3Accessible.containsNode(startEditor, focusOwner)) {
+                return startEditor;
+            }
+            if (M3Accessible.containsNode(startOpenButton, focusOwner)) {
+                return startOpenButton;
+            }
+            if (M3Accessible.containsNode(endEditor, focusOwner)) {
+                return endEditor;
+            }
+            if (M3Accessible.containsNode(endOpenButton, focusOwner)) {
+                return endOpenButton;
+            }
+        }
+        return startEditor;
     }
 
     /// Returns the current focus owner inside popup content when it belongs to the popup scene.
@@ -1176,8 +1197,11 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
     private void showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
+        boolean preservePopupFocus = popup.isShowing() && parameters.length == 0 && popupFocusOwner() != null;
         showPicker();
-        forwardPickerAccessibleAction(action, false, parameters);
+        if (!preservePopupFocus) {
+            forwardPickerAccessibleAction(action, false, parameters);
+        }
         focusPicker();
     }
 
@@ -1206,24 +1230,21 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Requests focus for the field's current editor or popup focus target.
     private void focusAccessibleNode() {
-        if (popup.isShowing()) {
-            focusPicker();
-            return;
-        }
-
-        focusEditor(currentEditor());
-    }
-
-    /// Requests focus for one editor and notifies accessibility clients.
-    private void focusEditor(M3TextField editor) {
-        editor.requestFocus();
+        M3Accessible.showItem(focusNode());
         notifyFocusNodeChanged();
         popupFocusNotifier.refresh();
     }
 
     /// Returns the editor currently focused by the user, or the start editor by default.
     private M3TextField currentEditor() {
-        return endEditor.isFocused() ? endEditor : startEditor;
+        @Nullable Scene scene = getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        if (focusOwner != null
+                && (M3Accessible.containsNode(endEditor, focusOwner)
+                || M3Accessible.containsNode(endOpenButton, focusOwner))) {
+            return endEditor;
+        }
+        return startEditor;
     }
 
     /// Returns the editor that should regain focus when the current popup session ends.

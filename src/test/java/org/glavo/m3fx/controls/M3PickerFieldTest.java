@@ -329,11 +329,32 @@ final class M3PickerFieldTest {
                 field.resizeRelocate(24.0, 24.0, 320.0, 72.0);
                 root.layout();
 
+                Node openButton = assertInstanceOf(Node.class, field.getInputLayout().getTrailing());
+                openButton.requestFocus();
+
+                assertTrue(openButton.isFocused());
+                assertSame(openButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                field.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(openButton.isFocused());
+                assertSame(openButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 field.showPicker();
                 Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
                 M3Button today = findPresetButton(presetContent, "Today");
 
                 today.requestFocus();
+
+                assertTrue(today.isFocused());
+                assertSame(today, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                field.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(today.isFocused());
+                assertSame(today, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                field.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
 
                 assertTrue(today.isFocused());
                 assertSame(today, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));

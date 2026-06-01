@@ -15509,6 +15509,11 @@ final class M3ControlStyleTest {
                 assertTrue(presetButton.isFocused());
                 assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                field.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(presetButton.isFocused());
+                assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 presetButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
 
                 assertFalse(field.isShowing());
