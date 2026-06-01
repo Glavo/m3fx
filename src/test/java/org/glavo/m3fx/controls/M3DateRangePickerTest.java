@@ -14,6 +14,7 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -41,6 +42,7 @@ import javax.imageio.ImageIO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -162,6 +164,48 @@ final class M3DateRangePickerTest {
 
         picker.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 2, 5));
         assertEquals(YearMonth.of(2026, 2), picker.getDisplayedMonth());
+    }
+
+    /// Verifies that default accessibility focus actions preserve the focused visible day cell.
+    @Test
+    void dateRangePickerAccessibleFocusPreservesFocusedVisibleCell() {
+        runOnFxThread(() -> {
+            M3DateRangePicker picker = new M3DateRangePicker(
+                    LocalDate.of(2026, 5, 18),
+                    LocalDate.of(2026, 5, 22)
+            );
+            picker.setFirstDayOfWeek(DayOfWeek.MONDAY);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(picker);
+                Scene scene = new Scene(root, 420.0, 360.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                picker.resize(360.0, 340.0);
+                root.layout();
+                picker.layout();
+
+                ButtonBase focusedCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
+                focusedCell.requestFocus();
+
+                assertTrue(focusedCell.isFocused());
+                assertSame(focusedCell, picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                picker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(focusedCell.isFocused());
+
+                picker.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(focusedCell.isFocused());
+                assertSame(focusedCell, picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that the date range picker renders selected endpoint and in-range states.

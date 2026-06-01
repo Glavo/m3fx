@@ -448,6 +448,11 @@ public class M3TimePicker extends Control {
             return this;
         }
 
+        @Nullable Node focusedCell = currentFocusedCell(skin);
+        if (focusedCell != null) {
+            return focusedCell;
+        }
+
         @Nullable LocalTime selectedTime = getValue();
         if (selectedTime != null) {
             @Nullable Node selectedCell = skin.getCell(selectedTime);
@@ -458,6 +463,25 @@ public class M3TimePicker extends Control {
 
         @Nullable Node firstEnabledCell = skin.getFirstEnabledCell();
         return firstEnabledCell == null ? this : firstEnabledCell;
+    }
+
+    /// Returns the currently focused visible time cell, or `null` when focus is outside this picker.
+    private @Nullable Node currentFocusedCell(M3TimePickerSkin skin) {
+        @Nullable Node focusOwner = getScene() == null ? null : getScene().getFocusOwner();
+        if (focusOwner == null) {
+            return null;
+        }
+
+        int count = skin.getVisibleCellCount();
+        for (int index = 0; index < count; index++) {
+            @Nullable Node cell = skin.getVisibleCell(index);
+            if (cell != null
+                    && !cell.isDisabled()
+                    && M3Accessible.containsNode(cell, focusOwner)) {
+                return M3Accessible.canReach(focusOwner) ? focusOwner : cell;
+            }
+        }
+        return null;
     }
 
     /// Focuses an accessibility target or the picker itself.

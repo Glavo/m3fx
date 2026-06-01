@@ -18,6 +18,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -196,6 +198,45 @@ final class M3TimePickerTest {
         assertEquals(LocalTime.of(12, 45), picker.getValue());
         assertEquals(List.of(LocalTime.of(12, 45)),
                 picker.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+    }
+
+    /// Verifies that default accessibility focus actions preserve the focused visible time cell.
+    @Test
+    void timePickerAccessibleFocusPreservesFocusedVisibleCell() {
+        runOnFxThread(() -> {
+            M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
+            picker.setMinuteStep(15);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(picker);
+                Scene scene = new Scene(root, 520.0, 360.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                picker.resize(460.0, 320.0);
+                root.layout();
+                picker.layout();
+
+                ButtonBase focusedCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "11");
+                focusedCell.requestFocus();
+
+                assertTrue(focusedCell.isFocused());
+                assertSame(focusedCell, picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                picker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(focusedCell.isFocused());
+
+                picker.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(focusedCell.isFocused());
+                assertSame(focusedCell, picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that time pickers render selected, 24-hour, and disabled range states.

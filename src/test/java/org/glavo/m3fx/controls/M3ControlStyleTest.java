@@ -12849,6 +12849,7 @@ final class M3ControlStyleTest {
                 assertCurrentAccessibleFocus(tabBar, tabFirst);
                 assertCurrentAccessibleFocus(navigationBar, barFirst);
                 assertCurrentAccessibleFocus(navigationRail, railFirst);
+                assertCurrentAccessibleFocus(navigationDrawer, drawerFirst);
 
                 assertAccessibleShowItemFocus(outsideFocus, iconGroup, iconSecond);
                 assertAccessibleShowItemFocus(outsideFocus, segmentedGroup, segmentSecond);

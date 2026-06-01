@@ -314,11 +314,7 @@ public class M3NavigationDrawer extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3SelectionNavigation.focusTarget(
-                    flattenedContent(),
-                    getSelectedItem(),
-                    M3ListItem.class
-            ));
+            case REQUEST_FOCUS -> M3Accessible.showItem(accessibleFocusNode());
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -498,11 +494,7 @@ public class M3NavigationDrawer extends Control {
     private void showAccessibleItem(Object... parameters) {
         ObservableList<Node> content = flattenedContent();
         if (parameters.length == 0) {
-            M3Accessible.showItem(M3SelectionNavigation.focusTarget(
-                    content,
-                    getSelectedItem(),
-                    M3ListItem.class
-            ));
+            M3Accessible.showItem(accessibleFocusNode(content));
             return;
         }
 

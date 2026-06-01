@@ -670,6 +670,11 @@ public class M3DateRangePicker extends Control {
             return this;
         }
 
+        @Nullable Node focusedCell = currentFocusedDayCell(skin);
+        if (focusedCell != null) {
+            return focusedCell;
+        }
+
         @Nullable LocalDate end = getEndDate();
         if (end != null) {
             @Nullable Node endCell = skin.getDayCell(end);
@@ -688,6 +693,25 @@ public class M3DateRangePicker extends Control {
 
         @Nullable Node firstEnabledCell = skin.getFirstEnabledDayCell();
         return firstEnabledCell == null ? this : firstEnabledCell;
+    }
+
+    /// Returns the currently focused visible day cell, or `null` when focus is outside this picker.
+    private @Nullable Node currentFocusedDayCell(M3DateRangePickerSkin skin) {
+        @Nullable Node focusOwner = getScene() == null ? null : getScene().getFocusOwner();
+        if (focusOwner == null) {
+            return null;
+        }
+
+        int count = skin.getVisibleDayCellCount();
+        for (int index = 0; index < count; index++) {
+            @Nullable Node cell = skin.getVisibleDayCell(index);
+            if (cell != null
+                    && !cell.isDisabled()
+                    && M3Accessible.containsNode(cell, focusOwner)) {
+                return M3Accessible.canReach(focusOwner) ? focusOwner : cell;
+            }
+        }
+        return null;
     }
 
     /// Focuses an accessibility target or the picker itself.
