@@ -472,48 +472,7 @@ public class M3SearchView extends Control {
 
     /// Returns the result referenced by accessibility action parameters.
     private @Nullable Node accessibleResultActionItem(Object... parameters) {
-        Objects.requireNonNull(parameters, "parameters");
-        if (parameters.length == 0) {
-            return null;
-        }
-        if (parameters[0] instanceof Number) {
-            return M3Accessible.itemAt(getResults(), parameters);
-        }
-        for (Object parameter : parameters) {
-            @Nullable Node item = accessibleResultActionItem(parameter);
-            if (item != null) {
-                return item;
-            }
-        }
-        return null;
-    }
-
-    /// Returns the result referenced by one accessibility action parameter.
-    private @Nullable Node accessibleResultActionItem(@Nullable Object parameter) {
-        if (parameter instanceof Number number) {
-            return M3Accessible.itemAt(getResults(), number);
-        }
-        if (parameter instanceof Node node && getResults().contains(node)) {
-            return node;
-        }
-        if (parameter instanceof Iterable<?> values) {
-            for (Object value : values) {
-                @Nullable Node item = accessibleResultActionItem(value);
-                if (item != null) {
-                    return item;
-                }
-            }
-            return null;
-        }
-        if (parameter instanceof Object[] values) {
-            for (Object value : values) {
-                @Nullable Node item = accessibleResultActionItem(value);
-                if (item != null) {
-                    return item;
-                }
-            }
-        }
-        return null;
+        return M3Accessible.actionItem(getResults(), parameters);
     }
 
     /// Focuses the next result relative to the current focus owner.
@@ -705,13 +664,9 @@ public class M3SearchView extends Control {
 
     /// Returns the current focused child target, or `null` when focus is outside this search view.
     private @Nullable Node currentFocusNode() {
-        int resultIndex = focusedResultIndex();
-        if (resultIndex >= 0) {
-            @Nullable Node result = getResults().get(resultIndex);
-            @Nullable Node focusTarget = M3Accessible.focusTarget(result);
-            if (focusTarget != null) {
-                return focusTarget;
-            }
+        @Nullable Node resultFocusNode = M3Accessible.currentFocusTarget(this, getResults());
+        if (resultFocusNode != null) {
+            return resultFocusNode;
         }
         return currentSearchBarFocusNode();
     }

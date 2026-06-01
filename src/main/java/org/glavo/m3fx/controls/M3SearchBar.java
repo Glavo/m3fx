@@ -487,7 +487,18 @@ public class M3SearchBar extends Control {
     /// Returns whether a node is one of the search bar's indexed accessibility items.
     private boolean containsAccessibleItem(Node node) {
         @Nullable Node leading = getLeading();
-        return node == leading || node == editor || getTrailingActions().contains(node);
+        if (node == leading || node == editor || M3Accessible.containsNode(editor, node)) {
+            return true;
+        }
+        if (leading != null && M3Accessible.containsNode(leading, node)) {
+            return true;
+        }
+        for (Node action : getTrailingActions()) {
+            if (node == action || M3Accessible.containsNode(action, node)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Focuses an indexed child item, falling back to the editor when the item is not focusable.
@@ -525,7 +536,7 @@ public class M3SearchBar extends Control {
                     if (item != null && M3Accessible.containsNode(item, focusOwner)) {
                         @Nullable Node focusTarget = M3Accessible.focusTarget(item);
                         if (focusTarget != null) {
-                            return focusTarget;
+                            return M3Accessible.canReach(focusOwner) ? focusOwner : focusTarget;
                         }
                     }
                 }
