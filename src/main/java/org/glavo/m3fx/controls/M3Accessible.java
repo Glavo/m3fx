@@ -332,6 +332,11 @@ final class M3Accessible {
     static @Nullable Node currentFocusTarget(Node owner, ObservableList<? extends Node> items) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(items, "items");
+        @Nullable Node externalTarget = activeExternalFocusTarget(owner, items);
+        if (externalTarget != null) {
+            return externalTarget;
+        }
+
         @Nullable Node focusOwner = focusOwner(owner);
         if (focusOwner == null) {
             return null;
@@ -354,6 +359,15 @@ final class M3Accessible {
     ) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(items, "items");
+        @Nullable Node externalLeadingTarget = activeExternalFocusTarget(owner, leading);
+        if (externalLeadingTarget != null) {
+            return externalLeadingTarget;
+        }
+        @Nullable Node externalItemTarget = activeExternalFocusTarget(owner, items);
+        if (externalItemTarget != null) {
+            return externalItemTarget;
+        }
+
         @Nullable Node focusOwner = focusOwner(owner);
         if (focusOwner == null) {
             return null;
@@ -381,6 +395,15 @@ final class M3Accessible {
     ) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(items, "items");
+        @Nullable Node externalItemTarget = activeExternalFocusTarget(owner, items);
+        if (externalItemTarget != null) {
+            return externalItemTarget;
+        }
+        @Nullable Node externalTrailingTarget = activeExternalFocusTarget(owner, trailing);
+        if (externalTrailingTarget != null) {
+            return externalTrailingTarget;
+        }
+
         @Nullable Node focusOwner = focusOwner(owner);
         if (focusOwner == null) {
             return null;
@@ -399,6 +422,15 @@ final class M3Accessible {
     /// Returns the current focus owner when it belongs to either optional child node.
     static @Nullable Node currentFocusTarget(Node owner, @Nullable Node first, @Nullable Node second) {
         Objects.requireNonNull(owner, "owner");
+        @Nullable Node externalFirstTarget = activeExternalFocusTarget(owner, first);
+        if (externalFirstTarget != null) {
+            return externalFirstTarget;
+        }
+        @Nullable Node externalSecondTarget = activeExternalFocusTarget(owner, second);
+        if (externalSecondTarget != null) {
+            return externalSecondTarget;
+        }
+
         @Nullable Node focusOwner = focusOwner(owner);
         if (focusOwner == null) {
             return null;
@@ -412,6 +444,51 @@ final class M3Accessible {
     private static @Nullable Node focusOwner(Node owner) {
         @Nullable Scene scene = owner.getScene();
         return scene == null ? null : scene.getFocusOwner();
+    }
+
+    /// Returns an active external focus target exposed by one item outside the owner subtree.
+    static @Nullable Node activeExternalFocusTarget(Node owner, @Nullable Node item) {
+        Objects.requireNonNull(owner, "owner");
+        if (item == null || !canReach(item)) {
+            return null;
+        }
+
+        @Nullable Object focusNode = item.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        if (focusNode instanceof Node node && isActiveExternalFocusTarget(owner, node)) {
+            return node;
+        }
+
+        if (item instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable Node childTarget = activeExternalFocusTarget(owner, child);
+                if (childTarget != null) {
+                    return childTarget;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first active external focus target exposed by one item list.
+    private static @Nullable Node activeExternalFocusTarget(Node owner, ObservableList<? extends Node> items) {
+        for (Node item : items) {
+            @Nullable Node target = activeExternalFocusTarget(owner, item);
+            if (target != null) {
+                return target;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a focus target belongs to a live popup or overlay outside the owner subtree.
+    private static boolean isActiveExternalFocusTarget(Node owner, Node focusTarget) {
+        if (!canReach(focusTarget) || containsNode(owner, focusTarget)) {
+            return false;
+        }
+
+        @Nullable Scene focusTargetScene = focusTarget.getScene();
+        @Nullable Node focusOwner = focusTargetScene == null ? null : focusTargetScene.getFocusOwner();
+        return focusOwner != null && containsNode(focusTarget, focusOwner);
     }
 
     /// Returns a focus owner when it is contained by an item that can expose focus.

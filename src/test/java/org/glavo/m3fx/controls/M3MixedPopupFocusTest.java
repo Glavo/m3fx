@@ -207,6 +207,125 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that indexed item containers expose active popup focus owned by child menu buttons.
+    @Test
+    void indexedContainersRouteFocusThroughNestedMenuPopup() {
+        runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem firstItem = new M3MenuItem("First");
+            M3MenuItem secondItem = new M3MenuItem("Second");
+            M3MenuButton menuButton = new M3MenuButton("Open menu", firstItem, secondItem);
+            M3ButtonGroup group = new M3ButtonGroup(menuButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(group);
+                Scene scene = new Scene(root, 520.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                group.resizeRelocate(32.0, 32.0, 260.0, 64.0);
+                root.layout();
+
+                menuButton.showMenu();
+                secondItem.requestFocus();
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(secondItem.isFocused());
+                assertPopupFocusRoutedByContainer(group, secondItem);
+
+                secondItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that surface content subtrees expose active picker popup focus to the surface owner.
+    @Test
+    void surfaceRoutesFocusThroughNestedPickerPopupInContentContainer() {
+        runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 20));
+            Pane content = new Pane(field);
+            content.setPrefSize(360.0, 96.0);
+            M3Surface surface = new M3Surface(content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 440.0, 144.0);
+                field.resizeRelocate(0.0, 0.0, 320.0, 72.0);
+                root.layout();
+
+                field.showPicker();
+                field.getPicker().requestFocus();
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+                assertPopupFocusRoutedByContainer(surface, pickerFocusNode);
+
+                field.getPicker().fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getEditor().isFocused());
+                assertSame(field.getEditor(), surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that slot-based containers expose active popup focus owned by action nodes.
+    @Test
+    void slotContainersRouteFocusThroughNestedMenuPopup() {
+        runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem saveItem = new M3MenuItem("Save");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
+            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, menuButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(appBar);
+                Scene scene = new Scene(root, 720.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                appBar.resizeRelocate(0.0, 0.0, 640.0, 72.0);
+                root.layout();
+
+                menuButton.showMenu();
+                archiveItem.requestFocus();
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertPopupFocusRoutedByContainer(appBar, archiveItem);
+
+                archiveItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, appBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Runs a JavaFX task with animations disabled and restores the previous global animation setting.
     private static void runOnFxThreadWithAnimationsDisabled(Runnable task) {
         runOnFxThread(() -> {
@@ -259,5 +378,20 @@ final class M3MixedPopupFocusTest {
     /// Creates a key press event for popup keyboard tests.
     private static KeyEvent keyPressed(KeyCode code) {
         return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
+    }
+
+    /// Verifies that a composite owner preserves and reveals an active external popup focus target.
+    private static void assertPopupFocusRoutedByContainer(Node container, Node focusTarget) {
+        assertSame(focusTarget, container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+        container.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+        assertTrue(focusTarget.isFocused());
+        assertSame(focusTarget, container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+        container.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+        assertTrue(focusTarget.isFocused());
+        assertSame(focusTarget, container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
     }
 }

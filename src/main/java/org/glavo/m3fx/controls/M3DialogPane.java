@@ -14,7 +14,6 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -411,7 +410,7 @@ public class M3DialogPane extends DialogPane {
         @Nullable Scene scene = getScene();
         @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
         @Nullable Node content = getContent();
-        @Nullable Node externalContentFocusTarget = activeExternalContentFocusTarget(content);
+        @Nullable Node externalContentFocusTarget = M3Accessible.activeExternalFocusTarget(this, content);
         if (externalContentFocusTarget != null) {
             return externalContentFocusTarget;
         }
@@ -431,43 +430,6 @@ public class M3DialogPane extends DialogPane {
             }
         }
         return null;
-    }
-
-    /// Returns an actively focused popup target exposed by dialog content when it lives outside this pane.
-    private @Nullable Node activeExternalContentFocusTarget(@Nullable Node content) {
-        if (content == null) {
-            return null;
-        }
-        return activeExternalFocusTarget(content);
-    }
-
-    /// Returns an active external focus target exposed by the supplied content subtree.
-    private @Nullable Node activeExternalFocusTarget(Node item) {
-        @Nullable Object focusNode = item.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
-        if (focusNode instanceof Node node && isActiveExternalFocusTarget(node)) {
-            return node;
-        }
-
-        if (item instanceof Parent parent) {
-            for (Node child : parent.getChildrenUnmodifiable()) {
-                @Nullable Node childFocusTarget = activeExternalFocusTarget(child);
-                if (childFocusTarget != null) {
-                    return childFocusTarget;
-                }
-            }
-        }
-        return null;
-    }
-
-    /// Returns whether the focus target belongs to a live popup or overlay outside this dialog pane.
-    private boolean isActiveExternalFocusTarget(Node focusTarget) {
-        if (!M3Accessible.canReach(focusTarget) || M3Accessible.containsNode(this, focusTarget)) {
-            return false;
-        }
-
-        @Nullable Scene focusTargetScene = focusTarget.getScene();
-        @Nullable Node focusOwner = focusTargetScene == null ? null : focusTargetScene.getFocusOwner();
-        return focusOwner != null && M3Accessible.containsNode(focusTarget, focusOwner);
     }
 
     /// Returns the focus owner when it is inside one dialog item, falling back to the item's focus target.
