@@ -210,12 +210,12 @@ public class M3DialogPane extends DialogPane {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> {
-                M3Accessible.showItem(firstFocusableItem());
+                M3Accessible.showItem(currentOrFirstFocusableItem());
                 notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
                 focusNotifier.refresh();
             }
             case SHOW_ITEM -> {
-                M3Accessible.showItem(accessibleActionItem(parameters));
+                M3Accessible.showItem(accessibleActionOrCurrentItem(parameters));
                 notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
                 focusNotifier.refresh();
             }
@@ -276,7 +276,7 @@ public class M3DialogPane extends DialogPane {
         StringBuilder builder = new StringBuilder();
         appendAccessibleText(builder, getHeaderText());
         appendAccessibleText(builder, getContentText());
-        setAccessibleText(builder.length() == 0 ? null : builder.toString());
+        setAccessibleText(builder.isEmpty() ? null : builder.toString());
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
     }
 
@@ -310,6 +310,12 @@ public class M3DialogPane extends DialogPane {
         }
 
         return buttonAt(index);
+    }
+
+    /// Returns the requested action item, preserving the current focus target when no item is requested.
+    private @Nullable Node accessibleActionOrCurrentItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        return parameters.length == 0 ? currentOrFirstFocusableItem() : accessibleActionItem(parameters);
     }
 
     /// Returns the item requested by accessibility action parameters.
@@ -442,6 +448,9 @@ public class M3DialogPane extends DialogPane {
 
     /// Returns the focus owner when it is inside one dialog item, falling back to the item's focus target.
     private static @Nullable Node containedFocusTarget(@Nullable Node item, Node focusOwner) {
+        if (item == null) {
+            return null;
+        }
         @Nullable Node itemFocusTarget = M3Accessible.focusTarget(item);
         if (itemFocusTarget == null || !M3Accessible.containsNode(item, focusOwner)) {
             return null;
@@ -489,7 +498,7 @@ public class M3DialogPane extends DialogPane {
         if (text == null || text.isBlank()) {
             return;
         }
-        if (builder.length() > 0) {
+        if (!builder.isEmpty()) {
             builder.append(' ');
         }
         builder.append(text);

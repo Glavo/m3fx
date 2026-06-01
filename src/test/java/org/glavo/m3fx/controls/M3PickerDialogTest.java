@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.geometry.NodeOrientation;
+import javafx.scene.AccessibleAction;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
@@ -452,6 +453,15 @@ final class M3PickerDialogTest {
                 );
 
                 today.requestFocus();
+
+                datePane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(today.isFocused());
+
+                datePane.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(today.isFocused());
+
                 today.fireEvent(keyPressed(KeyCode.DOWN));
 
                 assertTrue(tomorrow.isFocused());
@@ -461,6 +471,10 @@ final class M3PickerDialogTest {
                 assertTrue(nextMonth.isFocused());
 
                 nextMonth.fireEvent(keyPressed(KeyCode.RIGHT));
+
+                assertFocusInsidePicker(scene, dateDialog.getPicker());
+
+                datePane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
 
                 assertFocusInsidePicker(scene, dateDialog.getPicker());
 
@@ -477,6 +491,10 @@ final class M3PickerDialogTest {
 
                 rangeToday.requestFocus();
                 rangeToday.fireEvent(keyPressed(KeyCode.DOWN));
+
+                assertTrue(rangeTomorrow.isFocused());
+
+                rangePane.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
 
                 assertTrue(rangeTomorrow.isFocused());
 

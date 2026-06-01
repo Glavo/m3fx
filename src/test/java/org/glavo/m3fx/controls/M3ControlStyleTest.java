@@ -2138,10 +2138,11 @@ final class M3ControlStyleTest {
     void dialogPaneExposesIndexedAccessibleItems() {
         runOnFxThread(() -> {
             M3Button contentAction = new M3Button("Content action");
+            M3Button outsideAction = new M3Button("Outside action");
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(contentAction);
             dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
-            Pane root = new Pane(dialogPane);
+            Pane root = new Pane(dialogPane, outsideAction);
             Stage stage = new Stage();
             try {
                 stage.setScene(new Scene(root, 420.0, 220.0));
@@ -2163,6 +2164,8 @@ final class M3ControlStyleTest {
                         || initialFocusNode == cancelButton
                         || initialFocusNode == okButton);
 
+                outsideAction.requestFocus();
+
                 dialogPane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
                 assertTrue(contentAction.isFocused());
                 assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -2171,7 +2174,15 @@ final class M3ControlStyleTest {
                 assertTrue(okButton.isFocused());
                 assertEquals(okButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                dialogPane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(okButton.isFocused());
+                assertEquals(okButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                assertTrue(cancelButton.isFocused());
+                assertEquals(cancelButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
                 assertTrue(cancelButton.isFocused());
                 assertEquals(cancelButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
