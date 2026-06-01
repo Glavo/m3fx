@@ -1194,6 +1194,11 @@ final class M3ControlStyleTest {
                 assertTrue(secondAction.isFocused());
                 assertSame(secondAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                menu.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(secondAction.isFocused());
+                assertSame(secondAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 menu.executeAccessibleAction(AccessibleAction.COLLAPSE);
 
                 assertFalse(menu.isExpanded());
@@ -2900,6 +2905,13 @@ final class M3ControlStyleTest {
                 assertTrue(leading.isFocused());
                 assertSame(leading, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                layout.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(leading.isFocused());
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(leading.isFocused());
+                assertSame(leading, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, trailing);
                 assertTrue(trailing.isFocused());
                 assertSame(trailing, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -2911,6 +2923,13 @@ final class M3ControlStyleTest {
                 layout.setClearButtonEnabled(true);
                 M3IconButton clearButton = layout.getClearButton();
                 layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, clearButton);
+                assertTrue(clearButton.isFocused());
+                assertSame(clearButton, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                layout.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(clearButton.isFocused());
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
                 assertTrue(clearButton.isFocused());
                 assertSame(clearButton, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
@@ -6304,6 +6323,13 @@ final class M3ControlStyleTest {
                 assertTrue(filter.isFocused());
                 assertSame(filter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                searchBar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(filter.isFocused());
+
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(filter.isFocused());
+                assertSame(filter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 searchBar.executeAccessibleAction(AccessibleAction.COLLAPSE);
                 assertFalse(searchBar.isActive());
                 searchBar.executeAccessibleAction(AccessibleAction.EXPAND);
@@ -6339,6 +6365,13 @@ final class M3ControlStyleTest {
                 assertTrue(barFilter.isFocused());
                 assertSame(barFilter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                searchBar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(barFilter.isFocused());
+
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(barFilter.isFocused());
+                assertSame(barFilter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 searchBar.requestFocus();
                 assertTrue(searchBar.isFocused());
                 assertSame(searchBar, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -6347,7 +6380,21 @@ final class M3ControlStyleTest {
                 assertTrue(viewFilter.isFocused());
                 assertSame(viewFilter, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                searchView.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(viewFilter.isFocused());
+
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(viewFilter.isFocused());
+                assertSame(viewFilter, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 result.requestFocus();
+                assertTrue(result.isFocused());
+                assertSame(result, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchView.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(result.isFocused());
+
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
                 assertTrue(result.isFocused());
                 assertSame(result, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
@@ -13119,7 +13166,10 @@ final class M3ControlStyleTest {
             M3TextField invalidField = new M3TextField();
             M3TextInputLayout invalidLayout = new M3TextInputLayout(invalidField, "Name");
             invalidLayout.setValidator(M3TextInputValidators.required("Required"));
-            M3FormValidator validator = new M3FormValidator(invalidLayout);
+            M3TextField secondInvalidField = new M3TextField();
+            M3TextInputLayout secondInvalidLayout = new M3TextInputLayout(secondInvalidField, "Email");
+            secondInvalidLayout.setValidator(M3TextInputValidators.required("Required"));
+            M3FormValidator validator = new M3FormValidator(invalidLayout, secondInvalidLayout);
             M3ValidationSummary validationSummary = new M3ValidationSummary(validator);
             assertFalse(validator.validate());
 
@@ -13137,11 +13187,12 @@ final class M3ControlStyleTest {
                     fabMenu,
                     carousel,
                     invalidLayout,
+                    secondInvalidLayout,
                     validationSummary
             );
             Stage stage = new Stage();
             try {
-                Scene scene = new Scene(root, 760.0, 860.0);
+                Scene scene = new Scene(root, 760.0, 920.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
                 stage.show();
@@ -13161,6 +13212,7 @@ final class M3ControlStyleTest {
                 assertAccessibleFocus(fabMenu, fabMenu.getToggleButton());
                 assertAccessibleFocus(carousel, carouselSecond);
                 assertAccessibleFocus(validationSummary, invalidField);
+                assertCurrentAccessibleFocus(validationSummary, secondInvalidField);
             } finally {
                 stage.close();
             }

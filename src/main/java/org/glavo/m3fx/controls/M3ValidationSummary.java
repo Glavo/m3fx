@@ -234,11 +234,15 @@ public class M3ValidationSummary extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> focusFirstInvalidInput();
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> {
-                @Nullable M3TextInputLayout input = accessibleActionInput(parameters);
-                if (input != null) {
-                    focusInput(input);
+                if (parameters.length == 0) {
+                    focusAccessibleNode();
+                } else {
+                    @Nullable M3TextInputLayout input = accessibleActionInput(parameters);
+                    if (input != null) {
+                        focusInput(input);
+                    }
                 }
             }
             default -> super.executeAccessibleAction(action, parameters);
@@ -329,11 +333,15 @@ public class M3ValidationSummary extends Control {
         return textInputFocusTarget != null ? textInputFocusTarget : M3Accessible.focusTarget(invalidInput);
     }
 
-    /// Requests focus for the first invalid input through the current validator.
-    private boolean focusFirstInvalidInput() {
-        @Nullable M3FormValidator validator = getValidator();
-        @Nullable M3TextInputLayout invalidInput = validator == null ? null : validator.getFirstInvalidInput();
-        return invalidInput != null && focusInput(invalidInput);
+    /// Requests focus for the current accessible invalid input target.
+    private boolean focusAccessibleNode() {
+        @Nullable Node focusNode = accessibleFocusNode();
+        if (focusNode == null) {
+            return false;
+        }
+        M3Accessible.showItem(focusNode);
+        notifyFocusNodeChanged();
+        return true;
     }
 
     /// Returns the invalid input referenced by accessibility action parameters.

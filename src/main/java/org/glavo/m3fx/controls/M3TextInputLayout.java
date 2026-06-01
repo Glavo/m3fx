@@ -829,7 +829,7 @@ public class M3TextInputLayout extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> focusAccessibleItem(defaultFocusItem());
+            case REQUEST_FOCUS -> focusAccessibleItem(accessibleFocusNode());
             case SHOW_ITEM -> focusAccessibleItem(accessibleActionItem(parameters));
             default -> {
                 super.executeAccessibleAction(action, parameters);
@@ -1691,7 +1691,7 @@ public class M3TextInputLayout extends Control {
     private @Nullable Node accessibleActionItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            return defaultFocusItem();
+            return accessibleFocusNode();
         }
         if (parameters[0] instanceof Number) {
             return accessibleItemAt(parameters);

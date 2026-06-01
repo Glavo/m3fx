@@ -356,9 +356,7 @@ public class M3SearchView extends Control {
                 }
             }
             case REQUEST_FOCUS -> {
-                activate();
-                getEditor().requestFocus();
-                notifyFocusNodeChanged();
+                focusAccessibleNode();
             }
             case FIRE -> fire();
             case EXPAND -> activate();
@@ -451,8 +449,14 @@ public class M3SearchView extends Control {
 
     /// Shows and focuses the result referenced by accessibility action parameters.
     private void showAccessibleResult(Object... parameters) {
+        @Nullable Node currentFocusNode = currentDefaultShowItemFocusNode();
         activate();
         if (parameters.length == 0) {
+            if (currentFocusNode != null) {
+                M3Accessible.showItem(currentFocusNode);
+                notifyFocusNodeChanged();
+                return;
+            }
             if (!focusFirstResult()) {
                 getEditor().requestFocus();
                 notifyFocusNodeChanged();
@@ -662,6 +666,14 @@ public class M3SearchView extends Control {
         return focusNode == null ? getEditor() : focusNode;
     }
 
+    /// Focuses the current accessibility focus node, or the embedded editor when focus is outside this search view.
+    private void focusAccessibleNode() {
+        @Nullable Node focusNode = currentFocusNode();
+        activate();
+        M3Accessible.showItem(focusNode == null ? getEditor() : focusNode);
+        notifyFocusNodeChanged();
+    }
+
     /// Returns the current focused child target, or `null` when focus is outside this search view.
     private @Nullable Node currentFocusNode() {
         @Nullable Node resultFocusNode = M3Accessible.currentFocusTarget(this, getResults());
@@ -669,6 +681,22 @@ public class M3SearchView extends Control {
             return resultFocusNode;
         }
         return currentSearchBarFocusNode();
+    }
+
+    /// Returns the current target that a parameterless `SHOW_ITEM` should preserve.
+    private @Nullable Node currentDefaultShowItemFocusNode() {
+        @Nullable Node resultFocusNode = M3Accessible.currentFocusTarget(this, getResults());
+        if (resultFocusNode != null) {
+            return resultFocusNode;
+        }
+
+        @Nullable Node searchBarFocusNode = currentSearchBarFocusNode();
+        if (searchBarFocusNode == null
+                || searchBarFocusNode == getEditor()
+                || searchBarFocusNode == searchBar) {
+            return null;
+        }
+        return searchBarFocusNode;
     }
 
     /// Returns the embedded search bar's current focus target when focus is inside it.

@@ -332,7 +332,7 @@ public class M3SearchBar extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fire();
-            case REQUEST_FOCUS -> focusEditor();
+            case REQUEST_FOCUS -> focusAccessibleItem(accessibleFocusNode());
             case SHOW_ITEM -> focusAccessibleItem(accessibleActionItem(parameters));
             case EXPAND -> activate();
             case COLLAPSE -> deactivate();
@@ -442,7 +442,7 @@ public class M3SearchBar extends Control {
     private @Nullable Node accessibleActionItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            return editor;
+            return accessibleFocusNode();
         }
         if (parameters[0] instanceof Number) {
             return accessibleItemAt(parameters);

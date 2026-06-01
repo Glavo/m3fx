@@ -305,11 +305,7 @@ public class M3FabMenu extends Control {
         switch (action) {
             case FIRE -> toggle();
             case EXPAND -> show();
-            case SHOW_ITEM -> {
-                show();
-                M3Accessible.showItem(getItems(), parameters);
-                notifyFocusNodeChanged();
-            }
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             case COLLAPSE -> hide();
             case REQUEST_FOCUS -> {
                 M3Accessible.showItem(accessibleFocusNode());
@@ -433,6 +429,40 @@ public class M3FabMenu extends Control {
 
         int currentIndex = focusedTargetIndex(targets);
         return M3Accessible.focusTarget(targets.get(currentIndex));
+    }
+
+    /// Shows the action menu and focuses the requested action, preserving a currently focused action by default.
+    private void showAccessibleItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        @Nullable Node target = parameters.length == 0
+                ? currentActionFocusNode()
+                : M3Accessible.actionItem(getItems(), parameters);
+        show();
+        if (parameters.length == 0 && target == null) {
+            target = M3Accessible.actionItem(getItems());
+        }
+        M3Accessible.showItem(target);
+        notifyFocusNodeChanged();
+    }
+
+    /// Returns the focused action item target, ignoring the menu toggle button.
+    private @Nullable Node currentActionFocusNode() {
+        if (getScene() == null) {
+            return null;
+        }
+
+        @Nullable Node focusOwner = getScene().getFocusOwner();
+        if (focusOwner == null) {
+            return null;
+        }
+
+        for (Node item : getItems()) {
+            if (M3Accessible.containsNode(item, focusOwner)) {
+                @Nullable Node focusTarget = M3Accessible.focusTarget(item);
+                return focusTarget == null ? null : M3Accessible.canReach(focusOwner) ? focusOwner : focusTarget;
+            }
+        }
+        return null;
     }
 
     /// Returns whether keyboard focus is currently inside one of the expanded action items.
