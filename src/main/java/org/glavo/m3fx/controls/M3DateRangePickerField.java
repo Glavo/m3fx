@@ -861,6 +861,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         presetList.setAlignment(Pos.TOP_LEFT);
+        M3PresetNavigation.install(presetList, this, this::focusPickerContent);
         popup.setAutoHide(true);
         popup.getContent().add(popupContent);
         popup.setOnHidden(event -> handlePopupHidden());
@@ -1224,6 +1225,22 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
 
         M3Accessible.showItem(focusNode());
+        notifyFocusNodeChanged();
+        popupFocusNotifier.refresh();
+    }
+
+    /// Focuses the picker content directly instead of preserving an already focused preset action.
+    private void focusPickerContent() {
+        if (!popup.isShowing()) {
+            return;
+        }
+
+        @Nullable Object focusNode = picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        if (focusNode instanceof Node node && M3Accessible.canReach(node)) {
+            M3Accessible.showItem(node);
+        } else {
+            picker.requestFocus();
+        }
         notifyFocusNodeChanged();
         popupFocusNotifier.refresh();
     }

@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.event.EventType;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -354,6 +355,56 @@ final class M3DateRangePickerFieldTest {
                 assertFalse(field.isShowing());
                 assertTrue(field.getEndEditor().isFocused());
                 assertSame(field.getEndEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            }
+        });
+    }
+
+    /// Verifies that range field preset columns mirror picker handoff keys in right-to-left layout.
+    @Test
+    void dateRangePickerFieldPresetKeyboardNavigationMirrorsPickerHandoff() {
+        runOnFxThread(() -> {
+            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            M3MotionSettings.setAnimationsEnabled(false);
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    anchor,
+                    anchor.plusDays(6)
+            );
+            field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            field.setCommonPresets(anchor);
+            Pane root = new Pane(field);
+            Scene scene = new Scene(root, 760.0, 220.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
+                root.layout();
+
+                field.showPicker();
+                Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+                M3Button today = findPresetButton(presetContent, "Today");
+                M3Button tomorrow = findPresetButton(presetContent, "Tomorrow");
+
+                today.requestFocus();
+                today.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+                assertTrue(tomorrow.isFocused());
+
+                tomorrow.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                Node pickerFocusNode = assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
             } finally {
                 stage.close();
                 M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);

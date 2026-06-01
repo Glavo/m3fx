@@ -371,6 +371,81 @@ final class M3PickerFieldTest {
         });
     }
 
+    /// Verifies that preset popup action columns support keyboard traversal and picker handoff.
+    @Test
+    void pickerFieldPresetKeyboardNavigationMovesWithinColumnAndToPicker() {
+        runOnFxThread(() -> {
+            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            M3MotionSettings.setAnimationsEnabled(false);
+            LocalDate dateAnchor = LocalDate.of(2026, 5, 19);
+            LocalTime timeAnchor = LocalTime.of(10, 30);
+            M3DatePickerField dateField = new M3DatePickerField(dateAnchor);
+            M3TimePickerField timeField = new M3TimePickerField(timeAnchor);
+            dateField.setCommonPresets(dateAnchor);
+            timeField.setCommonPresets(timeAnchor);
+            Pane root = new Pane(dateField, timeField);
+            Scene scene = new Scene(root, 720.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dateField.resizeRelocate(24.0, 24.0, 320.0, 72.0);
+                timeField.resizeRelocate(24.0, 120.0, 320.0, 72.0);
+                root.layout();
+
+                dateField.showPicker();
+                Node datePresetContent = assertInstanceOf(Node.class, dateField.getPicker().getParent());
+                M3Button today = findPresetButton(datePresetContent, "Today");
+                M3Button tomorrow = findPresetButton(datePresetContent, "Tomorrow");
+                M3Button nextMonth = findPresetButton(datePresetContent, "Next month");
+
+                today.requestFocus();
+                today.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+                assertTrue(tomorrow.isFocused());
+
+                tomorrow.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertTrue(nextMonth.isFocused());
+
+                nextMonth.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                Node datePickerFocusNode = assertInstanceOf(
+                        Node.class,
+                        dateField.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+                assertTrue(datePickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(dateField.getPicker(), datePickerFocusNode));
+
+                dateField.hidePicker();
+                timeField.showPicker();
+                Node timePresetContent = assertInstanceOf(Node.class, timeField.getPicker().getParent());
+                M3Button now = findTimePresetButton(timePresetContent, "Now");
+                M3Button inFifteenMinutes = findTimePresetButton(timePresetContent, "In 15 min");
+                M3Button evening = findTimePresetButton(timePresetContent, "Evening");
+
+                now.requestFocus();
+                now.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+                assertTrue(inFifteenMinutes.isFocused());
+
+                inFifteenMinutes.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertTrue(evening.isFocused());
+
+                evening.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_UP));
+
+                assertTrue(now.isFocused());
+            } finally {
+                stage.close();
+                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            }
+        });
+    }
+
     /// Verifies that dialog panes route focus to popup content exposed by a nested picker field.
     @Test
     void dialogPaneRoutesFocusToNestedPickerPopupContent() {
