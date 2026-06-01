@@ -222,6 +222,24 @@ final class M3Accessible {
         return currentTarget != null ? currentTarget : firstFocusTarget(items);
     }
 
+    /// Returns the current focus target inside a selection container, or its selected or first reachable item.
+    static <T extends Node> @Nullable Node currentOrSelectionFocusTarget(
+            Node owner,
+            ObservableList<Node> items,
+            @Nullable T selectedItem,
+            Class<T> itemType
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(itemType, "itemType");
+
+        @Nullable Node currentTarget = currentFocusTarget(owner, items);
+        if (currentTarget != null) {
+            return currentTarget;
+        }
+        return focusTarget(M3SelectionNavigation.focusTarget(items, selectedItem, itemType));
+    }
+
     /// Returns the current focus target inside a leading item or item list, or the first focusable item.
     static @Nullable Node currentOrFirstFocusTarget(
             Node owner,

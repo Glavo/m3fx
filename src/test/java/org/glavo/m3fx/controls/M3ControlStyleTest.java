@@ -12794,6 +12794,15 @@ final class M3ControlStyleTest {
                 assertAccessibleFocus(navigationRail, railSecond);
                 assertAccessibleFocus(navigationDrawer, drawerSecond);
 
+                assertCurrentAccessibleFocus(iconGroup, iconFirst);
+                assertCurrentAccessibleFocus(segmentedGroup, segmentFirst);
+                assertCurrentAccessibleFocus(chipGroup, chipFirst);
+                assertCurrentAccessibleFocus(list, listFirst);
+                assertCurrentAccessibleFocus(passiveList, passiveListSecond);
+                assertCurrentAccessibleFocus(tabBar, tabFirst);
+                assertCurrentAccessibleFocus(navigationBar, barFirst);
+                assertCurrentAccessibleFocus(navigationRail, railFirst);
+
                 assertAccessibleShowItemFocus(outsideFocus, iconGroup, iconSecond);
                 assertAccessibleShowItemFocus(outsideFocus, segmentedGroup, segmentSecond);
                 assertAccessibleShowItemFocus(outsideFocus, chipGroup, chipSecond);
@@ -18591,6 +18600,17 @@ final class M3ControlStyleTest {
         control.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
 
         assertTrue(expectedFocusNode.isFocused());
+    }
+
+    /// Verifies that a selection container reports the child that currently owns scene focus.
+    private static void assertCurrentAccessibleFocus(Node control, Node focusedChild) {
+        focusedChild.requestFocus();
+        assertTrue(focusedChild.isFocused());
+        assertSame(focusedChild, control.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+        control.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+        assertTrue(focusedChild.isFocused());
     }
 
     /// Verifies that a parameterless show-item action focuses the expected accessibility item.

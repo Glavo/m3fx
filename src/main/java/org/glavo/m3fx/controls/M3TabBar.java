@@ -46,7 +46,8 @@ public class M3TabBar extends Control {
 
     /// Notifies accessibility clients when focus moves between tabs.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getTabs()));
+            new M3AccessibleFocusNotifier(this, () ->
+                    M3Accessible.currentOrSelectionFocusTarget(this, getTabs(), getSelectedTab(), M3Tab.class));
 
     /// The currently selected tab.
     private final ReadOnlyObjectWrapper<@Nullable M3Tab> selectedTab =
@@ -246,11 +247,12 @@ public class M3TabBar extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> getTabs().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getTabs(), parameters);
-            case FOCUS_NODE -> M3Accessible.focusTarget(M3SelectionNavigation.focusTarget(
+            case FOCUS_NODE -> M3Accessible.currentOrSelectionFocusTarget(
+                    this,
                     getTabs(),
                     getSelectedTab(),
                     M3Tab.class
-            ));
+            );
             case MULTIPLE_SELECTION -> false;
             case SELECTED_ITEMS -> selectedTabsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -262,13 +264,15 @@ public class M3TabBar extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3SelectionNavigation.focusTarget(
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.currentOrSelectionFocusTarget(
+                    this,
                     getTabs(),
                     getSelectedTab(),
                     M3Tab.class
             ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3SelectionNavigation.focusTarget(
+            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3Accessible.currentOrSelectionFocusTarget(
+                    this,
                     getTabs(),
                     getSelectedTab(),
                     M3Tab.class

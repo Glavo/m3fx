@@ -63,7 +63,8 @@ public class M3ChipGroup extends Control {
 
     /// Notifies accessibility clients when focus moves between chips.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(this, getItems()));
+            new M3AccessibleFocusNotifier(this, () ->
+                    M3Accessible.currentOrSelectionFocusTarget(this, getItems(), getSelectedChip(), M3Chip.class));
 
     // The preferred wrapping width used by the internal flow layout.
     private final DoubleProperty prefWrapLength = new SimpleDoubleProperty(this, "prefWrapLength", 400.0) {
@@ -482,11 +483,12 @@ public class M3ChipGroup extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
-            case FOCUS_NODE -> M3Accessible.focusTarget(M3SelectionNavigation.focusTarget(
+            case FOCUS_NODE -> M3Accessible.currentOrSelectionFocusTarget(
+                    this,
                     getItems(),
                     getSelectedChip(),
                     M3Chip.class
-            ));
+            );
             case MULTIPLE_SELECTION -> getSelectionMode() == M3ChipSelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedChipsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -498,13 +500,15 @@ public class M3ChipGroup extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3SelectionNavigation.focusTarget(
+            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.currentOrSelectionFocusTarget(
+                    this,
                     getItems(),
                     getSelectedChip(),
                     M3Chip.class
             ));
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3SelectionNavigation.focusTarget(
+            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3Accessible.currentOrSelectionFocusTarget(
+                    this,
                     getItems(),
                     getSelectedChip(),
                     M3Chip.class
