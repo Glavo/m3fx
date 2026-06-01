@@ -89,6 +89,10 @@ public class M3Carousel extends Control {
     private final @UnmodifiableView ObservableList<Node> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
+    /// Observes descendant focus changes for the public `FOCUS_NODE` attribute.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
+
     /// Updates item installation, selection invariants, and accessibility metadata when items change.
     private final ListChangeListener<Node> itemsListener = change -> {
         while (change.next()) {
@@ -103,6 +107,7 @@ public class M3Carousel extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        focusNotifier.refresh();
     };
 
     /// Selects clicked items.
@@ -357,6 +362,7 @@ public class M3Carousel extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(true);
+        focusNotifier.start();
         getItems().addListener(itemsListener);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
     }
@@ -427,10 +433,11 @@ public class M3Carousel extends Control {
             return;
         }
 
-        @Nullable Node target = accessibleTarget(parameters);
-        if (target != null) {
-            select(target);
-            M3Accessible.showItem(target);
+        @Nullable Node selectedTarget = accessibleTarget(parameters);
+        if (selectedTarget != null) {
+            select(selectedTarget);
+            @Nullable Node focusTarget = M3Accessible.actionItem(getItems(), parameters);
+            M3Accessible.showItem(focusTarget == null ? selectedTarget : focusTarget);
             return;
         }
         scrollSelectedItemIntoView();
@@ -438,6 +445,10 @@ public class M3Carousel extends Control {
 
     /// Returns the selected carousel item focus target, or this carousel when no item can receive focus.
     private @Nullable Node accessibleFocusNode() {
+        @Nullable Node currentFocusTarget = M3Accessible.currentFocusTarget(this, getItems());
+        if (currentFocusTarget != null) {
+            return currentFocusTarget;
+        }
         @Nullable Node selectedFocusTarget = M3Accessible.focusTarget(getSelectedItem());
         return selectedFocusTarget != null ? selectedFocusTarget : M3Accessible.focusTarget(this);
     }
@@ -463,16 +474,7 @@ public class M3Carousel extends Control {
     /// Returns the first item referenced by accessibility parameters.
     private @Nullable Node accessibleTarget(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        @Nullable Node byIndex = M3Accessible.itemAt(getItems(), parameters);
-        if (byIndex != null) {
-            return byIndex;
-        }
-        for (Node item : getItems()) {
-            if (M3Accessible.containsSelectionTarget(item, parameters)) {
-                return item;
-            }
-        }
-        return null;
+        return M3Accessible.containingItem(getItems(), parameters);
     }
 
     /// Installs carousel behavior and styles on one item.
@@ -509,6 +511,7 @@ public class M3Carousel extends Control {
         if (previousItem != nextItem) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            focusNotifier.refresh();
         }
         if (scroll && nextItem != null) {
             scrollSelectedItemIntoView();

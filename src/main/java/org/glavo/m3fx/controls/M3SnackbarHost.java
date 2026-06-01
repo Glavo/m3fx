@@ -532,11 +532,11 @@ public class M3SnackbarHost extends Control {
         }
 
         @Nullable M3Snackbar currentSnackbar = getSnackbar();
-        if (currentSnackbar != null && M3Accessible.containsSelectionTarget(currentSnackbar, parameters)) {
+        if (currentSnackbar != null && M3Accessible.containsNodeTarget(currentSnackbar, parameters)) {
             return currentSnackbar;
         }
         for (M3Snackbar queuedSnackbar : queue) {
-            if (M3Accessible.containsSelectionTarget(queuedSnackbar, parameters)) {
+            if (M3Accessible.containsNodeTarget(queuedSnackbar, parameters)) {
                 return queuedSnackbar;
             }
         }

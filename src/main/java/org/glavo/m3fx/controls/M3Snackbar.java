@@ -399,7 +399,7 @@ public class M3Snackbar extends Control {
         if (actionButton == null) {
             return null;
         }
-        return M3Accessible.containsSelectionTarget(actionButton, parameters) ? actionButton : null;
+        return M3Accessible.actionItem(actionButton, parameters);
     }
 
     /// Returns the installed Material snackbar skin.

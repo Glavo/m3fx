@@ -89,12 +89,24 @@ final class M3Accessible {
         return index == items.size() ? trailing : null;
     }
 
-    /// Returns whether accessibility action parameters contain the requested selection target.
+    /// Returns whether accessibility action parameters contain the requested selection target or one of its descendants.
     static boolean containsSelectionTarget(Node target, Object... parameters) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(parameters, "parameters");
         for (Object parameter : parameters) {
             if (containsSelectionTarget(target, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether accessibility action parameters reference the target node or one of its descendants.
+    static boolean containsNodeTarget(Node target, Object... parameters) {
+        Objects.requireNonNull(target, "target");
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (containsNodeTarget(target, parameter)) {
                 return true;
             }
         }
@@ -329,6 +341,9 @@ final class M3Accessible {
 
     /// Returns a focus owner when it is contained by an item that can expose focus.
     private static @Nullable Node containedFocusTarget(@Nullable Node item, Node focusOwner) {
+        if (item == null) {
+            return null;
+        }
         @Nullable Node itemFocusTarget = focusTarget(item);
         if (itemFocusTarget == null || !containsNode(item, focusOwner)) {
             return null;
@@ -358,6 +373,11 @@ final class M3Accessible {
         if (possibleAncestor == possibleDescendant) {
             return true;
         }
+        if (possibleAncestor instanceof M3ListItem listItem
+                && (containsOptionalNode(possibleAncestor, listItem.getLeading(), possibleDescendant)
+                || containsOptionalNode(possibleAncestor, listItem.getTrailing(), possibleDescendant))) {
+            return true;
+        }
         if (possibleAncestor instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 if (containsNode(child, possibleDescendant)) {
@@ -366,6 +386,17 @@ final class M3Accessible {
             }
         }
         return false;
+    }
+
+    /// Returns whether a nullable logical content node contains the requested descendant.
+    private static boolean containsOptionalNode(Node owner, @Nullable Node possibleAncestor, Node possibleDescendant) {
+        if (possibleAncestor == null) {
+            return false;
+        }
+        if (possibleAncestor == possibleDescendant) {
+            return true;
+        }
+        return possibleAncestor != owner && containsNode(possibleAncestor, possibleDescendant);
     }
 
     /// Returns the first child item referenced by accessibility selection parameters.
@@ -384,10 +415,30 @@ final class M3Accessible {
         return null;
     }
 
-    /// Returns whether one accessibility action parameter references the requested selection target.
+    /// Returns the indexed item or the item containing the node referenced by accessibility parameters.
+    static @Nullable Node containingItem(ObservableList<? extends Node> items, Object... parameters) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return null;
+        }
+        @Nullable Object firstParameter = parameters[0];
+        if (firstParameter instanceof Number) {
+            return itemAt(items, parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = containingItem(items, parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether one accessibility action parameter references the requested selection target or one of its descendants.
     private static boolean containsSelectionTarget(Node target, @Nullable Object parameter) {
-        if (parameter == target) {
-            return true;
+        if (parameter instanceof Node node) {
+            return containsNode(target, node);
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
@@ -407,6 +458,62 @@ final class M3Accessible {
         return false;
     }
 
+    /// Returns whether one accessibility action parameter references a target node or its descendant.
+    private static boolean containsNodeTarget(Node target, @Nullable Object parameter) {
+        if (parameter instanceof Node node) {
+            return containsNode(target, node);
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (containsNodeTarget(target, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (containsNodeTarget(target, value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// Returns the indexed item or the item containing one referenced node.
+    private static @Nullable Node containingItem(ObservableList<? extends Node> items, @Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return itemAt(items, number);
+        }
+        if (parameter instanceof Node node) {
+            for (Node item : items) {
+                if (containsNode(item, node)) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = containingItem(items, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = containingItem(items, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
     /// Returns the child item referenced by accessibility action parameters.
     static @Nullable Node actionItem(ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
@@ -422,6 +529,21 @@ final class M3Accessible {
             @Nullable Node item = actionItem(items, parameter);
             if (item != null) {
                 return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns a single node or contained descendant referenced by accessibility action parameters.
+    static @Nullable Node actionItem(@Nullable Node item, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return focusTarget(item) == null ? null : item;
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node target = actionItem(item, parameter);
+            if (target != null) {
+                return target;
             }
         }
         return null;
@@ -461,15 +583,14 @@ final class M3Accessible {
             return itemAt(leading, items, number);
         }
         if (parameter instanceof Node node) {
-            if (node == leading) {
-                return node;
-            }
-            if (leading != null && containsNode(leading, node)) {
-                return node;
+            @Nullable Node leadingTarget = containedActionTarget(leading, node);
+            if (leadingTarget != null) {
+                return leadingTarget;
             }
             for (Node item : items) {
-                if (node == item || containsNode(item, node)) {
-                    return node;
+                @Nullable Node target = containedActionTarget(item, node);
+                if (target != null) {
+                    return target;
                 }
             }
             return null;
@@ -530,12 +651,14 @@ final class M3Accessible {
         }
         if (parameter instanceof Node node) {
             for (Node item : items) {
-                if (node == item || containsNode(item, node)) {
-                    return node;
+                @Nullable Node target = containedActionTarget(item, node);
+                if (target != null) {
+                    return target;
                 }
             }
-            if (trailing != null && (node == trailing || containsNode(trailing, node))) {
-                return node;
+            @Nullable Node trailingTarget = containedActionTarget(trailing, node);
+            if (trailingTarget != null) {
+                return trailingTarget;
             }
             return null;
         }
@@ -584,11 +707,13 @@ final class M3Accessible {
             return itemAt(first, second, number);
         }
         if (parameter instanceof Node node) {
-            if (first != null && (node == first || containsNode(first, node))) {
-                return node;
+            @Nullable Node firstTarget = containedActionTarget(first, node);
+            if (firstTarget != null) {
+                return firstTarget;
             }
-            if (second != null && (node == second || containsNode(second, node))) {
-                return node;
+            @Nullable Node secondTarget = containedActionTarget(second, node);
+            if (secondTarget != null) {
+                return secondTarget;
             }
             return null;
         }
@@ -629,8 +754,9 @@ final class M3Accessible {
         }
         if (parameter instanceof Node node) {
             for (Node item : items) {
-                if (node == item || containsNode(item, node)) {
-                    return node;
+                @Nullable Node target = containedActionTarget(item, node);
+                if (target != null) {
+                    return target;
                 }
             }
             return null;
@@ -649,6 +775,45 @@ final class M3Accessible {
                 @Nullable Node item = actionItem(items, value);
                 if (item != null) {
                     return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the action target contained by one item for a requested node.
+    private static @Nullable Node containedActionTarget(@Nullable Node item, Node requestedNode) {
+        if (item == null || !containsNode(item, requestedNode)) {
+            return null;
+        }
+        return focusTarget(requestedNode) == null ? item : requestedNode;
+    }
+
+    /// Returns the single-node action target referenced by one accessibility action parameter.
+    private static @Nullable Node actionItem(@Nullable Node item, @Nullable Object parameter) {
+        if (item == null) {
+            return null;
+        }
+        if (parameter instanceof Number number) {
+            return number.intValue() == 0 ? item : null;
+        }
+        if (parameter instanceof Node node) {
+            return containedActionTarget(item, node);
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node target = actionItem(item, value);
+                if (target != null) {
+                    return target;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node target = actionItem(item, value);
+                if (target != null) {
+                    return target;
                 }
             }
         }

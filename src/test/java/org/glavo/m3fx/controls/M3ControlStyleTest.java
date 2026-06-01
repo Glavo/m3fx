@@ -1380,6 +1380,43 @@ final class M3ControlStyleTest {
         assertSame(first, carousel.getSelectedItem());
     }
 
+    /// Verifies that carousel accessibility reveal requests can target focusable descendants inside items.
+    @Test
+    void carouselAccessibleShowItemFocusesRequestedDescendant() {
+        runOnFxThread(() -> {
+            M3Button firstPrimary = new M3Button("First primary");
+            M3Button firstSecondary = new M3Button("First secondary");
+            M3Button secondPrimary = new M3Button("Second primary");
+            M3Button secondSecondary = new M3Button("Second secondary");
+            HBox firstItem = new HBox(firstPrimary, firstSecondary);
+            HBox secondItem = new HBox(secondPrimary, secondSecondary);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Pane root = new Pane(carousel);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 520.0, 140.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                carousel.resizeRelocate(0.0, 0.0, 500.0, 120.0);
+                root.applyCss();
+                root.layout();
+
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, secondSecondary);
+
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertTrue(secondSecondary.isFocused());
+                assertSame(secondSecondary, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                carousel.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, firstSecondary);
+
+                assertSame(firstItem, carousel.getSelectedItem());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that carousel skins create an internal viewport and reveal selected items.
     @Test
     void carouselCreatesMaterialSkinAndScrollsSelectedItemIntoView() {
@@ -1963,6 +2000,10 @@ final class M3ControlStyleTest {
 
                 actionButton.getScene().getRoot().requestFocus();
                 host.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                assertTrue(actionButton.isFocused());
+
+                actionButton.getScene().getRoot().requestFocus();
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, actionButton);
                 assertTrue(actionButton.isFocused());
 
                 M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
@@ -11967,6 +12008,8 @@ final class M3ControlStyleTest {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
             M3ListItem commonButtons = new M3ListItem("Common buttons");
             M3ListItem floatingActions = new M3ListItem("Floating actions");
+            M3Button floatingActionDetails = new M3Button("Open");
+            floatingActions.setTrailing(floatingActionDetails);
             group.addItems(commonButtons, floatingActions);
             group.setExpanded(true);
             Stage stage = new Stage();
@@ -11996,6 +12039,50 @@ final class M3ControlStyleTest {
                 assertTrue(floatingActions.isFocused());
                 assertSame(floatingActions, group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertEquals(3, group.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+                group.executeAccessibleAction(AccessibleAction.SHOW_ITEM, floatingActionDetails);
+
+                assertTrue(floatingActionDetails.isFocused());
+                assertSame(floatingActionDetails, group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that navigation drawers can reveal and focus descendants inside collapsed group rows.
+    @Test
+    void navigationDrawerAccessibleShowItemFocusesDescendantInCollapsedGroup() {
+        runOnFxThread(() -> {
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+            M3ListItem commonButtons = new M3ListItem("Common buttons");
+            M3ListItem floatingActions = new M3ListItem("Floating actions");
+            M3Button floatingActionDetails = new M3Button("Open");
+            floatingActions.setTrailing(floatingActionDetails);
+            group.addItems(commonButtons, floatingActions);
+            M3ListItem overview = new M3ListItem("Overview");
+            M3NavigationDrawer drawer = new M3NavigationDrawer(overview, group);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(drawer);
+                Scene scene = new Scene(root, 360.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                drawer.executeAccessibleAction(AccessibleAction.SHOW_ITEM, floatingActionDetails);
+
+                assertTrue(group.isExpanded());
+                assertTrue(floatingActionDetails.isFocused());
+                assertSame(floatingActionDetails, drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                group.setExpanded(false);
+                drawer.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, floatingActionDetails);
+
+                assertTrue(group.isExpanded());
+                assertSame(floatingActions, drawer.getSelectedItem());
             } finally {
                 stage.close();
             }

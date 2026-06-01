@@ -18,6 +18,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -266,9 +267,29 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Expands the group when needed and focuses the requested accessible row.
     private void showAccessibleItem(Object... parameters) {
-        setExpanded(true);
+        expandForAccessibleReveal();
         M3Accessible.showItem(accessibleContent(), parameters);
         notifyFocusNodeChanged();
+    }
+
+    /// Expands this group without leaving an in-flight reveal animation before an accessibility focus request.
+    void expandForAccessibleReveal() {
+        @Nullable Boolean previousAnimationsEnabled = M3MotionSettings.getAnimationsEnabled(this);
+        M3MotionSettings.setAnimationsEnabled(this, false);
+        try {
+            setExpanded(true);
+            applyCssIfAttached();
+            layout();
+        } finally {
+            M3MotionSettings.setAnimationsEnabled(this, previousAnimationsEnabled);
+        }
+    }
+
+    /// Applies CSS after an accessibility-driven expansion so newly mounted child slots can receive focus.
+    private void applyCssIfAttached() {
+        if (getScene() != null) {
+            applyCss();
+        }
     }
 
     /// Returns whether keyboard focus is currently inside a child destination row.

@@ -55,10 +55,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Notifies accessibility clients when focus moves between visible drawer rows.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentFocusTarget(
-                    this,
-                    flattenedContent()
-            ));
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
     // The currently selected navigation drawer item.
     private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
@@ -302,11 +299,7 @@ public class M3NavigationDrawer extends Control {
         return switch (attribute) {
             case ITEM_COUNT -> content.size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(content, parameters);
-            case FOCUS_NODE -> M3Accessible.focusTarget(M3SelectionNavigation.focusTarget(
-                    content,
-                    getSelectedItem(),
-                    M3ListItem.class
-            ));
+            case FOCUS_NODE -> accessibleFocusNode(content);
             case MULTIPLE_SELECTION -> false;
             case SELECTED_ITEMS -> selectedItemsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -521,6 +514,24 @@ public class M3NavigationDrawer extends Control {
         }
     }
 
+    /// Returns the active drawer focus target, or the selected visible item when focus is outside the drawer.
+    private @Nullable Node accessibleFocusNode() {
+        return accessibleFocusNode(flattenedContent());
+    }
+
+    /// Returns the active drawer focus target for a flattened drawer content snapshot.
+    private @Nullable Node accessibleFocusNode(ObservableList<Node> content) {
+        @Nullable Node currentFocusTarget = M3Accessible.currentFocusTarget(this, content);
+        if (currentFocusTarget != null) {
+            return currentFocusTarget;
+        }
+        return M3Accessible.focusTarget(M3SelectionNavigation.focusTarget(
+                content,
+                getSelectedItem(),
+                M3ListItem.class
+        ));
+    }
+
     /// Returns the list item referenced by accessibility selection parameters.
     private @Nullable M3ListItem accessibleSelectionTarget(Object... parameters) {
         @Nullable M3ListItem item =
@@ -546,12 +557,12 @@ public class M3NavigationDrawer extends Control {
             Object... parameters
     ) {
         M3ListItem headerItem = group.getHeaderItem();
-        if (M3Accessible.containsSelectionTarget(headerItem, parameters)) {
+        if (M3Accessible.containsNodeTarget(headerItem, parameters)) {
             return headerItem;
         }
 
         for (M3ListItem item : group.getItems()) {
-            if (M3Accessible.containsSelectionTarget(item, parameters)) {
+            if (M3Accessible.containsNodeTarget(item, parameters)) {
                 group.setExpanded(true);
                 return item;
             }
@@ -570,8 +581,9 @@ public class M3NavigationDrawer extends Control {
         }
 
         for (Node child : getItems()) {
-            if (M3Accessible.containsSelectionTarget(child, parameters)) {
-                return child;
+            @Nullable Node target = M3Accessible.actionItem(child, parameters);
+            if (target != null) {
+                return target;
             }
             if (child instanceof M3NavigationDrawerGroup group) {
                 @Nullable Node groupItem = accessibleGroupActionItem(group, parameters);
@@ -586,14 +598,16 @@ public class M3NavigationDrawer extends Control {
     /// Returns the group content node referenced by accessibility action parameters.
     private @Nullable Node accessibleGroupActionItem(M3NavigationDrawerGroup group, Object... parameters) {
         M3ListItem headerItem = group.getHeaderItem();
-        if (M3Accessible.containsSelectionTarget(headerItem, parameters)) {
-            return headerItem;
+        @Nullable Node headerTarget = M3Accessible.actionItem(headerItem, parameters);
+        if (headerTarget != null) {
+            return headerTarget;
         }
 
         for (M3ListItem item : group.getItems()) {
-            if (M3Accessible.containsSelectionTarget(item, parameters)) {
-                group.setExpanded(true);
-                return item;
+            if (M3Accessible.containsNodeTarget(item, parameters)) {
+                group.expandForAccessibleReveal();
+                @Nullable Node target = M3Accessible.actionItem(item, parameters);
+                return target == null ? item : target;
             }
         }
         return null;
