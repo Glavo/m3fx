@@ -13,12 +13,14 @@ import javafx.collections.ListChangeListener;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
 import javafx.util.Callback;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3ListViewCell;
 import org.glavo.m3fx.internal.M3Animation;
@@ -244,6 +246,14 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
         @Nullable M3ListViewCell<T> cell = flow.findVisibleCell(index);
         return cell == null ? null : cell.getListItem();
+    }
+
+    /// Returns the data index of the attached visible item that contains the supplied node.
+    ///
+    /// @param node the node to find in the attached visible rows
+    /// @return the containing row index, or `-1` when the node is not in an attached row
+    public int getAttachedVisibleItemIndex(Node node) {
+        return flow.attachedVisibleItemIndex(node);
     }
 
     /// Creates the virtual flow cell factory.
@@ -511,6 +521,31 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         return Math.abs(first - second) <= EPSILON;
     }
 
+    /// Returns whether one attached node contains another attached node.
+    private static boolean containsNode(Node possibleAncestor, Node possibleDescendant) {
+        if (possibleAncestor == possibleDescendant) {
+            return true;
+        }
+        if (possibleAncestor instanceof M3ListItem listItem
+                && (containsOptionalNode(listItem.getLeading(), possibleDescendant)
+                || containsOptionalNode(listItem.getTrailing(), possibleDescendant))) {
+            return true;
+        }
+        if (possibleAncestor instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (containsNode(child, possibleDescendant)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one optional logical slot node contains another attached node.
+    private static boolean containsOptionalNode(@Nullable Node possibleAncestor, Node possibleDescendant) {
+        return possibleAncestor != null && containsNode(possibleAncestor, possibleDescendant);
+    }
+
     /// A public-API wrapper exposing protected virtual flow refresh hooks to this skin.
     @NotNullByDefault
     private static final class ListViewVirtualFlow<T> extends VirtualFlow<M3ListViewCell<T>> {
@@ -558,6 +593,20 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
                 }
             }
             return 0.0;
+        }
+
+        /// Returns the index for the attached visible row that contains the supplied node.
+        private int attachedVisibleItemIndex(Node node) {
+            for (M3ListViewCell<T> cell : getCells()) {
+                if (cell.isEmpty() || cell.getScene() == null) {
+                    continue;
+                }
+                @Nullable Node listItem = cell.getListItem();
+                if (listItem != null && containsNode(listItem, node)) {
+                    return cell.getIndex();
+                }
+            }
+            return -1;
         }
     }
 }

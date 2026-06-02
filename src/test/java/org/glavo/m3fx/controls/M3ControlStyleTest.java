@@ -10974,6 +10974,103 @@ final class M3ControlStyleTest {
         }
     }
 
+    /// Verifies that virtualized list view accessibility actions accept rendered row descendants.
+    @Test
+    void listViewAccessibilityActionsAcceptRenderedRowDescendants() {
+        runOnFxThread(() -> {
+            M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(280.0, 168.0);
+            listView.setCellFactory(value -> {
+                M3ListItem item = new M3ListItem(value);
+                item.setTrailing(new M3Button("Action"));
+                return item;
+            });
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 320.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3ListItem settingsRow = Objects.requireNonNull(assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1)
+                ));
+                M3Button settingsAction = Objects.requireNonNull(assertInstanceOf(
+                        M3Button.class,
+                        settingsRow.getTrailing()
+                ));
+
+                listView.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, settingsAction);
+
+                assertEquals(1, listView.getSelectedIndex());
+                assertEquals("Settings", listView.getSelectedItem());
+
+                settingsRow = Objects.requireNonNull(assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1)
+                ));
+                settingsAction = Objects.requireNonNull(assertInstanceOf(
+                        M3Button.class,
+                        settingsRow.getTrailing()
+                ));
+                settingsRow.applyCss();
+                settingsRow.layout();
+
+                listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, settingsAction);
+                root.layout();
+
+                assertEquals(1, listView.getFocusedIndex());
+                M3ListItem focusedRow = Objects.requireNonNull(assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertEquals("Settings", focusedRow.getHeadlineText());
+
+                listView.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertEquals(1, listView.getFocusedIndex());
+                focusedRow = Objects.requireNonNull(assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertEquals("Settings", focusedRow.getHeadlineText());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that virtualized list view accessibility actions accept data item descendants.
+    @Test
+    void listViewAccessibilityActionsAcceptDataItemDescendants() {
+        M3ListItem first = new M3ListItem("First");
+        M3Button firstAction = new M3Button("First action");
+        first.setTrailing(firstAction);
+        M3ListItem second = new M3ListItem("Second");
+        M3Button secondAction = new M3Button("Second action");
+        second.setTrailing(secondAction);
+        M3ListView<M3ListItem> listView = new M3ListView<>(first, second);
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+
+        listView.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, List.of(firstAction, secondAction));
+
+        assertEquals(List.of(0, 1), listView.getSelectedIndices());
+        assertEquals(List.of(first, second), listView.getSelectedItems());
+
+        listView.clearFocus();
+        listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, secondAction);
+
+        assertEquals(1, listView.getFocusedIndex());
+        assertSame(second, listView.getFocusedItem());
+    }
+
     /// Verifies that focused virtualized list rows update after item changes.
     @Test
     void listViewRefreshesFocusedItemAfterDataChanges() {

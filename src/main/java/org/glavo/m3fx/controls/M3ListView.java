@@ -21,6 +21,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
@@ -791,6 +792,11 @@ public class M3ListView<T> extends Control {
 
     /// Returns the current visible focus node for accessibility clients.
     private Node accessibleFocusNode() {
+        @Nullable Node currentFocus = currentVisibleFocusNode();
+        if (currentFocus != null) {
+            return currentFocus;
+        }
+
         int index = focusedIndex.get();
         if (!isIndexNavigable(index)) {
             index = getSelectedIndex();
@@ -801,6 +807,14 @@ public class M3ListView<T> extends Control {
         if (index >= 0 && getSkin() instanceof M3ListViewSkin<?> skin) {
             @Nullable Node visibleItem = skin.getAttachedVisibleItem(index);
             if (visibleItem != null) {
+                @Nullable Node focusOwner = sceneFocusOwner();
+                if (focusOwner != null
+                        && focusOwner != this
+                        && focusOwner.isVisible()
+                        && !focusOwner.isDisabled()
+                        && M3Accessible.containsNode(visibleItem, focusOwner)) {
+                    return focusOwner;
+                }
                 return visibleItem;
             }
         }
@@ -809,6 +823,12 @@ public class M3ListView<T> extends Control {
 
     /// Moves focus to the focused row, selected row, or first row for accessibility clients.
     private void focusAccessibleNode() {
+        @Nullable Node currentFocus = currentVisibleFocusNode();
+        if (currentFocus != null) {
+            currentFocus.requestFocus();
+            return;
+        }
+
         int index = focusedIndex.get();
         if (index < 0) {
             index = getSelectedIndex();
@@ -821,6 +841,21 @@ public class M3ListView<T> extends Control {
         } else {
             requestFocus();
         }
+    }
+
+    /// Returns the current scene focus owner when it belongs to an attached visible row.
+    private @Nullable Node currentVisibleFocusNode() {
+        @Nullable Node focusOwner = sceneFocusOwner();
+        if (focusOwner == null || focusOwner == this || !M3Accessible.canReach(focusOwner)) {
+            return null;
+        }
+        return visibleNodeIndex(focusOwner) >= 0 ? focusOwner : null;
+    }
+
+    /// Returns the current scene focus owner, or `null` when this list is not attached.
+    private @Nullable Node sceneFocusOwner() {
+        @Nullable Scene scene = getScene();
+        return scene == null ? null : scene.getFocusOwner();
     }
 
     /// Applies selected items supplied by an accessibility client.
@@ -851,6 +886,20 @@ public class M3ListView<T> extends Control {
         if (parameters.length == 0) {
             focusAccessibleNode();
             return;
+        }
+
+        @Nullable Node requestedNode = firstNodeParameter(parameters);
+        if (requestedNode != null) {
+            int requestedIndex = selectionIndex(requestedNode);
+            if (requestedIndex >= 0) {
+                if (visibleNodeIndex(requestedNode) == requestedIndex) {
+                    updateFocusedIndexForAttachedNode(requestedIndex);
+                    M3Accessible.showItem(requestedNode);
+                } else {
+                    focusIndex(requestedIndex);
+                }
+                return;
+            }
         }
 
         int index = firstSelectionIndex(parameters);
@@ -921,7 +970,78 @@ public class M3ListView<T> extends Control {
             int index = cell.getIndex();
             return index >= 0 && index < getItems().size() ? index : -1;
         }
-        return getItems().indexOf(parameter);
+        if (parameter instanceof Node node) {
+            int visibleIndex = visibleNodeIndex(node);
+            if (visibleIndex >= 0) {
+                return visibleIndex;
+            }
+            int dataNodeIndex = dataNodeIndex(node);
+            if (dataNodeIndex >= 0) {
+                return dataNodeIndex;
+            }
+        }
+        return dataValueIndex(parameter);
+    }
+
+    /// Returns the data index for an attached visible row node or descendant.
+    private int visibleNodeIndex(Node node) {
+        if (getSkin() instanceof M3ListViewSkin<?> skin) {
+            int index = skin.getAttachedVisibleItemIndex(node);
+            return index >= 0 && index < getItems().size() ? index : -1;
+        }
+        return -1;
+    }
+
+    /// Returns the data index for a data item node or descendant.
+    private int dataNodeIndex(Node node) {
+        for (int index = 0; index < getItems().size(); index++) {
+            T item = getItems().get(index);
+            if (item instanceof Node itemNode && M3Accessible.containsNode(itemNode, node)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /// Returns the data index for a parameter equal to one backing data item.
+    private int dataValueIndex(@Nullable Object parameter) {
+        for (int index = 0; index < getItems().size(); index++) {
+            if (Objects.equals(getItems().get(index), parameter)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /// Returns the first node supplied directly or inside nested accessibility parameters.
+    private @Nullable Node firstNodeParameter(Object... parameters) {
+        for (Object parameter : parameters) {
+            @Nullable Node node = firstNodeParameter(parameter);
+            if (node != null) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first node supplied by one accessibility parameter.
+    private @Nullable Node firstNodeParameter(@Nullable Object parameter) {
+        if (parameter instanceof Node node) {
+            return node;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node node = firstNodeParameter(value);
+                if (node != null) {
+                    return node;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            return firstNodeParameter(values);
+        }
+        return null;
     }
 
     /// Enforces selection invariants for the current selection mode.
@@ -1030,6 +1150,17 @@ public class M3ListView<T> extends Control {
         }
         if (getSkin() instanceof M3ListViewSkin<?> skin) {
             skin.refreshFocus(requestNodeFocus, isAnimatedScroll());
+        }
+    }
+
+    /// Updates logical list focus for an already attached row without scrolling or stealing child focus.
+    private void updateFocusedIndexForAttachedNode(int index) {
+        int previousIndex = focusedIndex.get();
+        @Nullable T previousItem = focusedItem.get();
+        focusedIndex.set(index);
+        focusedItem.set(index < 0 ? null : getItems().get(index));
+        if (previousIndex != index || !Objects.equals(previousItem, focusedItem.get())) {
+            M3Accessible.notifyFocusNodeChanged(this);
         }
     }
 
