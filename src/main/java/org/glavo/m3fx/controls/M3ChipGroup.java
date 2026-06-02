@@ -138,7 +138,7 @@ public class M3ChipGroup extends Control {
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
     };
 
@@ -672,7 +672,7 @@ public class M3ChipGroup extends Control {
         selectedChip.set(selectedChips.isEmpty() ? null : selectedChips.get(0));
         if (!selectedChips.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();
         }
     }

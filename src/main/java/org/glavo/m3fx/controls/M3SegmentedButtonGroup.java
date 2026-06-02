@@ -142,7 +142,7 @@ public class M3SegmentedButtonGroup extends Control {
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
     };
 
@@ -632,7 +632,7 @@ public class M3SegmentedButtonGroup extends Control {
         selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
         if (!selectedButtons.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();
         }
     }

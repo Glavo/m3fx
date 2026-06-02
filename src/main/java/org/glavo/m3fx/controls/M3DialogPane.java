@@ -211,12 +211,12 @@ public class M3DialogPane extends DialogPane {
         switch (action) {
             case REQUEST_FOCUS -> {
                 M3Accessible.showItem(currentOrFirstFocusableItem());
-                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                M3Accessible.notifyFocusNodeChanged(this);
                 focusNotifier.refresh();
             }
             case SHOW_ITEM -> {
                 M3Accessible.showItem(accessibleActionOrCurrentItem(parameters));
-                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                M3Accessible.notifyFocusNodeChanged(this);
                 focusNotifier.refresh();
             }
             default -> super.executeAccessibleAction(action, parameters);
@@ -284,7 +284,7 @@ public class M3DialogPane extends DialogPane {
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         focusNotifier.refresh();
     }

@@ -288,6 +288,85 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that surface content subtrees expose active split-button menu popup focus to the surface owner.
+    @Test
+    void surfaceRoutesFocusThroughNestedSplitButtonPopup() {
+        runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            Pane content = new Pane(splitButton);
+            content.setPrefSize(360.0, 96.0);
+            M3Surface surface = new M3Surface(content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 440.0, 144.0);
+                splitButton.resizeRelocate(0.0, 0.0, 240.0, 48.0);
+                root.layout();
+
+                splitButton.showMenu();
+                publishItem.requestFocus();
+
+                assertTrue(splitButton.isShowing());
+                assertTrue(publishItem.isFocused());
+                assertSame(publishItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(surface, publishItem);
+
+                publishItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(splitButton.isShowing());
+                assertTrue(splitButton.getMenuButton().isFocused());
+                assertSame(splitButton.getMenuButton(), surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that surface content subtrees expose hosted snackbar action focus.
+    @Test
+    void surfaceRoutesFocusThroughNestedSnackbarHost() {
+        runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            M3Surface surface = new M3Surface(host);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 520.0, 160.0);
+                host.resizeRelocate(0.0, 0.0, 480.0, 96.0);
+                root.layout();
+
+                host.show(snackbar);
+                root.applyCss();
+                root.layout();
+                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertTrue(host.isShowing());
+                assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(surface, actionButton);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that slot-based containers expose active popup focus owned by action nodes.
     @Test
     void slotContainersRouteFocusThroughNestedMenuPopup() {

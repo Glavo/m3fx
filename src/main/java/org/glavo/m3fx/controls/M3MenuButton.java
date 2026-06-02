@@ -522,8 +522,7 @@ public class M3MenuButton extends M3Button {
 
     /// Notifies clients and composite owners that the current popup-accessible focus node changed.
     private void notifyPopupFocusNodeChanged() {
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-        M3Accessible.notifyFocusNodeChangedInAncestors(this);
+        M3Accessible.notifyFocusNodeChanged(this);
         popupFocusNotifier.refresh();
         for (Runnable listener : List.copyOf(popupFocusNodeListeners)) {
             listener.run();

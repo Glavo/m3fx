@@ -92,7 +92,7 @@ public class M3TabBar extends Control {
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
     };
 
@@ -395,7 +395,7 @@ public class M3TabBar extends Control {
         selectedTab.set(selectedTabs.isEmpty() ? null : selectedTabs.get(0));
         if (!selectedTabs.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();
         }
     }

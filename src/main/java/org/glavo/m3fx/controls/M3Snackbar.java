@@ -411,7 +411,7 @@ public class M3Snackbar extends Control {
     /// Notifies accessibility clients that the action item changed.
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 

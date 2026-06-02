@@ -104,8 +104,7 @@ public class M3SnackbarHost extends Control {
         setPickOnBounds(false);
         showing.addListener((observable, oldValue, newValue) -> {
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-            focusNotifier.refresh();
+            notifyFocusNodeChanged();
         });
         queue.addListener((ListChangeListener<M3Snackbar>) change ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT));
@@ -268,8 +267,7 @@ public class M3SnackbarHost extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-            focusNotifier.refresh();
+            notifyFocusNodeChanged();
         }
 
         snackbar.setManaged(true);
@@ -344,8 +342,7 @@ public class M3SnackbarHost extends Control {
             case COLLAPSE -> dismiss();
             case REQUEST_FOCUS -> {
                 M3Accessible.showItem(currentFocusNode());
-                notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-                focusNotifier.refresh();
+                notifyFocusNodeChanged();
             }
             case SHOW_ITEM -> showAccessibleSnackbar(parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -433,8 +430,7 @@ public class M3SnackbarHost extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-        focusNotifier.refresh();
+        notifyFocusNodeChanged();
         showNextQueuedSnackbar();
     }
 
@@ -494,7 +490,12 @@ public class M3SnackbarHost extends Control {
         if (currentSnackbar != null) {
             currentSnackbar.applyCss();
         }
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        notifyFocusNodeChanged();
+    }
+
+    /// Notifies and refreshes cached accessibility focus state.
+    private void notifyFocusNodeChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
     }
 

@@ -488,7 +488,7 @@ public class M3SplitButton extends Control {
 
     /// Notifies and refreshes cached accessibility focus state.
     private void notifyFocusNodeChanged() {
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
         popupFocusNotifier.refresh();
     }

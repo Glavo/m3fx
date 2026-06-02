@@ -765,8 +765,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Notifies accessibility clients and owner containers about the exposed focus target.
     private void notifyFocusNodeChanged() {
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-        M3Accessible.notifyFocusNodeChangedInAncestors(this);
+        M3Accessible.notifyFocusNodeChanged(this);
     }
 
     /// Clears generated parse or range errors after user edits.

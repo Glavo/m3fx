@@ -520,8 +520,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Notifies clients and popup owners that the current accessible focus node changed.
     private void notifyFocusNodeChanged() {
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-        M3Accessible.notifyFocusNodeChangedInAncestors(this);
+        M3Accessible.notifyFocusNodeChanged(this);
         popupFocusNotifier.refresh();
         for (Runnable listener : List.copyOf(focusNodeListeners)) {
             listener.run();

@@ -936,7 +936,7 @@ public class M3Menu extends Control {
 
     /// Notifies clients and popup owners that the current accessible focus node changed.
     private void notifyFocusNodeChanged() {
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
         for (Runnable listener : List.copyOf(focusNodeListeners)) {
             listener.run();

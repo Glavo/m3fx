@@ -17417,6 +17417,56 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that parent containers use child controls' exposed focus nodes as default focus targets.
+    @Test
+    void parentContainersReportNestedCompositeDefaultFocusNodes() {
+        runOnFxThread(() -> {
+            M3ButtonGroup buttonGroup = new M3ButtonGroup(new M3Button("Archive"), new M3Button("Share"));
+
+            M3SnackbarHost snackbarHost = new M3SnackbarHost();
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+
+            M3SearchView searchView = new M3SearchView("Search", new M3Button("Result"));
+
+            M3Surface surface = new M3Surface(buttonGroup, snackbarHost, searchView);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(surface, 640.0, 320.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                surface.applyCss();
+                surface.layout();
+
+                assertSame(
+                        buttonGroup.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
+                        surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+
+                buttonGroup.setVisible(false);
+                snackbarHost.show(snackbar);
+                surface.applyCss();
+                surface.layout();
+
+                assertSame(
+                        snackbarHost.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
+                        surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+
+                snackbarHost.setVisible(false);
+                surface.applyCss();
+                surface.layout();
+
+                assertSame(
+                        searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
+                        surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that composite controls actively notify when their accessible focus child changes.
     @Test
     void accessibleFocusNotifierReportsSceneFocusChanges() {

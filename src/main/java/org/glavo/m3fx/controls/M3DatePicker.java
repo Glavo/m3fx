@@ -84,7 +84,7 @@ public class M3DatePicker extends Control {
                     }
                     notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
                     notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-                    notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+                    M3Accessible.notifyFocusNodeChanged(M3DatePicker.this);
                 }
             };
 
@@ -705,7 +705,7 @@ public class M3DatePicker extends Control {
     /// Notifies accessibility clients that visible day cells changed.
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 

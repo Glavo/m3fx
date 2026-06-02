@@ -1023,7 +1023,7 @@ public class M3ListView<T> extends Control {
         focusedIndex.set(index);
         focusedItem.set(index < 0 ? null : getItems().get(index));
         if (previousIndex != index || !Objects.equals(previousItem, focusedItem.get())) {
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            M3Accessible.notifyFocusNodeChanged(this);
         }
         if (requestNodeFocus) {
             requestFocus();

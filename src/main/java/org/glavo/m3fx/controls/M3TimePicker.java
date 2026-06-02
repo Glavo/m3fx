@@ -594,7 +594,7 @@ public class M3TimePicker extends Control {
     /// Notifies accessibility clients that visible time cells changed.
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 

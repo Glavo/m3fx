@@ -106,7 +106,7 @@ public class M3Carousel extends Control {
         applySelectedIndex(getSelectedIndex(), false);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
     };
 
@@ -510,7 +510,7 @@ public class M3Carousel extends Control {
         selectedItems.setAll(nextItem == null ? java.util.List.of() : java.util.List.of(nextItem));
         if (previousItem != nextItem) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();
         }
         if (scroll && nextItem != null) {

@@ -1046,7 +1046,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
     }
 
     /// Updates editor text from the current selected range.
@@ -1271,8 +1271,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Notifies accessibility clients and owner containers about the exposed focus target.
     private void notifyFocusNodeChanged() {
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
-        M3Accessible.notifyFocusNodeChangedInAncestors(this);
+        M3Accessible.notifyFocusNodeChanged(this);
     }
 
     /// Copies scene styles and theme declarations into the popup-hosted picker.

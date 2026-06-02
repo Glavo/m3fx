@@ -394,7 +394,7 @@ public class M3NavigationDrawer extends Control {
             target.requestFocus();
         }
         select(target);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
         event.consume();
     }
@@ -805,7 +805,7 @@ public class M3NavigationDrawer extends Control {
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
         if (!selectedItems.equals(previousSelection)) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();
         }
     }
@@ -888,7 +888,7 @@ public class M3NavigationDrawer extends Control {
     private void notifyDrawerContentChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
     }
 

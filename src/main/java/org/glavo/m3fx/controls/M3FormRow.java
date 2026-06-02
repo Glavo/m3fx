@@ -113,7 +113,7 @@ public class M3FormRow extends Control {
         protected void invalidated() {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            M3Accessible.notifyFocusNodeChanged(M3FormRow.this);
             focusNotifier.refresh();
             requestLayout();
         }
@@ -133,7 +133,7 @@ public class M3FormRow extends Control {
         protected void invalidated() {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            M3Accessible.notifyFocusNodeChanged(M3FormRow.this);
             focusNotifier.refresh();
             requestLayout();
         }

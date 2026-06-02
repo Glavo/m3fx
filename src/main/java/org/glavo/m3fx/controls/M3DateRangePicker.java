@@ -916,13 +916,13 @@ public class M3DateRangePicker extends Control {
     private void notifyAccessibleRangeChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
     }
 
     /// Notifies accessibility clients that visible day cells changed.
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        M3Accessible.notifyFocusNodeChanged(this);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 
