@@ -208,7 +208,10 @@ final class M3Accessible {
 
     /// Requests focus for an accessibility item when it can be reached.
     static void showItem(@Nullable Node item) {
-        @Nullable Node focusTarget = focusTarget(item);
+        @Nullable Node focusTarget = currentContainedFocusTarget(item);
+        if (focusTarget == null) {
+            focusTarget = accessibleFocusTarget(item);
+        }
         if (focusTarget != null) {
             focusTarget.requestFocus();
         }
@@ -503,6 +506,19 @@ final class M3Accessible {
         return canReach(focusOwner) && focusOwner != item ? focusOwner : itemFocusTarget;
     }
 
+    /// Returns the current scene focus owner when it is already inside the supplied item.
+    private static @Nullable Node currentContainedFocusTarget(@Nullable Node item) {
+        if (!canReach(item)) {
+            return null;
+        }
+        @Nullable Scene scene = item.getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        if (focusOwner == null || !canReach(focusOwner) || !containsNode(item, focusOwner)) {
+            return null;
+        }
+        return focusOwner;
+    }
+
     /// Returns whether a node can receive a direct or descendant focus request.
     static boolean canReach(@Nullable Node node) {
         return node != null && node.isVisible() && !node.isDisabled() && node.getScene() != null;
@@ -697,7 +713,7 @@ final class M3Accessible {
     static @Nullable Node actionItem(@Nullable Node item, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            return focusTarget(item) == null ? null : item;
+            return accessibleFocusTarget(item) == null ? null : item;
         }
         for (Object parameter : parameters) {
             @Nullable Node target = actionItem(item, parameter);
@@ -717,7 +733,7 @@ final class M3Accessible {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            return focusTarget(leading) != null ? leading : firstFocusableItem(items);
+            return accessibleFocusTarget(leading) != null ? leading : firstFocusableItem(items);
         }
         @Nullable Object firstParameter = parameters[0];
         if (firstParameter instanceof Number) {
@@ -784,7 +800,7 @@ final class M3Accessible {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
             @Nullable Node item = firstFocusableItem(items);
-            return item != null ? item : (focusTarget(trailing) == null ? null : trailing);
+            return item != null ? item : (accessibleFocusTarget(trailing) == null ? null : trailing);
         }
         @Nullable Object firstParameter = parameters[0];
         if (firstParameter instanceof Number) {
@@ -845,7 +861,9 @@ final class M3Accessible {
     private static @Nullable Node actionItem(@Nullable Node first, @Nullable Node second, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            return focusTarget(first) != null ? first : (focusTarget(second) == null ? null : second);
+            return accessibleFocusTarget(first) != null
+                    ? first
+                    : (accessibleFocusTarget(second) == null ? null : second);
         }
         @Nullable Object firstParameter = parameters[0];
         if (firstParameter instanceof Number) {
@@ -899,7 +917,7 @@ final class M3Accessible {
     /// Returns the first child item with a focusable target from a list.
     private static @Nullable Node firstFocusableItem(ObservableList<? extends Node> items) {
         for (Node item : items) {
-            if (focusTarget(item) != null) {
+            if (accessibleFocusTarget(item) != null) {
                 return item;
             }
         }
@@ -956,7 +974,7 @@ final class M3Accessible {
         if (item == null || !containsNode(item, requestedNode)) {
             return null;
         }
-        return focusTarget(requestedNode) == null ? item : requestedNode;
+        return accessibleFocusTarget(requestedNode) == null ? item : requestedNode;
     }
 
     /// Returns the single-node action target referenced by one accessibility action parameter.
