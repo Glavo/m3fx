@@ -27,6 +27,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -149,6 +150,7 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -245,6 +247,11 @@ public final class M3FXDemoApp extends Application {
     /// Starts the demo application.
     @Override
     public void start(Stage stage) {
+        boolean isWindows = System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("windows");
+        if (isWindows && Screen.getPrimary().getOutputScaleX() > 1) {
+            System.getProperties().putIfAbsent("prism.lcdtext", "false");
+        }
+
         BorderPane root = new BorderPane();
         root.getStyleClass().add("demo-root");
         applyDemoFont(root);
