@@ -1,11 +1,18 @@
 plugins {
-    `java-library`
+    id("java-library")
+    id("jacoco")
+    id("maven-publish")
+    id("signing")
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("org.glavo.load-maven-publish-properties") version "0.1.0"
 }
 
 allprojects {
     group = "org.glavo"
     version = "1.0-SNAPSHOT"
 }
+
+description = "MonetFX is a JavaFX library that provides material design 3 components for JavaFX applications."
 
 repositories {
     mavenCentral()
@@ -38,13 +45,99 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-tasks.withType<JavaCompile>().configureEach {
+tasks.withType<JavaCompile> {
     options.release = 17
     options.encoding = "UTF-8"
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+tasks.withType<Javadoc> {
+    (options as StandardJavadocDocletOptions).also {
+        it.jFlags!!.addAll(listOf("-Duser.language=en", "-Duser.country=", "-Duser.variant="))
+
+        it.encoding("UTF-8")
+        it.addStringOption("link", "https://docs.oracle.com/en/java/javase/25/docs/api/")
+        it.addBooleanOption("html5", true)
+        it.addStringOption("Xdoclint:none", "-quiet")
+
+        it.tags!!.addAll(
+            listOf(
+                "apiNote:a:API Note:",
+                "implNote:a:Implementation Note:",
+                "implSpec:a:Implementation Specification:",
+            )
+        )
+    }
+}
+
+tasks.withType<GenerateModuleMetadata> {
+    enabled = false
+}
+
+publishing.publications.create<MavenPublication>("maven") {
+    groupId = project.group.toString()
+    version = project.version.toString()
+    artifactId = project.name
+
+    from(components["java"])
+
+    pom {
+        name.set(project.name)
+        description.set(project.description)
+        url.set("https://github.com/Glavo/weburl-java")
+
+        licenses {
+            license {
+                name.set("Apache-2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("Glavo")
+                name.set("Glavo")
+                email.set("zjx001202@gmail.com")
+            }
+        }
+
+        scm {
+            url.set("https://github.com/Glavo/weburl-java")
+        }
+    }
+}
+
+
+if (System.getenv("JITPACK").isNullOrBlank() && rootProject.ext.has("signing.key")) {
+    signing {
+        useInMemoryPgpKeys(
+            rootProject.ext["signing.keyId"].toString(),
+            rootProject.ext["signing.key"].toString(),
+            rootProject.ext["signing.password"].toString(),
+        )
+        sign(publishing.publications["maven"])
+    }
+}
+
+// ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+
+            username.set(rootProject.ext["sonatypeUsername"].toString())
+            password.set(rootProject.ext["sonatypePassword"].toString())
+        }
+    }
 }
 
 tasks.register("runDemo") {
