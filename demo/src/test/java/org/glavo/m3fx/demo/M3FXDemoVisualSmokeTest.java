@@ -180,6 +180,9 @@ final class M3FXDemoVisualSmokeTest {
     /// The highest acceptable vertical center ratio for single-line input text.
     private static final double INPUT_TEXT_MAXIMUM_CENTER_RATIO = 0.70;
 
+    /// The hover pseudo-class used when rendering synthetic interaction snapshots.
+    private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
+
     /// Starts the JavaFX toolkit before creating the demo stage.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -545,14 +548,12 @@ final class M3FXDemoVisualSmokeTest {
                     appReference,
                     sceneReference,
                     "Navigation",
-                    "Search",
                     "navigation-bar-selection"
             );
             verifyNavigationItemSelectionAnimation(
                     appReference,
                     sceneReference,
                     "Navigation Rail",
-                    "Search",
                     "navigation-rail-selection"
             );
             verifySidebarDrawerGroupExpansionAnimation(appReference, sceneReference);
@@ -800,7 +801,7 @@ final class M3FXDemoVisualSmokeTest {
                     "button",
                     "normal"
             );
-            applyPseudoState(target, "hover");
+            applyHoverPseudoState(target);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
         }, () -> {
@@ -828,7 +829,7 @@ final class M3FXDemoVisualSmokeTest {
             );
             Node target = Objects.requireNonNull(targetReference.get(), "button");
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
-            clearPseudoState(target, "hover");
+            clearHoverPseudoState(target);
         });
 
         assertNodeAreaChanged(
@@ -1386,7 +1387,6 @@ final class M3FXDemoVisualSmokeTest {
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference,
             String pageTitle,
-            String itemText,
             String snapshotName
     ) throws InterruptedException {
         AtomicReference<@Nullable M3NavigationItem> targetReference = new AtomicReference<>();
@@ -1403,7 +1403,7 @@ final class M3FXDemoVisualSmokeTest {
 
             M3NavigationItem target = Objects.requireNonNull(firstVisibleNavigationItemWithText(
                     scene.getRoot(),
-                    itemText
+                    "Search"
             ), "navigation item");
             assertFalse(target.isSelected());
             M3MotionSettings.setMotionScheme(target, visualNavigationMotionScheme());
@@ -2019,7 +2019,6 @@ final class M3FXDemoVisualSmokeTest {
     ) throws InterruptedException {
         AtomicReference<@Nullable M3Button> ownerReference = new AtomicReference<>();
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
-        AtomicReference<@Nullable Node> popupRootReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> popupReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
@@ -2054,7 +2053,6 @@ final class M3FXDemoVisualSmokeTest {
             layoutPopupRoot(popupRoot);
             assertTooltipNearOwner(owner, popupRoot);
             assertRichTooltipActionInsidePopup(popupRoot);
-            popupRootReference.set(popupRoot);
             popupReference.set(snapshotNode(popupRoot));
             writeAnimationSnapshot(
                     Objects.requireNonNull(popupReference.get(), "rich tooltip snapshot"),
@@ -2109,11 +2107,9 @@ final class M3FXDemoVisualSmokeTest {
             Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
             assertTrue(dialog.isShowing());
-            Node dialogPane = dialog.getDialogPane();
+            Parent dialogPane = dialog.getDialogPane();
             dialogPane.applyCss();
-            if (dialogPane instanceof Parent parent) {
-                parent.layout();
-            }
+            dialogPane.layout();
             assertDialogPaneStaysCompact(ownerScene, dialogPane);
             dialogSnapshotReference.set(snapshotNode(dialogPane));
             writeAnimationSnapshot(
@@ -2219,7 +2215,7 @@ final class M3FXDemoVisualSmokeTest {
                     "sidebar",
                     "normal"
             );
-            applyPseudoState(target, "hover");
+            applyHoverPseudoState(target);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
         }, () -> {
@@ -2247,7 +2243,7 @@ final class M3FXDemoVisualSmokeTest {
             );
             Node target = Objects.requireNonNull(targetReference.get(), "sidebar item");
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
-            clearPseudoState(target, "hover");
+            clearHoverPseudoState(target);
         });
 
         assertNodeAreaChanged(
@@ -2292,7 +2288,7 @@ final class M3FXDemoVisualSmokeTest {
                     "icon-toggle-button",
                     "normal"
             );
-            applyPseudoState(target, "hover");
+            applyHoverPseudoState(target);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
         }, () -> {
@@ -2320,7 +2316,7 @@ final class M3FXDemoVisualSmokeTest {
             );
             Node target = Objects.requireNonNull(targetReference.get(), "toggle icon button");
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
-            clearPseudoState(target, "hover");
+            clearHoverPseudoState(target);
         });
 
         Node target = Objects.requireNonNull(targetReference.get(), "toggle icon button");
@@ -2361,7 +2357,7 @@ final class M3FXDemoVisualSmokeTest {
             ), "button");
             targetReference.set(target);
             normalReference.set(snapshot(scene));
-            applyPseudoState(target, "hover");
+            applyHoverPseudoState(target);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
         }, () -> {
@@ -2369,7 +2365,7 @@ final class M3FXDemoVisualSmokeTest {
             hoverReference.set(snapshot(scene));
             M3MotionSettings.clearAnimationsEnabled(scene.getRoot());
             Node target = Objects.requireNonNull(targetReference.get(), "button");
-            clearPseudoState(target, "hover");
+            clearHoverPseudoState(target);
         });
 
         assertNodeAreaChanged(
@@ -2485,7 +2481,7 @@ final class M3FXDemoVisualSmokeTest {
             }
 
             Bounds controlBounds = node.localToScene(node.getBoundsInLocal());
-            if (!isVisibleWithinSceneViewport(node, controlBounds, sceneBounds)) {
+            if (isOutsideSceneViewport(node, controlBounds, sceneBounds)) {
                 return;
             }
 
@@ -2565,7 +2561,7 @@ final class M3FXDemoVisualSmokeTest {
 
             Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
             Bounds textBounds = text.localToScene(text.getBoundsInLocal());
-            if (!isVisibleWithinSceneViewport(text, textBounds, sceneBounds)) {
+            if (isOutsideSceneViewport(text, textBounds, sceneBounds)) {
                 return;
             }
 
@@ -2588,15 +2584,7 @@ final class M3FXDemoVisualSmokeTest {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
         visitVisibleNodes(scene.getRoot(), node -> {
             if (node instanceof M3RadioButton radioButton && hasRenderableBounds(radioButton)) {
-                assertNestedIndicatorCentered(
-                        radioButton,
-                        ".m3-radio-ring",
-                        ".m3-radio-dot",
-                        0.75,
-                        sceneBounds,
-                        pageTitle,
-                        "radio dot"
-                );
+                assertRadioDotCentered(radioButton, sceneBounds, pageTitle);
             } else if (node instanceof M3Switch switchControl && hasRenderableBounds(switchControl)) {
                 assertSwitchThumbInsideTrack(
                         switchControl,
@@ -2623,7 +2611,7 @@ final class M3FXDemoVisualSmokeTest {
 
             Bounds badgeBounds = badge.localToScene(badge.getBoundsInLocal());
             Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
-            if (!isVisibleWithinSceneViewport(badge, badgeBounds, sceneBounds)) {
+            if (isOutsideSceneViewport(badge, badgeBounds, sceneBounds)) {
                 return;
             }
 
@@ -2636,31 +2624,23 @@ final class M3FXDemoVisualSmokeTest {
         });
     }
 
-    /// Verifies that a nested visual indicator shares the same rendered center as its container.
-    private static void assertNestedIndicatorCentered(
-            Node root,
-            String containerStyleClass,
-            String indicatorStyleClass,
-            double tolerance,
-            Bounds sceneBounds,
-            String pageTitle,
-            String description
-    ) {
-        @Nullable Node container = root.lookup(containerStyleClass);
-        @Nullable Node indicator = root.lookup(indicatorStyleClass);
+    /// Verifies that a radio button dot shares the same rendered center as its ring.
+    private static void assertRadioDotCentered(Node root, Bounds sceneBounds, String pageTitle) {
+        @Nullable Node container = root.lookup(".m3-radio-ring");
+        @Nullable Node indicator = root.lookup(".m3-radio-dot");
         if (container == null || indicator == null || !hasRenderableBounds(container) || !hasRenderableBounds(indicator)) {
             return;
         }
         Bounds containerBounds = container.localToScene(container.getBoundsInLocal());
         Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
-        if (!isVisibleWithinSceneViewport(container, containerBounds, sceneBounds)) {
+        if (isOutsideSceneViewport(container, containerBounds, sceneBounds)) {
             return;
         }
 
         double dx = Math.abs(containerBounds.getCenterX() - indicatorBounds.getCenterX());
         double dy = Math.abs(containerBounds.getCenterY() - indicatorBounds.getCenterY());
-        assertTrue(dx <= tolerance && dy <= tolerance,
-                () -> pageTitle + " " + description + " is off-center: dx=" + dx + ", dy=" + dy
+        assertTrue(dx <= 0.75 && dy <= 0.75,
+                () -> pageTitle + " radio dot is off-center: dx=" + dx + ", dy=" + dy
                         + ", containerBounds=" + containerBounds + ", indicatorBounds=" + indicatorBounds);
     }
 
@@ -2673,7 +2653,7 @@ final class M3FXDemoVisualSmokeTest {
         }
         Bounds trackBounds = track.localToScene(track.getBoundsInLocal());
         Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
-        if (!isVisibleWithinSceneViewport(track, trackBounds, sceneBounds)) {
+        if (isOutsideSceneViewport(track, trackBounds, sceneBounds)) {
             return;
         }
 
@@ -2700,7 +2680,6 @@ final class M3FXDemoVisualSmokeTest {
         return node instanceof M3Button
                 || node instanceof M3DatePicker
                 || node instanceof M3FloatingActionButton
-                || node instanceof M3IconButton
                 || node instanceof M3IconToggleButton
                 || node instanceof M3LoadingIndicator
                 || node instanceof M3PickerField<?, ?>
@@ -2728,19 +2707,19 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
-    /// Returns whether a node bounds intersects the scene and any active scroll viewport.
-    private static boolean isVisibleWithinSceneViewport(Node node, Bounds nodeBounds, Bounds sceneBounds) {
+    /// Returns whether a node bounds should be skipped because it is outside the visible scene or scroll viewport.
+    private static boolean isOutsideSceneViewport(Node node, Bounds nodeBounds, Bounds sceneBounds) {
         if (!sceneBounds.intersects(nodeBounds)
                 || !sceneBounds.contains(nodeBounds.getCenterX(), nodeBounds.getCenterY())) {
-            return false;
+            return true;
         }
         @Nullable Node scrollViewport = nearestScrollViewport(node);
         if (scrollViewport == null) {
-            return true;
+            return false;
         }
         Bounds viewportBounds = scrollViewport.localToScene(scrollViewport.getBoundsInLocal());
-        return viewportBounds.intersects(nodeBounds)
-                && viewportBounds.contains(nodeBounds.getCenterX(), nodeBounds.getCenterY());
+        return !viewportBounds.intersects(nodeBounds)
+                || !viewportBounds.contains(nodeBounds.getCenterX(), nodeBounds.getCenterY());
     }
 
     /// Returns the first visible M3 button with the requested text.
@@ -3059,7 +3038,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that expanded FAB menu action items remain within the owning demo showcase surface.
     private static void assertFabMenuActionsStayInsideShowcase(M3FabMenu menu) {
         Node showcase = Objects.requireNonNull(
-                nearestAncestorWithStyle(menu, "demo-flow"),
+                nearestDemoFlowAncestor(menu),
                 "FAB menu showcase flow"
         );
         Bounds showcaseBounds = showcase.localToScene(showcase.getBoundsInLocal());
@@ -3144,14 +3123,14 @@ final class M3FXDemoVisualSmokeTest {
         return Math.max(0, Math.min((int) Math.ceil(size), (int) coordinate));
     }
 
-    /// Applies a JavaFX pseudo-class to a node before rendering an interaction state.
-    private static void applyPseudoState(Node node, String pseudoClass) {
-        node.pseudoClassStateChanged(PseudoClass.getPseudoClass(pseudoClass), true);
+    /// Applies the hover pseudo-class to a node before rendering an interaction state.
+    private static void applyHoverPseudoState(Node node) {
+        node.pseudoClassStateChanged(HOVER_PSEUDO_CLASS, true);
     }
 
-    /// Clears a JavaFX pseudo-class from a node after rendering an interaction state.
-    private static void clearPseudoState(Node node, String pseudoClass) {
-        node.pseudoClassStateChanged(PseudoClass.getPseudoClass(pseudoClass), false);
+    /// Clears the hover pseudo-class from a node after rendering an interaction state.
+    private static void clearHoverPseudoState(Node node) {
+        node.pseudoClassStateChanged(HOVER_PSEUDO_CLASS, false);
     }
 
     /// Fires a primary-button mouse event at the center of a node.
@@ -3233,11 +3212,11 @@ final class M3FXDemoVisualSmokeTest {
                 || inner.getMaxY() > viewport.getMaxY() - tolerance;
     }
 
-    /// Returns the nearest ancestor with the requested style class.
-    private static @Nullable Node nearestAncestorWithStyle(Node node, String styleClass) {
+    /// Returns the nearest demo flow ancestor.
+    private static @Nullable Node nearestDemoFlowAncestor(Node node) {
         @Nullable Parent parent = node.getParent();
         while (parent != null) {
-            if (parent.getStyleClass().contains(styleClass)) {
+            if (parent.getStyleClass().contains("demo-flow")) {
                 return parent;
             }
             parent = parent.getParent();
