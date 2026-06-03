@@ -149,8 +149,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -639,6 +642,18 @@ public final class M3FXDemoApp extends Application {
     /// Returns the demo page titles created for this application instance.
     @Unmodifiable List<String> demoPageTitlesForTesting() {
         return pages.stream().map(DemoPage::title).toList();
+    }
+
+    /// Returns Material documentation URLs keyed by demo page title.
+    @Unmodifiable Map<String, String> demoPageMaterialUrlsForTesting() {
+        LinkedHashMap<String, String> result = new LinkedHashMap<>();
+        for (DemoPage page : pages) {
+            @Nullable String materialUrl = page.materialUrl();
+            if (materialUrl != null) {
+                result.put(page.title(), materialUrl);
+            }
+        }
+        return Collections.unmodifiableMap(result);
     }
 
     /// Shows the demo page with the requested title.

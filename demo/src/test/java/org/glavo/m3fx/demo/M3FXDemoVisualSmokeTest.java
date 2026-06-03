@@ -72,6 +72,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -82,6 +83,7 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -109,6 +111,49 @@ final class M3FXDemoVisualSmokeTest {
             "Date Pickers",
             "Menus",
             "Navigation Drawer"
+    );
+
+    /// Material documentation URLs expected for demo pages that map to official Material pages.
+    private static final @Unmodifiable Map<String, String> EXPECTED_MATERIAL_URLS = Map.ofEntries(
+            Map.entry("Components Overview", "https://m3.material.io/components"),
+            Map.entry("App Bars", "https://m3.material.io/components/top-app-bar/overview"),
+            Map.entry("Badges", "https://m3.material.io/components/badges/overview"),
+            Map.entry("Button Groups", "https://m3.material.io/components/button-groups/overview"),
+            Map.entry("Buttons", "https://m3.material.io/components/buttons/overview"),
+            Map.entry("Extended FABs", "https://m3.material.io/components/extended-fab/overview"),
+            Map.entry("FAB Menu", "https://m3.material.io/components/fab-menu/overview"),
+            Map.entry("Floating Action Buttons", "https://m3.material.io/components/floating-action-button/overview"),
+            Map.entry("Icon Buttons", "https://m3.material.io/components/icon-buttons/overview"),
+            Map.entry("Segmented Buttons", "https://m3.material.io/components/segmented-buttons/overview"),
+            Map.entry("Split Buttons", "https://m3.material.io/components/split-button/overview"),
+            Map.entry("Cards", "https://m3.material.io/components/cards/overview"),
+            Map.entry("Carousel", "https://m3.material.io/components/carousel/overview"),
+            Map.entry("Checkboxes", "https://m3.material.io/components/checkbox/overview"),
+            Map.entry("Chips", "https://m3.material.io/components/chips/overview"),
+            Map.entry("Date Pickers", "https://m3.material.io/components/date-pickers/overview"),
+            Map.entry("Time Pickers", "https://m3.material.io/components/time-pickers/overview"),
+            Map.entry("Dialogs", "https://m3.material.io/components/dialogs/overview"),
+            Map.entry("Dividers", "https://m3.material.io/components/divider/overview"),
+            Map.entry("Lists", "https://m3.material.io/components/lists/overview"),
+            Map.entry("Loading Indicator", "https://m3.material.io/components/loading-indicator/overview"),
+            Map.entry("Progress", "https://m3.material.io/components/progress-indicators/overview"),
+            Map.entry("Menus", "https://m3.material.io/components/menus/overview"),
+            Map.entry("Navigation", "https://m3.material.io/components/navigation-bar/overview"),
+            Map.entry("Navigation Drawer", "https://m3.material.io/components/navigation-drawer/overview"),
+            Map.entry("Navigation Rail", "https://m3.material.io/components/navigation-rail/overview"),
+            Map.entry("Radio Buttons", "https://m3.material.io/components/radio-button/overview"),
+            Map.entry("Search", "https://m3.material.io/components/search/overview"),
+            Map.entry("Bottom Sheets", "https://m3.material.io/components/bottom-sheets/overview"),
+            Map.entry("Side Sheets", "https://m3.material.io/components/side-sheets/overview"),
+            Map.entry("Sliders", "https://m3.material.io/components/sliders/overview"),
+            Map.entry("Snackbars", "https://m3.material.io/components/snackbar/overview"),
+            Map.entry("Switches", "https://m3.material.io/components/switch/overview"),
+            Map.entry("Tabs", "https://m3.material.io/components/tabs/overview"),
+            Map.entry("Text Fields", "https://m3.material.io/components/text-fields/overview"),
+            Map.entry("Toolbars", "https://m3.material.io/components/toolbars/overview"),
+            Map.entry("Tooltips", "https://m3.material.io/components/tooltips/overview"),
+            Map.entry("Typography", "https://m3.material.io/styles/typography/overview"),
+            Map.entry("Icons", "https://m3.material.io/styles/icons/overview")
     );
 
     /// Fixed-target controls whose visible glyph content should stay centered.
@@ -146,6 +191,54 @@ final class M3FXDemoVisualSmokeTest {
         }
         assertTrue(latch.await(10, TimeUnit.SECONDS));
         Platform.setImplicitExit(false);
+    }
+
+    /// Verifies that demo pages expose stable Material documentation links in their page header.
+    @Test
+    void demoPagesExposeMaterialDocumentationLinks() {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            runOnFxThread(() -> {
+                M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+
+                assertEquals(EXPECTED_MATERIAL_URLS, app.demoPageMaterialUrlsForTesting());
+
+                app.showPageForTesting("Buttons");
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                Node docsLink = Objects.requireNonNull(scene.lookup(".demo-page-doc-link"), "docsLink");
+                M3Button docsButton = assertInstanceOf(M3Button.class, docsLink);
+                assertEquals("Material docs", docsButton.getText());
+
+                app.showPageForTesting("Forms");
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                assertNull(scene.lookup(".demo-page-doc-link"));
+            });
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that every registered demo page renders visible content without obvious clipping or off-center glyphs.
