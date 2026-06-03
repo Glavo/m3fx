@@ -100,6 +100,15 @@
     -fx-fill-width: true;
 }
 
+.demo-page-header {
+    -fx-alignment: center-left;
+    -fx-spacing: 16px;
+}
+
+.demo-page-heading {
+    -fx-spacing: 8px;
+}
+
 .demo-page-title {
     -fx-font-size: 28px;
     -fx-font-weight: 600;
@@ -109,6 +118,10 @@
 .demo-page-subtitle {
     -fx-font-size: 14px;
     -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.demo-page-doc-link {
+    -fx-min-width: 128px;
 }
 
 .demo-gallery {

@@ -178,6 +178,9 @@ public final class M3FXDemoApp extends Application {
     /// The size used only when registering the bundled demo font with JavaFX.
     private static final double DEMO_FONT_LOAD_SIZE = 12.0;
 
+    /// The root URL for Material Design 3 documentation.
+    private static final String MATERIAL_URL_BASE = "https://m3.material.io/";
+
     /// Progress track heights shown in the progress demo page.
     private static final @Unmodifiable List<Double> PROGRESS_TRACK_HEIGHTS = List.of(2.0, 4.0, 6.0, 8.0, 12.0);
 
@@ -393,50 +396,60 @@ public final class M3FXDemoApp extends Application {
         return header;
     }
 
+    /// Returns a Material Design 3 component documentation URL for the given component slug.
+    private static String materialComponentUrl(String component) {
+        return MATERIAL_URL_BASE + "components/" + component + "/overview";
+    }
+
+    /// Returns a Material Design 3 style documentation URL for the given style slug.
+    private static String materialStyleUrl(String style) {
+        return MATERIAL_URL_BASE + "styles/" + style + "/overview";
+    }
+
     /// Creates all component demo pages.
     private List<DemoPage> createPages() {
         return List.of(
-                new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse the implemented Material Design 3 component demos", this::createComponentsOverviewPage),
-                new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", this::createAppBarsPage),
-                new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", this::createBadgesPage),
-                new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", this::createButtonGroupsPage),
-                new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", this::createButtonsPage),
-                new DemoPage("Extended FABs", "Extended FABs", BUTTONS_GROUP, "Extended floating action button examples", this::createExtendedFabsPage),
-                new DemoPage("FAB Menu", "FAB menu", BUTTONS_GROUP, "Expandable floating action shortcuts", this::createFabMenuPage),
-                new DemoPage("Floating Action Buttons", "Floating action buttons (FABs)", BUTTONS_GROUP, "Floating action button sizes and variants", this::createFloatingActionButtonsPage),
-                new DemoPage("Icon Buttons", "Icon buttons", BUTTONS_GROUP, "Icon button and toggle icon button states", this::createIconButtonsPage),
-                new DemoPage("Segmented Buttons", "Segmented buttons", BUTTONS_GROUP, "Single- and multi-select segmented control states", this::createSegmentedButtonsPage),
-                new DemoPage("Split Buttons", "Split buttons", BUTTONS_GROUP, "Primary actions with attached menus", this::createSplitButtonsPage),
-                new DemoPage("Cards", "Cards", "Cards", "Filled, outlined, elevated, and interactive cards", this::createCardsPage),
-                new DemoPage("Carousel", "Carousel", "Carousel", "Horizontal content browsing with selected-item snapping", this::createCarouselPage),
-                new DemoPage("Checkboxes", "Checkbox", "Checkbox", "Checked, unchecked, indeterminate, and disabled states", this::createCheckboxesPage),
-                new DemoPage("Chips", "Chips", "Chips", "Assist, filter, input, suggestion, and disabled chips", this::createChipsPage),
-                new DemoPage("Date Pickers", "Date pickers", DATE_TIME_PICKERS_GROUP, "Calendar date selection, ranges, and month visibility", this::createDatePickersPage),
-                new DemoPage("Time Pickers", "Time pickers", DATE_TIME_PICKERS_GROUP, "12-hour, 24-hour, and bounded time selection", this::createTimePickersPage),
-                new DemoPage("Dialogs", "Dialogs", "Dialogs", "Dialog pane with themed actions", this::createDialogsPage),
-                new DemoPage("Dividers", "Divider", "Divider", "Full-width, inset, middle inset, and vertical dividers", this::createDividersPage),
-                new DemoPage("Lists", "Lists", "Lists", "One-line, two-line, three-line, and selected rows", this::createListPage),
-                new DemoPage("Loading Indicator", "Loading indicator", LOADING_PROGRESS_GROUP, "Indeterminate loading indicators", this::createLoadingIndicatorPage),
-                new DemoPage("Progress", "Progress indicators", LOADING_PROGRESS_GROUP, "Linear and circular progress indicators", this::createProgressPage),
-                new DemoPage("Menus", "Menus", "Menus", "Menu surfaces, actions, and menu buttons", this::createMenusPage),
-                new DemoPage("Navigation", "Navigation bar", NAVIGATION_GROUP, "Bottom navigation items and selected indicators", this::createNavigationPage),
-                new DemoPage("Navigation Drawer", "Navigation drawer", NAVIGATION_GROUP, "Drawer destinations with selected rows", this::createNavigationDrawerPage),
-                new DemoPage("Navigation Rail", "Navigation rail", NAVIGATION_GROUP, "Vertical destinations for wide layouts", this::createNavigationRailPage),
-                new DemoPage("Radio Buttons", "Radio button", "Radio button", "Grouped single selection states", this::createRadioButtonsPage),
-                new DemoPage("Search", "Search", "Search", "Search bars, actions, and result surfaces", this::createSearchPage),
-                new DemoPage("Bottom Sheets", "Bottom sheets", SHEETS_GROUP, "Bottom sheet containment surfaces", this::createBottomSheetsPage),
-                new DemoPage("Side Sheets", "Side sheets", SHEETS_GROUP, "Side sheet containment surfaces", this::createSideSheetsPage),
-                new DemoPage("Sliders", "Sliders", "Sliders", "Different values and disabled slider states", this::createSlidersPage),
-                new DemoPage("Snackbars", "Snackbar", "Snackbar", "Snackbar host with action and queued messages", this::createSnackbarsPage),
-                new DemoPage("Switches", "Switch", "Switch", "On, off, and disabled switch states", this::createSwitchesPage),
-                new DemoPage("Tabs", "Tabs", "Tabs", "Primary tabs with animated active indicators", this::createTabsPage),
-                new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", this::createTextFieldsPage),
-                new DemoPage("Toolbars", "Toolbars", "Toolbars", "Bottom app bars with actions and floating actions", this::createBottomAppBarsPage),
-                new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", this::createTooltipsPage),
+                new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse the implemented Material Design 3 component demos", MATERIAL_URL_BASE + "components", this::createComponentsOverviewPage),
+                new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", materialComponentUrl("top-app-bar"), this::createAppBarsPage),
+                new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", materialComponentUrl("badges"), this::createBadgesPage),
+                new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", materialComponentUrl("button-groups"), this::createButtonGroupsPage),
+                new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", materialComponentUrl("buttons"), this::createButtonsPage),
+                new DemoPage("Extended FABs", "Extended FABs", BUTTONS_GROUP, "Extended floating action button examples", materialComponentUrl("extended-fab"), this::createExtendedFabsPage),
+                new DemoPage("FAB Menu", "FAB menu", BUTTONS_GROUP, "Expandable floating action shortcuts", materialComponentUrl("fab-menu"), this::createFabMenuPage),
+                new DemoPage("Floating Action Buttons", "Floating action buttons (FABs)", BUTTONS_GROUP, "Floating action button sizes and variants", materialComponentUrl("floating-action-button"), this::createFloatingActionButtonsPage),
+                new DemoPage("Icon Buttons", "Icon buttons", BUTTONS_GROUP, "Icon button and toggle icon button states", materialComponentUrl("icon-buttons"), this::createIconButtonsPage),
+                new DemoPage("Segmented Buttons", "Segmented buttons", BUTTONS_GROUP, "Single- and multi-select segmented control states", materialComponentUrl("segmented-buttons"), this::createSegmentedButtonsPage),
+                new DemoPage("Split Buttons", "Split buttons", BUTTONS_GROUP, "Primary actions with attached menus", materialComponentUrl("split-button"), this::createSplitButtonsPage),
+                new DemoPage("Cards", "Cards", "Cards", "Filled, outlined, elevated, and interactive cards", materialComponentUrl("cards"), this::createCardsPage),
+                new DemoPage("Carousel", "Carousel", "Carousel", "Horizontal content browsing with selected-item snapping", materialComponentUrl("carousel"), this::createCarouselPage),
+                new DemoPage("Checkboxes", "Checkbox", "Checkbox", "Checked, unchecked, indeterminate, and disabled states", materialComponentUrl("checkbox"), this::createCheckboxesPage),
+                new DemoPage("Chips", "Chips", "Chips", "Assist, filter, input, suggestion, and disabled chips", materialComponentUrl("chips"), this::createChipsPage),
+                new DemoPage("Date Pickers", "Date pickers", DATE_TIME_PICKERS_GROUP, "Calendar date selection, ranges, and month visibility", materialComponentUrl("date-pickers"), this::createDatePickersPage),
+                new DemoPage("Time Pickers", "Time pickers", DATE_TIME_PICKERS_GROUP, "12-hour, 24-hour, and bounded time selection", materialComponentUrl("time-pickers"), this::createTimePickersPage),
+                new DemoPage("Dialogs", "Dialogs", "Dialogs", "Dialog pane with themed actions", materialComponentUrl("dialogs"), this::createDialogsPage),
+                new DemoPage("Dividers", "Divider", "Divider", "Full-width, inset, middle inset, and vertical dividers", materialComponentUrl("divider"), this::createDividersPage),
+                new DemoPage("Lists", "Lists", "Lists", "One-line, two-line, three-line, and selected rows", materialComponentUrl("lists"), this::createListPage),
+                new DemoPage("Loading Indicator", "Loading indicator", LOADING_PROGRESS_GROUP, "Indeterminate loading indicators", materialComponentUrl("loading-indicator"), this::createLoadingIndicatorPage),
+                new DemoPage("Progress", "Progress indicators", LOADING_PROGRESS_GROUP, "Linear and circular progress indicators", materialComponentUrl("progress-indicators"), this::createProgressPage),
+                new DemoPage("Menus", "Menus", "Menus", "Menu surfaces, actions, and menu buttons", materialComponentUrl("menus"), this::createMenusPage),
+                new DemoPage("Navigation", "Navigation bar", NAVIGATION_GROUP, "Bottom navigation items and selected indicators", materialComponentUrl("navigation-bar"), this::createNavigationPage),
+                new DemoPage("Navigation Drawer", "Navigation drawer", NAVIGATION_GROUP, "Drawer destinations with selected rows", materialComponentUrl("navigation-drawer"), this::createNavigationDrawerPage),
+                new DemoPage("Navigation Rail", "Navigation rail", NAVIGATION_GROUP, "Vertical destinations for wide layouts", materialComponentUrl("navigation-rail"), this::createNavigationRailPage),
+                new DemoPage("Radio Buttons", "Radio button", "Radio button", "Grouped single selection states", materialComponentUrl("radio-button"), this::createRadioButtonsPage),
+                new DemoPage("Search", "Search", "Search", "Search bars, actions, and result surfaces", materialComponentUrl("search"), this::createSearchPage),
+                new DemoPage("Bottom Sheets", "Bottom sheets", SHEETS_GROUP, "Bottom sheet containment surfaces", materialComponentUrl("bottom-sheets"), this::createBottomSheetsPage),
+                new DemoPage("Side Sheets", "Side sheets", SHEETS_GROUP, "Side sheet containment surfaces", materialComponentUrl("side-sheets"), this::createSideSheetsPage),
+                new DemoPage("Sliders", "Sliders", "Sliders", "Different values and disabled slider states", materialComponentUrl("sliders"), this::createSlidersPage),
+                new DemoPage("Snackbars", "Snackbar", "Snackbar", "Snackbar host with action and queued messages", materialComponentUrl("snackbar"), this::createSnackbarsPage),
+                new DemoPage("Switches", "Switch", "Switch", "On, off, and disabled switch states", materialComponentUrl("switch"), this::createSwitchesPage),
+                new DemoPage("Tabs", "Tabs", "Tabs", "Primary tabs with animated active indicators", materialComponentUrl("tabs"), this::createTabsPage),
+                new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", materialComponentUrl("text-fields"), this::createTextFieldsPage),
+                new DemoPage("Toolbars", "Toolbars", "Toolbars", "Bottom app bars with actions and floating actions", materialComponentUrl("toolbars"), this::createBottomAppBarsPage),
+                new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", materialComponentUrl("tooltips"), this::createTooltipsPage),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", this::createBannersPage),
                 new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", this::createFormsPage),
-                new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", this::createTypographyPage),
-                new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", this::createIconsPage),
+                new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", materialStyleUrl("typography"), this::createTypographyPage),
+                new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", materialStyleUrl("icons"), this::createIconsPage),
                 new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_GROUP, "Initials and graphic avatar slots", this::createAvatarsPage),
                 new DemoPage("Surfaces", "Surfaces", ADDITIONAL_DEMOS_GROUP, "Color containers, shape, padding, and elevation", this::createSurfacesPage),
                 new DemoPage("Scrims", "Scrims", ADDITIONAL_DEMOS_GROUP, "Modal overlays and dismiss actions", this::createScrimsPage)
@@ -578,14 +591,41 @@ public final class M3FXDemoApp extends Application {
         VBox pageNode = new VBox(24.0);
         pageNode.getStyleClass().add("demo-page");
 
+        pageNode.getChildren().addAll(createPageHeader(page), page.createContent());
+        host.getChildren().setAll(pageNode);
+    }
+
+    /// Creates the title, subtitle, and optional Material documentation action for a page.
+    private Node createPageHeader(DemoPage page) {
         Label title = new Label(page.title());
         title.getStyleClass().add("demo-page-title");
         Label subtitle = new Label(page.subtitle());
         subtitle.getStyleClass().add("demo-page-subtitle");
         subtitle.setWrapText(true);
 
-        pageNode.getChildren().addAll(title, subtitle, page.createContent());
-        host.getChildren().setAll(pageNode);
+        VBox heading = new VBox(8.0, title, subtitle);
+        heading.getStyleClass().add("demo-page-heading");
+        HBox.setHgrow(heading, Priority.ALWAYS);
+
+        HBox header = new HBox(16.0, heading);
+        header.getStyleClass().add("demo-page-header");
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        @Nullable String materialUrl = page.materialUrl();
+        if (materialUrl != null) {
+            M3Button docsButton = new M3Button("Material docs");
+            docsButton.setVariant(M3ButtonVariant.OUTLINED);
+            docsButton.getStyleClass().add("demo-page-doc-link");
+            docsButton.setOnAction(event -> openMaterialPage(materialUrl));
+            header.getChildren().add(docsButton);
+        }
+
+        return header;
+    }
+
+    /// Opens the requested Material Design documentation URL in the host browser.
+    private void openMaterialPage(String url) {
+        getHostServices().showDocument(url);
     }
 
     /// Recreates the current page so resolved runtime settings affect active controls immediately.
@@ -2838,6 +2878,7 @@ public final class M3FXDemoApp extends Application {
     /// @param navigationTitle the page title displayed in the sidebar
     /// @param sidebarSection the sidebar section containing this page
     /// @param subtitle the page subtitle
+    /// @param materialUrl the Material Design documentation URL, or `null` when no matching page exists
     /// @param contentFactory the factory used to create page content on demand
     @NotNullByDefault
     private record DemoPage(
@@ -2845,6 +2886,7 @@ public final class M3FXDemoApp extends Application {
             String navigationTitle,
             String sidebarSection,
             String subtitle,
+            @Nullable String materialUrl,
             Supplier<Node> contentFactory
     ) {
         /// Creates a demo page descriptor with a sidebar title and section.
@@ -2855,10 +2897,23 @@ public final class M3FXDemoApp extends Application {
                 String subtitle,
                 Supplier<Node> contentFactory
         ) {
+            this(title, navigationTitle, sidebarSection, subtitle, null, contentFactory);
+        }
+
+        /// Creates a demo page descriptor with a sidebar title, section, and documentation URL.
+        private DemoPage(
+                String title,
+                String navigationTitle,
+                String sidebarSection,
+                String subtitle,
+                @Nullable String materialUrl,
+                Supplier<Node> contentFactory
+        ) {
             this.title = Objects.requireNonNull(title, "title");
             this.navigationTitle = Objects.requireNonNull(navigationTitle, "navigationTitle");
             this.sidebarSection = Objects.requireNonNull(sidebarSection, "sidebarSection");
             this.subtitle = Objects.requireNonNull(subtitle, "subtitle");
+            this.materialUrl = materialUrl;
             this.contentFactory = Objects.requireNonNull(contentFactory, "contentFactory");
         }
 
