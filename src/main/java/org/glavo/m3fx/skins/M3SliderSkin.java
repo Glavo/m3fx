@@ -37,6 +37,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// The visible slider track.
     private final Region track = new Region();
 
+    /// The active slider track from the minimum value to the current value.
+    private final Region activeTrack = new Region();
+
     /// The draggable slider thumb.
     private final Region thumb = new Region();
 
@@ -86,10 +89,12 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     public M3SliderSkin(M3Slider control) {
         super(control);
         track.getStyleClass().add("track");
+        activeTrack.getStyleClass().add("active-track");
         thumb.getStyleClass().add("thumb");
         track.setMouseTransparent(true);
+        activeTrack.setMouseTransparent(true);
         thumb.setMouseTransparent(true);
-        getChildren().addAll(track, stateLayer, thumb);
+        getChildren().addAll(track, activeTrack, stateLayer, thumb);
         stateLayer.installStateTransitions(control);
         displayedPosition.set(valueToPosition(control.getValue()));
         displayedPosition.addListener(layoutInvalidation);
@@ -232,6 +237,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double thumbY = y + (height - thumbSize) / 2.0;
 
         track.resizeRelocate(trackX, trackY, trackLength, trackThickness);
+        layoutHorizontalActiveTrack(trackX, trackY, trackLength, trackThickness, visualPosition);
         stateLayer.layoutLayer(
                 thumbX + thumbSize / 2.0 - getSkinnable().getTouchTargetSize() / 2.0,
                 y + (height - getSkinnable().getTouchTargetSize()) / 2.0,
@@ -259,6 +265,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double thumbY = trackY + trackLength * (1.0 - position) - thumbSize / 2.0;
 
         track.resizeRelocate(trackX, trackY, trackThickness, trackLength);
+        layoutVerticalActiveTrack(trackX, trackY, trackThickness, trackLength, position);
         stateLayer.layoutLayer(
                 x + (width - getSkinnable().getTouchTargetSize()) / 2.0,
                 thumbY + thumbSize / 2.0 - getSkinnable().getTouchTargetSize() / 2.0,
@@ -267,6 +274,39 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                 getSkinnable().getTouchTargetSize() / 2.0
         );
         thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbSize);
+    }
+
+    /// Positions the active horizontal track segment for the current visual direction.
+    private void layoutHorizontalActiveTrack(
+            double trackX,
+            double trackY,
+            double trackLength,
+            double trackThickness,
+            double visualPosition
+    ) {
+        double activeLength;
+        double activeX;
+        if (isHorizontalRightToLeft()) {
+            activeLength = trackLength * (1.0 - visualPosition);
+            activeX = trackX + trackLength - activeLength;
+        } else {
+            activeLength = trackLength * visualPosition;
+            activeX = trackX;
+        }
+        activeTrack.resizeRelocate(activeX, trackY, Math.max(0.0, activeLength), trackThickness);
+    }
+
+    /// Positions the active vertical track segment from the current value toward the minimum edge.
+    private void layoutVerticalActiveTrack(
+            double trackX,
+            double trackY,
+            double trackThickness,
+            double trackLength,
+            double position
+    ) {
+        double activeLength = trackLength * position;
+        double activeY = trackY + trackLength - activeLength;
+        activeTrack.resizeRelocate(trackX, activeY, trackThickness, Math.max(0.0, activeLength));
     }
 
     /// Starts value adjustment from a primary mouse press.

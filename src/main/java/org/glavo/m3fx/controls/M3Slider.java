@@ -34,8 +34,9 @@ import java.util.Objects;
 ///
 /// `M3Slider` exposes JavaFX-style `min`, `max`, `value`, orientation, and block-increment properties while
 /// rendering a Material track, active range, thumb, focus state, and keyboard-accessible value changes. The
-/// `valueChanging` property is set during direct pointer interaction so applications can distinguish committed
-/// changes from in-progress drags.
+/// `stepSize` property turns the control into a discrete slider whose pointer, keyboard, programmatic, and
+/// accessibility value changes snap to valid steps. The `valueChanging` property is set during direct pointer
+/// interaction so applications can distinguish committed changes from in-progress drags.
 ///
 /// Use sliders for approximate or relative numeric choices. See
 /// [Material Design sliders](https://m3.material.io/components/sliders/overview).
@@ -53,8 +54,11 @@ public class M3Slider extends Control {
     /// The default slider value.
     private static final double DEFAULT_VALUE = 0.0;
 
-    /// The default block increment used for keyboard navigation.
+    /// The default block increment used for page navigation and continuous single-step adjustments.
     private static final double DEFAULT_BLOCK_INCREMENT = 10.0;
+
+    /// The default step size for continuous sliders.
+    private static final double DEFAULT_STEP_SIZE = 0.0;
 
     /// The default slider track thickness.
     private static final double DEFAULT_TRACK_THICKNESS = 4.0;
@@ -89,6 +93,9 @@ public class M3Slider extends Control {
 
     // Backing property for the public block increment API.
     private @Nullable DoubleProperty blockIncrement;
+
+    // Backing property for the public discrete step API.
+    private @Nullable DoubleProperty stepSize;
 
     // Backing property for the public track thickness token API.
     private @Nullable StyleableDoubleProperty trackThickness;
@@ -234,9 +241,9 @@ public class M3Slider extends Control {
                 /// Keeps the value inside the current range and requests visual updates.
                 @Override
                 protected void invalidated() {
-                    double clampedValue = clampToRange(get());
-                    if (Double.compare(clampedValue, get()) != 0) {
-                        set(clampedValue);
+                    double normalizedValue = normalizeValue(get());
+                    if (Double.compare(normalizedValue, get()) != 0) {
+                        set(normalizedValue);
                         return;
                     }
                     notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
@@ -343,16 +350,16 @@ public class M3Slider extends Control {
         return valueChanging;
     }
 
-    /// Returns the amount changed by page and arrow navigation.
+    /// Returns the amount changed by page navigation and continuous single-step navigation.
     ///
-    /// @return the amount changed by page and arrow navigation
+    /// @return the amount changed by page navigation and continuous single-step navigation
     public final double getBlockIncrement() {
         return blockIncrement == null ? DEFAULT_BLOCK_INCREMENT : blockIncrement.get();
     }
 
-    /// Sets the amount changed by page and arrow navigation.
+    /// Sets the amount changed by page navigation and continuous single-step navigation.
     ///
-    /// @param blockIncrement the amount changed by page and arrow navigation
+    /// @param blockIncrement the amount changed by page navigation and continuous single-step navigation
     public final void setBlockIncrement(double blockIncrement) {
         blockIncrementProperty().set(blockIncrement);
     }
@@ -379,21 +386,72 @@ public class M3Slider extends Control {
         return blockIncrement;
     }
 
-    /// Moves the value by one block increment.
+    /// Moves the value by one unit increment.
     public final void increment() {
-        adjustValue(getValue() + getBlockIncrement());
+        adjustValue(getValue() + getUnitIncrement());
     }
 
-    /// Moves the value down by one block increment.
+    /// Moves the value down by one unit increment.
     public final void decrement() {
-        adjustValue(getValue() - getBlockIncrement());
+        adjustValue(getValue() - getUnitIncrement());
     }
 
     /// Sets the value after clamping it to the current slider range.
     ///
     /// @param value the value to clamp and apply
     public final void adjustValue(double value) {
-        setValue(clampToRange(value));
+        setValue(normalizeValue(value));
+    }
+
+    /// Returns the step size used by discrete sliders.
+    ///
+    /// @return the positive step size, or `0` when the slider is continuous
+    public final double getStepSize() {
+        return stepSize == null ? DEFAULT_STEP_SIZE : stepSize.get();
+    }
+
+    /// Sets the step size used by discrete sliders.
+    ///
+    /// A value of `0` makes the slider continuous. Positive values snap all direct, keyboard, programmatic,
+    /// and accessibility value changes to the nearest step measured from `min`.
+    ///
+    /// @param stepSize the non-negative step size
+    public final void setStepSize(double stepSize) {
+        stepSizeProperty().set(M3Css.nonNegative(stepSize, "stepSize"));
+    }
+
+    /// Returns the step-size property.
+    ///
+    /// @return the step-size property
+    public final DoubleProperty stepSizeProperty() {
+        if (stepSize == null) {
+            stepSize = new DoublePropertyBase(DEFAULT_STEP_SIZE) {
+                /// Normalizes invalid values and re-snaps the current value when the step changes.
+                @Override
+                protected void invalidated() {
+                    double normalizedStepSize = M3Css.nonNegative(get(), "stepSize");
+                    if (Double.compare(normalizedStepSize, get()) != 0) {
+                        set(normalizedStepSize);
+                        return;
+                    }
+                    clampCurrentValue();
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Slider.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "stepSize";
+                }
+            };
+        }
+        return stepSize;
     }
 
     /// Returns the slider track thickness token.
@@ -643,8 +701,10 @@ public class M3Slider extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> requestFocus();
-            case INCREMENT, BLOCK_INCREMENT -> increment();
-            case DECREMENT, BLOCK_DECREMENT -> decrement();
+            case INCREMENT -> increment();
+            case DECREMENT -> decrement();
+            case BLOCK_INCREMENT -> adjustValue(getValue() + getBlockIncrement());
+            case BLOCK_DECREMENT -> adjustValue(getValue() - getBlockIncrement());
             case SET_VALUE -> setAccessibleValue(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -675,7 +735,26 @@ public class M3Slider extends Control {
 
     /// Clamps the current value after a range change.
     private void clampCurrentValue() {
-        setValue(clampToRange(getValue()));
+        setValue(normalizeValue(getValue()));
+    }
+
+    /// Returns the unit amount used for single-step keyboard and accessibility adjustments.
+    private double getUnitIncrement() {
+        double stepSize = getStepSize();
+        return stepSize > 0.0 ? stepSize : getBlockIncrement();
+    }
+
+    /// Clamps and snaps a value to the current slider range.
+    private double normalizeValue(double value) {
+        double clampedValue = clampToRange(value);
+        double stepSize = getStepSize();
+        if (stepSize <= 0.0 || getMax() <= getMin()) {
+            return clampedValue;
+        }
+
+        double min = getMin();
+        double snappedValue = min + Math.rint((clampedValue - min) / stepSize) * stepSize;
+        return clampToRange(snappedValue);
     }
 
     /// Clamps a value to the current range.

@@ -18,6 +18,19 @@
     -fx-pref-height: 4px;
 }
 
+.m3-slider.m3-slider .active-track,
+.m3-slider.m3-slider:hover .active-track,
+.m3-slider.m3-slider:focused .active-track,
+.m3-slider.m3-slider:pressed .active-track {
+    -fx-background-color: -m3-color-primary;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+    -fx-border-width: 0px;
+    -fx-pref-height: 4px;
+}
+
 .m3-slider.m3-slider .thumb,
 .m3-slider.m3-slider:hover .thumb,
 .m3-slider.m3-slider:focused .thumb,

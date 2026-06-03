@@ -1008,12 +1008,24 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the slider component page.
     private Node createSlidersPage() {
-        return createGallery(createShowcaseGroup(
-                "Values",
-                createSlider(24.0, false),
-                createSlider(64.0, false),
-                createSlider(50.0, true)
-        ));
+        M3Slider vertical = createSlider(48.0, false);
+        vertical.setOrientation(Orientation.VERTICAL);
+        vertical.setPrefSize(56.0, 180.0);
+
+        return createGallery(
+                createShowcaseGroup(
+                        "Continuous",
+                        createSlider(24.0, false),
+                        createSlider(64.0, false),
+                        createSlider(50.0, true)
+                ),
+                createShowcaseGroup(
+                        "Discrete",
+                        createSteppedSlider(30.0, 10.0, false),
+                        createSteppedSlider(70.0, 5.0, false)
+                ),
+                createShowcaseGroup("Vertical", vertical)
+        );
     }
 
     /// Creates the chip component page.
@@ -2086,6 +2098,13 @@ public final class M3FXDemoApp extends Application {
         M3Slider slider = new M3Slider(0.0, 100.0, value);
         slider.setPrefWidth(260.0);
         slider.setDisable(disabled);
+        return slider;
+    }
+
+    /// Creates a discrete slider sample.
+    private static M3Slider createSteppedSlider(double value, double stepSize, boolean disabled) {
+        M3Slider slider = createSlider(value, disabled);
+        slider.setStepSize(stepSize);
         return slider;
     }
 

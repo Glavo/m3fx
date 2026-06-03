@@ -8629,8 +8629,10 @@ final class M3ControlStyleTest {
         slider.layout();
 
         Region track = lookupRegion(slider, ".track");
+        Region activeTrack = lookupRegion(slider, ".active-track");
         Region thumb = lookupRegion(slider, ".thumb");
         assertRegionFill(track, Color.rgb(37, 38, 39));
+        assertRegionFill(activeTrack, Color.rgb(1, 2, 3));
         assertNoBorder(track);
         assertRegionFill(thumb, Color.rgb(1, 2, 3));
         assertNoBorder(thumb);
@@ -8662,6 +8664,46 @@ final class M3ControlStyleTest {
         slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
 
         assertEquals(25.0, slider.getValue(), 0.0001);
+    }
+
+    /// Verifies that slider active track layout follows value, orientation, and visual direction.
+    @Test
+    void sliderActiveTrackFollowsValueDirectionAndOrientation() {
+        M3Slider leftToRight = new M3Slider(0.0, 100.0, 25.0);
+        M3Slider rightToLeft = new M3Slider(0.0, 100.0, 25.0);
+        M3Slider vertical = new M3Slider(0.0, 100.0, 25.0);
+        rightToLeft.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        vertical.setOrientation(Orientation.VERTICAL);
+        Pane root = new Pane(leftToRight, rightToLeft, vertical);
+        Scene scene = new Scene(root, 640.0, 220.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        leftToRight.resize(220.0, 48.0);
+        rightToLeft.resize(220.0, 48.0);
+        vertical.resize(56.0, 180.0);
+        leftToRight.layout();
+        rightToLeft.layout();
+        vertical.layout();
+
+        Region leftToRightTrack = lookupRegion(leftToRight, ".track");
+        Region leftToRightActiveTrack = lookupRegion(leftToRight, ".active-track");
+        assertEquals(leftToRightTrack.getLayoutX(), leftToRightActiveTrack.getLayoutX(), 0.0001);
+        assertEquals(leftToRightTrack.getWidth() * 0.25, leftToRightActiveTrack.getWidth(), 0.0001);
+
+        Region rightToLeftTrack = lookupRegion(rightToLeft, ".track");
+        Region rightToLeftActiveTrack = lookupRegion(rightToLeft, ".active-track");
+        assertEquals(rightToLeftTrack.getLayoutX() + rightToLeftTrack.getWidth(),
+                rightToLeftActiveTrack.getLayoutX() + rightToLeftActiveTrack.getWidth(),
+                0.0001);
+        assertEquals(rightToLeftTrack.getWidth() * 0.25, rightToLeftActiveTrack.getWidth(), 0.0001);
+
+        Region verticalTrack = lookupRegion(vertical, ".track");
+        Region verticalActiveTrack = lookupRegion(vertical, ".active-track");
+        assertEquals(verticalTrack.getLayoutY() + verticalTrack.getHeight(),
+                verticalActiveTrack.getLayoutY() + verticalActiveTrack.getHeight(),
+                0.0001);
+        assertEquals(verticalTrack.getHeight() * 0.25, verticalActiveTrack.getHeight(), 0.0001);
     }
 
     /// Verifies that progress component token properties are styleable from CSS.
@@ -14409,11 +14451,15 @@ final class M3ControlStyleTest {
             var sliderBounds = slider.getBoundsInParent();
             int sliderX = (int) Math.round(sliderBounds.getMinX());
             int sliderY = (int) Math.round(sliderBounds.getMinY());
-            Color track = image.getPixelReader().getColor(sliderX + 24, sliderY + 28);
+            Color activeTrack = image.getPixelReader().getColor(sliderX + 24, sliderY + 28);
+            Color inactiveTrack = image.getPixelReader().getColor(sliderX + 190, sliderY + 28);
             Color thumb = image.getPixelReader().getColor(sliderX + 110, sliderY + 28);
             Color emptyTouchTarget = image.getPixelReader().getColor(sliderX + 110, sliderY + 4);
 
-            assertTrue(colorDistance(track, thumb) > 0.1, () -> "track=" + track + ", thumb=" + thumb);
+            assertTrue(colorDistance(inactiveTrack, thumb) > 0.1,
+                    () -> "inactiveTrack=" + inactiveTrack + ", thumb=" + thumb);
+            assertTrue(colorDistance(activeTrack, inactiveTrack) > 0.1,
+                    () -> "activeTrack=" + activeTrack + ", inactiveTrack=" + inactiveTrack);
             assertTrue(emptyTouchTarget.getOpacity() < 0.1
                     || colorDistance(emptyTouchTarget, thumb) > 0.1);
         });
@@ -16768,6 +16814,37 @@ final class M3ControlStyleTest {
         slider.setOrientation(Orientation.VERTICAL);
 
         assertEquals(Orientation.VERTICAL, slider.queryAccessibleAttribute(AccessibleAttribute.ORIENTATION));
+    }
+
+    /// Verifies that discrete sliders snap programmatic, keyboard, and accessibility value updates.
+    @Test
+    void sliderSnapsDiscreteValuesAcrossInputPaths() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 0.0);
+        slider.setStepSize(10.0);
+        slider.setBlockIncrement(25.0);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 240.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        slider.setValue(44.0);
+        assertEquals(40.0, slider.getValue(), 0.0001);
+
+        slider.adjustValue(46.0);
+        assertEquals(50.0, slider.getValue(), 0.0001);
+
+        slider.executeAccessibleAction(AccessibleAction.SET_VALUE, 73.0);
+        assertEquals(70.0, slider.getValue(), 0.0001);
+
+        slider.executeAccessibleAction(AccessibleAction.INCREMENT);
+        assertEquals(80.0, slider.getValue(), 0.0001);
+
+        slider.executeAccessibleAction(AccessibleAction.BLOCK_INCREMENT);
+        assertEquals(100.0, slider.getValue(), 0.0001);
+
+        slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+        assertEquals(90.0, slider.getValue(), 0.0001);
     }
 
     /// Verifies that slider track layout remains bounded by the slider control.
