@@ -26,6 +26,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -168,6 +169,13 @@ public final class M3FXDemoApp extends Application {
             Color.web("#7d5260")
     );
 
+    /// The bundled demo font resource path.
+    private static final String DEMO_FONT_RESOURCE =
+            "/org/glavo/m3fx/demo/fonts/AlibabaPuHuiTi-3-65-Medium.ttf";
+
+    /// The size used only when registering the bundled demo font with JavaFX.
+    private static final double DEMO_FONT_LOAD_SIZE = 12.0;
+
     /// Progress track heights shown in the progress demo page.
     private static final @Unmodifiable List<Double> PROGRESS_TRACK_HEIGHTS = List.of(2.0, 4.0, 6.0, 8.0, 12.0);
 
@@ -239,6 +247,7 @@ public final class M3FXDemoApp extends Application {
     public void start(Stage stage) {
         BorderPane root = new BorderPane();
         root.getStyleClass().add("demo-root");
+        applyDemoFont(root);
 
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
         this.snackbarHost = snackbarHost;
@@ -263,6 +272,44 @@ public final class M3FXDemoApp extends Application {
         stage.setMinHeight(680.0);
         stage.setScene(scene);
         stage.show();
+    }
+
+    /// Applies the bundled default font to the demo root when the resource is present.
+    ///
+    /// The loaded font family is read from JavaFX rather than hard-coded so the CSS uses the exact family name
+    /// reported by the font file on the current runtime.
+    ///
+    /// @param root the demo root node
+    private static void applyDemoFont(Region root) {
+        @Nullable String fontFamily = loadDemoFontFamily();
+        if (fontFamily == null) {
+            return;
+        }
+
+        String fontStyle = "-fx-font-family: " + cssString(fontFamily) + ";";
+        String currentStyle = root.getStyle();
+        root.setStyle(currentStyle.isBlank() ? fontStyle : currentStyle + " " + fontStyle);
+    }
+
+    /// Loads the bundled demo font and returns the JavaFX font family name.
+    ///
+    /// @return the loaded font family, or `null` when the resource cannot be loaded
+    private static @Nullable String loadDemoFontFamily() {
+        @Nullable URL fontUrl = M3FXDemoApp.class.getResource(DEMO_FONT_RESOURCE);
+        if (fontUrl == null) {
+            return null;
+        }
+
+        @Nullable Font font = Font.loadFont(fontUrl.toExternalForm(), DEMO_FONT_LOAD_SIZE);
+        return font == null ? null : font.getFamily();
+    }
+
+    /// Returns a quoted CSS string literal.
+    ///
+    /// @param value the raw string value
+    /// @return the escaped CSS string literal
+    private static String cssString(String value) {
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     /// Creates the header with theme controls.
@@ -1021,8 +1068,8 @@ public final class M3FXDemoApp extends Application {
                 ),
                 createShowcaseGroup(
                         "Discrete",
-                        createSteppedSlider(30.0, 10.0, false),
-                        createSteppedSlider(70.0, 5.0, false)
+                        createSteppedSlider(30.0, 10.0),
+                        createSteppedSlider(70.0, 5.0)
                 ),
                 createShowcaseGroup("Vertical", vertical)
         );
@@ -2102,8 +2149,8 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a discrete slider sample.
-    private static M3Slider createSteppedSlider(double value, double stepSize, boolean disabled) {
-        M3Slider slider = createSlider(value, disabled);
+    private static M3Slider createSteppedSlider(double value, double stepSize) {
+        M3Slider slider = createSlider(value, false);
         slider.setStepSize(stepSize);
         return slider;
     }
