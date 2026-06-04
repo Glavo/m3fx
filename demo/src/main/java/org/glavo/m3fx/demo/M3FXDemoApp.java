@@ -676,10 +676,10 @@ public final class M3FXDemoApp extends Application {
         return scene;
     }
 
-    /// Applies a demo theme mode directly for visual tests.
-    void setThemeModeForTesting(M3Profile profile, Brightness brightness) {
-        this.profile = Objects.requireNonNull(profile, "profile");
-        this.brightness = Objects.requireNonNull(brightness, "brightness");
+    /// Applies the dark expressive demo theme mode directly for visual tests.
+    void setDarkExpressiveThemeForTesting() {
+        this.profile = M3Profile.EXPRESSIVE_2025;
+        this.brightness = Brightness.DARK;
         applyTheme();
         applyMotionSettings();
         refreshCurrentPage();
@@ -867,12 +867,7 @@ public final class M3FXDemoApp extends Application {
                                 "2",
                                 "3"
                         ),
-                        createIconToggleMultiGroup(
-                                M3IconToggleButtonVariant.OUTLINED,
-                                "B",
-                                "I",
-                                "U"
-                        ),
+                        createFormattingToggleGroup(),
                         createIconToggleButton("D", M3IconToggleButtonVariant.TONAL, false)
                 )
         );
@@ -954,20 +949,17 @@ public final class M3FXDemoApp extends Application {
         M3TextArea filledArea = createTextArea(
                 "Filled text area",
                 "Write longer notes across multiple lines.",
-                M3TextInputVariant.FILLED,
-                false
+                M3TextInputVariant.FILLED
         );
         M3TextArea outlinedArea = createTextArea(
                 "Outlined text area",
                 "Material text areas share field colors but keep multi-line height tokens.",
-                M3TextInputVariant.OUTLINED,
-                false
+                M3TextInputVariant.OUTLINED
         );
         M3TextArea areaError = createTextArea(
                 "Text area error",
                 "This content needs review.",
-                M3TextInputVariant.FILLED,
-                false
+                M3TextInputVariant.FILLED
         );
         areaError.setError(true);
 
@@ -1417,8 +1409,8 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the navigation component page.
     private Node createNavigationPage() {
-        M3NavigationBar primary = createNavigationBar("Home", "Search", "Profile", "Settings");
-        M3NavigationBar compact = createNavigationBar("Inbox", "Tasks", "Done");
+        M3NavigationBar primary = createFourItemNavigationBar();
+        M3NavigationBar compact = createThreeItemNavigationBar();
         compact.setStyle("-fx-pref-height: 88px; -fx-padding: 0 24px;");
 
         return createGallery(
@@ -1429,8 +1421,8 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the navigation rail component page.
     private Node createNavigationRailPage() {
-        M3NavigationRail primary = createNavigationRail("Home", "Search", "Profile", "Settings");
-        M3NavigationRail compact = createNavigationRail("Inbox", "Tasks", "Done");
+        M3NavigationRail primary = createFourItemNavigationRail();
+        M3NavigationRail compact = createThreeItemNavigationRail();
 
         return createGallery(
                 createShowcaseGroup("Four Items", primary),
@@ -1440,8 +1432,8 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the navigation drawer component page.
     private Node createNavigationDrawerPage() {
-        M3NavigationDrawer primary = createNavigationDrawer("Inbox", "Starred", "Sent", "Archive");
-        M3NavigationDrawer labeled = createNavigationDrawer("Dashboard", "Reports", "Settings");
+        M3NavigationDrawer primary = createFourItemNavigationDrawer();
+        M3NavigationDrawer labeled = createSectionNavigationDrawer();
         Label section = new Label("Workspace");
         section.getStyleClass().add("demo-drawer-section");
         labeled.getItems().add(0, section);
@@ -1569,6 +1561,14 @@ public final class M3FXDemoApp extends Application {
         );
         listPane.select(selected);
 
+        return createGallery(
+                createShowcaseGroup("Static Pane", listPane),
+                createShowcaseGroup("Virtualized View", createVirtualizedListView())
+        );
+    }
+
+    /// Creates the virtualized list view sample.
+    private static M3ListView<String> createVirtualizedListView() {
         M3ListView<String> listView = new M3ListView<>();
         for (int i = 1; i <= 100; i++) {
             listView.addItem("Virtualized row " + i);
@@ -1583,11 +1583,7 @@ public final class M3FXDemoApp extends Application {
             return item;
         });
         listView.selectIndex(0);
-
-        return createGallery(
-                createShowcaseGroup("Static Pane", listPane),
-                createShowcaseGroup("Virtualized View", listView)
-        );
+        return listView;
     }
 
     /// Creates a sample thumbnail used by list item media rows.
@@ -2120,13 +2116,11 @@ public final class M3FXDemoApp extends Application {
     private static M3TextArea createTextArea(
             String prompt,
             String text,
-            M3TextInputVariant variant,
-            boolean disabled
+            M3TextInputVariant variant
     ) {
         M3TextArea textArea = new M3TextArea(text);
         textArea.setVariant(variant);
         textArea.setPromptText(prompt);
-        textArea.setDisable(disabled);
         textArea.setPrefWidth(360.0);
         return textArea;
     }
@@ -2271,11 +2265,11 @@ public final class M3FXDemoApp extends Application {
         return bottomAppBar;
     }
 
-    /// Creates a navigation bar sample.
-    private M3NavigationBar createNavigationBar(String first, String second, String third) {
-        M3NavigationItem firstItem = createNavigationItem(first, first.substring(0, 1));
-        M3NavigationItem secondItem = createNavigationItem(second, second.substring(0, 1));
-        M3NavigationItem thirdItem = createNavigationItem(third, third.substring(0, 1));
+    /// Creates the three-item navigation bar sample.
+    private M3NavigationBar createThreeItemNavigationBar() {
+        M3NavigationItem firstItem = createNavigationItem("Inbox", "I");
+        M3NavigationItem secondItem = createNavigationItem("Tasks", "T");
+        M3NavigationItem thirdItem = createNavigationItem("Done", "D");
         secondItem.setBadge(new M3Badge("3"));
 
         M3NavigationBar navigationBar = new M3NavigationBar(
@@ -2287,12 +2281,12 @@ public final class M3FXDemoApp extends Application {
         return navigationBar;
     }
 
-    /// Creates a navigation bar sample.
-    private M3NavigationBar createNavigationBar(String first, String second, String third, String fourth) {
-        M3NavigationItem firstItem = createNavigationItem(first, first.substring(0, 1));
-        M3NavigationItem secondItem = createNavigationItem(second, second.substring(0, 1));
-        M3NavigationItem thirdItem = createNavigationItem(third, third.substring(0, 1));
-        M3NavigationItem fourthItem = createNavigationItem(fourth, fourth.substring(0, 1));
+    /// Creates the four-item navigation bar sample.
+    private M3NavigationBar createFourItemNavigationBar() {
+        M3NavigationItem firstItem = createNavigationItem("Home", "H");
+        M3NavigationItem secondItem = createNavigationItem("Search", "S");
+        M3NavigationItem thirdItem = createNavigationItem("Profile", "P");
+        M3NavigationItem fourthItem = createNavigationItem("Settings", "S");
         secondItem.setBadge(new M3Badge("3"));
 
         M3NavigationBar navigationBar = new M3NavigationBar(
@@ -2305,11 +2299,11 @@ public final class M3FXDemoApp extends Application {
         return navigationBar;
     }
 
-    /// Creates a navigation rail sample.
-    private M3NavigationRail createNavigationRail(String first, String second, String third) {
-        M3NavigationItem firstItem = createNavigationItem(first, first.substring(0, 1));
-        M3NavigationItem secondItem = createNavigationItem(second, second.substring(0, 1));
-        M3NavigationItem thirdItem = createNavigationItem(third, third.substring(0, 1));
+    /// Creates the three-item navigation rail sample.
+    private M3NavigationRail createThreeItemNavigationRail() {
+        M3NavigationItem firstItem = createNavigationItem("Inbox", "I");
+        M3NavigationItem secondItem = createNavigationItem("Tasks", "T");
+        M3NavigationItem thirdItem = createNavigationItem("Done", "D");
         secondItem.setBadge(new M3Badge());
 
         M3NavigationRail navigationRail = new M3NavigationRail(
@@ -2321,12 +2315,12 @@ public final class M3FXDemoApp extends Application {
         return navigationRail;
     }
 
-    /// Creates a navigation rail sample.
-    private M3NavigationRail createNavigationRail(String first, String second, String third, String fourth) {
-        M3NavigationItem firstItem = createNavigationItem(first, first.substring(0, 1));
-        M3NavigationItem secondItem = createNavigationItem(second, second.substring(0, 1));
-        M3NavigationItem thirdItem = createNavigationItem(third, third.substring(0, 1));
-        M3NavigationItem fourthItem = createNavigationItem(fourth, fourth.substring(0, 1));
+    /// Creates the four-item navigation rail sample.
+    private M3NavigationRail createFourItemNavigationRail() {
+        M3NavigationItem firstItem = createNavigationItem("Home", "H");
+        M3NavigationItem secondItem = createNavigationItem("Search", "S");
+        M3NavigationItem thirdItem = createNavigationItem("Profile", "P");
+        M3NavigationItem fourthItem = createNavigationItem("Settings", "S");
         secondItem.setBadge(new M3Badge());
 
         M3NavigationRail navigationRail = new M3NavigationRail(
@@ -2339,17 +2333,12 @@ public final class M3FXDemoApp extends Application {
         return navigationRail;
     }
 
-    /// Creates a navigation drawer sample.
-    private static M3NavigationDrawer createNavigationDrawer(
-            String first,
-            String second,
-            String third,
-            String fourth
-    ) {
-        M3ListItem firstItem = createDrawerItem(first, first.substring(0, 1));
-        M3ListItem secondItem = createDrawerItem(second, second.substring(0, 1));
-        M3ListItem thirdItem = createDrawerItem(third, third.substring(0, 1));
-        M3ListItem fourthItem = createDrawerItem(fourth, fourth.substring(0, 1));
+    /// Creates the four-item navigation drawer sample.
+    private static M3NavigationDrawer createFourItemNavigationDrawer() {
+        M3ListItem firstItem = createDrawerItem("Inbox", "I");
+        M3ListItem secondItem = createDrawerItem("Starred", "S");
+        M3ListItem thirdItem = createDrawerItem("Sent", "S");
+        M3ListItem fourthItem = createDrawerItem("Archive", "A");
         secondItem.setTrailing(new M3Badge("3"));
 
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
@@ -2363,12 +2352,12 @@ public final class M3FXDemoApp extends Application {
         return navigationDrawer;
     }
 
-    /// Creates a navigation drawer sample.
-    private static M3NavigationDrawer createNavigationDrawer(String first, String second, String third) {
+    /// Creates the sectioned navigation drawer sample.
+    private static M3NavigationDrawer createSectionNavigationDrawer() {
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
-                createDrawerItem(first, first.substring(0, 1)),
-                createDrawerItem(second, second.substring(0, 1)),
-                createDrawerItem(third, third.substring(0, 1))
+                createDrawerItem("Dashboard", "D"),
+                createDrawerItem("Reports", "R"),
+                createDrawerItem("Settings", "S")
         );
         navigationDrawer.selectIndex(0);
         return navigationDrawer;
@@ -2435,16 +2424,11 @@ public final class M3FXDemoApp extends Application {
         return group;
     }
 
-    /// Creates a sample multi-selection toggle icon button group.
-    private static M3IconToggleButtonGroup createIconToggleMultiGroup(
-            M3IconToggleButtonVariant variant,
-            String first,
-            String second,
-            String third
-    ) {
-        M3IconToggleButton firstButton = createIconToggleButton(first, variant, false);
-        M3IconToggleButton secondButton = createIconToggleButton(second, variant, false);
-        M3IconToggleButton thirdButton = createIconToggleButton(third, variant, false);
+    /// Creates the formatting multi-selection toggle icon button group.
+    private static M3IconToggleButtonGroup createFormattingToggleGroup() {
+        M3IconToggleButton firstButton = createIconToggleButton("B", M3IconToggleButtonVariant.OUTLINED, false);
+        M3IconToggleButton secondButton = createIconToggleButton("I", M3IconToggleButtonVariant.OUTLINED, false);
+        M3IconToggleButton thirdButton = createIconToggleButton("U", M3IconToggleButtonVariant.OUTLINED, false);
         M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(
                 firstButton,
                 secondButton,
@@ -2639,10 +2623,8 @@ public final class M3FXDemoApp extends Application {
         dialog.setCommonPresets(initialDate);
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
-            @Nullable LocalDate result = dialog.getResult();
-            if (result != null) {
-                showSnackbar("Selected date " + result);
-            }
+            LocalDate result = dialog.getResult();
+            showSnackbar("Selected date " + result);
         });
         dialog.show();
     }
@@ -2652,10 +2634,8 @@ public final class M3FXDemoApp extends Application {
         M3DateRangePickerDialog dialog = new M3DateRangePickerDialog(startDate, endDate);
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
-            @Nullable M3DateRange result = dialog.getResult();
-            if (result != null) {
-                showSnackbar("Selected range " + result.startDate() + " to " + result.endDate());
-            }
+            M3DateRange result = dialog.getResult();
+            showSnackbar("Selected range " + result.startDate() + " to " + result.endDate());
         });
         dialog.show();
     }
@@ -2668,10 +2648,8 @@ public final class M3FXDemoApp extends Application {
         dialog.getPresets().setAll(M3DateRangePresets.common(anchorDate, dialog.getFirstDayOfWeek()));
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
-            @Nullable M3DateRange result = dialog.getResult();
-            if (result != null) {
-                showSnackbar("Selected preset range " + result.startDate() + " to " + result.endDate());
-            }
+            M3DateRange result = dialog.getResult();
+            showSnackbar("Selected preset range " + result.startDate() + " to " + result.endDate());
         });
         dialog.show();
     }
@@ -2684,10 +2662,8 @@ public final class M3FXDemoApp extends Application {
         dialog.setCommonPresets(initialTime);
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
-            @Nullable LocalTime result = dialog.getResult();
-            if (result != null) {
-                showSnackbar("Selected time " + result);
-            }
+            LocalTime result = dialog.getResult();
+            showSnackbar("Selected time " + result);
         });
         dialog.show();
     }

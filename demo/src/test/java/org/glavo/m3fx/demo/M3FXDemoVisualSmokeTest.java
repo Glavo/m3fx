@@ -56,8 +56,6 @@ import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.glavo.m3fx.theme.M3ThemeManager;
-import org.glavo.m3fx.tokens.M3Profile;
-import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -315,7 +313,7 @@ final class M3FXDemoVisualSmokeTest {
             app.start(stage);
             stage.setWidth(1366.0);
             stage.setHeight(900.0);
-            app.setThemeModeForTesting(M3Profile.EXPRESSIVE_2025, Brightness.DARK);
+            app.setDarkExpressiveThemeForTesting();
 
             Scene scene = Objects.requireNonNull(app.sceneForTesting(), "scene");
             assertNotNull(scene);
