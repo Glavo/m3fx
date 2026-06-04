@@ -135,6 +135,7 @@ import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.controls.M3ValidationSummary;
+import org.glavo.m3fx.docs.M3MaterialDocs;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Density;
@@ -180,9 +181,6 @@ public final class M3FXDemoApp extends Application {
 
     /// The size used only when registering the bundled demo font with JavaFX.
     private static final double DEMO_FONT_LOAD_SIZE = 12.0;
-
-    /// The root URL for Material Design 3 documentation.
-    private static final String MATERIAL_URL_BASE = "https://m3.material.io/";
 
     /// Progress track heights shown in the progress demo page.
     private static final @Unmodifiable List<Double> PROGRESS_TRACK_HEIGHTS = List.of(2.0, 4.0, 6.0, 8.0, 12.0);
@@ -399,60 +397,50 @@ public final class M3FXDemoApp extends Application {
         return header;
     }
 
-    /// Returns a Material Design 3 component documentation URL for the given component slug.
-    private static String materialComponentUrl(String component) {
-        return MATERIAL_URL_BASE + "components/" + component + "/overview";
-    }
-
-    /// Returns a Material Design 3 style documentation URL for the given style slug.
-    private static String materialStyleUrl(String style) {
-        return MATERIAL_URL_BASE + "styles/" + style + "/overview";
-    }
-
     /// Creates all component demo pages.
     private List<DemoPage> createPages() {
         return List.of(
-                new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse the implemented Material Design 3 component demos", MATERIAL_URL_BASE + "components", this::createComponentsOverviewPage),
-                new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", materialComponentUrl("top-app-bar"), this::createAppBarsPage),
-                new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", materialComponentUrl("badges"), this::createBadgesPage),
-                new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", materialComponentUrl("button-groups"), this::createButtonGroupsPage),
-                new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", materialComponentUrl("buttons"), this::createButtonsPage),
-                new DemoPage("Extended FABs", "Extended FABs", BUTTONS_GROUP, "Extended floating action button examples", materialComponentUrl("extended-fab"), this::createExtendedFabsPage),
-                new DemoPage("FAB Menu", "FAB menu", BUTTONS_GROUP, "Expandable floating action shortcuts", materialComponentUrl("fab-menu"), this::createFabMenuPage),
-                new DemoPage("Floating Action Buttons", "Floating action buttons (FABs)", BUTTONS_GROUP, "Floating action button sizes and variants", materialComponentUrl("floating-action-button"), this::createFloatingActionButtonsPage),
-                new DemoPage("Icon Buttons", "Icon buttons", BUTTONS_GROUP, "Icon button and toggle icon button states", materialComponentUrl("icon-buttons"), this::createIconButtonsPage),
-                new DemoPage("Segmented Buttons", "Segmented buttons", BUTTONS_GROUP, "Single- and multi-select segmented control states", materialComponentUrl("segmented-buttons"), this::createSegmentedButtonsPage),
-                new DemoPage("Split Buttons", "Split buttons", BUTTONS_GROUP, "Primary actions with attached menus", materialComponentUrl("split-button"), this::createSplitButtonsPage),
-                new DemoPage("Cards", "Cards", "Cards", "Filled, outlined, elevated, and interactive cards", materialComponentUrl("cards"), this::createCardsPage),
-                new DemoPage("Carousel", "Carousel", "Carousel", "Horizontal content browsing with selected-item snapping", materialComponentUrl("carousel"), this::createCarouselPage),
-                new DemoPage("Checkboxes", "Checkbox", "Checkbox", "Checked, unchecked, indeterminate, and disabled states", materialComponentUrl("checkbox"), this::createCheckboxesPage),
-                new DemoPage("Chips", "Chips", "Chips", "Assist, filter, input, suggestion, and disabled chips", materialComponentUrl("chips"), this::createChipsPage),
-                new DemoPage("Date Pickers", "Date pickers", DATE_TIME_PICKERS_GROUP, "Calendar date selection, ranges, and month visibility", materialComponentUrl("date-pickers"), this::createDatePickersPage),
-                new DemoPage("Time Pickers", "Time pickers", DATE_TIME_PICKERS_GROUP, "12-hour, 24-hour, and bounded time selection", materialComponentUrl("time-pickers"), this::createTimePickersPage),
-                new DemoPage("Dialogs", "Dialogs", "Dialogs", "Dialog pane with themed actions", materialComponentUrl("dialogs"), this::createDialogsPage),
-                new DemoPage("Dividers", "Divider", "Divider", "Full-width, inset, middle inset, and vertical dividers", materialComponentUrl("divider"), this::createDividersPage),
-                new DemoPage("Lists", "Lists", "Lists", "One-line, two-line, three-line, and selected rows", materialComponentUrl("lists"), this::createListPage),
-                new DemoPage("Loading Indicator", "Loading indicator", LOADING_PROGRESS_GROUP, "Indeterminate loading indicators", materialComponentUrl("loading-indicator"), this::createLoadingIndicatorPage),
-                new DemoPage("Progress", "Progress indicators", LOADING_PROGRESS_GROUP, "Linear and circular progress indicators", materialComponentUrl("progress-indicators"), this::createProgressPage),
-                new DemoPage("Menus", "Menus", "Menus", "Menu surfaces, actions, and menu buttons", materialComponentUrl("menus"), this::createMenusPage),
-                new DemoPage("Navigation", "Navigation bar", NAVIGATION_GROUP, "Bottom navigation items and selected indicators", materialComponentUrl("navigation-bar"), this::createNavigationPage),
-                new DemoPage("Navigation Drawer", "Navigation drawer", NAVIGATION_GROUP, "Drawer destinations with selected rows", materialComponentUrl("navigation-drawer"), this::createNavigationDrawerPage),
-                new DemoPage("Navigation Rail", "Navigation rail", NAVIGATION_GROUP, "Vertical destinations for wide layouts", materialComponentUrl("navigation-rail"), this::createNavigationRailPage),
-                new DemoPage("Radio Buttons", "Radio button", "Radio button", "Grouped single selection states", materialComponentUrl("radio-button"), this::createRadioButtonsPage),
-                new DemoPage("Search", "Search", "Search", "Search bars, actions, and result surfaces", materialComponentUrl("search"), this::createSearchPage),
-                new DemoPage("Bottom Sheets", "Bottom sheets", SHEETS_GROUP, "Bottom sheet containment surfaces", materialComponentUrl("bottom-sheets"), this::createBottomSheetsPage),
-                new DemoPage("Side Sheets", "Side sheets", SHEETS_GROUP, "Side sheet containment surfaces", materialComponentUrl("side-sheets"), this::createSideSheetsPage),
-                new DemoPage("Sliders", "Sliders", "Sliders", "Different values and disabled slider states", materialComponentUrl("sliders"), this::createSlidersPage),
-                new DemoPage("Snackbars", "Snackbar", "Snackbar", "Snackbar host with action and queued messages", materialComponentUrl("snackbar"), this::createSnackbarsPage),
-                new DemoPage("Switches", "Switch", "Switch", "On, off, and disabled switch states", materialComponentUrl("switch"), this::createSwitchesPage),
-                new DemoPage("Tabs", "Tabs", "Tabs", "Primary tabs with animated active indicators", materialComponentUrl("tabs"), this::createTabsPage),
-                new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", materialComponentUrl("text-fields"), this::createTextFieldsPage),
-                new DemoPage("Toolbars", "Toolbars", "Toolbars", "Bottom app bars with actions and floating actions", materialComponentUrl("toolbars"), this::createBottomAppBarsPage),
-                new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", materialComponentUrl("tooltips"), this::createTooltipsPage),
+                new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse the implemented Material Design 3 component demos", M3MaterialDocs.COMPONENTS, this::createComponentsOverviewPage),
+                new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", M3MaterialDocs.TOP_APP_BAR, this::createAppBarsPage),
+                new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", M3MaterialDocs.BADGES, this::createBadgesPage),
+                new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", M3MaterialDocs.BUTTON_GROUPS, this::createButtonGroupsPage),
+                new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", M3MaterialDocs.BUTTONS, this::createButtonsPage),
+                new DemoPage("Extended FABs", "Extended FABs", BUTTONS_GROUP, "Extended floating action button examples", M3MaterialDocs.EXTENDED_FAB, this::createExtendedFabsPage),
+                new DemoPage("FAB Menu", "FAB menu", BUTTONS_GROUP, "Expandable floating action shortcuts", M3MaterialDocs.FAB_MENU, this::createFabMenuPage),
+                new DemoPage("Floating Action Buttons", "Floating action buttons (FABs)", BUTTONS_GROUP, "Floating action button sizes and variants", M3MaterialDocs.FLOATING_ACTION_BUTTON, this::createFloatingActionButtonsPage),
+                new DemoPage("Icon Buttons", "Icon buttons", BUTTONS_GROUP, "Icon button and toggle icon button states", M3MaterialDocs.ICON_BUTTONS, this::createIconButtonsPage),
+                new DemoPage("Segmented Buttons", "Segmented buttons", BUTTONS_GROUP, "Single- and multi-select segmented control states", M3MaterialDocs.SEGMENTED_BUTTONS, this::createSegmentedButtonsPage),
+                new DemoPage("Split Buttons", "Split buttons", BUTTONS_GROUP, "Primary actions with attached menus", M3MaterialDocs.SPLIT_BUTTON, this::createSplitButtonsPage),
+                new DemoPage("Cards", "Cards", "Cards", "Filled, outlined, elevated, and interactive cards", M3MaterialDocs.CARDS, this::createCardsPage),
+                new DemoPage("Carousel", "Carousel", "Carousel", "Horizontal content browsing with selected-item snapping", M3MaterialDocs.CAROUSEL, this::createCarouselPage),
+                new DemoPage("Checkboxes", "Checkbox", "Checkbox", "Checked, unchecked, indeterminate, and disabled states", M3MaterialDocs.CHECKBOX, this::createCheckboxesPage),
+                new DemoPage("Chips", "Chips", "Chips", "Assist, filter, input, suggestion, and disabled chips", M3MaterialDocs.CHIPS, this::createChipsPage),
+                new DemoPage("Date Pickers", "Date pickers", DATE_TIME_PICKERS_GROUP, "Calendar date selection, ranges, and month visibility", M3MaterialDocs.DATE_PICKERS, this::createDatePickersPage),
+                new DemoPage("Time Pickers", "Time pickers", DATE_TIME_PICKERS_GROUP, "12-hour, 24-hour, and bounded time selection", M3MaterialDocs.TIME_PICKERS, this::createTimePickersPage),
+                new DemoPage("Dialogs", "Dialogs", "Dialogs", "Dialog pane with themed actions", M3MaterialDocs.DIALOGS, this::createDialogsPage),
+                new DemoPage("Dividers", "Divider", "Divider", "Full-width, inset, middle inset, and vertical dividers", M3MaterialDocs.DIVIDER, this::createDividersPage),
+                new DemoPage("Lists", "Lists", "Lists", "One-line, two-line, three-line, and selected rows", M3MaterialDocs.LISTS, this::createListPage),
+                new DemoPage("Loading Indicator", "Loading indicator", LOADING_PROGRESS_GROUP, "Indeterminate loading indicators", M3MaterialDocs.LOADING_INDICATOR, this::createLoadingIndicatorPage),
+                new DemoPage("Progress", "Progress indicators", LOADING_PROGRESS_GROUP, "Linear and circular progress indicators", M3MaterialDocs.PROGRESS_INDICATORS, this::createProgressPage),
+                new DemoPage("Menus", "Menus", "Menus", "Menu surfaces, actions, and menu buttons", M3MaterialDocs.MENUS, this::createMenusPage),
+                new DemoPage("Navigation", "Navigation bar", NAVIGATION_GROUP, "Bottom navigation items and selected indicators", M3MaterialDocs.NAVIGATION_BAR, this::createNavigationPage),
+                new DemoPage("Navigation Drawer", "Navigation drawer", NAVIGATION_GROUP, "Drawer destinations with selected rows", M3MaterialDocs.NAVIGATION_DRAWER, this::createNavigationDrawerPage),
+                new DemoPage("Navigation Rail", "Navigation rail", NAVIGATION_GROUP, "Vertical destinations for wide layouts", M3MaterialDocs.NAVIGATION_RAIL, this::createNavigationRailPage),
+                new DemoPage("Radio Buttons", "Radio button", "Radio button", "Grouped single selection states", M3MaterialDocs.RADIO_BUTTON, this::createRadioButtonsPage),
+                new DemoPage("Search", "Search", "Search", "Search bars, actions, and result surfaces", M3MaterialDocs.SEARCH, this::createSearchPage),
+                new DemoPage("Bottom Sheets", "Bottom sheets", SHEETS_GROUP, "Bottom sheet containment surfaces", M3MaterialDocs.BOTTOM_SHEETS, this::createBottomSheetsPage),
+                new DemoPage("Side Sheets", "Side sheets", SHEETS_GROUP, "Side sheet containment surfaces", M3MaterialDocs.SIDE_SHEETS, this::createSideSheetsPage),
+                new DemoPage("Sliders", "Sliders", "Sliders", "Different values and disabled slider states", M3MaterialDocs.SLIDERS, this::createSlidersPage),
+                new DemoPage("Snackbars", "Snackbar", "Snackbar", "Snackbar host with action and queued messages", M3MaterialDocs.SNACKBAR, this::createSnackbarsPage),
+                new DemoPage("Switches", "Switch", "Switch", "On, off, and disabled switch states", M3MaterialDocs.SWITCH, this::createSwitchesPage),
+                new DemoPage("Tabs", "Tabs", "Tabs", "Primary tabs with animated active indicators", M3MaterialDocs.TABS, this::createTabsPage),
+                new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", M3MaterialDocs.TEXT_FIELDS, this::createTextFieldsPage),
+                new DemoPage("Toolbars", "Toolbars", "Toolbars", "Bottom app bars with actions and floating actions", M3MaterialDocs.TOOLBARS, this::createBottomAppBarsPage),
+                new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", M3MaterialDocs.TOOLTIPS, this::createTooltipsPage),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", this::createBannersPage),
                 new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", this::createFormsPage),
-                new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", materialStyleUrl("typography"), this::createTypographyPage),
-                new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", materialStyleUrl("icons"), this::createIconsPage),
+                new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", M3MaterialDocs.TYPOGRAPHY, this::createTypographyPage),
+                new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", M3MaterialDocs.ICONS, this::createIconsPage),
                 new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_GROUP, "Initials and graphic avatar slots", this::createAvatarsPage),
                 new DemoPage("Surfaces", "Surfaces", ADDITIONAL_DEMOS_GROUP, "Color containers, shape, padding, and elevation", this::createSurfacesPage),
                 new DemoPage("Scrims", "Scrims", ADDITIONAL_DEMOS_GROUP, "Modal overlays and dismiss actions", this::createScrimsPage)
