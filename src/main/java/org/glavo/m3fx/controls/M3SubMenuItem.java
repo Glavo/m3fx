@@ -27,9 +27,9 @@ import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
-import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -598,25 +598,23 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Copies scene styles and theme declarations into the popup-hosted submenu.
     private void prepareSubMenuForPopup(Scene scene) {
-        copyPopupStylesheets(scene);
-        String menuStylesheet = M3Stylesheets.controlStylesheet("menu.css");
-        if (!subMenu.getStylesheets().contains(menuStylesheet)) {
-            subMenu.getStylesheets().add(menuStylesheet);
-        }
-
-        M3ThemeManager.copyThemeContext(popupThemeSource(scene), subMenu);
+        M3PopupStyles.preparePopupRoot(
+                subMenu,
+                popupStylesheetSource(scene),
+                popupThemeSource(scene),
+                M3Stylesheets.controlStylesheet("menu.css")
+        );
         M3Animation.copyResolvedMotionSettings(this, subMenu);
         subMenu.setNodeOrientation(getEffectiveNodeOrientation());
         subMenu.applyCss();
     }
 
-    /// Copies stylesheets from the owning popup menu when this item is already inside a popup branch.
-    private void copyPopupStylesheets(Scene scene) {
+    /// Returns stylesheets from the owning popup menu when this item is already inside a popup branch.
+    private List<String> popupStylesheetSource(Scene scene) {
         if (ownerMenu != null && !ownerMenu.getStylesheets().isEmpty()) {
-            subMenu.getStylesheets().setAll(ownerMenu.getStylesheets());
-        } else {
-            subMenu.getStylesheets().setAll(scene.getStylesheets());
+            return ownerMenu.getStylesheets();
         }
+        return scene.getStylesheets();
     }
 
     /// Returns the root that should supply looked-up theme tokens for the submenu popup.

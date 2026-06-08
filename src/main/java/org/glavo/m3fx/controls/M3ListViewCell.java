@@ -8,11 +8,18 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.IndexedCell;
 import javafx.scene.control.Skin;
+import javafx.stage.Window;
 import javafx.util.Callback;
+import org.glavo.m3fx.internal.M3PopupStyles;
+import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.skins.M3ListViewCellSkin;
+import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,6 +51,8 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     public M3ListViewCell(M3ListView<T> listView) {
         this.listView = Objects.requireNonNull(listView, "listView");
         M3ControlStyles.add(this, STYLE_CLASS);
+        M3PopupStyles.addFallbackRootStyleClass(this);
+        M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         setText(null);
@@ -85,9 +94,10 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     protected void updateItem(@Nullable T item, boolean empty) {
         super.updateItem(item, empty);
         if (empty) {
-            setListItem(null);
-            setGraphic(null);
-            setText(null);
+            clearContent();
+            return;
+        }
+        if (getScene() == null || !isListViewSceneShowing()) {
             return;
         }
 
@@ -138,7 +148,27 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
         itemNode.setFocusTraversable(false);
         itemNode.setMinWidth(0.0);
         itemNode.setMaxWidth(Double.MAX_VALUE);
+        copyThemeContext(itemNode);
         return itemNode;
+    }
+
+    /// Copies the current list view theme context into a virtualized row for early CSS passes.
+    private void copyThemeContext(M3ListItem itemNode) {
+        @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(getListView());
+        if (themeRoot != null) {
+            M3ThemeManager.copyThemeContext(themeRoot, itemNode);
+        }
+    }
+
+    /// Returns whether the owning list view is in a scene whose window is still visible.
+    private boolean isListViewSceneShowing() {
+        @Nullable Scene scene = getListView().getScene();
+        if (scene == null) {
+            return false;
+        }
+
+        @Nullable Window window = scene.getWindow();
+        return window == null || window.isShowing();
     }
 
     /// Replaces the rendered list item and updates event handlers.
@@ -150,6 +180,13 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
         if (listItem != null) {
             listItem.addEventHandler(ActionEvent.ACTION, itemActionHandler);
         }
+    }
+
+    /// Clears rendered content while the cell is empty or detached from the scene.
+    private void clearContent() {
+        setListItem(null);
+        setGraphic(null);
+        setText(null);
     }
 
     /// Updates the list item's selected state from the owning view.

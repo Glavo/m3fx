@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.internal;
 
-import javafx.application.Platform;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -12,6 +11,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
@@ -24,8 +24,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,13 +36,7 @@ final class M3AnimationTest {
     /// Starts the JavaFX toolkit before animation tests create timelines.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
     }
 
     /// Verifies that disabled motion completes timelines synchronously.

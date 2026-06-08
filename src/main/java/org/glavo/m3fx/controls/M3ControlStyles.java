@@ -14,6 +14,9 @@ import java.util.List;
 /// Provides shared style-class helpers for m3fx controls.
 @NotNullByDefault
 final class M3ControlStyles {
+    /// The standard JavaFX scene root style class used by fallback token declarations.
+    private static final String ROOT_STYLE_CLASS = "root";
+
     /// The node property key used to mark fallback stylesheet listener installation.
     private static final String FALLBACK_STYLESHEET_LISTENER_KEY =
             M3ControlStyles.class.getName() + ".fallbackStylesheetListener";
@@ -64,6 +67,10 @@ final class M3ControlStyles {
 
     /// Adds the fallback token stylesheet to the scene at the lowest application stylesheet priority.
     private static void addFallbackStylesheet(Scene scene) {
+        List<String> styleClasses = scene.getRoot().getStyleClass();
+        if (!styleClasses.contains(ROOT_STYLE_CLASS)) {
+            styleClasses.add(ROOT_STYLE_CLASS);
+        }
         String stylesheet = M3Stylesheets.fallbackStylesheet();
         List<String> stylesheets = scene.getStylesheets();
         if (!stylesheets.contains(stylesheet)) {

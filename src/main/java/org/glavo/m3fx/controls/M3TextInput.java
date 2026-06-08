@@ -85,4 +85,19 @@ public interface M3TextInput {
     ///
     /// @return the styleable horizontal content padding property
     StyleableDoubleProperty horizontalPaddingProperty();
+
+    /// Returns the vertical content padding token.
+    ///
+    /// @return the vertical content padding in pixels
+    double getVerticalPadding();
+
+    /// Sets the vertical content padding token.
+    ///
+    /// @param verticalPadding the vertical content padding in pixels
+    void setVerticalPadding(double verticalPadding);
+
+    /// Returns the vertical content padding token property.
+    ///
+    /// @return the styleable vertical content padding property
+    StyleableDoubleProperty verticalPaddingProperty();
 }

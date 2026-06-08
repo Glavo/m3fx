@@ -8,16 +8,19 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
+import javafx.stage.Window;
 import javafx.util.Callback;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
@@ -56,6 +59,10 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Updates logical focused-row visuals when the list view focus owner state changes.
     private final InvalidationListener focusedInvalidation = observable -> refreshCells();
+
+    /// Suspends virtualized cell refreshes while the list view is detached and refreshes after reattachment.
+    private final ChangeListener<@Nullable Scene> sceneListener =
+            (observable, oldScene, newScene) -> handleSceneChanged(newScene);
 
     /// Handles wheel and trackpad scrolling through Material motion.
     private final EventHandler<ScrollEvent> smoothScrollHandler = this::handleSmoothScroll;
@@ -96,6 +103,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         control.cellFactoryProperty().addListener(cellFactoryInvalidation);
         control.getSelectedIndices().addListener(selectedIndicesListener);
         control.focusedProperty().addListener(focusedInvalidation);
+        control.sceneProperty().addListener(sceneListener);
         refreshItemCount();
     }
 
@@ -110,6 +118,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         listView.cellFactoryProperty().removeListener(cellFactoryInvalidation);
         listView.getSelectedIndices().removeListener(selectedIndicesListener);
         listView.focusedProperty().removeListener(focusedInvalidation);
+        listView.sceneProperty().removeListener(sceneListener);
         flow.fixedCellSizeProperty().unbind();
         flow.setCellFactory(null);
         super.dispose();
@@ -125,6 +134,10 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     protected void layoutChildren(double x, double y, double width, double height) {
         flow.resizeRelocate(x, y, width, height);
         if (focusRequestPending) {
+            if (!isSceneRefreshable()) {
+                focusRequestPending = false;
+                return;
+            }
             flow.applyCss();
             flow.layout();
         }
@@ -176,11 +189,16 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Updates the number of cells owned by the virtual flow.
     public void refreshItemCount() {
         flow.setCellCount(getSkinnable().getItems().size());
-        flow.refreshCells();
+        if (isSceneRefreshable()) {
+            flow.requestLayout();
+        }
     }
 
     /// Requests visible cell state and layout updates.
     public void refreshCells() {
+        if (!isSceneRefreshable()) {
+            return;
+        }
         flow.refreshCells();
     }
 
@@ -190,6 +208,9 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// @param animated whether scrolling the focused cell into view should animate
     public void refreshFocus(boolean requestNodeFocus, boolean animated) {
         focusRequestPending |= requestNodeFocus;
+        if (!isSceneRefreshable()) {
+            return;
+        }
         flow.refreshCells();
         int focusedIndex = getSkinnable().getFocusedIndex();
         if (focusedIndex >= 0) {
@@ -204,7 +225,34 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Recreates visible cells after the cell factory changes.
     public void rebuildCells() {
+        if (!isSceneRefreshable()) {
+            return;
+        }
         flow.rebuildAllCells();
+    }
+
+    /// Updates virtualized row state after the list view enters or leaves a scene.
+    private void handleSceneChanged(@Nullable Scene scene) {
+        if (scene == null) {
+            focusRequestPending = false;
+            focusRetryScheduled = false;
+            stopSmoothScrollAnimation();
+            return;
+        }
+
+        flow.refreshCells();
+        getSkinnable().requestLayout();
+    }
+
+    /// Returns whether the virtual flow may safely refresh cells for the current scene lifecycle state.
+    private boolean isSceneRefreshable() {
+        @Nullable Scene scene = getSkinnable().getScene();
+        if (scene == null) {
+            return false;
+        }
+
+        @Nullable Window window = scene.getWindow();
+        return window == null || window.isShowing();
     }
 
     /// Scrolls the virtual flow to the supplied index.
@@ -292,6 +340,10 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         Platform.runLater(() -> {
             focusRetryScheduled = false;
             if (!focusRequestPending) {
+                return;
+            }
+            if (!isSceneRefreshable()) {
+                focusRequestPending = false;
                 return;
             }
 

@@ -13,19 +13,15 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -38,20 +34,14 @@ final class M3MixedPopupFocusTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
     }
 
     /// Verifies that a rich tooltip opened from a menu item keeps the parent menu stack active.
     @Test
     void richTooltipInsideMenuPopupRestoresFocusWithoutClosingMenu() {
-        runOnFxThreadWithAnimationsDisabled(() -> {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem detailsItem = new M3MenuItem("Details");
             M3Button action = new M3Button("Learn");
             M3RichTooltip tooltip = M3RichTooltip.install(
@@ -109,7 +99,7 @@ final class M3MixedPopupFocusTest {
     /// Verifies that dialog panes expose focus from a nested menu popup and restore it on dismissal.
     @Test
     void dialogPaneRoutesFocusThroughNestedMenuPopup() {
-        runOnFxThreadWithAnimationsDisabled(() -> {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem firstItem = new M3MenuItem("First");
             M3MenuItem secondItem = new M3MenuItem("Second");
             M3MenuButton menuButton = new M3MenuButton("Open menu", firstItem, secondItem);
@@ -155,7 +145,7 @@ final class M3MixedPopupFocusTest {
     /// Verifies that dialog panes expose nested picker popup focus through ordinary content containers.
     @Test
     void dialogPaneRoutesFocusThroughNestedPickerPopupInContentContainer() {
-        runOnFxThreadWithAnimationsDisabled(() -> {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
             Pane content = new Pane(field);
             M3DialogPane dialogPane = new M3DialogPane();
@@ -210,7 +200,7 @@ final class M3MixedPopupFocusTest {
     /// Verifies that indexed item containers expose active popup focus owned by child menu buttons.
     @Test
     void indexedContainersRouteFocusThroughNestedMenuPopup() {
-        runOnFxThreadWithAnimationsDisabled(() -> {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem firstItem = new M3MenuItem("First");
             M3MenuItem secondItem = new M3MenuItem("Second");
             M3MenuButton menuButton = new M3MenuButton("Open menu", firstItem, secondItem);
@@ -248,7 +238,7 @@ final class M3MixedPopupFocusTest {
     /// Verifies that surface content subtrees expose active picker popup focus to the surface owner.
     @Test
     void surfaceRoutesFocusThroughNestedPickerPopupInContentContainer() {
-        runOnFxThreadWithAnimationsDisabled(() -> {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 20));
             Pane content = new Pane(field);
             content.setPrefSize(360.0, 96.0);
@@ -291,7 +281,7 @@ final class M3MixedPopupFocusTest {
     /// Verifies that surface content subtrees expose active split-button menu popup focus to the surface owner.
     @Test
     void surfaceRoutesFocusThroughNestedSplitButtonPopup() {
-        runOnFxThreadWithAnimationsDisabled(() -> {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
             M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
@@ -333,7 +323,7 @@ final class M3MixedPopupFocusTest {
     /// Verifies that surface content subtrees expose hosted snackbar action focus.
     @Test
     void surfaceRoutesFocusThroughNestedSnackbarHost() {
-        runOnFxThreadWithAnimationsDisabled(() -> {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             M3Surface surface = new M3Surface(host);
@@ -370,7 +360,7 @@ final class M3MixedPopupFocusTest {
     /// Verifies that slot-based containers expose active popup focus owned by action nodes.
     @Test
     void slotContainersRouteFocusThroughNestedMenuPopup() {
-        runOnFxThreadWithAnimationsDisabled(() -> {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem saveItem = new M3MenuItem("Save");
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
@@ -403,55 +393,6 @@ final class M3MixedPopupFocusTest {
                 stage.close();
             }
         });
-    }
-
-    /// Runs a JavaFX task with animations disabled and restores the previous global animation setting.
-    private static void runOnFxThreadWithAnimationsDisabled(Runnable task) {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
-            try {
-                task.run();
-            } finally {
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
-            }
-        });
-    }
-
-    /// Runs a task on the JavaFX application thread and propagates failures.
-    private static void runOnFxThread(Runnable task) {
-        if (Platform.isFxApplicationThread()) {
-            task.run();
-            return;
-        }
-
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                task.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        @Nullable Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
     }
 
     /// Creates a key press event for popup keyboard tests.

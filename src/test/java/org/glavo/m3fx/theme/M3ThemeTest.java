@@ -3,13 +3,13 @@
 
 package org.glavo.m3fx.theme;
 
-import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3Badge;
@@ -79,8 +79,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -96,13 +94,7 @@ final class M3ThemeTest {
     /// Starts the JavaFX toolkit before tests create scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
     }
 
     /// Verifies that the baseline profile creates a complete token set.
@@ -599,6 +591,45 @@ final class M3ThemeTest {
         assertEquals(320.0, navigationDrawer.getMinWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getPrefWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getMaxWidth(), 0.0001);
+    }
+
+    /// Verifies that standalone controls install fallback token styles on a matching scene root.
+    @Test
+    void standaloneControlFallbackStylesheetAppliesToSceneRoot() {
+        M3ListItem listItem = new M3ListItem("List item");
+        Pane root = new Pane(listItem);
+        Scene scene = new Scene(root);
+
+        root.applyCss();
+        root.layout();
+
+        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
+        assertTrue(root.getStyleClass().contains("root"));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertFalse(root.getProperties().containsKey(M3ThemeManager.THEME_PROPERTY_KEY));
+    }
+
+    /// Verifies that installing and uninstalling a theme preserves standalone fallback root styling.
+    @Test
+    void themeInstallationPreservesStandaloneFallbackRootStyleClass() {
+        M3ListItem listItem = new M3ListItem("List item");
+        Pane root = new Pane(listItem);
+        Scene scene = new Scene(root);
+        M3Theme theme = M3Theme.defaultTheme();
+
+        root.applyCss();
+        M3ThemeManager.install(scene, theme);
+
+        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
+        assertTrue(root.getStyleClass().contains("root"));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+
+        M3ThemeManager.uninstall(scene);
+
+        assertTrue(root.getStyleClass().contains("root"));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertFalse(root.getProperties().containsKey(M3ThemeManager.THEME_PROPERTY_KEY));
+        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
     }
 
     /// Verifies that application styles can pin icon button metrics across theme reinstallations.

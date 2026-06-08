@@ -8,15 +8,11 @@ import javafx.beans.property.ObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.TextArea;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /// A Material Design 3 multi-line text area.
@@ -145,16 +141,19 @@ public class M3TextArea extends TextArea implements M3TextInput {
     }
 
     /// Returns the vertical content padding token.
+    @Override
     public final double getVerticalPadding() {
         return support.getVerticalPadding();
     }
 
     /// Sets the vertical content padding token.
+    @Override
     public final void setVerticalPadding(double verticalPadding) {
         support.setVerticalPadding(verticalPadding);
     }
 
     /// Returns the vertical content padding token property.
+    @Override
     public final StyleableDoubleProperty verticalPaddingProperty() {
         return support.verticalPaddingProperty();
     }
@@ -187,76 +186,49 @@ public class M3TextArea extends TextArea implements M3TextInput {
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.
-        private static final CssMetaData<M3TextArea, Number> CONTAINER_HEIGHT = createSizeCssMetaData(
+        private static final CssMetaData<M3TextArea, Number> CONTAINER_HEIGHT =
+                M3TextInputSupport.createSizeCssMetaData(
                 "-m3-container-height",
                 M3TextInputSupport.DEFAULT_AREA_CONTAINER_HEIGHT,
                 M3TextArea::containerHeightProperty
         );
 
         /// CSS metadata for the container shape token.
-        private static final CssMetaData<M3TextArea, Number> CONTAINER_SHAPE = createSizeCssMetaData(
+        private static final CssMetaData<M3TextArea, Number> CONTAINER_SHAPE =
+                M3TextInputSupport.createSizeCssMetaData(
                 "-m3-container-shape",
                 M3TextInputSupport.DEFAULT_CONTAINER_SHAPE,
                 M3TextArea::containerShapeProperty
         );
 
         /// CSS metadata for the horizontal padding token.
-        private static final CssMetaData<M3TextArea, Number> HORIZONTAL_PADDING = createSizeCssMetaData(
+        private static final CssMetaData<M3TextArea, Number> HORIZONTAL_PADDING =
+                M3TextInputSupport.createSizeCssMetaData(
                 "-m3-horizontal-padding",
                 M3TextInputSupport.DEFAULT_HORIZONTAL_PADDING,
                 M3TextArea::horizontalPaddingProperty
         );
 
         /// CSS metadata for the vertical padding token.
-        private static final CssMetaData<M3TextArea, Number> VERTICAL_PADDING = createSizeCssMetaData(
+        private static final CssMetaData<M3TextArea, Number> VERTICAL_PADDING =
+                M3TextInputSupport.createSizeCssMetaData(
                 "-m3-vertical-padding",
                 M3TextInputSupport.DEFAULT_AREA_VERTICAL_PADDING,
                 M3TextArea::verticalPaddingProperty
         );
 
         /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
-
-        static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(TextArea.getClassCssMetaData());
-            styleables.add(CONTAINER_HEIGHT);
-            styleables.add(CONTAINER_SHAPE);
-            styleables.add(HORIZONTAL_PADDING);
-            styleables.add(VERTICAL_PADDING);
-            STYLEABLES = Collections.unmodifiableList(styleables);
-        }
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES = M3TextInputSupport.cssMetaData(
+                TextArea.getClassCssMetaData(),
+                CONTAINER_HEIGHT,
+                CONTAINER_SHAPE,
+                HORIZONTAL_PADDING,
+                VERTICAL_PADDING
+        );
 
         /// Prevents utility class instantiation.
         private StyleableProperties() {
         }
 
-        /// Creates CSS metadata for a text area size token.
-        private static CssMetaData<M3TextArea, Number> createSizeCssMetaData(
-                String property,
-                double initialValue,
-                StyleablePropertyProvider provider
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3TextArea control) {
-                    return M3Css.isSettable(provider.property(control));
-                }
-
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3TextArea control) {
-                    return provider.property(control);
-                }
-            };
-        }
-    }
-
-    /// Provides a styleable double property for a text area.
-    @FunctionalInterface
-    @NotNullByDefault
-    private interface StyleablePropertyProvider {
-        /// Returns the styleable property for a text area.
-        StyleableDoubleProperty property(M3TextArea control);
     }
 }

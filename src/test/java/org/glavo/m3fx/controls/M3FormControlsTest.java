@@ -12,6 +12,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3FormPaneSkin;
 import org.glavo.m3fx.skins.M3FormRowSkin;
 import org.glavo.m3fx.skins.M3FormSectionSkin;
@@ -19,13 +20,9 @@ import org.glavo.m3fx.skins.M3ValidationSummarySkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -44,20 +41,14 @@ final class M3FormControlsTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
     }
 
     /// Verifies that form panes expose items through the skin and accessibility metadata.
     @Test
     void formPaneMirrorsItemsIntoSkin() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3FormRow first = new M3FormRow("Name", new Label("Content"));
             M3FormRow second = new M3FormRow("Email", new Label("Content"));
             M3FormPane form = new M3FormPane(first);
@@ -83,7 +74,7 @@ final class M3FormControlsTest {
     /// Verifies that form sections update title, supporting text, and content slots.
     @Test
     void formSectionMirrorsHeaderAndContent() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3FormRow row = new M3FormRow("Field", new Label("Value"));
             M3FormSection section = new M3FormSection("Account", "Profile fields", row);
             section.setContentSpacing(18.0);
@@ -111,7 +102,7 @@ final class M3FormControlsTest {
     /// Verifies that form rows update text, slots, metrics, and accessibility metadata.
     @Test
     void formRowMirrorsTextAndSlotsIntoSkin() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label content = new Label("Content");
             M3Button trailing = new M3Button("Action");
             M3FormRow row = new M3FormRow("Display name", "Visible to collaborators", content, trailing);
@@ -165,7 +156,7 @@ final class M3FormControlsTest {
     /// Verifies that form validators coordinate text input validation state.
     @Test
     void formValidatorCoordinatesTextInputValidation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField nameField = new M3TextField();
             M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
             nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
@@ -212,7 +203,7 @@ final class M3FormControlsTest {
     /// Verifies that form validators track external validation updates.
     @Test
     void formValidatorTracksExternalValidationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField field = new M3TextField();
             M3TextInputLayout layout = new M3TextInputLayout(field, "Name", "Required");
             layout.setValidator(M3TextInputValidators.required("Name is required"));
@@ -239,7 +230,7 @@ final class M3FormControlsTest {
     /// Verifies that form validators can validate and clear one registered input.
     @Test
     void formValidatorSupportsSingleInputValidationWorkflow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField nameField = new M3TextField();
             M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
             nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
@@ -278,7 +269,7 @@ final class M3FormControlsTest {
     /// Verifies that form validators reject duplicate registrations and update list state.
     @Test
     void formValidatorMaintainsDistinctInputs() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextInputLayout first = new M3TextInputLayout(new M3TextField());
             M3TextInputLayout second = new M3TextInputLayout(new M3TextField());
             M3FormValidator validator = new M3FormValidator(first);
@@ -299,7 +290,7 @@ final class M3FormControlsTest {
     /// Verifies that validation summaries render validator errors and expose accessibility targets.
     @Test
     void validationSummaryMirrorsValidatorErrorsIntoSkin() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             PseudoClass empty = PseudoClass.getPseudoClass("empty");
             M3TextField nameField = new M3TextField();
             M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
@@ -349,43 +340,5 @@ final class M3FormControlsTest {
         Scene scene = new Scene(root, 640.0, 320.0);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
-    }
-
-    /// Runs one assertion block on the JavaFX application thread.
-    private static void runOnFxThread(Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-            return;
-        }
-
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        Platform.runLater(() -> {
-            try {
-                action.run();
-            } catch (Throwable throwable) {
-                failure.set(throwable);
-            } finally {
-                latch.countDown();
-            }
-        });
-
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(exception);
-        }
-
-        @Nullable Throwable throwable = failure.get();
-        if (throwable instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (throwable instanceof Error error) {
-            throw error;
-        }
-        if (throwable != null) {
-            throw new AssertionError(throwable);
-        }
     }
 }

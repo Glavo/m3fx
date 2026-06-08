@@ -28,6 +28,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListViewSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -629,6 +630,8 @@ public class M3ListView<T> extends Control {
     /// Adds base style classes and installs data listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        M3PopupStyles.addFallbackRootStyleClass(this);
+        M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(true);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);

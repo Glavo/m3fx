@@ -11,6 +11,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.controls.M3Tooltip;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -45,7 +46,8 @@ public final class M3TooltipSkin implements Skin<M3Tooltip> {
         this.tooltip = tooltip;
 
         syncStyleClasses();
-        root.getStylesheets().add(M3Stylesheets.controlStylesheet("tooltip.css"));
+        M3PopupStyles.addStylesheet(root, M3Stylesheets.fallbackStylesheet());
+        M3PopupStyles.addStylesheet(root, M3Stylesheets.controlStylesheet("tooltip.css"));
         tooltip.getStyleClass().addListener(styleClassListener);
         tooltip.themeProperty().addListener(themeListener);
         root.sceneProperty().addListener(sceneListener);
@@ -98,7 +100,8 @@ public final class M3TooltipSkin implements Skin<M3Tooltip> {
 
     /// Copies current tooltip style classes onto the rendered root node.
     private void syncStyleClasses() {
-        root.getStyleClass().setAll(tooltip.getStyleClass());
+        root.getStyleClass().setAll(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS);
+        root.getStyleClass().addAll(tooltip.getStyleClass());
     }
 
     /// Installs or removes the generated theme stylesheet used by popup content.

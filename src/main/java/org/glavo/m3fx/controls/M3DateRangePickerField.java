@@ -24,7 +24,6 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
@@ -36,10 +35,10 @@ import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
-import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -852,8 +851,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         picker.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         popupContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
 
-        popupContent.getStyleClass().add(M3PickerField.POPUP_STYLE_CLASS);
-        popupContent.getStyleClass().add(POPUP_STYLE_CLASS);
+        M3ControlStyles.add(popupContent, M3PickerField.POPUP_STYLE_CLASS);
+        M3ControlStyles.add(popupContent, POPUP_STYLE_CLASS);
         popupContent.getChildren().setAll(picker);
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
         presetContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
@@ -1276,16 +1275,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Copies scene styles and theme declarations into the popup-hosted picker.
     private void preparePopupForShow(Scene scene) {
-        popupContent.getStylesheets().setAll(scene.getStylesheets());
-        String fieldStylesheet = M3Stylesheets.controlStylesheet("picker-field.css");
-        if (!popupContent.getStylesheets().contains(fieldStylesheet)) {
-            popupContent.getStylesheets().add(fieldStylesheet);
-        }
-
-        @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(this);
-        if (themeRoot != null) {
-            M3ThemeManager.copyThemeContext(themeRoot, popupContent);
-        }
+        M3PopupStyles.preparePopupRoot(
+                popupContent,
+                scene.getStylesheets(),
+                M3ThemeResolver.findThemeRoot(this),
+                M3Stylesheets.controlStylesheet("picker-field.css")
+        );
         M3Animation.copyResolvedMotionSettings(this, popupContent);
         double fieldWidth = Math.max(0.0, getWidth());
         popupContent.setMinWidth(Math.max(fieldWidth, popupContent.minWidth(-1.0)));

@@ -3,12 +3,12 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.application.Platform;
 import javafx.animation.Timeline;
 import javafx.css.PseudoClass;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -18,10 +18,6 @@ import org.glavo.m3fx.tokens.M3TokenSet;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,19 +30,13 @@ final class M3StateLayerTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
     }
 
     /// Verifies that owner-state hover opacity is reached through an animation.
     @Test
     void stateLayerAnimatesOwnerStateHoverOpacity() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
             M3StateLayer stateLayer = new M3StateLayer();
@@ -71,7 +61,7 @@ final class M3StateLayerTest {
     /// Verifies that disabled motion applies owner-state hover opacity without starting a transition.
     @Test
     void disabledMotionAppliesOwnerStateHoverOpacityImmediately() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
             M3MotionSettings.setAnimationsEnabled(owner, false);
@@ -95,7 +85,7 @@ final class M3StateLayerTest {
     /// Verifies that running owner-state opacity animation settles when animations are disabled at runtime.
     @Test
     void stateLayerSettlesOwnerStateOpacityWhenAnimationsAreDisabledAtRuntime() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
             M3StateLayer stateLayer = new M3StateLayer();
@@ -128,7 +118,7 @@ final class M3StateLayerTest {
     /// Verifies that installed theme tokens control runtime state layer opacity.
     @Test
     void stateLayerUsesInstalledThemeStateTokens() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
             M3MotionSettings.setAnimationsEnabled(owner, false);
@@ -172,7 +162,7 @@ final class M3StateLayerTest {
     /// Verifies that disabled motion suppresses transient ripple animation.
     @Test
     void disabledMotionSuppressesRippleAnimation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             M3MotionSettings.setAnimationsEnabled(owner, false);
             M3StateLayer stateLayer = new M3StateLayer();
@@ -191,7 +181,7 @@ final class M3StateLayerTest {
     /// Verifies that a running ripple is cleared when animations are disabled at runtime.
     @Test
     void stateLayerClearsRippleWhenAnimationsAreDisabledAtRuntime() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
@@ -222,7 +212,7 @@ final class M3StateLayerTest {
     /// Verifies that plain focused state does not show a persistent state layer.
     @Test
     void stateLayerUsesFocusVisibleInsteadOfPlainFocus() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
             M3MotionSettings.setAnimationsEnabled(owner, false);
@@ -248,7 +238,7 @@ final class M3StateLayerTest {
     /// Verifies that ripples remain visible until explicitly released.
     @Test
     void rippleHoldsUntilReleaseThenFades() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane root = new Pane();
             M3StateLayer stateLayer = new M3StateLayer();
             root.getChildren().add(stateLayer);
@@ -284,7 +274,7 @@ final class M3StateLayerTest {
     /// Verifies that an early release lets the ripple expand while it fades.
     @Test
     void rippleReleasedBeforeExpansionCompletesStillExpandsWhileFading() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane root = new Pane();
             M3StateLayer stateLayer = new M3StateLayer();
             root.getChildren().add(stateLayer);
@@ -332,42 +322,6 @@ final class M3StateLayerTest {
             return assertInstanceOf(Timeline.class, field.get(stateLayer));
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
-        }
-    }
-
-    /// Runs a task on the FX application thread and propagates failures.
-    private static void runOnFxThread(Runnable task) {
-        if (Platform.isFxApplicationThread()) {
-            task.run();
-            return;
-        }
-
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                task.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
         }
     }
 }

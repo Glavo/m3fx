@@ -99,7 +99,7 @@ public class M3SnackbarHost extends Control {
 
     /// Creates an empty snackbar host.
     public M3SnackbarHost() {
-        getStyleClass().add(STYLE_CLASS);
+        M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setPickOnBounds(false);
         showing.addListener((observable, oldValue, newValue) -> {

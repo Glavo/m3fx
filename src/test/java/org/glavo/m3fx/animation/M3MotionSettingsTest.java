@@ -5,6 +5,7 @@ package org.glavo.m3fx.animation;
 
 import javafx.beans.InvalidationListener;
 import javafx.scene.layout.Pane;
+import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
@@ -21,23 +22,19 @@ final class M3MotionSettingsTest {
     /// Verifies the global animation switch.
     @Test
     void globalAnimationSwitchControlsDefaultState() {
-        boolean previous = M3MotionSettings.areAnimationsEnabled();
-        try {
+        FxTestUtils.runWithMotionSettingsPreserved(() -> {
             M3MotionSettings.setAnimationsEnabled(false);
             assertFalse(M3MotionSettings.areAnimationsEnabled());
 
             M3MotionSettings.setAnimationsEnabled(true);
             assertTrue(M3MotionSettings.areAnimationsEnabled());
-        } finally {
-            M3MotionSettings.setAnimationsEnabled(previous);
-        }
+        });
     }
 
     /// Verifies that node-local settings inherit through parent nodes.
     @Test
     void nodeAnimationSettingsInheritThroughParentChain() {
-        boolean previous = M3MotionSettings.areAnimationsEnabled();
-        try {
+        FxTestUtils.runWithMotionSettingsPreserved(() -> {
             Pane root = new Pane();
             Pane child = new Pane();
             Pane nested = new Pane();
@@ -59,18 +56,14 @@ final class M3MotionSettingsTest {
 
             M3MotionSettings.clearAnimationsEnabled(root);
             assertTrue(M3MotionSettings.areAnimationsEnabled(nested));
-        } finally {
-            M3MotionSettings.setAnimationsEnabled(previous);
-        }
+        });
     }
 
     /// Verifies that the settings revision changes when global or node-local motion settings change.
     @Test
     void settingsRevisionChangesWhenSettingsChange() {
-        boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-        M3MotionScheme previousScheme = M3MotionSettings.getMotionScheme();
-        M3MotionBehavior previousBehavior = M3MotionSettings.getMotionBehavior();
-        try {
+        FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
             Pane node = new Pane();
             long revision = M3MotionSettings.settingsRevisionProperty().get();
 
@@ -93,11 +86,7 @@ final class M3MotionSettingsTest {
             M3MotionSettings.setAnimationsEnabled(node, false);
 
             assertEquals(afterNodeAnimations, M3MotionSettings.settingsRevisionProperty().get());
-        } finally {
-            M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
-            M3MotionSettings.setMotionScheme(previousScheme);
-            M3MotionSettings.setMotionBehavior(previousBehavior);
-        }
+        });
     }
 
     /// Verifies that explicit settings change listeners are called for each effective settings change.
@@ -125,8 +114,7 @@ final class M3MotionSettingsTest {
     /// Verifies the global motion scheme switch.
     @Test
     void globalMotionSchemeSwitchControlsDefaultScheme() {
-        M3MotionScheme previous = M3MotionSettings.getMotionScheme();
-        try {
+        FxTestUtils.runWithMotionSettingsPreserved(() -> {
             M3MotionSettings.setMotionScheme(M3MotionScheme.expressive());
 
             assertEquals(M3MotionEasing.EMPHASIZED, M3MotionSettings.getMotionScheme().defaultEffects().easing());
@@ -134,9 +122,7 @@ final class M3MotionSettingsTest {
             M3MotionSettings.setMotionScheme(M3MotionScheme.standard());
 
             assertEquals(M3MotionEasing.STANDARD, M3MotionSettings.getMotionScheme().defaultEffects().easing());
-        } finally {
-            M3MotionSettings.setMotionScheme(previous);
-        }
+        });
     }
 
     /// Verifies that node-local motion schemes can be set and cleared.
@@ -158,8 +144,7 @@ final class M3MotionSettingsTest {
     /// Verifies the global motion behavior switch.
     @Test
     void globalMotionBehaviorSwitchControlsDefaultBehavior() {
-        M3MotionBehavior previous = M3MotionSettings.getMotionBehavior();
-        try {
+        FxTestUtils.runWithMotionSettingsPreserved(() -> {
             M3MotionSettings.setMotionBehavior(M3MotionBehavior.expressive());
 
             assertEquals(4000.0, M3MotionSettings.getMotionBehavior().snackbarDisplayDuration().toMillis(), 0.0001);
@@ -183,9 +168,7 @@ final class M3MotionSettingsTest {
                     M3MotionSettings.getMotionBehavior().loadingIndicatorGlobalRotationDuration().toMillis(),
                     0.0001
             );
-        } finally {
-            M3MotionSettings.setMotionBehavior(previous);
-        }
+        });
     }
 
     /// Verifies that node-local motion behavior can be set and cleared.

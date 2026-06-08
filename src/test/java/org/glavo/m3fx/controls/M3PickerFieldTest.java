@@ -16,12 +16,11 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -29,9 +28,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,13 +41,7 @@ final class M3PickerFieldTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
     }
 
@@ -84,7 +74,7 @@ final class M3PickerFieldTest {
     /// Verifies that date picker field presets render next to the picker and update the field value.
     @Test
     void datePickerFieldPresetsRenderAndApplyDate() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerField field = new M3DatePickerField();
 
@@ -113,7 +103,7 @@ final class M3PickerFieldTest {
     /// Verifies that date picker field presets outside the current bounds are rendered disabled.
     @Test
     void datePickerFieldDisablesOutOfBoundsPresetButtons() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerField field = new M3DatePickerField();
             field.setMinDate(anchor.plusDays(1));
@@ -155,7 +145,7 @@ final class M3PickerFieldTest {
     /// Verifies that time picker field presets render next to the picker and update the field value.
     @Test
     void timePickerFieldPresetsRenderAndApplyTime() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalTime anchor = LocalTime.of(10, 30);
             M3TimePickerField field = new M3TimePickerField();
 
@@ -183,7 +173,7 @@ final class M3PickerFieldTest {
     /// Verifies that time picker field presets outside the current bounds are rendered disabled.
     @Test
     void timePickerFieldDisablesOutOfBoundsPresetButtons() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TimePickerField field = new M3TimePickerField();
             field.setMinTime(LocalTime.of(9, 0));
             field.setMaxTime(LocalTime.of(17, 30));
@@ -218,7 +208,7 @@ final class M3PickerFieldTest {
     /// Verifies that picker fields install the shared picker field skin and render their input layouts.
     @Test
     void pickerFieldSkinInstallsInputLayouts() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 19));
             M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
             HBox root = new HBox(16.0, dateField, timeField);
@@ -239,7 +229,7 @@ final class M3PickerFieldTest {
     /// Verifies that a picker field can show its popup when attached to a visible window.
     @Test
     void pickerFieldCanShowPopupFromVisibleWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
             Pane root = new Pane(field);
             Scene scene = new Scene(root, 420.0, 180.0);
@@ -269,9 +259,7 @@ final class M3PickerFieldTest {
     /// Verifies that keyboard dismissal from popup picker content returns focus to the editor.
     @Test
     void pickerFieldRestoresEditorFocusAfterKeyboardDismissal() {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
             Pane root = new Pane(field);
             Scene scene = new Scene(root, 420.0, 180.0);
@@ -303,7 +291,6 @@ final class M3PickerFieldTest {
                 assertSame(field.getEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
             }
         });
     }
@@ -311,9 +298,7 @@ final class M3PickerFieldTest {
     /// Verifies that preset popup actions expose focus and support keyboard dismissal.
     @Test
     void pickerFieldPresetFocusIsExposedAndDismissibleFromPopupContent() {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerField field = new M3DatePickerField(anchor);
             field.setCommonPresets(anchor);
@@ -366,7 +351,6 @@ final class M3PickerFieldTest {
                 assertSame(field.getEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
             }
         });
     }
@@ -374,9 +358,7 @@ final class M3PickerFieldTest {
     /// Verifies that preset popup action columns support keyboard traversal and picker handoff.
     @Test
     void pickerFieldPresetKeyboardNavigationMovesWithinColumnAndToPicker() {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             LocalDate dateAnchor = LocalDate.of(2026, 5, 19);
             LocalTime timeAnchor = LocalTime.of(10, 30);
             M3DatePickerField dateField = new M3DatePickerField(dateAnchor);
@@ -441,7 +423,6 @@ final class M3PickerFieldTest {
                 assertTrue(now.isFocused());
             } finally {
                 stage.close();
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
             }
         });
     }
@@ -449,9 +430,7 @@ final class M3PickerFieldTest {
     /// Verifies that dialog panes route focus to popup content exposed by a nested picker field.
     @Test
     void dialogPaneRoutesFocusToNestedPickerPopupContent() {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerField field = new M3DatePickerField(anchor);
             field.setCommonPresets(anchor);
@@ -491,7 +470,6 @@ final class M3PickerFieldTest {
                 assertSame(field.getEditor(), pane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
             }
         });
     }
@@ -499,7 +477,7 @@ final class M3PickerFieldTest {
     /// Verifies that picker popup content inherits a locally installed parent theme.
     @Test
     void pickerFieldPopupInheritsLocalParentThemeContext() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 19));
             Pane localRoot = new Pane(field);
             Pane root = new Pane(localRoot);
@@ -524,42 +502,6 @@ final class M3PickerFieldTest {
                 stage.close();
             }
         });
-    }
-
-    /// Runs a task on the FX application thread and propagates failures.
-    private static void runOnFxThread(Runnable task) {
-        if (Platform.isFxApplicationThread()) {
-            task.run();
-            return;
-        }
-
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                task.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        @Nullable Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
     }
 
     /// Returns a date preset button with the supplied text.

@@ -60,7 +60,7 @@ This file tracks product status and planning only. Repository rules, code style,
 - MonetFX-backed Material color mapping.
 - Root CSS token generation for color, typography, shape, elevation, motion, state layers, density, and component defaults.
 - Generated token stylesheets use stable content hashing.
-- Standalone controls install a low-priority fallback token stylesheet on their scene so per-control user-agent styles resolve default Material colors before an application theme is installed.
+- Standalone controls install a low-priority fallback token stylesheet on their scene and ensure scene, dialog, menu, submenu, picker, and tooltip popup roots match fallback token declarations, so per-control user-agent styles resolve default Material colors before an application theme is installed.
 - Baseline and expressive profile hooks exist for shape and component token evolution.
 - Reusable Material motion constants, easing curves, semantic specs, standard/expressive motion schemes, and motion behavior timings exist for JavaFX animations and motion-adjacent interaction delays.
 - Runtime motion settings expose a settings revision and explicit change listeners so controls with long-running animation loops can refresh immediately when global or node-local animation switches, motion schemes, or behavior timings change.

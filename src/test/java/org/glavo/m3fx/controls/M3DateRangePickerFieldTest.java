@@ -15,21 +15,17 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,13 +40,7 @@ final class M3DateRangePickerFieldTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
     }
 
@@ -112,14 +102,14 @@ final class M3DateRangePickerFieldTest {
     void dateRangePickerFieldSyncsPopupPickerSelection() {
         M3DateRangePickerField field = new M3DateRangePickerField();
 
-        runOnFxThread(() -> field.getPicker().selectDate(LocalDate.of(2026, 5, 18)));
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> field.getPicker().selectDate(LocalDate.of(2026, 5, 18)));
+        FxTestUtils.runOnFxThread(() -> {
             assertEquals(LocalDate.of(2026, 5, 18), field.getStartDate());
             assertNull(field.getEndDate());
             assertEquals("2026-05-18", field.getStartEditor().getText());
             field.getPicker().selectDate(LocalDate.of(2026, 5, 22));
         });
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             assertEquals(LocalDate.of(2026, 5, 18), field.getStartDate());
             assertEquals(LocalDate.of(2026, 5, 22), field.getEndDate());
             assertEquals("2026-05-22", field.getEndEditor().getText());
@@ -129,7 +119,7 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that popup presets render next to the picker and update the field range immediately.
     @Test
     void dateRangePickerFieldPresetsRenderAndApplyRange() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerField field = new M3DateRangePickerField();
 
@@ -162,7 +152,7 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that presets outside the current field bounds are rendered disabled.
     @Test
     void dateRangePickerFieldDisablesOutOfBoundsPresetButtons() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerField field = new M3DateRangePickerField();
             field.setMinDate(anchor.plusDays(1));
@@ -207,7 +197,7 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that the range field installs its skin and lays out both input layouts.
     @Test
     void dateRangePickerFieldSkinInstallsInputLayouts() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DateRangePickerField field = new M3DateRangePickerField(
                     LocalDate.of(2026, 5, 18),
                     LocalDate.of(2026, 5, 22)
@@ -229,7 +219,7 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that the range field can show its popup when attached to a visible window.
     @Test
     void dateRangePickerFieldCanShowPopupFromVisibleWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DateRangePickerField field = new M3DateRangePickerField(
                     LocalDate.of(2026, 5, 18),
                     LocalDate.of(2026, 5, 22)
@@ -259,9 +249,7 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that keyboard dismissal from range popup picker content returns focus to the start editor.
     @Test
     void dateRangePickerFieldRestoresStartEditorFocusAfterKeyboardDismissal() {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DateRangePickerField field = new M3DateRangePickerField(
                     LocalDate.of(2026, 5, 18),
                     LocalDate.of(2026, 5, 22)
@@ -291,7 +279,6 @@ final class M3DateRangePickerFieldTest {
                 assertTrue(field.getStartEditor().isFocused());
             } finally {
                 stage.close();
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
             }
         });
     }
@@ -299,9 +286,7 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that range field popup presets preserve accessibility focus while the popup is open.
     @Test
     void dateRangePickerFieldPresetFocusIsPreservedByAccessibleActions() {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerField field = new M3DateRangePickerField(
                     anchor,
@@ -357,7 +342,6 @@ final class M3DateRangePickerFieldTest {
                 assertSame(field.getEndEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
             }
         });
     }
@@ -365,9 +349,7 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that range field preset columns mirror picker handoff keys in right-to-left layout.
     @Test
     void dateRangePickerFieldPresetKeyboardNavigationMirrorsPickerHandoff() {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerField field = new M3DateRangePickerField(
                     anchor,
@@ -407,7 +389,6 @@ final class M3DateRangePickerFieldTest {
                 assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
             } finally {
                 stage.close();
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
             }
         });
     }
@@ -415,7 +396,7 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that the range field popup inherits a locally installed parent theme.
     @Test
     void dateRangePickerFieldPopupInheritsLocalParentThemeContext() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DateRangePickerField field = new M3DateRangePickerField(
                     LocalDate.of(2026, 5, 18),
                     LocalDate.of(2026, 5, 22)
@@ -443,42 +424,6 @@ final class M3DateRangePickerFieldTest {
                 stage.close();
             }
         });
-    }
-
-    /// Runs a task on the FX application thread and propagates failures.
-    private static void runOnFxThread(Runnable task) {
-        if (Platform.isFxApplicationThread()) {
-            task.run();
-            return;
-        }
-
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                task.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        @Nullable Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
     }
 
     /// Returns a preset button with the supplied text.

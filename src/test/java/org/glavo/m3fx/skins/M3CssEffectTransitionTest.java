@@ -3,19 +3,15 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,19 +25,13 @@ final class M3CssEffectTransitionTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
     }
 
     /// Verifies that CSS effect changes are animated from the current effect.
     @Test
     void animatesCssResolvedDropShadow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             Region target = new Region();
             owner.getChildren().add(target);
@@ -66,7 +56,7 @@ final class M3CssEffectTransitionTest {
     /// Verifies that disabled motion applies CSS effect changes without starting a transition.
     @Test
     void disabledMotionAppliesCssResolvedDropShadowImmediately() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             Region target = new Region();
             owner.getChildren().add(target);
@@ -90,7 +80,7 @@ final class M3CssEffectTransitionTest {
     /// Verifies that a running CSS effect transition settles when animations are disabled at runtime.
     @Test
     void runningCssResolvedDropShadowSettlesWhenAnimationsAreDisabledAtRuntime() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             Region target = new Region();
             owner.getChildren().add(target);
@@ -119,41 +109,5 @@ final class M3CssEffectTransitionTest {
                 transition.uninstall();
             }
         });
-    }
-
-    /// Runs a task on the FX application thread and propagates failures.
-    private static void runOnFxThread(Runnable task) {
-        if (Platform.isFxApplicationThread()) {
-            task.run();
-            return;
-        }
-
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                task.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
     }
 }

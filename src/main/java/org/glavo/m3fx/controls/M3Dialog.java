@@ -12,6 +12,7 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.stage.Window;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -193,6 +194,7 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Adds the shared M3FX stylesheet to the dialog pane.
     private static void installStylesheet(M3DialogPane pane) {
+        M3PopupStyles.addFallbackRootStyleClass(pane);
         String stylesheet = M3ThemeManager.stylesheetUrl();
         moveOrAdd(pane.getStylesheets(), stylesheet, 0);
     }

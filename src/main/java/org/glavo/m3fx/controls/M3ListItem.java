@@ -26,6 +26,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -181,6 +182,8 @@ public class M3ListItem extends Control {
     public M3ListItem(String headlineText) {
         installLineCountListeners();
         M3ControlStyles.add(this, STYLE_CLASS);
+        M3PopupStyles.addFallbackRootStyleClass(this);
+        M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         setFocusTraversable(true);
         setHeadlineText(headlineText);

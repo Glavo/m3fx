@@ -19,7 +19,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -35,9 +35,6 @@ import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.imageio.ImageIO;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,13 +54,7 @@ final class M3TimePickerTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
     }
 
@@ -89,7 +80,7 @@ final class M3TimePickerTest {
     /// Verifies that the skin creates selectable cells and routes actions into the value property.
     @Test
     void timePickerSkinSelectsHourMinuteAndPeriod() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 15));
             picker.setMinuteStep(15);
             Pane root = new Pane(picker);
@@ -118,7 +109,7 @@ final class M3TimePickerTest {
     /// Verifies 24-hour mode, minute-step rendering, and bounded range disabled states.
     @Test
     void timePickerSupportsTwentyFourHourModeAndRanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(14, 45));
             picker.setUse24HourClock(true);
             picker.setMinuteStep(15);
@@ -203,7 +194,7 @@ final class M3TimePickerTest {
     /// Verifies that default accessibility focus actions preserve the focused visible time cell.
     @Test
     void timePickerAccessibleFocusPreservesFocusedVisibleCell() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
             picker.setMinuteStep(15);
             Stage stage = new Stage();
@@ -242,7 +233,7 @@ final class M3TimePickerTest {
     /// Verifies that time pickers render selected, 24-hour, and disabled range states.
     @Test
     void timePickerSnapshotRendersSelectionAndRangeStates() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TimePicker twelveHour = new M3TimePicker(LocalTime.of(10, 30));
             M3TimePicker twentyFourHour = new M3TimePicker(LocalTime.of(14, 45));
             twentyFourHour.setUse24HourClock(true);
@@ -281,39 +272,33 @@ final class M3TimePickerTest {
     /// Verifies that an armed time cell shows the Material state layer.
     @Test
     void timePickerCellShowsArmedStateLayer() {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
-            try {
-                M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
-                picker.setMinuteStep(15);
-                Pane root = new Pane(picker);
-                root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-                Scene scene = new Scene(root, 560.0, 360.0);
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
+            picker.setMinuteStep(15);
+            Pane root = new Pane(picker);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 560.0, 360.0);
 
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                root.applyCss();
-                picker.resize(500.0, 320.0);
-                root.resize(560.0, 360.0);
-                root.layout();
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            picker.resize(500.0, 320.0);
+            root.resize(560.0, 360.0);
+            root.layout();
 
-                ButtonBase targetCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "11");
-                WritableImage normalImage = snapshotImageOnFxThread(root);
+            ButtonBase targetCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "11");
+            WritableImage normalImage = snapshotImageOnFxThread(root);
 
-                targetCell.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, true);
-                assertTrue(targetCell.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
-                targetCell.applyCss();
-                targetCell.requestLayout();
-                root.layout();
+            targetCell.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, true);
+            assertTrue(targetCell.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
+            targetCell.applyCss();
+            targetCell.requestLayout();
+            root.layout();
 
-                Node stateLayer = targetCell.lookup(".m3-state-layer");
-                assertTrue(stateLayer.getOpacity() >= 0.09);
+            Node stateLayer = targetCell.lookup(".m3-state-layer");
+            assertTrue(stateLayer.getOpacity() >= 0.09);
 
-                WritableImage armedImage = snapshotImageOnFxThread(root);
-                assertSnapshotAreaChanged(normalImage, armedImage, targetCell, 16);
-            } finally {
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
-            }
+            WritableImage armedImage = snapshotImageOnFxThread(root);
+            assertSnapshotAreaChanged(normalImage, armedImage, targetCell, 16);
         });
     }
 
@@ -325,42 +310,6 @@ final class M3TimePickerTest {
             }
         }
         throw new AssertionError("No time cell found for " + styleClass + " with text " + text);
-    }
-
-    /// Runs a task on the FX application thread and propagates failures.
-    private static void runOnFxThread(Runnable task) {
-        if (Platform.isFxApplicationThread()) {
-            task.run();
-            return;
-        }
-
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                task.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
     }
 
     /// Returns high-contrast color tokens used by snapshot-based visual tests.

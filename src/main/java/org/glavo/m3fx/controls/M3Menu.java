@@ -26,6 +26,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3MenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -435,6 +436,7 @@ public class M3Menu extends Control {
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        M3PopupStyles.addFallbackRootStyleClass(this);
         setAccessibleRole(AccessibleRole.MENU);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);

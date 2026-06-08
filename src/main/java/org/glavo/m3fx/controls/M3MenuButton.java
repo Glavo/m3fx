@@ -17,16 +17,15 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
-import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -580,16 +579,12 @@ public class M3MenuButton extends M3Button {
 
     /// Copies scene styles and theme declarations into the popup-hosted menu.
     private void prepareMenuForPopup(Scene scene) {
-        menu.getStylesheets().setAll(scene.getStylesheets());
-        String menuStylesheet = M3Stylesheets.controlStylesheet("menu.css");
-        if (!menu.getStylesheets().contains(menuStylesheet)) {
-            menu.getStylesheets().add(menuStylesheet);
-        }
-
-        @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(this);
-        if (themeRoot != null) {
-            M3ThemeManager.copyThemeContext(themeRoot, menu);
-        }
+        M3PopupStyles.preparePopupRoot(
+                menu,
+                scene.getStylesheets(),
+                M3ThemeResolver.findThemeRoot(this),
+                M3Stylesheets.controlStylesheet("menu.css")
+        );
         M3Animation.copyResolvedMotionSettings(this, menu);
         menu.setNodeOrientation(getEffectiveNodeOrientation());
         menu.applyCss();

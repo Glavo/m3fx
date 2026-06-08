@@ -1,4 +1,5 @@
-.root {
+.root,
+.m3-fallback-root {
     -monet-primary: rgb(101,85,143);
     -m3-color-primary: rgb(101,85,143);
     -monet-on-primary: rgb(255,255,255);

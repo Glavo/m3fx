@@ -8,7 +8,9 @@ import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
+import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
+import javafx.css.Styleable;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventType;
@@ -66,6 +68,7 @@ import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -137,22 +140,14 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -166,66 +161,161 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests style classes and skins for m3fx controls.
 @NotNullByDefault
 final class M3ControlStyleTest {
+    /// The delay used after snackbar exit animations should have removed dismissed content.
+    private static final Duration SNACKBAR_EXIT_SETTLE_DELAY = Duration.millis(180.0);
+
+    /// The delay used for keyboard-triggered tooltip show and hide checks.
+    private static final Duration TOOLTIP_FOCUS_DELAY = Duration.millis(40.0);
+
+    /// The delay used after a tooltip popup should inherit owner state or move keyboard focus.
+    private static final Duration TOOLTIP_FOCUS_TRANSFER_DELAY = Duration.millis(80.0);
+
+    /// The delay used after a rich tooltip popup should be visible for keyboard traversal.
+    private static final Duration RICH_TOOLTIP_KEYBOARD_DELAY = Duration.millis(120.0);
+
+    /// The delay used after a rich tooltip popup should remain visible while hovered.
+    private static final Duration RICH_TOOLTIP_HOVER_DELAY = Duration.millis(260.0);
+
+    /// The delay used after rich tooltip popup focus changes should settle.
+    private static final Duration RICH_TOOLTIP_FOCUS_SETTLE_DELAY = Duration.millis(360.0);
+
+    /// The delay used after disclosure icon rotation should settle.
+    private static final Duration DISCLOSURE_ANIMATION_SETTLE_DELAY = Duration.millis(220.0);
+
+    /// The delay used after menu popups should finish their initial layout.
+    private static final Duration MENU_POPUP_SETUP_DELAY = Duration.millis(220.0);
+
+    /// The delay used after submenu hover should open a child popup.
+    private static final Duration SUBMENU_OPEN_DELAY = Duration.millis(260.0);
+
+    /// The delay used after submenu hover exit should close a child popup.
+    private static final Duration SUBMENU_CLOSE_DELAY = Duration.millis(420.0);
+
+    /// The delay used after search and scrim hide transitions should settle.
+    private static final Duration FAST_EXIT_SETTLE_DELAY = Duration.millis(180.0);
+
+    /// The delay used after sheet exit transitions should settle.
+    private static final Duration SHEET_EXIT_SETTLE_DELAY = Duration.millis(280.0);
+
+    /// The delay used after sheet enter transitions should settle.
+    private static final Duration SHEET_ENTER_SETTLE_DELAY = Duration.millis(380.0);
+
+    /// The delay used after scrim enter transitions should settle.
+    private static final Duration SCRIM_SHOW_SETTLE_DELAY = Duration.millis(260.0);
+
+    /// The delay used after determinate progress changes should settle.
+    private static final Duration PROGRESS_DETERMINATE_SETTLE_DELAY = Duration.millis(320.0);
+
+    /// The delay used when sampling indeterminate progress motion.
+    private static final Duration PROGRESS_INDETERMINATE_SAMPLE_DELAY = Duration.millis(180.0);
+
+    /// The delay used to sample navigation drawer expansion at an intermediate frame.
+    private static final Duration DRAWER_EXPANSION_INTERMEDIATE_DELAY = Duration.millis(90.0);
+
+    /// The delay used after navigation drawer expansion or collapse should settle.
+    private static final Duration DRAWER_EXPANSION_SETTLE_DELAY = Duration.millis(300.0);
+
+    /// The delay used after picker popups should have rendered their preset columns.
+    private static final Duration PICKER_POPUP_SHOW_DELAY = Duration.millis(120.0);
+
+    /// The number of pulses used to catch deferred CSS warnings from standalone fallback stylesheet installation.
+    private static final int STANDALONE_CSS_SETTLE_PULSES = 40;
+
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
     }
 
     /// Verifies that standalone control stylesheets provide fallback color tokens without requiring a theme.
     @Test
-    void standaloneControlStylesheetsResolveFallbackColorTokens() {
-        Logger cssLogger = Logger.getLogger("javafx.css");
-        Logger cssStyleHelperLogger = Logger.getLogger("javafx.scene.CssStyleHelper");
-        List<LogRecord> cssWarnings = new ArrayList<>();
-        Handler handler = new Handler() {
-            /// Captures JavaFX CSS warnings emitted while fallback token styles are resolved.
-            @Override
-            public void publish(LogRecord record) {
-                if (record.getLevel().intValue() >= Level.WARNING.intValue()) {
-                    cssWarnings.add(record);
-                }
-            }
+    void standaloneControlStylesheetsResolveFallbackColorTokens() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<M3MenuButton> menuButtonReference = new AtomicReference<>();
+        AtomicReference<M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
 
-            /// Flushes captured records.
-            @Override
-            public void flush() {
-            }
+        runOnFxThreadAfterPulses(STANDALONE_CSS_SETTLE_PULSES, () -> {
+            M3Button button = new M3Button("Button");
+            M3ListItem listItem = new M3ListItem("List item");
+            M3Menu menu = new M3Menu(new M3MenuItem("Menu item"));
+            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
+            M3MenuButton menuButton = new M3MenuButton("Open menu", new M3MenuItem("Duplicate"), subMenuItem);
+            M3SnackbarHost snackbarHost = new M3SnackbarHost();
+            M3TextField textField = new M3TextField("Text");
+            M3PasswordField passwordField = new M3PasswordField("Secret");
+            M3TextArea textArea = new M3TextArea("Multiline");
+            M3DatePickerField datePickerField = new M3DatePickerField();
+            M3TimePickerField timePickerField = new M3TimePickerField();
+            M3DateRangePickerField dateRangePickerField = new M3DateRangePickerField();
+            FlowPane root = new FlowPane(
+                    12.0,
+                    12.0,
+                    button,
+                    listItem,
+                    menu,
+                    menuButton,
+                    snackbarHost,
+                    textField,
+                    passwordField,
+                    textArea,
+                    datePickerField,
+                    timePickerField,
+                    dateRangePickerField
+            );
+            Scene scene = new Scene(root, 720.0, 360.0);
+            Stage stage = new Stage();
 
-            /// Closes this in-memory handler.
-            @Override
-            public void close() {
-            }
-        };
-        cssLogger.addHandler(handler);
-        cssStyleHelperLogger.addHandler(handler);
-        try {
-            runOnFxThread(() -> {
-                M3Button button = new M3Button("Button");
-                M3ListItem listItem = new M3ListItem("List item");
-                M3Menu menu = new M3Menu(new M3MenuItem("Menu item"));
-                FlowPane root = new FlowPane(12.0, 12.0, button, listItem, menu);
-                new Scene(root, 480.0, 220.0);
+            stageReference.set(stage);
+            menuButtonReference.set(menuButton);
+            subMenuItemReference.set(subMenuItem);
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+            menuButton.showMenu();
+            subMenuItem.showSubMenu();
+        }, () -> {
+            subMenuItemReference.get().hideSubMenu();
+            menuButtonReference.get().hideMenu();
+            stageReference.get().close();
+        });
+    }
 
-                root.applyCss();
-                root.layout();
-            });
-        } finally {
-            cssLogger.removeHandler(handler);
-            cssStyleHelperLogger.removeHandler(handler);
-        }
+    /// Verifies that standalone picker field popups resolve fallback color tokens without requiring a theme.
+    @Test
+    void standalonePickerFieldPopupsResolveFallbackColorTokens() throws InterruptedException {
+        AtomicReference<Stage> stageReference = new AtomicReference<>();
+        AtomicReference<M3DatePickerField> datePickerFieldReference = new AtomicReference<>();
+        AtomicReference<M3TimePickerField> timePickerFieldReference = new AtomicReference<>();
+        AtomicReference<M3DateRangePickerField> dateRangePickerFieldReference = new AtomicReference<>();
 
-        assertTrue(cssWarnings.stream().noneMatch(M3ControlStyleTest::isColorTokenCssWarning),
-                () -> cssWarnings.stream()
-                        .map(record -> record.getLevel() + ": " + record.getMessage())
-                        .collect(Collectors.joining("\n")));
+        runOnFxThreadAfterPulses(STANDALONE_CSS_SETTLE_PULSES, () -> {
+            M3DatePickerField datePickerField = new M3DatePickerField();
+            M3TimePickerField timePickerField = new M3TimePickerField();
+            M3DateRangePickerField dateRangePickerField = new M3DateRangePickerField();
+            VBox root = new VBox(12.0, datePickerField, timePickerField, dateRangePickerField);
+            Scene scene = new Scene(root, 560.0, 360.0);
+            Stage stage = new Stage();
+
+            stageReference.set(stage);
+            datePickerFieldReference.set(datePickerField);
+            timePickerFieldReference.set(timePickerField);
+            dateRangePickerFieldReference.set(dateRangePickerField);
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+
+            showAndApplyPickerPopup(datePickerField, datePickerField.getPicker());
+            showAndApplyPickerPopup(timePickerField, timePickerField.getPicker());
+            showAndApplyPickerPopup(dateRangePickerField, dateRangePickerField.getPicker());
+        }, () -> {
+            datePickerFieldReference.get().hidePicker();
+            timePickerFieldReference.get().hidePicker();
+            dateRangePickerFieldReference.get().hidePicker();
+            stageReference.get().close();
+        });
     }
 
     /// Verifies that button variants update their style classes.
@@ -1768,52 +1858,30 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts remove dismissed snackbars after the exit animation.
     @Test
     void snackbarHostRemovesDismissedSnackbars() throws InterruptedException {
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<M3Snackbar> snackbarReference = new AtomicReference<>();
 
-        Platform.runLater(() -> {
-            try {
-                M3SnackbarHost host = new M3SnackbarHost();
-                host.setDisplayDuration(Duration.INDEFINITE);
-                Pane root = new Pane(host);
-                Scene scene = new Scene(root, 320.0, 120.0);
+        runOnFxThreadAfterDelay(
+                SNACKBAR_EXIT_SETTLE_DELAY,
+                () -> {
+                    M3SnackbarHost host = new M3SnackbarHost();
+                    host.setDisplayDuration(Duration.INDEFINITE);
+                    Pane root = new Pane(host);
+                    Scene scene = new Scene(root, 320.0, 120.0);
 
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                host.show("Saved");
-                root.applyCss();
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    host.show("Saved");
+                    root.applyCss();
 
-                M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
-                host.dismiss();
-
-                PauseTransition pause = new PauseTransition(Duration.millis(180.0));
-                pause.setOnFinished(event -> {
-                    try {
-                        assertNull(snackbar.getParent());
-                        assertFalse(snackbar.isVisible());
-                    } catch (Throwable e) {
-                        failure.set(e);
-                    } finally {
-                        latch.countDown();
-                    }
-                });
-                pause.play();
-            } catch (Throwable e) {
-                failure.set(e);
-                latch.countDown();
-            }
-        });
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
-        Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
+                    M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
+                    snackbarReference.set(snackbar);
+                    host.dismiss();
+                },
+                () -> {
+                    M3Snackbar snackbar = snackbarReference.get();
+                    assertNull(snackbar.getParent());
+                    assertFalse(snackbar.isVisible());
+                }
+        );
     }
 
     /// Verifies that snackbar hosts display queued snackbars after the current snackbar is dismissed.
@@ -1824,7 +1892,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3Snackbar> secondReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(180.0),
+                SNACKBAR_EXIT_SETTLE_DELAY,
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
                     host.setDisplayDuration(Duration.INDEFINITE);
@@ -1921,7 +1989,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3Snackbar> secondReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(180.0),
+                SNACKBAR_EXIT_SETTLE_DELAY,
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
                     host.setDisplayDuration(Duration.INDEFINITE);
@@ -2242,6 +2310,7 @@ final class M3ControlStyleTest {
             assertEquals("Body", pane.getContentText());
             assertEquals(java.util.List.of(ButtonType.CANCEL, ButtonType.OK), pane.getButtonTypes());
             assertTrue(pane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
+            assertTrue(pane.getStyleClass().contains("root"));
             assertTrue(pane.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
 
             applyCss(pane);
@@ -2470,18 +2539,31 @@ final class M3ControlStyleTest {
             input.setContainerHeight(72.0);
             input.setContainerShape(14.0);
             input.setHorizontalPadding(24.0);
+            input.setVerticalPadding(10.0);
 
             TextInputControl control = assertInstanceOf(TextInputControl.class, input);
             assertEquals(72.0, input.getContainerHeight(), 0.0001);
             assertEquals(14.0, input.getContainerShape(), 0.0001);
             assertEquals(24.0, input.getHorizontalPadding(), 0.0001);
+            assertEquals(10.0, input.getVerticalPadding(), 0.0001);
             assertEquals(72.0, control.getPrefHeight(), 0.0001);
             assertEquals(24.0, control.getPadding().getLeft(), 0.0001);
             assertEquals(24.0, control.getPadding().getRight(), 0.0001);
+            assertEquals(10.0, control.getPadding().getTop(), 0.0001);
+            assertEquals(10.0, control.getPadding().getBottom(), 0.0001);
             assertThrows(IllegalArgumentException.class, () -> input.setContainerHeight(-1.0));
             assertThrows(IllegalArgumentException.class, () -> input.setContainerShape(-1.0));
             assertThrows(IllegalArgumentException.class, () -> input.setHorizontalPadding(-1.0));
+            assertThrows(IllegalArgumentException.class, () -> input.setVerticalPadding(-1.0));
         }
+    }
+
+    /// Verifies that text input controls expose their shared Material metric tokens through CSS metadata.
+    @Test
+    void textInputCssMetaDataExposeSharedMetricTokens() {
+        assertTextInputCssMetaData(M3TextField.getClassCssMetaData());
+        assertTextInputCssMetaData(M3PasswordField.getClassCssMetaData());
+        assertTextInputCssMetaData(M3TextArea.getClassCssMetaData());
     }
 
     /// Verifies that text input layouts expose supporting text, counters, and wrapped input state.
@@ -3553,7 +3635,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3Tooltip> tooltipReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(40.0),
+                TOOLTIP_FOCUS_DELAY,
                 () -> {
                     Label target = new Label("Target");
                     target.setFocusTraversable(true);
@@ -3597,7 +3679,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3Button> actionReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(80.0),
+                TOOLTIP_FOCUS_TRANSFER_DELAY,
                 () -> {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
@@ -3685,11 +3767,8 @@ final class M3ControlStyleTest {
 
     /// Verifies that tooltip component tokens apply profile-specific popup metrics.
     @Test
-    void tooltipAppliesProfileMetrics() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-
-        Platform.runLater(() -> {
+    void tooltipAppliesProfileMetrics() {
+        runOnFxThread(() -> {
             Stage stage = new Stage();
             M3Tooltip plainTooltip = new M3Tooltip("Details");
             M3RichTooltip richTooltip = new M3RichTooltip("Title", "Supporting text", new M3Button("Action"));
@@ -3740,21 +3819,12 @@ final class M3ControlStyleTest {
                 assertEquals(12.0, actions.getSpacing(), 0.0001);
                 assertEquals(36.0, actionButton.getContainerHeight(), 0.0001);
                 assertEquals(16.0, actionButton.getHorizontalPadding(), 0.0001);
-            } catch (Throwable throwable) {
-                failure.set(throwable);
             } finally {
                 plainTooltip.hide();
                 richTooltip.hide();
                 stage.close();
-                latch.countDown();
             }
         });
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
-        Throwable throwable = failure.get();
-        if (throwable != null) {
-            throw new AssertionError(throwable);
-        }
     }
 
     /// Verifies that rich tooltips install on nodes and expose combined accessible help.
@@ -3782,7 +3852,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3RichTooltip> tooltipReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(260.0),
+                RICH_TOOLTIP_HOVER_DELAY,
                 () -> {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
@@ -3832,7 +3902,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3Button> actionReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(360.0),
+                RICH_TOOLTIP_FOCUS_SETTLE_DELAY,
                 () -> {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
@@ -3855,7 +3925,7 @@ final class M3ControlStyleTest {
                     root.layout();
                     target.requestFocus();
 
-                    PauseTransition focusActionDelay = new PauseTransition(Duration.millis(80.0));
+                    PauseTransition focusActionDelay = new PauseTransition(TOOLTIP_FOCUS_TRANSFER_DELAY);
                     focusActionDelay.setOnFinished(event -> {
                         if (tooltip.isShowing()) {
                             action.requestFocus();
@@ -3900,7 +3970,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3Button> secondActionReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(120.0),
+                RICH_TOOLTIP_KEYBOARD_DELAY,
                 () -> {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
@@ -4234,7 +4304,7 @@ final class M3ControlStyleTest {
         AtomicReference<SVGPath> shape = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(220.0),
+                DISCLOSURE_ANIMATION_SETTLE_DELAY,
                 () -> {
                     M3DisclosureIcon icon = new M3DisclosureIcon();
                     Pane root = new Pane(icon);
@@ -5048,7 +5118,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3SubMenuItem> itemReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+            runOnFxThreadAfterDelay(SUBMENU_OPEN_DELAY, () -> {
                 Stage stage = new Stage();
                 M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
                 M3Menu menu = new M3Menu(export);
@@ -5086,7 +5156,7 @@ final class M3ControlStyleTest {
                 ));
             });
 
-            runOnFxThreadAfterDelay(Duration.millis(420.0), () ->
+            runOnFxThreadAfterDelay(SUBMENU_CLOSE_DELAY, () ->
                     itemReference.get().fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 8.0, 8.0, false)),
                     () -> assertFalse(itemReference.get().isSubMenuShowing()));
         } finally {
@@ -5614,82 +5684,54 @@ final class M3ControlStyleTest {
     /// Verifies that popup menu branches inherit theme color lookups without CSS conversion warnings.
     @Test
     void popupMenuBranchesResolveThemeColorLookups() {
-        Logger logger = Logger.getLogger("javafx.scene.CssStyleHelper");
-        List<LogRecord> cssWarnings = new ArrayList<>();
-        Handler handler = new Handler() {
-            @Override
-            public void publish(LogRecord record) {
-                if (record.getLevel().intValue() >= Level.WARNING.intValue()) {
-                    cssWarnings.add(record);
-                }
+        FxTestUtils.assertNoCssWarningsMatching(() -> runOnFxThread(() -> {
+            M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"));
+            M3MenuItem archive = new M3MenuItem("Archive");
+            M3MenuItem inbox = new M3MenuItem("Inbox");
+            M3SubMenuItem moveTo = new M3SubMenuItem("Move to", archive, inbox);
+            M3MenuButton menuButton = new M3MenuButton(
+                    "Open menu",
+                    new M3MenuSectionHeader("Document"),
+                    new M3MenuItem("Duplicate"),
+                    moveTo
+            );
+            menuButton.setVariant(M3ButtonVariant.OUTLINED);
+            Pane root = new Pane(menuButton);
+            Scene scene = new Scene(root, 420.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, theme);
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                menuButton.showMenu();
+                moveTo.showSubMenu();
+
+                M3Menu menu = menuButton.getMenu();
+                M3Menu subMenu = moveTo.getSubMenu();
+                menu.applyCss();
+                menu.layout();
+                subMenu.applyCss();
+                subMenu.layout();
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(moveTo.isSubMenuShowing());
+                assertTrue(subMenu.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertTrue(subMenu.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
+                assertResolvedBackgroundFill(menu, "menu");
+                assertResolvedBackgroundFill(subMenu, "submenu");
+                assertResolvedListItemTextFill(moveTo);
+                assertResolvedListItemTextFill(archive);
+                assertResolvedListItemTextFill(inbox);
+            } finally {
+                moveTo.hideSubMenu();
+                menuButton.hideMenu();
+                stage.close();
             }
-
-            @Override
-            public void flush() {
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-
-        logger.addHandler(handler);
-        try {
-            runOnFxThread(() -> {
-                M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"));
-                M3MenuItem archive = new M3MenuItem("Archive");
-                M3MenuItem inbox = new M3MenuItem("Inbox");
-                M3SubMenuItem moveTo = new M3SubMenuItem("Move to", archive, inbox);
-                M3MenuButton menuButton = new M3MenuButton(
-                        "Open menu",
-                        new M3MenuSectionHeader("Document"),
-                        new M3MenuItem("Duplicate"),
-                        moveTo
-                );
-                menuButton.setVariant(M3ButtonVariant.OUTLINED);
-                Pane root = new Pane(menuButton);
-                Scene scene = new Scene(root, 420.0, 260.0);
-                Stage stage = new Stage();
-
-                try {
-                    M3ThemeManager.install(scene, theme);
-                    stage.setScene(scene);
-                    stage.show();
-                    root.applyCss();
-                    root.layout();
-
-                    menuButton.showMenu();
-                    moveTo.showSubMenu();
-
-                    M3Menu menu = menuButton.getMenu();
-                    M3Menu subMenu = moveTo.getSubMenu();
-                    menu.applyCss();
-                    menu.layout();
-                    subMenu.applyCss();
-                    subMenu.layout();
-
-                    assertTrue(menuButton.isShowing());
-                    assertTrue(moveTo.isSubMenuShowing());
-                    assertTrue(subMenu.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-                    assertTrue(subMenu.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
-                    assertResolvedBackgroundFill(menu, "menu");
-                    assertResolvedBackgroundFill(subMenu, "submenu");
-                    assertResolvedListItemTextFill(moveTo);
-                    assertResolvedListItemTextFill(archive);
-                    assertResolvedListItemTextFill(inbox);
-                } finally {
-                    moveTo.hideSubMenu();
-                    menuButton.hideMenu();
-                    stage.close();
-                }
-            });
-        } finally {
-            logger.removeHandler(handler);
-        }
-
-        assertTrue(cssWarnings.isEmpty(), () -> cssWarnings.stream()
-                .map(record -> record.getLevel() + ": " + record.getMessage())
-                .collect(Collectors.joining("\n")));
+        }), record -> true);
     }
 
     /// Verifies that static lists support printable-key type-ahead focus and single selection.
@@ -5991,7 +6033,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(Duration.millis(220.0), () -> {
+            runOnFxThreadAfterDelay(MENU_POPUP_SETUP_DELAY, () -> {
                 M3MenuItem pdf = new M3MenuItem("PDF");
                 M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
                 M3Menu menu = new M3Menu(export);
@@ -6042,7 +6084,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3MenuItem> emailReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(Duration.millis(220.0), () -> {
+            runOnFxThreadAfterDelay(MENU_POPUP_SETUP_DELAY, () -> {
                 M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
                 M3MenuItem email = new M3MenuItem("Email");
                 M3SubMenuItem share = new M3SubMenuItem("Share", email);
@@ -6097,7 +6139,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(Duration.millis(220.0), () -> {
+            runOnFxThreadAfterDelay(MENU_POPUP_SETUP_DELAY, () -> {
                 M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
                 M3MenuButton menuButton = new M3MenuButton("More", export);
                 Stage stage = new Stage();
@@ -6187,7 +6229,7 @@ final class M3ControlStyleTest {
         AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+            runOnFxThreadAfterDelay(SUBMENU_OPEN_DELAY, () -> {
                 M3MenuItem pdf = new M3MenuItem("PDF");
                 M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
                 M3MenuButton menuButton = new M3MenuButton("More", export);
@@ -6611,7 +6653,7 @@ final class M3ControlStyleTest {
         assertTrue(results.isManaged());
         assertTrue(results.getOpacity() <= 1.0);
 
-        runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+        runOnFxThreadAfterDelay(FAST_EXIT_SETTLE_DELAY, () -> {
         }, () -> {
             assertFalse(results.isVisible());
             assertFalse(results.isManaged());
@@ -7018,7 +7060,7 @@ final class M3ControlStyleTest {
         assertTrue(sideSheet.isVisible());
         assertTrue(bottomSheet.isVisible());
 
-        runOnFxThreadAfterDelay(Duration.millis(280.0), () -> {
+        runOnFxThreadAfterDelay(SHEET_EXIT_SETTLE_DELAY, () -> {
         }, () -> {
             assertFalse(sideSheet.isVisible());
             assertFalse(sideSheet.isManaged());
@@ -7038,7 +7080,7 @@ final class M3ControlStyleTest {
         assertTrue(sideSheet.isVisible());
         assertTrue(bottomSheet.isVisible());
 
-        runOnFxThreadAfterDelay(Duration.millis(380.0), () -> {
+        runOnFxThreadAfterDelay(SHEET_ENTER_SETTLE_DELAY, () -> {
         }, () -> {
             assertTrue(sideSheet.isManaged());
             assertEquals(0.0, sideSheet.getTranslateX(), 0.0001);
@@ -7230,7 +7272,7 @@ final class M3ControlStyleTest {
         assertTrue(scrim.isVisible());
         assertTrue(scrim.isManaged());
 
-        runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+        runOnFxThreadAfterDelay(FAST_EXIT_SETTLE_DELAY, () -> {
         }, () -> {
             assertFalse(scrim.isVisible());
             assertFalse(scrim.isManaged());
@@ -7243,7 +7285,7 @@ final class M3ControlStyleTest {
         assertTrue(scrim.isVisible());
         assertTrue(scrim.isManaged());
 
-        runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+        runOnFxThreadAfterDelay(SCRIM_SHOW_SETTLE_DELAY, () -> {
         }, () -> assertEquals(0.32, scrim.getOpacity(), 0.0001));
     }
 
@@ -9259,7 +9301,7 @@ final class M3ControlStyleTest {
         progressBar.resize(200.0, 16.0);
         progressBar.layout();
 
-        Rectangle track = (Rectangle) lookupShape(progressBar, ".track");
+        Rectangle track = progressBarPrimaryTrack(progressBar);
         Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
         assertEquals(200.0, track.getWidth(), 0.0001);
         assertEquals(100.0, bar.getWidth(), 0.0001);
@@ -9300,7 +9342,7 @@ final class M3ControlStyleTest {
         AtomicReference<Rectangle> barReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(320.0),
+                PROGRESS_DETERMINATE_SETTLE_DELAY,
                 () -> {
                     M3ProgressBar progressBar = new M3ProgressBar(0.1);
                     Pane root = new Pane(progressBar);
@@ -9339,7 +9381,7 @@ final class M3ControlStyleTest {
         AtomicReference<Double> initialX = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(180.0),
+                PROGRESS_INDETERMINATE_SAMPLE_DELAY,
                 () -> {
                     M3ProgressBar progressBar = new M3ProgressBar();
                     Pane root = new Pane(progressBar);
@@ -9445,7 +9487,7 @@ final class M3ControlStyleTest {
         progressBar.layout();
 
         Path wave = assertInstanceOf(Path.class, lookupShape(progressBar, ".m3-progress-bar-wave"));
-        Rectangle leadingTrack = (Rectangle) lookupShape(progressBar, ".track");
+        Rectangle leadingTrack = progressBarPrimaryTrack(progressBar);
         Rectangle trailingTrack = (Rectangle) lookupShape(progressBar, ".m3-progress-bar-secondary-track");
         Point2D waveStart = firstPathPoint(wave);
         Point2D waveEnd = lastPathPoint(wave);
@@ -9471,7 +9513,7 @@ final class M3ControlStyleTest {
         progressBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
         root.applyCss();
 
-        Shape track = lookupShape(progressBar, ".track");
+        Shape track = progressBarPrimaryTrack(progressBar);
         Shape bar = lookupShape(progressBar, ".bar");
         assertEquals(Color.rgb(7, 8, 9), track.getFill());
         assertTrue(isTransparent(track.getStroke()));
@@ -9546,7 +9588,7 @@ final class M3ControlStyleTest {
         AtomicReference<Arc> indicatorReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(320.0),
+                PROGRESS_DETERMINATE_SETTLE_DELAY,
                 () -> {
                     M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.1);
                     Pane root = new Pane(progressIndicator);
@@ -9585,7 +9627,7 @@ final class M3ControlStyleTest {
         AtomicReference<Double> initialStartAngle = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(180.0),
+                PROGRESS_INDETERMINATE_SAMPLE_DELAY,
                 () -> {
                     M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
                     Pane root = new Pane(progressIndicator);
@@ -11016,6 +11058,34 @@ final class M3ControlStyleTest {
         }
     }
 
+    /// Verifies that deferred virtualized focus retries do not apply CSS after the list view is detached.
+    @Test
+    void listViewSkipsDeferredFocusCssWhenDetached() throws InterruptedException {
+        runOnFxThreadAfterPulses(8, () -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+            Stage stage = new Stage();
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+
+            listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 99);
+            stage.close();
+        }, () -> {
+        });
+    }
+
     /// Verifies that virtualized list view accessibility actions accept rendered row descendants.
     @Test
     void listViewAccessibilityActionsAcceptRenderedRowDescendants() {
@@ -12418,7 +12488,7 @@ final class M3ControlStyleTest {
         AtomicReference<Double> expandedHeightReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
-                Duration.millis(90.0),
+                DRAWER_EXPANSION_INTERMEDIATE_DELAY,
                 () -> {
                     M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
                     M3ListItem buttons = new M3ListItem("Buttons");
@@ -12454,7 +12524,7 @@ final class M3ControlStyleTest {
         );
 
         runOnFxThreadAfterDelay(
-                Duration.millis(300.0),
+                DRAWER_EXPANSION_SETTLE_DELAY,
                 () -> {
                 },
                 () -> {
@@ -12466,7 +12536,7 @@ final class M3ControlStyleTest {
         );
 
         runOnFxThreadAfterDelay(
-                Duration.millis(90.0),
+                DRAWER_EXPANSION_INTERMEDIATE_DELAY,
                 () -> {
                 },
                 () -> {
@@ -12480,7 +12550,7 @@ final class M3ControlStyleTest {
         );
 
         runOnFxThreadAfterDelay(
-                Duration.millis(300.0),
+                DRAWER_EXPANSION_SETTLE_DELAY,
                 () -> {
                 },
                 () -> {
@@ -15465,7 +15535,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3DateRangePickerField> fieldReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+            runOnFxThreadAfterDelay(PICKER_POPUP_SHOW_DELAY, () -> {
                 M3DateRangePickerField field = new M3DateRangePickerField(
                         LocalDate.of(2026, 5, 19),
                         LocalDate.of(2026, 5, 25)
@@ -15537,7 +15607,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3DateRangePickerField> fieldReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+            runOnFxThreadAfterDelay(PICKER_POPUP_SHOW_DELAY, () -> {
                 M3DateRangePickerField field = new M3DateRangePickerField(
                         LocalDate.of(2026, 5, 19),
                         LocalDate.of(2026, 5, 25)
@@ -18281,32 +18351,7 @@ final class M3ControlStyleTest {
 
     /// Runs a test action on the JavaFX application thread and waits for completion.
     private static void runOnFxThreadAndWait(Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-            return;
-        }
-
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        Platform.runLater(() -> {
-            try {
-                action.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        @Nullable Throwable throwable = failure.get();
-        if (throwable != null) {
-            throw new AssertionError(throwable);
-        }
+        FxTestUtils.runOnFxThread(action);
     }
 
     /// Returns a private double property from a test target.
@@ -18457,6 +18502,17 @@ final class M3ControlStyleTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Shape.class, child);
         return (Shape) child;
+    }
+
+    /// Returns the primary progress bar track, excluding the secondary expressive track.
+    private static Rectangle progressBarPrimaryTrack(M3ProgressBar progressBar) {
+        for (Node node : progressBar.lookupAll(".track")) {
+            if (node instanceof Rectangle rectangle
+                    && !rectangle.getStyleClass().contains("m3-progress-bar-secondary-track")) {
+                return rectangle;
+            }
+        }
+        throw new AssertionError("Missing primary progress bar track below " + progressBar);
     }
 
     /// Returns a scroll bar with the requested orientation from a parent node.
@@ -18880,33 +18936,7 @@ final class M3ControlStyleTest {
 
     /// Returns a rendered pixel from a node snapshot.
     private static Color snapshotPixel(Node node, int x, int y) {
-        if (Platform.isFxApplicationThread()) {
-            return snapshotPixelOnFxThread(node, x, y);
-        }
-
-        AtomicReference<Color> color = new AtomicReference<>();
-        AtomicReference<RuntimeException> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                color.set(snapshotPixelOnFxThread(node, x, y));
-            } catch (RuntimeException e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        RuntimeException exception = failure.get();
-        if (exception != null) {
-            throw exception;
-        }
-        return color.get();
+        return FxTestUtils.callOnFxThread(() -> snapshotPixelOnFxThread(node, x, y));
     }
 
     /// Verifies that a control reports and focuses the expected accessibility focus node.
@@ -18947,38 +18977,7 @@ final class M3ControlStyleTest {
 
     /// Runs a task on the FX application thread and propagates failures.
     private static void runOnFxThread(Runnable task) {
-        if (Platform.isFxApplicationThread()) {
-            task.run();
-            return;
-        }
-
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                task.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
+        FxTestUtils.runOnFxThread(task);
     }
 
     /// Runs setup on the FX thread and verifies the result after a JavaFX delay.
@@ -18987,40 +18986,16 @@ final class M3ControlStyleTest {
             Runnable setup,
             Runnable verification
     ) throws InterruptedException {
-        AtomicReference<Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
+        FxTestUtils.runOnFxThreadAfterDelay(delay, setup, verification);
+    }
 
-        Platform.runLater(() -> {
-            try {
-                setup.run();
-                PauseTransition pause = new PauseTransition(delay);
-                pause.setOnFinished(event -> {
-                    try {
-                        verification.run();
-                    } catch (Throwable e) {
-                        failure.set(e);
-                    } finally {
-                        latch.countDown();
-                    }
-                });
-                pause.play();
-            } catch (Throwable e) {
-                failure.set(e);
-                latch.countDown();
-            }
-        });
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
-        Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
+    /// Runs setup on the FX thread and verifies the result after JavaFX pulses.
+    private static void runOnFxThreadAfterPulses(
+            int pulseCount,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        FxTestUtils.runOnFxThreadAfterPulses(pulseCount, setup, verification);
     }
 
     /// Creates a section container used by visual snapshot tests.
@@ -19412,6 +19387,22 @@ final class M3ControlStyleTest {
                 () -> description + ": actual=" + actual + ", expected=" + expected);
     }
 
+    /// Shows a picker field popup and applies CSS to the popup picker.
+    private static <T, P extends Control> void showAndApplyPickerPopup(M3PickerField<T, P> field, P picker) {
+        field.showPicker();
+        assertTrue(field.isShowing());
+        picker.applyCss();
+        picker.layout();
+    }
+
+    /// Shows a date range picker field popup and applies CSS to the popup picker.
+    private static void showAndApplyPickerPopup(M3DateRangePickerField field, M3DateRangePicker picker) {
+        field.showPicker();
+        assertTrue(field.isShowing());
+        picker.applyCss();
+        picker.layout();
+    }
+
     /// Creates a button with the requested variant.
     private static M3Button createButton(String text, M3ButtonVariant variant) {
         return new M3Button(text, variant);
@@ -19505,6 +19496,24 @@ final class M3ControlStyleTest {
         M3TextArea textArea = new M3TextArea(text);
         textArea.setVariant(variant);
         return textArea;
+    }
+
+    /// Verifies that one text input CSS metadata list exposes the expected Material metric tokens.
+    private static void assertTextInputCssMetaData(List<CssMetaData<? extends Styleable, ?>> cssMetaData) {
+        assertCssProperty(cssMetaData, "-m3-container-height");
+        assertCssProperty(cssMetaData, "-m3-container-shape");
+        assertCssProperty(cssMetaData, "-m3-horizontal-padding");
+        assertCssProperty(cssMetaData, "-m3-vertical-padding");
+    }
+
+    /// Verifies that one CSS metadata list contains a property.
+    private static void assertCssProperty(List<CssMetaData<? extends Styleable, ?>> cssMetaData, String property) {
+        assertTrue(containsCssProperty(cssMetaData, property), () -> "Missing CSS property " + property);
+    }
+
+    /// Returns whether a CSS metadata list contains a property.
+    private static boolean containsCssProperty(List<CssMetaData<? extends Styleable, ?>> cssMetaData, String property) {
+        return cssMetaData.stream().anyMatch(metaData -> metaData.getProperty().equals(property));
     }
 
     /// Creates an avatar with the requested variant.
@@ -19729,14 +19738,6 @@ final class M3ControlStyleTest {
     /// Creates a key event for control behavior tests.
     private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
         return new KeyEvent(eventType, "", "", code, false, false, false, false);
-    }
-
-    /// Returns whether a JavaFX CSS warning indicates unresolved M3FX color tokens.
-    private static boolean isColorTokenCssWarning(LogRecord record) {
-        String message = record.getMessage();
-        return message != null
-                && (message.contains("-m3-color-")
-                || message.contains("ClassCastException") && message.contains("-fx-background-color"));
     }
 
     /// Creates a typed key event for printable-key behavior tests.

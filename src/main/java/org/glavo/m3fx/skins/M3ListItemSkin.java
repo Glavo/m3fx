@@ -364,6 +364,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         String style = "-fx-background-radius: " + formatPixels(radius) + ";";
         selectionContainer.setStyle(style);
         container.setStyle(style);
+        if (getSkinnable().getScene() == null) {
+            return;
+        }
         selectionContainer.applyCss();
         container.applyCss();
     }

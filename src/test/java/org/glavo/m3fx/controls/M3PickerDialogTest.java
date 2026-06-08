@@ -14,6 +14,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -25,9 +26,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,20 +41,14 @@ final class M3PickerDialogTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
     }
 
     /// Verifies single-date dialog content, OK state, and result conversion.
     @Test
     void datePickerDialogConvertsAcceptedDate() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate value = LocalDate.of(2026, 5, 19);
             M3DatePickerDialog dialog = new M3DatePickerDialog();
             M3DialogPane pane = dialog.getM3DialogPane();
@@ -83,7 +75,7 @@ final class M3PickerDialogTest {
     /// Verifies single-date dialog delegates picker configuration.
     @Test
     void datePickerDialogDelegatesPickerConfiguration() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePickerDialog dialog = new M3DatePickerDialog(LocalDate.of(2026, 5, 20));
             LocalDate min = LocalDate.of(2026, 5, 1);
             LocalDate max = LocalDate.of(2026, 5, 31);
@@ -122,7 +114,7 @@ final class M3PickerDialogTest {
     /// Verifies single-date dialog preset actions update the selected date.
     @Test
     void datePickerDialogAppliesPresetActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerDialog dialog = new M3DatePickerDialog();
             M3DialogPane pane = dialog.getM3DialogPane();
@@ -201,7 +193,7 @@ final class M3PickerDialogTest {
     /// Verifies range dialog content, OK state, and result conversion.
     @Test
     void dateRangePickerDialogConvertsCompleteRange() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate start = LocalDate.of(2026, 5, 19);
             LocalDate end = LocalDate.of(2026, 5, 23);
             M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
@@ -230,7 +222,7 @@ final class M3PickerDialogTest {
     /// Verifies date range dialog delegates picker configuration.
     @Test
     void dateRangePickerDialogDelegatesPickerConfiguration() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate start = LocalDate.of(2026, 5, 19);
             LocalDate end = LocalDate.of(2026, 5, 23);
             M3DateRangePickerDialog dialog = new M3DateRangePickerDialog(new M3DateRange(start, end));
@@ -257,7 +249,7 @@ final class M3PickerDialogTest {
     /// Verifies date range dialog preset actions update the selected range.
     @Test
     void dateRangePickerDialogAppliesPresetActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
             M3DialogPane pane = dialog.getM3DialogPane();
@@ -304,7 +296,7 @@ final class M3PickerDialogTest {
     /// Verifies time dialog content, OK state, and result conversion.
     @Test
     void timePickerDialogConvertsAcceptedTime() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalTime value = LocalTime.of(10, 30);
             M3TimePickerDialog dialog = new M3TimePickerDialog();
             M3DialogPane pane = dialog.getM3DialogPane();
@@ -331,7 +323,7 @@ final class M3PickerDialogTest {
     /// Verifies time dialog delegates picker configuration.
     @Test
     void timePickerDialogDelegatesPickerConfiguration() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(10, 30, 45));
             LocalTime min = LocalTime.of(9, 0);
             LocalTime max = LocalTime.of(17, 30);
@@ -369,7 +361,7 @@ final class M3PickerDialogTest {
     /// Verifies time dialog preset actions update the selected time.
     @Test
     void timePickerDialogAppliesPresetActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalTime anchor = LocalTime.of(10, 30);
             M3TimePickerDialog dialog = new M3TimePickerDialog();
             M3DialogPane pane = dialog.getM3DialogPane();
@@ -409,7 +401,7 @@ final class M3PickerDialogTest {
     /// Verifies that dialog preset action columns support keyboard traversal and picker handoff.
     @Test
     void pickerDialogPresetKeyboardNavigationMovesWithinColumnAndToPicker() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LocalDate dateAnchor = LocalDate.of(2026, 5, 19);
             LocalTime timeAnchor = LocalTime.of(10, 30);
             M3DatePickerDialog dateDialog = new M3DatePickerDialog(dateAnchor);
@@ -572,41 +564,4 @@ final class M3PickerDialogTest {
         return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
     }
 
-    /// Runs one assertion block on the JavaFX application thread.
-    private static void runOnFxThread(Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-            return;
-        }
-
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        Platform.runLater(() -> {
-            try {
-                action.run();
-            } catch (Throwable throwable) {
-                failure.set(throwable);
-            } finally {
-                latch.countDown();
-            }
-        });
-
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(exception);
-        }
-
-        @Nullable Throwable throwable = failure.get();
-        if (throwable instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (throwable instanceof Error error) {
-            throw error;
-        }
-        if (throwable != null) {
-            throw new AssertionError(throwable);
-        }
-    }
 }

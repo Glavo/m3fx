@@ -9,12 +9,18 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
+import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.control.TextInputControl;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /// Provides shared state and token plumbing for Material text input controls.
@@ -124,6 +130,59 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
                 control.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, get());
             }
         };
+    }
+
+    /// Creates CSS metadata for a non-negative text input size token.
+    static <C extends TextInputControl & M3TextInput> CssMetaData<C, Number> createSizeCssMetaData(
+            String property,
+            double initialValue,
+            StyleablePropertyProvider<C> provider
+    ) {
+        return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
+            /// Returns whether this property can be set by CSS.
+            @Override
+            public boolean isSettable(C control) {
+                return M3Css.isSettable(provider.property(control));
+            }
+
+            /// Returns the styleable property for a control.
+            @Override
+            public StyleableProperty<Number> getStyleableProperty(C control) {
+                return provider.property(control);
+            }
+        };
+    }
+
+    /// Combines JavaFX text input CSS metadata with three Material text input token entries.
+    static <C extends TextInputControl & M3TextInput> List<CssMetaData<? extends Styleable, ?>> cssMetaData(
+            List<CssMetaData<? extends Styleable, ?>> baseCssMetaData,
+            CssMetaData<C, Number> containerHeightCssMetaData,
+            CssMetaData<C, Number> containerShapeCssMetaData,
+            CssMetaData<C, Number> horizontalPaddingCssMetaData
+    ) {
+        List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(baseCssMetaData);
+        styleables.add(containerHeightCssMetaData);
+        styleables.add(containerShapeCssMetaData);
+        styleables.add(horizontalPaddingCssMetaData);
+        return Collections.unmodifiableList(styleables);
+    }
+
+    /// Combines JavaFX text input CSS metadata with four Material text input token entries.
+    static <C extends TextInputControl & M3TextInput> List<CssMetaData<? extends Styleable, ?>> cssMetaData(
+            List<CssMetaData<? extends Styleable, ?>> baseCssMetaData,
+            CssMetaData<C, Number> containerHeightCssMetaData,
+            CssMetaData<C, Number> containerShapeCssMetaData,
+            CssMetaData<C, Number> horizontalPaddingCssMetaData,
+            CssMetaData<C, Number> verticalPaddingCssMetaData
+    ) {
+        List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(cssMetaData(
+                baseCssMetaData,
+                containerHeightCssMetaData,
+                containerShapeCssMetaData,
+                horizontalPaddingCssMetaData
+        ));
+        styleables.add(verticalPaddingCssMetaData);
+        return Collections.unmodifiableList(styleables);
     }
 
     /// Adds base styles and applies default text input metrics.
@@ -316,5 +375,13 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
                 return cssMetaData;
             }
         };
+    }
+
+    /// Provides a styleable double property for a text input control.
+    @FunctionalInterface
+    @NotNullByDefault
+    interface StyleablePropertyProvider<C extends TextInputControl & M3TextInput> {
+        /// Returns the styleable property for a text input control.
+        StyleableDoubleProperty property(C control);
     }
 }

@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.demo;
 
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
@@ -73,8 +72,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -181,16 +178,49 @@ final class M3FXDemoVisualSmokeTest {
     /// The hover pseudo-class used when rendering synthetic interaction snapshots.
     private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
 
+    /// The delay used after switching ordinary demo pages before capturing layout-sensitive snapshots.
+    private static final Duration PAGE_LAYOUT_DELAY = Duration.millis(80.0);
+
+    /// The delay used after switching themed pages before capturing layout-sensitive snapshots.
+    private static final Duration THEME_LAYOUT_DELAY = Duration.millis(120.0);
+
+    /// The delay used before capturing hover, pressed, focus, or selection interaction frames.
+    private static final Duration INTERACTION_FRAME_DELAY = Duration.millis(160.0);
+
+    /// The delay used for early ripple release snapshots.
+    private static final Duration RIPPLE_RELEASE_FRAME_DELAY = Duration.millis(70.0);
+
+    /// The delay used after a ripple release should visually settle.
+    private static final Duration RIPPLE_SETTLE_DELAY = Duration.millis(260.0);
+
+    /// The delay used before capturing a popup or overlay after it has been requested.
+    private static final Duration POPUP_SHOW_DELAY = Duration.millis(120.0);
+
+    /// The delay used for popup and overlay enter animation intermediate frames.
+    private static final Duration POPUP_ENTER_FRAME_DELAY = Duration.millis(620.0);
+
+    /// The delay used for popup and overlay exit animation intermediate frames.
+    private static final Duration POPUP_EXIT_FRAME_DELAY = Duration.millis(360.0);
+
+    /// The delay used when a component transition should be near the middle of a visible animation.
+    private static final Duration TRANSITION_MIDPOINT_DELAY = Duration.millis(520.0);
+
+    /// The delay used for modal or sheet overlay setup before the first snapshot.
+    private static final Duration OVERLAY_SETUP_DELAY = Duration.millis(240.0);
+
+    /// The delay used for early intermediate frames in controls with short visible transitions.
+    private static final Duration EARLY_ANIMATION_FRAME_DELAY = Duration.millis(180.0);
+
+    /// The long linear motion spec duration used to make animation frames visually observable in tests.
+    private static final Duration OBSERVABLE_MOTION_DURATION = Duration.millis(600.0);
+
+    /// The hide delay used by the interactive rich tooltip lifetime test.
+    private static final Duration TOOLTIP_HIDE_DELAY = Duration.millis(160.0);
+
     /// Starts the JavaFX toolkit before creating the demo stage.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        DemoFxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
     }
 
@@ -268,28 +298,30 @@ final class M3FXDemoVisualSmokeTest {
         try {
             @Unmodifiable List<String> pageTitles =
                     Objects.requireNonNull(appReference.get(), "app").demoPageTitlesForTesting();
-            for (String pageTitle : pageTitles) {
-                runOnFxThreadAfterDelay(Duration.millis(80.0), () -> {
-                    M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    app.showPageForTesting(pageTitle);
-                    scene.getRoot().applyCss();
-                    scene.getRoot().layout();
-                }, () -> {
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    assertCurrentPageTitle(scene, pageTitle);
+            DemoFxTestUtils.assertNoM3CssTokenWarnings(() -> {
+                for (String pageTitle : pageTitles) {
+                    runOnFxThreadAfterDelay(PAGE_LAYOUT_DELAY, () -> {
+                        M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        app.showPageForTesting(pageTitle);
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+                    }, () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertCurrentPageTitle(scene, pageTitle);
 
-                    WritableImage image = snapshot(scene);
-                    writeVisualSnapshot(image, Path.of(
-                            "build",
-                            "reports",
-                            "m3fx-demo-visual",
-                            "demo-" + snapshotFileName(pageTitle) + ".png"
-                    ));
-                    assertSnapshotHasVisibleContent(image, pageTitle);
-                    assertDemoPageVisualGeometry(scene, pageTitle);
-                });
-            }
+                        WritableImage image = snapshot(scene);
+                        writeVisualSnapshot(image, Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-demo-visual",
+                                "demo-" + snapshotFileName(pageTitle) + ".png"
+                        ));
+                        assertSnapshotHasVisibleContent(image, pageTitle);
+                        assertDemoPageVisualGeometry(scene, pageTitle);
+                    });
+                }
+            });
         } finally {
             runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -327,30 +359,32 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         try {
-            for (String pageTitle : DARK_EXPRESSIVE_VISUAL_PAGES) {
-                runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
-                    M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    app.showPageForTesting(pageTitle);
-                    scene.getRoot().applyCss();
-                    scene.getRoot().layout();
-                }, () -> {
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    assertCurrentPageTitle(scene, pageTitle);
-                    assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
-                    assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            DemoFxTestUtils.assertNoM3CssTokenWarnings(() -> {
+                for (String pageTitle : DARK_EXPRESSIVE_VISUAL_PAGES) {
+                    runOnFxThreadAfterDelay(THEME_LAYOUT_DELAY, () -> {
+                        M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        app.showPageForTesting(pageTitle);
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+                    }, () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertCurrentPageTitle(scene, pageTitle);
+                        assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                        assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
 
-                    WritableImage image = snapshot(scene);
-                    writeVisualSnapshot(image, Path.of(
-                            "build",
-                            "reports",
-                            "m3fx-demo-visual",
-                            "demo-dark-expressive-" + snapshotFileName(pageTitle) + ".png"
-                    ));
-                    assertSnapshotHasVisibleContent(image, pageTitle);
-                    assertDemoPageVisualGeometry(scene, pageTitle);
-                });
-            }
+                        WritableImage image = snapshot(scene);
+                        writeVisualSnapshot(image, Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-demo-visual",
+                                "demo-dark-expressive-" + snapshotFileName(pageTitle) + ".png"
+                        ));
+                        assertSnapshotHasVisibleContent(image, pageTitle);
+                        assertDemoPageVisualGeometry(scene, pageTitle);
+                    });
+                }
+            });
         } finally {
             runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -386,30 +420,32 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         try {
-            for (String pageTitle : RTL_VISUAL_PAGES) {
-                runOnFxThreadAfterDelay(Duration.millis(80.0), () -> {
-                    M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    app.showPageForTesting(pageTitle);
-                    scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-                    scene.getRoot().applyCss();
-                    scene.getRoot().layout();
-                }, () -> {
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    assertEquals(NodeOrientation.RIGHT_TO_LEFT, scene.getRoot().getEffectiveNodeOrientation());
-                    assertCurrentPageTitle(scene, pageTitle);
+            DemoFxTestUtils.assertNoM3CssTokenWarnings(() -> {
+                for (String pageTitle : RTL_VISUAL_PAGES) {
+                    runOnFxThreadAfterDelay(PAGE_LAYOUT_DELAY, () -> {
+                        M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        app.showPageForTesting(pageTitle);
+                        scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+                    }, () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertEquals(NodeOrientation.RIGHT_TO_LEFT, scene.getRoot().getEffectiveNodeOrientation());
+                        assertCurrentPageTitle(scene, pageTitle);
 
-                    WritableImage image = snapshot(scene);
-                    writeVisualSnapshot(image, Path.of(
-                            "build",
-                            "reports",
-                            "m3fx-demo-visual",
-                            "demo-rtl-" + snapshotFileName(pageTitle) + ".png"
-                    ));
-                    assertSnapshotHasVisibleContent(image, pageTitle);
-                    assertDemoPageVisualGeometry(scene, pageTitle);
-                });
-            }
+                        WritableImage image = snapshot(scene);
+                        writeVisualSnapshot(image, Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-demo-visual",
+                                "demo-rtl-" + snapshotFileName(pageTitle) + ".png"
+                        ));
+                        assertSnapshotHasVisibleContent(image, pageTitle);
+                        assertDemoPageVisualGeometry(scene, pageTitle);
+                    });
+                }
+            });
         } finally {
             runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -654,7 +690,7 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         try {
-            runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+            runOnFxThreadAfterDelay(EARLY_ANIMATION_FRAME_DELAY, () -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 app.showPageForTesting("Progress");
@@ -674,7 +710,7 @@ final class M3FXDemoVisualSmokeTest {
                 );
             });
 
-            runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+            runOnFxThreadAfterDelay(TRANSITION_MIDPOINT_DELAY, () -> {
             }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 secondFrameReference.set(snapshot(scene));
@@ -724,7 +760,7 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         try {
-            runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+            runOnFxThreadAfterDelay(EARLY_ANIMATION_FRAME_DELAY, () -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 app.showPageForTesting("Loading Indicator");
@@ -744,7 +780,7 @@ final class M3FXDemoVisualSmokeTest {
                 );
             });
 
-            runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+            runOnFxThreadAfterDelay(TRANSITION_MIDPOINT_DELAY, () -> {
             }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 secondFrameReference.set(snapshot(scene));
@@ -781,7 +817,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Buttons");
@@ -816,7 +852,7 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             pressedReference.set(snapshot(scene));
@@ -904,7 +940,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> releaseReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting(pageTitle);
@@ -934,7 +970,7 @@ final class M3FXDemoVisualSmokeTest {
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(70.0), () -> {
+        runOnFxThreadAfterDelay(RIPPLE_RELEASE_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             releaseReference.set(snapshot(scene));
@@ -945,7 +981,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+        runOnFxThreadAfterDelay(RIPPLE_SETTLE_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             settledReference.set(snapshot(scene));
@@ -987,7 +1023,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> intermediateReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        runOnFxThreadAfterDelay(OVERLAY_SETUP_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Switches");
@@ -1020,7 +1056,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+        runOnFxThreadAfterDelay(TRANSITION_MIDPOINT_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             settledReference.set(snapshot(scene));
@@ -1054,7 +1090,7 @@ final class M3FXDemoVisualSmokeTest {
                 standard.fastEffects(),
                 standard.defaultEffects(),
                 standard.slowEffects(),
-                M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR),
+                M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR),
                 standard.defaultSpatial(),
                 standard.slowSpatial()
         );
@@ -1071,7 +1107,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Split Buttons");
@@ -1101,7 +1137,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             M3SplitButton target = Objects.requireNonNull(targetReference.get(), "split button");
             assertTrue(target.isShowing());
@@ -1120,7 +1156,7 @@ final class M3FXDemoVisualSmokeTest {
             target.hideMenu();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_EXIT_FRAME_DELAY, () -> {
         }, () -> {
             Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "split button popup");
             layoutPopupRoot(popupRoot);
@@ -1132,7 +1168,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_EXIT_FRAME_DELAY, () -> {
         }, () -> {
             M3SplitButton target = Objects.requireNonNull(targetReference.get(), "split button");
             assertFalse(target.isShowing());
@@ -1163,7 +1199,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Menus");
@@ -1183,7 +1219,7 @@ final class M3FXDemoVisualSmokeTest {
             layoutPopupRoot(menuButton.getMenu());
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
             assertTrue(menuButton.isShowing());
@@ -1205,7 +1241,7 @@ final class M3FXDemoVisualSmokeTest {
             subMenuItemReference.set(subMenuItem);
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(180.0), () -> {
+        runOnFxThreadAfterDelay(EARLY_ANIMATION_FRAME_DELAY, () -> {
         }, () -> {
             M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
             layoutPopupRoot(subMenuItem.getSubMenu());
@@ -1217,7 +1253,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
             M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
@@ -1243,7 +1279,7 @@ final class M3FXDemoVisualSmokeTest {
             subMenuItem.hideSubMenu();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_EXIT_FRAME_DELAY, () -> {
         }, () -> {
             M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
             layoutPopupRoot(subMenuItem.getSubMenu());
@@ -1255,7 +1291,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_EXIT_FRAME_DELAY, () -> {
         }, () -> {
             M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
             M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
@@ -1288,7 +1324,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Date Pickers");
@@ -1317,7 +1353,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             M3DatePickerField target = Objects.requireNonNull(targetReference.get(), "date picker field");
             assertTrue(target.isShowing());
@@ -1336,7 +1372,7 @@ final class M3FXDemoVisualSmokeTest {
             target.hidePicker();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_EXIT_FRAME_DELAY, () -> {
         }, () -> {
             Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "date picker field popup");
             layoutPopupRoot(popupRoot);
@@ -1348,7 +1384,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(360.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_EXIT_FRAME_DELAY, () -> {
         }, () -> {
             M3DatePickerField target = Objects.requireNonNull(targetReference.get(), "date picker field");
             assertFalse(target.isShowing());
@@ -1374,7 +1410,7 @@ final class M3FXDemoVisualSmokeTest {
                 standard.fastEffects(),
                 standard.defaultEffects(),
                 standard.slowEffects(),
-                M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR),
+                M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR),
                 standard.defaultSpatial(),
                 standard.slowSpatial()
         );
@@ -1392,7 +1428,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> intermediateReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting(pageTitle);
@@ -1426,7 +1462,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+        runOnFxThreadAfterDelay(TRANSITION_MIDPOINT_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             settledReference.set(snapshot(scene));
@@ -1465,7 +1501,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> collapsingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Buttons");
@@ -1500,7 +1536,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+        runOnFxThreadAfterDelay(TRANSITION_MIDPOINT_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3NavigationDrawerGroup target = Objects.requireNonNull(targetReference.get(), "sidebar drawer group");
@@ -1514,7 +1550,7 @@ final class M3FXDemoVisualSmokeTest {
             target.setExpanded(false);
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        runOnFxThreadAfterDelay(OVERLAY_SETUP_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             collapsingReference.set(snapshot(scene));
@@ -1525,7 +1561,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(520.0), () -> {
+        runOnFxThreadAfterDelay(TRANSITION_MIDPOINT_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3NavigationDrawerGroup target = Objects.requireNonNull(targetReference.get(), "sidebar drawer group");
@@ -1564,7 +1600,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Returns a navigation-specific motion scheme that makes selection and disclosure frames observable.
     private static M3MotionScheme visualNavigationMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
-        M3MotionSpec observableSpec = M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR);
+        M3MotionSpec observableSpec = M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
         return M3MotionScheme.create(
                 standard.fastEffects(),
                 observableSpec,
@@ -1587,7 +1623,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> showingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> resettledReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Bottom Sheets");
@@ -1617,7 +1653,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3BottomSheet target = Objects.requireNonNull(targetReference.get(), "bottom sheet");
@@ -1631,7 +1667,7 @@ final class M3FXDemoVisualSmokeTest {
             target.show();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        runOnFxThreadAfterDelay(OVERLAY_SETUP_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             showingReference.set(snapshot(scene));
@@ -1642,7 +1678,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3BottomSheet target = Objects.requireNonNull(targetReference.get(), "bottom sheet");
@@ -1691,7 +1727,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> showingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> resettledReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Side Sheets");
@@ -1721,7 +1757,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SideSheet target = Objects.requireNonNull(targetReference.get(), "side sheet");
@@ -1735,7 +1771,7 @@ final class M3FXDemoVisualSmokeTest {
             target.show();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        runOnFxThreadAfterDelay(OVERLAY_SETUP_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             showingReference.set(snapshot(scene));
@@ -1746,7 +1782,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SideSheet target = Objects.requireNonNull(targetReference.get(), "side sheet");
@@ -1786,7 +1822,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Returns a sheet-specific motion scheme that makes visibility motion frames observable.
     private static M3MotionScheme visualSheetMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
-        M3MotionSpec observableSpec = M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR);
+        M3MotionSpec observableSpec = M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
         return M3MotionScheme.create(
                 standard.fastEffects(),
                 standard.defaultEffects(),
@@ -1808,7 +1844,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hiddenReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Snackbars");
@@ -1836,7 +1872,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
@@ -1854,7 +1890,7 @@ final class M3FXDemoVisualSmokeTest {
             host.dismiss();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        runOnFxThreadAfterDelay(OVERLAY_SETUP_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
@@ -1869,7 +1905,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
@@ -1913,7 +1949,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> collapsingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> recollapsedReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("FAB Menu");
@@ -1942,7 +1978,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3FabMenu target = Objects.requireNonNull(targetReference.get(), "FAB menu");
@@ -1959,7 +1995,7 @@ final class M3FXDemoVisualSmokeTest {
             target.hide();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        runOnFxThreadAfterDelay(OVERLAY_SETUP_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             scene.getRoot().applyCss();
@@ -1972,7 +2008,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(620.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3FabMenu target = Objects.requireNonNull(targetReference.get(), "FAB menu");
@@ -2019,7 +2055,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> popupReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(120.0), () -> {
+        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Tooltips");
@@ -2038,7 +2074,7 @@ final class M3FXDemoVisualSmokeTest {
                     action
             );
             tooltip.setShowDelay(Duration.ZERO);
-            tooltip.setHideDelay(Duration.millis(160.0));
+            tooltip.setHideDelay(TOOLTIP_HIDE_DELAY);
             tooltip.setShowDuration(Duration.INDEFINITE);
             ownerReference.set(owner);
             tooltipReference.set(tooltip);
@@ -2065,14 +2101,14 @@ final class M3FXDemoVisualSmokeTest {
             firePrimaryMouseEvent(popupRoot, MouseEvent.MOUSE_ENTERED, false);
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(260.0), () -> {
+        runOnFxThreadAfterDelay(RIPPLE_SETTLE_DELAY, () -> {
         }, () -> {
             M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "rich tooltip");
             assertTrue(tooltip.isShowing());
             tooltip.hide();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(80.0), () -> {
+        runOnFxThreadAfterDelay(PAGE_LAYOUT_DELAY, () -> {
         }, () -> {
             M3Button owner = Objects.requireNonNull(ownerReference.get(), "rich tooltip owner");
             M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "rich tooltip");
@@ -2088,7 +2124,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> dialogSnapshotReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(240.0), () -> {
+        runOnFxThreadAfterDelay(OVERLAY_SETUP_DELAY, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3Dialog<ButtonType> dialog = new M3Dialog<>(
                     "M3FX Demo Dialog",
@@ -2126,7 +2162,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Returns an overlay-specific motion scheme that makes popup and surface transitions observable.
     private static M3MotionScheme visualOverlayMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
-        M3MotionSpec observableSpec = M3MotionSpec.create(Duration.millis(600.0), M3MotionEasing.LINEAR);
+        M3MotionSpec observableSpec = M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
         return M3MotionScheme.create(
                 observableSpec,
                 observableSpec,
@@ -2146,7 +2182,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> focusedReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Text Fields");
@@ -2195,7 +2231,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Buttons");
@@ -2230,7 +2266,7 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             pressedReference.set(snapshot(scene));
@@ -2268,7 +2304,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Icon Buttons");
@@ -2303,7 +2339,7 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
         });
 
-        runOnFxThreadAfterDelay(Duration.millis(160.0), () -> {
+        runOnFxThreadAfterDelay(INTERACTION_FRAME_DELAY, () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             pressedReference.set(snapshot(scene));
@@ -2341,7 +2377,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(Duration.millis(80.0), () -> {
+        runOnFxThreadAfterDelay(PAGE_LAYOUT_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3MotionSettings.setAnimationsEnabled(scene.getRoot(), false);
@@ -3284,39 +3320,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Runs a task on the JavaFX application thread and propagates failures.
     private static void runOnFxThread(Runnable task) {
-        if (Platform.isFxApplicationThread()) {
-            task.run();
-            return;
-        }
-
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                task.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-
-        @Nullable Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
+        DemoFxTestUtils.runOnFxThread(task);
     }
 
     /// Runs setup on the FX thread and verifies the result after a JavaFX delay.
@@ -3325,38 +3329,6 @@ final class M3FXDemoVisualSmokeTest {
             Runnable setup,
             Runnable verification
     ) throws InterruptedException {
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                setup.run();
-                PauseTransition pause = new PauseTransition(delay);
-                pause.setOnFinished(event -> {
-                    try {
-                        verification.run();
-                    } catch (Throwable e) {
-                        failure.set(e);
-                    } finally {
-                        latch.countDown();
-                    }
-                });
-                pause.play();
-            } catch (Throwable e) {
-                failure.set(e);
-                latch.countDown();
-            }
-        });
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
-        @Nullable Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
+        DemoFxTestUtils.runOnFxThreadAfterDelay(delay, setup, verification);
     }
 }

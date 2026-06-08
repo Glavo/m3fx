@@ -8,15 +8,11 @@ import javafx.beans.property.ObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.TextField;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /// A Material Design 3 single-line text field.
@@ -40,7 +36,7 @@ public class M3TextField extends TextField implements M3TextInput {
             StyleableProperties.CONTAINER_HEIGHT,
             StyleableProperties.CONTAINER_SHAPE,
             StyleableProperties.HORIZONTAL_PADDING,
-            null
+            StyleableProperties.VERTICAL_PADDING
     );
 
     /// Creates an empty filled text field.
@@ -144,6 +140,24 @@ public class M3TextField extends TextField implements M3TextInput {
         return support.horizontalPaddingProperty();
     }
 
+    /// Returns the vertical content padding token.
+    @Override
+    public final double getVerticalPadding() {
+        return support.getVerticalPadding();
+    }
+
+    /// Sets the vertical content padding token.
+    @Override
+    public final void setVerticalPadding(double verticalPadding) {
+        support.setVerticalPadding(verticalPadding);
+    }
+
+    /// Returns the vertical content padding token property.
+    @Override
+    public final StyleableDoubleProperty verticalPaddingProperty() {
+        return support.verticalPaddingProperty();
+    }
+
     /// Returns the CSS metadata for this control class.
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
@@ -171,68 +185,49 @@ public class M3TextField extends TextField implements M3TextInput {
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.
-        private static final CssMetaData<M3TextField, Number> CONTAINER_HEIGHT = createSizeCssMetaData(
+        private static final CssMetaData<M3TextField, Number> CONTAINER_HEIGHT =
+                M3TextInputSupport.createSizeCssMetaData(
                 "-m3-container-height",
                 M3TextInputSupport.DEFAULT_FIELD_CONTAINER_HEIGHT,
                 M3TextField::containerHeightProperty
         );
 
         /// CSS metadata for the container shape token.
-        private static final CssMetaData<M3TextField, Number> CONTAINER_SHAPE = createSizeCssMetaData(
+        private static final CssMetaData<M3TextField, Number> CONTAINER_SHAPE =
+                M3TextInputSupport.createSizeCssMetaData(
                 "-m3-container-shape",
                 M3TextInputSupport.DEFAULT_CONTAINER_SHAPE,
                 M3TextField::containerShapeProperty
         );
 
         /// CSS metadata for the horizontal padding token.
-        private static final CssMetaData<M3TextField, Number> HORIZONTAL_PADDING = createSizeCssMetaData(
+        private static final CssMetaData<M3TextField, Number> HORIZONTAL_PADDING =
+                M3TextInputSupport.createSizeCssMetaData(
                 "-m3-horizontal-padding",
                 M3TextInputSupport.DEFAULT_HORIZONTAL_PADDING,
                 M3TextField::horizontalPaddingProperty
         );
 
-        /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+        /// CSS metadata for the vertical padding token.
+        private static final CssMetaData<M3TextField, Number> VERTICAL_PADDING =
+                M3TextInputSupport.createSizeCssMetaData(
+                "-m3-vertical-padding",
+                M3TextInputSupport.DEFAULT_FIELD_VERTICAL_PADDING,
+                M3TextField::verticalPaddingProperty
+        );
 
-        static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(TextField.getClassCssMetaData());
-            styleables.add(CONTAINER_HEIGHT);
-            styleables.add(CONTAINER_SHAPE);
-            styleables.add(HORIZONTAL_PADDING);
-            STYLEABLES = Collections.unmodifiableList(styleables);
-        }
+        /// The complete immutable CSS metadata list.
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES = M3TextInputSupport.cssMetaData(
+                TextField.getClassCssMetaData(),
+                CONTAINER_HEIGHT,
+                CONTAINER_SHAPE,
+                HORIZONTAL_PADDING,
+                VERTICAL_PADDING
+        );
 
         /// Prevents utility class instantiation.
         private StyleableProperties() {
         }
 
-        /// Creates CSS metadata for a text field size token.
-        private static CssMetaData<M3TextField, Number> createSizeCssMetaData(
-                String property,
-                double initialValue,
-                StyleablePropertyProvider provider
-        ) {
-            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
-                /// Returns whether this property can be set by CSS.
-                @Override
-                public boolean isSettable(M3TextField control) {
-                    return M3Css.isSettable(provider.property(control));
-                }
-
-                /// Returns the styleable property for a control.
-                @Override
-                public StyleableProperty<Number> getStyleableProperty(M3TextField control) {
-                    return provider.property(control);
-                }
-            };
-        }
-    }
-
-    /// Provides a styleable double property for a text field.
-    @FunctionalInterface
-    @NotNullByDefault
-    private interface StyleablePropertyProvider {
-        /// Returns the styleable property for a text field.
-        StyleableDoubleProperty property(M3TextField control);
     }
 }

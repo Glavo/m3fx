@@ -15,12 +15,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -34,9 +33,6 @@ import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.imageio.ImageIO;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,13 +51,7 @@ final class M3DateRangePickerTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        try {
-            Platform.startup(latch::countDown);
-        } catch (IllegalStateException ignored) {
-            latch.countDown();
-        }
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
     }
 
@@ -110,7 +100,7 @@ final class M3DateRangePickerTest {
     /// Verifies that the range picker skin marks range start, middle, and end day cells.
     @Test
     void dateRangePickerSkinBuildsCalendarCellsAndRangeStates() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DateRangePicker picker = new M3DateRangePicker();
             picker.setDisplayedMonth(YearMonth.of(2026, 5));
             picker.setFirstDayOfWeek(DayOfWeek.MONDAY);
@@ -169,7 +159,7 @@ final class M3DateRangePickerTest {
     /// Verifies that default accessibility focus actions preserve the focused visible day cell.
     @Test
     void dateRangePickerAccessibleFocusPreservesFocusedVisibleCell() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DateRangePicker picker = new M3DateRangePicker(
                     LocalDate.of(2026, 5, 18),
                     LocalDate.of(2026, 5, 22)
@@ -211,7 +201,7 @@ final class M3DateRangePickerTest {
     /// Verifies that the date range picker renders selected endpoint and in-range states.
     @Test
     void dateRangePickerSnapshotRendersRangeStates() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DateRangePicker selected = new M3DateRangePicker(
                     LocalDate.of(2026, 5, 18),
                     LocalDate.of(2026, 5, 22)
@@ -253,39 +243,33 @@ final class M3DateRangePickerTest {
     /// Verifies that an armed range-picker day cell shows the Material state layer.
     @Test
     void dateRangePickerDayCellShowsArmedStateLayer() {
-        runOnFxThread(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionSettings.setAnimationsEnabled(false);
-            try {
-                M3DateRangePicker picker = new M3DateRangePicker();
-                picker.setDisplayedMonth(YearMonth.of(2026, 5));
-                Pane root = new Pane(picker);
-                root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-                Scene scene = new Scene(root, 420.0, 360.0);
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DateRangePicker picker = new M3DateRangePicker();
+            picker.setDisplayedMonth(YearMonth.of(2026, 5));
+            Pane root = new Pane(picker);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 420.0, 360.0);
 
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                root.applyCss();
-                picker.resize(360.0, 340.0);
-                root.resize(420.0, 360.0);
-                root.layout();
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            picker.resize(360.0, 340.0);
+            root.resize(420.0, 360.0);
+            root.layout();
 
-                ButtonBase targetCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
-                WritableImage normalImage = snapshotImageOnFxThread(root);
+            ButtonBase targetCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
+            WritableImage normalImage = snapshotImageOnFxThread(root);
 
-                targetCell.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, true);
-                assertTrue(targetCell.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
-                targetCell.applyCss();
-                targetCell.requestLayout();
-                root.layout();
+            targetCell.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, true);
+            assertTrue(targetCell.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
+            targetCell.applyCss();
+            targetCell.requestLayout();
+            root.layout();
 
-                Node stateLayer = targetCell.lookup(".m3-state-layer");
-                assertTrue(stateLayer.getOpacity() >= 0.09);
+            Node stateLayer = targetCell.lookup(".m3-state-layer");
+            assertTrue(stateLayer.getOpacity() >= 0.09);
 
-                WritableImage armedImage = snapshotImageOnFxThread(root);
-                assertSnapshotAreaChanged(normalImage, armedImage, targetCell, 16);
-            } finally {
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
-            }
+            WritableImage armedImage = snapshotImageOnFxThread(root);
+            assertSnapshotAreaChanged(normalImage, armedImage, targetCell, 16);
         });
     }
 
@@ -297,42 +281,6 @@ final class M3DateRangePickerTest {
             }
         }
         throw new AssertionError("No date cell found for " + date);
-    }
-
-    /// Runs a task on the FX application thread and propagates failures.
-    private static void runOnFxThread(Runnable task) {
-        if (Platform.isFxApplicationThread()) {
-            task.run();
-            return;
-        }
-
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                task.run();
-            } catch (Throwable e) {
-                failure.set(e);
-            } finally {
-                latch.countDown();
-            }
-        });
-        try {
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
-        }
-        @Nullable Throwable exception = failure.get();
-        if (exception instanceof RuntimeException runtimeException) {
-            throw runtimeException;
-        }
-        if (exception instanceof Error error) {
-            throw error;
-        }
-        if (exception != null) {
-            throw new AssertionError(exception);
-        }
     }
 
     /// Returns high-contrast color tokens used by snapshot-based visual tests.
