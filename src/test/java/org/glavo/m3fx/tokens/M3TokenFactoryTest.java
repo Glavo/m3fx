@@ -179,6 +179,10 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-split-button-menu-width: 49px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-pref-width: 49px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-tab-active-indicator"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-medium-container-height: 60px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-large-container-height: 61px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-medium-bottom-padding: 12px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-large-bottom-padding: 13px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-top-app-bar-actions"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-text-area"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-menu .m3-menu-item"));

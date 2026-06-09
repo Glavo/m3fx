@@ -26,6 +26,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -1367,17 +1368,17 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the app bar component page.
     private Node createAppBarsPage() {
-        M3TopAppBar small = createTopAppBar("Inbox");
-        M3TopAppBar centerAligned = createTopAppBar("Calendar");
-        centerAligned.setVariant(M3TopAppBarVariant.CENTER_ALIGNED);
-        M3TopAppBar medium = createTopAppBar("Project");
-        medium.setVariant(M3TopAppBarVariant.MEDIUM);
-        M3TopAppBar large = createTopAppBar("Workspace");
-        large.setVariant(M3TopAppBarVariant.LARGE);
+        M3TopAppBar small = createTopAppBar("Inbox", M3TopAppBarVariant.SMALL, "menu", "search", "more");
+        M3TopAppBar centerAligned = createTopAppBar("Calendar", M3TopAppBarVariant.CENTER_ALIGNED,
+                "back", "add", "more");
+        M3TopAppBar medium = createTopAppBar("Project", M3TopAppBarVariant.MEDIUM, "menu", "search", "more");
+        M3TopAppBar large = createTopAppBar("Workspace", M3TopAppBarVariant.LARGE, "menu", "search", "more");
 
         return createGallery(
-                createShowcaseGroup("Small", small, centerAligned),
-                createShowcaseGroup("Tall", medium, large)
+                createShowcaseGroup("Small", createTopAppBarPreview(small)),
+                createShowcaseGroup("Center Aligned", createTopAppBarPreview(centerAligned)),
+                createShowcaseGroup("Medium", createTopAppBarPreview(medium)),
+                createShowcaseGroup("Large", createTopAppBarPreview(large))
         );
     }
 
@@ -1390,7 +1391,12 @@ public final class M3FXDemoApp extends Application {
         start.setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment.START);
 
         return createGallery(
-                createShowcaseGroup("Floating Action", end, center, start)
+                createShowcaseGroup(
+                        "Floating Action",
+                        createBottomAppBarPreview(end),
+                        createBottomAppBarPreview(center),
+                        createBottomAppBarPreview(start)
+                )
         );
     }
 
@@ -2215,15 +2221,61 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a top app bar sample.
-    private static M3TopAppBar createTopAppBar(String title) {
+    private static M3TopAppBar createTopAppBar(
+            String title,
+            M3TopAppBarVariant variant,
+            String navigationIcon,
+            String firstActionIcon,
+            String secondActionIcon
+    ) {
         M3TopAppBar topAppBar = new M3TopAppBar(
                 title,
-                createIconButton("M"),
-                createIconButton("S"),
-                createIconButton("A")
+                variant,
+                createAppBarIconButton(navigationIcon, "Navigation"),
+                createAppBarIconButton(firstActionIcon, "Primary action"),
+                createAppBarIconButton(secondActionIcon, "Secondary action")
         );
-        topAppBar.setPrefWidth(560.0);
+        topAppBar.setMaxWidth(Double.MAX_VALUE);
         return topAppBar;
+    }
+
+    /// Creates a preview surface for a top app bar.
+    private static VBox createTopAppBarPreview(M3TopAppBar topAppBar) {
+        VBox preview = createAppBarPreview();
+        Region body = createAppBarBody();
+        body.getStyleClass().add("demo-top-app-bar-body");
+        preview.getChildren().addAll(topAppBar, body);
+        return preview;
+    }
+
+    /// Creates a preview surface for a bottom app bar.
+    private static VBox createBottomAppBarPreview(M3BottomAppBar bottomAppBar) {
+        VBox preview = createAppBarPreview();
+        Region body = createAppBarBody();
+        body.getStyleClass().add("demo-bottom-app-bar-body");
+        VBox.setVgrow(body, Priority.ALWAYS);
+        preview.getChildren().addAll(body, bottomAppBar);
+        return preview;
+    }
+
+    /// Creates the shared app bar preview container.
+    private static VBox createAppBarPreview() {
+        VBox preview = new VBox();
+        preview.getStyleClass().add("demo-app-bar-preview");
+        preview.setFillWidth(true);
+        preview.setMinWidth(560.0);
+        preview.setPrefWidth(760.0);
+        preview.setMaxWidth(760.0);
+        return preview;
+    }
+
+    /// Creates the blank body area used by app bar previews.
+    private static Region createAppBarBody() {
+        Region body = new Region();
+        body.getStyleClass().add("demo-app-bar-body");
+        body.setMinHeight(112.0);
+        body.setPrefHeight(132.0);
+        return body;
     }
 
     /// Creates a sample surface.
@@ -2245,10 +2297,10 @@ public final class M3FXDemoApp extends Application {
         M3BottomAppBar bottomAppBar = new M3BottomAppBar(
                 M3BottomAppBarFloatingActionAlignment.END,
                 createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
-                createIconButton("M"),
-                createIconButton("S")
+                createAppBarIconButton("search", "Search"),
+                createAppBarIconButton("favorite", "Favorites")
         );
-        bottomAppBar.setPrefWidth(560.0);
+        bottomAppBar.setMaxWidth(Double.MAX_VALUE);
         return bottomAppBar;
     }
 
@@ -2374,6 +2426,35 @@ public final class M3FXDemoApp extends Application {
         M3Icon icon = new M3Icon(text, M3IconSize.SMALL, M3IconVariant.PRIMARY);
         icon.getStyleClass().add("demo-icon-label");
         return new M3IconButton(icon);
+    }
+
+    /// Creates a sample icon button for app bar slots.
+    private static M3IconButton createAppBarIconButton(String iconName, String accessibleText) {
+        SVGPath icon = new SVGPath();
+        icon.setContent(appBarIconPath(iconName));
+        icon.getStyleClass().add("demo-app-bar-icon");
+        M3IconButton button = new M3IconButton(icon);
+        button.setAccessibleText(accessibleText);
+        return button;
+    }
+
+    /// Returns the SVG path for a sample app bar icon.
+    private static String appBarIconPath(String iconName) {
+        return switch (iconName) {
+            case "add" -> "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z";
+            case "back" -> "M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z";
+            case "favorite" -> "M12 21.4l-1.4-1.3C5.4 15.4 2 12.3 2 8.5 "
+                    + "2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2 1.1-1.2 2.8-2 4.5-2 "
+                    + "19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.6 11.6z";
+            case "more" -> "M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
+                    + "m0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"
+                    + "m0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z";
+            case "search" -> "M9.5 3a6.5 6.5 0 0 1 5.1 10.5l4.4 4.4-1.4 1.4-4.4-4.4"
+                    + "A6.5 6.5 0 1 1 9.5 3z"
+                    + "m0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z";
+            case "menu" -> "M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z";
+            default -> throw new IllegalArgumentException("Unknown app bar icon: " + iconName);
+        };
     }
 
     /// Creates the sample toggle icon button.

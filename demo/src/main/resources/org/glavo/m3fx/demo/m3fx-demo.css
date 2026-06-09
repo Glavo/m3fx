@@ -144,6 +144,37 @@
     -fx-background-radius: 12px;
 }
 
+.demo-app-bar-preview {
+    -fx-background-color: -m3-color-surface;
+    -fx-background-radius: 12px;
+    -fx-border-color: -m3-color-outline-variant;
+    -fx-border-radius: 12px;
+}
+
+.demo-app-bar-preview .m3-top-app-bar {
+    -fx-background-radius: 12px 12px 0px 0px;
+}
+
+.demo-app-bar-preview .m3-bottom-app-bar {
+    -fx-background-radius: 0px 0px 12px 12px;
+}
+
+.demo-app-bar-body {
+    -fx-background-color: -m3-color-surface-container-lowest;
+}
+
+.demo-top-app-bar-body {
+    -fx-background-radius: 0px 0px 12px 12px;
+}
+
+.demo-bottom-app-bar-body {
+    -fx-background-radius: 12px 12px 0px 0px;
+}
+
+.demo-app-bar-icon {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
 .demo-progress-track-height-label {
     -fx-font-size: 12px;
     -fx-text-fill: -m3-color-on-surface-variant;

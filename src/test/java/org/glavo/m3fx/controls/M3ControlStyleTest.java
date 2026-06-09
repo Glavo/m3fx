@@ -11809,6 +11809,13 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.getContainerHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.getMediumContainerHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.getLargeContainerHeight(), 0.0001);
+        assertEquals(16.0, topAppBar.getHorizontalPadding(), 0.0001);
+        assertEquals(20.0, topAppBar.getMediumBottomPadding(), 0.0001);
+        assertEquals(28.0, topAppBar.getLargeBottomPadding(), 0.0001);
+        assertEquals(16.0, topAppBar.getContentSpacing(), 0.0001);
         assertEquals(16.0, topAppBar.getPadding().getLeft(), 0.0001);
         assertInstanceOf(M3TopAppBarSkin.class, topAppBar.getSkin());
         assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
@@ -11833,6 +11840,13 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(72.0, topAppBar.getContainerHeight(), 0.0001);
+        assertEquals(120.0, topAppBar.getMediumContainerHeight(), 0.0001);
+        assertEquals(160.0, topAppBar.getLargeContainerHeight(), 0.0001);
+        assertEquals(24.0, topAppBar.getHorizontalPadding(), 0.0001);
+        assertEquals(24.0, topAppBar.getMediumBottomPadding(), 0.0001);
+        assertEquals(32.0, topAppBar.getLargeBottomPadding(), 0.0001);
+        assertEquals(20.0, topAppBar.getContentSpacing(), 0.0001);
         assertEquals(24.0, topAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(12.0, actions.getSpacing(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
@@ -11962,6 +11976,9 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(80.0, bottomAppBar.getContainerHeight(), 0.0001);
+        assertEquals(16.0, bottomAppBar.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, bottomAppBar.getContentSpacing(), 0.0001);
         assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertInstanceOf(M3BottomAppBarSkin.class, bottomAppBar.getSkin());
         HBox actions = assertInstanceOf(HBox.class, bottomAppBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS));
@@ -11975,6 +11992,9 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertEquals(88.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(88.0, bottomAppBar.getContainerHeight(), 0.0001);
+        assertEquals(24.0, bottomAppBar.getHorizontalPadding(), 0.0001);
+        assertEquals(20.0, bottomAppBar.getContentSpacing(), 0.0001);
         assertEquals(24.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(12.0, actions.getSpacing(), 0.0001);
     }
@@ -12036,9 +12056,22 @@ final class M3ControlStyleTest {
             bottomAppBar.layout();
             banner.layout();
 
+            Bounds topNavigationBounds = topNavigation.localToScene(topNavigation.getBoundsInLocal());
+            Bounds topActionBounds = topAction.localToScene(topAction.getBoundsInLocal());
+            Bounds topAppBarBounds = topAppBar.localToScene(topAppBar.getBoundsInLocal());
+            Parent topNavigationParent = Objects.requireNonNull(topNavigation.getParent(), "topNavigationParent");
+            Parent topActionParent = Objects.requireNonNull(topAction.getParent(), "topActionParent");
+            Bounds topNavigationParentBounds = topNavigationParent.localToScene(topNavigationParent.getBoundsInLocal());
+            Bounds topActionParentBounds = topActionParent.localToScene(topActionParent.getBoundsInLocal());
             assertTrue(
-                    topNavigation.localToScene(topNavigation.getBoundsInLocal()).getMinX()
-                            > topAction.localToScene(topAction.getBoundsInLocal()).getMaxX()
+                    topNavigationBounds.getMinX() > topActionBounds.getMaxX(),
+                    () -> "top app bar RTL slots are not mirrored: navigation="
+                            + topNavigationBounds + ", action=" + topActionBounds
+                            + ", appBar=" + topAppBarBounds
+                            + ", orientation=" + topAppBar.getNodeOrientation()
+                            + ", effectiveOrientation=" + topAppBar.getEffectiveNodeOrientation()
+                            + ", navigationParent=" + topNavigationParentBounds
+                            + ", actionParent=" + topActionParentBounds
             );
             assertTrue(
                     floatingAction.localToScene(floatingAction.getBoundsInLocal()).getMaxX()

@@ -2475,10 +2475,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a top app bar token CSS rule.
     private static void appendTopAppBarRule(StringBuilder builder, String selector, TopAppBarTokens tokens) {
         beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-medium-container-height", M3TokenCss.pixels(tokens.mediumContainerHeight()));
+        appendDeclaration(builder, "-m3-large-container-height", M3TokenCss.pixels(tokens.largeContainerHeight()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-m3-medium-bottom-padding", M3TokenCss.pixels(tokens.mediumBottomPadding()));
+        appendDeclaration(builder, "-m3-large-bottom-padding", M3TokenCss.pixels(tokens.largeBottomPadding()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         endRule(builder);
     }
 
@@ -2509,10 +2515,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a bottom app bar token CSS rule.
     private static void appendBottomAppBarRule(StringBuilder builder, String selector, BottomAppBarTokens tokens) {
         beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         endRule(builder);
     }
 

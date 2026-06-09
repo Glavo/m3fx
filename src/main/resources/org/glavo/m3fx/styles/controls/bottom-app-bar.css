@@ -1,8 +1,8 @@
 .m3-bottom-app-bar {
+    -m3-container-height: 80px;
+    -m3-horizontal-padding: 16px;
+    -m3-content-spacing: 16px;
     -fx-background-color: -m3-color-surface-container;
-    -fx-min-height: 80px;
-    -fx-pref-height: 80px;
-    -fx-padding: 0px 16px 0px 16px;
 }
 
 .m3-bottom-app-bar-actions {

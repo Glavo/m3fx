@@ -27,6 +27,7 @@ import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3DatePicker;
@@ -54,6 +55,8 @@ import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
 import org.glavo.m3fx.controls.M3TextInputLayout;
+import org.glavo.m3fx.controls.M3TopAppBar;
+import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -67,6 +70,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -88,6 +92,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class M3FXDemoVisualSmokeTest {
     /// Representative pages rendered under the dark expressive theme combination.
     private static final @Unmodifiable List<String> DARK_EXPRESSIVE_VISUAL_PAGES = List.of(
+            "App Bars",
             "Buttons",
             "Button Groups",
             "Text Fields",
@@ -95,17 +100,20 @@ final class M3FXDemoVisualSmokeTest {
             "Loading Indicator",
             "Progress",
             "Menus",
-            "Navigation Drawer"
+            "Navigation Drawer",
+            "Toolbars"
     );
 
     /// Demo pages that are sensitive to right-to-left mirroring in real window layouts.
     private static final @Unmodifiable List<String> RTL_VISUAL_PAGES = List.of(
+            "App Bars",
             "Button Groups",
             "Icon Buttons",
             "Text Fields",
             "Date Pickers",
             "Menus",
-            "Navigation Drawer"
+            "Navigation Drawer",
+            "Toolbars"
     );
 
     /// Material documentation URLs expected for demo pages that map to official Material pages.
@@ -261,6 +269,68 @@ final class M3FXDemoVisualSmokeTest {
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
                 assertNull(scene.lookup(".demo-page-doc-link"));
+            });
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that app bar demo pages render app bars as full-width application bars inside preview surfaces.
+    @Test
+    void appBarDemoPagesUseRealFullWidthPreviewBars() {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            runOnFxThread(() -> {
+                M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+
+                app.showPageForTesting("App Bars");
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                List<M3TopAppBar> topAppBars = visibleNodesOfType(scene.getRoot(), M3TopAppBar.class);
+                assertEquals(4, topAppBars.size(), "top app bar demo count");
+                assertEquals(M3TopAppBarVariant.SMALL, topAppBars.get(0).getVariant());
+                assertEquals(M3TopAppBarVariant.CENTER_ALIGNED, topAppBars.get(1).getVariant());
+                assertEquals(M3TopAppBarVariant.MEDIUM, topAppBars.get(2).getVariant());
+                assertEquals(M3TopAppBarVariant.LARGE, topAppBars.get(3).getVariant());
+                for (M3TopAppBar appBar : topAppBars) {
+                    assertAppBarFitsPreview(appBar, "top app bar");
+                    assertEquals(3, visibleNodesOfType(appBar, M3IconButton.class).size(),
+                            "top app bar should use real icon buttons");
+                }
+
+                app.showPageForTesting("Toolbars");
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                List<M3BottomAppBar> bottomAppBars = visibleNodesOfType(scene.getRoot(), M3BottomAppBar.class);
+                assertEquals(3, bottomAppBars.size(), "bottom app bar demo count");
+                for (M3BottomAppBar appBar : bottomAppBars) {
+                    assertAppBarFitsPreview(appBar, "bottom app bar");
+                    assertEquals(2, visibleNodesOfType(appBar, M3IconButton.class).size(),
+                            "bottom app bar should use regular icon buttons");
+                    assertEquals(1, visibleNodesOfType(appBar, M3FloatingActionButton.class).size(),
+                            "bottom app bar should show a floating action button");
+                }
             });
         } finally {
             runOnFxThread(() -> {
@@ -2658,6 +2728,24 @@ final class M3FXDemoVisualSmokeTest {
         });
     }
 
+    /// Verifies that an app bar fills the horizontal span of its demo preview surface.
+    private static void assertAppBarFitsPreview(Node appBar, String description) {
+        Parent preview = Objects.requireNonNull(
+                nearestAncestorWithStyle(appBar, "demo-app-bar-preview"),
+                description + " preview"
+        );
+        Bounds previewBounds = preview.localToScene(preview.getBoundsInLocal());
+        Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
+        assertTrue(appBarBounds.getWidth() >= 520.0,
+                () -> description + " is too narrow for an app preview: bounds=" + appBarBounds);
+        assertTrue(Math.abs(appBarBounds.getMinX() - previewBounds.getMinX()) <= CONTROL_EDGE_TOLERANCE
+                        && Math.abs(appBarBounds.getMaxX() - previewBounds.getMaxX()) <= CONTROL_EDGE_TOLERANCE,
+                () -> description + " does not fill its preview horizontally: appBarBounds=" + appBarBounds
+                        + ", previewBounds=" + previewBounds);
+        assertTrue(appBarBounds.getHeight() >= 60.0,
+                () -> description + " height is too small: bounds=" + appBarBounds);
+    }
+
     /// Verifies that a radio button dot shares the same rendered center as its ring.
     private static void assertRadioDotCentered(Node root, Bounds sceneBounds, String pageTitle) {
         @Nullable Node container = root.lookup(".m3-radio-ring");
@@ -2711,7 +2799,8 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Returns whether a node is a demo-level Material control whose visible bounds should fit the viewport.
     private static boolean isPageLevelMaterialControl(Node node) {
-        return node instanceof M3Button
+        return node instanceof M3BottomAppBar
+                || node instanceof M3Button
                 || node instanceof M3DatePicker
                 || node instanceof M3FloatingActionButton
                 || node instanceof M3IconToggleButton
@@ -2722,7 +2811,8 @@ final class M3FXDemoVisualSmokeTest {
                 || node instanceof M3SplitButton
                 || node instanceof M3Switch
                 || node instanceof M3TextField
-                || node instanceof M3TextInputLayout;
+                || node instanceof M3TextInputLayout
+                || node instanceof M3TopAppBar;
     }
 
     /// Returns the first visible descendant with the requested style class.
@@ -2737,6 +2827,40 @@ final class M3FXDemoVisualSmokeTest {
                     return result;
                 }
             }
+        }
+        return null;
+    }
+
+    /// Returns visible descendants assignable to the requested type.
+    private static <T> List<T> visibleNodesOfType(Node root, Class<T> type) {
+        List<T> result = new ArrayList<>();
+        collectVisibleNodesOfType(root, type, result);
+        return result;
+    }
+
+    /// Adds visible descendants assignable to the requested type into a result list.
+    private static <T> void collectVisibleNodesOfType(Node root, Class<T> type, List<T> result) {
+        if (!root.isVisible()) {
+            return;
+        }
+        if (type.isInstance(root) && hasRenderableBounds(root)) {
+            result.add(type.cast(root));
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                collectVisibleNodesOfType(child, type, result);
+            }
+        }
+    }
+
+    /// Returns the nearest ancestor with the requested style class.
+    private static @Nullable Parent nearestAncestorWithStyle(Node node, String styleClass) {
+        @Nullable Parent parent = node.getParent();
+        while (parent != null) {
+            if (parent.getStyleClass().contains(styleClass)) {
+                return parent;
+            }
+            parent = parent.getParent();
         }
         return null;
     }

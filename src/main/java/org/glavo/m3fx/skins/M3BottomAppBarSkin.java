@@ -21,14 +21,11 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3BottomAppBar].
 @NotNullByDefault
 public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
-    /// The spacing between bottom app bar content slots.
-    private static final double CONTENT_SPACING = 16.0;
-
     /// The spacing between regular action nodes.
     private static final double ACTION_SPACING = 8.0;
 
     /// The internal horizontal container.
-    private final HBox container = new HBox(CONTENT_SPACING);
+    private final HBox container = new HBox();
 
     /// The regular action node container.
     private final HBox actions = new HBox(ACTION_SPACING);
@@ -54,6 +51,7 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     public M3BottomAppBarSkin(M3BottomAppBar control) {
         super(control);
         container.setManaged(false);
+        container.spacingProperty().bind(control.contentSpacingProperty());
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         actions.getStyleClass().add(M3BottomAppBar.ACTIONS_STYLE_CLASS);
         floatingActionSlot.getStyleClass().add(M3BottomAppBar.FLOATING_ACTION_STYLE_CLASS);
@@ -77,6 +75,7 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         M3BottomAppBar control = getSkinnable();
         control.getActions().removeListener(actionsListener);
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.spacingProperty().unbind();
         container.nodeOrientationProperty().unbind();
         actions.getChildren().clear();
         floatingActionSlot.getChildren().clear();
