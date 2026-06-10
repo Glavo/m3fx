@@ -75,3 +75,19 @@
     -monet-surface-tint: rgb(101,85,143);
     -m3-color-surface-tint: rgb(101,85,143);
 }
+
+.m3-internal-icon-path {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
+.m3-internal-icon-primary .m3-internal-icon-path {
+    -fx-fill: -m3-color-primary;
+}
+
+.m3-internal-icon-on-surface-variant .m3-internal-icon-path {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
+.m3-internal-icon-on-primary-container .m3-internal-icon-path {
+    -fx-fill: -m3-color-on-primary-container;
+}

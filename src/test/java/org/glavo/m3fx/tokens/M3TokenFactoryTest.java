@@ -127,6 +127,7 @@ final class M3TokenFactoryTest {
         assertEquals(61.0, tokenSet.componentTokens().topAppBar().largeContainerHeight(), 0.0001);
         assertEquals(12.0, tokenSet.componentTokens().topAppBar().mediumBottomPadding(), 0.0001);
         assertEquals(13.0, tokenSet.componentTokens().topAppBar().largeBottomPadding(), 0.0001);
+        assertEquals(6.0, tokenSet.componentTokens().topAppBar().actionSpacing(), 0.0001);
         assertEquals(70.0, tokenSet.componentTokens().banner().containerMinHeight(), 0.0001);
         assertEquals(6.0, tokenSet.componentTokens().tooltip().richContainerShape(), 0.0001);
         assertEquals(37.0, tokenSet.componentTokens().pickerField().popupShape(), 0.0001);
@@ -137,6 +138,7 @@ final class M3TokenFactoryTest {
         assertEquals(22.0, tokenSet.componentTokens().surface().containerShape(), 0.0001);
         assertEquals(0.91, tokenSet.componentTokens().carousel().itemOpacity(), 0.0001);
         assertEquals(62.0, tokenSet.componentTokens().bottomAppBar().containerHeight(), 0.0001);
+        assertEquals(7.0, tokenSet.componentTokens().bottomAppBar().actionSpacing(), 0.0001);
         assertEquals(72.0, tokenSet.componentTokens().navigationRail().containerWidth(), 0.0001);
         assertEquals(63.0, tokenSet.componentTokens().loadingIndicator().containerSize(), 0.0001);
         assertEquals(22.0, tokenSet.componentTokens().loadingIndicator().indicatorSize(), 0.0001);
@@ -147,12 +149,14 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-large-container-height: 61px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-medium-bottom-padding: 12px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-large-bottom-padding: 13px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-action-spacing: 6px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-banner-container-min-height: 70px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-tooltip-rich-container-shape: 6px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-picker-field-popup-shape: 37px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-date-picker-day-cell-size: 47px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-time-picker-display-cell-height: 54px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 62px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-bottom-app-bar-action-spacing: 7px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 72px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 78px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-text-area-container-height: 67px"));
@@ -183,7 +187,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-large-container-height: 61px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-medium-bottom-padding: 12px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-large-bottom-padding: 13px"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-top-app-bar-actions"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-action-spacing: 6px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-text-area"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-menu .m3-menu-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view .m3-list-item"));
@@ -199,7 +203,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-wavelength: 41px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-stop-size: 7px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-avatar.m3-avatar"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-app-bar-actions"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-action-spacing: 7px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-rail .m3-navigation-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-drawer .m3-list-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-list-section-header"));

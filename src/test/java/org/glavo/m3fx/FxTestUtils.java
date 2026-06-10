@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Handler;
@@ -125,6 +126,12 @@ public final class FxTestUtils {
     /// Captures JavaFX CSS warnings emitted while running a task.
     public static @Unmodifiable List<LogRecord> captureCssWarnings(Runnable task) {
         return captureWarnings(task, "javafx.css", "javafx.scene.CssStyleHelper");
+    }
+
+    /// Verifies that a task does not emit JavaFX CSS warnings.
+    public static void assertNoCssWarnings(Runnable task) {
+        List<LogRecord> warnings = captureCssWarnings(task);
+        assertTrue(warnings.isEmpty(), () -> formatLogRecords(warnings));
     }
 
     /// Verifies that a task does not emit matching JavaFX CSS warnings.
@@ -241,6 +248,22 @@ public final class FxTestUtils {
         assertTrue(warnings.stream().noneMatch(FxTestUtils::isM3CssTokenWarning), () -> formatLogRecords(warnings));
     }
 
+    /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
+    public static void runOnFxThreadWhen(
+            BooleanSupplier condition,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        List<LogRecord> warnings = captureWarningsChecked(
+                () -> runWithMotionSettingsPreservedChecked(
+                        () -> runOnFxThreadWhenWithoutCssCapture(condition, setup, verification)
+                ),
+                "javafx.css",
+                "javafx.scene.CssStyleHelper"
+        );
+        assertTrue(warnings.stream().noneMatch(FxTestUtils::isM3CssTokenWarning), () -> formatLogRecords(warnings));
+    }
+
     /// Runs setup on the FX application thread and verifies the result after a JavaFX delay.
     private static void runOnFxThreadAfterDelayWithoutCssCapture(
             Duration delay,
@@ -313,6 +336,57 @@ public final class FxTestUtils {
                     }
                 };
                 timer.start();
+            } catch (Throwable e) {
+                failure.set(e);
+                latch.countDown();
+            }
+        });
+
+        await(latch);
+        throwIfFailed(failure.get());
+    }
+
+    /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
+    private static void runOnFxThreadWhenWithoutCssCapture(
+            BooleanSupplier condition,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Platform.runLater(() -> {
+            try {
+                setup.run();
+                long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(FX_TIMEOUT_SECONDS);
+                AnimationTimer timer = new AnimationTimer() {
+                    /// Checks the readiness condition on each JavaFX pulse.
+                    @Override
+                    public void handle(long now) {
+                        try {
+                            if (condition.getAsBoolean()) {
+                                stop();
+                                verification.run();
+                                latch.countDown();
+                            } else if (now >= deadlineNanos) {
+                                stop();
+                                failure.set(new AssertionError("Timed out waiting for JavaFX condition"));
+                                latch.countDown();
+                            }
+                        } catch (Throwable e) {
+                            stop();
+                            failure.set(e);
+                            latch.countDown();
+                        }
+                    }
+                };
+
+                if (condition.getAsBoolean()) {
+                    verification.run();
+                    latch.countDown();
+                } else {
+                    timer.start();
+                }
             } catch (Throwable e) {
                 failure.set(e);
                 latch.countDown();

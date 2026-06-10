@@ -20,10 +20,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DatePicker;
-import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
-import org.glavo.m3fx.controls.M3IconSize;
-import org.glavo.m3fx.controls.M3IconVariant;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -59,10 +57,10 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
     private final Label monthLabel = new Label();
 
     /// The button that navigates to the previous month.
-    private final M3IconButton previousButton = createNavigationButton("<");
+    private final M3IconButton previousButton = createNavigationButton(M3InternalIcon.Glyph.CHEVRON_LEFT);
 
     /// The button that navigates to the next month.
-    private final M3IconButton nextButton = createNavigationButton(">");
+    private final M3IconButton nextButton = createNavigationButton(M3InternalIcon.Glyph.CHEVRON_RIGHT);
 
     /// The row containing localized weekday labels.
     private final HBox weekdayRow = new HBox();
@@ -339,8 +337,12 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
         header.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
         weekdayRow.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-        setNavigationIcon(previousButton, rightToLeft ? ">" : "<");
-        setNavigationIcon(nextButton, rightToLeft ? "<" : ">");
+        setNavigationIcon(previousButton, rightToLeft
+                ? M3InternalIcon.Glyph.CHEVRON_RIGHT
+                : M3InternalIcon.Glyph.CHEVRON_LEFT);
+        setNavigationIcon(nextButton, rightToLeft
+                ? M3InternalIcon.Glyph.CHEVRON_LEFT
+                : M3InternalIcon.Glyph.CHEVRON_RIGHT);
     }
 
     /// Selects the date represented by a day cell action.
@@ -354,16 +356,16 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
     }
 
     /// Creates a navigation icon button.
-    private static M3IconButton createNavigationButton(String text) {
-        M3IconButton button = new M3IconButton(new M3Icon(text, M3IconSize.SMALL, M3IconVariant.PRIMARY));
+    private static M3IconButton createNavigationButton(M3InternalIcon.Glyph glyph) {
+        M3IconButton button = new M3IconButton(new M3InternalIcon(glyph, M3InternalIcon.ColorRole.PRIMARY));
         button.getStyleClass().add(M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS);
         return button;
     }
 
     /// Updates a navigation button icon glyph.
-    private static void setNavigationIcon(M3IconButton button, String text) {
-        if (button.getGraphic() instanceof M3Icon icon) {
-            icon.setText(text);
+    private static void setNavigationIcon(M3IconButton button, M3InternalIcon.Glyph glyph) {
+        if (button.getGraphic() instanceof M3InternalIcon icon) {
+            icon.setGlyph(glyph);
         }
     }
 

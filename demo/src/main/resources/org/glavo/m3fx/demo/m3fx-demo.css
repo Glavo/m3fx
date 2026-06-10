@@ -144,40 +144,77 @@
     -fx-background-radius: 12px;
 }
 
+.demo-stacked-flow {
+    -fx-fill-width: true;
+}
+
+.demo-app-bar-sample {
+    -fx-fill-width: true;
+}
+
+.demo-app-bar-sample-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
 .demo-app-bar-preview {
     -fx-background-color: -m3-color-surface;
-    -fx-background-radius: 12px;
-    -fx-border-color: -m3-color-outline-variant;
-    -fx-border-radius: 12px;
+    -fx-background-radius: 0px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0px;
+    -fx-border-radius: 0px;
 }
 
 .demo-app-bar-preview .m3-top-app-bar {
-    -fx-background-radius: 12px 12px 0px 0px;
+    -fx-background-radius: 0px;
 }
 
 .demo-app-bar-preview .m3-bottom-app-bar {
-    -fx-background-radius: 0px 0px 12px 12px;
-}
-
-.demo-app-bar-body {
-    -fx-background-color: -m3-color-surface-container-lowest;
-}
-
-.demo-top-app-bar-body {
-    -fx-background-radius: 0px 0px 12px 12px;
-}
-
-.demo-bottom-app-bar-body {
-    -fx-background-radius: 12px 12px 0px 0px;
-}
-
-.demo-app-bar-icon {
-    -fx-fill: -m3-color-on-surface-variant;
+    -fx-background-radius: 0px;
 }
 
 .demo-progress-track-height-label {
     -fx-font-size: 12px;
     -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.demo-vector-icon-primary {
+    -fx-fill: -m3-color-primary;
+}
+
+.demo-vector-icon-secondary {
+    -fx-fill: -m3-color-secondary;
+}
+
+.demo-vector-icon-tertiary {
+    -fx-fill: -m3-color-tertiary;
+}
+
+.demo-vector-icon-on-surface {
+    -fx-fill: -m3-color-on-surface;
+}
+
+.demo-vector-icon-on-surface-variant {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
+.demo-vector-icon-inverse-on-surface {
+    -fx-fill: -m3-color-inverse-on-surface;
+}
+
+.demo-vector-icon-viewport {
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-pref-width: 24px;
+    -fx-pref-height: 24px;
+    -fx-max-width: 24px;
+    -fx-max-height: 24px;
+    -fx-alignment: center;
+}
+
+.demo-vector-icon-error {
+    -fx-fill: -m3-color-error;
 }
 
 .demo-icon-label {
@@ -187,12 +224,27 @@
 }
 
 .demo-fab-icon {
-    -m3-icon-size: 20px;
-    -m3-icon-font-weight: 700;
+    -fx-fill: -m3-color-on-primary-container;
+}
+
+.m3-secondary-fab .demo-fab-icon {
+    -fx-fill: -m3-color-on-secondary-container;
+}
+
+.m3-tertiary-fab .demo-fab-icon {
+    -fx-fill: -m3-color-on-tertiary-container;
+}
+
+.m3-surface-fab .demo-fab-icon {
+    -fx-fill: -m3-color-primary;
 }
 
 .demo-sample-icon {
-    -m3-icon-font-weight: 700;
+    -fx-alignment: center;
+}
+
+.demo-sample-icon:disabled .demo-vector-icon {
+    -fx-opacity: 0.38;
 }
 
 .demo-navigation-icon {
@@ -201,17 +253,14 @@
     -fx-pref-width: 24px;
     -fx-pref-height: 24px;
     -fx-alignment: center;
-    -m3-icon-size: 13px;
-    -m3-icon-font-weight: 700;
-    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
-.m3-navigation-item:selected .demo-navigation-icon {
-    -fx-text-fill: -m3-color-on-secondary-container;
+.m3-navigation-item:selected .demo-navigation-icon .demo-vector-icon {
+    -fx-fill: -m3-color-on-secondary-container;
 }
 
-.m3-navigation-drawer .m3-list-item:selected .demo-navigation-icon {
-    -fx-text-fill: -m3-color-on-secondary-container;
+.m3-navigation-drawer .m3-list-item:selected .demo-navigation-icon .demo-vector-icon {
+    -fx-fill: -m3-color-on-secondary-container;
 }
 
 .demo-menu-shortcut {

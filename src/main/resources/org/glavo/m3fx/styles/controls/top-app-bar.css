@@ -6,6 +6,7 @@
     -m3-medium-bottom-padding: 20px;
     -m3-large-bottom-padding: 28px;
     -m3-content-spacing: 16px;
+    -m3-action-spacing: 8px;
     -fx-background-color: -m3-color-surface;
 }
 
@@ -15,16 +16,20 @@
 
 .m3-top-app-bar-title {
     -fx-font-size: 22px;
-    -fx-font-weight: 500;
+    -fx-font-weight: 400;
     -fx-text-fill: -m3-color-on-surface;
 }
 
-.m3-top-app-bar-medium .m3-top-app-bar-title,
-.m3-top-app-bar-large .m3-top-app-bar-title {
+.m3-top-app-bar-medium .m3-top-app-bar-title {
     -fx-font-size: 28px;
+    -fx-font-weight: 400;
+}
+
+.m3-top-app-bar-large .m3-top-app-bar-title {
+    -fx-font-size: 32px;
+    -fx-font-weight: 400;
 }
 
 .m3-top-app-bar-actions {
     -fx-alignment: center-right;
-    -fx-spacing: 8px;
 }

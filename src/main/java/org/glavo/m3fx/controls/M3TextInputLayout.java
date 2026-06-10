@@ -47,6 +47,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.QuadCurveTo;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
@@ -419,10 +420,9 @@ public class M3TextInputLayout extends Control {
     private final Label counterLabel = new Label();
 
     /// The built-in trailing clear button.
-    private final M3IconButton clearButton = new M3IconButton(new M3Icon(
-            "x",
-            M3IconSize.SMALL,
-            M3IconVariant.ON_SURFACE_VARIANT
+    private final M3IconButton clearButton = new M3IconButton(new M3InternalIcon(
+            M3InternalIcon.Glyph.CLOSE,
+            M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
     ));
 
     /// Notifies accessibility clients when focus moves between the input and adornment slots.

@@ -2,12 +2,12 @@
     -m3-container-height: 80px;
     -m3-horizontal-padding: 16px;
     -m3-content-spacing: 16px;
+    -m3-action-spacing: 8px;
     -fx-background-color: -m3-color-surface-container;
 }
 
 .m3-bottom-app-bar-actions {
     -fx-alignment: center-left;
-    -fx-spacing: 8px;
 }
 
 .m3-bottom-app-bar-floating-action {

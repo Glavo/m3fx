@@ -12,6 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3Banner;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -50,9 +51,12 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         textLabel.getStyleClass().add(M3Banner.TEXT_STYLE_CLASS);
         actions.getStyleClass().add(M3Banner.ACTIONS_STYLE_CLASS);
         HBox.setHgrow(textLabel, Priority.ALWAYS);
+        textLabel.setMinWidth(0.0);
         textLabel.setMaxWidth(Double.MAX_VALUE);
         textLabel.setWrapText(true);
         textLabel.textProperty().bind(control.textProperty());
+        actions.setMinWidth(Region.USE_PREF_SIZE);
+        actions.setMaxWidth(Region.USE_PREF_SIZE);
 
         control.iconProperty().addListener((observable, oldValue, newValue) -> updateIcon(newValue));
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);

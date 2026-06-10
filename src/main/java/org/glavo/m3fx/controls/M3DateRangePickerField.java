@@ -34,6 +34,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -892,7 +893,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Creates one popup open button.
     private static M3IconButton createOpenButton(String accessibleText) {
-        M3IconButton button = new M3IconButton(new M3Icon("v", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
+        M3IconButton button = new M3IconButton(new M3InternalIcon(
+                M3InternalIcon.Glyph.CALENDAR,
+                M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
+        ));
         M3ControlStyles.add(button, OPEN_BUTTON_STYLE_CLASS);
         button.setAccessibleText(accessibleText);
         return button;

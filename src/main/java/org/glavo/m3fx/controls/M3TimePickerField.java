@@ -14,6 +14,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -77,7 +78,7 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
                 DateTimeFormatter.ofPattern("HH:mm"),
                 STYLE_CLASS,
                 POPUP_STYLE_CLASS,
-                "v",
+                M3InternalIcon.Glyph.SCHEDULE,
                 "Open time picker",
                 "Enter a valid time",
                 "Time is outside the selectable range"

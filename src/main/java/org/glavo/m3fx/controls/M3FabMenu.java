@@ -31,6 +31,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
@@ -664,7 +665,10 @@ public class M3FabMenu extends Control {
 
     /// Creates the default menu toggle floating action button.
     private static M3FloatingActionButton createDefaultToggleButton() {
-        M3FloatingActionButton button = new M3FloatingActionButton(new M3Icon("+"));
+        M3FloatingActionButton button = new M3FloatingActionButton(new M3InternalIcon(
+                M3InternalIcon.Glyph.ADD,
+                M3InternalIcon.ColorRole.ON_PRIMARY_CONTAINER
+        ));
         button.setVariant(M3FloatingActionButtonVariant.PRIMARY);
         button.setSize(M3FloatingActionButtonSize.REGULAR);
         return button;

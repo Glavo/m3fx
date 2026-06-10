@@ -452,8 +452,14 @@ final class M3Accessible {
     /// Returns an active external focus target exposed by one item outside the owner subtree.
     static @Nullable Node activeExternalFocusTarget(Node owner, @Nullable Node item) {
         Objects.requireNonNull(owner, "owner");
-        if (item == null || !canReach(item)) {
+        if (!canReach(item)) {
             return null;
+        }
+
+        @Nullable Node tooltipFocusTarget = M3Tooltip.activeInstalledTooltipFocusTarget(item);
+        if (tooltipFocusTarget != null && isActiveExternalFocusTarget(owner, tooltipFocusTarget)) {
+            @Nullable Node itemFocusTarget = focusTarget(item);
+            return itemFocusTarget != null ? itemFocusTarget : item;
         }
 
         @Nullable Object focusNode = item.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);

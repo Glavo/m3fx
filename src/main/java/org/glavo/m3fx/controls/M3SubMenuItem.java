@@ -26,6 +26,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -65,7 +66,7 @@ public class M3SubMenuItem extends M3MenuItem {
     private final M3Menu subMenu = new M3Menu();
 
     /// The default submenu indicator used when no custom trailing content is set.
-    private final M3Icon defaultIndicator = createDefaultIndicator();
+    private final M3InternalIcon defaultIndicator = createDefaultIndicator();
 
     /// The menu that directly owns this submenu item.
     private @Nullable M3Menu ownerMenu;
@@ -585,7 +586,9 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Updates the default indicator to point toward the submenu opening side.
     private void updateDefaultIndicatorDirection() {
-        defaultIndicator.setText(isRightToLeft() ? "<" : ">");
+        defaultIndicator.setGlyph(isRightToLeft()
+                ? M3InternalIcon.Glyph.CHEVRON_LEFT
+                : M3InternalIcon.Glyph.CHEVRON_RIGHT);
     }
 
     /// Starts the pointer-exit close delay when the submenu is open.
@@ -638,8 +641,11 @@ public class M3SubMenuItem extends M3MenuItem {
     }
 
     /// Creates the default trailing submenu indicator.
-    private static M3Icon createDefaultIndicator() {
-        M3Icon indicator = new M3Icon(">", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT);
+    private static M3InternalIcon createDefaultIndicator() {
+        M3InternalIcon indicator = new M3InternalIcon(
+                M3InternalIcon.Glyph.CHEVRON_RIGHT,
+                M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
+        );
         M3ControlStyles.add(indicator, INDICATOR_STYLE_CLASS);
         return indicator;
     }

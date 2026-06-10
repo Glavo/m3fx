@@ -19,7 +19,10 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
+import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -38,6 +41,7 @@ import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconToggleButton;
+import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
@@ -77,6 +81,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -86,6 +91,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /// Visual smoke tests for the demo application's real JavaFX window hierarchy.
 @NotNullByDefault
@@ -168,11 +174,49 @@ final class M3FXDemoVisualSmokeTest {
             M3SegmentedButton.STYLE_CLASS
     );
 
+    /// Demo pages that should use SVG icons instead of text-placeholder icon controls in interactive slots.
+    private static final @Unmodifiable Map<String, Integer> DEMO_VECTOR_ICON_PAGE_MINIMUMS = Map.ofEntries(
+            Map.entry("App Bars", 12),
+            Map.entry("Avatars", 1),
+            Map.entry("Banners", 2),
+            Map.entry("Bottom Sheets", 3),
+            Map.entry("Chips", 1),
+            Map.entry("FAB Menu", 6),
+            Map.entry("Floating Action Buttons", 3),
+            Map.entry("Icon Buttons", 12),
+            Map.entry("Icons", 12),
+            Map.entry("Lists", 8),
+            Map.entry("Menus", 10),
+            Map.entry("Navigation", 7),
+            Map.entry("Navigation Drawer", 7),
+            Map.entry("Navigation Rail", 7),
+            Map.entry("Search", 5),
+            Map.entry("Side Sheets", 3),
+            Map.entry("Text Fields", 5),
+            Map.entry("Toolbars", 9),
+            Map.entry("Tooltips", 1)
+    );
+
     /// The edge tolerance used when comparing text bounds against scene and viewport bounds.
     private static final double TEXT_EDGE_TOLERANCE = 1.0;
 
     /// The edge tolerance used when comparing visible control bounds against scene and viewport bounds.
     private static final double CONTROL_EDGE_TOLERANCE = 2.0;
+
+    /// The minimum width expected from app bar previews in desktop demo captures.
+    private static final double APP_BAR_PREVIEW_MIN_WIDTH = 680.0;
+
+    /// The tolerance used when checking app bar slot placement against component tokens.
+    private static final double APP_BAR_SLOT_TOLERANCE = 4.0;
+
+    /// The baseline Material icon button container size used by demo app bar actions.
+    private static final double APP_BAR_ICON_BUTTON_SIZE = 40.0;
+
+    /// The Material icon viewport size used by demo SVG icon slots.
+    private static final double DEMO_ICON_VIEWPORT_SIZE = 24.0;
+
+    /// The tolerance used when checking icon centering inside fixed action targets.
+    private static final double DEMO_ICON_CENTER_TOLERANCE = 2.0;
 
     /// The minimum safe vertical room for single-line input text inside its editable area.
     private static final double INPUT_TEXT_MINIMUM_VERTICAL_ROOM = 4.0;
@@ -186,14 +230,17 @@ final class M3FXDemoVisualSmokeTest {
     /// The hover pseudo-class used when rendering synthetic interaction snapshots.
     private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
 
-    /// The delay used after switching ordinary demo pages before capturing layout-sensitive snapshots.
-    private static final Duration PAGE_LAYOUT_DELAY = Duration.millis(80.0);
+    /// The JavaFX pulse count used after switching ordinary demo pages before layout-sensitive assertions.
+    private static final int PAGE_LAYOUT_PULSES = 2;
 
-    /// The delay used after switching themed pages before capturing layout-sensitive snapshots.
-    private static final Duration THEME_LAYOUT_DELAY = Duration.millis(120.0);
+    /// The JavaFX pulse count used after switching theme-sensitive pages before layout-sensitive assertions.
+    private static final int THEME_LAYOUT_PULSES = 3;
 
     /// The delay used before capturing hover, pressed, focus, or selection interaction frames.
     private static final Duration INTERACTION_FRAME_DELAY = Duration.millis(160.0);
+
+    /// The delay used before capturing a target that is held in the pressed state.
+    private static final Duration PRESSED_STATE_FRAME_DELAY = Duration.millis(120.0);
 
     /// The delay used for early ripple release snapshots.
     private static final Duration RIPPLE_RELEASE_FRAME_DELAY = Duration.millis(70.0);
@@ -201,11 +248,8 @@ final class M3FXDemoVisualSmokeTest {
     /// The delay used after a ripple release should visually settle.
     private static final Duration RIPPLE_SETTLE_DELAY = Duration.millis(260.0);
 
-    /// The delay used before capturing a popup or overlay after it has been requested.
-    private static final Duration POPUP_SHOW_DELAY = Duration.millis(120.0);
-
-    /// The delay used for popup and overlay enter animation intermediate frames.
-    private static final Duration POPUP_ENTER_FRAME_DELAY = Duration.millis(620.0);
+    /// The delay used before capturing an early popup opening animation frame.
+    private static final Duration POPUP_OPENING_FRAME_DELAY = Duration.millis(120.0);
 
     /// The delay used for popup and overlay exit animation intermediate frames.
     private static final Duration POPUP_EXIT_FRAME_DELAY = Duration.millis(360.0);
@@ -280,7 +324,7 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that app bar demo pages render app bars as full-width application bars inside preview surfaces.
+    /// Verifies that app bar demo pages render full-width app bar components without placeholder icons.
     @Test
     void appBarDemoPagesUseRealFullWidthPreviewBars() {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -315,9 +359,14 @@ final class M3FXDemoVisualSmokeTest {
                 assertEquals(M3TopAppBarVariant.LARGE, topAppBars.get(3).getVariant());
                 for (M3TopAppBar appBar : topAppBars) {
                     assertAppBarFitsPreview(appBar, "top app bar");
-                    assertEquals(3, visibleNodesOfType(appBar, M3IconButton.class).size(),
-                            "top app bar should use real icon buttons");
+                    assertTopAppBarPreviewBalance(appBar);
+                    assertTopAppBarSlotGeometry(appBar);
+                    assertAppBarUsesVectorIconButtons(appBar, 3, "top app bar");
                 }
+                List<M3BottomAppBar> appBarsPageBottomAppBars =
+                        visibleNodesOfType(scene.getRoot(), M3BottomAppBar.class);
+                assertEquals(0, appBarsPageBottomAppBars.size(),
+                        "App Bars page should not duplicate bottom app bars that belong to Toolbars");
 
                 app.showPageForTesting("Toolbars");
                 scene.getRoot().applyCss();
@@ -326,10 +375,52 @@ final class M3FXDemoVisualSmokeTest {
                 assertEquals(3, bottomAppBars.size(), "bottom app bar demo count");
                 for (M3BottomAppBar appBar : bottomAppBars) {
                     assertAppBarFitsPreview(appBar, "bottom app bar");
-                    assertEquals(2, visibleNodesOfType(appBar, M3IconButton.class).size(),
-                            "bottom app bar should use regular icon buttons");
+                    assertBottomAppBarPreviewBalance(appBar);
+                    assertAppBarUsesVectorIconButtons(appBar, 2, "bottom app bar");
                     assertEquals(1, visibleNodesOfType(appBar, M3FloatingActionButton.class).size(),
                             "bottom app bar should show a floating action button");
+                }
+            });
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that interactive demo icon slots use SVG graphics instead of text placeholder icons.
+    @Test
+    void interactiveDemoIconSlotsUseVectorGraphics() {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            runOnFxThread(() -> {
+                M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+
+                for (Map.Entry<String, Integer> entry : DEMO_VECTOR_ICON_PAGE_MINIMUMS.entrySet()) {
+                    String pageTitle = entry.getKey();
+                    app.showPageForTesting(pageTitle);
+                    scene.getRoot().applyCss();
+                    scene.getRoot().layout();
+                    assertDemoVectorIcons(scene.getRoot(), pageTitle, entry.getValue());
                 }
             });
         } finally {
@@ -368,17 +459,19 @@ final class M3FXDemoVisualSmokeTest {
         try {
             @Unmodifiable List<String> pageTitles =
                     Objects.requireNonNull(appReference.get(), "app").demoPageTitlesForTesting();
-            DemoFxTestUtils.assertNoM3CssTokenWarnings(() -> {
+            DemoFxTestUtils.assertNoCssWarnings(() -> {
                 for (String pageTitle : pageTitles) {
-                    runOnFxThreadAfterDelay(PAGE_LAYOUT_DELAY, () -> {
+                    runOnFxThreadAfterPulses(PAGE_LAYOUT_PULSES, () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         app.showPageForTesting(pageTitle);
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
                     }, () -> {
+                        M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         assertCurrentPageTitle(scene, pageTitle);
+                        assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
 
                         WritableImage image = snapshot(scene);
                         writeVisualSnapshot(image, Path.of(
@@ -429,17 +522,19 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         try {
-            DemoFxTestUtils.assertNoM3CssTokenWarnings(() -> {
+            DemoFxTestUtils.assertNoCssWarnings(() -> {
                 for (String pageTitle : DARK_EXPRESSIVE_VISUAL_PAGES) {
-                    runOnFxThreadAfterDelay(THEME_LAYOUT_DELAY, () -> {
+                    runOnFxThreadAfterPulses(THEME_LAYOUT_PULSES, () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         app.showPageForTesting(pageTitle);
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
                     }, () -> {
+                        M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         assertCurrentPageTitle(scene, pageTitle);
+                        assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
                         assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                         assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
 
@@ -490,9 +585,9 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         try {
-            DemoFxTestUtils.assertNoM3CssTokenWarnings(() -> {
+            DemoFxTestUtils.assertNoCssWarnings(() -> {
                 for (String pageTitle : RTL_VISUAL_PAGES) {
-                    runOnFxThreadAfterDelay(PAGE_LAYOUT_DELAY, () -> {
+                    runOnFxThreadAfterPulses(PAGE_LAYOUT_PULSES, () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         app.showPageForTesting(pageTitle);
@@ -500,9 +595,11 @@ final class M3FXDemoVisualSmokeTest {
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
                     }, () -> {
+                        M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         assertEquals(NodeOrientation.RIGHT_TO_LEFT, scene.getRoot().getEffectiveNodeOrientation());
                         assertCurrentPageTitle(scene, pageTitle);
+                        assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
 
                         WritableImage image = snapshot(scene);
                         writeVisualSnapshot(image, Path.of(
@@ -513,6 +610,11 @@ final class M3FXDemoVisualSmokeTest {
                         ));
                         assertSnapshotHasVisibleContent(image, pageTitle);
                         assertDemoPageVisualGeometry(scene, pageTitle);
+                        if ("App Bars".equals(pageTitle)) {
+                            for (M3TopAppBar appBar : visibleNodesOfType(scene.getRoot(), M3TopAppBar.class)) {
+                                assertTopAppBarSlotGeometry(appBar);
+                            }
+                        }
                     });
                 }
             });
@@ -617,7 +719,10 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         try {
-            verifyNestedMenuPopupStackAnimation(appReference, sceneReference);
+            DemoFxTestUtils.assertNoCssWarnings(() -> verifyNestedMenuPopupStackAnimation(
+                    appReference,
+                    sceneReference
+            ));
         } finally {
             runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -1010,7 +1115,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> releaseReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
+        runOnFxThreadAfterDelay(PRESSED_STATE_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting(pageTitle);
@@ -1177,7 +1282,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
+        runOnFxThreadAfterDelay(POPUP_OPENING_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Split Buttons");
@@ -1207,7 +1312,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> popupRootSettled(popupRootReference.get()), () -> {
         }, () -> {
             M3SplitButton target = Objects.requireNonNull(targetReference.get(), "split button");
             assertTrue(target.isShowing());
@@ -1238,7 +1343,10 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_EXIT_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> {
+            @Nullable M3SplitButton target = targetReference.get();
+            return target != null && !target.isShowing();
+        }, () -> {
         }, () -> {
             M3SplitButton target = Objects.requireNonNull(targetReference.get(), "split button");
             assertFalse(target.isShowing());
@@ -1269,7 +1377,12 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
+        runOnFxThreadWhen(() -> {
+            @Nullable M3MenuButton menuButton = menuButtonReference.get();
+            return menuButton != null
+                    && menuButton.isShowing()
+                    && menuButton.getMenu().getScene() != null;
+        }, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Menus");
@@ -1289,7 +1402,10 @@ final class M3FXDemoVisualSmokeTest {
             layoutPopupRoot(menuButton.getMenu());
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> {
+            @Nullable M3MenuButton menuButton = menuButtonReference.get();
+            return menuButton != null && popupRootSettled(menuButton.getMenu());
+        }, () -> {
         }, () -> {
             M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
             assertTrue(menuButton.isShowing());
@@ -1323,14 +1439,22 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> {
+            @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+            return subMenuItem != null && popupRootSettled(subMenuItem.getSubMenu());
         }, () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
             M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
             assertTrue(menuButton.isShowing());
             assertTrue(subMenuItem.isSubMenuShowing());
             layoutPopupRoot(menuButton.getMenu());
             layoutPopupRoot(subMenuItem.getSubMenu());
+            assertPopupThemeContext(scene.getRoot(), menuButton.getMenu(), "owner menu");
+            assertPopupThemeContext(scene.getRoot(), subMenuItem.getSubMenu(), "nested submenu");
+            assertPopupSurfaceSize(menuButton.getMenu(), "owner menu");
+            assertPopupSurfaceSize(subMenuItem.getSubMenu(), "nested submenu");
             settledReference.set(snapshotNode(subMenuItem.getSubMenu()));
             writeAnimationSnapshot(
                     Objects.requireNonNull(settledReference.get(), "settled submenu snapshot"),
@@ -1361,7 +1485,10 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_EXIT_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> {
+            @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+            return subMenuItem != null && !subMenuItem.isSubMenuShowing();
+        }, () -> {
         }, () -> {
             M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
             M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
@@ -1394,7 +1521,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
+        runOnFxThreadAfterDelay(POPUP_OPENING_FRAME_DELAY, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Date Pickers");
@@ -1423,7 +1550,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> popupRootSettled(popupRootReference.get()), () -> {
         }, () -> {
             M3DatePickerField target = Objects.requireNonNull(targetReference.get(), "date picker field");
             assertTrue(target.isShowing());
@@ -1454,7 +1581,10 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_EXIT_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> {
+            @Nullable M3DatePickerField target = targetReference.get();
+            return target != null && !target.isShowing();
+        }, () -> {
         }, () -> {
             M3DatePickerField target = Objects.requireNonNull(targetReference.get(), "date picker field");
             assertFalse(target.isShowing());
@@ -1723,7 +1853,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> bottomSheetHidden(targetReference.get()), () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3BottomSheet target = Objects.requireNonNull(targetReference.get(), "bottom sheet");
@@ -1748,7 +1878,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> bottomSheetShown(targetReference.get()), () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3BottomSheet target = Objects.requireNonNull(targetReference.get(), "bottom sheet");
@@ -1827,7 +1957,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> sideSheetHidden(targetReference.get()), () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SideSheet target = Objects.requireNonNull(targetReference.get(), "side sheet");
@@ -1852,7 +1982,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> sideSheetShown(targetReference.get()), () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SideSheet target = Objects.requireNonNull(targetReference.get(), "side sheet");
@@ -1942,7 +2072,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> snackbarSettled(hostReference.get()), () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
@@ -1975,7 +2105,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> snackbarHidden(hostReference.get()), () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
@@ -2048,7 +2178,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> fabMenuExpandedSettled(targetReference.get()), () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3FabMenu target = Objects.requireNonNull(targetReference.get(), "FAB menu");
@@ -2078,7 +2208,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadAfterDelay(POPUP_ENTER_FRAME_DELAY, () -> {
+        runOnFxThreadWhen(() -> fabMenuCollapsedSettled(targetReference.get()), () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3FabMenu target = Objects.requireNonNull(targetReference.get(), "FAB menu");
@@ -2125,7 +2255,10 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> popupReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(POPUP_SHOW_DELAY, () -> {
+        runOnFxThreadWhen(() -> {
+            @Nullable M3RichTooltip tooltip = tooltipReference.get();
+            return tooltip != null && tooltip.isShowing() && tooltip.getScene() != null;
+        }, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Tooltips");
@@ -2178,7 +2311,7 @@ final class M3FXDemoVisualSmokeTest {
             tooltip.hide();
         });
 
-        runOnFxThreadAfterDelay(PAGE_LAYOUT_DELAY, () -> {
+        runOnFxThreadAfterPulses(PAGE_LAYOUT_PULSES, () -> {
         }, () -> {
             M3Button owner = Objects.requireNonNull(ownerReference.get(), "rich tooltip owner");
             M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "rich tooltip");
@@ -2447,7 +2580,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(PAGE_LAYOUT_DELAY, () -> {
+        runOnFxThreadAfterPulses(PAGE_LAYOUT_PULSES, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3MotionSettings.setAnimationsEnabled(scene.getRoot(), false);
@@ -2491,6 +2624,21 @@ final class M3FXDemoVisualSmokeTest {
         }
         assertNotNull(title, () -> "No visible page title for " + pageTitle);
         assertEquals(pageTitle, title.getText());
+    }
+
+    /// Verifies that the demo sidebar selection matches the displayed page.
+    private static void assertSidebarSelectionMatchesCurrentPage(M3FXDemoApp app, String pageTitle) {
+        String expected = Objects.requireNonNull(
+                app.currentPageNavigationTitleForTesting(),
+                () -> "No current page navigation title for " + pageTitle
+        );
+        String selected = Objects.requireNonNull(
+                app.selectedSidebarNavigationTitleForTesting(),
+                () -> "No selected sidebar item for " + pageTitle
+        );
+        assertEquals(expected, selected,
+                () -> "Sidebar selection does not match page " + pageTitle
+                        + ": expected=" + expected + ", selected=" + selected);
     }
 
     /// Captures the current scene root as a writable image.
@@ -2537,6 +2685,62 @@ final class M3FXDemoVisualSmokeTest {
         assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
         assertSelectionIndicatorsCentered(scene, pageTitle);
         assertNavigationBadgesStayCompact(scene, pageTitle);
+    }
+
+    /// Verifies that demo icon slots use renderable SVG paths and no legacy text-placeholder `M3Icon` nodes.
+    private static void assertDemoVectorIcons(Node root, String pageTitle, int minimumIconCount) {
+        int[] iconCount = {0};
+        visitVisibleNodes(root, node -> {
+            if (node.getStyleClass().contains(DemoIcons.STYLE_CLASS)) {
+                iconCount[0]++;
+                assertInstanceOf(SVGPath.class, node,
+                        () -> pageTitle + " demo vector icon style is not applied to an SVGPath: " + node);
+                assertTrue(hasRenderableBounds(node),
+                        () -> pageTitle + " demo vector icon has no renderable bounds: " + node);
+                assertTrue(isInsideStableDemoIconViewport(node),
+                        () -> pageTitle + " demo vector icon is not wrapped in a stable viewport: " + node);
+            }
+
+            if (node instanceof M3Icon && hasDemoIconSlotStyle(node)) {
+                fail(() -> pageTitle + " still uses a text-placeholder M3Icon in an interactive icon slot: "
+                        + node.getStyleClass());
+            }
+
+            if (node instanceof M3ListItem listItem) {
+                assertListItemSlotIsNotTextPlaceholder(listItem.getLeading(), pageTitle, "leading");
+                assertListItemSlotIsNotTextPlaceholder(listItem.getTrailing(), pageTitle, "trailing");
+            }
+        });
+
+        assertTrue(iconCount[0] >= minimumIconCount,
+                () -> pageTitle + " rendered too few demo SVG icons: actual="
+                        + iconCount[0] + ", minimum=" + minimumIconCount);
+    }
+
+    /// Verifies that a list item icon slot does not use a text-placeholder `M3Icon`.
+    private static void assertListItemSlotIsNotTextPlaceholder(
+            @Nullable Node slot,
+            String pageTitle,
+            String slotName
+    ) {
+        if (slot instanceof M3Icon icon) {
+            fail(() -> pageTitle + " list item " + slotName
+                    + " slot still uses a text-placeholder M3Icon: " + icon.getText());
+        }
+    }
+
+    /// Returns whether a node has a demo style class historically used for interactive icon slots.
+    private static boolean hasDemoIconSlotStyle(Node node) {
+        return node.getStyleClass().contains("demo-icon-label")
+                || node.getStyleClass().contains("demo-fab-icon")
+                || node.getStyleClass().contains("demo-navigation-icon")
+                || node.getStyleClass().contains("demo-app-bar-icon");
+    }
+
+    /// Returns whether a demo SVG icon is inside a fixed or explicitly sized icon viewport.
+    private static boolean isInsideStableDemoIconViewport(Node node) {
+        return nearestAncestorWithStyle(node, "demo-vector-icon-viewport") != null
+                || nearestAncestorWithStyle(node, "demo-sample-icon") != null;
     }
 
     /// Verifies that visible text nodes intersecting the scene are not clipped by the scene viewport.
@@ -2629,20 +2833,35 @@ final class M3FXDemoVisualSmokeTest {
                 return;
             }
 
-            @Nullable Text text = firstVisibleText(node);
-            if (text == null || !hasRenderableBounds(text)) {
+            @Nullable Node glyph = firstVisibleText(node);
+            if (glyph == null || !hasRenderableBounds(glyph)) {
+                glyph = centeredDemoVectorIconNode(node);
+            }
+            if (glyph == null || !hasRenderableBounds(glyph)) {
                 return;
             }
 
+            Node renderedGlyph = glyph;
             Bounds targetBounds = node.localToScene(node.getBoundsInLocal());
-            Bounds textBounds = text.localToScene(text.getBoundsInLocal());
-            double dx = Math.abs(targetBounds.getCenterX() - textBounds.getCenterX());
-            double dy = Math.abs(targetBounds.getCenterY() - textBounds.getCenterY());
+            Bounds glyphBounds = renderedGlyph.localToScene(renderedGlyph.getBoundsInLocal());
+            double dx = Math.abs(targetBounds.getCenterX() - glyphBounds.getCenterX());
+            double dy = Math.abs(targetBounds.getCenterY() - glyphBounds.getCenterY());
             assertTrue(dx <= 3.0 && dy <= 3.5,
                     () -> pageTitle + " fixed target glyph is off-center: target="
-                            + node + ", text=" + text.getText() + ", dx=" + dx + ", dy=" + dy
-                            + ", targetBounds=" + targetBounds + ", textBounds=" + textBounds);
+                            + node + ", glyph=" + renderedGlyph + ", dx=" + dx + ", dy=" + dy
+                            + ", targetBounds=" + targetBounds + ", glyphBounds=" + glyphBounds);
         });
+    }
+
+    /// Returns the node whose center represents a demo vector icon target.
+    private static @Nullable Node centeredDemoVectorIconNode(Node root) {
+        @Nullable Node icon = firstVisibleDemoVectorIcon(root);
+        if (icon == null) {
+            return null;
+        }
+
+        @Nullable Parent viewport = nearestAncestorWithStyle(icon, "demo-vector-icon-viewport");
+        return viewport == null ? icon : viewport;
     }
 
     /// Verifies that single-line text input glyphs have visible vertical room inside their field containers.
@@ -2736,7 +2955,7 @@ final class M3FXDemoVisualSmokeTest {
         );
         Bounds previewBounds = preview.localToScene(preview.getBoundsInLocal());
         Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
-        assertTrue(appBarBounds.getWidth() >= 520.0,
+        assertTrue(appBarBounds.getWidth() >= APP_BAR_PREVIEW_MIN_WIDTH,
                 () -> description + " is too narrow for an app preview: bounds=" + appBarBounds);
         assertTrue(Math.abs(appBarBounds.getMinX() - previewBounds.getMinX()) <= CONTROL_EDGE_TOLERANCE
                         && Math.abs(appBarBounds.getMaxX() - previewBounds.getMaxX()) <= CONTROL_EDGE_TOLERANCE,
@@ -2744,6 +2963,293 @@ final class M3FXDemoVisualSmokeTest {
                         + ", previewBounds=" + previewBounds);
         assertTrue(appBarBounds.getHeight() >= 60.0,
                 () -> description + " height is too small: bounds=" + appBarBounds);
+    }
+
+    /// Verifies that a top app bar uses its token-backed variant height without an oversized mock body.
+    private static void assertTopAppBarPreviewBalance(M3TopAppBar appBar) {
+        Parent preview = Objects.requireNonNull(
+                nearestAncestorWithStyle(appBar, "demo-app-bar-preview"),
+                "top app bar preview"
+        );
+        Bounds previewBounds = preview.localToScene(preview.getBoundsInLocal());
+        Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
+        double expectedHeight = expectedTopAppBarHeight(appBar);
+
+        assertEquals(expectedHeight, appBarBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                () -> "top app bar variant height drifted: variant=" + appBar.getVariant()
+                        + ", expected=" + expectedHeight + ", bounds=" + appBarBounds);
+        assertEquals(expectedHeight, previewBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                () -> "top app bar preview should frame only the component: variant=" + appBar.getVariant()
+                        + ", previewBounds=" + previewBounds + ", appBarBounds=" + appBarBounds);
+    }
+
+    /// Verifies that a bottom app bar preview frames only the toolbar component.
+    private static void assertBottomAppBarPreviewBalance(M3BottomAppBar appBar) {
+        Parent preview = Objects.requireNonNull(
+                nearestAncestorWithStyle(appBar, "demo-app-bar-preview"),
+                "bottom app bar preview"
+        );
+        Bounds previewBounds = preview.localToScene(preview.getBoundsInLocal());
+        Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
+        double expectedHeight = appBar.getContainerHeight();
+
+        assertEquals(expectedHeight, appBarBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                () -> "bottom app bar token height drifted: expected=" + expectedHeight
+                        + ", bounds=" + appBarBounds);
+        assertEquals(expectedHeight, previewBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                () -> "bottom app bar preview should frame only the component: previewBounds="
+                        + previewBounds + ", appBarBounds=" + appBarBounds);
+    }
+
+    /// Returns the expected rendered height for a top app bar variant.
+    private static double expectedTopAppBarHeight(M3TopAppBar appBar) {
+        return switch (appBar.getVariant()) {
+            case MEDIUM -> appBar.getMediumContainerHeight();
+            case LARGE -> appBar.getLargeContainerHeight();
+            case SMALL, CENTER_ALIGNED -> appBar.getContainerHeight();
+        };
+    }
+
+    /// Verifies that top app bar slots use token-backed padding and variant-specific title placement.
+    private static void assertTopAppBarSlotGeometry(M3TopAppBar appBar) {
+        Node navigation = requireVisibleStyledDescendant(
+                appBar,
+                M3TopAppBar.NAVIGATION_STYLE_CLASS,
+                "top app bar navigation slot"
+        );
+        Node title = requireVisibleStyledDescendant(
+                appBar,
+                M3TopAppBar.TITLE_STYLE_CLASS,
+                "top app bar title slot"
+        );
+        Node actions = requireVisibleStyledDescendant(
+                appBar,
+                M3TopAppBar.ACTIONS_STYLE_CLASS,
+                "top app bar actions slot"
+        );
+
+        Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
+        Bounds navigationBounds = navigation.localToScene(navigation.getBoundsInLocal());
+        Bounds titleBounds = title.localToScene(title.getBoundsInLocal());
+        Bounds actionsBounds = actions.localToScene(actions.getBoundsInLocal());
+        Node titleText = Objects.requireNonNull(firstVisibleText(title), "top app bar rendered title text");
+        Bounds titleTextBounds = titleText.localToScene(titleText.getBoundsInLocal());
+        double horizontalPadding = appBar.getHorizontalPadding();
+        boolean rightToLeft = appBar.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+
+        if (rightToLeft) {
+            assertEquals(
+                    appBarBounds.getMaxX() - horizontalPadding,
+                    navigationBounds.getMaxX(),
+                    APP_BAR_SLOT_TOLERANCE,
+                    () -> "RTL top app bar navigation slot does not respect horizontal padding: variant="
+                            + appBar.getVariant() + ", appBarBounds=" + appBarBounds
+                            + ", navigationBounds=" + navigationBounds
+            );
+            assertEquals(
+                    appBarBounds.getMinX() + horizontalPadding,
+                    actionsBounds.getMinX(),
+                    APP_BAR_SLOT_TOLERANCE,
+                    () -> "RTL top app bar actions slot does not respect horizontal padding: variant="
+                            + appBar.getVariant() + ", appBarBounds=" + appBarBounds
+                            + ", actionsBounds=" + actionsBounds
+            );
+        } else {
+            assertEquals(appBarBounds.getMinX() + horizontalPadding, navigationBounds.getMinX(), APP_BAR_SLOT_TOLERANCE,
+                    () -> "top app bar navigation slot does not respect horizontal padding: variant="
+                            + appBar.getVariant() + ", appBarBounds=" + appBarBounds
+                            + ", navigationBounds=" + navigationBounds);
+            assertEquals(appBarBounds.getMaxX() - horizontalPadding, actionsBounds.getMaxX(), APP_BAR_SLOT_TOLERANCE,
+                    () -> "top app bar actions slot does not respect horizontal padding: variant="
+                            + appBar.getVariant() + ", appBarBounds=" + appBarBounds
+                            + ", actionsBounds=" + actionsBounds);
+        }
+
+        switch (appBar.getVariant()) {
+            case CENTER_ALIGNED -> assertEquals(
+                    appBarBounds.getCenterX(),
+                    titleTextBounds.getCenterX(),
+                    APP_BAR_SLOT_TOLERANCE,
+                    () -> "center-aligned top app bar title is not centered: titleBounds=" + titleBounds
+                            + ", titleTextBounds=" + titleTextBounds
+                            + ", appBarBounds=" + appBarBounds
+            );
+            case MEDIUM, LARGE -> {
+                double bottomPadding = appBar.getVariant() == M3TopAppBarVariant.MEDIUM
+                        ? appBar.getMediumBottomPadding()
+                        : appBar.getLargeBottomPadding();
+                if (rightToLeft) {
+                    assertEquals(
+                            appBarBounds.getMaxX() - horizontalPadding,
+                            titleTextBounds.getMaxX(),
+                            APP_BAR_SLOT_TOLERANCE,
+                            () -> "RTL tall top app bar title text does not respect leading padding: variant="
+                                    + appBar.getVariant() + ", titleTextBounds=" + titleTextBounds
+                                    + ", titleBounds=" + titleBounds + ", appBarBounds=" + appBarBounds
+                    );
+                } else {
+                    assertEquals(
+                            appBarBounds.getMinX() + horizontalPadding,
+                            titleBounds.getMinX(),
+                            APP_BAR_SLOT_TOLERANCE,
+                            () -> "tall top app bar title does not respect leading padding: variant="
+                                    + appBar.getVariant() + ", titleBounds=" + titleBounds
+                                    + ", appBarBounds=" + appBarBounds
+                    );
+                }
+                assertEquals(appBarBounds.getMaxY() - bottomPadding, titleBounds.getMaxY(), APP_BAR_SLOT_TOLERANCE,
+                        () -> "tall top app bar title does not respect bottom padding: variant="
+                                + appBar.getVariant() + ", titleBounds=" + titleBounds
+                                + ", appBarBounds=" + appBarBounds);
+                assertTrue(titleBounds.getCenterY() > appBarBounds.getCenterY(),
+                        () -> "tall top app bar title should sit below the icon row: variant="
+                                + appBar.getVariant() + ", titleBounds=" + titleBounds
+                                + ", appBarBounds=" + appBarBounds);
+            }
+            case SMALL -> {
+                double expectedCenterY = appBarBounds.getMinY() + appBar.getContainerHeight() / 2.0;
+                assertEquals(expectedCenterY, titleTextBounds.getCenterY(), APP_BAR_SLOT_TOLERANCE,
+                        () -> "small top app bar title is not centered in the toolbar row: titleTextBounds="
+                                + titleTextBounds + ", titleBounds=" + titleBounds + ", appBarBounds=" + appBarBounds);
+                if (rightToLeft) {
+                    assertTrue(titleTextBounds.getMaxX() <= navigationBounds.getMinX() + APP_BAR_SLOT_TOLERANCE,
+                            () -> "RTL small top app bar title text overlaps navigation slot: titleTextBounds="
+                                    + titleTextBounds + ", navigationBounds=" + navigationBounds);
+                } else {
+                    assertTrue(titleBounds.getMinX() >= navigationBounds.getMaxX() - APP_BAR_SLOT_TOLERANCE,
+                            () -> "small top app bar title overlaps navigation slot: titleBounds="
+                                    + titleBounds + ", navigationBounds=" + navigationBounds);
+                }
+            }
+        }
+    }
+
+    /// Verifies that app bar actions are icon-only vector buttons rather than text placeholders.
+    private static void assertAppBarUsesVectorIconButtons(Node appBar, int expectedCount, String description) {
+        List<M3IconButton> iconButtons = visibleNodesOfType(appBar, M3IconButton.class);
+        assertEquals(expectedCount, iconButtons.size(),
+                () -> description + " should use icon button actions");
+        for (M3IconButton iconButton : iconButtons) {
+            assertTrue(iconButton.getText().isEmpty(),
+                    () -> description + " icon button should not expose placeholder text: " + iconButton.getText());
+            Node graphic = Objects.requireNonNull(iconButton.getGraphic(),
+                    description + " icon button graphic");
+            @Nullable Node vectorIcon = firstVisibleDemoVectorIcon(graphic);
+            assertNotNull(vectorIcon,
+                    () -> description + " icon button should contain a visible demo vector icon graphic");
+            assertAppBarIconButtonGeometry(iconButton, graphic, vectorIcon, description);
+        }
+    }
+
+    /// Verifies that a demo app bar icon button uses Material-sized centered vector geometry.
+    private static void assertAppBarIconButtonGeometry(
+            M3IconButton iconButton,
+            Node graphic,
+            Node vectorIcon,
+            String description
+    ) {
+        Bounds buttonBounds = iconButton.localToScene(iconButton.getBoundsInLocal());
+        Bounds graphicBounds = graphic.localToScene(graphic.getBoundsInLocal());
+        Bounds vectorIconBounds = vectorIcon.localToScene(vectorIcon.getBoundsInLocal());
+        @Nullable Parent viewport = nearestAncestorWithStyle(vectorIcon, "demo-vector-icon-viewport");
+        assertNotNull(viewport,
+                () -> description + " icon button SVG is not wrapped in the fixed demo icon viewport");
+        Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+
+        assertEquals(APP_BAR_ICON_BUTTON_SIZE, buttonBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " icon button width does not match the Material action target: "
+                        + buttonBounds);
+        assertEquals(APP_BAR_ICON_BUTTON_SIZE, buttonBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " icon button height does not match the Material action target: "
+                        + buttonBounds);
+        assertEquals(DEMO_ICON_VIEWPORT_SIZE, viewportBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " icon viewport width is not 24dp: " + viewportBounds);
+        assertEquals(DEMO_ICON_VIEWPORT_SIZE, viewportBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " icon viewport height is not 24dp: " + viewportBounds);
+        assertTrue(containsBoundsWithTolerance(buttonBounds, graphicBounds, CONTROL_EDGE_TOLERANCE),
+                () -> description + " icon graphic leaves its button target: button="
+                        + buttonBounds + ", graphic=" + graphicBounds);
+        assertTrue(containsBoundsWithTolerance(viewportBounds, vectorIconBounds, CONTROL_EDGE_TOLERANCE),
+                () -> description + " SVG path leaves its 24dp viewport: viewport="
+                        + viewportBounds + ", path=" + vectorIconBounds);
+        assertEquals(buttonBounds.getCenterX(), viewportBounds.getCenterX(), DEMO_ICON_CENTER_TOLERANCE,
+                () -> description + " icon viewport is horizontally off-center inside its action target: button="
+                        + buttonBounds + ", viewport=" + viewportBounds);
+        assertEquals(buttonBounds.getCenterY(), viewportBounds.getCenterY(), DEMO_ICON_CENTER_TOLERANCE,
+                () -> description + " icon viewport is vertically off-center inside its action target: button="
+                        + buttonBounds + ", viewport=" + viewportBounds);
+        assertAppBarIconHasVisiblePaint(vectorIcon, description);
+    }
+
+    /// Verifies that an app bar icon renders visible SVG pixels with contrast against its app bar container.
+    private static void assertAppBarIconHasVisiblePaint(Node vectorIcon, String description) {
+        assertNodeSnapshotHasOpaquePixels(vectorIcon, description + " icon");
+        assertInstanceOf(SVGPath.class, vectorIcon,
+                () -> description + " demo vector icon should be an SVG path");
+
+        SVGPath svgPath = (SVGPath) vectorIcon;
+        assertInstanceOf(Color.class, svgPath.getFill(),
+                () -> description + " demo vector icon should resolve to a concrete fill color");
+        Color iconColor = (Color) svgPath.getFill();
+        assertTrue(iconColor.getOpacity() > 0.1,
+                () -> description + " demo vector icon fill is transparent: " + iconColor);
+
+        @Nullable Region appBar = nearestAppBarRegion(vectorIcon);
+        assertNotNull(appBar, () -> description + " demo vector icon is not inside an app bar region");
+        Color containerColor = Objects.requireNonNull(
+                firstBackgroundColor(Objects.requireNonNull(appBar)),
+                description + " app bar background color"
+        );
+        assertTrue(colorDistance(iconColor, containerColor) > 0.08,
+                () -> description + " demo vector icon has too little contrast against the app bar background: icon="
+                        + iconColor + ", background=" + containerColor);
+    }
+
+    /// Verifies that a node snapshot contains non-transparent rendered pixels.
+    private static void assertNodeSnapshotHasOpaquePixels(Node node, String description) {
+        WritableImage image = snapshotNode(node);
+        int opaquePixels = 0;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                if (image.getPixelReader().getColor(x, y).getOpacity() > 0.1) {
+                    opaquePixels++;
+                }
+            }
+        }
+        int minimumOpaquePixels = Math.max(4, (int) (image.getWidth() * image.getHeight() * 0.02));
+        int finalOpaquePixels = opaquePixels;
+        assertTrue(finalOpaquePixels >= minimumOpaquePixels,
+                () -> description + " snapshot has too few opaque pixels: opaque="
+                        + finalOpaquePixels + ", minimum=" + minimumOpaquePixels
+                        + ", size=" + image.getWidth() + "x" + image.getHeight());
+    }
+
+    /// Returns the nearest top or bottom app bar region containing a node.
+    private static @Nullable Region nearestAppBarRegion(Node node) {
+        @Nullable Parent parent = node.getParent();
+        while (parent != null) {
+            if (parent instanceof Region region
+                    && (region.getStyleClass().contains(M3TopAppBar.STYLE_CLASS)
+                    || region.getStyleClass().contains(M3BottomAppBar.STYLE_CLASS))) {
+                return region;
+            }
+            parent = parent.getParent();
+        }
+        return null;
+    }
+
+    /// Returns the first concrete background color used by a region.
+    private static @Nullable Color firstBackgroundColor(Region region) {
+        if (region.getBackground() == null) {
+            return null;
+        }
+        for (javafx.scene.layout.BackgroundFill fill : region.getBackground().getFills()) {
+            Paint paint = fill.getFill();
+            if (paint instanceof Color color) {
+                return color;
+            }
+        }
+        return null;
     }
 
     /// Verifies that a radio button dot shares the same rendered center as its ring.
@@ -2861,6 +3367,29 @@ final class M3FXDemoVisualSmokeTest {
                 return parent;
             }
             parent = parent.getParent();
+        }
+        return null;
+    }
+
+    /// Returns a visible descendant with the requested style class or fails the test.
+    private static Node requireVisibleStyledDescendant(Node root, String styleClass, String description) {
+        @Nullable Node node = firstVisibleStyledDescendant(root, styleClass);
+        assertNotNull(node, description);
+        return Objects.requireNonNull(node, description);
+    }
+
+    /// Returns the first visible descendant with the requested style class.
+    private static @Nullable Node firstVisibleStyledDescendant(Node root, String styleClass) {
+        if (root.isVisible() && root.getStyleClass().contains(styleClass) && hasRenderableBounds(root)) {
+            return root;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable Node result = firstVisibleStyledDescendant(child, styleClass);
+                if (result != null) {
+                    return result;
+                }
+            }
         }
         return null;
     }
@@ -3122,6 +3651,112 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
+    /// Returns whether a popup root has reached its fully shown visual state.
+    private static boolean popupRootSettled(@Nullable Node popupRoot) {
+        if (popupRoot == null
+                || popupRoot.getScene() == null
+                || !popupRoot.isVisible()
+                || !hasRenderableBounds(popupRoot)) {
+            return false;
+        }
+
+        layoutPopupRoot(popupRoot);
+        @Nullable Bounds screenBounds = popupRoot.localToScreen(popupRoot.getBoundsInLocal());
+        return screenBounds != null
+                && screenBounds.getWidth() > 0.0
+                && screenBounds.getHeight() > 0.0
+                && popupRoot.getOpacity() >= 0.995
+                && Math.abs(popupRoot.getScaleX() - 1.0) <= 0.005
+                && Math.abs(popupRoot.getScaleY() - 1.0) <= 0.005
+                && Math.abs(popupRoot.getTranslateX()) <= CONTROL_EDGE_TOLERANCE
+                && Math.abs(popupRoot.getTranslateY()) <= CONTROL_EDGE_TOLERANCE;
+    }
+
+    /// Returns whether a bottom sheet has reached its fully hidden state.
+    private static boolean bottomSheetHidden(@Nullable M3BottomSheet sheet) {
+        return sheet != null && !sheet.isShown() && !sheet.isVisible() && !sheet.isManaged();
+    }
+
+    /// Returns whether a bottom sheet has reached its fully shown state.
+    private static boolean bottomSheetShown(@Nullable M3BottomSheet sheet) {
+        return sheet != null
+                && sheet.isShown()
+                && sheet.isVisible()
+                && sheet.isManaged()
+                && sheet.getOpacity() >= 0.995
+                && Math.abs(sheet.getTranslateY()) <= CONTROL_EDGE_TOLERANCE
+                && hasRenderableBounds(sheet);
+    }
+
+    /// Returns whether a side sheet has reached its fully hidden state.
+    private static boolean sideSheetHidden(@Nullable M3SideSheet sheet) {
+        return sheet != null && !sheet.isShown() && !sheet.isVisible() && !sheet.isManaged();
+    }
+
+    /// Returns whether a side sheet has reached its fully shown state.
+    private static boolean sideSheetShown(@Nullable M3SideSheet sheet) {
+        return sheet != null
+                && sheet.isShown()
+                && sheet.isVisible()
+                && sheet.isManaged()
+                && sheet.getOpacity() >= 0.995
+                && Math.abs(sheet.getTranslateX()) <= CONTROL_EDGE_TOLERANCE
+                && hasRenderableBounds(sheet);
+    }
+
+    /// Returns whether a snackbar host has reached its fully shown state.
+    private static boolean snackbarSettled(@Nullable M3SnackbarHost host) {
+        if (host == null || !host.isShowing()) {
+            return false;
+        }
+
+        @Nullable M3Snackbar snackbar = host.getSnackbar();
+        return snackbar != null
+                && snackbar.isVisible()
+                && snackbar.isManaged()
+                && snackbar.getOpacity() >= 0.995
+                && Math.abs(snackbar.getTranslateY()) <= CONTROL_EDGE_TOLERANCE
+                && hasRenderableBounds(snackbar);
+    }
+
+    /// Returns whether a snackbar host has reached its fully hidden state.
+    private static boolean snackbarHidden(@Nullable M3SnackbarHost host) {
+        return host != null && !host.isShowing() && host.getSnackbar() == null;
+    }
+
+    /// Returns whether a FAB menu has reached its fully expanded visual state.
+    private static boolean fabMenuExpandedSettled(@Nullable M3FabMenu menu) {
+        if (menu == null || !menu.isExpanded()) {
+            return false;
+        }
+
+        for (Node item : menu.getItems()) {
+            if (!item.isVisible()
+                    || !item.isManaged()
+                    || item.getOpacity() < 0.995
+                    || Math.abs(item.getScaleX() - 1.0) > 0.005
+                    || Math.abs(item.getScaleY() - 1.0) > 0.005
+                    || Math.abs(item.getTranslateY()) > CONTROL_EDGE_TOLERANCE) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// Returns whether a FAB menu has reached its fully collapsed visual state.
+    private static boolean fabMenuCollapsedSettled(@Nullable M3FabMenu menu) {
+        if (menu == null || menu.isExpanded()) {
+            return false;
+        }
+
+        for (Node item : menu.getItems()) {
+            if (item.isVisible() || item.isManaged()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /// Verifies that an owning popup and nested popup are positioned beside each other on screen.
     private static void assertPopupStackSideBySide(Node ownerPopupRoot, Node childPopupRoot) {
         @Nullable Bounds ownerBounds = ownerPopupRoot.localToScreen(ownerPopupRoot.getBoundsInLocal());
@@ -3145,6 +3780,57 @@ final class M3FXDemoVisualSmokeTest {
                 () -> "Nested popup stack has unsafe placement: ownerBounds=" + ownerBounds
                         + ", childBounds=" + childBounds + ", horizontalOverlap=" + horizontalOverlap
                         + ", verticalOverlap=" + verticalOverlap);
+    }
+
+    /// Verifies that popup roots keep the same installed demo theme context as the owner scene root.
+    private static void assertPopupThemeContext(Parent sceneRoot, Parent popupRoot, String description) {
+        assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS),
+                () -> description + " popup root does not have the M3 theme root style class: "
+                        + popupRoot.getStyleClass());
+        assertSameThemeModeStyleClass(
+                sceneRoot,
+                popupRoot,
+                M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS,
+                M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS,
+                description + " profile"
+        );
+        assertSameThemeModeStyleClass(
+                sceneRoot,
+                popupRoot,
+                M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS,
+                M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS,
+                description + " brightness"
+        );
+    }
+
+    /// Verifies that exactly the active owner theme mode class is present on a popup root.
+    private static void assertSameThemeModeStyleClass(
+            Parent sceneRoot,
+            Parent popupRoot,
+            String firstStyleClass,
+            String secondStyleClass,
+            String description
+    ) {
+        boolean sceneHasFirst = sceneRoot.getStyleClass().contains(firstStyleClass);
+        boolean sceneHasSecond = sceneRoot.getStyleClass().contains(secondStyleClass);
+        boolean popupHasFirst = popupRoot.getStyleClass().contains(firstStyleClass);
+        boolean popupHasSecond = popupRoot.getStyleClass().contains(secondStyleClass);
+        assertEquals(sceneHasFirst, popupHasFirst,
+                () -> description + " first style class mismatch: scene=" + sceneRoot.getStyleClass()
+                        + ", popup=" + popupRoot.getStyleClass());
+        assertEquals(sceneHasSecond, popupHasSecond,
+                () -> description + " second style class mismatch: scene=" + sceneRoot.getStyleClass()
+                        + ", popup=" + popupRoot.getStyleClass());
+    }
+
+    /// Verifies that a popup menu root remains a compact menu surface.
+    private static void assertPopupSurfaceSize(Node popupRoot, String description) {
+        @Nullable Bounds bounds = popupRoot.localToScreen(popupRoot.getBoundsInLocal());
+        assertNotNull(bounds, () -> description + " popup screen bounds");
+        assertTrue(bounds.getWidth() >= 112.0 && bounds.getWidth() <= 360.0,
+                () -> description + " popup width is not menu-like: bounds=" + bounds);
+        assertTrue(bounds.getHeight() >= 48.0 && bounds.getHeight() <= 520.0,
+                () -> description + " popup height is not menu-like: bounds=" + bounds);
     }
 
     /// Verifies that a snackbar occupies its compact message surface instead of the whole overlay.
@@ -3344,6 +4030,24 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
+    /// Returns the first visible demo SVG icon below a target node.
+    private static @Nullable Node firstVisibleDemoVectorIcon(Node node) {
+        if (node instanceof SVGPath
+                && node.getStyleClass().contains(DemoIcons.STYLE_CLASS)
+                && hasRenderableBounds(node)) {
+            return node;
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable Node icon = firstVisibleDemoVectorIcon(child);
+                if (icon != null) {
+                    return icon;
+                }
+            }
+        }
+        return null;
+    }
+
     /// Returns whether a node has visible non-empty bounds.
     private static boolean hasRenderableBounds(Node node) {
         Bounds bounds = node.getBoundsInLocal();
@@ -3454,5 +4158,23 @@ final class M3FXDemoVisualSmokeTest {
             Runnable verification
     ) throws InterruptedException {
         DemoFxTestUtils.runOnFxThreadAfterDelay(delay, setup, verification);
+    }
+
+    /// Runs setup on the FX thread and verifies the result after JavaFX pulses.
+    private static void runOnFxThreadAfterPulses(
+            int pulseCount,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        DemoFxTestUtils.runOnFxThreadAfterPulses(pulseCount, setup, verification);
+    }
+
+    /// Runs setup on the FX thread and verifies the result when a condition becomes true.
+    private static void runOnFxThreadWhen(
+            BooleanSupplier condition,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        DemoFxTestUtils.runOnFxThreadWhen(condition, setup, verification);
     }
 }

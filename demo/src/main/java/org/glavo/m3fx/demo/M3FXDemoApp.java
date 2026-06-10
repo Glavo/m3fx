@@ -9,9 +9,12 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.geometry.Bounds;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
@@ -71,7 +74,6 @@ import org.glavo.m3fx.controls.M3FormPane;
 import org.glavo.m3fx.controls.M3FormRow;
 import org.glavo.m3fx.controls.M3FormSection;
 import org.glavo.m3fx.controls.M3FormValidator;
-import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconToggleButton;
@@ -209,6 +211,9 @@ public final class M3FXDemoApp extends Application {
     /// The sidebar section for demo pages absent from the Material components navigation drawer.
     private static final String ADDITIONAL_DEMOS_GROUP = "Additional demos";
 
+    /// The fixed icon viewport style used by interactive SVG icon samples.
+    private static final String DEMO_VECTOR_ICON_VIEWPORT_STYLE_CLASS = "demo-vector-icon-viewport";
+
     /// The current seed color used by the demo theme.
     private Color seedColor = M3Theme.DEFAULT_SEED_COLOR;
 
@@ -238,6 +243,9 @@ public final class M3FXDemoApp extends Application {
 
     /// The navigation drawer used by the demo sidebar.
     private @Nullable M3NavigationDrawer sidebarDrawer;
+
+    /// The scroll pane that hosts the demo sidebar.
+    private @Nullable ScrollPane sidebarScrollPane;
 
     /// The currently shown demo page.
     private @Nullable DemoPage currentPage;
@@ -474,6 +482,7 @@ public final class M3FXDemoApp extends Application {
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        sidebarScrollPane = scrollPane;
         return scrollPane;
     }
 
@@ -584,6 +593,7 @@ public final class M3FXDemoApp extends Application {
 
         pageNode.getChildren().addAll(createPageHeader(page), page.createContent());
         host.getChildren().setAll(pageNode);
+        scrollSidebarPageIntoViewLater(page);
     }
 
     /// Creates the title, subtitle, and optional Material documentation action for a page.
@@ -664,6 +674,23 @@ public final class M3FXDemoApp extends Application {
         return scene;
     }
 
+    /// Returns the current page's sidebar navigation title for visual tests.
+    @Nullable String currentPageNavigationTitleForTesting() {
+        DemoPage page = currentPage;
+        return page == null ? null : page.navigationTitle();
+    }
+
+    /// Returns the selected sidebar item title for visual tests.
+    @Nullable String selectedSidebarNavigationTitleForTesting() {
+        for (SidebarGroup group : sidebarGroups) {
+            @Nullable M3ListItem selectedItem = group.selectedItem();
+            if (selectedItem != null) {
+                return selectedItem.getHeadlineText();
+            }
+        }
+        return null;
+    }
+
     /// Applies the dark expressive demo theme mode directly for visual tests.
     void setDarkExpressiveThemeForTesting() {
         this.profile = M3Profile.EXPRESSIVE_2025;
@@ -690,6 +717,65 @@ public final class M3FXDemoApp extends Application {
         for (SidebarGroup group : sidebarGroups) {
             group.updateSelection(page);
         }
+    }
+
+    /// Schedules scrolling the active sidebar destination into view after the sidebar has laid out.
+    private void scrollSidebarPageIntoViewLater(DemoPage page) {
+        Platform.runLater(() -> scrollSidebarPageIntoView(page));
+    }
+
+    /// Scrolls the active sidebar destination into view when it is outside the current viewport.
+    private void scrollSidebarPageIntoView(DemoPage page) {
+        ScrollPane scrollPane = sidebarScrollPane;
+        Node content = scrollPane == null ? null : scrollPane.getContent();
+        @Nullable M3ListItem item = sidebarItemForPage(page);
+        if (scrollPane == null || content == null || item == null || item.getScene() == null) {
+            return;
+        }
+
+        scrollPane.applyCss();
+        content.applyCss();
+        if (content instanceof Parent parent) {
+            parent.layout();
+        }
+
+        Bounds viewportBounds = scrollPane.getViewportBounds();
+        double viewportHeight = viewportBounds.getHeight();
+        double contentHeight = content.getLayoutBounds().getHeight();
+        double scrollableHeight = contentHeight - viewportHeight;
+        if (viewportHeight <= 0.0 || scrollableHeight <= 0.0) {
+            return;
+        }
+
+        Bounds itemBounds = content.sceneToLocal(item.localToScene(item.getBoundsInLocal()));
+        double visibleTop = scrollPane.getVvalue() * scrollableHeight;
+        double visibleBottom = visibleTop + viewportHeight;
+        double safePadding = 24.0;
+        if (itemBounds.getMinY() >= visibleTop + safePadding
+                && itemBounds.getMaxY() <= visibleBottom - safePadding) {
+            return;
+        }
+
+        double targetTop;
+        if (itemBounds.getMinY() < visibleTop + safePadding) {
+            targetTop = itemBounds.getMinY() - safePadding;
+        } else {
+            targetTop = itemBounds.getMaxY() + safePadding - viewportHeight;
+        }
+
+        double clampedTop = Math.max(0.0, Math.min(scrollableHeight, targetTop));
+        scrollPane.setVvalue(clampedTop / scrollableHeight);
+    }
+
+    /// Returns the rendered sidebar destination item for a page.
+    private @Nullable M3ListItem sidebarItemForPage(DemoPage page) {
+        for (SidebarGroup group : sidebarGroups) {
+            @Nullable M3ListItem item = group.itemForPage(page);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
     }
 
     /// Stops animations owned by the previous page.
@@ -821,42 +907,42 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup(
                         "Floating Action Buttons",
-                        createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
-                        createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
-                        createFab("*", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.LARGE)
+                        createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
+                        createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
+                        createFab("spark", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.LARGE)
                 )
         );
     }
 
     /// Creates the icon button component page.
     private Node createIconButtonsPage() {
-        M3IconButton disabledIcon = createIconButton("i");
+        M3IconButton disabledIcon = createIconButton("info");
         disabledIcon.setDisable(true);
 
         return createGallery(
                 createShowcaseGroup(
                         "Icon Buttons",
-                        createIconButton("i"),
-                        createIconButton("+"),
+                        createIconButton("info"),
+                        createIconButton("add"),
                         disabledIcon
                 ),
                 createShowcaseGroup(
                         "Toggle Icon Buttons",
                         createIconToggleGroup(
                                 M3IconToggleButtonVariant.STANDARD,
-                                "S",
-                                "F",
-                                "T",
-                                "O"
+                                "star",
+                                "favorite",
+                                "tune",
+                                "visibility"
                         ),
                         createIconToggleGroup(
                                 M3IconToggleButtonVariant.TONAL,
-                                "1",
-                                "2",
-                                "3"
+                                "bookmark",
+                                "schedule",
+                                "notifications"
                         ),
                         createFormattingToggleGroup(),
-                        createIconToggleButton("D", M3IconToggleButtonVariant.TONAL, false)
+                        createIconToggleButton("delete", M3IconToggleButtonVariant.TONAL, false)
                 )
         );
     }
@@ -881,33 +967,33 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the icon component page.
     private Node createIconsPage() {
-        M3Icon disabledIcon = createDemoIcon("D", M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT);
+        Node disabledIcon = createDemoIcon("notifications", M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT);
         disabledIcon.setDisable(true);
 
         return createGallery(
                 createShowcaseGroup(
                         "Sizes",
-                        createDemoIcon("S", M3IconSize.SMALL, M3IconVariant.PRIMARY),
-                        createDemoIcon("M", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
-                        createDemoIcon("L", M3IconSize.LARGE, M3IconVariant.PRIMARY),
-                        createDemoIcon("X", M3IconSize.EXTRA_LARGE, M3IconVariant.PRIMARY)
+                        createDemoIcon("search", M3IconSize.SMALL, M3IconVariant.PRIMARY),
+                        createDemoIcon("search", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
+                        createDemoIcon("search", M3IconSize.LARGE, M3IconVariant.PRIMARY),
+                        createDemoIcon("search", M3IconSize.EXTRA_LARGE, M3IconVariant.PRIMARY)
                 ),
                 createShowcaseGroup(
                         "Color Variants",
-                        createDemoIcon("P", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
-                        createDemoIcon("S", M3IconSize.MEDIUM, M3IconVariant.SECONDARY),
-                        createDemoIcon("T", M3IconSize.MEDIUM, M3IconVariant.TERTIARY),
-                        createDemoIcon("E", M3IconSize.MEDIUM, M3IconVariant.ERROR),
-                        createDemoIcon("O", M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE),
+                        createDemoIcon("star", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
+                        createDemoIcon("star", M3IconSize.MEDIUM, M3IconVariant.SECONDARY),
+                        createDemoIcon("star", M3IconSize.MEDIUM, M3IconVariant.TERTIARY),
+                        createDemoIcon("star", M3IconSize.MEDIUM, M3IconVariant.ERROR),
+                        createDemoIcon("star", M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE),
                         disabledIcon
                 ),
                 createShowcaseGroup(
                         "Button Usage",
-                        createIconButton("i"),
-                        createIconButton("+"),
-                        createIconToggleButton("B", M3IconToggleButtonVariant.TONAL, true),
-                        createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
-                        createFab("*", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.REGULAR)
+                        createIconButton("info"),
+                        createIconButton("add"),
+                        createIconToggleButton("bold", M3IconToggleButtonVariant.TONAL, true),
+                        createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
+                        createFab("spark", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.REGULAR)
                 )
         );
     }
@@ -953,20 +1039,20 @@ public final class M3FXDemoApp extends Application {
 
         M3TextInputLayout filledLayout = createTextInputLayout(filled, "Supporting text");
         M3TextInputLayout filledTextLayout = createTextInputLayout(filledText, "Email address");
-        filledTextLayout.setLeading(createDemoIcon("E", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
+        filledTextLayout.setLeading(createSurfaceVariantIcon("email"));
         filledTextLayout.setClearButtonEnabled(true);
         filledTextLayout.setCharacterCounterVisible(true);
         filledTextLayout.setCharacterLimit(32);
         M3TextInputLayout filledDisabledLayout = createTextInputLayout(filledDisabled, "Disabled supporting text");
-        filledDisabledLayout.setLeading(createDemoIcon("R", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
+        filledDisabledLayout.setLeading(createSurfaceVariantIcon("lock"));
         M3TextInputLayout outlinedLayout = createTextInputLayout(outlined, "Outlined supporting text");
         M3TextInputLayout outlinedTextLayout = createTextInputLayout(outlinedText, "Project name");
-        outlinedTextLayout.setLeading(createDemoIcon("T", M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT));
+        outlinedTextLayout.setLeading(createSurfaceVariantIcon("text"));
         outlinedTextLayout.setCharacterCounterVisible(true);
         outlinedTextLayout.setCharacterLimit(24);
         outlinedTextLayout.setCharacterLimitEnforced(true);
         M3TextInputLayout passwordLayout = createTextInputLayout(password, "At least 8 characters");
-        passwordLayout.setTrailing(createIconButton("V"));
+        passwordLayout.setTrailing(createIconButton("visibility"));
         M3TextField validatedEmail = createTextField("Validated email", "support", M3TextInputVariant.OUTLINED, false);
         validatedEmail.setPrefWidth(340.0);
         M3TextInputLayout validatedEmailLayout = createTextInputLayout(validatedEmail, "Validation runs on focus loss");
@@ -983,7 +1069,7 @@ public final class M3FXDemoApp extends Application {
         M3TextInputLayout filledErrorLayout = createTextInputLayout(filledError, "Supporting text");
         filledErrorLayout.setErrorText("Use a valid value");
         M3TextInputLayout outlinedErrorLayout = createTextInputLayout(outlinedError, "Supporting text");
-        outlinedErrorLayout.setLeading(createDemoIcon("!", M3IconSize.SMALL, M3IconVariant.ERROR));
+        outlinedErrorLayout.setLeading(createErrorIcon("error"));
         outlinedErrorLayout.setErrorText("This field is required");
         M3TextInputLayout passwordErrorLayout = createTextInputLayout(passwordError, "Supporting text");
         passwordErrorLayout.setErrorText("Password cannot be empty");
@@ -1007,7 +1093,7 @@ public final class M3FXDemoApp extends Application {
     private Node createSearchPage() {
         M3SearchBar searchBar = new M3SearchBar("Search M3FX");
         searchBar.setPrefWidth(420.0);
-        M3IconButton clearSearchBar = createIconButton("C");
+        M3IconButton clearSearchBar = createIconButton("close");
         clearSearchBar.setOnAction(event -> searchBar.clear());
         searchBar.getTrailingActions().add(clearSearchBar);
 
@@ -1017,7 +1103,7 @@ public final class M3FXDemoApp extends Application {
 
         M3SearchView searchView = new M3SearchView("Search components");
         searchView.setPrefWidth(520.0);
-        M3IconButton clearSearchView = createIconButton("C");
+        M3IconButton clearSearchView = createIconButton("close");
         clearSearchView.setOnAction(event -> searchView.clear());
         searchView.getTrailingActions().add(clearSearchView);
         searchView.getResults().addAll(
@@ -1120,7 +1206,7 @@ public final class M3FXDemoApp extends Application {
     /// Creates the chip component page.
     private Node createChipsPage() {
         M3Chip assist = createChip("Assist", M3ChipVariant.ASSIST, false, false);
-        assist.setGraphic(createNavigationIcon("A"));
+        assist.setGraphic(createNavigationIcon("info"));
         M3Chip suggestion = createChip("Suggestion", M3ChipVariant.SUGGESTION, false, false);
         M3Chip input = createChip("Input", M3ChipVariant.INPUT, false, false);
         M3Chip filter = createChip("Filter", M3ChipVariant.FILTER, false, false);
@@ -1270,48 +1356,48 @@ public final class M3FXDemoApp extends Application {
     private Node createMenusPage() {
         M3Menu inlineMenu = new M3Menu(
                 new M3MenuSectionHeader("File"),
-                createMenuItem("New", "N", "Ctrl+N"),
-                createMenuItem("Open", "O", "Ctrl+O"),
+                createMenuItem("New", "add", "Ctrl+N"),
+                createMenuItem("Open", "folder", "Ctrl+O"),
                 new M3SubMenuItem(
                         "Open Recent",
-                        createMenuItem("Project Alpha", "A", ""),
-                        createMenuItem("Project Beta", "B", "")
+                        createMenuItem("Project Alpha", "work", ""),
+                        createMenuItem("Project Beta", "bookmark", "")
                 ),
-                createMenuItem("Save", "S", "Ctrl+S"),
+                createMenuItem("Save", "save", "Ctrl+S"),
                 new M3Divider(),
                 new M3MenuSectionHeader("Recent"),
-                createMenuItem("Project Alpha", "A", ""),
-                createMenuItem("Project Beta", "B", "")
+                createMenuItem("Project Alpha", "work", ""),
+                createMenuItem("Project Beta", "bookmark", "")
         );
 
         M3MenuButton menuButton = new M3MenuButton(
                 "Open menu",
                 new M3MenuSectionHeader("Document"),
-                createMenuItem("Duplicate", "D", "Ctrl+D"),
+                createMenuItem("Duplicate", "bookmark", "Ctrl+D"),
                 new M3SubMenuItem(
                         "Move to",
-                        createMenuItem("Archive", "A", ""),
-                        createMenuItem("Inbox", "I", "")
+                        createMenuItem("Archive", "archive", ""),
+                        createMenuItem("Inbox", "inbox", "")
                 ),
-                createMenuItem("Rename", "R", ""),
+                createMenuItem("Rename", "edit", ""),
                 new M3Divider(),
                 new M3MenuSectionHeader("Danger"),
-                createMenuItem("Delete", "X", "")
+                createMenuItem("Delete", "delete", "")
         );
         menuButton.setVariant(M3ButtonVariant.OUTLINED);
         menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
 
-        M3MenuItem selected = createMenuItem("Selected item", "S", "");
-        M3Menu selectedMenu = new M3Menu(selected, createMenuItem("Regular item", "R", ""));
+        M3MenuItem selected = createMenuItem("Selected item", "check", "");
+        M3Menu selectedMenu = new M3Menu(selected, createMenuItem("Regular item", "label", ""));
         selectedMenu.setSelectionMode(M3MenuSelectionMode.SINGLE);
         selectedMenu.setAllowEmptySelection(false);
         selectedMenu.selectIndex(0);
 
         M3Menu multiSelectMenu = new M3Menu(
                 new M3MenuSectionHeader("Visibility"),
-                createMenuItem("Icons", "I", ""),
-                createMenuItem("Labels", "L", ""),
-                createMenuItem("Badges", "B", "")
+                createMenuItem("Icons", "visibility", ""),
+                createMenuItem("Labels", "label", ""),
+                createMenuItem("Badges", "bookmark", "")
         );
         multiSelectMenu.setSelectionMode(M3MenuSelectionMode.MULTIPLE);
         multiSelectMenu.selectIndex(1);
@@ -1375,10 +1461,12 @@ public final class M3FXDemoApp extends Application {
         M3TopAppBar large = createTopAppBar("Workspace", M3TopAppBarVariant.LARGE, "menu", "search", "more");
 
         return createGallery(
-                createShowcaseGroup("Small", createTopAppBarPreview(small)),
-                createShowcaseGroup("Center Aligned", createTopAppBarPreview(centerAligned)),
-                createShowcaseGroup("Medium", createTopAppBarPreview(medium)),
-                createShowcaseGroup("Large", createTopAppBarPreview(large))
+                createAppBarShowcaseGroup(
+                        createLabeledAppBarPreview("Small", createTopAppBarPreview(small)),
+                        createLabeledAppBarPreview("Center Aligned", createTopAppBarPreview(centerAligned)),
+                        createLabeledAppBarPreview("Medium", createTopAppBarPreview(medium)),
+                        createLabeledAppBarPreview("Large", createTopAppBarPreview(large))
+                )
         );
     }
 
@@ -1507,12 +1595,12 @@ public final class M3FXDemoApp extends Application {
     /// Creates the list component page.
     private Node createListPage() {
         M3ListItem oneLine = new M3ListItem("One-line item");
-        oneLine.setLeadingIcon("I");
+        oneLine.setLeading(createSurfaceVariantIcon("inbox"));
 
         M3ListItem twoLine = new M3ListItem("Two-line item");
         twoLine.setSupportingText("Supporting text");
         twoLine.setTrailingSupportingText("3 min");
-        twoLine.setTrailingIcon(">");
+        twoLine.setTrailing(createSurfaceVariantIcon("chevron-right"));
 
         M3ListItem threeLine = new M3ListItem("Three-line item");
         threeLine.setOverlineText("Overline");
@@ -1521,17 +1609,17 @@ public final class M3FXDemoApp extends Application {
 
         M3ListItem thumbnail = new M3ListItem("Thumbnail item");
         thumbnail.setSupportingText("Leading square media and trailing metadata.");
-        thumbnail.setLeadingThumbnail(createListThumbnail("T"));
+        thumbnail.setLeadingThumbnail(createListThumbnail());
         thumbnail.setTrailingSupportingText("12:40");
 
         M3ListItem wideThumbnail = new M3ListItem("Wide thumbnail item");
         wideThumbnail.setSupportingText("Media content is clipped to the configured slot size.");
-        wideThumbnail.setLeadingMedia(createListThumbnail("W"), M3ListItemSlotSize.WIDE_THUMBNAIL);
-        wideThumbnail.setTrailingIcon(">");
+        wideThumbnail.setLeadingMedia(createListThumbnail(), M3ListItemSlotSize.WIDE_THUMBNAIL);
+        wideThumbnail.setTrailing(createSurfaceVariantIcon("chevron-right"));
 
         M3ListItem selected = new M3ListItem("Selected item");
         selected.setSupportingText("Current destination");
-        selected.setLeadingIcon("S");
+        selected.setLeading(createSurfaceVariantIcon("done"));
         selected.setTrailingSupportingText("Now");
 
         M3ListPane listPane = new M3ListPane();
@@ -1571,7 +1659,7 @@ public final class M3FXDemoApp extends Application {
         listView.setPrefSize(360.0, 280.0);
         listView.setCellFactory(text -> {
             M3ListItem item = new M3ListItem(text);
-            item.setLeadingIcon("#");
+            item.setLeading(createSurfaceVariantIcon("task"));
             item.setTrailingSupportingText(Integer.toString(text.length()));
             return item;
         });
@@ -1580,8 +1668,8 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a sample thumbnail used by list item media rows.
-    private static StackPane createListThumbnail(String iconText) {
-        M3Icon icon = new M3Icon(iconText, M3IconSize.SMALL, M3IconVariant.ON_SURFACE);
+    private static StackPane createListThumbnail() {
+        Node icon = createImageIcon();
         StackPane thumbnail = new StackPane(icon);
         thumbnail.getStyleClass().add("demo-list-thumbnail");
         return thumbnail;
@@ -1603,7 +1691,7 @@ public final class M3FXDemoApp extends Application {
         M3Avatar initials = new M3Avatar("AB");
         M3Avatar single = new M3Avatar("M");
         single.setVariant(M3AvatarVariant.SECONDARY);
-        M3Avatar graphic = new M3Avatar(createNavigationIcon("G"));
+        M3Avatar graphic = new M3Avatar(createNavigationIcon("person"));
         graphic.setVariant(M3AvatarVariant.TERTIARY);
         M3Avatar surface = new M3Avatar("S");
         surface.setVariant(M3AvatarVariant.SURFACE);
@@ -1696,9 +1784,9 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the side sheet component page.
     private Node createSideSheetsPage() {
-        M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent(), createIconButton("X"));
+        M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent(), createIconButton("close"));
 
-        M3SideSheet modalSideSheet = new M3SideSheet("Filters", createSheetContent(), createIconButton("X"));
+        M3SideSheet modalSideSheet = new M3SideSheet("Filters", createSheetContent(), createIconButton("close"));
         modalSideSheet.setVariant(M3SheetVariant.MODAL);
 
         return createGallery(
@@ -1708,7 +1796,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the bottom sheet component page.
     private Node createBottomSheetsPage() {
-        M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent(), createIconButton("X"));
+        M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent(), createIconButton("close"));
         bottomSheet.setPrefWidth(520.0);
 
         M3BottomSheet compactBottomSheet = new M3BottomSheet("Compact", createSheetContent());
@@ -1758,7 +1846,7 @@ public final class M3FXDemoApp extends Application {
                 learnButton,
                 dismissButton
         );
-        informational.setIcon(new M3Icon("i", M3IconSize.MEDIUM, M3IconVariant.PRIMARY));
+        informational.setIcon(createInfoIcon());
         informational.setPrefWidth(760.0);
 
         M3Button reviewButton = createButton("Review", M3ButtonVariant.TEXT);
@@ -1767,7 +1855,7 @@ public final class M3FXDemoApp extends Application {
                 "The selected jlink target uses platform-specific BellSoft LibericaJDK Full jmods.",
                 reviewButton
         );
-        warning.setIcon(new M3Icon("!", M3IconSize.MEDIUM, M3IconVariant.ERROR));
+        warning.setIcon(createErrorIcon("warning"));
         warning.setPrefWidth(760.0);
 
         M3Button manageButton = createButton("Manage", M3ButtonVariant.TEXT);
@@ -1901,7 +1989,7 @@ public final class M3FXDemoApp extends Application {
         tooltip.setPrefWidth(260.0);
         M3Tooltip.install(longText, tooltip);
 
-        M3IconButton iconButton = createIconButton("i");
+        M3IconButton iconButton = createIconButton("info");
         M3Tooltip.install(iconButton, "Icon button");
 
         M3Button rich = createButton("Rich tooltip", M3ButtonVariant.TONAL);
@@ -1947,6 +2035,23 @@ public final class M3FXDemoApp extends Application {
         flow.getChildren().addAll(nodes);
 
         VBox group = new VBox(10.0, label, flow);
+        group.getStyleClass().add("demo-showcase-group");
+        group.setMaxWidth(Double.MAX_VALUE);
+        return group;
+    }
+
+    /// Creates the app bar showcase group whose samples are stacked and expanded to the available width.
+    private static VBox createAppBarShowcaseGroup(Node... nodes) {
+        Label label = new Label("Top App Bars");
+        label.getStyleClass().add("demo-group-title");
+
+        VBox stack = new VBox(16.0);
+        stack.getStyleClass().addAll("demo-flow", "demo-stacked-flow");
+        stack.setFillWidth(true);
+        stack.setMaxWidth(Double.MAX_VALUE);
+        stack.getChildren().addAll(nodes);
+
+        VBox group = new VBox(10.0, label, stack);
         group.getStyleClass().add("demo-showcase-group");
         group.setMaxWidth(Double.MAX_VALUE);
         return group;
@@ -2135,7 +2240,7 @@ public final class M3FXDemoApp extends Application {
     private static M3ListItem createOverviewItem(String title, String supportingText) {
         M3ListItem item = new M3ListItem(title);
         item.setSupportingText(supportingText);
-        item.setLeading(createNavigationIcon(title.substring(0, 1)));
+        item.setLeading(createNavigationIcon(overviewIconName(title)));
         return item;
     }
 
@@ -2143,8 +2248,39 @@ public final class M3FXDemoApp extends Application {
     private static M3ListItem createSearchResult(String title, String supportingText) {
         M3ListItem item = new M3ListItem(title);
         item.setSupportingText(supportingText);
-        item.setLeading(createNavigationIcon(title.substring(0, 1)));
+        item.setLeading(createNavigationIcon(overviewIconName(title)));
         return item;
+    }
+
+    /// Returns the demo icon name that best matches a list row title.
+    private static String overviewIconName(String title) {
+        String normalized = title.toLowerCase(Locale.ROOT);
+        if (normalized.contains("button")) {
+            return "add";
+        } else if (normalized.contains("input") || normalized.contains("text")) {
+            return "text";
+        } else if (normalized.contains("selection") || normalized.contains("checkbox")) {
+            return "check";
+        } else if (normalized.contains("navigation")) {
+            return "home";
+        } else if (normalized.contains("loading") || normalized.contains("progress")) {
+            return "schedule";
+        } else if (normalized.contains("date") || normalized.contains("time")) {
+            return "calendar";
+        } else if (normalized.contains("dialog") || normalized.contains("sheet")) {
+            return "info";
+        } else if (normalized.contains("list") || normalized.contains("surface")) {
+            return "label";
+        } else if (normalized.contains("menu")) {
+            return "menu";
+        } else if (normalized.contains("search")) {
+            return "search";
+        } else if (normalized.contains("profile")) {
+            return "person";
+        } else if (normalized.contains("settings")) {
+            return "settings";
+        }
+        return "bookmark";
     }
 
     /// Creates a sample menu item.
@@ -2225,16 +2361,16 @@ public final class M3FXDemoApp extends Application {
             String title,
             M3TopAppBarVariant variant,
             String navigationIcon,
-            String firstActionIcon,
-            String secondActionIcon
+            String... actionIcons
     ) {
-        M3TopAppBar topAppBar = new M3TopAppBar(
-                title,
-                variant,
-                createAppBarIconButton(navigationIcon, "Navigation"),
-                createAppBarIconButton(firstActionIcon, "Primary action"),
-                createAppBarIconButton(secondActionIcon, "Secondary action")
-        );
+        Objects.requireNonNull(actionIcons, "actionIcons");
+
+        M3TopAppBar topAppBar = new M3TopAppBar(title);
+        topAppBar.setVariant(variant);
+        topAppBar.setNavigation(createAppBarIconButton(navigationIcon));
+        for (String actionIcon : actionIcons) {
+            topAppBar.addAction(createAppBarIconButton(actionIcon));
+        }
         topAppBar.setMaxWidth(Double.MAX_VALUE);
         return topAppBar;
     }
@@ -2242,20 +2378,31 @@ public final class M3FXDemoApp extends Application {
     /// Creates a preview surface for a top app bar.
     private static VBox createTopAppBarPreview(M3TopAppBar topAppBar) {
         VBox preview = createAppBarPreview();
-        Region body = createAppBarBody();
-        body.getStyleClass().add("demo-top-app-bar-body");
-        preview.getChildren().addAll(topAppBar, body);
+        preview.getChildren().add(topAppBar);
         return preview;
     }
 
     /// Creates a preview surface for a bottom app bar.
     private static VBox createBottomAppBarPreview(M3BottomAppBar bottomAppBar) {
         VBox preview = createAppBarPreview();
-        Region body = createAppBarBody();
-        body.getStyleClass().add("demo-bottom-app-bar-body");
-        VBox.setVgrow(body, Priority.ALWAYS);
-        preview.getChildren().addAll(body, bottomAppBar);
+        preview.getChildren().add(bottomAppBar);
         return preview;
+    }
+
+    /// Creates a labeled app bar preview for variant comparison.
+    private static VBox createLabeledAppBarPreview(String labelText, Node preview) {
+        Label label = new Label(labelText);
+        label.getStyleClass().add("demo-app-bar-sample-label");
+
+        VBox sample = new VBox(8.0, label, preview);
+        sample.getStyleClass().add("demo-app-bar-sample");
+        sample.setFillWidth(true);
+        sample.setMaxWidth(Double.MAX_VALUE);
+        if (preview instanceof Region region) {
+            region.setMaxWidth(Double.MAX_VALUE);
+            VBox.setVgrow(region, Priority.NEVER);
+        }
+        return sample;
     }
 
     /// Creates the shared app bar preview container.
@@ -2265,17 +2412,8 @@ public final class M3FXDemoApp extends Application {
         preview.setFillWidth(true);
         preview.setMinWidth(560.0);
         preview.setPrefWidth(760.0);
-        preview.setMaxWidth(760.0);
+        preview.setMaxWidth(Double.MAX_VALUE);
         return preview;
-    }
-
-    /// Creates the blank body area used by app bar previews.
-    private static Region createAppBarBody() {
-        Region body = new Region();
-        body.getStyleClass().add("demo-app-bar-body");
-        body.setMinHeight(112.0);
-        body.setPrefHeight(132.0);
-        return body;
     }
 
     /// Creates a sample surface.
@@ -2296,9 +2434,9 @@ public final class M3FXDemoApp extends Application {
     private static M3BottomAppBar createBottomAppBar() {
         M3BottomAppBar bottomAppBar = new M3BottomAppBar(
                 M3BottomAppBarFloatingActionAlignment.END,
-                createFab("+", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
-                createAppBarIconButton("search", "Search"),
-                createAppBarIconButton("favorite", "Favorites")
+                createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
+                createAppBarIconButton("search"),
+                createAppBarIconButton("favorite")
         );
         bottomAppBar.setMaxWidth(Double.MAX_VALUE);
         return bottomAppBar;
@@ -2306,9 +2444,9 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the three-item navigation bar sample.
     private M3NavigationBar createThreeItemNavigationBar() {
-        M3NavigationItem firstItem = createNavigationItem("Inbox", "I");
-        M3NavigationItem secondItem = createNavigationItem("Tasks", "T");
-        M3NavigationItem thirdItem = createNavigationItem("Done", "D");
+        M3NavigationItem firstItem = createNavigationItem("Inbox", "inbox");
+        M3NavigationItem secondItem = createNavigationItem("Tasks", "task");
+        M3NavigationItem thirdItem = createNavigationItem("Done", "done");
         secondItem.setBadge(new M3Badge("3"));
 
         M3NavigationBar navigationBar = new M3NavigationBar(
@@ -2322,10 +2460,10 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the four-item navigation bar sample.
     private M3NavigationBar createFourItemNavigationBar() {
-        M3NavigationItem firstItem = createNavigationItem("Home", "H");
-        M3NavigationItem secondItem = createNavigationItem("Search", "S");
-        M3NavigationItem thirdItem = createNavigationItem("Profile", "P");
-        M3NavigationItem fourthItem = createNavigationItem("Settings", "S");
+        M3NavigationItem firstItem = createNavigationItem("Home", "home");
+        M3NavigationItem secondItem = createNavigationItem("Search", "search");
+        M3NavigationItem thirdItem = createNavigationItem("Profile", "person");
+        M3NavigationItem fourthItem = createNavigationItem("Settings", "settings");
         secondItem.setBadge(new M3Badge("3"));
 
         M3NavigationBar navigationBar = new M3NavigationBar(
@@ -2340,9 +2478,9 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the three-item navigation rail sample.
     private M3NavigationRail createThreeItemNavigationRail() {
-        M3NavigationItem firstItem = createNavigationItem("Inbox", "I");
-        M3NavigationItem secondItem = createNavigationItem("Tasks", "T");
-        M3NavigationItem thirdItem = createNavigationItem("Done", "D");
+        M3NavigationItem firstItem = createNavigationItem("Inbox", "inbox");
+        M3NavigationItem secondItem = createNavigationItem("Tasks", "task");
+        M3NavigationItem thirdItem = createNavigationItem("Done", "done");
         secondItem.setBadge(new M3Badge());
 
         M3NavigationRail navigationRail = new M3NavigationRail(
@@ -2356,10 +2494,10 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the four-item navigation rail sample.
     private M3NavigationRail createFourItemNavigationRail() {
-        M3NavigationItem firstItem = createNavigationItem("Home", "H");
-        M3NavigationItem secondItem = createNavigationItem("Search", "S");
-        M3NavigationItem thirdItem = createNavigationItem("Profile", "P");
-        M3NavigationItem fourthItem = createNavigationItem("Settings", "S");
+        M3NavigationItem firstItem = createNavigationItem("Home", "home");
+        M3NavigationItem secondItem = createNavigationItem("Search", "search");
+        M3NavigationItem thirdItem = createNavigationItem("Profile", "person");
+        M3NavigationItem fourthItem = createNavigationItem("Settings", "settings");
         secondItem.setBadge(new M3Badge());
 
         M3NavigationRail navigationRail = new M3NavigationRail(
@@ -2374,10 +2512,10 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the four-item navigation drawer sample.
     private static M3NavigationDrawer createFourItemNavigationDrawer() {
-        M3ListItem firstItem = createDrawerItem("Inbox", "I");
-        M3ListItem secondItem = createDrawerItem("Starred", "S");
-        M3ListItem thirdItem = createDrawerItem("Sent", "S");
-        M3ListItem fourthItem = createDrawerItem("Archive", "A");
+        M3ListItem firstItem = createDrawerItem("Inbox", "inbox");
+        M3ListItem secondItem = createDrawerItem("Starred", "star");
+        M3ListItem thirdItem = createDrawerItem("Sent", "send");
+        M3ListItem fourthItem = createDrawerItem("Archive", "archive");
         secondItem.setTrailing(new M3Badge("3"));
 
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
@@ -2394,77 +2532,67 @@ public final class M3FXDemoApp extends Application {
     /// Creates the sectioned navigation drawer sample.
     private static M3NavigationDrawer createSectionNavigationDrawer() {
         M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
-                createDrawerItem("Dashboard", "D"),
-                createDrawerItem("Reports", "R"),
-                createDrawerItem("Settings", "S")
+                createDrawerItem("Dashboard", "dashboard"),
+                createDrawerItem("Reports", "reports"),
+                createDrawerItem("Settings", "settings")
         );
         navigationDrawer.selectIndex(0);
         return navigationDrawer;
     }
 
     /// Creates a sample drawer item.
-    private static M3ListItem createDrawerItem(String text, String iconText) {
+    private static M3ListItem createDrawerItem(String text, String iconName) {
         M3ListItem item = new M3ListItem(text);
-        item.setLeading(createNavigationIcon(iconText));
+        item.setLeading(createNavigationIcon(iconName));
         return item;
     }
 
     /// Creates a sample navigation item.
-    private static M3NavigationItem createNavigationItem(String text, String iconText) {
-        return new M3NavigationItem(text, createNavigationIcon(iconText));
+    private static M3NavigationItem createNavigationItem(String text, String iconName) {
+        return new M3NavigationItem(text, createNavigationIcon(iconName));
     }
 
     /// Creates a sample navigation icon.
-    private static M3Icon createNavigationIcon(String iconText) {
-        M3Icon icon = new M3Icon(iconText, M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT);
+    private static Node createNavigationIcon(String iconName) {
+        StackPane icon = createSurfaceVariantIcon(iconName);
         icon.getStyleClass().add("demo-navigation-icon");
         return icon;
     }
 
     /// Creates the sample icon button.
-    private static M3IconButton createIconButton(String text) {
-        M3Icon icon = new M3Icon(text, M3IconSize.SMALL, M3IconVariant.PRIMARY);
-        icon.getStyleClass().add("demo-icon-label");
+    private static M3IconButton createIconButton(String iconName) {
+        Node icon = createIconViewport(DemoIcons.primary(iconName));
         return new M3IconButton(icon);
     }
 
     /// Creates a sample icon button for app bar slots.
-    private static M3IconButton createAppBarIconButton(String iconName, String accessibleText) {
-        SVGPath icon = new SVGPath();
-        icon.setContent(appBarIconPath(iconName));
-        icon.getStyleClass().add("demo-app-bar-icon");
+    private static M3IconButton createAppBarIconButton(String iconName) {
+        Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName), "demo-app-bar-icon");
         M3IconButton button = new M3IconButton(icon);
-        button.setAccessibleText(accessibleText);
+        button.setAccessibleText(appBarIconAccessibleText(iconName));
         return button;
     }
 
-    /// Returns the SVG path for a sample app bar icon.
-    private static String appBarIconPath(String iconName) {
+    /// Returns the accessible action text used by app bar icon buttons.
+    private static String appBarIconAccessibleText(String iconName) {
         return switch (iconName) {
-            case "add" -> "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z";
-            case "back" -> "M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z";
-            case "favorite" -> "M12 21.4l-1.4-1.3C5.4 15.4 2 12.3 2 8.5 "
-                    + "2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2 1.1-1.2 2.8-2 4.5-2 "
-                    + "19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.6 11.6z";
-            case "more" -> "M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
-                    + "m0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"
-                    + "m0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z";
-            case "search" -> "M9.5 3a6.5 6.5 0 0 1 5.1 10.5l4.4 4.4-1.4 1.4-4.4-4.4"
-                    + "A6.5 6.5 0 1 1 9.5 3z"
-                    + "m0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z";
-            case "menu" -> "M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z";
+            case "add" -> "Add";
+            case "back" -> "Back";
+            case "favorite" -> "Favorites";
+            case "menu" -> "Menu";
+            case "more" -> "More options";
+            case "search" -> "Search";
             default -> throw new IllegalArgumentException("Unknown app bar icon: " + iconName);
         };
     }
 
     /// Creates the sample toggle icon button.
     private static M3IconToggleButton createIconToggleButton(
-            String text,
+            String iconName,
             M3IconToggleButtonVariant variant,
             boolean selected
     ) {
-        M3Icon icon = new M3Icon(text, M3IconSize.SMALL, M3IconVariant.ON_SURFACE_VARIANT);
-        icon.getStyleClass().add("demo-icon-label");
+        Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName));
         M3IconToggleButton button = new M3IconToggleButton(icon);
         button.setVariant(variant);
         button.setSelected(selected);
@@ -2484,8 +2612,8 @@ public final class M3FXDemoApp extends Application {
                 createIconToggleButton(second, variant, false),
                 createIconToggleButton(third, variant, false)
         );
-        for (String text : rest) {
-            group.getItems().add(createIconToggleButton(text, variant, false));
+        for (String iconName : rest) {
+            group.getItems().add(createIconToggleButton(iconName, variant, false));
         }
         group.setAllowEmptySelection(false);
         group.selectIndex(0);
@@ -2494,9 +2622,9 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the formatting multi-selection toggle icon button group.
     private static M3IconToggleButtonGroup createFormattingToggleGroup() {
-        M3IconToggleButton firstButton = createIconToggleButton("B", M3IconToggleButtonVariant.OUTLINED, false);
-        M3IconToggleButton secondButton = createIconToggleButton("I", M3IconToggleButtonVariant.OUTLINED, false);
-        M3IconToggleButton thirdButton = createIconToggleButton("U", M3IconToggleButtonVariant.OUTLINED, false);
+        M3IconToggleButton firstButton = createIconToggleButton("bold", M3IconToggleButtonVariant.OUTLINED, false);
+        M3IconToggleButton secondButton = createIconToggleButton("italic", M3IconToggleButtonVariant.OUTLINED, false);
+        M3IconToggleButton thirdButton = createIconToggleButton("underline", M3IconToggleButtonVariant.OUTLINED, false);
         M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(
                 firstButton,
                 secondButton,
@@ -2510,16 +2638,44 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a sample floating action button.
     private static M3FloatingActionButton createFab(
-            String iconText,
+            String iconName,
             M3FloatingActionButtonVariant variant,
             M3FloatingActionButtonSize size
     ) {
-        M3Icon icon = new M3Icon(iconText, M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE);
-        icon.getStyleClass().add("demo-fab-icon");
+        Node icon = createIconViewport(DemoIcons.fab(iconName));
         M3FloatingActionButton button = new M3FloatingActionButton(icon);
         button.setVariant(variant);
         button.setSize(size);
         return button;
+    }
+
+    /// Creates a fixed viewport for a primary-colored icon slot.
+    private static StackPane createInfoIcon() {
+        return createIconViewport(DemoIcons.primary("info"));
+    }
+
+    /// Creates a fixed viewport for an on-surface icon slot.
+    private static StackPane createImageIcon() {
+        return createIconViewport(DemoIcons.onSurface("image"));
+    }
+
+    /// Creates a fixed viewport for an on-surface-variant icon slot.
+    private static StackPane createSurfaceVariantIcon(String iconName) {
+        return createIconViewport(DemoIcons.onSurfaceVariant(iconName));
+    }
+
+    /// Creates a fixed viewport for an error-colored icon slot.
+    private static StackPane createErrorIcon(String iconName) {
+        return createIconViewport(DemoIcons.error(iconName));
+    }
+
+    /// Wraps a demo SVG icon in a stable 24 dp viewport.
+    private static StackPane createIconViewport(Node icon, String... styleClasses) {
+        StackPane viewport = new StackPane(icon);
+        viewport.getStyleClass().add(DEMO_VECTOR_ICON_VIEWPORT_STYLE_CLASS);
+        viewport.getStyleClass().addAll(styleClasses);
+        viewport.setMouseTransparent(true);
+        return viewport;
     }
 
     /// Creates a floating action button menu sample.
@@ -2535,9 +2691,9 @@ public final class M3FXDemoApp extends Application {
             M3FloatingActionButtonVariant firstVariant,
             M3FloatingActionButtonVariant secondVariant
     ) {
-        M3FloatingActionButton create = createFab("C", firstVariant, M3FloatingActionButtonSize.SMALL);
-        M3FloatingActionButton edit = createFab("E", secondVariant, M3FloatingActionButtonSize.SMALL);
-        M3FloatingActionButton share = createFab("S", M3FloatingActionButtonVariant.SURFACE, M3FloatingActionButtonSize.SMALL);
+        M3FloatingActionButton create = createFab("create", firstVariant, M3FloatingActionButtonSize.SMALL);
+        M3FloatingActionButton edit = createFab("edit", secondVariant, M3FloatingActionButtonSize.SMALL);
+        M3FloatingActionButton share = createFab("share", M3FloatingActionButtonVariant.SURFACE, M3FloatingActionButtonSize.SMALL);
         create.setOnAction(event -> showSnackbar());
         edit.setOnAction(event -> showSnackbar());
         share.setOnAction(event -> showSnackbar());
@@ -2547,10 +2703,28 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a sample standalone icon.
-    private static M3Icon createDemoIcon(String text, M3IconSize size, M3IconVariant variant) {
-        M3Icon icon = new M3Icon(text, size, variant);
-        icon.getStyleClass().add("demo-sample-icon");
-        return icon;
+    private static StackPane createDemoIcon(String iconName, M3IconSize size, M3IconVariant variant) {
+        SVGPath icon = switch (variant) {
+            case PRIMARY -> DemoIcons.primary(iconName);
+            case SECONDARY -> DemoIcons.secondary(iconName);
+            case TERTIARY -> DemoIcons.tertiary(iconName);
+            case ERROR -> DemoIcons.error(iconName);
+            case ON_SURFACE -> DemoIcons.onSurface(iconName);
+            case ON_SURFACE_VARIANT -> DemoIcons.onSurfaceVariant(iconName);
+            case INVERSE_ON_SURFACE -> DemoIcons.inverseOnSurface(iconName);
+        };
+        double iconSize = size.getDefaultSize();
+        double scale = iconSize / M3IconSize.MEDIUM.getDefaultSize();
+        icon.setScaleX(scale);
+        icon.setScaleY(scale);
+
+        StackPane viewport = new StackPane(icon);
+        viewport.getStyleClass().add("demo-sample-icon");
+        viewport.setMinSize(iconSize, iconSize);
+        viewport.setPrefSize(iconSize, iconSize);
+        viewport.setMaxSize(iconSize, iconSize);
+        viewport.setMouseTransparent(true);
+        return viewport;
     }
 
     /// Creates a sample extended floating action button.
@@ -2610,12 +2784,12 @@ public final class M3FXDemoApp extends Application {
     private static VBox createSheetContent() {
         M3ListItem first = new M3ListItem("Overview");
         first.setSupportingText("Primary sheet content");
-        first.setLeading(createNavigationIcon("O"));
+        first.setLeading(createNavigationIcon("info"));
         M3ListItem second = new M3ListItem("Activity");
         second.setSupportingText("Recent updates and state");
-        second.setLeading(createNavigationIcon("A"));
+        second.setLeading(createNavigationIcon("schedule"));
         M3ListItem third = new M3ListItem("Settings");
-        third.setLeading(createNavigationIcon("S"));
+        third.setLeading(createNavigationIcon("settings"));
 
         VBox content = new VBox(first, second, third);
         content.getStyleClass().add("demo-sheet-content");
@@ -2928,6 +3102,44 @@ public final class M3FXDemoApp extends Application {
             if (topLevelItem != null) {
                 topLevelItem.setSelected(topLevelItem.getUserData() == page);
             }
+        }
+
+        /// Returns the rendered item for a page in this sidebar group.
+        private @Nullable M3ListItem itemForPage(DemoPage page) {
+            M3NavigationDrawerGroup drawerGroup = this.drawerGroup;
+            if (drawerGroup != null) {
+                for (M3ListItem item : drawerGroup.getItems()) {
+                    if (item.getUserData() == page) {
+                        return item;
+                    }
+                }
+                return null;
+            }
+
+            M3ListItem topLevelItem = this.topLevelItem;
+            if (topLevelItem != null && topLevelItem.getUserData() == page) {
+                return topLevelItem;
+            }
+            return null;
+        }
+
+        /// Returns the currently selected rendered item in this sidebar group.
+        private @Nullable M3ListItem selectedItem() {
+            M3NavigationDrawerGroup drawerGroup = this.drawerGroup;
+            if (drawerGroup != null) {
+                if (drawerGroup.getHeaderItem().isSelected()) {
+                    return drawerGroup.getHeaderItem();
+                }
+                for (M3ListItem item : drawerGroup.getItems()) {
+                    if (item.isSelected()) {
+                        return item;
+                    }
+                }
+                return null;
+            }
+
+            M3ListItem topLevelItem = this.topLevelItem;
+            return topLevelItem != null && topLevelItem.isSelected() ? topLevelItem : null;
         }
     }
 

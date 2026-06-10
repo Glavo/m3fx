@@ -21,10 +21,10 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
-import javafx.scene.control.Label;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -568,8 +568,11 @@ public class M3SearchBar extends Control {
 
     /// Creates the default leading search glyph node.
     private static Node defaultLeadingNode() {
-        Label label = new Label("S");
-        label.getStyleClass().add("m3-search-bar-default-leading");
-        return label;
+        M3InternalIcon icon = new M3InternalIcon(
+                M3InternalIcon.Glyph.SEARCH,
+                M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
+        );
+        icon.getStyleClass().add("m3-search-bar-default-leading");
+        return icon;
     }
 }

@@ -1019,9 +1019,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 topAppBar().largeBottomPadding(),
                 topAppBar()
         );
-        appendTopAppBarActionsRule(builder, ".m3-top-app-bar-actions", topAppBar());
         appendBottomAppBarRule(builder, ".m3-bottom-app-bar", bottomAppBar());
-        appendBottomAppBarActionsRule(builder, ".m3-bottom-app-bar-actions", bottomAppBar());
         appendNavigationBarRule(builder, ".m3-navigation-bar", navigationBar());
         appendNavigationItemRule(builder, ".m3-navigation-item", navigationBar());
         appendNavigationIndicatorRule(builder, ".m3-navigation-item-indicator", navigationBar());
@@ -2482,6 +2480,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-medium-bottom-padding", M3TokenCss.pixels(tokens.mediumBottomPadding()));
         appendDeclaration(builder, "-m3-large-bottom-padding", M3TokenCss.pixels(tokens.largeBottomPadding()));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        appendDeclaration(builder, "-m3-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
         appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
@@ -2505,29 +2504,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
-    /// Appends a top app bar actions token CSS rule.
-    private static void appendTopAppBarActionsRule(StringBuilder builder, String selector, TopAppBarTokens tokens) {
-        beginRule(builder, selector);
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
-        endRule(builder);
-    }
-
     /// Appends a bottom app bar token CSS rule.
     private static void appendBottomAppBarRule(StringBuilder builder, String selector, BottomAppBarTokens tokens) {
         beginRule(builder, selector);
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        appendDeclaration(builder, "-m3-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
         appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
-        endRule(builder);
-    }
-
-    /// Appends a bottom app bar actions token CSS rule.
-    private static void appendBottomAppBarActionsRule(StringBuilder builder, String selector, BottomAppBarTokens tokens) {
-        beginRule(builder, selector);
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
         endRule(builder);
     }
 

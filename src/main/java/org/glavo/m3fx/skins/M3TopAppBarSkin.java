@@ -20,9 +20,6 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3TopAppBar].
 @NotNullByDefault
 public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
-    /// The spacing between trailing action nodes.
-    private static final double ACTION_SPACING = 8.0;
-
     /// The slot that hosts the optional navigation node.
     private final StackPane navigationSlot = new StackPane();
 
@@ -30,7 +27,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     private final Label titleLabel = new Label();
 
     /// The trailing action node container.
-    private final HBox actions = new HBox(ACTION_SPACING);
+    private final HBox actions = new HBox();
 
     /// Updates the visual action list when public actions change.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
@@ -51,6 +48,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         navigationSlot.getStyleClass().add(M3TopAppBar.NAVIGATION_STYLE_CLASS);
         titleLabel.getStyleClass().add(M3TopAppBar.TITLE_STYLE_CLASS);
         actions.getStyleClass().add(M3TopAppBar.ACTIONS_STYLE_CLASS);
+        actions.spacingProperty().bind(control.actionSpacingProperty());
         titleLabel.textProperty().bind(control.titleProperty());
 
         control.navigationProperty().addListener((observable, oldValue, newValue) -> updateNavigation(newValue));
@@ -76,6 +74,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         control.widthProperty().removeListener(sizeInvalidation);
         control.heightProperty().removeListener(sizeInvalidation);
         actions.nodeOrientationProperty().unbind();
+        actions.spacingProperty().unbind();
         actions.getChildren().clear();
         navigationSlot.getChildren().clear();
         super.dispose();
@@ -158,8 +157,6 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     protected void layoutChildren(double x, double y, double width, double height) {
         M3TopAppBar control = getSkinnable();
         M3TopAppBarVariant variant = control.getVariant();
-        boolean rightToLeft = isRightToLeft();
-
         double navigationWidth = navigationSlot.isManaged() ? snappedPrefWidth(navigationSlot, height) : 0.0;
         double navigationHeight = navigationSlot.isManaged() ? snappedPrefHeight(navigationSlot, navigationWidth) : 0.0;
         double actionsWidth = snappedPrefWidth(actions, height);
@@ -179,7 +176,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         if (variant == M3TopAppBarVariant.CENTER_ALIGNED) {
             layoutCenterAlignedTitle(x, y, width, rowHeight, navigationWidth, actionsWidth);
         } else if (variant == M3TopAppBarVariant.MEDIUM || variant == M3TopAppBarVariant.LARGE) {
-            layoutTallTitle(x, y, width, height, rightToLeft);
+            layoutTallTitle(x, y, width, height);
         } else {
             layoutSmallTitle(x, y, width, rowHeight, navigationWidth, actionsWidth);
         }
@@ -208,11 +205,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         boolean rightToLeft = isRightToLeft();
 
         actions.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
-        if (centerAligned) {
-            titleLabel.setAlignment(Pos.CENTER);
-        } else {
-            titleLabel.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-        }
+        titleLabel.setAlignment(centerAligned ? Pos.CENTER : Pos.CENTER_LEFT);
         getSkinnable().requestLayout();
     }
 
@@ -260,11 +253,11 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     }
 
     /// Lays out a medium or large title at the bottom edge of the app bar.
-    private void layoutTallTitle(double x, double y, double width, double height, boolean rightToLeft) {
+    private void layoutTallTitle(double x, double y, double width, double height) {
         double titleHeight = snappedPrefHeight(titleLabel, width);
         double titleY = y + height - titleHeight;
         titleLabel.resizeRelocate(x, titleY, width, titleHeight);
-        titleLabel.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        titleLabel.setAlignment(Pos.CENTER_LEFT);
     }
 
     /// Lays out a small title between the leading navigation slot and trailing actions.

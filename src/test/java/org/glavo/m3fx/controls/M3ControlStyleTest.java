@@ -58,6 +58,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Arc;
 import javafx.scene.shape.CubicCurveTo;
+import javafx.scene.shape.FillRule;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
@@ -73,6 +74,7 @@ import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
@@ -146,6 +148,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
@@ -161,29 +164,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests style classes and skins for m3fx controls.
 @NotNullByDefault
 final class M3ControlStyleTest {
-    /// The delay used after snackbar exit animations should have removed dismissed content.
-    private static final Duration SNACKBAR_EXIT_SETTLE_DELAY = Duration.millis(180.0);
-
-    /// The delay used for keyboard-triggered tooltip show and hide checks.
-    private static final Duration TOOLTIP_FOCUS_DELAY = Duration.millis(40.0);
-
-    /// The delay used after a tooltip popup should inherit owner state or move keyboard focus.
-    private static final Duration TOOLTIP_FOCUS_TRANSFER_DELAY = Duration.millis(80.0);
-
-    /// The delay used after a rich tooltip popup should be visible for keyboard traversal.
-    private static final Duration RICH_TOOLTIP_KEYBOARD_DELAY = Duration.millis(120.0);
-
     /// The delay used after a rich tooltip popup should remain visible while hovered.
     private static final Duration RICH_TOOLTIP_HOVER_DELAY = Duration.millis(260.0);
 
-    /// The delay used after rich tooltip popup focus changes should settle.
-    private static final Duration RICH_TOOLTIP_FOCUS_SETTLE_DELAY = Duration.millis(360.0);
-
     /// The delay used after disclosure icon rotation should settle.
     private static final Duration DISCLOSURE_ANIMATION_SETTLE_DELAY = Duration.millis(220.0);
-
-    /// The delay used after menu popups should finish their initial layout.
-    private static final Duration MENU_POPUP_SETUP_DELAY = Duration.millis(220.0);
 
     /// The delay used after submenu hover should open a child popup.
     private static final Duration SUBMENU_OPEN_DELAY = Duration.millis(260.0);
@@ -191,32 +176,11 @@ final class M3ControlStyleTest {
     /// The delay used after submenu hover exit should close a child popup.
     private static final Duration SUBMENU_CLOSE_DELAY = Duration.millis(420.0);
 
-    /// The delay used after search and scrim hide transitions should settle.
-    private static final Duration FAST_EXIT_SETTLE_DELAY = Duration.millis(180.0);
-
-    /// The delay used after sheet exit transitions should settle.
-    private static final Duration SHEET_EXIT_SETTLE_DELAY = Duration.millis(280.0);
-
-    /// The delay used after sheet enter transitions should settle.
-    private static final Duration SHEET_ENTER_SETTLE_DELAY = Duration.millis(380.0);
-
-    /// The delay used after scrim enter transitions should settle.
-    private static final Duration SCRIM_SHOW_SETTLE_DELAY = Duration.millis(260.0);
-
-    /// The delay used after determinate progress changes should settle.
-    private static final Duration PROGRESS_DETERMINATE_SETTLE_DELAY = Duration.millis(320.0);
-
     /// The delay used when sampling indeterminate progress motion.
     private static final Duration PROGRESS_INDETERMINATE_SAMPLE_DELAY = Duration.millis(180.0);
 
     /// The delay used to sample navigation drawer expansion at an intermediate frame.
     private static final Duration DRAWER_EXPANSION_INTERMEDIATE_DELAY = Duration.millis(90.0);
-
-    /// The delay used after navigation drawer expansion or collapse should settle.
-    private static final Duration DRAWER_EXPANSION_SETTLE_DELAY = Duration.millis(300.0);
-
-    /// The delay used after picker popups should have rendered their preset columns.
-    private static final Duration PICKER_POPUP_SHOW_DELAY = Duration.millis(120.0);
 
     /// The number of pulses used to catch deferred CSS warnings from standalone fallback stylesheet installation.
     private static final int STANDALONE_CSS_SETTLE_PULSES = 40;
@@ -231,9 +195,9 @@ final class M3ControlStyleTest {
     /// Verifies that standalone control stylesheets provide fallback color tokens without requiring a theme.
     @Test
     void standaloneControlStylesheetsResolveFallbackColorTokens() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<M3MenuButton> menuButtonReference = new AtomicReference<>();
-        AtomicReference<M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
 
         runOnFxThreadAfterPulses(STANDALONE_CSS_SETTLE_PULSES, () -> {
             M3Button button = new M3Button("Button");
@@ -285,10 +249,10 @@ final class M3ControlStyleTest {
     /// Verifies that standalone picker field popups resolve fallback color tokens without requiring a theme.
     @Test
     void standalonePickerFieldPopupsResolveFallbackColorTokens() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<M3DatePickerField> datePickerFieldReference = new AtomicReference<>();
-        AtomicReference<M3TimePickerField> timePickerFieldReference = new AtomicReference<>();
-        AtomicReference<M3DateRangePickerField> dateRangePickerFieldReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DatePickerField> datePickerFieldReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3TimePickerField> timePickerFieldReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DateRangePickerField> dateRangePickerFieldReference = new AtomicReference<>();
 
         runOnFxThreadAfterPulses(STANDALONE_CSS_SETTLE_PULSES, () -> {
             M3DatePickerField datePickerField = new M3DatePickerField();
@@ -316,6 +280,115 @@ final class M3ControlStyleTest {
             dateRangePickerFieldReference.get().hidePicker();
             stageReference.get().close();
         });
+    }
+
+    /// Verifies that built-in affordance icons use stable vector geometry instead of font fallback text.
+    @Test
+    void builtInAffordancesUseInternalVectorIcons() {
+        M3TextInputLayout textInputLayout = new M3TextInputLayout(new M3TextField("Text"));
+        textInputLayout.setClearButtonEnabled(true);
+        assertInternalIconButton(textInputLayout.getClearButton(), M3InternalIcon.Glyph.CLOSE, "text field clear button");
+
+        M3DatePickerField dateField = new M3DatePickerField();
+        assertInternalIconButton(dateField.getInputLayout().getTrailing(), M3InternalIcon.Glyph.CALENDAR, "date field picker button");
+
+        M3TimePickerField timeField = new M3TimePickerField();
+        assertInternalIconButton(timeField.getInputLayout().getTrailing(), M3InternalIcon.Glyph.SCHEDULE, "time field picker button");
+
+        M3DateRangePickerField rangeField = new M3DateRangePickerField();
+        assertInternalIconButton(
+                rangeField.getStartInputLayout().getTrailing(),
+                M3InternalIcon.Glyph.CALENDAR,
+                "range start picker button"
+        );
+        assertInternalIconButton(
+                rangeField.getEndInputLayout().getTrailing(),
+                M3InternalIcon.Glyph.CALENDAR,
+                "range end picker button"
+        );
+
+        M3FabMenu fabMenu = new M3FabMenu();
+        assertInternalIcon(fabMenu.getToggleButton().getGraphic(), M3InternalIcon.Glyph.ADD, "FAB menu toggle");
+
+        M3SearchBar searchBar = new M3SearchBar("Search");
+        assertInternalIcon(searchBar.getLeading(), M3InternalIcon.Glyph.SEARCH, "search bar leading icon");
+
+        M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
+        assertInternalIcon(subMenuItem.getTrailing(), M3InternalIcon.Glyph.CHEVRON_RIGHT, "submenu indicator");
+
+        subMenuItem.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        applyCss(subMenuItem);
+
+        assertInternalIcon(subMenuItem.getTrailing(), M3InternalIcon.Glyph.CHEVRON_LEFT, "RTL submenu indicator");
+    }
+
+    /// Verifies that internal vector icons resolve color through style classes instead of inline CSS.
+    @Test
+    void internalVectorIconColorRolesUseStyleClasses() {
+        M3InternalIcon icon = new M3InternalIcon(
+                M3InternalIcon.Glyph.SEARCH,
+                M3InternalIcon.ColorRole.PRIMARY
+        );
+
+        assertInternalIcon(icon, M3InternalIcon.Glyph.SEARCH, "primary internal icon");
+        assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.PRIMARY);
+
+        icon.setColorRole(M3InternalIcon.ColorRole.ON_SURFACE_VARIANT);
+        assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.ON_SURFACE_VARIANT);
+
+        icon.setColorRole(M3InternalIcon.ColorRole.ON_PRIMARY_CONTAINER);
+        assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.ON_PRIMARY_CONTAINER);
+    }
+
+    /// Verifies that standalone controls resolve internal icon colors from fallback token CSS.
+    @Test
+    void standaloneInternalIconsResolveFallbackTokenColors() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3InternalIcon> iconReference = new AtomicReference<>();
+
+        runOnFxThreadAfterPulses(STANDALONE_CSS_SETTLE_PULSES, () -> {
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            VBox root = new VBox(searchBar);
+            Scene scene = new Scene(root, 360.0, 120.0);
+            Stage stage = new Stage();
+
+            stageReference.set(stage);
+            iconReference.set(assertInstanceOf(M3InternalIcon.class, searchBar.getLeading()));
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+        }, () -> {
+            M3InternalIcon icon = Objects.requireNonNull(iconReference.get(), "icon");
+            Paint fill = icon.getPath().getFill();
+            assertEquals(Color.rgb(73, 69, 78), fill, "standalone internal icon fallback fill");
+
+            Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that calendar navigation buttons use vector chevron glyphs.
+    @Test
+    void datePickerNavigationButtonsUseInternalVectorIcons() {
+        M3DatePicker datePicker = new M3DatePicker();
+        M3DateRangePicker dateRangePicker = new M3DateRangePicker();
+
+        applyCss(datePicker);
+        applyCss(dateRangePicker);
+
+        assertNavigationGlyphs(datePicker);
+        assertNavigationGlyphs(dateRangePicker);
+
+        datePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        dateRangePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        applyCss(datePicker);
+        applyCss(dateRangePicker);
+
+        assertNavigationGlyphs(datePicker);
+        assertNavigationGlyphs(dateRangePicker);
     }
 
     /// Verifies that button variants update their style classes.
@@ -1645,6 +1718,42 @@ final class M3ControlStyleTest {
         assertEquals(8.0, assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
     }
 
+    /// Verifies that long banner text wraps before action buttons are compressed.
+    @Test
+    void bannerPreservesActionPreferredWidthsWhenTextWraps() {
+        M3Button firstAction = new M3Button("Learn");
+        M3Button secondAction = new M3Button("Dismiss");
+        M3Banner banner = createBanner(
+                "M3FX can install generated token stylesheets for each JavaFX scene while keeping application "
+                        + "scene management explicit.",
+                new Label("i"),
+                firstAction,
+                secondAction
+        );
+        Pane root = new Pane(banner);
+        Scene scene = new Scene(root, 760.0, 160.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        double firstPreferredWidth = firstAction.prefWidth(-1.0);
+        double secondPreferredWidth = secondAction.prefWidth(-1.0);
+        HBox actions = assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS));
+        double actionsPreferredWidth = actions.prefWidth(-1.0);
+
+        banner.resizeRelocate(0.0, 0.0, 760.0, banner.prefHeight(760.0));
+        banner.layout();
+
+        assertTrue(firstAction.getWidth() >= firstPreferredWidth - 0.5,
+                () -> "First banner action was compressed: width=" + firstAction.getWidth()
+                        + ", pref=" + firstPreferredWidth);
+        assertTrue(secondAction.getWidth() >= secondPreferredWidth - 0.5,
+                () -> "Second banner action was compressed: width=" + secondAction.getWidth()
+                        + ", pref=" + secondPreferredWidth);
+        assertTrue(actions.getWidth() >= actionsPreferredWidth - 0.5,
+                () -> "Banner action container was compressed: width=" + actions.getWidth()
+                        + ", pref=" + actionsPreferredWidth);
+    }
+
     /// Verifies that snackbars expose action constructors and programmatic action firing.
     @Test
     void snackbarActionConstructorsAndFireAction() {
@@ -1858,10 +1967,10 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts remove dismissed snackbars after the exit animation.
     @Test
     void snackbarHostRemovesDismissedSnackbars() throws InterruptedException {
-        AtomicReference<M3Snackbar> snackbarReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> snackbarReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                SNACKBAR_EXIT_SETTLE_DELAY,
+        runOnFxThreadWhen(
+                () -> snackbarDetached(snackbarReference),
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
                     host.setDisplayDuration(Duration.INDEFINITE);
@@ -1877,7 +1986,7 @@ final class M3ControlStyleTest {
                     host.dismiss();
                 },
                 () -> {
-                    M3Snackbar snackbar = snackbarReference.get();
+                    M3Snackbar snackbar = Objects.requireNonNull(snackbarReference.get(), "snackbar");
                     assertNull(snackbar.getParent());
                     assertFalse(snackbar.isVisible());
                 }
@@ -1887,12 +1996,12 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts display queued snackbars after the current snackbar is dismissed.
     @Test
     void snackbarHostQueuesSnackbars() throws InterruptedException {
-        AtomicReference<M3SnackbarHost> hostReference = new AtomicReference<>();
-        AtomicReference<M3Snackbar> firstReference = new AtomicReference<>();
-        AtomicReference<M3Snackbar> secondReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                SNACKBAR_EXIT_SETTLE_DELAY,
+        runOnFxThreadWhen(
+                () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
                     host.setDisplayDuration(Duration.INDEFINITE);
@@ -1916,9 +2025,9 @@ final class M3ControlStyleTest {
                     host.dismiss();
                 },
                 () -> {
-                    M3SnackbarHost host = hostReference.get();
-                    M3Snackbar first = firstReference.get();
-                    M3Snackbar second = secondReference.get();
+                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
                     assertEquals(second, host.getSnackbar());
                     assertTrue(host.isShowing());
@@ -1984,12 +2093,12 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts can dismiss the current snackbar and clear the queue in one call.
     @Test
     void snackbarHostDismissAllClearsCurrentAndQueuedSnackbars() throws InterruptedException {
-        AtomicReference<M3SnackbarHost> hostReference = new AtomicReference<>();
-        AtomicReference<M3Snackbar> firstReference = new AtomicReference<>();
-        AtomicReference<M3Snackbar> secondReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                SNACKBAR_EXIT_SETTLE_DELAY,
+        runOnFxThreadWhen(
+                () -> snackbarHostCleared(hostReference, firstReference, secondReference),
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
                     host.setDisplayDuration(Duration.INDEFINITE);
@@ -2007,9 +2116,9 @@ final class M3ControlStyleTest {
                     host.dismissAll();
                 },
                 () -> {
-                    M3SnackbarHost host = hostReference.get();
-                    M3Snackbar first = firstReference.get();
-                    M3Snackbar second = secondReference.get();
+                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
                     assertNull(host.getSnackbar());
                     assertFalse(host.isShowing());
@@ -3630,12 +3739,12 @@ final class M3ControlStyleTest {
     /// Verifies that installed tooltips open from keyboard focus and close from Escape.
     @Test
     void tooltipInstalledOnFocusSupportsKeyboardDismissal() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<Label> targetReference = new AtomicReference<>();
-        AtomicReference<M3Tooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                TOOLTIP_FOCUS_DELAY,
+        runOnFxThreadWhen(
+                () -> tooltipShowingWithFocus(tooltipReference, targetReference),
                 () -> {
                     Label target = new Label("Target");
                     target.setFocusTraversable(true);
@@ -3654,9 +3763,9 @@ final class M3ControlStyleTest {
                     tooltipReference.set(tooltip);
                 },
                 () -> {
-                    Stage stage = stageReference.get();
-                    Label target = targetReference.get();
-                    M3Tooltip tooltip = tooltipReference.get();
+                    Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                    Label target = Objects.requireNonNull(targetReference.get(), "target");
+                    M3Tooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
                     try {
                         assertTrue(target.isFocused());
                         assertTrue(tooltip.isShowing());
@@ -3674,12 +3783,12 @@ final class M3ControlStyleTest {
     /// Verifies that installed tooltip popups inherit the owner's local motion settings.
     @Test
     void tooltipPopupInheritsOwnerMotionSettings() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<M3RichTooltip> tooltipReference = new AtomicReference<>();
-        AtomicReference<M3Button> actionReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> actionReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                TOOLTIP_FOCUS_TRANSFER_DELAY,
+        runOnFxThreadWhen(
+                () -> tooltipShowing(tooltipReference),
                 () -> {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
@@ -3710,9 +3819,9 @@ final class M3ControlStyleTest {
                     actionReference.set(action);
                 },
                 () -> {
-                    Stage stage = stageReference.get();
-                    M3RichTooltip tooltip = tooltipReference.get();
-                    M3Button action = actionReference.get();
+                    Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                    M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
+                    M3Button action = Objects.requireNonNull(actionReference.get(), "action");
                     try {
                         assertTrue(tooltip.isShowing());
                         Node tooltipRoot = tooltip.getScene().getRoot();
@@ -3848,8 +3957,8 @@ final class M3ControlStyleTest {
     /// Verifies that rich tooltip popup hover keeps action content reachable.
     @Test
     void richTooltipStaysOpenWhilePopupIsHovered() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
                 RICH_TOOLTIP_HOVER_DELAY,
@@ -3896,13 +4005,13 @@ final class M3ControlStyleTest {
     /// Verifies that rich tooltip popup focus keeps action content reachable from the keyboard.
     @Test
     void richTooltipStaysOpenWhilePopupActionHasKeyboardFocus() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<Label> targetReference = new AtomicReference<>();
-        AtomicReference<M3RichTooltip> tooltipReference = new AtomicReference<>();
-        AtomicReference<M3Button> actionReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> actionReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                RICH_TOOLTIP_FOCUS_SETTLE_DELAY,
+        runOnFxThreadWhen(
+                () -> tooltipShowingWithFocus(tooltipReference, targetReference),
                 () -> {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
@@ -3925,26 +4034,19 @@ final class M3ControlStyleTest {
                     root.layout();
                     target.requestFocus();
 
-                    PauseTransition focusActionDelay = new PauseTransition(TOOLTIP_FOCUS_TRANSFER_DELAY);
-                    focusActionDelay.setOnFinished(event -> {
-                        if (tooltip.isShowing()) {
-                            action.requestFocus();
-                        }
-                    });
-                    focusActionDelay.play();
-
                     stageReference.set(stage);
                     targetReference.set(target);
                     tooltipReference.set(tooltip);
                     actionReference.set(action);
                 },
                 () -> {
-                    Stage stage = stageReference.get();
-                    Label target = targetReference.get();
-                    M3RichTooltip tooltip = tooltipReference.get();
-                    M3Button action = actionReference.get();
+                    Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                    Label target = Objects.requireNonNull(targetReference.get(), "target");
+                    M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
+                    M3Button action = Objects.requireNonNull(actionReference.get(), "action");
                     try {
                         assertTrue(tooltip.isShowing());
+                        assertTrue(tooltip.focusFirstInteractiveTarget());
                         assertTrue(action.isFocused());
 
                         action.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
@@ -3962,15 +4064,15 @@ final class M3ControlStyleTest {
     /// Verifies that rich tooltip keyboard traversal connects the owner and popup actions.
     @Test
     void richTooltipKeyboardTraversalConnectsOwnerAndActions() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<Label> targetReference = new AtomicReference<>();
-        AtomicReference<M3RichTooltip> tooltipReference = new AtomicReference<>();
-        AtomicReference<M3Button> firstActionReference = new AtomicReference<>();
-        AtomicReference<M3Button> disabledActionReference = new AtomicReference<>();
-        AtomicReference<M3Button> secondActionReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> firstActionReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> disabledActionReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> secondActionReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                RICH_TOOLTIP_KEYBOARD_DELAY,
+        runOnFxThreadWhen(
+                () -> tooltipShowingWithFocus(tooltipReference, targetReference),
                 () -> {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
@@ -4006,12 +4108,12 @@ final class M3ControlStyleTest {
                     secondActionReference.set(secondAction);
                 },
                 () -> {
-                    Stage stage = stageReference.get();
-                    Label target = targetReference.get();
-                    M3RichTooltip tooltip = tooltipReference.get();
-                    M3Button firstAction = firstActionReference.get();
-                    M3Button disabledAction = disabledActionReference.get();
-                    M3Button secondAction = secondActionReference.get();
+                    Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                    Label target = Objects.requireNonNull(targetReference.get(), "target");
+                    M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
+                    M3Button firstAction = Objects.requireNonNull(firstActionReference.get(), "firstAction");
+                    M3Button disabledAction = Objects.requireNonNull(disabledActionReference.get(), "disabledAction");
+                    M3Button secondAction = Objects.requireNonNull(secondActionReference.get(), "secondAction");
                     try {
                         assertTrue(tooltip.isShowing());
                         assertTrue(target.isFocused());
@@ -4301,7 +4403,7 @@ final class M3ControlStyleTest {
     /// Verifies that disclosure icons expose expanded state and animate their arrow rotation.
     @Test
     void disclosureIconAnimatesExpandedState() throws InterruptedException {
-        AtomicReference<SVGPath> shape = new AtomicReference<>();
+        AtomicReference<@Nullable SVGPath> shape = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
                 DISCLOSURE_ANIMATION_SETTLE_DELAY,
@@ -4874,11 +4976,11 @@ final class M3ControlStyleTest {
     void menuSectionHeaderSnapshotRendersGroupedContent() {
         runOnFxThread(() -> {
             M3MenuSectionHeader fileHeader = new M3MenuSectionHeader("File");
-            M3MenuItem open = new M3MenuItem("Open", new M3Icon("O"));
+            M3MenuItem open = new M3MenuItem("Open", visualIcon("folder"));
             M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
-            M3MenuItem save = new M3MenuItem("Save", new M3Icon("S"));
+            M3MenuItem save = new M3MenuItem("Save", visualIcon("save"));
             M3MenuSectionHeader recentHeader = new M3MenuSectionHeader("Recent");
-            M3MenuItem project = new M3MenuItem("Project Alpha", new M3Icon("A"));
+            M3MenuItem project = new M3MenuItem("Project Alpha", visualIcon("work"));
             project.setSelected(true);
             M3Menu menu = new M3Menu(
                     fileHeader,
@@ -4899,6 +5001,8 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.resize(340.0, 260.0);
             root.layout();
+
+            assertVisualIconSlotsUseVectorGraphics(root);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, fileHeader, Color.WHITE, 0.04);
@@ -5048,7 +5152,7 @@ final class M3ControlStyleTest {
         assertEquals(false, export.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
         assertEquals(2, export.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertEquals(exportHtml, export.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
-        assertInstanceOf(M3Icon.class, export.getTrailing());
+        assertInternalIcon(export.getTrailing(), M3InternalIcon.Glyph.CHEVRON_RIGHT, "submenu indicator");
 
         export.clearItems();
 
@@ -5063,8 +5167,7 @@ final class M3ControlStyleTest {
 
         applyCss(export);
 
-        M3Icon indicator = assertInstanceOf(M3Icon.class, export.getTrailing());
-        assertEquals("<", indicator.getText());
+        assertInternalIcon(export.getTrailing(), M3InternalIcon.Glyph.CHEVRON_LEFT, "RTL submenu indicator");
     }
 
     /// Verifies that submenu items are focusable menu items but do not participate in parent menu selection.
@@ -5114,8 +5217,8 @@ final class M3ControlStyleTest {
     /// Verifies that submenu hover opens and closes the submenu popup after Material delays.
     @Test
     void subMenuItemHoverOpensAndClosesPopup() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<M3SubMenuItem> itemReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> itemReference = new AtomicReference<>();
 
         try {
             runOnFxThreadAfterDelay(SUBMENU_OPEN_DELAY, () -> {
@@ -5681,10 +5784,95 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that rich tooltip popup focus opened from a menu item keeps owner containers anchored to the item.
+    @Test
+    void menuItemRichTooltipPopupFocusAnchorsOwnerStack() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Surface> surfaceReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuItem> detailsReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> actionReference = new AtomicReference<>();
+
+        runOnFxThreadWhen(
+                () -> tooltipShowingWithFocus(tooltipReference, detailsReference),
+                () -> {
+                    Stage stage = new Stage();
+                    M3MenuItem details = new M3MenuItem("Details");
+                    M3MenuButton menuButton = new M3MenuButton("More", details);
+                    M3Button action = createButton("Open details", M3ButtonVariant.TEXT);
+                    M3RichTooltip tooltip = M3RichTooltip.install(
+                            details,
+                            "Details",
+                            "Actions in a menu-owned tooltip remain reachable.",
+                            action
+                    );
+                    tooltip.setShowDelay(Duration.ZERO);
+                    tooltip.setHideDelay(Duration.ZERO);
+                    tooltip.setShowDuration(Duration.INDEFINITE);
+                    M3Surface surface = new M3Surface(menuButton);
+                    Scene scene = new Scene(surface, 360.0, 220.0);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+                    surface.applyCss();
+                    surface.layout();
+
+                    menuButton.showMenu();
+                    menuButton.getMenu().applyCss();
+                    menuButton.getMenu().layout();
+                    details.requestFocus();
+
+                    stageReference.set(stage);
+                    surfaceReference.set(surface);
+                    menuButtonReference.set(menuButton);
+                    detailsReference.set(details);
+                    tooltipReference.set(tooltip);
+                    actionReference.set(action);
+                },
+                () -> {
+                    Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                    M3Surface surface = Objects.requireNonNull(surfaceReference.get(), "surface");
+                    M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                    M3MenuItem details = Objects.requireNonNull(detailsReference.get(), "details");
+                    M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
+                    M3Button action = Objects.requireNonNull(actionReference.get(), "action");
+                    try {
+                        assertTrue(menuButton.isShowing());
+                        assertTrue(tooltip.isShowing());
+                        assertTrue(tooltip.focusFirstInteractiveTarget());
+                        assertTrue(action.isFocused());
+                        assertSame(details, menuButton.getMenu().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                        assertSame(details, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                        assertSame(details, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                        menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                        assertTrue(details.isFocused());
+                        assertSame(details, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                        assertTrue(tooltip.focusFirstInteractiveTarget());
+                        assertTrue(action.isFocused());
+                        assertSame(details, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                        action.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+                        assertFalse(tooltip.isShowing());
+                        assertTrue(details.isFocused());
+                        assertSame(details, menuButton.getMenu().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                        assertSame(details, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    } finally {
+                        tooltip.hide();
+                        menuButton.hideMenu();
+                        stage.close();
+                    }
+                }
+        );
+    }
+
     /// Verifies that popup menu branches inherit theme color lookups without CSS conversion warnings.
     @Test
     void popupMenuBranchesResolveThemeColorLookups() {
-        FxTestUtils.assertNoCssWarningsMatching(() -> runOnFxThread(() -> {
+        FxTestUtils.assertNoCssWarnings(() -> runOnFxThread(() -> {
             M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"));
             M3MenuItem archive = new M3MenuItem("Archive");
             M3MenuItem inbox = new M3MenuItem("Inbox");
@@ -5731,7 +5919,7 @@ final class M3ControlStyleTest {
                 menuButton.hideMenu();
                 stage.close();
             }
-        }), record -> true);
+        }));
     }
 
     /// Verifies that static lists support printable-key type-ahead focus and single selection.
@@ -6029,11 +6217,14 @@ final class M3ControlStyleTest {
     /// Verifies that submenu keyboard open and close keys mirror in right-to-left menus.
     @Test
     void menuKeyboardNavigationMirrorsSubMenuKeysForRightToLeft() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(MENU_POPUP_SETUP_DELAY, () -> {
+            runOnFxThreadWhen(() -> {
+                @Nullable M3SubMenuItem export = exportReference.get();
+                return export != null && !export.isSubMenuShowing() && export.isFocused();
+            }, () -> {
                 M3MenuItem pdf = new M3MenuItem("PDF");
                 M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
                 M3Menu menu = new M3Menu(export);
@@ -6078,13 +6269,23 @@ final class M3ControlStyleTest {
     /// Verifies that opening one submenu closes sibling submenus and keeps focus in the active branch.
     @Test
     void siblingSubMenusAreMutuallyExclusive() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
-        AtomicReference<M3SubMenuItem> shareReference = new AtomicReference<>();
-        AtomicReference<M3MenuItem> emailReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> exportReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> shareReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuItem> emailReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(MENU_POPUP_SETUP_DELAY, () -> {
+            runOnFxThreadWhen(() -> {
+                @Nullable M3SubMenuItem export = exportReference.get();
+                @Nullable M3SubMenuItem share = shareReference.get();
+                @Nullable M3MenuItem email = emailReference.get();
+                return export != null
+                        && share != null
+                        && email != null
+                        && !export.isSubMenuShowing()
+                        && share.isSubMenuShowing()
+                        && email.isFocused();
+            }, () -> {
                 M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
                 M3MenuItem email = new M3MenuItem("Email");
                 M3SubMenuItem share = new M3SubMenuItem("Share", email);
@@ -6134,12 +6335,20 @@ final class M3ControlStyleTest {
     /// Verifies that submenu dismissal returns focus to the owning item without closing the parent popup.
     @Test
     void subMenuEscapeReturnsFocusToOwnerItem() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<M3MenuButton> buttonReference = new AtomicReference<>();
-        AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuButton> buttonReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(MENU_POPUP_SETUP_DELAY, () -> {
+            runOnFxThreadWhen(() -> {
+                @Nullable M3MenuButton menuButton = buttonReference.get();
+                @Nullable M3SubMenuItem export = exportReference.get();
+                return menuButton != null
+                        && export != null
+                        && menuButton.isShowing()
+                        && !export.isSubMenuShowing()
+                        && export.isFocused();
+            }, () -> {
                 M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
                 M3MenuButton menuButton = new M3MenuButton("More", export);
                 Stage stage = new Stage();
@@ -6224,9 +6433,9 @@ final class M3ControlStyleTest {
     /// Verifies that submenu actions close the owning popup menu and return focus to the menu button.
     @Test
     void subMenuActionClosesMenuButtonPopup() throws InterruptedException {
-        AtomicReference<Stage> stageReference = new AtomicReference<>();
-        AtomicReference<M3MenuButton> buttonReference = new AtomicReference<>();
-        AtomicReference<M3SubMenuItem> exportReference = new AtomicReference<>();
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuButton> buttonReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
             runOnFxThreadAfterDelay(SUBMENU_OPEN_DELAY, () -> {
@@ -6653,7 +6862,10 @@ final class M3ControlStyleTest {
         assertTrue(results.isManaged());
         assertTrue(results.getOpacity() <= 1.0);
 
-        runOnFxThreadAfterDelay(FAST_EXIT_SETTLE_DELAY, () -> {
+        runOnFxThreadWhen(() -> !results.isVisible()
+                && !results.isManaged()
+                && Math.abs(results.getOpacity()) < 0.0001
+                && results.getTranslateY() < 0.0, () -> {
         }, () -> {
             assertFalse(results.isVisible());
             assertFalse(results.isManaged());
@@ -7060,7 +7272,14 @@ final class M3ControlStyleTest {
         assertTrue(sideSheet.isVisible());
         assertTrue(bottomSheet.isVisible());
 
-        runOnFxThreadAfterDelay(SHEET_EXIT_SETTLE_DELAY, () -> {
+        runOnFxThreadWhen(() -> !sideSheet.isVisible()
+                && !sideSheet.isManaged()
+                && sideSheet.getTranslateX() > 0.0
+                && Math.abs(sideSheet.getOpacity()) < 0.0001
+                && !bottomSheet.isVisible()
+                && !bottomSheet.isManaged()
+                && bottomSheet.getTranslateY() > 0.0
+                && Math.abs(bottomSheet.getOpacity()) < 0.0001, () -> {
         }, () -> {
             assertFalse(sideSheet.isVisible());
             assertFalse(sideSheet.isManaged());
@@ -7080,7 +7299,12 @@ final class M3ControlStyleTest {
         assertTrue(sideSheet.isVisible());
         assertTrue(bottomSheet.isVisible());
 
-        runOnFxThreadAfterDelay(SHEET_ENTER_SETTLE_DELAY, () -> {
+        runOnFxThreadWhen(() -> sideSheet.isManaged()
+                && Math.abs(sideSheet.getTranslateX()) < 0.0001
+                && Math.abs(sideSheet.getOpacity() - 1.0) < 0.0001
+                && bottomSheet.isManaged()
+                && Math.abs(bottomSheet.getTranslateY()) < 0.0001
+                && Math.abs(bottomSheet.getOpacity() - 1.0) < 0.0001, () -> {
         }, () -> {
             assertTrue(sideSheet.isManaged());
             assertEquals(0.0, sideSheet.getTranslateX(), 0.0001);
@@ -7272,7 +7496,9 @@ final class M3ControlStyleTest {
         assertTrue(scrim.isVisible());
         assertTrue(scrim.isManaged());
 
-        runOnFxThreadAfterDelay(FAST_EXIT_SETTLE_DELAY, () -> {
+        runOnFxThreadWhen(() -> !scrim.isVisible()
+                && !scrim.isManaged()
+                && Math.abs(scrim.getOpacity()) < 0.0001, () -> {
         }, () -> {
             assertFalse(scrim.isVisible());
             assertFalse(scrim.isManaged());
@@ -7285,7 +7511,7 @@ final class M3ControlStyleTest {
         assertTrue(scrim.isVisible());
         assertTrue(scrim.isManaged());
 
-        runOnFxThreadAfterDelay(SCRIM_SHOW_SETTLE_DELAY, () -> {
+        runOnFxThreadWhen(() -> Math.abs(scrim.getOpacity() - 0.32) < 0.0001, () -> {
         }, () -> assertEquals(0.32, scrim.getOpacity(), 0.0001));
     }
 
@@ -9338,11 +9564,11 @@ final class M3ControlStyleTest {
     /// Verifies that determinate progress bar value changes are animated.
     @Test
     void progressBarSkinAnimatesDeterminateProgressChanges() throws InterruptedException {
-        AtomicReference<M3ProgressBar> progressBarReference = new AtomicReference<>();
-        AtomicReference<Rectangle> barReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ProgressBar> progressBarReference = new AtomicReference<>();
+        AtomicReference<@Nullable Rectangle> barReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                PROGRESS_DETERMINATE_SETTLE_DELAY,
+        runOnFxThreadWhen(
+                () -> progressBarWidthSettled(progressBarReference, barReference, 180.0),
                 () -> {
                     M3ProgressBar progressBar = new M3ProgressBar(0.1);
                     Pane root = new Pane(progressBar);
@@ -9364,8 +9590,8 @@ final class M3ControlStyleTest {
                     assertTrue(bar.getWidth() < 180.0);
                 },
                 () -> {
-                    M3ProgressBar progressBar = progressBarReference.get();
-                    Rectangle bar = barReference.get();
+                    M3ProgressBar progressBar = Objects.requireNonNull(progressBarReference.get(), "progressBar");
+                    Rectangle bar = Objects.requireNonNull(barReference.get(), "bar");
                     progressBar.layout();
 
                     assertEquals(180.0, bar.getWidth(), 0.0001);
@@ -9376,9 +9602,9 @@ final class M3ControlStyleTest {
     /// Verifies that indeterminate progress bar segments move over time.
     @Test
     void progressBarSkinAnimatesIndeterminateProgress() throws InterruptedException {
-        AtomicReference<M3ProgressBar> progressBarReference = new AtomicReference<>();
-        AtomicReference<Rectangle> barReference = new AtomicReference<>();
-        AtomicReference<Double> initialX = new AtomicReference<>();
+        AtomicReference<@Nullable M3ProgressBar> progressBarReference = new AtomicReference<>();
+        AtomicReference<@Nullable Rectangle> barReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> initialX = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
                 PROGRESS_INDETERMINATE_SAMPLE_DELAY,
@@ -9584,11 +9810,11 @@ final class M3ControlStyleTest {
     /// Verifies that determinate circular progress value changes are animated.
     @Test
     void progressIndicatorSkinAnimatesDeterminateProgressChanges() throws InterruptedException {
-        AtomicReference<M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
-        AtomicReference<Arc> indicatorReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
+        AtomicReference<@Nullable Arc> indicatorReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                PROGRESS_DETERMINATE_SETTLE_DELAY,
+        runOnFxThreadWhen(
+                () -> progressIndicatorLengthSettled(progressIndicatorReference, indicatorReference, -324.0),
                 () -> {
                     M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.1);
                     Pane root = new Pane(progressIndicator);
@@ -9610,8 +9836,9 @@ final class M3ControlStyleTest {
                     assertTrue(indicator.getLength() > -324.0);
                 },
                 () -> {
-                    M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
-                    Arc indicator = indicatorReference.get();
+                    M3ProgressIndicator progressIndicator =
+                            Objects.requireNonNull(progressIndicatorReference.get(), "progressIndicator");
+                    Arc indicator = Objects.requireNonNull(indicatorReference.get(), "indicator");
                     progressIndicator.layout();
 
                     assertEquals(-324.0, indicator.getLength(), 0.0001);
@@ -9622,9 +9849,9 @@ final class M3ControlStyleTest {
     /// Verifies that indeterminate circular progress rotates without oversized sweeps.
     @Test
     void progressIndicatorSkinAnimatesIndeterminateProgress() throws InterruptedException {
-        AtomicReference<M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
-        AtomicReference<Arc> indicatorReference = new AtomicReference<>();
-        AtomicReference<Double> initialStartAngle = new AtomicReference<>();
+        AtomicReference<@Nullable M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
+        AtomicReference<@Nullable Arc> indicatorReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> initialStartAngle = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
                 PROGRESS_INDETERMINATE_SAMPLE_DELAY,
@@ -11775,27 +12002,27 @@ final class M3ControlStyleTest {
         assertEquals(M3TopAppBarVariant.CENTER_ALIGNED, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
-        assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
 
         assertEquals(M3TopAppBarVariant.MEDIUM, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass()));
-        assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
 
         assertEquals(M3TopAppBarVariant.LARGE, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE.getStyleClass()));
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
-        assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
 
         topAppBar.variantProperty().set(null);
 
         assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
-        assertEquals(Region.USE_COMPUTED_SIZE, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
     }
 
     /// Verifies that top app bar token rules apply container metrics.
@@ -11816,6 +12043,7 @@ final class M3ControlStyleTest {
         assertEquals(20.0, topAppBar.getMediumBottomPadding(), 0.0001);
         assertEquals(28.0, topAppBar.getLargeBottomPadding(), 0.0001);
         assertEquals(16.0, topAppBar.getContentSpacing(), 0.0001);
+        assertEquals(8.0, topAppBar.getActionSpacing(), 0.0001);
         assertEquals(16.0, topAppBar.getPadding().getLeft(), 0.0001);
         assertInstanceOf(M3TopAppBarSkin.class, topAppBar.getSkin());
         assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
@@ -11847,6 +12075,7 @@ final class M3ControlStyleTest {
         assertEquals(24.0, topAppBar.getMediumBottomPadding(), 0.0001);
         assertEquals(32.0, topAppBar.getLargeBottomPadding(), 0.0001);
         assertEquals(20.0, topAppBar.getContentSpacing(), 0.0001);
+        assertEquals(12.0, topAppBar.getActionSpacing(), 0.0001);
         assertEquals(24.0, topAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(12.0, actions.getSpacing(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
@@ -11857,6 +12086,123 @@ final class M3ControlStyleTest {
         root.applyCss();
         assertEquals(160.0, topAppBar.getPrefHeight(), 0.0001);
         assertEquals(32.0, topAppBar.getPadding().getBottom(), 0.0001);
+        topAppBar.setActionSpacing(18.0);
+        assertEquals(18.0, topAppBar.getActionSpacing(), 0.0001);
+        assertEquals(18.0, actions.getSpacing(), 0.0001);
+    }
+
+    /// Verifies that app bar metric tokens are exposed through CSS metadata.
+    @Test
+    void appBarMetricTokensAreExposedThroughCssMetadata() {
+        List<CssMetaData<? extends Styleable, ?>> topAppBarCssMetaData = M3TopAppBar.getClassCssMetaData();
+        assertCssProperty(topAppBarCssMetaData, "-m3-container-height");
+        assertCssProperty(topAppBarCssMetaData, "-m3-medium-container-height");
+        assertCssProperty(topAppBarCssMetaData, "-m3-large-container-height");
+        assertCssProperty(topAppBarCssMetaData, "-m3-horizontal-padding");
+        assertCssProperty(topAppBarCssMetaData, "-m3-medium-bottom-padding");
+        assertCssProperty(topAppBarCssMetaData, "-m3-large-bottom-padding");
+        assertCssProperty(topAppBarCssMetaData, "-m3-content-spacing");
+        assertCssProperty(topAppBarCssMetaData, "-m3-action-spacing");
+
+        List<CssMetaData<? extends Styleable, ?>> bottomAppBarCssMetaData = M3BottomAppBar.getClassCssMetaData();
+        assertCssProperty(bottomAppBarCssMetaData, "-m3-container-height");
+        assertCssProperty(bottomAppBarCssMetaData, "-m3-horizontal-padding");
+        assertCssProperty(bottomAppBarCssMetaData, "-m3-content-spacing");
+        assertCssProperty(bottomAppBarCssMetaData, "-m3-action-spacing");
+    }
+
+    /// Verifies that app bar metric tokens are directly styleable from control CSS.
+    @Test
+    void appBarMetricTokensAreStyleable() {
+        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        topAppBar.setStyle(
+                "-m3-container-height: 70px; "
+                        + "-m3-medium-container-height: 118px; "
+                        + "-m3-large-container-height: 158px; "
+                        + "-m3-horizontal-padding: 22px; "
+                        + "-m3-medium-bottom-padding: 24px; "
+                        + "-m3-large-bottom-padding: 32px; "
+                        + "-m3-content-spacing: 18px; "
+                        + "-m3-action-spacing: 11px;"
+        );
+
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        bottomAppBar.setStyle(
+                "-m3-container-height: 86px; "
+                        + "-m3-horizontal-padding: 20px; "
+                        + "-m3-content-spacing: 14px; "
+                        + "-m3-action-spacing: 9px;"
+        );
+
+        Pane root = new Pane(topAppBar, bottomAppBar);
+        new Scene(root);
+        root.applyCss();
+
+        assertEquals(70.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(70.0, topAppBar.getContainerHeight(), 0.0001);
+        assertEquals(118.0, topAppBar.getMediumContainerHeight(), 0.0001);
+        assertEquals(158.0, topAppBar.getLargeContainerHeight(), 0.0001);
+        assertEquals(22.0, topAppBar.getHorizontalPadding(), 0.0001);
+        assertEquals(24.0, topAppBar.getMediumBottomPadding(), 0.0001);
+        assertEquals(32.0, topAppBar.getLargeBottomPadding(), 0.0001);
+        assertEquals(18.0, topAppBar.getContentSpacing(), 0.0001);
+        assertEquals(11.0, topAppBar.getActionSpacing(), 0.0001);
+        assertEquals(22.0, topAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(11.0, assertInstanceOf(
+                HBox.class,
+                topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS)
+        ).getSpacing(), 0.0001);
+
+        topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
+        root.applyCss();
+        assertEquals(118.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(24.0, topAppBar.getPadding().getBottom(), 0.0001);
+
+        topAppBar.setVariant(M3TopAppBarVariant.LARGE);
+        root.applyCss();
+        assertEquals(158.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(32.0, topAppBar.getPadding().getBottom(), 0.0001);
+
+        assertEquals(86.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(86.0, bottomAppBar.getContainerHeight(), 0.0001);
+        assertEquals(20.0, bottomAppBar.getHorizontalPadding(), 0.0001);
+        assertEquals(14.0, bottomAppBar.getContentSpacing(), 0.0001);
+        assertEquals(9.0, bottomAppBar.getActionSpacing(), 0.0001);
+        assertEquals(20.0, bottomAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(9.0, assertInstanceOf(
+                HBox.class,
+                bottomAppBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS)
+        ).getSpacing(), 0.0001);
+    }
+
+    /// Verifies that top app bar variants apply distinct Material title type scale roles.
+    @Test
+    void topAppBarVariantsApplyTitleTypeScale() {
+        M3TopAppBar small = new M3TopAppBar("Inbox");
+        M3TopAppBar centerAligned = new M3TopAppBar("Calendar");
+        centerAligned.setVariant(M3TopAppBarVariant.CENTER_ALIGNED);
+        M3TopAppBar medium = new M3TopAppBar("Project");
+        medium.setVariant(M3TopAppBarVariant.MEDIUM);
+        M3TopAppBar large = new M3TopAppBar("Workspace");
+        large.setVariant(M3TopAppBarVariant.LARGE);
+
+        VBox root = new VBox(small, centerAligned, medium, large);
+        Scene scene = new Scene(root);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertTopAppBarTitleFontSize(small, 22.0);
+        assertTopAppBarTitleFontSize(centerAligned, 22.0);
+        assertTopAppBarTitleFontSize(medium, 28.0);
+        assertTopAppBarTitleFontSize(large, 32.0);
+    }
+
+    /// Asserts the rendered font size used by a top app bar title label.
+    private static void assertTopAppBarTitleFontSize(M3TopAppBar appBar, double expectedSize) {
+        Label title = assertInstanceOf(Label.class, appBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
+
+        assertEquals(expectedSize, title.getFont().getSize(), 0.0001,
+                () -> "top app bar title font size mismatch: variant=" + appBar.getVariant());
     }
 
     /// Verifies that top app bar icon buttons do not clip fallback glyphs.
@@ -11866,11 +12212,14 @@ final class M3ControlStyleTest {
             M3Icon navigationIcon = new M3Icon("M", M3IconSize.SMALL, M3IconVariant.PRIMARY);
             M3Icon searchIcon = new M3Icon("S", M3IconSize.SMALL, M3IconVariant.PRIMARY);
             M3Icon accountIcon = new M3Icon("A", M3IconSize.SMALL, M3IconVariant.PRIMARY);
+            M3IconButton navigationButton = new M3IconButton(navigationIcon);
+            M3IconButton searchButton = new M3IconButton(searchIcon);
+            M3IconButton accountButton = new M3IconButton(accountIcon);
             M3TopAppBar topAppBar = new M3TopAppBar(
                     "Inbox",
-                    new M3IconButton(navigationIcon),
-                    new M3IconButton(searchIcon),
-                    new M3IconButton(accountIcon)
+                    navigationButton,
+                    searchButton,
+                    accountButton
             );
             topAppBar.setPrefWidth(560.0);
 
@@ -11888,6 +12237,9 @@ final class M3ControlStyleTest {
                 assertSnapshotNodeContainsContrast(image, icon, Color.WHITE, 0.05);
                 assertSnapshotNodeEdgesClear(image, icon, Color.WHITE, 0.05);
             }
+            for (M3IconButton button : java.util.List.of(navigationButton, searchButton, accountButton)) {
+                assertAppBarIconButtonTargetGeometry(button);
+            }
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
                     "reports",
@@ -11895,6 +12247,30 @@ final class M3ControlStyleTest {
                     "visual-top-app-bar-fallback-icons.png"
             ));
         });
+    }
+
+    /// Verifies that an app bar icon button keeps its fallback glyph centered in the Material action target.
+    private static void assertAppBarIconButtonTargetGeometry(M3IconButton iconButton) {
+        Node graphic = Objects.requireNonNull(iconButton.getGraphic(), "graphic");
+        Bounds buttonBounds = iconButton.localToScene(iconButton.getBoundsInLocal());
+        Bounds graphicBounds = graphic.localToScene(graphic.getBoundsInLocal());
+
+        assertEquals(40.0, buttonBounds.getWidth(), 1.0,
+                () -> "top app bar fallback icon button width drifted: " + buttonBounds);
+        assertEquals(40.0, buttonBounds.getHeight(), 1.0,
+                () -> "top app bar fallback icon button height drifted: " + buttonBounds);
+        assertTrue(graphicBounds.getMinX() >= buttonBounds.getMinX() - 1.0
+                        && graphicBounds.getMaxX() <= buttonBounds.getMaxX() + 1.0
+                        && graphicBounds.getMinY() >= buttonBounds.getMinY() - 1.0
+                        && graphicBounds.getMaxY() <= buttonBounds.getMaxY() + 1.0,
+                () -> "top app bar fallback icon leaves its button target: button="
+                        + buttonBounds + ", graphic=" + graphicBounds);
+        assertEquals(buttonBounds.getCenterX(), graphicBounds.getCenterX(), 1.0,
+                () -> "top app bar fallback icon is horizontally off-center: button="
+                        + buttonBounds + ", graphic=" + graphicBounds);
+        assertEquals(buttonBounds.getCenterY(), graphicBounds.getCenterY(), 1.0,
+                () -> "top app bar fallback icon is vertically off-center: button="
+                        + buttonBounds + ", graphic=" + graphicBounds);
     }
 
     /// Verifies that bottom app bars expose action and floating action slots.
@@ -11979,6 +12355,7 @@ final class M3ControlStyleTest {
         assertEquals(80.0, bottomAppBar.getContainerHeight(), 0.0001);
         assertEquals(16.0, bottomAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, bottomAppBar.getContentSpacing(), 0.0001);
+        assertEquals(8.0, bottomAppBar.getActionSpacing(), 0.0001);
         assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertInstanceOf(M3BottomAppBarSkin.class, bottomAppBar.getSkin());
         HBox actions = assertInstanceOf(HBox.class, bottomAppBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS));
@@ -11996,7 +12373,11 @@ final class M3ControlStyleTest {
         assertEquals(24.0, bottomAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(20.0, bottomAppBar.getContentSpacing(), 0.0001);
         assertEquals(24.0, bottomAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(12.0, bottomAppBar.getActionSpacing(), 0.0001);
         assertEquals(12.0, actions.getSpacing(), 0.0001);
+        bottomAppBar.setActionSpacing(18.0);
+        assertEquals(18.0, bottomAppBar.getActionSpacing(), 0.0001);
+        assertEquals(18.0, actions.getSpacing(), 0.0001);
     }
 
     /// Verifies that app bars and banners create Material Design 3 skins.
@@ -12027,6 +12408,7 @@ final class M3ControlStyleTest {
             Label topAction = new Label("A");
             M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topAction);
             topAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            topAppBar.setPrefWidth(420.0);
 
             Label bottomAction = new Label("B");
             Label floatingAction = new Label("F");
@@ -12036,11 +12418,13 @@ final class M3ControlStyleTest {
                     bottomAction
             );
             bottomAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            bottomAppBar.setPrefWidth(420.0);
 
             Label bannerIcon = new Label("I");
             Label bannerAction = new Label("C");
             M3Banner banner = createBanner("Message", bannerIcon, bannerAction);
             banner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            banner.setPrefWidth(420.0);
 
             Pane root = new Pane(topAppBar, bottomAppBar, banner);
             root.setStyle("-fx-background-color: white; " + visualTestColors());
@@ -12059,6 +12443,9 @@ final class M3ControlStyleTest {
             Bounds topNavigationBounds = topNavigation.localToScene(topNavigation.getBoundsInLocal());
             Bounds topActionBounds = topAction.localToScene(topAction.getBoundsInLocal());
             Bounds topAppBarBounds = topAppBar.localToScene(topAppBar.getBoundsInLocal());
+            Label topTitle = assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
+            Text topTitleText = assertInstanceOf(Text.class, topTitle.lookup(".text"));
+            Bounds topTitleTextBounds = topTitleText.localToScene(topTitleText.getBoundsInLocal());
             Parent topNavigationParent = Objects.requireNonNull(topNavigation.getParent(), "topNavigationParent");
             Parent topActionParent = Objects.requireNonNull(topAction.getParent(), "topActionParent");
             Bounds topNavigationParentBounds = topNavigationParent.localToScene(topNavigationParent.getBoundsInLocal());
@@ -12072,6 +12459,13 @@ final class M3ControlStyleTest {
                             + ", effectiveOrientation=" + topAppBar.getEffectiveNodeOrientation()
                             + ", navigationParent=" + topNavigationParentBounds
                             + ", actionParent=" + topActionParentBounds
+            );
+            assertTrue(
+                    topTitleTextBounds.getCenterX() > topAppBarBounds.getCenterX()
+                            && topTitleTextBounds.getMaxX() <= topNavigationBounds.getMinX(),
+                    () -> "top app bar RTL title text is not aligned to the navigation side: title="
+                            + topTitleTextBounds + ", navigation=" + topNavigationBounds
+                            + ", action=" + topActionBounds + ", appBar=" + topAppBarBounds
             );
             assertTrue(
                     floatingAction.localToScene(floatingAction.getBoundsInLocal()).getMaxX()
@@ -12516,9 +12910,9 @@ final class M3ControlStyleTest {
     /// Verifies that navigation drawer groups animate child row expansion and collapse.
     @Test
     void navigationDrawerGroupAnimatesExpansionAndCollapse() throws InterruptedException {
-        AtomicReference<M3NavigationDrawerGroup> groupReference = new AtomicReference<>();
-        AtomicReference<Double> collapsedHeightReference = new AtomicReference<>();
-        AtomicReference<Double> expandedHeightReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3NavigationDrawerGroup> groupReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> collapsedHeightReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> expandedHeightReference = new AtomicReference<>();
 
         runOnFxThreadAfterDelay(
                 DRAWER_EXPANSION_INTERMEDIATE_DELAY,
@@ -12556,8 +12950,9 @@ final class M3ControlStyleTest {
                 }
         );
 
-        runOnFxThreadAfterDelay(
-                DRAWER_EXPANSION_SETTLE_DELAY,
+        runOnFxThreadWhen(
+                () -> navigationDrawerGroupHeightSettled(groupReference, expandedHeightReference)
+                        && navigationDrawerGroupChildCount(groupReference) == 2,
                 () -> {
                 },
                 () -> {
@@ -12582,8 +12977,9 @@ final class M3ControlStyleTest {
                 }
         );
 
-        runOnFxThreadAfterDelay(
-                DRAWER_EXPANSION_SETTLE_DELAY,
+        runOnFxThreadWhen(
+                () -> navigationDrawerGroupHeightSettled(groupReference, collapsedHeightReference)
+                        && navigationDrawerGroupChildCount(groupReference) == 0,
                 () -> {
                 },
                 () -> {
@@ -13568,8 +13964,8 @@ final class M3ControlStyleTest {
             assertEquals(Pos.CENTER_RIGHT, dateWeekdays.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, rangeHeader.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, timeDisplay.getAlignment());
-            assertEquals(">", pickerHeaderNavigationIconText(dateHeader, 2));
-            assertEquals("<", pickerHeaderNavigationIconText(dateHeader, 3));
+            assertEquals(M3InternalIcon.Glyph.CHEVRON_RIGHT, pickerHeaderNavigationIcon(dateHeader, 2));
+            assertEquals(M3InternalIcon.Glyph.CHEVRON_LEFT, pickerHeaderNavigationIcon(dateHeader, 3));
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateField.getPicker().getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, rangeField.getPicker().getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, timeField.getPicker().getEffectiveNodeOrientation());
@@ -13810,12 +14206,12 @@ final class M3ControlStyleTest {
             M3Tab details = new M3Tab("Details");
             M3TabBar tabBar = new M3TabBar(overview, details);
 
-            M3NavigationItem home = new M3NavigationItem("Home", new M3Icon("H"));
-            M3NavigationItem search = new M3NavigationItem("Search", new M3Icon("S"));
+            M3NavigationItem home = new M3NavigationItem("Home", visualIcon("home"));
+            M3NavigationItem search = new M3NavigationItem("Search", visualIcon("search"));
             M3NavigationBar navigationBar = new M3NavigationBar(home, search);
 
-            M3NavigationItem railHome = new M3NavigationItem("Home", new M3Icon("H"));
-            M3NavigationItem railSearch = new M3NavigationItem("Search", new M3Icon("S"));
+            M3NavigationItem railHome = new M3NavigationItem("Home", visualIcon("home"));
+            M3NavigationItem railSearch = new M3NavigationItem("Search", visualIcon("search"));
             M3NavigationRail navigationRail = new M3NavigationRail(railHome, railSearch);
 
             VBox root = new VBox(18.0, tabBar, navigationBar, navigationRail);
@@ -13826,6 +14222,8 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.resize(360.0, 320.0);
             root.layout();
+
+            assertVisualIconSlotsUseVectorGraphics(root);
 
             tabBar.select(details);
             navigationBar.select(search);
@@ -14332,7 +14730,7 @@ final class M3ControlStyleTest {
             M3Tab focusTab = createTab("Tab focus", true);
             M3NavigationItem hoverNavigationItem = createNavigationItem(
                     "Home",
-                    new M3Icon("H"),
+                    visualIcon("home"),
                     true
             );
             applyPseudoState(pressedSlider, "pressed");
@@ -14340,7 +14738,7 @@ final class M3ControlStyleTest {
             applyPseudoState(hoverNavigationItem, "hover");
 
             M3ListItem pressedListItem = new M3ListItem("Pressed list item");
-            pressedListItem.setLeadingIcon("L");
+            pressedListItem.setLeading(visualIcon("inbox"));
             pressedListItem.setPrefWidth(220.0);
             M3Card hoverCard = new M3Card(
                     visualLabel("Hover card"),
@@ -14386,6 +14784,8 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.resize(920.0, Math.ceil(root.prefHeight(920.0)));
             root.layout();
+
+            assertVisualIconSlotsUseVectorGraphics(root);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotHasColorVariety(image, 18);
@@ -14786,14 +15186,14 @@ final class M3ControlStyleTest {
             supportingField.setPrefWidth(220.0);
             M3TextInputLayout supportingLayout = new M3TextInputLayout(supportingField, "Supporting text");
             supportingLayout.setLabelText("Project");
-            supportingLayout.setLeading(new M3Icon("A"));
+            supportingLayout.setLeading(visualIcon("work"));
             supportingLayout.setPrefWidth(220.0);
 
             M3TextField counterField = createTextField("support@example.com", M3TextInputVariant.OUTLINED);
             counterField.setPrefWidth(320.0);
             M3TextInputLayout counterLayout = new M3TextInputLayout(counterField, "Email address");
             counterLayout.setLabelText("Email");
-            counterLayout.setLeading(new M3Icon("E"));
+            counterLayout.setLeading(visualIcon("mail"));
             counterLayout.setClearButtonEnabled(true);
             counterLayout.setCharacterCounterVisible(true);
             counterLayout.setCharacterLimit(32);
@@ -14803,7 +15203,7 @@ final class M3ControlStyleTest {
             errorField.setPrefWidth(220.0);
             M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
             errorLayout.setLabelText("Code");
-            errorLayout.setLeading(new M3Icon("!"));
+            errorLayout.setLeading(visualIcon("warning"));
             errorLayout.setCharacterCounterVisible(true);
             errorLayout.setCharacterLimit(4);
             errorLayout.setErrorText("Too long");
@@ -14892,6 +15292,7 @@ final class M3ControlStyleTest {
             ));
             assertRenderedTextNodesStayInsideLayout(row);
             assertOutlinedTextInputsKeepTextCentered(row);
+            assertVisualIconSlotsUseVectorGraphics(row);
             assertFixedTargetControlsKeepCenteredContent(row);
         });
     }
@@ -14905,7 +15306,7 @@ final class M3ControlStyleTest {
 
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
             layout.setLabelText("Outlined with text");
-            layout.setLeading(new M3Icon("T"));
+            layout.setLeading(visualIcon("text"));
             layout.setCharacterCounterVisible(true);
             layout.setCharacterLimit(24);
             layout.setPrefWidth(360.0);
@@ -14920,6 +15321,8 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.resize(430.0, 140.0);
             root.layout();
+
+            assertVisualIconSlotsUseVectorGraphics(root);
 
             WritableImage image = snapshotImageOnFxThread(root);
             Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
@@ -15260,8 +15663,8 @@ final class M3ControlStyleTest {
             M3Card card = new M3Card(new Label("Elevated card"));
             card.setVariant(M3CardVariant.ELEVATED);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            M3NavigationItem home = createNavigationItem("Home", new M3Icon("H"), true);
-            M3NavigationItem search = new M3NavigationItem("Search", new M3Icon("S"));
+            M3NavigationItem home = createNavigationItem("Home", visualIcon("home"), true);
+            M3NavigationItem search = new M3NavigationItem("Search", visualIcon("search"));
             M3NavigationBar navigationBar = new M3NavigationBar(home, search);
 
             FlowPane topRow = new FlowPane(18.0, 18.0, avatar, badgedBox, list, card);
@@ -15273,6 +15676,8 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.resize(640.0, 420.0);
             root.layout();
+
+            assertVisualIconSlotsUseVectorGraphics(root);
 
             assertBadgedBoxBadgeAnchoredToLogicalEnd(badgedBox, false);
             WritableImage image = snapshotImageOnFxThread(root);
@@ -15568,57 +15973,58 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3DateRangePickerField> fieldReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(PICKER_POPUP_SHOW_DELAY, () -> {
-                M3DateRangePickerField field = new M3DateRangePickerField(
-                        LocalDate.of(2026, 5, 19),
-                        LocalDate.of(2026, 5, 25)
-                );
-                field.setCommonPresets(LocalDate.of(2026, 5, 19));
-                field.setPrefWidth(680.0);
+            runOnFxThreadWhen(
+                    () -> dateRangeFieldPresetPopupReady(fieldReference),
+                    () -> {
+                        M3DateRangePickerField field = new M3DateRangePickerField(
+                                LocalDate.of(2026, 5, 19),
+                                LocalDate.of(2026, 5, 25)
+                        );
+                        field.setCommonPresets(LocalDate.of(2026, 5, 19));
+                        field.setPrefWidth(680.0);
 
-                Pane root = new Pane(field);
-                Stage stage = new Stage();
-                Scene scene = new Scene(root, 760.0, 180.0);
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
-                root.layout();
+                        Pane root = new Pane(field);
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 760.0, 180.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
+                        root.layout();
 
-                stageReference.set(stage);
-                fieldReference.set(field);
-                field.showPicker();
-            }, () -> {
-                M3DateRangePickerField field = Objects.requireNonNull(fieldReference.get());
-                assertTrue(field.isShowing());
-                Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
-                Node popupRoot = assertInstanceOf(Node.class, presetContent.getParent());
-                popupRoot.applyCss();
-                if (popupRoot instanceof Region region) {
-                    region.layout();
-                }
+                        stageReference.set(stage);
+                        fieldReference.set(field);
+                        field.showPicker();
+                    }, () -> {
+                        M3DateRangePickerField field = Objects.requireNonNull(fieldReference.get());
+                        assertTrue(field.isShowing());
+                        Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+                        Node popupRoot = assertInstanceOf(Node.class, presetContent.getParent());
+                        popupRoot.applyCss();
+                        if (popupRoot instanceof Region region) {
+                            region.layout();
+                        }
 
-                WritableImage image = snapshotImageOnFxThread(popupRoot);
-                assertEquals(
-                        6,
-                        presetContent.lookupAll("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS).size()
-                );
-                assertSnapshotNodeContainsContrast(
-                        image,
-                        assertInstanceOf(Node.class, presetContent.lookup(
-                                "." + M3DateRangePickerField.PRESET_LIST_STYLE_CLASS
-                        )),
-                        Color.WHITE,
-                        0.04
-                );
-                writeVisualSnapshot(image, java.nio.file.Path.of(
-                        "build",
-                        "reports",
-                        "m3fx-visual",
-                        "visual-date-range-field-presets.png"
-                ));
-            });
+                        WritableImage image = snapshotImageOnFxThread(popupRoot);
+                        assertEquals(
+                                6,
+                                presetContent.lookupAll("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS).size()
+                        );
+                        assertNodeSnapshotContainsContrast(
+                                assertInstanceOf(Node.class, presetContent.lookup(
+                                        "." + M3DateRangePickerField.PRESET_LIST_STYLE_CLASS
+                                )),
+                                Color.WHITE,
+                                0.04
+                        );
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-date-range-field-presets.png"
+                        ));
+                    });
         } finally {
             runOnFxThread(() -> {
                 @Nullable M3DateRangePickerField field = fieldReference.get();
@@ -15640,56 +16046,58 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3DateRangePickerField> fieldReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(PICKER_POPUP_SHOW_DELAY, () -> {
-                M3DateRangePickerField field = new M3DateRangePickerField(
-                        LocalDate.of(2026, 5, 19),
-                        LocalDate.of(2026, 5, 25)
-                );
-                field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-                field.setCommonPresets(LocalDate.of(2026, 5, 19));
-                field.setPrefWidth(680.0);
+            runOnFxThreadWhen(
+                    () -> dateRangeFieldPresetPopupReady(fieldReference),
+                    () -> {
+                        M3DateRangePickerField field = new M3DateRangePickerField(
+                                LocalDate.of(2026, 5, 19),
+                                LocalDate.of(2026, 5, 25)
+                        );
+                        field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                        field.setCommonPresets(LocalDate.of(2026, 5, 19));
+                        field.setPrefWidth(680.0);
 
-                Pane root = new Pane(field);
-                Stage stage = new Stage();
-                Scene scene = new Scene(root, 760.0, 180.0);
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
-                root.layout();
+                        Pane root = new Pane(field);
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 760.0, 180.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        field.resizeRelocate(24.0, 24.0, 680.0, 96.0);
+                        root.layout();
 
-                stageReference.set(stage);
-                fieldReference.set(field);
-                field.showPicker();
-            }, () -> {
-                M3DateRangePickerField field = Objects.requireNonNull(fieldReference.get());
-                assertTrue(field.isShowing());
-                Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
-                Node popupRoot = assertInstanceOf(Node.class, presetContent.getParent());
-                popupRoot.applyCss();
-                if (popupRoot instanceof Region region) {
-                    region.layout();
-                }
+                        stageReference.set(stage);
+                        fieldReference.set(field);
+                        field.showPicker();
+                    }, () -> {
+                        M3DateRangePickerField field = Objects.requireNonNull(fieldReference.get());
+                        assertTrue(field.isShowing());
+                        Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+                        Node popupRoot = assertInstanceOf(Node.class, presetContent.getParent());
+                        popupRoot.applyCss();
+                        if (popupRoot instanceof Region region) {
+                            region.layout();
+                        }
 
-                assertPickerPresetMirrorsRightToLeft(
-                        popupRoot,
-                        M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
-                        M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
-                        field.getPicker()
-                );
+                        assertPickerPresetMirrorsRightToLeft(
+                                popupRoot,
+                                M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
+                                M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
+                                field.getPicker()
+                        );
 
-                WritableImage image = snapshotImageOnFxThread(popupRoot);
-                assertSnapshotNodeContainsContrast(image, presetContent, Color.WHITE, 0.04);
-                writeVisualSnapshot(image, java.nio.file.Path.of(
-                        "build",
-                        "reports",
-                        "m3fx-visual",
-                        "visual-date-range-field-presets-rtl.png"
-                ));
-                assertRenderedTextNodesStayInsideLayout(popupRoot);
-                assertFixedTargetControlsKeepCenteredContent(popupRoot);
-            });
+                        WritableImage image = snapshotImageOnFxThread(popupRoot);
+                        assertNodeSnapshotContainsContrast(presetContent, Color.WHITE, 0.04);
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-date-range-field-presets-rtl.png"
+                        ));
+                        assertRenderedTextNodesStayInsideLayout(popupRoot);
+                        assertFixedTargetControlsKeepCenteredContent(popupRoot);
+                    });
         } finally {
             runOnFxThread(() -> {
                 @Nullable M3DateRangePickerField field = fieldReference.get();
@@ -15940,7 +16348,7 @@ final class M3ControlStyleTest {
             M3Avatar avatar = createAvatar("AB", M3AvatarVariant.PRIMARY);
             M3Badge badge = new M3Badge("9+");
             M3BadgedBox badgedBox = new M3BadgedBox(
-                    new M3Icon("M", M3IconSize.LARGE, M3IconVariant.PRIMARY),
+                    visualIcon("mail", 32.0),
                     new M3Badge("3")
             );
             M3Divider horizontalDivider = new M3Divider();
@@ -15966,24 +16374,24 @@ final class M3ControlStyleTest {
                     new M3MenuItem("Copy")
             );
 
-            M3IconButton iconButton = new M3IconButton(new M3Icon("i"));
+            M3IconButton iconButton = new M3IconButton(visualIcon("info"));
             M3IconToggleButton standardToggle = createIconToggleButton(
-                    "S",
+                    visualIcon("star"),
                     M3IconToggleButtonVariant.STANDARD,
                     true
             );
             M3IconToggleButton filledToggle = createIconToggleButton(
-                    "F",
+                    visualIcon("done"),
                     M3IconToggleButtonVariant.FILLED,
                     true
             );
             M3IconToggleButton tonalToggle = createIconToggleButton(
-                    "T",
+                    visualIcon("text"),
                     M3IconToggleButtonVariant.TONAL,
                     true
             );
             M3IconToggleButton outlinedToggle = createIconToggleButton(
-                    "O",
+                    visualIcon("bookmark"),
                     M3IconToggleButtonVariant.OUTLINED,
                     true
             );
@@ -15995,12 +16403,12 @@ final class M3ControlStyleTest {
             );
 
             M3FloatingActionButton smallFab = createGraphicFab(
-                    new M3Icon("+"),
+                    visualIcon("add"),
                     M3FloatingActionButtonVariant.PRIMARY,
                     M3FloatingActionButtonSize.SMALL
             );
             M3FloatingActionButton regularFab = createGraphicFab(
-                    new M3Icon("+"),
+                    visualIcon("add"),
                     M3FloatingActionButtonVariant.SECONDARY,
                     M3FloatingActionButtonSize.REGULAR
             );
@@ -16012,19 +16420,19 @@ final class M3ControlStyleTest {
             );
             M3FloatingActionButton extendedFab = createFab(
                     "Create",
-                    new M3Icon("+"),
+                    visualIcon("add"),
                     M3FloatingActionButtonVariant.SURFACE,
                     M3FloatingActionButtonSize.REGULAR
             );
             M3FabMenu fabMenu = new M3FabMenu();
             fabMenu.addItems(
                     createGraphicFab(
-                            new M3Icon("A"),
+                            visualIcon("edit"),
                             M3FloatingActionButtonVariant.PRIMARY,
                             M3FloatingActionButtonSize.SMALL
                     ),
                     createGraphicFab(
-                            new M3Icon("B"),
+                            visualIcon("share"),
                             M3FloatingActionButtonVariant.SECONDARY,
                             M3FloatingActionButtonSize.SMALL
                     )
@@ -16061,7 +16469,7 @@ final class M3ControlStyleTest {
 
             M3Chip assistChip = createChip("Assist", M3ChipVariant.ASSIST);
             M3Chip filterChip = createChip("Filter", M3ChipVariant.FILTER, true);
-            M3Chip inputChip = createChip("Input", new M3Icon("x"), M3ChipVariant.INPUT);
+            M3Chip inputChip = createChip("Input", visualIcon("close"), M3ChipVariant.INPUT);
             M3Chip suggestionChip = createChip("Suggestion", M3ChipVariant.SUGGESTION);
             M3ChipGroup chipGroup = new M3ChipGroup(assistChip, filterChip, inputChip, suggestionChip);
             M3SegmentedButtonGroup segmentedButtons = new M3SegmentedButtonGroup(
@@ -16106,7 +16514,7 @@ final class M3ControlStyleTest {
 
             M3Banner banner = createBanner(
                     "Banner message with persistent inline feedback.",
-                    new M3Icon("i", M3IconSize.MEDIUM, M3IconVariant.PRIMARY),
+                    visualIcon("info"),
                     createButton("Action", M3ButtonVariant.TEXT)
             );
             banner.setPrefWidth(520.0);
@@ -16127,7 +16535,7 @@ final class M3ControlStyleTest {
             dialogPane.setPrefWidth(320.0);
 
             M3ListItem selectedListItem = new M3ListItem("Selected list item");
-            selectedListItem.setLeadingIcon("L");
+            selectedListItem.setLeading(visualIcon("inbox"));
             selectedListItem.setTrailing(new M3Badge("2"));
             selectedListItem.setSupportingText("Supporting text");
             selectedListItem.setTrailingSupportingText("Now");
@@ -16140,7 +16548,7 @@ final class M3ControlStyleTest {
                     new M3ListItem("List item")
             );
             list.setPrefWidth(300.0);
-            M3MenuItem selectedMenuItem = new M3MenuItem("Selected menu item", new M3Icon("M"));
+            M3MenuItem selectedMenuItem = new M3MenuItem("Selected menu item", visualIcon("done"));
             selectedMenuItem.setSelected(true);
             M3Menu menu = new M3Menu(
                     new M3MenuSectionHeader("Actions"),
@@ -16165,33 +16573,33 @@ final class M3ControlStyleTest {
             M3TopAppBar topAppBar = new M3TopAppBar(
                     "Top app bar",
                     M3TopAppBarVariant.CENTER_ALIGNED,
-                    new M3IconButton(new M3Icon("<")),
-                    new M3IconButton(new M3Icon("S")),
-                    new M3IconButton(new M3Icon("M"))
+                    new M3IconButton(visualIcon("menu")),
+                    new M3IconButton(visualIcon("search")),
+                    new M3IconButton(visualIcon("more"))
             );
             topAppBar.setPrefWidth(520.0);
             M3BottomAppBar bottomAppBar = new M3BottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     createGraphicFab(
-                            new M3Icon("+"),
+                            visualIcon("add"),
                             M3FloatingActionButtonVariant.PRIMARY,
                             M3FloatingActionButtonSize.SMALL
                     ),
-                    new M3IconButton(new M3Icon("H")),
-                    new M3IconButton(new M3Icon("S"))
+                    new M3IconButton(visualIcon("home")),
+                    new M3IconButton(visualIcon("search"))
             );
             bottomAppBar.setPrefWidth(520.0);
 
             M3NavigationBar navigationBar = new M3NavigationBar(
-                    createNavigationItem("Home", new M3Icon("H"), true),
-                    new M3NavigationItem("Search", new M3Icon("S"), new M3Badge("1")),
-                    new M3NavigationItem("Profile", new M3Icon("P"))
+                    createNavigationItem("Home", visualIcon("home"), true),
+                    new M3NavigationItem("Search", visualIcon("search"), new M3Badge("1")),
+                    new M3NavigationItem("Profile", visualIcon("person"))
             );
             navigationBar.setPrefWidth(420.0);
             M3NavigationRail navigationRail = new M3NavigationRail(
-                    createNavigationItem("Home", new M3Icon("H"), true),
-                    new M3NavigationItem("Search", new M3Icon("S")),
-                    new M3NavigationItem("Profile", new M3Icon("P"))
+                    createNavigationItem("Home", visualIcon("home"), true),
+                    new M3NavigationItem("Search", visualIcon("search")),
+                    new M3NavigationItem("Profile", visualIcon("person"))
             );
             M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
                     drawerItem("Inbox", true),
@@ -16292,6 +16700,8 @@ final class M3ControlStyleTest {
             root.resize(1120.0, Math.ceil(root.prefHeight(1120.0)));
             root.layout();
 
+            assertVisualIconSlotsUseVectorGraphics(root);
+
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotHasColorVariety(image, 28);
             assertSnapshotNodeContainsContrast(image, titleText, Color.WHITE, 0.08);
@@ -16370,26 +16780,26 @@ final class M3ControlStyleTest {
     void expressiveProfileVisualSnapshotRendersProfileSizedControls() {
         runOnFxThread(() -> {
             M3Button filledButton = createButton("Filled", M3ButtonVariant.FILLED);
-            M3IconButton iconButton = new M3IconButton(new M3Icon("S"));
+            M3IconButton iconButton = new M3IconButton(visualIcon("search"));
             M3IconToggleButton standardToggle = createIconToggleButton(
-                    "B",
+                    visualIcon("bold"),
                     M3IconToggleButtonVariant.STANDARD,
                     false
             );
             M3IconToggleButton tonalToggle = createIconToggleButton(
-                    "I",
+                    visualIcon("italic"),
                     M3IconToggleButtonVariant.TONAL,
                     true
             );
             M3IconToggleButton outlinedToggle = createIconToggleButton(
-                    "U",
+                    visualIcon("underline"),
                     M3IconToggleButtonVariant.OUTLINED,
                     false
             );
             M3IconToggleButtonGroup toggleGroup =
                     new M3IconToggleButtonGroup(standardToggle, tonalToggle, outlinedToggle);
             M3FloatingActionButton regularFab = createGraphicFab(
-                    new M3Icon("+"),
+                    visualIcon("add"),
                     M3FloatingActionButtonVariant.PRIMARY,
                     M3FloatingActionButtonSize.REGULAR
             );
@@ -16427,32 +16837,32 @@ final class M3ControlStyleTest {
             M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom sheet content"));
             bottomSheet.setPrefWidth(360.0);
             bottomSheet.setPrefHeight(180.0);
-            M3NavigationItem navigationBarItem = createNavigationItem("Home", new M3Icon("H"), true);
+            M3NavigationItem navigationBarItem = createNavigationItem("Home", visualIcon("home"), true);
             M3NavigationBar navigationBar = new M3NavigationBar(
                     navigationBarItem,
-                    new M3NavigationItem("Search", new M3Icon("S"))
+                    new M3NavigationItem("Search", visualIcon("search"))
             );
-            M3NavigationItem navigationRailItem = createNavigationItem("Home", new M3Icon("H"), true);
+            M3NavigationItem navigationRailItem = createNavigationItem("Home", visualIcon("home"), true);
             M3NavigationRail navigationRail = new M3NavigationRail(
                     navigationRailItem,
-                    new M3NavigationItem("Search", new M3Icon("S"))
+                    new M3NavigationItem("Search", visualIcon("search"))
             );
             M3ListItem drawerItem = new M3ListItem("Inbox");
-            drawerItem.setLeadingIcon("I");
+            drawerItem.setLeading(visualIcon("inbox"));
             drawerItem.setSelected(true);
             M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(drawerItem);
             navigationDrawer.setPrefHeight(120.0);
             M3TopAppBar topAppBar = new M3TopAppBar(
                     "Expressive app bar",
-                    new M3IconButton(new M3Icon("<")),
-                    new M3IconButton(new M3Icon("A"))
+                    new M3IconButton(visualIcon("back")),
+                    new M3IconButton(visualIcon("person"))
             );
             topAppBar.setPrefWidth(560.0);
             M3TopAppBar mediumTopAppBar = new M3TopAppBar(
                     "Medium expressive app bar",
                     M3TopAppBarVariant.MEDIUM,
-                    new M3IconButton(new M3Icon("<")),
-                    new M3IconButton(new M3Icon("A"))
+                    new M3IconButton(visualIcon("back")),
+                    new M3IconButton(visualIcon("person"))
             );
             mediumTopAppBar.setPrefWidth(560.0);
 
@@ -16505,6 +16915,8 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.resize(960.0, Math.ceil(root.prefHeight(960.0)));
             root.layout();
+
+            assertVisualIconSlotsUseVectorGraphics(root);
 
             assertTrue(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
             assertTrue(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
@@ -16612,12 +17024,12 @@ final class M3ControlStyleTest {
             M3Button tonalButton = createButton("Tonal", M3ButtonVariant.TONAL);
             M3Button outlinedButton = createButton("Outlined", M3ButtonVariant.OUTLINED);
             M3IconToggleButton selectedToggle = createIconToggleButton(
-                    "B",
+                    visualIcon("done"),
                     M3IconToggleButtonVariant.FILLED,
                     true
             );
             M3FloatingActionButton fab = createGraphicFab(
-                    new M3Icon("+"),
+                    visualIcon("add"),
                     M3FloatingActionButtonVariant.PRIMARY,
                     M3FloatingActionButtonSize.REGULAR
             );
@@ -16646,10 +17058,10 @@ final class M3ControlStyleTest {
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 21));
             M3SearchBar searchBar = new M3SearchBar("Search dark");
             searchBar.setPrefWidth(320.0);
-            M3NavigationItem home = createNavigationItem("Home", new M3Icon("H"), true);
+            M3NavigationItem home = createNavigationItem("Home", visualIcon("home"), true);
             M3NavigationBar navigationBar = new M3NavigationBar(
                     home,
-                    new M3NavigationItem("Search", new M3Icon("S"))
+                    new M3NavigationItem("Search", visualIcon("search"))
             );
             M3Snackbar snackbar = new M3Snackbar("Dark snackbar", "Action");
 
@@ -16682,6 +17094,8 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.resize(980.0, Math.ceil(root.prefHeight(980.0)));
             root.layout();
+
+            assertVisualIconSlotsUseVectorGraphics(root);
 
             assertTrue(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
             assertTrue(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
@@ -18330,6 +18744,121 @@ final class M3ControlStyleTest {
                 + "-m3-color-inverse-primary: rgb(56,57,58);";
     }
 
+    /// Returns whether a snackbar has completed its exit transition and left its host.
+    private static boolean snackbarDetached(AtomicReference<@Nullable M3Snackbar> snackbarReference) {
+        @Nullable M3Snackbar snackbar = snackbarReference.get();
+        return snackbar != null && snackbar.getParent() == null && !snackbar.isVisible();
+    }
+
+    /// Returns whether a snackbar host has advanced from its first queued snackbar to its second.
+    private static boolean queuedSnackbarShown(
+            AtomicReference<@Nullable M3SnackbarHost> hostReference,
+            AtomicReference<@Nullable M3Snackbar> firstReference,
+            AtomicReference<@Nullable M3Snackbar> secondReference
+    ) {
+        @Nullable M3SnackbarHost host = hostReference.get();
+        @Nullable M3Snackbar first = firstReference.get();
+        @Nullable M3Snackbar second = secondReference.get();
+        return host != null
+                && first != null
+                && second != null
+                && host.getSnackbar() == second
+                && host.isShowing()
+                && host.getQueue().isEmpty()
+                && first.getParent() == null
+                && second.getParent() != null
+                && !first.isVisible();
+    }
+
+    /// Returns whether a snackbar host has completed dismissing its current snackbar and clearing its queue.
+    private static boolean snackbarHostCleared(
+            AtomicReference<@Nullable M3SnackbarHost> hostReference,
+            AtomicReference<@Nullable M3Snackbar> firstReference,
+            AtomicReference<@Nullable M3Snackbar> secondReference
+    ) {
+        @Nullable M3SnackbarHost host = hostReference.get();
+        @Nullable M3Snackbar first = firstReference.get();
+        @Nullable M3Snackbar second = secondReference.get();
+        return host != null
+                && first != null
+                && second != null
+                && host.getSnackbar() == null
+                && !host.isShowing()
+                && host.getQueue().isEmpty()
+                && first.getParent() == null
+                && second.getParent() == null
+                && !first.isVisible();
+    }
+
+    /// Returns whether a referenced tooltip is currently showing.
+    private static boolean tooltipShowing(AtomicReference<? extends @Nullable M3Tooltip> tooltipReference) {
+        @Nullable M3Tooltip tooltip = tooltipReference.get();
+        return tooltip != null && tooltip.isShowing();
+    }
+
+    /// Returns whether a referenced tooltip is showing while the requested owner keeps keyboard focus.
+    private static boolean tooltipShowingWithFocus(
+            AtomicReference<? extends @Nullable M3Tooltip> tooltipReference,
+            AtomicReference<? extends @Nullable Node> focusOwnerReference
+    ) {
+        @Nullable Node focusOwner = focusOwnerReference.get();
+        return focusOwner != null && focusOwner.isFocused() && tooltipShowing(tooltipReference);
+    }
+
+    /// Returns whether a navigation drawer group has settled to the expected preferred height.
+    private static boolean navigationDrawerGroupHeightSettled(
+            AtomicReference<@Nullable M3NavigationDrawerGroup> groupReference,
+            AtomicReference<@Nullable Double> expectedHeightReference
+    ) {
+        @Nullable M3NavigationDrawerGroup group = groupReference.get();
+        @Nullable Double expectedHeight = expectedHeightReference.get();
+        return group != null
+                && expectedHeight != null
+                && Math.abs(group.prefHeight(240.0) - expectedHeight) <= 0.5;
+    }
+
+    /// Returns the currently rendered child row count for a navigation drawer group.
+    private static int navigationDrawerGroupChildCount(
+            AtomicReference<@Nullable M3NavigationDrawerGroup> groupReference
+    ) {
+        @Nullable M3NavigationDrawerGroup group = groupReference.get();
+        return group == null
+                ? -1
+                : group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size();
+    }
+
+    /// Returns whether a determinate progress bar has reached the expected rendered bar width.
+    private static boolean progressBarWidthSettled(
+            AtomicReference<@Nullable M3ProgressBar> progressBarReference,
+            AtomicReference<@Nullable Rectangle> barReference,
+            double expectedWidth
+    ) {
+        @Nullable M3ProgressBar progressBar = progressBarReference.get();
+        @Nullable Rectangle bar = barReference.get();
+        if (progressBar == null || bar == null) {
+            return false;
+        }
+
+        progressBar.layout();
+        return Math.abs(bar.getWidth() - expectedWidth) < 0.0001;
+    }
+
+    /// Returns whether a determinate circular progress indicator has reached the expected arc length.
+    private static boolean progressIndicatorLengthSettled(
+            AtomicReference<@Nullable M3ProgressIndicator> progressIndicatorReference,
+            AtomicReference<@Nullable Arc> indicatorReference,
+            double expectedLength
+    ) {
+        @Nullable M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
+        @Nullable Arc indicator = indicatorReference.get();
+        if (progressIndicator == null || indicator == null) {
+            return false;
+        }
+
+        progressIndicator.layout();
+        return Math.abs(indicator.getLength() - expectedLength) < 0.0001;
+    }
+
     /// Applies the pseudo-class combination that previously allowed Modena button styles to win.
     private static void applyInteractivePseudoClasses(Node node) {
         node.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
@@ -18762,6 +19291,34 @@ final class M3ControlStyleTest {
                 () -> "presetListBounds=" + presetListBounds + ", pickerBounds=" + pickerBounds);
     }
 
+    /// Returns whether a date range picker field popup has rendered its preset column.
+    private static boolean dateRangeFieldPresetPopupReady(
+            AtomicReference<@Nullable M3DateRangePickerField> fieldReference
+    ) {
+        @Nullable M3DateRangePickerField field = fieldReference.get();
+        if (field == null || !field.isShowing()) {
+            return false;
+        }
+
+        @Nullable Parent presetContent = field.getPicker().getParent();
+        if (presetContent == null) {
+            return false;
+        }
+
+        @Nullable Parent popupRoot = presetContent.getParent();
+        if (popupRoot == null || popupRoot.getScene() == null) {
+            return false;
+        }
+
+        popupRoot.applyCss();
+        if (popupRoot instanceof Region region) {
+            region.layout();
+        }
+
+        return presetContent.lookupAll("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS).size() == 6
+                && presetContent.lookup("." + M3DateRangePickerField.PRESET_LIST_STYLE_CLASS) != null;
+    }
+
     /// Verifies that hidden picker field preset content uses the orientation-aware logical start alignment.
     private static void assertPickerFieldPresetContentUsesLogicalStart(Node presetContentNode, String presetListStyleClass) {
         HBox presetContent = assertInstanceOf(HBox.class, presetContentNode);
@@ -18785,6 +19342,59 @@ final class M3ControlStyleTest {
                 assertNodeInsideAncestor(boundary, text, 1.0);
             }
         });
+    }
+
+    /// Verifies that visual-gallery icon slots use vector graphics instead of text fallback glyphs.
+    private static void assertVisualIconSlotsUseVectorGraphics(Node root) {
+        visitVisibleNodes(root, node -> {
+            if (node instanceof M3IconButton button) {
+                assertIconSlotUsesVectorGraphic(button, button.getGraphic());
+            } else if (node instanceof M3IconToggleButton button) {
+                assertIconSlotUsesVectorGraphic(button, button.getGraphic());
+            } else if (node instanceof M3FloatingActionButton button) {
+                assertIconSlotUsesVectorGraphic(button, button.getGraphic());
+            } else if (node instanceof M3NavigationItem item) {
+                assertIconSlotUsesVectorGraphic(item, item.getGraphic());
+            } else if (node instanceof M3Chip chip) {
+                assertIconSlotUsesVectorGraphic(chip, chip.getGraphic());
+            } else if (node instanceof M3TextInputLayout inputLayout) {
+                assertIconSlotUsesVectorGraphic(inputLayout, inputLayout.getLeading());
+            } else if (node instanceof M3ListItem item) {
+                assertIconSlotUsesVectorGraphic(item, item.getLeading());
+            }
+        });
+    }
+
+    /// Verifies that an icon slot graphic contains SVG geometry when present.
+    private static void assertIconSlotUsesVectorGraphic(Node owner, @Nullable Node graphic) {
+        if (graphic == null) {
+            return;
+        }
+
+        assertTrue(
+                containsSvgPath(graphic),
+                () -> "visual icon slot should use SVG geometry: owner="
+                        + owner.getClass().getSimpleName()
+                        + ", graphic="
+                        + graphic.getClass().getSimpleName()
+        );
+    }
+
+    /// Returns whether a node hierarchy contains SVG path geometry.
+    private static boolean containsSvgPath(Node node) {
+        if (node instanceof SVGPath) {
+            return true;
+        }
+
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (containsSvgPath(child)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// Verifies that fixed Material touch targets keep their rendered content centered.
@@ -19022,6 +19632,15 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThreadAfterDelay(delay, setup, verification);
     }
 
+    /// Runs setup on the FX thread and verifies the result when a condition becomes true.
+    private static void runOnFxThreadWhen(
+            BooleanSupplier condition,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        FxTestUtils.runOnFxThreadWhen(condition, setup, verification);
+    }
+
     /// Runs setup on the FX thread and verifies the result after JavaFX pulses.
     private static void runOnFxThreadAfterPulses(
             int pulseCount,
@@ -19102,7 +19721,12 @@ final class M3ControlStyleTest {
     /// Creates a navigation drawer item for visual snapshot tests.
     private static M3ListItem drawerItem(String text, boolean selected) {
         M3ListItem item = new M3ListItem(text);
-        item.setLeading(new M3Icon(text.substring(0, 1)));
+        String iconName = switch (text) {
+            case "Sent" -> "share";
+            case "Archive" -> "bookmark";
+            default -> "inbox";
+        };
+        item.setLeading(visualIcon(iconName));
         item.setSelected(selected);
         return item;
     }
@@ -19201,6 +19825,21 @@ final class M3ControlStyleTest {
                 reference,
                 minimumDistance,
                 node.toString()
+        );
+    }
+
+    /// Verifies that a node's own snapshot contains pixels that contrast with a reference color.
+    private static void assertNodeSnapshotContainsContrast(Node node, Color reference, double minimumDistance) {
+        WritableImage image = snapshotImageOnFxThread(node);
+        assertSnapshotAreaContainsContrast(
+                image,
+                0,
+                0,
+                (int) image.getWidth(),
+                (int) image.getHeight(),
+                reference,
+                minimumDistance,
+                node + " snapshot"
         );
     }
 
@@ -19364,11 +20003,84 @@ final class M3ControlStyleTest {
         return new Rectangle2D(minX, minY, maxX - minX + 1.0, maxY - minY + 1.0);
     }
 
-    /// Returns the icon text rendered by a picker header navigation button.
-    private static String pickerHeaderNavigationIconText(HBox header, int childIndex) {
+    /// Returns the icon glyph rendered by a picker header navigation button.
+    private static M3InternalIcon.Glyph pickerHeaderNavigationIcon(HBox header, int childIndex) {
         M3IconButton button = assertInstanceOf(M3IconButton.class, header.getChildren().get(childIndex));
-        M3Icon icon = assertInstanceOf(M3Icon.class, button.getGraphic());
-        return icon.getText();
+        M3InternalIcon icon = assertInstanceOf(M3InternalIcon.class, button.getGraphic());
+        return icon.getGlyph();
+    }
+
+    /// Verifies that a node is an internal icon with the expected glyph.
+    private static void assertInternalIcon(
+            @Nullable Node node,
+            M3InternalIcon.Glyph expectedGlyph,
+            String description
+    ) {
+        M3InternalIcon icon = assertInstanceOf(
+                M3InternalIcon.class,
+                Objects.requireNonNull(node, description),
+                description
+        );
+        assertEquals(expectedGlyph, icon.getGlyph(), description);
+        assertFalse(icon.getPath().getContent().isBlank(), description);
+        assertTrue(icon.getStyleClass().contains(M3InternalIcon.STYLE_CLASS), description);
+        assertTrue(icon.getStyleClass().contains(internalIconColorRoleStyleClass(icon.getColorRole())), description);
+        assertTrue(icon.getPath().getStyleClass().contains(M3InternalIcon.PATH_STYLE_CLASS), description);
+        assertTrue(icon.getPath().getStyle().isBlank(), description);
+    }
+
+    /// Verifies that an internal icon has exactly the style class for its active color role.
+    private static void assertInternalIconColorRole(M3InternalIcon icon, M3InternalIcon.ColorRole expectedRole) {
+        assertEquals(expectedRole, icon.getColorRole());
+        for (M3InternalIcon.ColorRole role : M3InternalIcon.ColorRole.values()) {
+            String styleClass = internalIconColorRoleStyleClass(role);
+            assertEquals(
+                    role == expectedRole,
+                    icon.getStyleClass().contains(styleClass),
+                    () -> "Unexpected internal icon color role style class " + styleClass
+                            + " for " + expectedRole
+            );
+        }
+        assertTrue(icon.getPath().getStyle().isBlank(), "internal icon path should not use inline CSS");
+    }
+
+    /// Returns the public style class used by an internal icon color role.
+    private static String internalIconColorRoleStyleClass(M3InternalIcon.ColorRole colorRole) {
+        return switch (colorRole) {
+            case PRIMARY -> M3InternalIcon.PRIMARY_STYLE_CLASS;
+            case ON_SURFACE_VARIANT -> M3InternalIcon.ON_SURFACE_VARIANT_STYLE_CLASS;
+            case ON_PRIMARY_CONTAINER -> M3InternalIcon.ON_PRIMARY_CONTAINER_STYLE_CLASS;
+        };
+    }
+
+    /// Verifies that a node is an icon button carrying the expected internal icon glyph.
+    private static void assertInternalIconButton(
+            @Nullable Node node,
+            M3InternalIcon.Glyph expectedGlyph,
+            String description
+    ) {
+        M3IconButton button = assertInstanceOf(
+                M3IconButton.class,
+                Objects.requireNonNull(node, description),
+                description
+        );
+        assertInternalIcon(button.getGraphic(), expectedGlyph, description);
+        assertTrue(button.getText().isEmpty(), description);
+    }
+
+    /// Verifies that a picker exposes both logical navigation chevrons.
+    private static void assertNavigationGlyphs(Control picker) {
+        Set<M3InternalIcon.Glyph> glyphs = new HashSet<>();
+        for (Node node : picker.lookupAll("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS)) {
+            M3IconButton button = assertInstanceOf(M3IconButton.class, node);
+            M3InternalIcon icon = assertInstanceOf(M3InternalIcon.class, button.getGraphic());
+            glyphs.add(icon.getGlyph());
+        }
+        assertEquals(
+                Set.of(M3InternalIcon.Glyph.CHEVRON_LEFT, M3InternalIcon.Glyph.CHEVRON_RIGHT),
+                glyphs,
+                () -> "Navigation glyphs for " + picker
+        );
     }
 
     /// Writes a rendered snapshot to a build report path for manual visual inspection.
@@ -19571,6 +20283,59 @@ final class M3ControlStyleTest {
     /// Creates an icon button with an M3FX icon label, size, and color variant.
     private static M3IconButton createIconButton(String iconText, M3IconSize iconSize, M3IconVariant iconVariant) {
         return new M3IconButton(new M3Icon(iconText, iconSize, iconVariant));
+    }
+
+    /// Creates a fixed-size SVG icon viewport for visual snapshot fixtures.
+    private static StackPane visualIcon(String name) {
+        return visualIcon(name, 24.0);
+    }
+
+    /// Creates a fixed-size SVG icon viewport for visual snapshot fixtures.
+    private static StackPane visualIcon(String name, double size) {
+        SVGPath path = new SVGPath();
+        path.setContent(visualIconPath(name));
+        path.setFillRule(FillRule.EVEN_ODD);
+        path.setStyle("-fx-fill: -m3-color-primary;");
+        path.setMouseTransparent(true);
+
+        StackPane viewport = new StackPane(path);
+        viewport.setAlignment(Pos.CENTER);
+        viewport.setMinSize(size, size);
+        viewport.setPrefSize(size, size);
+        viewport.setMaxSize(size, size);
+        viewport.setMouseTransparent(true);
+        return viewport;
+    }
+
+    /// Returns SVG path data for visual snapshot fixture icons.
+    private static String visualIconPath(String name) {
+        return switch (Objects.requireNonNull(name, "name")) {
+            case "add" -> "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z";
+            case "back" -> "M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z";
+            case "bold" -> "M15.6 10.8c1-.7 1.7-1.8 1.7-2.8 0-2.3-1.8-4-4-4H7v14h7c2.1 0 3.8-1.7 3.8-3.8 0-1.5-.9-2.8-2.2-3.4zM10 6.5h3c.8 0 1.5.7 1.5 1.5S13.8 9.5 13 9.5h-3zm3.5 9H10v-3h3.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5z";
+            case "bookmark" -> "M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z";
+            case "close" -> "M18.3 5.7 12 12l6.3 6.3-1.4 1.4-6.3-6.3-6.3 6.3-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z";
+            case "done" -> "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z";
+            case "edit" -> "M3 17.3V21h3.8L17.9 9.9l-3.8-3.8zM20.7 7c.4-.4.4-1 0-1.4l-2.3-2.3c-.4-.4-1-.4-1.4 0l-1.8 1.8 3.8 3.8z";
+            case "folder" -> "M10 4l2 2h8c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z";
+            case "home" -> "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
+            case "inbox" -> "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14h-4c0 1.7-1.3 3-3 3s-3-1.3-3-3H5V5h14z";
+            case "info" -> "M11 17h2v-6h-2zm1-14a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm-1 6h2V7h-2z";
+            case "italic" -> "M10 4v3h2.2l-3.4 8H6v3h8v-3h-2.2l3.4-8H18V4z";
+            case "mail" -> "M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5z";
+            case "menu" -> "M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z";
+            case "more" -> "M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z";
+            case "person" -> "M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z";
+            case "save" -> "M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM6 8V5h9v3z";
+            case "search" -> "M9.5 3a6.5 6.5 0 0 1 5.1 10.5l4.4 4.4-1.4 1.4-4.4-4.4A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z";
+            case "share" -> "M18 16.1c-.8 0-1.5.3-2 .9L8.9 12.9c.1-.3.1-.6.1-.9s0-.6-.1-.9L16 7c.5.5 1.2.9 2 .9a3 3 0 1 0-3-3c0 .3 0 .6.1.9L8 9.9A3 3 0 1 0 8 14l7.1 4.2c-.1.3-.1.5-.1.8a3 3 0 1 0 3-2.9z";
+            case "star" -> "M12 17.3 18.2 21l-1.6-7L22 9.2l-7.2-.6L12 2 9.2 8.6 2 9.2 7.5 14 5.8 21z";
+            case "text" -> "M5 4v3h5v13h4V7h5V4z";
+            case "underline" -> "M12 17c3.3 0 6-2.7 6-6V3h-2.5v8c0 1.9-1.6 3.5-3.5 3.5S8.5 12.9 8.5 11V3H6v8c0 3.3 2.7 6 6 6zM5 19v2h14v-2z";
+            case "warning" -> "M12 2 1 21h22zM13 18h-2v-2h2zm0-4h-2v-4h2z";
+            case "work" -> "M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 0h-4V4h4z";
+            default -> throw new IllegalArgumentException("Unknown visual icon: " + name);
+        };
     }
 
     /// Creates a toggle icon button with graphic content, variant, and selected state.

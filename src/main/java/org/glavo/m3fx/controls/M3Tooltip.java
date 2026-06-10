@@ -14,8 +14,9 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Bounds;
-import javafx.scene.Scene;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.PopupControl;
 import javafx.scene.control.Skin;
@@ -584,6 +585,19 @@ public class M3Tooltip extends PopupControl {
         tooltipInstallation.uninstall();
     }
 
+    /// Returns the focused node inside an installed interactive tooltip popup for a target node.
+    ///
+    /// This supports composite accessibility containers, such as menus or app bars, whose child node owns a
+    /// tooltip in a separate popup scene.
+    static @Nullable Node activeInstalledTooltipFocusTarget(Node node) {
+        Objects.requireNonNull(node, "node");
+        Object installation = node.getProperties().get(INSTALLATION_KEY);
+        if (installation instanceof TooltipInstallation tooltipInstallation) {
+            return tooltipInstallation.activePopupFocusTarget();
+        }
+        return null;
+    }
+
     /// Installs an accessible help binding on the tooltip target.
     private static void installAccessibleHelp(Node node, M3Tooltip tooltip) {
         uninstallAccessibleHelp(node);
@@ -858,6 +872,7 @@ public class M3Tooltip extends PopupControl {
             } else if (tooltip.isShowing()) {
                 scheduleHide();
             }
+            notifyOwnerFocusNodeChanged();
         }
 
         /// Installs or removes popup hover handlers as the tooltip is shown or hidden.
@@ -902,6 +917,38 @@ public class M3Tooltip extends PopupControl {
             }
             @Nullable Scene scene = node.getScene();
             return scene != null && scene.getFocusOwner() == node;
+        }
+
+        /// Returns the current focus owner inside the tooltip popup scene.
+        private @Nullable Node activePopupFocusTarget() {
+            if (!tooltip.isInteractive() || !tooltip.isShowing()) {
+                return null;
+            }
+
+            @Nullable Scene scene = tooltip.getScene();
+            if (scene == null) {
+                return null;
+            }
+
+            @Nullable Node popupRoot = scene.getRoot();
+            @Nullable Node focusOwner = scene.getFocusOwner();
+            return popupRoot != null
+                    && focusOwner != null
+                    && M3Accessible.containsNode(popupRoot, focusOwner)
+                    ? focusOwner
+                    : null;
+        }
+
+        /// Notifies the target and owning menu chain that the exposed focus node may have changed.
+        private void notifyOwnerFocusNodeChanged() {
+            M3Accessible.notifyFocusNodeChanged(node);
+            @Nullable Parent parent = node.getParent();
+            while (parent != null) {
+                if (parent instanceof M3Menu menu) {
+                    menu.notifyDescendantFocusNodeChanged();
+                }
+                parent = parent.getParent();
+            }
         }
 
         /// Schedules tooltip display after the configured show delay.

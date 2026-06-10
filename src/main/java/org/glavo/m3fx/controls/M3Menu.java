@@ -923,6 +923,11 @@ public class M3Menu extends Control {
 
     /// Returns the focused item inside this menu or one of its open submenus.
     private @Nullable Node focusedAccessibleNode() {
+        @Nullable Node currentFocus = M3Accessible.currentFocusTarget(this, getItems());
+        if (currentFocus != null) {
+            return currentFocus;
+        }
+
         @Nullable Node nestedFocus = focusedOpenSubMenuNode(true);
         if (nestedFocus != null) {
             return nestedFocus;
@@ -934,6 +939,11 @@ public class M3Menu extends Control {
         }
 
         return focusedOpenSubMenuNode(false);
+    }
+
+    /// Notifies popup owners that a descendant's external popup focus node changed.
+    void notifyDescendantFocusNodeChanged() {
+        notifyFocusNodeChanged();
     }
 
     /// Notifies clients and popup owners that the current accessible focus node changed.

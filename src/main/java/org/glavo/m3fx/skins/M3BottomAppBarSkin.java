@@ -14,21 +14,17 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3BottomAppBar;
-import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3BottomAppBar].
 @NotNullByDefault
 public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
-    /// The spacing between regular action nodes.
-    private static final double ACTION_SPACING = 8.0;
-
     /// The internal horizontal container.
     private final HBox container = new HBox();
 
     /// The regular action node container.
-    private final HBox actions = new HBox(ACTION_SPACING);
+    private final HBox actions = new HBox();
 
     /// The flexible spacer before the floating action slot.
     private final Region leadingSpacer = new Region();
@@ -53,6 +49,7 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         container.setManaged(false);
         container.spacingProperty().bind(control.contentSpacingProperty());
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        actions.spacingProperty().bind(control.actionSpacingProperty());
         actions.getStyleClass().add(M3BottomAppBar.ACTIONS_STYLE_CLASS);
         floatingActionSlot.getStyleClass().add(M3BottomAppBar.FLOATING_ACTION_STYLE_CLASS);
         HBox.setHgrow(leadingSpacer, Priority.ALWAYS);
@@ -77,6 +74,7 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.spacingProperty().unbind();
         container.nodeOrientationProperty().unbind();
+        actions.spacingProperty().unbind();
         actions.getChildren().clear();
         floatingActionSlot.getChildren().clear();
         container.getChildren().clear();

@@ -49,6 +49,9 @@ public class M3BottomAppBar extends Control {
     /// The default spacing between regular actions, flexible slots, and floating action content in pixels.
     private static final double DEFAULT_CONTENT_SPACING = 16.0;
 
+    /// The default spacing between regular action nodes in pixels.
+    private static final double DEFAULT_ACTION_SPACING = 8.0;
+
     /// The base style class for M3FX bottom app bars.
     public static final String STYLE_CLASS = "m3-bottom-app-bar";
 
@@ -87,6 +90,9 @@ public class M3BottomAppBar extends Control {
 
     /// The spacing token between content slots.
     private @Nullable StyleableDoubleProperty contentSpacing;
+
+    /// The spacing token between regular action nodes.
+    private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Notifies accessibility clients when focus moves between action children.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -285,6 +291,34 @@ public class M3BottomAppBar extends Control {
         return contentSpacing;
     }
 
+    /// Returns the spacing token between regular action nodes.
+    ///
+    /// @return the regular action spacing in pixels
+    public final double getActionSpacing() {
+        return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
+    }
+
+    /// Sets the spacing token between regular action nodes.
+    ///
+    /// @param actionSpacing the regular action spacing in pixels
+    public final void setActionSpacing(double actionSpacing) {
+        actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
+    }
+
+    /// Returns the spacing token property between regular action nodes.
+    ///
+    /// @return the regular action spacing property
+    public final StyleableDoubleProperty actionSpacingProperty() {
+        if (actionSpacing == null) {
+            actionSpacing = createStyleableDoubleProperty(
+                    DEFAULT_ACTION_SPACING,
+                    "actionSpacing",
+                    StyleableProperties.ACTION_SPACING
+            );
+        }
+        return actionSpacing;
+    }
+
     /// Returns the user-agent stylesheet for M3FX bottom app bars.
     @Override
     public String getUserAgentStylesheet() {
@@ -432,6 +466,11 @@ public class M3BottomAppBar extends Control {
                 createSizeCssMetaData("-m3-content-spacing", DEFAULT_CONTENT_SPACING,
                         M3BottomAppBar::contentSpacingProperty);
 
+        /// CSS metadata for the regular action spacing token.
+        private static final CssMetaData<M3BottomAppBar, Number> ACTION_SPACING =
+                createSizeCssMetaData("-m3-action-spacing", DEFAULT_ACTION_SPACING,
+                        M3BottomAppBar::actionSpacingProperty);
+
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -440,6 +479,7 @@ public class M3BottomAppBar extends Control {
             styleables.add(CONTAINER_HEIGHT);
             styleables.add(HORIZONTAL_PADDING);
             styleables.add(CONTENT_SPACING);
+            styleables.add(ACTION_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 

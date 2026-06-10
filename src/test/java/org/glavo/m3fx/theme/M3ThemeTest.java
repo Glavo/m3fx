@@ -365,6 +365,7 @@ final class M3ThemeTest {
         assertEquals(24.0, theme.tokens().componentTokens().topAppBar().mediumBottomPadding(), 0.0001);
         assertEquals(32.0, theme.tokens().componentTokens().topAppBar().largeBottomPadding(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().topAppBar().contentSpacing(), 0.0001);
+        assertEquals(12.0, theme.tokens().componentTokens().topAppBar().actionSpacing(), 0.0001);
         assertEquals(12.0, theme.tokens().componentTokens().bottomAppBar().actionSpacing(), 0.0001);
     }
 

@@ -13,6 +13,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -80,7 +81,7 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
                 DateTimeFormatter.ISO_LOCAL_DATE,
                 STYLE_CLASS,
                 POPUP_STYLE_CLASS,
-                "v",
+                M3InternalIcon.Glyph.CALENDAR,
                 "Open date picker",
                 "Enter a valid date",
                 "Date is outside the selectable range"
