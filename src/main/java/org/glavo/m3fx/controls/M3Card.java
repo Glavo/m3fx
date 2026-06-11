@@ -85,6 +85,12 @@ public class M3Card extends Control {
     // The styleable outline width token.
     private @Nullable StyleableDoubleProperty outlineWidth;
 
+    /// Whether focus traversal was enabled automatically because the card became actionable.
+    private boolean actionFocusTraversableApplied;
+
+    /// The focus traversal value that was active before the card became actionable.
+    private boolean focusTraversableBeforeAction;
+
     /// Creates an empty filled card.
     public M3Card() {
         this(null);
@@ -95,6 +101,7 @@ public class M3Card extends Control {
     /// @param content the card content node, or `null` for no content
     public M3Card(@Nullable Node content) {
         M3ControlStyles.add(this, STYLE_CLASS);
+        setFocusTraversable(false);
         setContent(content);
         updateVariantStyle();
         updateActionAccessibility();
@@ -395,7 +402,14 @@ public class M3Card extends Control {
         boolean actionable = getOnAction() != null;
         setAccessibleRole(actionable ? AccessibleRole.BUTTON : AccessibleRole.PARENT);
         if (actionable) {
-            setFocusTraversable(true);
+            if (!actionFocusTraversableApplied) {
+                focusTraversableBeforeAction = isFocusTraversable();
+                setFocusTraversable(true);
+                actionFocusTraversableApplied = true;
+            }
+        } else if (actionFocusTraversableApplied) {
+            setFocusTraversable(focusTraversableBeforeAction);
+            actionFocusTraversableApplied = false;
         }
     }
 

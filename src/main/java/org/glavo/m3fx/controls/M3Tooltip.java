@@ -598,6 +598,14 @@ public class M3Tooltip extends PopupControl {
         return null;
     }
 
+    /// Returns whether an installed interactive tooltip currently owns pointer or keyboard focus inside its popup.
+    static boolean activeInstalledTooltipPopupOwnsInteraction(Node node) {
+        Objects.requireNonNull(node, "node");
+        Object installation = node.getProperties().get(INSTALLATION_KEY);
+        return installation instanceof TooltipInstallation tooltipInstallation
+                && tooltipInstallation.hasActivePopupInteraction();
+    }
+
     /// Installs an accessible help binding on the tooltip target.
     private static void installAccessibleHelp(Node node, M3Tooltip tooltip) {
         uninstallAccessibleHelp(node);
@@ -937,6 +945,13 @@ public class M3Tooltip extends PopupControl {
                     && M3Accessible.containsNode(popupRoot, focusOwner)
                     ? focusOwner
                     : null;
+        }
+
+        /// Returns whether pointer or keyboard focus is currently inside the tooltip popup.
+        private boolean hasActivePopupInteraction() {
+            return tooltip.isInteractive()
+                    && tooltip.isShowing()
+                    && (tooltipContainsPointer || tooltipContainsFocus);
         }
 
         /// Notifies the target and owning menu chain that the exposed focus node may have changed.

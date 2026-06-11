@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// Top app bar variants choose the title placement and height metrics for different page hierarchy levels. The
 /// variant is visual and does not change the navigation or action slot APIs.
 ///
-/// See [Material Design top app bars](https://m3.material.io/components/top-app-bar/overview).
+/// See [Material Design app bars](https://m3.material.io/components/app-bars/overview).
 @NotNullByDefault
 public enum M3TopAppBarVariant {
     /// Uses the baseline small top app bar layout.

@@ -259,10 +259,10 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-horizontal-padding: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-medium-bottom-padding: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-large-bottom-padding: 32px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-action-spacing: 12px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-action-spacing: 0px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 88px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-horizontal-padding: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-action-spacing: 12px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-action-spacing: 0px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 112px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 384px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-bar-horizontal-padding: 12px"));
@@ -364,9 +364,9 @@ final class M3ThemeTest {
         assertEquals(160.0, theme.tokens().componentTokens().topAppBar().largeContainerHeight(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().topAppBar().mediumBottomPadding(), 0.0001);
         assertEquals(32.0, theme.tokens().componentTokens().topAppBar().largeBottomPadding(), 0.0001);
-        assertEquals(20.0, theme.tokens().componentTokens().topAppBar().contentSpacing(), 0.0001);
-        assertEquals(12.0, theme.tokens().componentTokens().topAppBar().actionSpacing(), 0.0001);
-        assertEquals(12.0, theme.tokens().componentTokens().bottomAppBar().actionSpacing(), 0.0001);
+        assertEquals(12.0, theme.tokens().componentTokens().topAppBar().contentSpacing(), 0.0001);
+        assertEquals(0.0, theme.tokens().componentTokens().topAppBar().actionSpacing(), 0.0001);
+        assertEquals(0.0, theme.tokens().componentTokens().bottomAppBar().actionSpacing(), 0.0001);
     }
 
     /// Verifies that convenience theme factories use the expected defaults.

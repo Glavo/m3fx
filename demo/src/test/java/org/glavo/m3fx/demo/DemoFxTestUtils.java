@@ -4,9 +4,7 @@
 package org.glavo.m3fx.demo;
 
 import javafx.animation.AnimationTimer;
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
-import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -143,15 +141,6 @@ final class DemoFxTestUtils {
                 || message.contains("ClassCastException") && message.contains("-fx-background-color"));
     }
 
-    /// Runs setup on the FX application thread and verifies the result after a JavaFX delay.
-    static void runOnFxThreadAfterDelay(
-            Duration delay,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        assertNoCssWarnings(() -> runOnFxThreadAfterDelayWithoutCssCapture(delay, setup, verification));
-    }
-
     /// Runs setup on the FX application thread and verifies the result after JavaFX pulses.
     static void runOnFxThreadAfterPulses(
             int pulseCount,
@@ -173,37 +162,17 @@ final class DemoFxTestUtils {
         assertNoCssWarnings(() -> runOnFxThreadWhenWithoutCssCapture(condition, setup, verification));
     }
 
-    /// Runs setup on the FX application thread and verifies the result after a JavaFX delay.
-    private static void runOnFxThreadAfterDelayWithoutCssCapture(
-            Duration delay,
+    /// Runs setup on the FX application thread and verifies the result after a condition stays true for pulses.
+    static void runOnFxThreadWhenStable(
+            BooleanSupplier condition,
+            int stablePulseCount,
             Runnable setup,
             Runnable verification
     ) throws InterruptedException {
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-
-        Platform.runLater(() -> {
-            try {
-                setup.run();
-                PauseTransition pause = new PauseTransition(delay);
-                pause.setOnFinished(event -> {
-                    try {
-                        verification.run();
-                    } catch (Throwable e) {
-                        failure.set(e);
-                    } finally {
-                        latch.countDown();
-                    }
-                });
-                pause.play();
-            } catch (Throwable e) {
-                failure.set(e);
-                latch.countDown();
-            }
+        assertNoCssWarnings(() -> {
+            runOnFxThreadWhenStableWithoutCssCapture(condition, stablePulseCount, setup, verification);
+            waitForPulses(POST_PULSE_TEST_CSS_DRAIN_PULSES);
         });
-
-        await(latch);
-        throwIfFailed(failure.get());
     }
 
     /// Runs setup on the FX application thread and verifies the result after JavaFX pulses.
@@ -296,6 +265,64 @@ final class DemoFxTestUtils {
                 } else {
                     timer.start();
                 }
+            } catch (Throwable e) {
+                failure.set(e);
+                latch.countDown();
+            }
+        });
+
+        await(latch);
+        throwIfFailed(failure.get());
+    }
+
+    /// Runs setup on the FX application thread and verifies after a condition remains true across pulses.
+    private static void runOnFxThreadWhenStableWithoutCssCapture(
+            BooleanSupplier condition,
+            int stablePulseCount,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        if (stablePulseCount < 1) {
+            throw new IllegalArgumentException("stablePulseCount must be positive");
+        }
+
+        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Platform.runLater(() -> {
+            try {
+                setup.run();
+                long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(FX_TIMEOUT_SECONDS);
+                AnimationTimer timer = new AnimationTimer() {
+                    /// The number of consecutive pulses where the condition has been true.
+                    private int stablePulses;
+
+                    /// Checks the readiness condition and waits for the requested stable pulse count.
+                    @Override
+                    public void handle(long now) {
+                        try {
+                            if (condition.getAsBoolean()) {
+                                stablePulses++;
+                                if (stablePulses >= stablePulseCount) {
+                                    stop();
+                                    verification.run();
+                                    latch.countDown();
+                                }
+                            } else if (now >= deadlineNanos) {
+                                stop();
+                                failure.set(new AssertionError("Timed out waiting for stable JavaFX condition"));
+                                latch.countDown();
+                            } else {
+                                stablePulses = 0;
+                            }
+                        } catch (Throwable e) {
+                            stop();
+                            failure.set(e);
+                            latch.countDown();
+                        }
+                    }
+                };
+                timer.start();
             } catch (Throwable e) {
                 failure.set(e);
                 latch.countDown();

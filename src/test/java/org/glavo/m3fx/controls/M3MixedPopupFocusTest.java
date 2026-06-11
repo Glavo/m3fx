@@ -235,6 +235,39 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that indexed item containers reveal nested popup targets from explicit accessibility actions.
+    @Test
+    void indexedContainersRevealNestedMenuPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem firstItem = new M3MenuItem("First");
+            M3MenuItem secondItem = new M3MenuItem("Second");
+            M3MenuButton menuButton = new M3MenuButton("Open menu", firstItem, secondItem);
+            M3ButtonGroup group = new M3ButtonGroup(menuButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(group);
+                Scene scene = new Scene(root, 520.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                group.resizeRelocate(32.0, 32.0, 260.0, 64.0);
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+
+                group.executeAccessibleAction(AccessibleAction.SHOW_ITEM, secondItem);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(secondItem.isFocused());
+                assertSame(secondItem, group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that surface content subtrees expose active picker popup focus to the surface owner.
     @Test
     void surfaceRoutesFocusThroughNestedPickerPopupInContentContainer() {
@@ -272,6 +305,50 @@ final class M3MixedPopupFocusTest {
                 assertFalse(field.isShowing());
                 assertTrue(field.getEditor().isFocused());
                 assertSame(field.getEditor(), surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content containers reveal nested menu popup targets from explicit actions.
+    @Test
+    void dialogPaneRevealsNestedMenuPopupTargetInContentContainer() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem pdfItem = new M3MenuItem("PDF");
+            M3MenuItem htmlItem = new M3MenuItem("HTML");
+            M3SubMenuItem recentItem = new M3SubMenuItem("Recent", pdfItem, htmlItem);
+            M3SubMenuItem exportItem = new M3SubMenuItem("Export", recentItem);
+            M3MenuButton menuButton = new M3MenuButton("More", exportItem);
+            Pane content = new Pane(menuButton);
+            content.setPrefSize(360.0, 80.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 560.0, 320.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 440.0, 220.0);
+                menuButton.resizeRelocate(0.0, 0.0, 180.0, 48.0);
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+                assertFalse(exportItem.isSubMenuShowing());
+                assertFalse(recentItem.isSubMenuShowing());
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, htmlItem);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(exportItem.isSubMenuShowing());
+                assertTrue(recentItem.isSubMenuShowing());
+                assertTrue(htmlItem.isFocused());
+                assertSame(htmlItem, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
             }
@@ -320,6 +397,42 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that surface content containers reveal nested split-button menu targets from explicit actions.
+    @Test
+    void surfaceRevealsNestedSplitButtonPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            Pane content = new Pane(splitButton);
+            content.setPrefSize(360.0, 96.0);
+            M3Surface surface = new M3Surface(content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 440.0, 144.0);
+                splitButton.resizeRelocate(0.0, 0.0, 240.0, 48.0);
+                root.layout();
+
+                assertFalse(splitButton.isShowing());
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, publishItem);
+
+                assertTrue(splitButton.isShowing());
+                assertTrue(publishItem.isFocused());
+                assertSame(publishItem, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that surface content subtrees expose hosted snackbar action focus.
     @Test
     void surfaceRoutesFocusThroughNestedSnackbarHost() {
@@ -351,6 +464,39 @@ final class M3MixedPopupFocusTest {
                 assertTrue(host.isShowing());
                 assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertPopupFocusRoutedByContainer(surface, actionButton);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that slot-based containers reveal nested popup targets from explicit accessibility actions.
+    @Test
+    void slotContainersRevealNestedMenuPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem saveItem = new M3MenuItem("Save");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
+            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, menuButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(appBar);
+                Scene scene = new Scene(root, 720.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                appBar.resizeRelocate(0.0, 0.0, 640.0, 72.0);
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+
+                appBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, appBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
             }

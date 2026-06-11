@@ -49,14 +49,17 @@ public class M3BottomAppBar extends Control {
     /// The default spacing between regular actions, flexible slots, and floating action content in pixels.
     private static final double DEFAULT_CONTENT_SPACING = 16.0;
 
-    /// The default spacing between regular action nodes in pixels.
-    private static final double DEFAULT_ACTION_SPACING = 8.0;
+    /// The default spacing between generated regular action slots in pixels.
+    private static final double DEFAULT_ACTION_SPACING = 0.0;
 
     /// The base style class for M3FX bottom app bars.
     public static final String STYLE_CLASS = "m3-bottom-app-bar";
 
     /// The actions container style class.
     public static final String ACTIONS_STYLE_CLASS = "m3-bottom-app-bar-actions";
+
+    /// The generated regular action slot style class.
+    public static final String ACTION_SLOT_STYLE_CLASS = "m3-bottom-app-bar-action-slot";
 
     /// The floating action slot style class.
     public static final String FLOATING_ACTION_STYLE_CLASS = "m3-bottom-app-bar-floating-action";
@@ -291,23 +294,23 @@ public class M3BottomAppBar extends Control {
         return contentSpacing;
     }
 
-    /// Returns the spacing token between regular action nodes.
+    /// Returns the spacing token between generated regular action slots.
     ///
-    /// @return the regular action spacing in pixels
+    /// @return the regular action slot spacing in pixels
     public final double getActionSpacing() {
         return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
     }
 
-    /// Sets the spacing token between regular action nodes.
+    /// Sets the spacing token between generated regular action slots.
     ///
-    /// @param actionSpacing the regular action spacing in pixels
+    /// @param actionSpacing the regular action slot spacing in pixels
     public final void setActionSpacing(double actionSpacing) {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
 
-    /// Returns the spacing token property between regular action nodes.
+    /// Returns the spacing token property between generated regular action slots.
     ///
-    /// @return the regular action spacing property
+    /// @return the regular action slot spacing property
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
             actionSpacing = createStyleableDoubleProperty(
@@ -466,7 +469,7 @@ public class M3BottomAppBar extends Control {
                 createSizeCssMetaData("-m3-content-spacing", DEFAULT_CONTENT_SPACING,
                         M3BottomAppBar::contentSpacingProperty);
 
-        /// CSS metadata for the regular action spacing token.
+        /// CSS metadata for the regular action slot spacing token.
         private static final CssMetaData<M3BottomAppBar, Number> ACTION_SPACING =
                 createSizeCssMetaData("-m3-action-spacing", DEFAULT_ACTION_SPACING,
                         M3BottomAppBar::actionSpacingProperty);

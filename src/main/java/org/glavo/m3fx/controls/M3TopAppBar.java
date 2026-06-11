@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -11,6 +13,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -37,11 +40,15 @@ import java.util.Objects;
 ///
 /// `M3TopAppBar` provides navigation, title, and trailing action slots for the top edge of an application view.
 /// The variant property selects the small, medium, large, or centered layout metrics, while the action list
-/// allows arbitrary JavaFX nodes such as [M3IconButton] instances.
+/// allows arbitrary JavaFX nodes such as [M3IconButton] instances. The scroll-under state exposes the
+/// `:scrolled-under` pseudo-class used when content moves beneath the app bar.
 ///
-/// See [Material Design top app bars](https://m3.material.io/components/top-app-bar/overview).
+/// See [Material Design app bars](https://m3.material.io/components/app-bars/overview).
 @NotNullByDefault
 public class M3TopAppBar extends Control {
+    /// The pseudo-class applied while content is scrolled beneath the app bar.
+    private static final PseudoClass SCROLLED_UNDER_PSEUDO_CLASS = PseudoClass.getPseudoClass("scrolled-under");
+
     /// The default small top app bar container height in pixels.
     private static final double DEFAULT_CONTAINER_HEIGHT = 64.0;
 
@@ -60,11 +67,11 @@ public class M3TopAppBar extends Control {
     /// The default large bottom content padding in pixels.
     private static final double DEFAULT_LARGE_BOTTOM_PADDING = 28.0;
 
-    /// The default spacing between leading, title, and trailing content slots in pixels.
-    private static final double DEFAULT_CONTENT_SPACING = 16.0;
+    /// The default spacing between the leading navigation slot and the title in pixels.
+    private static final double DEFAULT_CONTENT_SPACING = 8.0;
 
-    /// The default spacing between trailing action nodes in pixels.
-    private static final double DEFAULT_ACTION_SPACING = 8.0;
+    /// The default spacing between trailing action slots in pixels.
+    private static final double DEFAULT_ACTION_SPACING = 0.0;
 
     /// The base style class for M3FX top app bars.
     public static final String STYLE_CLASS = "m3-top-app-bar";
@@ -77,6 +84,9 @@ public class M3TopAppBar extends Control {
 
     /// The actions container style class.
     public static final String ACTIONS_STYLE_CLASS = "m3-top-app-bar-actions";
+
+    /// The style class applied to each 48 dp trailing action slot.
+    public static final String ACTION_SLOT_STYLE_CLASS = "m3-top-app-bar-action-slot";
 
     /// The app bar title text property.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
@@ -95,6 +105,15 @@ public class M3TopAppBar extends Control {
                     updateVariantMetrics();
                 }
             };
+
+    /// Whether scrollable content currently passes beneath this app bar.
+    private final BooleanProperty scrolledUnder = new SimpleBooleanProperty(this, "scrolledUnder") {
+        /// Updates the scroll-under pseudo-class when the property changes.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SCROLLED_UNDER_PSEUDO_CLASS, get());
+        }
+    };
 
     /// The optional leading navigation node property.
     private final ObjectProperty<@Nullable Node> navigation = new SimpleObjectProperty<>(this, "navigation");
@@ -191,6 +210,30 @@ public class M3TopAppBar extends Control {
     /// Returns the top app bar variant property.
     public final ObjectProperty<M3TopAppBarVariant> variantProperty() {
         return variant;
+    }
+
+    /// Returns whether scrollable content is currently passing beneath this app bar.
+    ///
+    /// When this property is `true`, the control enters the `:scrolled-under` pseudo-class so CSS can use the
+    /// elevated Material container treatment used while content scrolls under the top app bar.
+    ///
+    /// @return `true` when content is scrolled under the app bar
+    public final boolean isScrolledUnder() {
+        return scrolledUnder.get();
+    }
+
+    /// Sets whether scrollable content is currently passing beneath this app bar.
+    ///
+    /// @param scrolledUnder `true` to apply the `:scrolled-under` visual state
+    public final void setScrolledUnder(boolean scrolledUnder) {
+        this.scrolledUnder.set(scrolledUnder);
+    }
+
+    /// Returns the scroll-under state property.
+    ///
+    /// @return the scroll-under property
+    public final BooleanProperty scrolledUnderProperty() {
+        return scrolledUnder;
     }
 
     /// Returns the optional leading navigation node.

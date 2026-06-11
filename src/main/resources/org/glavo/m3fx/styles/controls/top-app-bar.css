@@ -5,9 +5,14 @@
     -m3-horizontal-padding: 16px;
     -m3-medium-bottom-padding: 20px;
     -m3-large-bottom-padding: 28px;
-    -m3-content-spacing: 16px;
-    -m3-action-spacing: 8px;
+    -m3-content-spacing: 8px;
+    -m3-action-spacing: 0px;
     -fx-background-color: -m3-color-surface;
+}
+
+.m3-top-app-bar:scrolled-under {
+    -fx-background-color: -m3-color-surface-container;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.16, 0, 2);
 }
 
 .m3-top-app-bar-navigation {
@@ -21,15 +26,19 @@
 }
 
 .m3-top-app-bar-medium .m3-top-app-bar-title {
-    -fx-font-size: 28px;
+    -fx-font-size: 24px;
     -fx-font-weight: 400;
 }
 
 .m3-top-app-bar-large .m3-top-app-bar-title {
-    -fx-font-size: 32px;
+    -fx-font-size: 28px;
     -fx-font-weight: 400;
 }
 
 .m3-top-app-bar-actions {
     -fx-alignment: center-right;
+}
+
+.m3-top-app-bar-action-slot {
+    -fx-alignment: center;
 }

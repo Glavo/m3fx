@@ -14,8 +14,8 @@ final class DemoMaterialDocs {
     /// The Material Design 3 components overview URL.
     static final String COMPONENTS = ROOT + "components";
 
-    /// The top app bar component documentation URL.
-    static final String TOP_APP_BAR = componentUrl("top-app-bar");
+    /// The app bars component documentation URL.
+    static final String APP_BARS = componentUrl("app-bars");
 
     /// The badges component documentation URL.
     static final String BADGES = componentUrl("badges");

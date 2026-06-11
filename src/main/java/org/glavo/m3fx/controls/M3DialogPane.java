@@ -215,7 +215,7 @@ public class M3DialogPane extends DialogPane {
                 focusNotifier.refresh();
             }
             case SHOW_ITEM -> {
-                M3Accessible.showItem(accessibleActionOrCurrentItem(parameters));
+                showAccessibleItem(parameters);
                 M3Accessible.notifyFocusNodeChanged(this);
                 focusNotifier.refresh();
             }
@@ -230,6 +230,7 @@ public class M3DialogPane extends DialogPane {
         buttonBar.getStyleClass().add(BUTTON_BAR_STYLE_CLASS);
         if (buttonBar instanceof ButtonBar materialButtonBar) {
             materialButtonBar.setButtonMinWidth(0.0);
+            materialButtonBar.setButtonOrder(ButtonBar.BUTTON_ORDER_NONE);
         }
         return buttonBar;
     }
@@ -316,6 +317,18 @@ public class M3DialogPane extends DialogPane {
     private @Nullable Node accessibleActionOrCurrentItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         return parameters.length == 0 ? currentOrFirstFocusableItem() : accessibleActionItem(parameters);
+    }
+
+    /// Focuses a requested dialog item or delegates deep popup targets to the content control.
+    private void showAccessibleItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        @Nullable Node item = accessibleActionOrCurrentItem(parameters);
+        if (item != null) {
+            M3Accessible.showItem(item);
+            return;
+        }
+
+        M3Accessible.showAccessibleActionTarget(getContent(), parameters);
     }
 
     /// Returns the item requested by accessibility action parameters.

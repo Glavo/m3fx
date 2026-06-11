@@ -148,6 +148,10 @@
     -fx-fill-width: true;
 }
 
+.demo-app-bar-stack {
+    -fx-fill-width: true;
+}
+
 .demo-app-bar-sample {
     -fx-fill-width: true;
 }
@@ -161,8 +165,8 @@
 .demo-app-bar-preview {
     -fx-background-color: -m3-color-surface;
     -fx-background-radius: 0px;
-    -fx-border-color: transparent;
-    -fx-border-width: 0px;
+    -fx-border-color: -m3-color-outline-variant;
+    -fx-border-width: 1px;
     -fx-border-radius: 0px;
 }
 
@@ -172,6 +176,46 @@
 
 .demo-app-bar-preview .m3-bottom-app-bar {
     -fx-background-radius: 0px;
+}
+
+.demo-top-app-bar-preview {
+    -fx-background-color: -m3-color-surface;
+}
+
+.demo-top-app-bar-preview-content {
+    -fx-padding: 16px;
+    -fx-background-color: -m3-color-surface;
+}
+
+.demo-top-app-bar-preview-row {
+    -fx-min-height: 56px;
+    -fx-pref-height: 56px;
+    -fx-max-height: 56px;
+}
+
+.demo-top-app-bar-preview-leading {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-radius: 20px;
+}
+
+.demo-top-app-bar-preview-text {
+    -fx-alignment: center-left;
+}
+
+.demo-top-app-bar-preview-headline {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.demo-top-app-bar-preview-supporting {
+    -fx-font-size: 12px;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.demo-top-app-bar-preview-trailing {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-radius: 6px;
 }
 
 .demo-progress-track-height-label {
@@ -280,7 +324,26 @@
 }
 
 .demo-card-content {
-    -fx-min-height: 92px;
+    -fx-min-height: 104px;
+}
+
+.demo-card-media {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-radius: 10px;
+}
+
+.demo-card-header {
+    -fx-alignment: center-left;
+}
+
+.demo-card-text {
+    -fx-alignment: center-left;
+}
+
+.demo-card-overline {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -m3-color-primary;
 }
 
 .demo-carousel-card-content {
@@ -296,6 +359,10 @@
 .demo-card-body {
     -fx-font-size: 13px;
     -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.demo-card-actions {
+    -fx-alignment: center-right;
 }
 
 .demo-list {
@@ -328,4 +395,31 @@
     -fx-font-size: 16px;
     -fx-font-weight: 600;
     -fx-text-fill: -m3-color-on-primary-container;
+}
+
+.demo-dialog-pane {
+    -fx-min-width: 420px;
+}
+
+.demo-dialog-content {
+    -fx-alignment: top-left;
+}
+
+.demo-dialog-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+}
+
+.demo-dialog-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.demo-dialog-scroll-content {
+    -fx-padding: 0 4px 0 0;
+}
+
+.demo-dialog-body-line {
+    -fx-font-size: 14px;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }

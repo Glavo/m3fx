@@ -13,6 +13,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// samples exercise icon slots with real vector graphics instead of text placeholders.
 @NotNullByDefault
 final class DemoIcons {
+    /// The node property key that stores the logical demo icon name.
+    static final String ICON_NAME_PROPERTY = "org.glavo.m3fx.demo.iconName";
+
     /// The base style class applied to every demo SVG icon.
     static final String STYLE_CLASS = "demo-vector-icon";
 
@@ -114,12 +117,13 @@ final class DemoIcons {
         icon.setContent(path(name));
         icon.setFillRule(FillRule.EVEN_ODD);
         icon.getStyleClass().addAll(STYLE_CLASS, colorStyleClass);
+        icon.getProperties().put(ICON_NAME_PROPERTY, name);
         icon.setMouseTransparent(true);
         return icon;
     }
 
     /// Returns the material-style SVG path for a logical icon name.
-    private static String path(String name) {
+    static String path(String name) {
         return switch (name) {
             case "+", "add" -> "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z";
             case "*", "spark" -> "M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z";

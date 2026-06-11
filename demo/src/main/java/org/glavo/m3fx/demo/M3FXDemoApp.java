@@ -11,11 +11,13 @@ import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -409,7 +411,7 @@ public final class M3FXDemoApp extends Application {
     private List<DemoPage> createPages() {
         return List.of(
                 new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse the implemented Material Design 3 component demos", DemoMaterialDocs.COMPONENTS, this::createComponentsOverviewPage),
-                new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", DemoMaterialDocs.TOP_APP_BAR, this::createAppBarsPage),
+                new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", DemoMaterialDocs.APP_BARS, this::createAppBarsPage),
                 new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", DemoMaterialDocs.BADGES, this::createBadgesPage),
                 new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", DemoMaterialDocs.BUTTON_GROUPS, this::createButtonGroupsPage),
                 new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", DemoMaterialDocs.BUTTONS, this::createButtonsPage),
@@ -1459,13 +1461,23 @@ public final class M3FXDemoApp extends Application {
                 "back", "add", "more");
         M3TopAppBar medium = createTopAppBar("Project", M3TopAppBarVariant.MEDIUM, "menu", "search", "more");
         M3TopAppBar large = createTopAppBar("Workspace", M3TopAppBarVariant.LARGE, "menu", "search", "more");
+        M3TopAppBar smallScrolled = createTopAppBar("Inbox", M3TopAppBarVariant.SMALL, "menu", "search", "more");
+        M3TopAppBar mediumScrolled = createTopAppBar("Project", M3TopAppBarVariant.MEDIUM, "menu", "search", "more");
+        smallScrolled.setScrolledUnder(true);
+        mediumScrolled.setScrolledUnder(true);
 
         return createGallery(
                 createAppBarShowcaseGroup(
+                        "Top App Bars",
                         createLabeledAppBarPreview("Small", createTopAppBarPreview(small)),
                         createLabeledAppBarPreview("Center Aligned", createTopAppBarPreview(centerAligned)),
                         createLabeledAppBarPreview("Medium", createTopAppBarPreview(medium)),
                         createLabeledAppBarPreview("Large", createTopAppBarPreview(large))
+                ),
+                createAppBarShowcaseGroup(
+                        "Scrolled Under",
+                        createLabeledAppBarPreview("Small scrolled", createTopAppBarPreview(smallScrolled)),
+                        createLabeledAppBarPreview("Medium scrolled", createTopAppBarPreview(mediumScrolled))
                 )
         );
     }
@@ -1651,19 +1663,21 @@ public final class M3FXDemoApp extends Application {
     /// Creates the virtualized list view sample.
     private static M3ListView<String> createVirtualizedListView() {
         M3ListView<String> listView = new M3ListView<>();
-        for (int i = 1; i <= 100; i++) {
+        listView.getStyleClass().add("demo-virtualized-list");
+        for (int i = 1; i <= 240; i++) {
             listView.addItem("Virtualized row " + i);
         }
         listView.setSelectionMode(M3ListSelectionMode.SINGLE);
-        listView.setFixedCellSize(56.0);
-        listView.setPrefSize(360.0, 280.0);
+        listView.setFixedCellSize(72.0);
+        listView.setPrefSize(520.0, 360.0);
         listView.setCellFactory(text -> {
             M3ListItem item = new M3ListItem(text);
+            item.setSupportingText("Reused VirtualFlow row with generated content");
             item.setLeading(createSurfaceVariantIcon("task"));
             item.setTrailingSupportingText(Integer.toString(text.length()));
             return item;
         });
-        listView.selectIndex(0);
+        listView.selectIndex(2);
         return listView;
     }
 
@@ -1743,11 +1757,49 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the card component page.
     private Node createCardsPage() {
-        M3Card filled = createSampleCard("Filled card", M3CardVariant.FILLED);
-        M3Card outlined = createSampleCard("Outlined card", M3CardVariant.OUTLINED);
-        M3Card elevated = createSampleCard("Elevated card", M3CardVariant.ELEVATED);
+        M3Card filled = createSampleCard(
+                "Filled card",
+                "Status summary",
+                "Use filled cards for related content on a higher emphasis container.",
+                M3CardVariant.FILLED
+        );
+        M3Card outlined = createSampleCard(
+                "Outlined card",
+                "Document details",
+                "Use outlined cards when the page already has stronger filled surfaces.",
+                M3CardVariant.OUTLINED
+        );
+        M3Card elevated = createSampleCard(
+                "Elevated card",
+                "Pinned project",
+                "Use elevated cards sparingly when separation from the page background matters.",
+                M3CardVariant.ELEVATED
+        );
 
-        return createGallery(createShowcaseGroup("Cards", filled, outlined, elevated));
+        M3Card media = createMediaCard(
+                "Component audit",
+                "Visual QA",
+                "Review interaction states, snapshot coverage, and remaining MD3 parity gaps.",
+                M3CardVariant.FILLED
+        );
+        M3Card action = createMediaCard(
+                "Release candidate",
+                "Actionable",
+                "Click the surface or use the actions to trigger demo feedback.",
+                M3CardVariant.ELEVATED
+        );
+        M3Card disabled = createMediaCard(
+                "Archived review",
+                "Disabled",
+                "Disabled cards keep content visible while suppressing action feedback.",
+                M3CardVariant.OUTLINED
+        );
+        disabled.setDisable(true);
+
+        return createGallery(
+                createShowcaseGroup("Variants", filled, outlined, elevated),
+                createShowcaseGroup("Media And Actions", media, action, disabled)
+        );
     }
 
     /// Creates the carousel component page.
@@ -1820,62 +1872,176 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the dialog component page.
     private Node createDialogsPage() {
-        M3Button dialogButton = createButton("Open dialog", M3ButtonVariant.FILLED);
-        dialogButton.setOnAction(event -> showDemoDialog());
+        M3Button basicButton = createButton("Open basic", M3ButtonVariant.FILLED);
+        basicButton.setOnAction(event -> showDemoDialog());
+        M3Button settingsButton = createButton("Open settings", M3ButtonVariant.TONAL);
+        settingsButton.setOnAction(event -> showSettingsDialog());
+        M3Button destructiveButton = createButton("Open destructive", M3ButtonVariant.OUTLINED);
+        destructiveButton.setOnAction(event -> showDestructiveDialog());
 
-        M3DialogPane inlinePane = new M3DialogPane();
-        inlinePane.setHeaderText("Dialog title");
-        inlinePane.setContentText("The active theme is applied to this dialog pane.");
-        inlinePane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
-        inlinePane.setPrefWidth(420.0);
+        M3DialogPane basicPane = createDialogPreviewPane(
+                "Dialog title",
+                "The active theme is applied to this dialog pane.",
+                createDialogButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
+                createDialogButtonType("OK", ButtonBar.ButtonData.OK_DONE)
+        );
+        basicPane.setPrefWidth(420.0);
+
+        M3DialogPane settingsPane = createDialogPreviewPane(
+                "Project settings",
+                null,
+                createDialogButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
+                createDialogButtonType("Apply", ButtonBar.ButtonData.APPLY)
+        );
+        settingsPane.setContent(createDialogSettingsContent(false));
+        settingsPane.setPrefWidth(520.0);
+
+        M3DialogPane longPane = createDialogPreviewPane(
+                "Release notes",
+                null,
+                createDialogButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE)
+        );
+        longPane.setContent(createScrollableDialogContent());
+        longPane.setPrefWidth(520.0);
 
         return createGallery(
-                createShowcaseGroup("Launcher", dialogButton),
-                createShowcaseGroup("Pane", inlinePane)
+                createShowcaseGroup("Launchers", basicButton, settingsButton, destructiveButton),
+                createShowcaseGroup("Inline Panes", basicPane, settingsPane),
+                createShowcaseGroup("Scrollable Content", longPane)
         );
+    }
+
+    /// Creates one inline dialog pane preview.
+    private static M3DialogPane createDialogPreviewPane(
+            String headerText,
+            @Nullable String contentText,
+            ButtonType... buttonTypes
+    ) {
+        M3DialogPane pane = new M3DialogPane();
+        pane.getStyleClass().add("demo-dialog-pane");
+        pane.setHeaderText(headerText);
+        pane.setContentText(contentText);
+        pane.getButtonTypes().addAll(buttonTypes);
+        return pane;
+    }
+
+    /// Creates an English dialog button type for the demo.
+    private static ButtonType createDialogButtonType(String text, ButtonBar.ButtonData buttonData) {
+        return new ButtonType(text, buttonData);
+    }
+
+    /// Creates form-like content for dialog previews and popups.
+    private static Node createDialogSettingsContent(boolean popup) {
+        M3TextField projectName = createTextField("Project name", "M3FX", M3TextInputVariant.OUTLINED, false);
+        projectName.setPrefWidth(popup ? 360.0 : 320.0);
+        M3TextInputLayout projectLayout = createTextInputLayout(projectName, "Shown in generated artifacts");
+        projectLayout.setPrefWidth(projectName.getPrefWidth());
+        projectLayout.setMaxWidth(projectName.getPrefWidth());
+
+        M3Switch notifications = new M3Switch("Notify contributors");
+        notifications.setSelected(true);
+        M3CheckBox rememberChoice = new M3CheckBox("Remember this choice");
+        rememberChoice.setSelected(true);
+
+        VBox content = new VBox(12.0, projectLayout, notifications, rememberChoice);
+        content.getStyleClass().add("demo-dialog-content");
+        content.setMaxWidth(Double.MAX_VALUE);
+        return content;
+    }
+
+    /// Creates scrollable long-form dialog content.
+    private static Node createScrollableDialogContent() {
+        VBox content = new VBox(8.0);
+        content.getStyleClass().add("demo-dialog-scroll-content");
+        content.getChildren().addAll(
+                new Label("Review theme inheritance, popup focus restoration, and generated runtime packaging."),
+                new Label("The dialog body can host regular JavaFX content while M3FX supplies the surrounding surface, actions, shape, and color tokens."),
+                new Label("Use this form for dense supporting information that should stay inside a compact modal surface."),
+                new Label("Scrolling keeps the action row visible while the body remains inspectable.")
+        );
+        for (Node node : content.getChildren()) {
+            if (node instanceof Label label) {
+                label.setWrapText(true);
+                label.getStyleClass().add("demo-dialog-body-line");
+            }
+        }
+
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.getStyleClass().add("demo-dialog-scroll-pane");
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(132.0);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        M3ScrollPanes.style(scrollPane);
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
+        return scrollPane;
     }
 
     /// Creates the banner component page.
     private Node createBannersPage() {
-        M3Button learnButton = createButton("Learn", M3ButtonVariant.TEXT);
-        learnButton.setOnAction(event -> showSnackbar());
-        M3Button dismissButton = createButton("Dismiss", M3ButtonVariant.TEXT);
-        dismissButton.setOnAction(event -> showSnackbar());
-        M3Banner informational = new M3Banner(
+        M3Banner informational = createBanner(
                 "M3FX can install generated token stylesheets for each JavaFX scene while keeping application scene management explicit.",
-                learnButton,
-                dismissButton
+                createInfoIcon(),
+                "Learn",
+                "Dismiss"
         );
-        informational.setIcon(createInfoIcon());
-        informational.setPrefWidth(760.0);
 
-        M3Button reviewButton = createButton("Review", M3ButtonVariant.TEXT);
-        reviewButton.setOnAction(event -> showActionSnackbar());
-        M3Banner warning = new M3Banner(
+        M3Banner warning = createBanner(
                 "The selected jlink target uses platform-specific BellSoft LibericaJDK Full jmods.",
-                reviewButton
+                createErrorIcon("warning"),
+                "Review"
         );
-        warning.setIcon(createErrorIcon("warning"));
-        warning.setPrefWidth(760.0);
 
-        M3Button manageButton = createButton("Manage", M3ButtonVariant.TEXT);
-        manageButton.setOnAction(event -> showSnackbar());
-        M3Banner noIcon = new M3Banner(
+        M3Banner noIcon = createBanner(
                 "Banners may omit the leading icon when surrounding context already makes the message clear.",
-                manageButton
+                null,
+                "Manage"
         );
-        noIcon.setPrefWidth(760.0);
 
-        M3Banner passive = new M3Banner(
+        M3Banner passive = createBanner(
                 "Passive banners keep persistent contextual information visible without interrupting the current task."
         );
-        passive.setPrefWidth(760.0);
+
+        M3Banner narrow = createBanner(
+                "A narrow banner wraps longer text while keeping actions reachable.",
+                createInfoIcon(),
+                "Details",
+                "Close"
+        );
+        narrow.setPrefWidth(420.0);
+
+        M3Banner rightToLeft = createBanner(
+                "Right-to-left layout mirrors the icon and actions while preserving logical action order.",
+                createInfoIcon(),
+                "Primary",
+                "Secondary"
+        );
+        rightToLeft.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
         return createGallery(
                 createShowcaseGroup("With Actions", informational, warning),
                 createShowcaseGroup("Without Icon", noIcon),
-                createShowcaseGroup("Passive", passive)
+                createShowcaseGroup("Passive", passive),
+                createShowcaseGroup("Responsive And RTL", narrow, rightToLeft)
         );
+    }
+
+    /// Creates a sample banner for the page gallery.
+    private M3Banner createBanner(String text) {
+        return createBanner(text, null);
+    }
+
+    /// Creates a sample banner for the page gallery.
+    private M3Banner createBanner(String text, @Nullable Node icon, String... actionTexts) {
+        M3Banner banner = new M3Banner(text);
+        banner.setIcon(icon);
+        banner.setPrefWidth(760.0);
+        banner.getStyleClass().add("demo-banner");
+        for (String actionText : actionTexts) {
+            M3Button action = createButton(actionText, M3ButtonVariant.TEXT);
+            action.setOnAction(event -> showSnackbar(actionText + " pressed"));
+            banner.addAction(action);
+        }
+        return banner;
     }
 
     /// Creates the snackbar component page.
@@ -2041,12 +2207,12 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates the app bar showcase group whose samples are stacked and expanded to the available width.
-    private static VBox createAppBarShowcaseGroup(Node... nodes) {
-        Label label = new Label("Top App Bars");
+    private static VBox createAppBarShowcaseGroup(String title, Node... nodes) {
+        Label label = new Label(title);
         label.getStyleClass().add("demo-group-title");
 
         VBox stack = new VBox(16.0);
-        stack.getStyleClass().addAll("demo-flow", "demo-stacked-flow");
+        stack.getStyleClass().addAll("demo-app-bar-stack", "demo-stacked-flow");
         stack.setFillWidth(true);
         stack.setMaxWidth(Double.MAX_VALUE);
         stack.getChildren().addAll(nodes);
@@ -2367,9 +2533,9 @@ public final class M3FXDemoApp extends Application {
 
         M3TopAppBar topAppBar = new M3TopAppBar(title);
         topAppBar.setVariant(variant);
-        topAppBar.setNavigation(createAppBarIconButton(navigationIcon));
+        topAppBar.setNavigation(createLeadingAppBarIconButton(navigationIcon));
         for (String actionIcon : actionIcons) {
-            topAppBar.addAction(createAppBarIconButton(actionIcon));
+            topAppBar.addAction(createTrailingAppBarIconButton(actionIcon));
         }
         topAppBar.setMaxWidth(Double.MAX_VALUE);
         return topAppBar;
@@ -2378,7 +2544,8 @@ public final class M3FXDemoApp extends Application {
     /// Creates a preview surface for a top app bar.
     private static VBox createTopAppBarPreview(M3TopAppBar topAppBar) {
         VBox preview = createAppBarPreview();
-        preview.getChildren().add(topAppBar);
+        preview.getStyleClass().add("demo-top-app-bar-preview");
+        preview.getChildren().addAll(topAppBar, createTopAppBarPreviewContent(topAppBar.getTitle()));
         return preview;
     }
 
@@ -2416,6 +2583,49 @@ public final class M3FXDemoApp extends Application {
         return preview;
     }
 
+    /// Creates the lightweight content area shown below a top app bar preview.
+    private static VBox createTopAppBarPreviewContent(String title) {
+        VBox content = new VBox(10.0);
+        content.getStyleClass().add("demo-top-app-bar-preview-content");
+        content.setFillWidth(true);
+        content.setMaxWidth(Double.MAX_VALUE);
+
+        content.getChildren().addAll(
+                createTopAppBarPreviewRow(title + " updates", "Updated just now"),
+                createTopAppBarPreviewRow("Pinned items", "3 active entries")
+        );
+        return content;
+    }
+
+    /// Creates one content row for a top app bar preview.
+    private static HBox createTopAppBarPreviewRow(String title, String supportingText) {
+        StackPane leading = new StackPane();
+        leading.getStyleClass().add("demo-top-app-bar-preview-leading");
+        leading.setMinSize(40.0, 40.0);
+        leading.setPrefSize(40.0, 40.0);
+        leading.setMaxSize(40.0, 40.0);
+
+        Label headline = new Label(title);
+        headline.getStyleClass().add("demo-top-app-bar-preview-headline");
+        Label supporting = new Label(supportingText);
+        supporting.getStyleClass().add("demo-top-app-bar-preview-supporting");
+        VBox text = new VBox(2.0, headline, supporting);
+        text.getStyleClass().add("demo-top-app-bar-preview-text");
+        HBox.setHgrow(text, Priority.ALWAYS);
+
+        Region trailing = new Region();
+        trailing.getStyleClass().add("demo-top-app-bar-preview-trailing");
+        trailing.setMinSize(56.0, 12.0);
+        trailing.setPrefSize(56.0, 12.0);
+        trailing.setMaxSize(56.0, 12.0);
+
+        HBox row = new HBox(16.0, leading, text, trailing);
+        row.getStyleClass().add("demo-top-app-bar-preview-row");
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setMaxWidth(Double.MAX_VALUE);
+        return row;
+    }
+
     /// Creates a sample surface.
     private static M3Surface createSurface(
             String title,
@@ -2435,8 +2645,8 @@ public final class M3FXDemoApp extends Application {
         M3BottomAppBar bottomAppBar = new M3BottomAppBar(
                 M3BottomAppBarFloatingActionAlignment.END,
                 createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
-                createAppBarIconButton("search"),
-                createAppBarIconButton("favorite")
+                createTrailingAppBarIconButton("search"),
+                createTrailingAppBarIconButton("favorite")
         );
         bottomAppBar.setMaxWidth(Double.MAX_VALUE);
         return bottomAppBar;
@@ -2565,8 +2775,16 @@ public final class M3FXDemoApp extends Application {
         return new M3IconButton(icon);
     }
 
-    /// Creates a sample icon button for app bar slots.
-    private static M3IconButton createAppBarIconButton(String iconName) {
+    /// Creates a sample icon button for leading app bar slots.
+    private static M3IconButton createLeadingAppBarIconButton(String iconName) {
+        Node icon = createIconViewport(DemoIcons.onSurface(iconName), "demo-app-bar-icon");
+        M3IconButton button = new M3IconButton(icon);
+        button.setAccessibleText(appBarIconAccessibleText(iconName));
+        return button;
+    }
+
+    /// Creates a sample icon button for trailing app bar action slots.
+    private static M3IconButton createTrailingAppBarIconButton(String iconName) {
         Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName), "demo-app-bar-icon");
         M3IconButton button = new M3IconButton(icon);
         button.setAccessibleText(appBarIconAccessibleText(iconName));
@@ -2740,22 +2958,70 @@ public final class M3FXDemoApp extends Application {
         return button;
     }
 
-    /// Creates a sample card.
-    private M3Card createSampleCard(String title, M3CardVariant variant) {
-        VBox content = new VBox(6.0);
+    /// Creates a compact sample card.
+    private M3Card createSampleCard(String title, String overline, String body, M3CardVariant variant) {
+        VBox content = createCardTextContent(title, overline, body);
+        M3Card card = new M3Card(content, variant, event -> showSnackbar());
+        card.getStyleClass().add("demo-card");
+        card.setPrefSize(280.0, 168.0);
+        return card;
+    }
+
+    /// Creates a sample card with media, supporting text, and actions.
+    private M3Card createMediaCard(String title, String overline, String body, M3CardVariant variant) {
+        VBox content = new VBox(12.0);
         content.getStyleClass().add("demo-card-content");
+
+        Region media = new Region();
+        media.getStyleClass().add("demo-card-media");
+        media.setMinHeight(104.0);
+        media.setPrefHeight(104.0);
+        media.setMaxHeight(104.0);
+        media.setMaxWidth(Double.MAX_VALUE);
+
+        HBox header = new HBox(12.0);
+        header.getStyleClass().add("demo-card-header");
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        M3Avatar avatar = new M3Avatar(title.substring(0, 1));
+        avatar.setVariant(M3AvatarVariant.SECONDARY);
+
+        VBox text = createCardTextContent(title, overline, body);
+        HBox.setHgrow(text, Priority.ALWAYS);
+
+        header.getChildren().addAll(avatar, text);
+
+        HBox actions = new HBox(8.0);
+        actions.getStyleClass().add("demo-card-actions");
+        actions.setAlignment(Pos.CENTER_RIGHT);
+        actions.getChildren().addAll(
+                createButton("Details", M3ButtonVariant.TEXT),
+                createButton("Open", M3ButtonVariant.TONAL)
+        );
+
+        content.getChildren().addAll(media, header, actions);
+
+        M3Card card = new M3Card(content, variant, event -> showSnackbar());
+        card.getStyleClass().add("demo-card");
+        card.setPrefSize(360.0, 300.0);
+        return card;
+    }
+
+    /// Creates the text stack used by demo cards.
+    private static VBox createCardTextContent(String title, String overline, String body) {
+        Label overlineLabel = new Label(overline);
+        overlineLabel.getStyleClass().add("demo-card-overline");
 
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("demo-card-title");
-        Label bodyLabel = new Label("Project summary with active state, shape, and color tokens.");
+
+        Label bodyLabel = new Label(body);
         bodyLabel.getStyleClass().add("demo-card-body");
         bodyLabel.setWrapText(true);
 
-        content.getChildren().addAll(titleLabel, bodyLabel);
-
-        M3Card card = new M3Card(content, variant, event -> showSnackbar());
-        card.setPrefWidth(260.0);
-        return card;
+        VBox content = new VBox(4.0, overlineLabel, titleLabel, bodyLabel);
+        content.getStyleClass().add("demo-card-text");
+        return content;
     }
 
     /// Creates a sample carousel card.
@@ -2849,14 +3115,57 @@ public final class M3FXDemoApp extends Application {
 
     /// Opens the demo dialog.
     private void showDemoDialog() {
-        M3Dialog<Void> dialog = new M3Dialog<>("M3 Dialog");
-        M3DialogPane pane = dialog.getM3DialogPane();
-        pane.setHeaderText("Dialog title");
-        pane.setContentText("This dialog uses the M3FX dialog pane style and active theme tokens.");
-        pane.getButtonTypes().add(ButtonType.OK);
+        M3Dialog<ButtonType> dialog = createDemoDialog(
+                "M3 Dialog",
+                "Dialog title",
+                "This dialog uses the M3FX dialog pane style and active theme tokens.",
+                createDialogButtonType("OK", ButtonBar.ButtonData.OK_DONE)
+        );
+        dialog.show();
+    }
 
+    /// Opens a demo dialog with form-like content.
+    private void showSettingsDialog() {
+        M3Dialog<ButtonType> dialog = createDemoDialog(
+                "Project Settings",
+                "Project settings",
+                null,
+                createDialogButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
+                createDialogButtonType("Apply", ButtonBar.ButtonData.APPLY)
+        );
+        dialog.getM3DialogPane().setContent(createDialogSettingsContent(true));
+        dialog.getM3DialogPane().setPrefWidth(460.0);
+        dialog.show();
+    }
+
+    /// Opens a demo dialog for a destructive confirmation flow.
+    private void showDestructiveDialog() {
+        ButtonType delete = createDialogButtonType("Delete", ButtonBar.ButtonData.OK_DONE);
+        M3Dialog<ButtonType> dialog = createDemoDialog(
+                "Delete Draft",
+                "Delete draft?",
+                "Deleting this local draft cannot be undone. Published project files are not affected.",
+                createDialogButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
+                delete
+        );
+        dialog.getM3DialogPane().setGraphic(createErrorIcon("warning"));
+        dialog.show();
+    }
+
+    /// Creates a demo dialog and initializes its owner from the active scene.
+    private M3Dialog<ButtonType> createDemoDialog(
+            String title,
+            String headerText,
+            @Nullable String contentText,
+            ButtonType... buttonTypes
+    ) {
+        M3Dialog<ButtonType> dialog = new M3Dialog<>(title);
+        M3DialogPane pane = dialog.getM3DialogPane();
+        pane.setHeaderText(headerText);
+        pane.setContentText(contentText);
+        pane.getButtonTypes().addAll(buttonTypes);
         initDialogOwner(dialog);
-        dialog.showAndWait();
+        return dialog;
     }
 
     /// Opens a date picker dialog and reports the accepted date.

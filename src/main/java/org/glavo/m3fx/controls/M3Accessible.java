@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.collections.ObservableList;
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -11,7 +12,10 @@ import javafx.scene.Scene;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Objects;
+import java.util.Set;
 
 /// Provides shared accessibility query helpers for M3FX controls.
 @NotNullByDefault
@@ -113,26 +117,42 @@ final class M3Accessible {
         return false;
     }
 
+    /// Returns whether an item exposes the supplied target through its accessibility item tree.
+    static boolean containsAccessibleActionTarget(@Nullable Node item, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (item == null || parameters.length == 0) {
+            return false;
+        }
+
+        for (Object parameter : parameters) {
+            Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+            if (containsAccessibleActionTarget(item, parameter, visited)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /// Requests focus for the item referenced by accessibility action parameters.
     static void showItem(ObservableList<? extends Node> items, Object... parameters) {
-        showItem(actionItem(items, parameters));
+        showItemOrAccessibleActionTarget(actionItem(items, parameters), items, parameters);
     }
 
     /// Requests focus for the leading item or one of the indexed trailing items.
     static void showItem(@Nullable Node leading, ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
-        showItem(actionItem(leading, items, parameters));
+        showItemOrAccessibleActionTarget(actionItem(leading, items, parameters), leading, items, parameters);
     }
 
     /// Requests focus for one of the indexed items or the trailing item.
     static void showItem(ObservableList<? extends Node> items, @Nullable Node trailing, Object... parameters) {
         Objects.requireNonNull(items, "items");
-        showItem(actionItem(items, trailing, parameters));
+        showItemOrAccessibleActionTarget(actionItem(items, trailing, parameters), items, trailing, parameters);
     }
 
     /// Requests focus for one of two optional indexed items.
     static void showItem(@Nullable Node first, @Nullable Node second, Object... parameters) {
-        showItem(actionItem(first, second, parameters));
+        showItemOrAccessibleActionTarget(actionItem(first, second, parameters), first, second, parameters);
     }
 
     /// Requests focus for the default item when no parameter is supplied, or for the requested indexed item.
@@ -146,7 +166,7 @@ final class M3Accessible {
         @Nullable Node item = parameters.length == 0
                 ? (focusTarget(defaultItem) == null ? firstFocusableItem(items) : defaultItem)
                 : actionItem(items, parameters);
-        showItem(item);
+        showItemOrAccessibleActionTarget(item, items, parameters);
     }
 
     /// Requests focus for the current focus target in an indexed container, or for the requested item.
@@ -208,13 +228,108 @@ final class M3Accessible {
 
     /// Requests focus for an accessibility item when it can be reached.
     static void showItem(@Nullable Node item) {
+        showItemIfPresent(item);
+    }
+
+    /// Requests focus for an accessibility item when it can be reached.
+    private static boolean showItemIfPresent(@Nullable Node item) {
         @Nullable Node focusTarget = currentContainedFocusTarget(item);
         if (focusTarget == null) {
             focusTarget = accessibleFocusTarget(item);
         }
         if (focusTarget != null) {
             focusTarget.requestFocus();
+            return true;
         }
+        return false;
+    }
+
+    /// Focuses a direct action target or delegates explicit reveal to nested accessible popup owners.
+    private static void showItemOrAccessibleActionTarget(
+            @Nullable Node item,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        if (!showItemIfPresent(item) && parameters.length > 0) {
+            showAccessibleActionTarget(items, parameters);
+        }
+    }
+
+    /// Focuses a direct action target or delegates explicit reveal to a leading/list child.
+    private static void showItemOrAccessibleActionTarget(
+            @Nullable Node item,
+            @Nullable Node leading,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(leading, parameters)) {
+            showAccessibleActionTarget(items, parameters);
+        }
+    }
+
+    /// Focuses a direct action target or delegates explicit reveal to a list/trailing child.
+    private static void showItemOrAccessibleActionTarget(
+            @Nullable Node item,
+            ObservableList<? extends Node> items,
+            @Nullable Node trailing,
+            Object... parameters
+    ) {
+        if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(items, parameters)) {
+            showAccessibleActionTarget(trailing, parameters);
+        }
+    }
+
+    /// Focuses a direct action target or delegates explicit reveal to either optional child.
+    private static void showItemOrAccessibleActionTarget(
+            @Nullable Node item,
+            @Nullable Node first,
+            @Nullable Node second,
+            Object... parameters
+    ) {
+        if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(first, parameters)) {
+            showAccessibleActionTarget(second, parameters);
+        }
+    }
+
+    /// Delegates an explicit reveal request to the first child that exposes the requested accessibility target.
+    static boolean showAccessibleActionTarget(@Nullable Node item, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (item == null || parameters.length == 0) {
+            return false;
+        }
+
+        @Nullable Node directTarget = actionItem(item, parameters);
+        if (showItemIfPresent(directTarget)) {
+            return true;
+        }
+
+        if (containsAccessibleActionTarget(item, parameters)) {
+            item.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+            return true;
+        }
+
+        if (item instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (showAccessibleActionTarget(child, parameters)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// Delegates an explicit reveal request to the first indexed child that exposes the requested target.
+    private static boolean showAccessibleActionTarget(
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        for (Node item : items) {
+            if (showAccessibleActionTarget(item, parameters)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Returns a node's currently exposed accessibility focus target when available.
@@ -657,6 +772,59 @@ final class M3Accessible {
                 if (containsNodeTarget(target, value)) {
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether an item exposes one accessibility action target parameter.
+    private static boolean containsAccessibleActionTarget(
+            Node item,
+            @Nullable Object parameter,
+            Set<Node> visited
+    ) {
+        if (parameter instanceof Node node) {
+            return containsAccessibleNode(item, node, visited);
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                Set<Node> branchVisited = Collections.newSetFromMap(new IdentityHashMap<>());
+                if (containsAccessibleActionTarget(item, value, branchVisited)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                Set<Node> branchVisited = Collections.newSetFromMap(new IdentityHashMap<>());
+                if (containsAccessibleActionTarget(item, value, branchVisited)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether an owner node exposes a requested node directly or through indexed accessibility children.
+    private static boolean containsAccessibleNode(Node owner, Node requestedNode, Set<Node> visited) {
+        if (!visited.add(owner)) {
+            return false;
+        }
+        if (owner == requestedNode || containsNode(owner, requestedNode)) {
+            return true;
+        }
+
+        @Nullable Object itemCountValue = owner.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT);
+        if (!(itemCountValue instanceof Number itemCountNumber)) {
+            return false;
+        }
+
+        int itemCount = Math.max(0, itemCountNumber.intValue());
+        for (int index = 0; index < itemCount; index++) {
+            @Nullable Object child = owner.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, index);
+            if (child instanceof Node childNode && containsAccessibleNode(childNode, requestedNode, visited)) {
+                return true;
             }
         }
         return false;

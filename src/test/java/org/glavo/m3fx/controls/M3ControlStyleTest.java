@@ -4,7 +4,6 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
-import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
@@ -164,23 +163,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests style classes and skins for m3fx controls.
 @NotNullByDefault
 final class M3ControlStyleTest {
-    /// The delay used after a rich tooltip popup should remain visible while hovered.
-    private static final Duration RICH_TOOLTIP_HOVER_DELAY = Duration.millis(260.0);
-
-    /// The delay used after disclosure icon rotation should settle.
-    private static final Duration DISCLOSURE_ANIMATION_SETTLE_DELAY = Duration.millis(220.0);
-
-    /// The delay used after submenu hover should open a child popup.
-    private static final Duration SUBMENU_OPEN_DELAY = Duration.millis(260.0);
-
-    /// The delay used after submenu hover exit should close a child popup.
-    private static final Duration SUBMENU_CLOSE_DELAY = Duration.millis(420.0);
-
-    /// The delay used when sampling indeterminate progress motion.
-    private static final Duration PROGRESS_INDETERMINATE_SAMPLE_DELAY = Duration.millis(180.0);
-
-    /// The delay used to sample navigation drawer expansion at an intermediate frame.
-    private static final Duration DRAWER_EXPANSION_INTERMEDIATE_DELAY = Duration.millis(90.0);
+    /// The pulse count used after a rich tooltip popup takes pointer ownership.
+    private static final int RICH_TOOLTIP_POPUP_OWNERSHIP_STABLE_PULSES = 2;
 
     /// The number of pulses used to catch deferred CSS warnings from standalone fallback stylesheet installation.
     private static final int STANDALONE_CSS_SETTLE_PULSES = 40;
@@ -1429,6 +1413,37 @@ final class M3ControlStyleTest {
         assertEquals(1, eventCount.get());
     }
 
+    /// Verifies that card action state controls accessibility semantics without leaking focus traversal.
+    @Test
+    void cardActionStateControlsAccessibleRoleAndFocusTraversal() {
+        M3Card card = new M3Card(new Label("Content"));
+
+        assertEquals(AccessibleRole.PARENT, card.getAccessibleRole());
+        assertFalse(card.isFocusTraversable());
+
+        card.setOnAction(event -> {
+        });
+
+        assertEquals(AccessibleRole.BUTTON, card.getAccessibleRole());
+        assertTrue(card.isFocusTraversable());
+
+        card.setOnAction(event -> {
+        });
+        card.setOnAction(null);
+
+        assertEquals(AccessibleRole.PARENT, card.getAccessibleRole());
+        assertFalse(card.isFocusTraversable());
+
+        M3Card explicitlyFocusableCard = new M3Card(new Label("Focusable content"));
+        explicitlyFocusableCard.setFocusTraversable(true);
+        explicitlyFocusableCard.setOnAction(event -> {
+        });
+        explicitlyFocusableCard.setOnAction(null);
+
+        assertEquals(AccessibleRole.PARENT, explicitlyFocusableCard.getAccessibleRole());
+        assertTrue(explicitlyFocusableCard.isFocusTraversable());
+    }
+
     /// Verifies that card skins expose bounded surface ripple feedback.
     @Test
     void cardSkinPlaysBoundedRippleOnSurfacePress() {
@@ -2266,12 +2281,20 @@ final class M3ControlStyleTest {
     @Test
     void dialogPaneCreatesMaterialActionButtons() {
         M3DialogPane dialogPane = new M3DialogPane();
-        dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+        ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType ok = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+        dialogPane.getButtonTypes().setAll(cancel, ok);
+        Pane root = new Pane(dialogPane);
+        Scene scene = new Scene(root, 480.0, 240.0);
 
-        applyCss(dialogPane);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        dialogPane.resizeRelocate(0.0, 0.0, 420.0, 180.0);
+        root.applyCss();
+        root.layout();
+        dialogPane.layout();
 
-        Node cancelNode = dialogPane.lookupButton(ButtonType.CANCEL);
-        Node okNode = dialogPane.lookupButton(ButtonType.OK);
+        Node cancelNode = dialogPane.lookupButton(cancel);
+        Node okNode = dialogPane.lookupButton(ok);
         M3Button cancelButton = assertInstanceOf(M3Button.class, cancelNode);
         M3Button okButton = assertInstanceOf(M3Button.class, okNode);
         assertEquals(M3ButtonVariant.TEXT, cancelButton.getVariant());
@@ -2283,6 +2306,18 @@ final class M3ControlStyleTest {
         assertTrue(cancelButton.isCancelButton());
         assertTrue(okButton.isDefaultButton());
         assertFalse(okButton.disableProperty().isBound());
+        ButtonBar buttonBar = assertInstanceOf(
+                ButtonBar.class,
+                dialogPane.lookup("." + M3DialogPane.BUTTON_BAR_STYLE_CLASS)
+        );
+        assertEquals(ButtonBar.BUTTON_ORDER_NONE, buttonBar.getButtonOrder());
+        List<String> buttonTexts = buttonBar.lookupAll("." + M3DialogPane.BUTTON_STYLE_CLASS).stream()
+                .map(node -> assertInstanceOf(M3Button.class, node))
+                .sorted(java.util.Comparator.comparingDouble(button ->
+                        button.localToScene(button.getBoundsInLocal()).getMinX()))
+                .map(M3Button::getText)
+                .toList();
+        assertEquals(List.of("Cancel", "OK"), buttonTexts);
 
         okButton.setDisable(true);
 
@@ -2367,6 +2402,84 @@ final class M3ControlStyleTest {
                 assertTrue(contentAction.isFocused());
                 assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog panes expose focused descendants from nested popups hosted by dialog content.
+    @Test
+    void dialogPaneFocusNodeTracksNestedContentPopups() {
+        runOnFxThread(() -> {
+            M3MenuItem pdf = new M3MenuItem("PDF");
+            M3MenuItem html = new M3MenuItem("HTML");
+            M3SubMenuItem recent = new M3SubMenuItem("Recent", pdf, html);
+            M3SubMenuItem export = new M3SubMenuItem("Export", recent);
+            M3Button unrelatedAction = new M3Button("Unrelated");
+            M3MenuButton menuButton = new M3MenuButton("More", export);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(menuButton);
+            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            Pane root = new Pane(dialogPane);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setAnimationsEnabled(menuButton, false);
+                M3MotionSettings.setAnimationsEnabled(export, false);
+                M3MotionSettings.setAnimationsEnabled(recent, false);
+
+                stage.setScene(new Scene(root, 480.0, 260.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(24.0, 24.0, 420.0, 190.0);
+                root.layout();
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, List.of(unrelatedAction, html));
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(export.isSubMenuShowing());
+                assertTrue(recent.isSubMenuShowing());
+                assertTrue(html.isFocused());
+                assertSame(html, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(html, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(html.isFocused());
+                assertSame(html, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                pdf.requestFocus();
+
+                assertTrue(pdf.isFocused());
+                assertSame(pdf, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                recent.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertTrue(export.isSubMenuShowing());
+                assertFalse(recent.isSubMenuShowing());
+                assertTrue(recent.isFocused());
+                assertSame(recent, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(recent, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                export.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(export.isSubMenuShowing());
+                assertTrue(export.isFocused());
+                assertSame(export, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(export, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menuButton.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                recent.hideSubMenu();
+                export.hideSubMenu();
+                menuButton.hideMenu();
+                M3MotionSettings.clearAnimationsEnabled(menuButton);
+                M3MotionSettings.clearAnimationsEnabled(export);
+                M3MotionSettings.clearAnimationsEnabled(recent);
                 stage.close();
             }
         });
@@ -3958,10 +4071,22 @@ final class M3ControlStyleTest {
     @Test
     void richTooltipStaysOpenWhilePopupIsHovered() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> tooltipRootReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                RICH_TOOLTIP_HOVER_DELAY,
+        runOnFxThreadWhenStable(
+                () -> {
+                    @Nullable Label target = targetReference.get();
+                    @Nullable M3RichTooltip tooltip = tooltipReference.get();
+                    @Nullable Node tooltipRoot = tooltipRootReference.get();
+                    return target != null
+                            && tooltip != null
+                            && tooltipRoot != null
+                            && tooltip.isShowing()
+                            && M3Tooltip.activeInstalledTooltipPopupOwnsInteraction(target);
+                },
+                RICH_TOOLTIP_POPUP_OWNERSHIP_STABLE_PULSES,
                 () -> {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
@@ -3976,10 +4101,12 @@ final class M3ControlStyleTest {
                     tooltip.setShowDuration(Duration.INDEFINITE);
 
                     Pane root = new Pane(target);
+                    root.setFocusTraversable(true);
                     stage.setScene(new Scene(root, 240.0, 120.0));
                     stage.show();
                     root.applyCss();
                     root.layout();
+                    root.requestFocus();
 
                     tooltip.show(target, stage.getX() + 32.0, stage.getY() + 72.0);
                     Node tooltipRoot = tooltip.getScene().getRoot();
@@ -3987,13 +4114,20 @@ final class M3ControlStyleTest {
                     tooltipRoot.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_ENTERED, 4.0, 4.0, false));
 
                     stageReference.set(stage);
+                    targetReference.set(target);
                     tooltipReference.set(tooltip);
+                    tooltipRootReference.set(tooltipRoot);
                 },
                 () -> {
-                    Stage stage = stageReference.get();
-                    M3RichTooltip tooltip = tooltipReference.get();
+                    Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                    Label target = Objects.requireNonNull(targetReference.get(), "target");
+                    M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
+                    Node tooltipRoot = Objects.requireNonNull(tooltipRootReference.get(), "tooltipRoot");
                     try {
                         assertTrue(tooltip.isShowing());
+                        assertTrue(M3Tooltip.activeInstalledTooltipPopupOwnsInteraction(target));
+
+                        tooltipRoot.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 4.0, 4.0, false));
                     } finally {
                         tooltip.hide();
                         stage.close();
@@ -4405,8 +4539,11 @@ final class M3ControlStyleTest {
     void disclosureIconAnimatesExpandedState() throws InterruptedException {
         AtomicReference<@Nullable SVGPath> shape = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                DISCLOSURE_ANIMATION_SETTLE_DELAY,
+        runOnFxThreadWhen(
+                () -> {
+                    @Nullable SVGPath arrow = shape.get();
+                    return arrow != null && Math.abs(arrow.getRotate()) <= 0.01;
+                },
                 () -> {
                     M3DisclosureIcon icon = new M3DisclosureIcon();
                     Pane root = new Pane(icon);
@@ -5221,7 +5358,10 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3SubMenuItem> itemReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(SUBMENU_OPEN_DELAY, () -> {
+            runOnFxThreadWhen(() -> {
+                @Nullable M3SubMenuItem item = itemReference.get();
+                return item != null && item.isSubMenuShowing();
+            }, () -> {
                 Stage stage = new Stage();
                 M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
                 M3Menu menu = new M3Menu(export);
@@ -5239,7 +5379,7 @@ final class M3ControlStyleTest {
                 itemReference.set(export);
                 export.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_ENTERED, 8.0, 8.0, false));
             }, () -> {
-                M3SubMenuItem item = itemReference.get();
+                M3SubMenuItem item = Objects.requireNonNull(itemReference.get(), "submenu item");
                 assertTrue(item.isSubMenuShowing());
 
                 M3Menu subMenu = item.getSubMenu();
@@ -5259,9 +5399,13 @@ final class M3ControlStyleTest {
                 ));
             });
 
-            runOnFxThreadAfterDelay(SUBMENU_CLOSE_DELAY, () ->
-                    itemReference.get().fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 8.0, 8.0, false)),
-                    () -> assertFalse(itemReference.get().isSubMenuShowing()));
+            runOnFxThreadWhen(() -> {
+                @Nullable M3SubMenuItem item = itemReference.get();
+                return item != null && !item.isSubMenuShowing();
+            }, () -> {
+                M3SubMenuItem item = Objects.requireNonNull(itemReference.get(), "submenu item");
+                item.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 8.0, 8.0, false));
+            }, () -> assertFalse(Objects.requireNonNull(itemReference.get(), "submenu item").isSubMenuShowing()));
         } finally {
             runOnFxThread(() -> {
                 @Nullable Stage stage = stageReference.get();
@@ -6438,7 +6582,15 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadAfterDelay(SUBMENU_OPEN_DELAY, () -> {
+            runOnFxThreadWhen(() -> {
+                @Nullable M3MenuButton menuButton = buttonReference.get();
+                @Nullable M3SubMenuItem export = exportReference.get();
+                return menuButton != null
+                        && export != null
+                        && !export.isSubMenuShowing()
+                        && !menuButton.isShowing()
+                        && menuButton.isFocused();
+            }, () -> {
                 M3MenuItem pdf = new M3MenuItem("PDF");
                 M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
                 M3MenuButton menuButton = new M3MenuButton("More", export);
@@ -9606,8 +9758,18 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Rectangle> barReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> initialX = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                PROGRESS_INDETERMINATE_SAMPLE_DELAY,
+        runOnFxThreadWhen(
+                () -> {
+                    @Nullable M3ProgressBar progressBar = progressBarReference.get();
+                    @Nullable Rectangle bar = barReference.get();
+                    @Nullable Double x = initialX.get();
+                    if (progressBar == null || bar == null || x == null) {
+                        return false;
+                    }
+
+                    progressBar.layout();
+                    return Math.abs(bar.getX() - x) > 0.1;
+                },
                 () -> {
                     M3ProgressBar progressBar = new M3ProgressBar();
                     Pane root = new Pane(progressBar);
@@ -9624,11 +9786,13 @@ final class M3ControlStyleTest {
                     initialX.set(bar.getX());
                 },
                 () -> {
-                    M3ProgressBar progressBar = progressBarReference.get();
-                    Rectangle bar = barReference.get();
+                    M3ProgressBar progressBar =
+                            Objects.requireNonNull(progressBarReference.get(), "progressBar");
+                    Rectangle bar = Objects.requireNonNull(barReference.get(), "bar");
+                    double x = Objects.requireNonNull(initialX.get(), "initialX");
                     progressBar.layout();
 
-                    assertTrue(Math.abs(bar.getX() - initialX.get()) > 0.1);
+                    assertTrue(Math.abs(bar.getX() - x) > 0.1);
                 }
         );
     }
@@ -9853,8 +10017,18 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Arc> indicatorReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> initialStartAngle = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                PROGRESS_INDETERMINATE_SAMPLE_DELAY,
+        runOnFxThreadWhen(
+                () -> {
+                    @Nullable M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
+                    @Nullable Arc indicator = indicatorReference.get();
+                    @Nullable Double startAngle = initialStartAngle.get();
+                    if (progressIndicator == null || indicator == null || startAngle == null) {
+                        return false;
+                    }
+
+                    progressIndicator.layout();
+                    return Math.abs(indicator.getStartAngle() - startAngle) > 0.1;
+                },
                 () -> {
                     M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
                     Pane root = new Pane(progressIndicator);
@@ -9871,11 +10045,13 @@ final class M3ControlStyleTest {
                     initialStartAngle.set(indicator.getStartAngle());
                 },
                 () -> {
-                    M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
-                    Arc indicator = indicatorReference.get();
+                    M3ProgressIndicator progressIndicator =
+                            Objects.requireNonNull(progressIndicatorReference.get(), "progressIndicator");
+                    Arc indicator = Objects.requireNonNull(indicatorReference.get(), "indicator");
+                    double startAngle = Objects.requireNonNull(initialStartAngle.get(), "initialStartAngle");
                     progressIndicator.layout();
 
-                    assertTrue(Math.abs(indicator.getStartAngle() - initialStartAngle.get()) > 0.1);
+                    assertTrue(Math.abs(indicator.getStartAngle() - startAngle) > 0.1);
                     assertTrue(indicator.getLength() <= -42.0);
                     assertTrue(indicator.getLength() >= -96.0);
                 }
@@ -12042,13 +12218,13 @@ final class M3ControlStyleTest {
         assertEquals(16.0, topAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(20.0, topAppBar.getMediumBottomPadding(), 0.0001);
         assertEquals(28.0, topAppBar.getLargeBottomPadding(), 0.0001);
-        assertEquals(16.0, topAppBar.getContentSpacing(), 0.0001);
-        assertEquals(8.0, topAppBar.getActionSpacing(), 0.0001);
+        assertEquals(8.0, topAppBar.getContentSpacing(), 0.0001);
+        assertEquals(0.0, topAppBar.getActionSpacing(), 0.0001);
         assertEquals(16.0, topAppBar.getPadding().getLeft(), 0.0001);
         assertInstanceOf(M3TopAppBarSkin.class, topAppBar.getSkin());
         assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
         HBox actions = assertInstanceOf(HBox.class, topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
-        assertEquals(8.0, actions.getSpacing(), 0.0001);
+        assertEquals(0.0, actions.getSpacing(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
         assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
@@ -12074,10 +12250,10 @@ final class M3ControlStyleTest {
         assertEquals(24.0, topAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(24.0, topAppBar.getMediumBottomPadding(), 0.0001);
         assertEquals(32.0, topAppBar.getLargeBottomPadding(), 0.0001);
-        assertEquals(20.0, topAppBar.getContentSpacing(), 0.0001);
-        assertEquals(12.0, topAppBar.getActionSpacing(), 0.0001);
+        assertEquals(12.0, topAppBar.getContentSpacing(), 0.0001);
+        assertEquals(0.0, topAppBar.getActionSpacing(), 0.0001);
         assertEquals(24.0, topAppBar.getPadding().getLeft(), 0.0001);
-        assertEquals(12.0, actions.getSpacing(), 0.0001);
+        assertEquals(0.0, actions.getSpacing(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
         assertEquals(120.0, topAppBar.getPrefHeight(), 0.0001);
@@ -12175,6 +12351,38 @@ final class M3ControlStyleTest {
         ).getSpacing(), 0.0001);
     }
 
+    /// Verifies that top app bars expose the Material scroll-under visual state through a pseudo-class.
+    @Test
+    void topAppBarScrolledUnderStateUsesPseudoClassAndCss() {
+        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        PseudoClass scrolledUnder = PseudoClass.getPseudoClass("scrolled-under");
+
+        StackPane root = new StackPane(topAppBar);
+        Scene scene = new Scene(root, 360.0, 120.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.layout();
+
+        assertFalse(topAppBar.isScrolledUnder());
+        assertFalse(topAppBar.getPseudoClassStates().contains(scrolledUnder));
+        assertNull(topAppBar.getEffect());
+
+        topAppBar.setScrolledUnder(true);
+        root.applyCss();
+        root.layout();
+
+        assertTrue(topAppBar.isScrolledUnder());
+        assertTrue(topAppBar.getPseudoClassStates().contains(scrolledUnder));
+        assertInstanceOf(DropShadow.class, topAppBar.getEffect());
+
+        topAppBar.setScrolledUnder(false);
+        root.applyCss();
+        root.layout();
+
+        assertFalse(topAppBar.getPseudoClassStates().contains(scrolledUnder));
+        assertNull(topAppBar.getEffect());
+    }
+
     /// Verifies that top app bar variants apply distinct Material title type scale roles.
     @Test
     void topAppBarVariantsApplyTitleTypeScale() {
@@ -12193,8 +12401,117 @@ final class M3ControlStyleTest {
 
         assertTopAppBarTitleFontSize(small, 22.0);
         assertTopAppBarTitleFontSize(centerAligned, 22.0);
-        assertTopAppBarTitleFontSize(medium, 28.0);
-        assertTopAppBarTitleFontSize(large, 32.0);
+        assertTopAppBarTitleFontSize(medium, 24.0);
+        assertTopAppBarTitleFontSize(large, 28.0);
+    }
+
+    /// Verifies that all top app bar variants use Material row, title, and action slot geometry.
+    @Test
+    void topAppBarVariantsLayOutMaterialSlots() {
+        runOnFxThread(() -> {
+            M3TopAppBar small = createGeometryTopAppBar("Inbox", M3TopAppBarVariant.SMALL);
+            M3TopAppBar centerAligned = createGeometryTopAppBar("Calendar", M3TopAppBarVariant.CENTER_ALIGNED);
+            M3TopAppBar medium = createGeometryTopAppBar("Project", M3TopAppBarVariant.MEDIUM);
+            M3TopAppBar large = createGeometryTopAppBar("Workspace", M3TopAppBarVariant.LARGE);
+
+            VBox root = new VBox(8.0, small, centerAligned, medium, large);
+            root.setFillWidth(true);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 680.0, 440.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(680.0, 440.0);
+            root.layout();
+
+            for (M3TopAppBar appBar : List.of(small, centerAligned, medium, large)) {
+                assertTopAppBarMaterialSlotGeometry(appBar);
+                assertTopAppBarIconButtonTargets(appBar);
+            }
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            for (M3TopAppBar appBar : List.of(small, centerAligned, medium, large)) {
+                assertSnapshotNodeContainsContrast(image, appBar, Color.WHITE, 0.04);
+            }
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-top-app-bar-variants.png"
+            ));
+        });
+    }
+
+    /// Verifies that top app bar variants mirror logical leading and trailing slots in right-to-left layouts.
+    @Test
+    void topAppBarVariantsLayOutMaterialSlotsInRightToLeft() {
+        runOnFxThread(() -> {
+            M3TopAppBar small = createGeometryTopAppBar("Inbox", M3TopAppBarVariant.SMALL);
+            M3TopAppBar centerAligned = createGeometryTopAppBar("Calendar", M3TopAppBarVariant.CENTER_ALIGNED);
+            M3TopAppBar medium = createGeometryTopAppBar("Project", M3TopAppBarVariant.MEDIUM);
+            M3TopAppBar large = createGeometryTopAppBar("Workspace", M3TopAppBarVariant.LARGE);
+
+            VBox root = new VBox(8.0, small, centerAligned, medium, large);
+            root.setFillWidth(true);
+            root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 680.0, 440.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(680.0, 440.0);
+            root.layout();
+
+            for (M3TopAppBar appBar : List.of(small, centerAligned, medium, large)) {
+                assertTopAppBarMaterialSlotGeometry(appBar);
+                assertTopAppBarIconButtonTargets(appBar);
+            }
+
+            writeVisualSnapshot(snapshotImageOnFxThread(root), java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-top-app-bar-variants-rtl.png"
+            ));
+        });
+    }
+
+    /// Verifies that generated top app bar action slots track action-list mutations without stale parents.
+    @Test
+    void topAppBarActionSlotsTrackActionListMutations() {
+        runOnFxThread(() -> {
+            M3IconButton navigation = createGeometryTopAppBarIcon("menu");
+            M3IconButton search = createGeometryTopAppBarIcon("search");
+            M3IconButton more = createGeometryTopAppBarIcon("more");
+            M3IconButton account = createGeometryTopAppBarIcon("person");
+            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", navigation, search, more);
+            Pane root = new Pane(topAppBar);
+            Scene scene = new Scene(root, 360.0, 96.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            topAppBar.resizeRelocate(0.0, 0.0, 360.0, 64.0);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(2, topAppBar.lookupAll("." + M3TopAppBar.ACTION_SLOT_STYLE_CLASS).size());
+
+            topAppBar.setActions(more, account);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(2, topAppBar.lookupAll("." + M3TopAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertNull(search.getParent(), "removed app bar action should not keep an old slot parent");
+            assertTrue(more.getParent() instanceof StackPane, "reused app bar action should be reparented into a slot");
+            assertTrue(account.getParent() instanceof StackPane, "new app bar action should be parented into a slot");
+
+            topAppBar.clearActions();
+            root.applyCss();
+            root.layout();
+
+            assertEquals(0, topAppBar.lookupAll("." + M3TopAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertNull(more.getParent(), "cleared app bar action should not keep a slot parent");
+            assertNull(account.getParent(), "cleared app bar action should not keep a slot parent");
+        });
     }
 
     /// Asserts the rendered font size used by a top app bar title label.
@@ -12203,6 +12520,205 @@ final class M3ControlStyleTest {
 
         assertEquals(expectedSize, title.getFont().getSize(), 0.0001,
                 () -> "top app bar title font size mismatch: variant=" + appBar.getVariant());
+    }
+
+    /// Creates a top app bar with action targets suitable for deterministic layout assertions.
+    private static M3TopAppBar createGeometryTopAppBar(String title, M3TopAppBarVariant variant) {
+        M3TopAppBar appBar = new M3TopAppBar(
+                title,
+                variant,
+                createGeometryTopAppBarIcon("menu"),
+                createGeometryTopAppBarIcon("search"),
+                createGeometryTopAppBarIcon("more")
+        );
+        appBar.setMaxWidth(Double.MAX_VALUE);
+        return appBar;
+    }
+
+    /// Creates an icon button used only by top app bar geometry tests.
+    private static M3IconButton createGeometryTopAppBarIcon(String iconName) {
+        return new M3IconButton(visualIcon(iconName));
+    }
+
+    /// Asserts Material slot geometry for one rendered top app bar.
+    private static void assertTopAppBarMaterialSlotGeometry(M3TopAppBar appBar) {
+        StackPane navigation = assertInstanceOf(
+                StackPane.class,
+                appBar.lookup("." + M3TopAppBar.NAVIGATION_STYLE_CLASS)
+        );
+        Label title = assertInstanceOf(Label.class, appBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
+        HBox actions = assertInstanceOf(HBox.class, appBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
+        Text titleText = assertInstanceOf(Text.class, title.lookup(".text"));
+
+        Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
+        Bounds navigationBounds = navigation.localToScene(navigation.getBoundsInLocal());
+        Bounds titleBounds = title.localToScene(title.getBoundsInLocal());
+        Bounds titleTextBounds = titleText.localToScene(titleText.getBoundsInLocal());
+        Bounds actionsBounds = actions.localToScene(actions.getBoundsInLocal());
+        List<Node> actionSlots = appBar.lookupAll("." + M3TopAppBar.ACTION_SLOT_STYLE_CLASS).stream()
+                .sorted(java.util.Comparator.comparingDouble(node ->
+                        node.localToScene(node.getBoundsInLocal()).getMinX()))
+                .toList();
+        double horizontalPadding = appBar.getHorizontalPadding();
+        double rowCenterY = appBarBounds.getMinY() + appBar.getContainerHeight() / 2.0;
+        boolean rightToLeft = appBar.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+
+        assertEquals(expectedTopAppBarHeight(appBar), appBarBounds.getHeight(), 1.0,
+                () -> "top app bar rendered height drifted: variant=" + appBar.getVariant()
+                        + ", bounds=" + appBarBounds);
+        assertEquals(rowCenterY, navigationBounds.getCenterY(), 1.0,
+                () -> "top app bar navigation target is not centered in the icon row: variant="
+                        + appBar.getVariant() + ", navigation=" + navigationBounds
+                        + ", appBar=" + appBarBounds);
+        assertEquals(rowCenterY, actionsBounds.getCenterY(), 1.0,
+                () -> "top app bar action targets are not centered in the icon row: variant="
+                        + appBar.getVariant() + ", actions=" + actionsBounds
+                        + ", appBar=" + appBarBounds);
+        assertTopAppBarActionSlots(appBar, navigation, actionSlots, rowCenterY);
+        if (rightToLeft) {
+            assertEquals(appBarBounds.getMaxX() - horizontalPadding, navigationBounds.getMaxX(), 1.0,
+                    () -> "RTL top app bar navigation target ignores leading padding: variant="
+                            + appBar.getVariant() + ", navigation=" + navigationBounds
+                            + ", appBar=" + appBarBounds);
+            assertEquals(appBarBounds.getMinX() + horizontalPadding, actionsBounds.getMinX(), 1.0,
+                    () -> "RTL top app bar action targets ignore trailing padding: variant="
+                            + appBar.getVariant() + ", actions=" + actionsBounds
+                            + ", appBar=" + appBarBounds);
+        } else {
+            assertEquals(appBarBounds.getMinX() + horizontalPadding, navigationBounds.getMinX(), 1.0,
+                    () -> "top app bar navigation target ignores leading padding: variant="
+                            + appBar.getVariant() + ", navigation=" + navigationBounds
+                            + ", appBar=" + appBarBounds);
+            assertEquals(appBarBounds.getMaxX() - horizontalPadding, actionsBounds.getMaxX(), 1.0,
+                    () -> "top app bar action targets ignore trailing padding: variant="
+                            + appBar.getVariant() + ", actions=" + actionsBounds
+                            + ", appBar=" + appBarBounds);
+        }
+
+        switch (appBar.getVariant()) {
+            case CENTER_ALIGNED -> {
+                assertEquals(appBarBounds.getCenterX(), titleTextBounds.getCenterX(), 1.0,
+                        () -> "center-aligned top app bar title is not horizontally centered: title="
+                                + titleTextBounds + ", appBar=" + appBarBounds);
+                assertEquals(rowCenterY, titleTextBounds.getCenterY(), 1.0,
+                        () -> "center-aligned top app bar title is not centered in the icon row: title="
+                                + titleTextBounds + ", appBar=" + appBarBounds);
+            }
+            case MEDIUM, LARGE -> {
+                double bottomPadding = appBar.getVariant() == M3TopAppBarVariant.MEDIUM
+                        ? appBar.getMediumBottomPadding()
+                        : appBar.getLargeBottomPadding();
+                if (rightToLeft) {
+                    assertEquals(appBarBounds.getMaxX() - horizontalPadding, titleTextBounds.getMaxX(), 1.0,
+                            () -> "RTL tall top app bar title ignores leading padding: variant="
+                                    + appBar.getVariant() + ", titleText=" + titleTextBounds
+                                    + ", title=" + titleBounds + ", appBar=" + appBarBounds);
+                } else {
+                    assertEquals(appBarBounds.getMinX() + horizontalPadding, titleBounds.getMinX(), 1.0,
+                            () -> "tall top app bar title ignores leading padding: variant="
+                                    + appBar.getVariant() + ", title=" + titleBounds
+                                    + ", appBar=" + appBarBounds);
+                }
+                assertEquals(appBarBounds.getMaxY() - bottomPadding, titleBounds.getMaxY(), 1.0,
+                        () -> "tall top app bar title ignores bottom padding: variant="
+                                + appBar.getVariant() + ", title=" + titleBounds
+                                + ", appBar=" + appBarBounds);
+                assertTrue(titleTextBounds.getCenterY() > rowCenterY,
+                        () -> "tall top app bar title should sit below the icon row: variant="
+                                + appBar.getVariant() + ", title=" + titleTextBounds
+                                + ", rowCenterY=" + rowCenterY);
+            }
+            case SMALL -> {
+                assertEquals(rowCenterY, titleTextBounds.getCenterY(), 1.0,
+                        () -> "small top app bar title is not centered in the icon row: title="
+                                + titleTextBounds + ", appBar=" + appBarBounds);
+                if (rightToLeft) {
+                    assertTrue(titleTextBounds.getMaxX() <= navigationBounds.getMinX() + 1.0,
+                            () -> "RTL small top app bar title overlaps the navigation target: title="
+                                    + titleTextBounds + ", navigation=" + navigationBounds);
+                } else {
+                    assertTrue(titleBounds.getMinX() >= navigationBounds.getMaxX() - 1.0,
+                            () -> "small top app bar title overlaps the navigation target: title="
+                                    + titleBounds + ", navigation=" + navigationBounds);
+                }
+            }
+        }
+    }
+
+    /// Asserts that top app bar navigation and trailing actions are hosted in stable 48 dp Material slots.
+    private static void assertTopAppBarActionSlots(
+            M3TopAppBar appBar,
+            StackPane navigation,
+            List<Node> actionSlots,
+            double rowCenterY
+    ) {
+        Bounds navigationBounds = navigation.localToScene(navigation.getBoundsInLocal());
+        assertEquals(48.0, navigationBounds.getWidth(), 1.0,
+                () -> "top app bar navigation slot width is not 48 dp: variant="
+                        + appBar.getVariant() + ", navigation=" + navigationBounds);
+        assertEquals(48.0, navigationBounds.getHeight(), 1.0,
+                () -> "top app bar navigation slot height is not 48 dp: variant="
+                        + appBar.getVariant() + ", navigation=" + navigationBounds);
+
+        assertEquals(appBar.getActions().size(), actionSlots.size(),
+                () -> "top app bar action slot count does not match action nodes: variant="
+                        + appBar.getVariant());
+        @Nullable Bounds previousBounds = null;
+        for (Node slot : actionSlots) {
+            Bounds slotBounds = slot.localToScene(slot.getBoundsInLocal());
+            assertEquals(48.0, slotBounds.getWidth(), 1.0,
+                    () -> "top app bar action slot width is not 48 dp: variant="
+                            + appBar.getVariant() + ", slot=" + slotBounds);
+            assertEquals(48.0, slotBounds.getHeight(), 1.0,
+                    () -> "top app bar action slot height is not 48 dp: variant="
+                            + appBar.getVariant() + ", slot=" + slotBounds);
+            assertEquals(rowCenterY, slotBounds.getCenterY(), 1.0,
+                    () -> "top app bar action slot is not centered in the icon row: variant="
+                            + appBar.getVariant() + ", slot=" + slotBounds);
+            if (previousBounds != null) {
+                Bounds previousSlotBounds = previousBounds;
+                assertEquals(appBar.getActionSpacing(), slotBounds.getMinX() - previousSlotBounds.getMaxX(), 1.0,
+                        () -> "top app bar action slots do not use action spacing: variant="
+                                + appBar.getVariant() + ", previous=" + previousSlotBounds + ", slot=" + slotBounds);
+            }
+            previousBounds = slotBounds;
+        }
+    }
+
+    /// Returns the expected top app bar height for the active variant.
+    private static double expectedTopAppBarHeight(M3TopAppBar appBar) {
+        return switch (appBar.getVariant()) {
+            case MEDIUM -> appBar.getMediumContainerHeight();
+            case LARGE -> appBar.getLargeContainerHeight();
+            case SMALL, CENTER_ALIGNED -> appBar.getContainerHeight();
+        };
+    }
+
+    /// Asserts that rendered top app bar icon buttons keep Material action target sizing.
+    private static void assertTopAppBarIconButtonTargets(M3TopAppBar appBar) {
+        assertTopAppBarIconButtonTarget(Objects.requireNonNull(appBar.getNavigation(), "navigation"));
+        for (Node action : appBar.getActions()) {
+            assertTopAppBarIconButtonTarget(action);
+        }
+    }
+
+    /// Asserts one rendered top app bar icon button target.
+    private static void assertTopAppBarIconButtonTarget(Node action) {
+        M3IconButton iconButton = assertInstanceOf(M3IconButton.class, action);
+        Bounds bounds = iconButton.localToScene(iconButton.getBoundsInLocal());
+        assertEquals(40.0, bounds.getWidth(), 1.0,
+                () -> "top app bar icon button target width drifted: " + bounds);
+        assertEquals(40.0, bounds.getHeight(), 1.0,
+                () -> "top app bar icon button target height drifted: " + bounds);
+        assertTopAppBarIconGraphicIsVector(iconButton);
+    }
+
+    /// Asserts that a top app bar icon button uses a vector fixture instead of a fallback text glyph.
+    private static void assertTopAppBarIconGraphicIsVector(M3IconButton iconButton) {
+        Node graphic = Objects.requireNonNull(iconButton.getGraphic(), "top app bar icon graphic");
+        assertFalse(graphic instanceof M3Icon, "top app bar geometry fixture should not use text icon placeholders");
+        assertTrue(containsSvgPath(graphic), () -> "top app bar icon graphic should contain SVG vector content: "
+                + graphic);
     }
 
     /// Verifies that top app bar icon buttons do not clip fallback glyphs.
@@ -12355,11 +12871,11 @@ final class M3ControlStyleTest {
         assertEquals(80.0, bottomAppBar.getContainerHeight(), 0.0001);
         assertEquals(16.0, bottomAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, bottomAppBar.getContentSpacing(), 0.0001);
-        assertEquals(8.0, bottomAppBar.getActionSpacing(), 0.0001);
+        assertEquals(0.0, bottomAppBar.getActionSpacing(), 0.0001);
         assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertInstanceOf(M3BottomAppBarSkin.class, bottomAppBar.getSkin());
         HBox actions = assertInstanceOf(HBox.class, bottomAppBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS));
-        assertEquals(8.0, actions.getSpacing(), 0.0001);
+        assertEquals(0.0, actions.getSpacing(), 0.0001);
 
         M3ThemeManager.install(scene, M3Theme.fromSeed(
                 Color.web("#006a6a"),
@@ -12373,11 +12889,206 @@ final class M3ControlStyleTest {
         assertEquals(24.0, bottomAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(20.0, bottomAppBar.getContentSpacing(), 0.0001);
         assertEquals(24.0, bottomAppBar.getPadding().getLeft(), 0.0001);
-        assertEquals(12.0, bottomAppBar.getActionSpacing(), 0.0001);
-        assertEquals(12.0, actions.getSpacing(), 0.0001);
+        assertEquals(0.0, bottomAppBar.getActionSpacing(), 0.0001);
+        assertEquals(0.0, actions.getSpacing(), 0.0001);
         bottomAppBar.setActionSpacing(18.0);
         assertEquals(18.0, bottomAppBar.getActionSpacing(), 0.0001);
         assertEquals(18.0, actions.getSpacing(), 0.0001);
+    }
+
+    /// Verifies that generated bottom app bar action slots track action-list mutations without stale parents.
+    @Test
+    void bottomAppBarActionSlotsTrackActionListMutations() {
+        runOnFxThread(() -> {
+            M3IconButton search = createGeometryTopAppBarIcon("search");
+            M3IconButton more = createGeometryTopAppBarIcon("more");
+            M3IconButton account = createGeometryTopAppBarIcon("person");
+            M3BottomAppBar bottomAppBar = new M3BottomAppBar(search, more);
+            Pane root = new Pane(bottomAppBar);
+            Scene scene = new Scene(root, 360.0, 96.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            bottomAppBar.resizeRelocate(0.0, 0.0, 360.0, 80.0);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(2, bottomAppBar.lookupAll("." + M3BottomAppBar.ACTION_SLOT_STYLE_CLASS).size());
+
+            bottomAppBar.setActions(more, account);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(2, bottomAppBar.lookupAll("." + M3BottomAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertNull(search.getParent(), "removed bottom app bar action should not keep an old slot parent");
+            assertTrue(more.getParent() instanceof StackPane,
+                    "reused bottom app bar action should be reparented into a slot");
+            assertTrue(account.getParent() instanceof StackPane,
+                    "new bottom app bar action should be parented into a slot");
+
+            bottomAppBar.clearActions();
+            root.applyCss();
+            root.layout();
+
+            assertEquals(0, bottomAppBar.lookupAll("." + M3BottomAppBar.ACTION_SLOT_STYLE_CLASS).size());
+            assertNull(more.getParent(), "cleared bottom app bar action should not keep a slot parent");
+            assertNull(account.getParent(), "cleared bottom app bar action should not keep a slot parent");
+        });
+    }
+
+    /// Verifies that bottom app bars align floating action slots against the full bar instead of action width.
+    @Test
+    void bottomAppBarLaysOutFloatingActionSlotFromMaterialGeometry() {
+        runOnFxThread(() -> {
+            for (M3BottomAppBarFloatingActionAlignment alignment : M3BottomAppBarFloatingActionAlignment.values()) {
+                M3BottomAppBar bottomAppBar = createGeometryBottomAppBar(alignment);
+                Pane root = new Pane(bottomAppBar);
+                root.setStyle("-fx-background-color: white; " + visualTestColors());
+                Scene scene = new Scene(root, 540.0, 128.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                root.applyCss();
+                bottomAppBar.resizeRelocate(30.0, 24.0, 480.0, 80.0);
+                root.layout();
+                bottomAppBar.layout();
+                assertBottomAppBarMaterialSlotGeometry(bottomAppBar, false);
+
+                bottomAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                bottomAppBar.layout();
+                assertBottomAppBarMaterialSlotGeometry(bottomAppBar, true);
+            }
+        });
+    }
+
+    /// Creates a bottom app bar with deterministic slot sizes for geometry tests.
+    private static M3BottomAppBar createGeometryBottomAppBar(M3BottomAppBarFloatingActionAlignment alignment) {
+        return new M3BottomAppBar(
+                alignment,
+                createFixedGeometryRegion(56.0, 56.0),
+                createFixedGeometryRegion(48.0, 48.0),
+                createFixedGeometryRegion(48.0, 48.0)
+        );
+    }
+
+    /// Creates a fixed-size region used only by slot geometry tests.
+    private static Region createFixedGeometryRegion(double width, double height) {
+        Region region = new Region();
+        region.setMinSize(width, height);
+        region.setPrefSize(width, height);
+        region.setMaxSize(width, height);
+        return region;
+    }
+
+    /// Asserts Material slot geometry for one rendered bottom app bar.
+    private static void assertBottomAppBarMaterialSlotGeometry(M3BottomAppBar appBar, boolean rightToLeft) {
+        HBox actions = assertInstanceOf(HBox.class, appBar.lookup("." + M3BottomAppBar.ACTIONS_STYLE_CLASS));
+        StackPane floatingActionSlot = assertInstanceOf(
+                StackPane.class,
+                appBar.lookup("." + M3BottomAppBar.FLOATING_ACTION_STYLE_CLASS)
+        );
+        Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
+        Bounds actionsBounds = actions.localToScene(actions.getBoundsInLocal());
+        Bounds floatingActionBounds = floatingActionSlot.localToScene(floatingActionSlot.getBoundsInLocal());
+        List<Node> actionSlots = appBar.lookupAll("." + M3BottomAppBar.ACTION_SLOT_STYLE_CLASS).stream()
+                .sorted(java.util.Comparator.comparingDouble(node ->
+                        node.localToScene(node.getBoundsInLocal()).getMinX()))
+                .toList();
+        double contentMinX = appBarBounds.getMinX() + appBar.getHorizontalPadding();
+        double contentMaxX = appBarBounds.getMaxX() - appBar.getHorizontalPadding();
+        double contentCenterX = (contentMinX + contentMaxX) / 2.0;
+        double contentSpacing = appBar.getContentSpacing();
+
+        assertEquals(appBarBounds.getCenterY(), actionsBounds.getCenterY(), 1.0,
+                () -> "bottom app bar actions are not vertically centered: actions=" + actionsBounds
+                        + ", appBar=" + appBarBounds);
+        assertEquals(appBarBounds.getCenterY(), floatingActionBounds.getCenterY(), 1.0,
+                () -> "bottom app bar floating action slot is not vertically centered: floatingAction="
+                        + floatingActionBounds + ", appBar=" + appBarBounds);
+        assertBottomAppBarActionSlots(appBar, actionSlots, appBarBounds.getCenterY());
+
+        switch (appBar.getFloatingActionAlignment()) {
+            case START -> {
+                if (rightToLeft) {
+                    assertEquals(contentMaxX, floatingActionBounds.getMaxX(), 1.0,
+                            () -> "RTL start bottom app bar floating action should be on the physical right edge: "
+                                    + floatingActionBounds + ", appBar=" + appBarBounds);
+                    assertTrue(actionsBounds.getMaxX() <= floatingActionBounds.getMinX() - contentSpacing + 1.0,
+                            () -> "RTL start bottom app bar actions should follow the floating action logically: actions="
+                                    + actionsBounds + ", floatingAction=" + floatingActionBounds);
+                } else {
+                    assertEquals(contentMinX, floatingActionBounds.getMinX(), 1.0,
+                            () -> "start bottom app bar floating action should be on the leading edge: "
+                                    + floatingActionBounds + ", appBar=" + appBarBounds);
+                    assertTrue(actionsBounds.getMinX() >= floatingActionBounds.getMaxX() + contentSpacing - 1.0,
+                            () -> "start bottom app bar actions should follow the floating action logically: actions="
+                                    + actionsBounds + ", floatingAction=" + floatingActionBounds);
+                }
+            }
+            case CENTER -> {
+                assertEquals(contentCenterX, floatingActionBounds.getCenterX(), 1.0,
+                        () -> "center bottom app bar floating action should be centered in the full content area: "
+                                + floatingActionBounds + ", appBar=" + appBarBounds);
+                assertLogicalStart(actionsBounds, contentMinX, contentMaxX, rightToLeft, "center");
+            }
+            case END -> {
+                if (rightToLeft) {
+                    assertEquals(contentMinX, floatingActionBounds.getMinX(), 1.0,
+                            () -> "RTL end bottom app bar floating action should be on the physical left edge: "
+                                    + floatingActionBounds + ", appBar=" + appBarBounds);
+                } else {
+                    assertEquals(contentMaxX, floatingActionBounds.getMaxX(), 1.0,
+                            () -> "end bottom app bar floating action should be on the trailing edge: "
+                                    + floatingActionBounds + ", appBar=" + appBarBounds);
+                }
+                assertLogicalStart(actionsBounds, contentMinX, contentMaxX, rightToLeft, "end");
+            }
+        }
+    }
+
+    /// Asserts that bottom app bar regular actions are hosted in stable 48 dp Material slots.
+    private static void assertBottomAppBarActionSlots(
+            M3BottomAppBar appBar,
+            List<Node> actionSlots,
+            double rowCenterY
+    ) {
+        assertEquals(appBar.getActions().size(), actionSlots.size(),
+                "bottom app bar action slot count does not match action nodes");
+        @Nullable Bounds previousBounds = null;
+        for (Node slot : actionSlots) {
+            Bounds slotBounds = slot.localToScene(slot.getBoundsInLocal());
+            assertEquals(48.0, slotBounds.getWidth(), 1.0,
+                    () -> "bottom app bar action slot width is not 48 dp: " + slotBounds);
+            assertEquals(48.0, slotBounds.getHeight(), 1.0,
+                    () -> "bottom app bar action slot height is not 48 dp: " + slotBounds);
+            assertEquals(rowCenterY, slotBounds.getCenterY(), 1.0,
+                    () -> "bottom app bar action slot is not centered in the bar row: " + slotBounds);
+            if (previousBounds != null) {
+                Bounds previousSlotBounds = previousBounds;
+                assertEquals(appBar.getActionSpacing(), slotBounds.getMinX() - previousSlotBounds.getMaxX(), 1.0,
+                        () -> "bottom app bar action slots do not use action spacing: previous="
+                                + previousSlotBounds + ", slot=" + slotBounds);
+            }
+            previousBounds = slotBounds;
+        }
+    }
+
+    /// Asserts that a slot is placed at the logical start edge.
+    private static void assertLogicalStart(
+            Bounds bounds,
+            double contentMinX,
+            double contentMaxX,
+            boolean rightToLeft,
+            String description
+    ) {
+        if (rightToLeft) {
+            assertEquals(contentMaxX, bounds.getMaxX(), 1.0,
+                    () -> "RTL " + description + " bottom app bar actions should start on the physical right edge: "
+                            + bounds);
+        } else {
+            assertEquals(contentMinX, bounds.getMinX(), 1.0,
+                    () -> description + " bottom app bar actions should start on the physical left edge: " + bounds);
+        }
     }
 
     /// Verifies that app bars and banners create Material Design 3 skins.
@@ -12914,8 +13625,12 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Double> collapsedHeightReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> expandedHeightReference = new AtomicReference<>();
 
-        runOnFxThreadAfterDelay(
-                DRAWER_EXPANSION_INTERMEDIATE_DELAY,
+        runOnFxThreadWhen(
+                () -> navigationDrawerGroupHeightBetween(
+                        groupReference,
+                        collapsedHeightReference,
+                        expandedHeightReference
+                ) && navigationDrawerGroupChildCount(groupReference) == 2,
                 () -> {
                     M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
                     M3ListItem buttons = new M3ListItem("Buttons");
@@ -12963,8 +13678,12 @@ final class M3ControlStyleTest {
                 }
         );
 
-        runOnFxThreadAfterDelay(
-                DRAWER_EXPANSION_INTERMEDIATE_DELAY,
+        runOnFxThreadWhen(
+                () -> navigationDrawerGroupHeightBetween(
+                        groupReference,
+                        collapsedHeightReference,
+                        expandedHeightReference
+                ) && navigationDrawerGroupChildCount(groupReference) == 2,
                 () -> {
                 },
                 () -> {
@@ -18817,6 +19536,23 @@ final class M3ControlStyleTest {
                 && Math.abs(group.prefHeight(240.0) - expectedHeight) <= 0.5;
     }
 
+    /// Returns whether a navigation drawer group is between collapsed and expanded preferred heights.
+    private static boolean navigationDrawerGroupHeightBetween(
+            AtomicReference<@Nullable M3NavigationDrawerGroup> groupReference,
+            AtomicReference<@Nullable Double> collapsedHeightReference,
+            AtomicReference<@Nullable Double> expandedHeightReference
+    ) {
+        @Nullable M3NavigationDrawerGroup group = groupReference.get();
+        @Nullable Double collapsedHeight = collapsedHeightReference.get();
+        @Nullable Double expandedHeight = expandedHeightReference.get();
+        if (group == null || collapsedHeight == null || expandedHeight == null) {
+            return false;
+        }
+
+        double height = group.prefHeight(240.0);
+        return height > collapsedHeight + 0.5 && height < expandedHeight - 0.5;
+    }
+
     /// Returns the currently rendered child row count for a navigation drawer group.
     private static int navigationDrawerGroupChildCount(
             AtomicReference<@Nullable M3NavigationDrawerGroup> groupReference
@@ -19623,15 +20359,6 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(task);
     }
 
-    /// Runs setup on the FX thread and verifies the result after a JavaFX delay.
-    private static void runOnFxThreadAfterDelay(
-            Duration delay,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        FxTestUtils.runOnFxThreadAfterDelay(delay, setup, verification);
-    }
-
     /// Runs setup on the FX thread and verifies the result when a condition becomes true.
     private static void runOnFxThreadWhen(
             BooleanSupplier condition,
@@ -19639,6 +20366,16 @@ final class M3ControlStyleTest {
             Runnable verification
     ) throws InterruptedException {
         FxTestUtils.runOnFxThreadWhen(condition, setup, verification);
+    }
+
+    /// Runs setup on the FX thread and verifies the result after a condition remains true across pulses.
+    private static void runOnFxThreadWhenStable(
+            BooleanSupplier condition,
+            int stablePulseCount,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        FxTestUtils.runOnFxThreadWhenStable(condition, stablePulseCount, setup, verification);
     }
 
     /// Runs setup on the FX thread and verifies the result after JavaFX pulses.

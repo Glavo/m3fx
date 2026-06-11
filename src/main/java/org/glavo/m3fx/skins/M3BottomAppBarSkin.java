@@ -10,27 +10,20 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3BottomAppBar;
+import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3BottomAppBar].
 @NotNullByDefault
 public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
-    /// The internal horizontal container.
-    private final HBox container = new HBox();
+    /// The minimum Material hit slot used by bottom app bar regular action icons.
+    private static final double MINIMUM_ACTION_SLOT_SIZE = 48.0;
 
     /// The regular action node container.
     private final HBox actions = new HBox();
-
-    /// The flexible spacer before the floating action slot.
-    private final Region leadingSpacer = new Region();
-
-    /// The flexible spacer after the floating action slot.
-    private final Region trailingSpacer = new Region();
 
     /// The slot that hosts the optional floating action node.
     private final StackPane floatingActionSlot = new StackPane();
@@ -39,31 +32,30 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
     /// Updates logical floating-action placement when node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updateLayoutOrder();
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateLayoutState();
 
     /// Creates a bottom app bar skin.
     ///
     /// @param control the bottom app bar controlled by this skin
     public M3BottomAppBarSkin(M3BottomAppBar control) {
         super(control);
-        container.setManaged(false);
-        container.spacingProperty().bind(control.contentSpacingProperty());
-        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        actions.setManaged(false);
+        floatingActionSlot.setManaged(false);
+        actions.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         actions.spacingProperty().bind(control.actionSpacingProperty());
         actions.getStyleClass().add(M3BottomAppBar.ACTIONS_STYLE_CLASS);
         floatingActionSlot.getStyleClass().add(M3BottomAppBar.FLOATING_ACTION_STYLE_CLASS);
-        HBox.setHgrow(leadingSpacer, Priority.ALWAYS);
-        HBox.setHgrow(trailingSpacer, Priority.ALWAYS);
 
         control.floatingActionProperty().addListener((observable, oldValue, newValue) -> updateFloatingAction(newValue));
-        control.floatingActionAlignmentProperty().addListener((observable, oldValue, newValue) -> updateLayoutOrder());
+        control.floatingActionAlignmentProperty().addListener((observable, oldValue, newValue) -> updateLayoutState());
+        control.nodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.getActions().addListener(actionsListener);
 
         updateActions();
         updateFloatingAction(control.getFloatingAction());
-        updateLayoutOrder();
-        getChildren().add(container);
+        updateLayoutState();
+        getChildren().addAll(actions, floatingActionSlot);
     }
 
     /// Removes listeners and child references before disposal.
@@ -71,17 +63,16 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     public void dispose() {
         M3BottomAppBar control = getSkinnable();
         control.getActions().removeListener(actionsListener);
+        control.nodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
-        container.spacingProperty().unbind();
-        container.nodeOrientationProperty().unbind();
+        actions.nodeOrientationProperty().unbind();
         actions.spacingProperty().unbind();
-        actions.getChildren().clear();
+        clearActionSlots();
         floatingActionSlot.getChildren().clear();
-        container.getChildren().clear();
         super.dispose();
     }
 
-    /// Computes the minimum width from the internal container.
+    /// Computes the minimum width needed by the action and floating action slots.
     @Override
     protected double computeMinWidth(
             double height,
@@ -90,10 +81,10 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + container.minWidth(height) + rightInset;
+        return leftInset + computeContentWidth(height, true) + rightInset;
     }
 
-    /// Computes the minimum height from the internal container.
+    /// Computes the minimum height from the Material container height token.
     @Override
     protected double computeMinHeight(
             double width,
@@ -102,10 +93,10 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.minHeight(width) + bottomInset;
+        return topInset + getSkinnable().getContainerHeight() + bottomInset;
     }
 
-    /// Computes the preferred width from the internal container.
+    /// Computes the preferred width needed by the action and floating action slots.
     @Override
     protected double computePrefWidth(
             double height,
@@ -114,10 +105,10 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + container.prefWidth(height) + rightInset;
+        return leftInset + computeContentWidth(height, false) + rightInset;
     }
 
-    /// Computes the preferred height from the internal container.
+    /// Computes the preferred height from the Material container height token.
     @Override
     protected double computePrefHeight(
             double width,
@@ -126,10 +117,10 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.prefHeight(width) + bottomInset;
+        return topInset + getSkinnable().getContainerHeight() + bottomInset;
     }
 
-    /// Computes the maximum width from the internal container.
+    /// Computes the maximum width.
     @Override
     protected double computeMaxWidth(
             double height,
@@ -138,10 +129,10 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + container.maxWidth(height) + rightInset;
+        return Double.MAX_VALUE;
     }
 
-    /// Computes the maximum height from the internal container.
+    /// Computes the maximum height from the Material container height token.
     @Override
     protected double computeMaxHeight(
             double width,
@@ -150,19 +141,76 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
             double bottomInset,
             double leftInset
     ) {
-        return topInset + container.maxHeight(width) + bottomInset;
+        return topInset + getSkinnable().getContainerHeight() + bottomInset;
     }
 
-    /// Lays out the internal container in the full control content bounds.
+    /// Lays out the action and floating action slots using full app bar geometry.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        container.resizeRelocate(x, y, width, height);
+        M3BottomAppBar control = getSkinnable();
+        M3BottomAppBarFloatingActionAlignment alignment = control.getFloatingActionAlignment();
+        boolean hasFloatingAction = floatingActionSlot.isManaged();
+        double contentSpacing = hasFloatingAction ? control.getContentSpacing() : 0.0;
+        double actionsWidth = snappedPrefWidth(actions, height);
+        double actionsHeight = snappedPrefHeight(actions, actionsWidth);
+        double floatingActionWidth = hasFloatingAction ? snappedPrefWidth(floatingActionSlot, height) : 0.0;
+        double floatingActionHeight = hasFloatingAction ? snappedPrefHeight(floatingActionSlot, floatingActionWidth) : 0.0;
+        double floatingActionX = computeFloatingActionX(
+                x,
+                width,
+                floatingActionWidth,
+                alignment,
+                hasFloatingAction
+        );
+        double actionsX = computeActionsX(
+                x,
+                floatingActionWidth,
+                floatingActionX,
+                contentSpacing,
+                alignment,
+                hasFloatingAction
+        );
+        double actionsY = y + snappedOffset((height - actionsHeight) / 2.0);
+        double floatingActionY = y + snappedOffset((height - floatingActionHeight) / 2.0);
+
+        actions.resizeRelocate(actionsX, actionsY, actionsWidth, actionsHeight);
+        actions.layout();
+        if (hasFloatingAction) {
+            floatingActionSlot.resizeRelocate(
+                    floatingActionX,
+                    floatingActionY,
+                    floatingActionWidth,
+                    floatingActionHeight
+            );
+            floatingActionSlot.layout();
+        }
     }
 
     /// Updates the regular action container.
     private void updateActions() {
-        actions.getChildren().setAll(getSkinnable().getActions());
+        clearActionSlots();
+        for (Node action : getSkinnable().getActions()) {
+            actions.getChildren().add(createActionSlot(action));
+        }
         getSkinnable().requestLayout();
+    }
+
+    /// Removes child references from generated action slots before rebuilding or disposing the skin.
+    private void clearActionSlots() {
+        for (Node child : actions.getChildren()) {
+            if (child instanceof SlotPane slot) {
+                slot.getChildren().clear();
+            }
+        }
+        actions.getChildren().clear();
+    }
+
+    /// Creates a fixed Material action slot for a public regular action node.
+    private static SlotPane createActionSlot(Node action) {
+        SlotPane slot = new SlotPane();
+        slot.getStyleClass().add(M3BottomAppBar.ACTION_SLOT_STYLE_CLASS);
+        slot.getChildren().add(action);
+        return slot;
     }
 
     /// Updates the floating action slot.
@@ -176,26 +224,122 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         getSkinnable().requestLayout();
     }
 
-    /// Updates child order and slot alignment from the floating action alignment.
-    private void updateLayoutOrder() {
-        container.getChildren().clear();
-        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-        container.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+    /// Updates slot alignment from orientation and floating action placement.
+    private void updateLayoutState() {
+        boolean rightToLeft = isRightToLeft();
         actions.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
         switch (getSkinnable().getFloatingActionAlignment()) {
-            case START -> {
-                floatingActionSlot.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-                container.getChildren().addAll(floatingActionSlot, actions, trailingSpacer);
-            }
-            case CENTER -> {
-                floatingActionSlot.setAlignment(Pos.CENTER);
-                container.getChildren().addAll(actions, leadingSpacer, floatingActionSlot, trailingSpacer);
-            }
-            case END -> {
-                floatingActionSlot.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
-                container.getChildren().addAll(actions, leadingSpacer, floatingActionSlot);
-            }
+            case START -> floatingActionSlot.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+            case CENTER -> floatingActionSlot.setAlignment(Pos.CENTER);
+            case END -> floatingActionSlot.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
         }
         getSkinnable().requestLayout();
+    }
+
+    /// Returns whether the skinnable lays out logical starts on the physical right.
+    private boolean isRightToLeft() {
+        NodeOrientation orientation = getSkinnable().getNodeOrientation();
+        return orientation == NodeOrientation.RIGHT_TO_LEFT
+                || orientation == NodeOrientation.INHERIT
+                && getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+    }
+
+    /// Computes the content width needed by visible slots.
+    private double computeContentWidth(double height, boolean minimum) {
+        double actionsWidth = minimum ? actions.minWidth(height) : actions.prefWidth(height);
+        double floatingActionWidth = floatingActionSlot.isManaged()
+                ? (minimum ? floatingActionSlot.minWidth(height) : floatingActionSlot.prefWidth(height))
+                : 0.0;
+        double spacing = actionsWidth > 0.0 && floatingActionWidth > 0.0 ? getSkinnable().getContentSpacing() : 0.0;
+        return actionsWidth + floatingActionWidth + spacing;
+    }
+
+    /// Computes the logical x coordinate for the floating action slot.
+    private double computeFloatingActionX(
+            double x,
+            double width,
+            double floatingActionWidth,
+            M3BottomAppBarFloatingActionAlignment alignment,
+            boolean hasFloatingAction
+    ) {
+        if (!hasFloatingAction) {
+            return x;
+        }
+        return switch (alignment) {
+            case START -> x;
+            case CENTER -> x + snappedOffsetX((width - floatingActionWidth) / 2.0);
+            case END -> x + width - floatingActionWidth;
+        };
+    }
+
+    /// Computes the logical x coordinate for regular actions.
+    private double computeActionsX(
+            double x,
+            double floatingActionWidth,
+            double floatingActionX,
+            double contentSpacing,
+            M3BottomAppBarFloatingActionAlignment alignment,
+            boolean hasFloatingAction
+    ) {
+        if (!hasFloatingAction) {
+            return x;
+        }
+        return switch (alignment) {
+            case START -> floatingActionX + floatingActionWidth + contentSpacing;
+            case CENTER, END -> x;
+        };
+    }
+
+    /// Returns a child node's snapped preferred width.
+    private double snappedPrefWidth(Node node, double height) {
+        return snapSizeX(node.prefWidth(height));
+    }
+
+    /// Returns a child node's snapped preferred height.
+    private double snappedPrefHeight(Node node, double width) {
+        return snapSizeY(node.prefHeight(width));
+    }
+
+    /// Snaps an offset to the horizontal pixel grid.
+    private double snappedOffsetX(double value) {
+        return snapPositionX(Math.max(0.0, value));
+    }
+
+    /// Snaps an offset to the vertical pixel grid.
+    private double snappedOffset(double value) {
+        return snapPositionY(Math.max(0.0, value));
+    }
+
+    /// A slot pane that preserves the 48 dp Material bottom app bar action target while centering smaller controls.
+    @NotNullByDefault
+    private static final class SlotPane extends StackPane {
+        /// Creates a bottom app bar action slot.
+        private SlotPane() {
+            setAlignment(Pos.CENTER);
+        }
+
+        /// Computes the minimum slot width.
+        @Override
+        protected double computeMinWidth(double height) {
+            return Math.max(MINIMUM_ACTION_SLOT_SIZE, super.computeMinWidth(height));
+        }
+
+        /// Computes the minimum slot height.
+        @Override
+        protected double computeMinHeight(double width) {
+            return Math.max(MINIMUM_ACTION_SLOT_SIZE, super.computeMinHeight(width));
+        }
+
+        /// Computes the preferred slot width.
+        @Override
+        protected double computePrefWidth(double height) {
+            return Math.max(MINIMUM_ACTION_SLOT_SIZE, super.computePrefWidth(height));
+        }
+
+        /// Computes the preferred slot height.
+        @Override
+        protected double computePrefHeight(double width) {
+            return Math.max(MINIMUM_ACTION_SLOT_SIZE, super.computePrefHeight(width));
+        }
     }
 }

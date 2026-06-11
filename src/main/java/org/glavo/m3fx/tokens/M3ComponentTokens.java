@@ -504,8 +504,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double tooltipRichActionButtonHeight = density.apply(expressive ? 36.0 : 32.0);
         double tooltipRichActionButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
         double appBarHorizontalPadding = density.apply(expressive ? 24.0 : 16.0);
-        double appBarContentSpacing = density.apply(expressive ? 20.0 : 16.0);
-        double appBarActionSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double topAppBarContentSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double topAppBarActionSpacing = 0.0;
+        double bottomAppBarContentSpacing = density.apply(expressive ? 20.0 : 16.0);
+        double bottomAppBarActionSpacing = 0.0;
         double topAppBarMediumBottomPadding = density.apply(expressive ? 24.0 : 20.0);
         double topAppBarLargeBottomPadding = density.apply(expressive ? 32.0 : 28.0);
         double buttonHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
@@ -740,10 +742,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         appBarHorizontalPadding,
                         topAppBarMediumBottomPadding,
                         topAppBarLargeBottomPadding,
-                        appBarContentSpacing,
-                        appBarActionSpacing
+                        topAppBarContentSpacing,
+                        topAppBarActionSpacing
                 ),
-                new BottomAppBarTokens(bottomAppBarHeight, appBarHorizontalPadding, appBarContentSpacing, appBarActionSpacing),
+                new BottomAppBarTokens(
+                        bottomAppBarHeight,
+                        appBarHorizontalPadding,
+                        bottomAppBarContentSpacing,
+                        bottomAppBarActionSpacing
+                ),
                 new NavigationBarTokens(
                         navigationBarHeight,
                         navigationItemWidth,

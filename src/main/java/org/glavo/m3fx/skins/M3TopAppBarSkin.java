@@ -20,8 +20,11 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3TopAppBar].
 @NotNullByDefault
 public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
+    /// The minimum Material hit slot used by top app bar navigation and trailing action icons.
+    private static final double MINIMUM_ACTION_SLOT_SIZE = 48.0;
+
     /// The slot that hosts the optional navigation node.
-    private final StackPane navigationSlot = new StackPane();
+    private final SlotPane navigationSlot = new SlotPane();
 
     /// The label that renders the app bar title.
     private final Label titleLabel = new Label();
@@ -75,7 +78,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         control.heightProperty().removeListener(sizeInvalidation);
         actions.nodeOrientationProperty().unbind();
         actions.spacingProperty().unbind();
-        actions.getChildren().clear();
+        clearActionSlots();
         navigationSlot.getChildren().clear();
         super.dispose();
     }
@@ -194,8 +197,29 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
 
     /// Updates the trailing action container.
     private void updateActions() {
-        actions.getChildren().setAll(getSkinnable().getActions());
+        clearActionSlots();
+        for (Node action : getSkinnable().getActions()) {
+            actions.getChildren().add(createActionSlot(action));
+        }
         getSkinnable().requestLayout();
+    }
+
+    /// Removes child references from generated action slots before rebuilding or disposing the skin.
+    private void clearActionSlots() {
+        for (Node child : actions.getChildren()) {
+            if (child instanceof SlotPane slot) {
+                slot.getChildren().clear();
+            }
+        }
+        actions.getChildren().clear();
+    }
+
+    /// Creates a fixed Material action slot for a public trailing action node.
+    private static SlotPane createActionSlot(Node action) {
+        SlotPane slot = new SlotPane();
+        slot.getStyleClass().add(M3TopAppBar.ACTION_SLOT_STYLE_CLASS);
+        slot.getChildren().add(action);
+        return slot;
     }
 
     /// Updates layout details that depend on the top app bar variant.
@@ -205,16 +229,18 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         boolean rightToLeft = isRightToLeft();
 
         actions.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
-        titleLabel.setAlignment(centerAligned ? Pos.CENTER : Pos.CENTER_LEFT);
+        titleLabel.setAlignment(centerAligned ? Pos.CENTER : leadingTextAlignment());
         getSkinnable().requestLayout();
     }
 
     /// Computes the minimum content width needed by app bar slots.
     private double computeContentMinWidth(double height) {
-        return snappedPrefWidth(navigationSlot, height)
+        double navigationWidth = navigationSlot.isManaged() ? snappedPrefWidth(navigationSlot, height) : 0.0;
+        return navigationWidth
                 + snappedPrefWidth(titleLabel, height)
                 + snappedPrefWidth(actions, height)
-                + getSkinnable().getContentSpacing() * 2.0;
+                + spacingAfter(navigationWidth)
+                + spacingAfter(snappedPrefWidth(actions, height));
     }
 
     /// Computes the preferred content width needed by app bar slots.
@@ -255,9 +281,10 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     /// Lays out a medium or large title at the bottom edge of the app bar.
     private void layoutTallTitle(double x, double y, double width, double height) {
         double titleHeight = snappedPrefHeight(titleLabel, width);
+        double titleWidth = Math.min(snappedPrefWidth(titleLabel, titleHeight), width);
         double titleY = y + height - titleHeight;
-        titleLabel.resizeRelocate(x, titleY, width, titleHeight);
-        titleLabel.setAlignment(Pos.CENTER_LEFT);
+        titleLabel.resizeRelocate(x, titleY, titleWidth, titleHeight);
+        titleLabel.setAlignment(leadingTextAlignment());
     }
 
     /// Lays out a small title between the leading navigation slot and trailing actions.
@@ -274,6 +301,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         double titleX = x + navigationWidth + spacingAfter(navigationWidth);
         double titleWidth = Math.max(0.0,
                 width - navigationWidth - actionsWidth - spacingAfter(navigationWidth) - spacingAfter(actionsWidth));
+        titleWidth = Math.min(snappedPrefWidth(titleLabel, titleHeight), titleWidth);
         titleLabel.resizeRelocate(titleX, titleY, titleWidth, titleHeight);
     }
 
@@ -288,6 +316,11 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         return orientation == NodeOrientation.RIGHT_TO_LEFT
                 || orientation == NodeOrientation.INHERIT
                 && getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+    }
+
+    /// Returns the physical alignment used for logical leading text.
+    private Pos leadingTextAlignment() {
+        return isRightToLeft() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT;
     }
 
     /// Returns a child node's snapped preferred width.
@@ -311,5 +344,38 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
             return minimum;
         }
         return Math.max(minimum, Math.min(value, maximum));
+    }
+
+    /// A slot pane that preserves the 48 dp Material top app bar action target while centering smaller controls.
+    @NotNullByDefault
+    private static final class SlotPane extends StackPane {
+        /// Creates a top app bar action slot.
+        private SlotPane() {
+            setAlignment(Pos.CENTER);
+        }
+
+        /// Computes the minimum slot width.
+        @Override
+        protected double computeMinWidth(double height) {
+            return Math.max(MINIMUM_ACTION_SLOT_SIZE, super.computeMinWidth(height));
+        }
+
+        /// Computes the minimum slot height.
+        @Override
+        protected double computeMinHeight(double width) {
+            return Math.max(MINIMUM_ACTION_SLOT_SIZE, super.computeMinHeight(width));
+        }
+
+        /// Computes the preferred slot width.
+        @Override
+        protected double computePrefWidth(double height) {
+            return Math.max(MINIMUM_ACTION_SLOT_SIZE, super.computePrefWidth(height));
+        }
+
+        /// Computes the preferred slot height.
+        @Override
+        protected double computePrefHeight(double width) {
+            return Math.max(MINIMUM_ACTION_SLOT_SIZE, super.computePrefHeight(width));
+        }
     }
 }
