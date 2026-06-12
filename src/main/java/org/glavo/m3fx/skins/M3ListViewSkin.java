@@ -481,11 +481,15 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
                 spec.duration(),
                 new KeyValue(flow.positionProperty(), smoothScrollTargetPosition, spec.interpolator())
         ));
-        if (onFinished != null) {
-            timeline.setOnFinished(event -> onFinished.run());
-        }
         smoothScrollAnimation = timeline;
         smoothScrollOnFinished = onFinished;
+        timeline.setOnFinished(event -> {
+            smoothScrollAnimation = null;
+            smoothScrollOnFinished = null;
+            if (onFinished != null) {
+                onFinished.run();
+            }
+        });
         M3Animation.playFromStart(getSkinnable(), timeline);
     }
 

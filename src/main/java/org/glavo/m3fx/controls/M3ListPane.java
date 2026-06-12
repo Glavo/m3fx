@@ -24,6 +24,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -103,6 +104,10 @@ public class M3ListPane extends Control {
 
     /// Clears the type-ahead prefix after the user stops typing.
     private final PauseTransition typeAheadResetDelay = new PauseTransition();
+
+    /// Updates type-ahead timing when runtime motion settings change.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Updates item listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -381,6 +386,15 @@ public class M3ListPane extends Control {
             }
         });
         typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
+    }
+
+    /// Applies changed runtime motion settings to the type-ahead reset delay.
+    private void refreshMotionSettings() {
+        M3Animation.updatePauseDuration(
+                typeAheadResetDelay,
+                M3Animation.motionBehavior(this).typeAheadResetDelay(),
+                typeAheadBuffer.length() > 0
+        );
     }
 
     /// Applies keyboard navigation across enabled list items.

@@ -3,8 +3,10 @@
 
 package org.glavo.m3fx.internal;
 
+import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -114,5 +116,26 @@ final class M3AnimationTest {
         assertEquals(150.0, M3Animation.motionBehavior(target).subMenuHoverOpenDelay().toMillis(), 0.0001);
         assertEquals(900.0, M3Animation.motionBehavior(target).typeAheadResetDelay().toMillis(), 0.0001);
         assertEquals(650.0, M3Animation.motionBehavior(target).loadingIndicatorMorphInterval().toMillis(), 0.0001);
+    }
+
+    /// Verifies that pause-transition duration changes restart only when the caller keeps the timer active.
+    @Test
+    void updatesPauseDurationWithoutMutatingRunningAnimationTimingInPlace() {
+        FxTestUtils.runOnFxThread(() -> {
+            PauseTransition transition = new PauseTransition(Duration.seconds(5.0));
+
+            transition.playFromStart();
+            assertEquals(Animation.Status.RUNNING, transition.getStatus());
+
+            M3Animation.updatePauseDuration(transition, Duration.millis(250.0), true);
+
+            assertEquals(Duration.millis(250.0), transition.getDuration());
+            assertEquals(Animation.Status.RUNNING, transition.getStatus());
+
+            M3Animation.updatePauseDuration(transition, Duration.millis(100.0), false);
+
+            assertEquals(Duration.millis(100.0), transition.getDuration());
+            assertEquals(Animation.Status.STOPPED, transition.getStatus());
+        });
     }
 }

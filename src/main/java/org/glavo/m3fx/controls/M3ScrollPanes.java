@@ -243,6 +243,7 @@ public final class M3ScrollPanes {
                     new KeyValue(scrollPane.vvalueProperty(), targetVValue, spec.interpolator())
             ));
             animation = timeline;
+            timeline.setOnFinished(event -> animation = null);
             M3Animation.playFromStart(scrollPane, timeline);
         }
 

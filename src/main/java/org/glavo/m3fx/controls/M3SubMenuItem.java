@@ -567,6 +567,21 @@ public class M3SubMenuItem extends M3MenuItem {
             M3Animation.copyResolvedMotionSettings(this, subMenu);
         }
         M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
+        refreshHoverDelays();
+    }
+
+    /// Applies changed runtime motion settings to pointer-hover submenu delays.
+    private void refreshHoverDelays() {
+        M3Animation.updatePauseDuration(
+                hoverOpenDelay,
+                M3Animation.motionBehavior(this).subMenuHoverOpenDelay(),
+                pointerInsideOwner && !popup.isShowing()
+        );
+        M3Animation.updatePauseDuration(
+                hoverCloseDelay,
+                M3Animation.motionBehavior(this).subMenuHoverCloseDelay(),
+                popup.isShowing() && !pointerInsideOwner && !pointerInsideSubMenu
+        );
     }
 
     /// Returns whether a key opens the submenu for the current node orientation.

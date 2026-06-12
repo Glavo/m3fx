@@ -26,6 +26,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3MenuSkin;
@@ -105,6 +106,10 @@ public class M3Menu extends Control {
 
     /// Clears the type-ahead prefix after the user stops typing.
     private final PauseTransition typeAheadResetDelay = new PauseTransition();
+
+    /// Updates type-ahead timing when runtime motion settings change.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Reports focused menu-item changes to accessibility clients.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -448,6 +453,15 @@ public class M3Menu extends Control {
             }
         });
         typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
+    }
+
+    /// Applies changed runtime motion settings to the type-ahead reset delay.
+    private void refreshMotionSettings() {
+        M3Animation.updatePauseDuration(
+                typeAheadResetDelay,
+                M3Animation.motionBehavior(this).typeAheadResetDelay(),
+                typeAheadBuffer.length() > 0
+        );
     }
 
     /// Applies keyboard navigation across enabled menu items.

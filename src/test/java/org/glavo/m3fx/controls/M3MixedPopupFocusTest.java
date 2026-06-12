@@ -96,6 +96,82 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that a rich tooltip opened from a nested submenu item preserves the full popup focus chain.
+    @Test
+    void richTooltipInsideNestedSubMenuPreservesPopupFocusChain() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem pdfItem = new M3MenuItem("PDF");
+            M3MenuItem htmlItem = new M3MenuItem("HTML");
+            M3Button action = new M3Button("Describe");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    pdfItem,
+                    "PDF export",
+                    "Exports the active document.",
+                    action
+            );
+            M3SubMenuItem recentItem = new M3SubMenuItem("Recent", pdfItem, htmlItem);
+            M3SubMenuItem exportItem = new M3SubMenuItem("Export", recentItem);
+            M3MenuButton menuButton = new M3MenuButton("More", exportItem);
+            Pane content = new Pane(menuButton);
+            content.setPrefSize(360.0, 96.0);
+            M3Surface surface = new M3Surface(content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 440.0, 144.0);
+                menuButton.resizeRelocate(0.0, 0.0, 180.0, 48.0);
+                root.layout();
+
+                menuButton.showMenu();
+                exportItem.showSubMenu();
+                recentItem.showSubMenu();
+                pdfItem.requestFocus();
+                tooltip.show(pdfItem, stage.getX() + 312.0, stage.getY() + 144.0);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(exportItem.isSubMenuShowing());
+                assertTrue(recentItem.isSubMenuShowing());
+                assertTrue(tooltip.isShowing());
+                assertTrue(pdfItem.isFocused());
+                assertSame(pdfItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, exportItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, recentItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                pdfItem.fireEvent(keyPressed(KeyCode.F6));
+
+                assertTrue(action.isFocused());
+                assertTrue(tooltip.isShowing());
+                assertTrue(menuButton.isShowing());
+                assertTrue(exportItem.isSubMenuShowing());
+                assertTrue(recentItem.isSubMenuShowing());
+                assertSame(pdfItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, exportItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, recentItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                action.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(tooltip.isShowing());
+                assertTrue(pdfItem.isFocused());
+                assertTrue(menuButton.isShowing());
+                assertTrue(exportItem.isSubMenuShowing());
+                assertTrue(recentItem.isSubMenuShowing());
+                assertSame(pdfItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that dialog panes expose focus from a nested menu popup and restore it on dismissal.
     @Test
     void dialogPaneRoutesFocusThroughNestedMenuPopup() {

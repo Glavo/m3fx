@@ -211,25 +211,6 @@ public final class FxTestUtils {
         return result.get();
     }
 
-    /// Runs setup on the FX application thread and verifies the result after JavaFX pulses.
-    public static void runOnFxThreadAfterPulses(
-            int pulseCount,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        List<LogRecord> warnings = captureWarningsChecked(
-                () -> runWithMotionSettingsPreservedChecked(
-                        () -> {
-                            runOnFxThreadAfterPulsesWithoutCssCapture(pulseCount, setup, verification);
-                            waitForPulses(POST_PULSE_TEST_CSS_DRAIN_PULSES);
-                        }
-                ),
-                "javafx.css",
-                "javafx.scene.CssStyleHelper"
-        );
-        assertTrue(warnings.stream().noneMatch(FxTestUtils::isM3CssTokenWarning), () -> formatLogRecords(warnings));
-    }
-
     /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
     public static void runOnFxThreadWhen(
             BooleanSupplier condition,
@@ -269,55 +250,6 @@ public final class FxTestUtils {
                 "javafx.scene.CssStyleHelper"
         );
         assertTrue(warnings.stream().noneMatch(FxTestUtils::isM3CssTokenWarning), () -> formatLogRecords(warnings));
-    }
-
-    /// Runs setup on the FX application thread and verifies the result after JavaFX pulses.
-    private static void runOnFxThreadAfterPulsesWithoutCssCapture(
-            int pulseCount,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        if (pulseCount < 1) {
-            throw new IllegalArgumentException("pulseCount must be positive");
-        }
-
-        AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-
-        Platform.runLater(() -> {
-            try {
-                setup.run();
-                AnimationTimer timer = new AnimationTimer() {
-                    /// The number of pulses observed after setup.
-                    private int pulses;
-
-                    /// Counts pulses and runs verification after the requested pulse.
-                    @Override
-                    public void handle(long now) {
-                        pulses++;
-                        if (pulses < pulseCount) {
-                            return;
-                        }
-
-                        stop();
-                        try {
-                            verification.run();
-                        } catch (Throwable e) {
-                            failure.set(e);
-                        } finally {
-                            latch.countDown();
-                        }
-                    }
-                };
-                timer.start();
-            } catch (Throwable e) {
-                failure.set(e);
-                latch.countDown();
-            }
-        });
-
-        await(latch);
-        throwIfFailed(failure.get());
     }
 
     /// Runs setup on the FX application thread and verifies the result when a condition becomes true.

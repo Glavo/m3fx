@@ -527,6 +527,7 @@ public class M3FabMenu extends Control {
             index++;
         }
         animation = transition;
+        transition.setOnFinished(event -> animation = null);
         M3Animation.playFromStart(this, transition);
     }
 
@@ -551,6 +552,7 @@ public class M3FabMenu extends Control {
             index++;
         }
         transition.setOnFinished(event -> {
+            animation = null;
             if (!isExpanded()) {
                 applyCollapsedState();
             }

@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
@@ -166,8 +167,11 @@ final class M3ControlStyleTest {
     /// The pulse count used after a rich tooltip popup takes pointer ownership.
     private static final int RICH_TOOLTIP_POPUP_OWNERSHIP_STABLE_PULSES = 2;
 
-    /// The number of pulses used to catch deferred CSS warnings from standalone fallback stylesheet installation.
-    private static final int STANDALONE_CSS_SETTLE_PULSES = 40;
+    /// The pulse count used after standalone fallback styles have a ready rendered target.
+    private static final int STANDALONE_FALLBACK_STYLE_STABLE_PULSES = 2;
+
+    /// The pulse count used after closing a virtualized list view window with a pending focus retry.
+    private static final int DETACHED_LIST_FOCUS_RETRY_STABLE_PULSES = 8;
 
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
@@ -183,7 +187,11 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
         AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
 
-        runOnFxThreadAfterPulses(STANDALONE_CSS_SETTLE_PULSES, () -> {
+        runOnFxThreadWhenStable(() -> standaloneControlPopupStackReady(
+                stageReference,
+                menuButtonReference,
+                subMenuItemReference
+        ), STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
             M3Button button = new M3Button("Button");
             M3ListItem listItem = new M3ListItem("List item");
             M3Menu menu = new M3Menu(new M3MenuItem("Menu item"));
@@ -238,7 +246,12 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3TimePickerField> timePickerFieldReference = new AtomicReference<>();
         AtomicReference<@Nullable M3DateRangePickerField> dateRangePickerFieldReference = new AtomicReference<>();
 
-        runOnFxThreadAfterPulses(STANDALONE_CSS_SETTLE_PULSES, () -> {
+        runOnFxThreadWhenStable(() -> standalonePickerPopupsReady(
+                stageReference,
+                datePickerFieldReference,
+                timePickerFieldReference,
+                dateRangePickerFieldReference
+        ), STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
             M3DatePickerField datePickerField = new M3DatePickerField();
             M3TimePickerField timePickerField = new M3TimePickerField();
             M3DateRangePickerField dateRangePickerField = new M3DateRangePickerField();
@@ -330,7 +343,8 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3InternalIcon> iconReference = new AtomicReference<>();
 
-        runOnFxThreadAfterPulses(STANDALONE_CSS_SETTLE_PULSES, () -> {
+        runOnFxThreadWhenStable(() -> standaloneInternalIconReady(stageReference, iconReference),
+                STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
             M3SearchBar searchBar = new M3SearchBar("Search");
             VBox root = new VBox(searchBar);
             Scene scene = new Scene(root, 360.0, 120.0);
@@ -1369,6 +1383,89 @@ final class M3ControlStyleTest {
         assertEquals(18.0, menu.getActionSpacing(), 0.0001);
     }
 
+    /// Verifies that FAB menu expand and collapse animations release their transient animation reference.
+    @Test
+    void fabMenuClearsAnimationReferenceAfterExpandAndCollapseFinish() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FabMenu> menuReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FloatingActionButton> actionReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhen(
+                    () -> {
+                        M3FabMenu menu = Objects.requireNonNull(menuReference.get(), "menu");
+                        M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
+                        return menu.isExpanded()
+                                && action.isVisible()
+                                && Math.abs(action.getOpacity() - 1.0) < 0.0001
+                                && reflectedNullableAnimation(menu, "animation") == null;
+                    },
+                    () -> {
+                        M3FloatingActionButton action = new M3FloatingActionButton("A");
+                        M3FabMenu menu = new M3FabMenu();
+                        menu.addItem(action);
+                        Pane root = new Pane(menu);
+                        Scene scene = new Scene(root, 220.0, 220.0);
+                        Stage stage = new Stage();
+
+                        M3MotionSettings.setAnimationsEnabled(menu, true);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        menu.resizeRelocate(24.0, 24.0, 120.0, 160.0);
+                        root.layout();
+
+                        stageReference.set(stage);
+                        menuReference.set(menu);
+                        actionReference.set(action);
+                        menu.show();
+                        assertInstanceOf(Animation.class, reflectedNullableAnimation(menu, "animation"));
+                    },
+                    () -> {
+                        M3FabMenu menu = Objects.requireNonNull(menuReference.get(), "menu");
+                        M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
+                        assertNull(reflectedNullableAnimation(menu, "animation"));
+                        assertTrue(action.isVisible());
+                        assertTrue(action.isManaged());
+                        menu.hide();
+                        assertInstanceOf(Animation.class, reflectedNullableAnimation(menu, "animation"));
+                    }
+            );
+
+            runOnFxThreadWhen(
+                    () -> {
+                        M3FabMenu menu = Objects.requireNonNull(menuReference.get(), "menu");
+                        M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
+                        return !menu.isExpanded()
+                                && !action.isVisible()
+                                && !action.isManaged()
+                                && reflectedNullableAnimation(menu, "animation") == null;
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        M3FabMenu menu = Objects.requireNonNull(menuReference.get(), "menu");
+                        M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
+                        assertNull(reflectedNullableAnimation(menu, "animation"));
+                        assertFalse(action.isVisible());
+                        assertFalse(action.isManaged());
+                    }
+            );
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3FabMenu menu = menuReference.get();
+                if (menu != null) {
+                    M3MotionSettings.clearAnimationsEnabled(menu);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that card component token properties are styleable from CSS.
     @Test
     void cardTokensAreStyleable() {
@@ -1651,6 +1748,56 @@ final class M3ControlStyleTest {
 
                 M3MotionSettings.clearAnimationsEnabled(viewport);
             } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that running carousel scroll transitions settle when animations are disabled at runtime.
+    @Test
+    void carouselSettlesRunningScrollAnimationWhenAnimationsAreDisabled() {
+        runOnFxThread(() -> {
+            M3Carousel carousel = new M3Carousel(
+                    carouselTestItem("A"),
+                    carouselTestItem("B"),
+                    carouselTestItem("C"),
+                    carouselTestItem("D"),
+                    carouselTestItem("E")
+            );
+            carousel.setAnimatedScroll(true);
+            carousel.setPrefSize(260.0, 100.0);
+            Pane root = new Pane(carousel);
+            Scene scene = new Scene(root, 280.0, 120.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                carousel.resizeRelocate(0.0, 0.0, 260.0, 100.0);
+                root.layout();
+
+                M3CarouselSkin skin = assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
+                ScrollPane viewport = assertInstanceOf(
+                        ScrollPane.class,
+                        carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS)
+                );
+
+                M3MotionSettings.setAnimationsEnabled(carousel, true);
+                carousel.selectIndex(4);
+                root.layout();
+
+                Animation scrollAnimation = reflectedAnimation(skin, "scrollAnimation");
+                assertEquals(Animation.Status.RUNNING, scrollAnimation.getStatus());
+                assertTrue(viewport.getHvalue() < 0.5, () -> "hvalue=" + viewport.getHvalue());
+
+                M3MotionSettings.setAnimationsEnabled(carousel, false);
+
+                assertEquals(Animation.Status.STOPPED, scrollAnimation.getStatus());
+                assertEquals(1.0, viewport.getHvalue(), 0.0001);
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(carousel);
                 stage.close();
             }
         });
@@ -2259,6 +2406,73 @@ final class M3ControlStyleTest {
         host.displayDurationProperty().set(null);
 
         assertEquals(Duration.millis(1234.0), host.getDisplayDuration());
+    }
+
+    /// Verifies that the running snackbar display timer refreshes when duration inputs change.
+    @Test
+    void snackbarHostDisplayTimerRefreshesWhenDurationInputsChange() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            VBox root = new VBox(host);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.standard());
+                Scene scene = new Scene(root, 360.0, 140.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                host.show("Saved");
+
+                PauseTransition displayTimer = reflectedPauseTransition(host, "displayTimer");
+                assertPauseDuration(host, "displayTimer", 4000.0);
+                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
+
+                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.create(
+                        Duration.millis(500.0),
+                        Duration.ZERO,
+                        Duration.seconds(5.0),
+                        Duration.seconds(10.0),
+                        Duration.millis(1234.0),
+                        Duration.millis(200.0),
+                        Duration.millis(1000.0),
+                        Duration.millis(200.0),
+                        Duration.millis(1400.0),
+                        Duration.millis(1332.0),
+                        Duration.millis(650.0),
+                        Duration.millis(4666.0)
+                ));
+
+                assertPauseDuration(host, "displayTimer", 1234.0);
+                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
+
+                host.setDisplayDuration(Duration.millis(2222.0));
+
+                assertPauseDuration(host, "displayTimer", 2222.0);
+                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
+
+                host.displayDurationProperty().set(null);
+
+                assertPauseDuration(host, "displayTimer", 1234.0);
+                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
+
+                host.setDisplayDuration(Duration.INDEFINITE);
+
+                assertEquals(Animation.Status.STOPPED, displayTimer.getStatus());
+
+                host.setDisplayDuration(Duration.millis(333.0));
+
+                assertPauseDuration(host, "displayTimer", 333.0);
+                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.clearMotionBehavior(root);
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that dialog pane component token properties are styleable from CSS.
@@ -3954,6 +4168,54 @@ final class M3ControlStyleTest {
                     }
                 }
         );
+    }
+
+    /// Verifies that installed tooltip timers refresh when inherited motion behavior changes at runtime.
+    @Test
+    void tooltipInstallationTimersRefreshWhenMotionBehaviorChanges() {
+        runOnFxThread(() -> {
+            Label target = new Label("Target");
+            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+            VBox root = new VBox(target);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.standard());
+                Scene scene = new Scene(root, 240.0, 120.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                Object installation = tooltipInstallation(target);
+                assertPauseDuration(installation, "showTimer", 500.0);
+                assertPauseDuration(installation, "hideTimer", 0.0);
+                assertPauseDuration(installation, "durationTimer", 5000.0);
+
+                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.create(
+                        Duration.millis(125.0),
+                        Duration.millis(75.0),
+                        Duration.millis(850.0),
+                        Duration.millis(950.0),
+                        Duration.seconds(4.0),
+                        Duration.millis(150.0),
+                        Duration.millis(900.0),
+                        Duration.millis(150.0),
+                        Duration.millis(1400.0),
+                        Duration.millis(1332.0),
+                        Duration.millis(650.0),
+                        Duration.millis(4666.0)
+                ));
+
+                assertPauseDuration(installation, "showTimer", 125.0);
+                assertPauseDuration(installation, "hideTimer", 75.0);
+                assertPauseDuration(installation, "durationTimer", 850.0);
+            } finally {
+                M3Tooltip.uninstall(target, tooltip);
+                M3MotionSettings.clearMotionBehavior(root);
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that rich tooltips expose graphic-only Material content.
@@ -6245,6 +6507,49 @@ final class M3ControlStyleTest {
                 assertSame(overview, drawer.getSelectedItem());
                 assertSame(overview, drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that interaction timers refresh when inherited motion behavior changes at runtime.
+    @Test
+    void keyboardAndSubMenuTimingRefreshesWhenMotionBehaviorChanges() {
+        runOnFxThread(() -> {
+            M3ListPane listPane = new M3ListPane(new M3ListItem("Archive"));
+            M3ListView<String> listView = new M3ListView<>("Archive", "Settings");
+            M3Menu menu = new M3Menu(new M3MenuItem("Archive"));
+            M3NavigationDrawer drawer = new M3NavigationDrawer(new M3ListItem("Archive"));
+            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
+            VBox root = new VBox(listPane, listView, menu, drawer, subMenuItem);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.standard());
+                Scene scene = new Scene(root, 360.0, 360.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertTypeAheadResetDelay(listPane, 1000.0);
+                assertTypeAheadResetDelay(listView, 1000.0);
+                assertTypeAheadResetDelay(menu, 1000.0);
+                assertTypeAheadResetDelay(drawer, 1000.0);
+                assertPauseDuration(subMenuItem, "hoverOpenDelay", 200.0);
+                assertPauseDuration(subMenuItem, "hoverCloseDelay", 200.0);
+
+                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.expressive());
+
+                assertTypeAheadResetDelay(listPane, 900.0);
+                assertTypeAheadResetDelay(listView, 900.0);
+                assertTypeAheadResetDelay(menu, 900.0);
+                assertTypeAheadResetDelay(drawer, 900.0);
+                assertPauseDuration(subMenuItem, "hoverOpenDelay", 150.0);
+                assertPauseDuration(subMenuItem, "hoverCloseDelay", 150.0);
+            } finally {
+                M3MotionSettings.clearMotionBehavior(root);
                 stage.close();
             }
         });
@@ -10841,6 +11146,78 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that completed virtualized list wheel scrolling clears its transient animation fields.
+    @Test
+    void listViewSmoothScrollingClearsAnimationReferenceAfterCompletion() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListView<Integer>> listViewReference = new AtomicReference<>();
+        AtomicReference<@Nullable VirtualFlow<?>> flowReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListViewSkin<?>> skinReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhen(
+                    () -> {
+                        VirtualFlow<?> flow = Objects.requireNonNull(flowReference.get(), "flow");
+                        M3ListViewSkin<?> skin = Objects.requireNonNull(skinReference.get(), "skin");
+                        return flow.getPosition() > 0.0
+                                && reflectedNullableTimeline(skin, "smoothScrollAnimation") == null
+                                && reflectedFieldValue(skin, "smoothScrollOnFinished") == null;
+                    },
+                    () -> {
+                        M3ListView<Integer> listView = new M3ListView<>();
+                        for (int i = 0; i < 100; i++) {
+                            listView.addItem(i);
+                        }
+                        listView.setFixedCellSize(56.0);
+                        listView.setPrefSize(260.0, 168.0);
+                        listView.setCellFactory(value -> new M3ListItem("Row " + value));
+                        Pane root = new StackPane(listView);
+                        Scene scene = new Scene(root, 300.0, 220.0);
+                        Stage stage = new Stage();
+
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.layout();
+
+                        M3ListViewSkin<?> skin = assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
+                        VirtualFlow<?> flow = assertInstanceOf(
+                                VirtualFlow.class,
+                                listView.lookup(".m3-list-view-flow")
+                        );
+                        M3MotionSettings.setAnimationsEnabled(listView, true);
+
+                        stageReference.set(stage);
+                        listViewReference.set(listView);
+                        flowReference.set(flow);
+                        skinReference.set(skin);
+
+                        ScrollEvent event = scrollEvent(listView, 0.0, -112.0);
+                        listView.fireEvent(event);
+                        assertTrue(event.isConsumed());
+                        assertInstanceOf(Timeline.class, reflectedNullableTimeline(skin, "smoothScrollAnimation"));
+                    },
+                    () -> {
+                        M3ListViewSkin<?> skin = Objects.requireNonNull(skinReference.get(), "skin");
+                        assertNull(reflectedNullableTimeline(skin, "smoothScrollAnimation"));
+                        assertNull(reflectedFieldValue(skin, "smoothScrollOnFinished"));
+                    }
+            );
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3ListView<Integer> listView = listViewReference.get();
+                if (listView != null) {
+                    M3MotionSettings.clearAnimationsEnabled(listView);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that running virtualized list wheel scrolling settles when animations are disabled at runtime.
     @Test
     void listViewSmoothScrollingSettlesWhenAnimationsAreDisabledAtRuntime() {
@@ -11464,7 +11841,12 @@ final class M3ControlStyleTest {
     /// Verifies that deferred virtualized focus retries do not apply CSS after the list view is detached.
     @Test
     void listViewSkipsDeferredFocusCssWhenDetached() throws InterruptedException {
-        runOnFxThreadAfterPulses(8, () -> {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+
+        runOnFxThreadWhenStable(() -> {
+            @Nullable Stage stage = stageReference.get();
+            return stage != null && !stage.isShowing();
+        }, DETACHED_LIST_FOCUS_RETRY_STABLE_PULSES, () -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -11478,6 +11860,7 @@ final class M3ControlStyleTest {
             Stage stage = new Stage();
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stageReference.set(stage);
             stage.setScene(scene);
             stage.show();
             root.applyCss();
@@ -19288,6 +19671,72 @@ final class M3ControlStyleTest {
         assertFalse(M3ScrollPanes.isSmoothScrollingEnabled(scrollPane));
     }
 
+    /// Verifies that completed scroll pane smooth scrolling clears its transient animation reference.
+    @Test
+    void scrollPaneSmoothScrollingClearsAnimationReferenceAfterCompletion() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable ScrollPane> scrollPaneReference = new AtomicReference<>();
+        AtomicReference<@Nullable Region> contentReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhen(
+                    () -> {
+                        ScrollPane scrollPane = Objects.requireNonNull(scrollPaneReference.get(), "scrollPane");
+                        return scrollPane.getVvalue() > 0.0 && smoothScrollAnimation(scrollPane) == null;
+                    },
+                    () -> {
+                        Region content = new Region();
+                        content.setPrefSize(160.0, 480.0);
+                        ScrollPane scrollPane = new ScrollPane(content);
+                        scrollPane.setPrefSize(160.0, 120.0);
+                        StackPane root = new StackPane(scrollPane);
+                        Scene scene = new Scene(root, 180.0, 140.0);
+                        Stage stage = new Stage();
+
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.resize(180.0, 140.0);
+                        root.layout();
+
+                        M3ScrollPanes.enableSmoothScrolling(scrollPane);
+                        M3MotionSettings.setAnimationsEnabled(scrollPane, true);
+                        stageReference.set(stage);
+                        scrollPaneReference.set(scrollPane);
+                        contentReference.set(content);
+
+                        ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
+                        scrollPane.fireEvent(event);
+                        assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+                        assertInstanceOf(Timeline.class, smoothScrollAnimation(scrollPane));
+                    },
+                    () -> {
+                        ScrollPane scrollPane = Objects.requireNonNull(scrollPaneReference.get(), "scrollPane");
+                        Region content = Objects.requireNonNull(contentReference.get(), "content");
+                        assertTrue(scrollPane.getVvalue() > 0.0, () -> scrollPaneDebug(
+                                scrollPane,
+                                content,
+                                scrollEvent(scrollPane, 0.0, -80.0)
+                        ));
+                        assertNull(smoothScrollAnimation(scrollPane));
+                    }
+            );
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable ScrollPane scrollPane = scrollPaneReference.get();
+                if (scrollPane != null) {
+                    M3ScrollPanes.disableSmoothScrolling(scrollPane);
+                    M3MotionSettings.clearAnimationsEnabled(scrollPane);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that a running smooth scroll settles when animations are disabled at runtime.
     @Test
     void scrollPaneSmoothScrollingSettlesWhenAnimationsAreDisabledAtRuntime() {
@@ -19647,6 +20096,49 @@ final class M3ControlStyleTest {
         return reflectedAnimation(control, fieldName);
     }
 
+    /// Returns the smooth scrolling animation installed on a JavaFX scroll pane, or `null` when idle.
+    private static @Nullable Timeline smoothScrollAnimation(ScrollPane scrollPane) {
+        @Nullable Object state = smoothScrollState(scrollPane);
+        return state == null ? null : reflectedNullableTimeline(state, "animation");
+    }
+
+    /// Returns the private smooth scrolling state installed on a JavaFX scroll pane.
+    private static @Nullable Object smoothScrollState(ScrollPane scrollPane) {
+        try {
+            java.lang.reflect.Field field = reflectedField(M3ScrollPanes.class, "SMOOTH_SCROLL_STATE_KEY");
+            field.setAccessible(true);
+            return scrollPane.getProperties().get(field.get(null));
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /// Asserts a private type-ahead reset timer duration.
+    private static void assertTypeAheadResetDelay(Object target, double expectedMillis) {
+        assertPauseDuration(target, "typeAheadResetDelay", expectedMillis);
+    }
+
+    /// Asserts a private pause-transition duration.
+    private static void assertPauseDuration(Object target, String fieldName, double expectedMillis) {
+        assertEquals(
+                expectedMillis,
+                reflectedPauseTransition(target, fieldName).getDuration().toMillis(),
+                0.0001
+        );
+    }
+
+    /// Returns the private tooltip installation stored on a target node.
+    private static Object tooltipInstallation(Node node) {
+        try {
+            java.lang.reflect.Field field = reflectedField(M3Tooltip.class, "INSTALLATION_KEY");
+            field.setAccessible(true);
+            String key = assertInstanceOf(String.class, field.get(null));
+            return Objects.requireNonNull(node.getProperties().get(key), "tooltip installation");
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     /// Runs a test action on the JavaFX application thread and waits for completion.
     private static void runOnFxThreadAndWait(Runnable action) {
         FxTestUtils.runOnFxThread(action);
@@ -19680,6 +20172,40 @@ final class M3ControlStyleTest {
             java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
             field.setAccessible(true);
             return assertInstanceOf(Animation.class, field.get(target));
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /// Returns a private nullable animation field from a test target.
+    private static @Nullable Animation reflectedNullableAnimation(Object target, String fieldName) {
+        @Nullable Object value = reflectedFieldValue(target, fieldName);
+        return value == null ? null : assertInstanceOf(Animation.class, value);
+    }
+
+    /// Returns a private nullable timeline field from a test target.
+    private static @Nullable Timeline reflectedNullableTimeline(Object target, String fieldName) {
+        @Nullable Object value = reflectedFieldValue(target, fieldName);
+        return value == null ? null : assertInstanceOf(Timeline.class, value);
+    }
+
+    /// Returns a private pause-transition field from a test target.
+    private static PauseTransition reflectedPauseTransition(Object target, String fieldName) {
+        try {
+            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
+            field.setAccessible(true);
+            return assertInstanceOf(PauseTransition.class, field.get(target));
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /// Returns the value of a private field from a test target.
+    private static @Nullable Object reflectedFieldValue(Object target, String fieldName) {
+        try {
+            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
+            field.setAccessible(true);
+            return field.get(target);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
@@ -20378,15 +20904,6 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThreadWhenStable(condition, stablePulseCount, setup, verification);
     }
 
-    /// Runs setup on the FX thread and verifies the result after JavaFX pulses.
-    private static void runOnFxThreadAfterPulses(
-            int pulseCount,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        FxTestUtils.runOnFxThreadAfterPulses(pulseCount, setup, verification);
-    }
-
     /// Creates a section container used by visual snapshot tests.
     private static VBox visualSection(String title, Node... nodes) {
         M3Text heading = new M3Text(title, M3TextRole.TITLE_MEDIUM);
@@ -20867,6 +21384,106 @@ final class M3ControlStyleTest {
     private static void assertColorNear(Color actual, Color expected, double maximumDistance, String description) {
         assertTrue(colorDistance(actual, expected) <= maximumDistance,
                 () -> description + ": actual=" + actual + ", expected=" + expected);
+    }
+
+    /// Returns whether standalone controls and their popup stack have reached a renderable fallback-styled state.
+    private static boolean standaloneControlPopupStackReady(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable M3MenuButton> menuButtonReference,
+            AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference
+    ) {
+        @Nullable Stage stage = stageReference.get();
+        @Nullable M3MenuButton menuButton = menuButtonReference.get();
+        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+        if (stage == null
+                || menuButton == null
+                || subMenuItem == null
+                || !stage.isShowing()
+                || stage.getScene() == null
+                || !menuButton.isShowing()
+                || !subMenuItem.isSubMenuShowing()) {
+            return false;
+        }
+
+        Parent root = stage.getScene().getRoot();
+        root.applyCss();
+        root.layout();
+        M3Menu ownerMenu = menuButton.getMenu();
+        M3Menu subMenu = subMenuItem.getSubMenu();
+        ownerMenu.applyCss();
+        ownerMenu.layout();
+        subMenu.applyCss();
+        subMenu.layout();
+        return hasRenderableBounds(menuButton)
+                && hasRenderableBounds(ownerMenu)
+                && hasRenderableBounds(subMenu);
+    }
+
+    /// Returns whether standalone picker field popups have reached a renderable fallback-styled state.
+    private static boolean standalonePickerPopupsReady(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable M3DatePickerField> datePickerFieldReference,
+            AtomicReference<@Nullable M3TimePickerField> timePickerFieldReference,
+            AtomicReference<@Nullable M3DateRangePickerField> dateRangePickerFieldReference
+    ) {
+        @Nullable Stage stage = stageReference.get();
+        @Nullable M3DatePickerField datePickerField = datePickerFieldReference.get();
+        @Nullable M3TimePickerField timePickerField = timePickerFieldReference.get();
+        @Nullable M3DateRangePickerField dateRangePickerField = dateRangePickerFieldReference.get();
+        if (stage == null
+                || datePickerField == null
+                || timePickerField == null
+                || dateRangePickerField == null
+                || !stage.isShowing()
+                || stage.getScene() == null) {
+            return false;
+        }
+
+        Parent root = stage.getScene().getRoot();
+        root.applyCss();
+        root.layout();
+        return pickerPopupReady(datePickerField, datePickerField.getPicker())
+                && pickerPopupReady(timePickerField, timePickerField.getPicker())
+                && pickerPopupReady(dateRangePickerField, dateRangePickerField.getPicker());
+    }
+
+    /// Returns whether a picker field popup and picker control are visible and renderable.
+    private static <T, P extends Control> boolean pickerPopupReady(M3PickerField<T, P> field, P picker) {
+        if (!field.isShowing() || picker.getScene() == null) {
+            return false;
+        }
+
+        picker.applyCss();
+        picker.layout();
+        return hasRenderableBounds(picker);
+    }
+
+    /// Returns whether a date range picker field popup and picker control are visible and renderable.
+    private static boolean pickerPopupReady(M3DateRangePickerField field, M3DateRangePicker picker) {
+        if (!field.isShowing() || picker.getScene() == null) {
+            return false;
+        }
+
+        picker.applyCss();
+        picker.layout();
+        return hasRenderableBounds(picker);
+    }
+
+    /// Returns whether a standalone internal icon has resolved a renderable fallback token fill.
+    private static boolean standaloneInternalIconReady(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable M3InternalIcon> iconReference
+    ) {
+        @Nullable Stage stage = stageReference.get();
+        @Nullable M3InternalIcon icon = iconReference.get();
+        if (stage == null || icon == null || !stage.isShowing() || stage.getScene() == null) {
+            return false;
+        }
+
+        Parent root = stage.getScene().getRoot();
+        root.applyCss();
+        root.layout();
+        return hasRenderableBounds(icon) && icon.getPath().getFill() != null;
     }
 
     /// Shows a picker field popup and applies CSS to the popup picker.

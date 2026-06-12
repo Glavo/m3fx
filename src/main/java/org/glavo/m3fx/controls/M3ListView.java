@@ -28,6 +28,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListViewSkin;
@@ -146,6 +147,10 @@ public class M3ListView<T> extends Control {
 
     /// Clears the type-ahead prefix after the user stops typing.
     private final PauseTransition typeAheadResetDelay = new PauseTransition();
+
+    /// Updates type-ahead timing when runtime motion settings change.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Updates selection and cells when data items change.
     private final ListChangeListener<T> itemsListener = change -> {
@@ -643,6 +648,15 @@ public class M3ListView<T> extends Control {
             }
         });
         typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
+    }
+
+    /// Applies changed runtime motion settings to the type-ahead reset delay.
+    private void refreshMotionSettings() {
+        M3Animation.updatePauseDuration(
+                typeAheadResetDelay,
+                M3Animation.motionBehavior(this).typeAheadResetDelay(),
+                typeAheadBuffer.length() > 0
+        );
     }
 
     /// Applies the configured selection policy to a cell activation.

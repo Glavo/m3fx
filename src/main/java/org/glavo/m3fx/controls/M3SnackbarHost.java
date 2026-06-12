@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.PauseTransition;
@@ -73,7 +74,9 @@ public class M3SnackbarHost extends Control {
                     @Nullable Duration duration = get();
                     if (duration != null && duration.lessThan(Duration.ZERO)) {
                         set(Duration.ZERO);
+                        return;
                     }
+                    refreshDisplayTimer();
                 }
             };
 
@@ -397,6 +400,7 @@ public class M3SnackbarHost extends Control {
     /// Applies changed runtime motion settings to the active snackbar animations.
     private void refreshMotionSettings() {
         M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
+        refreshDisplayTimer();
     }
 
     /// Schedules automatic dismissal for the target snackbar.
@@ -405,18 +409,38 @@ public class M3SnackbarHost extends Control {
             return;
         }
 
-        Duration duration = getDisplayDuration();
-        if (duration.isUnknown() || duration.isIndefinite() || duration.lessThanOrEqualTo(Duration.ZERO)) {
+        if (getSnackbar() != target) {
+            return;
+        }
+        refreshDisplayTimer();
+    }
+
+    /// Applies the current display duration to the automatic dismissal timer.
+    private void refreshDisplayTimer() {
+        @Nullable M3Snackbar target = getSnackbar();
+        if (target == null || !showing.get()) {
+            displayTimer.stop();
             return;
         }
 
-        displayTimer.setDuration(duration);
+        Duration duration = getDisplayDuration();
+        if (duration.isUnknown() || duration.isIndefinite() || duration.lessThanOrEqualTo(Duration.ZERO)) {
+            displayTimer.stop();
+            return;
+        }
         displayTimer.setOnFinished(event -> {
-            if (getSnackbar() == target) {
+            if (getSnackbar() == target && showing.get()) {
                 dismiss();
             }
         });
-        displayTimer.playFromStart();
+        if (showAnimation.getStatus() == Animation.Status.RUNNING) {
+            displayTimer.setDuration(duration);
+            return;
+        }
+        M3Animation.updatePauseDuration(displayTimer, duration, true);
+        if (displayTimer.getStatus() != Animation.Status.RUNNING) {
+            displayTimer.playFromStart();
+        }
     }
 
     /// Removes the snackbar after its exit transition finishes.

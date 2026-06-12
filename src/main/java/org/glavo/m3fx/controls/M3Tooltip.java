@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.Animation;
 import javafx.animation.PauseTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.BooleanPropertyBase;
@@ -27,6 +28,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -697,6 +699,9 @@ public class M3Tooltip extends PopupControl {
         /// The timer used to auto-close pointer-triggered tooltips.
         private final PauseTransition durationTimer = new PauseTransition();
 
+        /// Updates tooltip activation timings when runtime motion settings change.
+        private final M3MotionSettingsObserver motionSettingsObserver;
+
         /// The popup root node that currently has tooltip hover handlers installed.
         private @Nullable Node tooltipRoot;
 
@@ -756,6 +761,7 @@ public class M3Tooltip extends PopupControl {
             showTimer.setOnFinished(event -> showTooltip());
             hideTimer.setOnFinished(event -> hideIfPointerOutside());
             durationTimer.setOnFinished(event -> hideAfterVisibleDuration());
+            motionSettingsObserver = new M3MotionSettingsObserver(node, this::refreshMotionSettings);
         }
 
         /// Adds event handlers to the target node.
@@ -781,6 +787,7 @@ public class M3Tooltip extends PopupControl {
             node.focusedProperty().removeListener(focusListener);
             node.sceneProperty().removeListener(ownerSceneListener);
             tooltip.showingProperty().removeListener(showingListener);
+            motionSettingsObserver.dispose();
             uninstallOwnerSceneFilter();
             uninstallTooltipHoverHandlers();
             ownerContainsPointer = false;
@@ -1067,6 +1074,40 @@ public class M3Tooltip extends PopupControl {
         /// Returns whether an interactive tooltip still has pointer or keyboard focus ownership.
         private boolean isTooltipActive() {
             return ownerContainsPointer || node.isFocused() || tooltipContainsPointer || tooltipContainsFocus;
+        }
+
+        /// Applies changed runtime motion settings to delayed tooltip activation timers.
+        private void refreshMotionSettings() {
+            M3Animation.updatePauseDuration(
+                    showTimer,
+                    tooltip.effectiveShowDelay(node),
+                    ownerContainsPointer || ownerHasKeyboardFocus()
+            );
+            M3Animation.updatePauseDuration(
+                    hideTimer,
+                    effectiveHideDelay(),
+                    tooltip.isShowing() && !isTooltipActive()
+            );
+            refreshAutoHideDuration();
+            @Nullable Scene scene = tooltip.getScene();
+            if (tooltip.isShowing() && scene != null && scene.getRoot() != null) {
+                M3Animation.copyResolvedMotionSettings(node, scene.getRoot());
+            }
+        }
+
+        /// Applies changed runtime motion settings to the visible-duration timer.
+        private void refreshAutoHideDuration() {
+            Duration duration = tooltip.effectiveShowDuration(node);
+            if (!isFiniteDuration(duration)) {
+                durationTimer.stop();
+                return;
+            }
+
+            boolean shouldRun = tooltip.isShowing() && !hasActivePopupInteraction();
+            M3Animation.updatePauseDuration(durationTimer, duration, shouldRun);
+            if (shouldRun && durationTimer.getStatus() != Animation.Status.RUNNING) {
+                durationTimer.playFromStart();
+            }
         }
 
         /// Installs scene-level owner keyboard handling.

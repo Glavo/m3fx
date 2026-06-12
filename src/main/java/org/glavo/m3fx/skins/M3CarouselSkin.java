@@ -18,6 +18,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,6 +44,13 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     private final ChangeListener<Number> selectedIndexListener =
             (observable, oldValue, newValue) -> requestSelectedScroll(true);
 
+    /// Settles running selected-item scroll transitions when runtime motion settings change.
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(
+                    getSkinnable(),
+                    this::refreshMotionSettings
+            );
+
     /// The currently running scroll animation.
     private @Nullable Animation scrollAnimation;
 
@@ -67,6 +75,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Removes listeners, animations, and child references before disposal.
     @Override
     public void dispose() {
+        motionSettingsObserver.dispose();
         stopScrollAnimation();
         M3ScrollPanes.disableSmoothScrolling(viewport);
         getSkinnable().getItems().removeListener(itemsListener);
@@ -210,8 +219,26 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
                 spec.duration(),
                 new KeyValue(viewport.hvalueProperty(), targetHValue, spec.interpolator())
         ));
+        timeline.setOnFinished(event -> {
+            if (scrollAnimation == timeline) {
+                scrollAnimation = null;
+            }
+        });
         scrollAnimation = timeline;
         M3Animation.playFromStart(getSkinnable(), timeline);
+    }
+
+    /// Settles a running scroll animation if the carousel now resolves reduced motion.
+    private void refreshMotionSettings() {
+        Animation animation = scrollAnimation;
+        if (animation == null) {
+            return;
+        }
+
+        M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), animation);
+        if (animation.getStatus() != Animation.Status.RUNNING && scrollAnimation == animation) {
+            scrollAnimation = null;
+        }
     }
 
     /// Stops the current scroll animation.

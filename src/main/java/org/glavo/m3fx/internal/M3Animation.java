@@ -6,6 +6,7 @@ package org.glavo.m3fx.internal;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
+import javafx.animation.PauseTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.Timeline;
 import javafx.beans.value.WritableValue;
@@ -203,6 +204,36 @@ public final class M3Animation {
         }
         for (Animation animation : animations) {
             finishIfRunning(animation);
+        }
+    }
+
+    /// Updates the duration of a pause transition and restarts it when requested.
+    ///
+    /// This helper is used for motion-behavior timings such as type-ahead reset and submenu hover delays.
+    /// JavaFX animations should not have timing properties changed while they are running, so the transition is
+    /// stopped before its duration is replaced. Running transitions are restarted only when the caller still has
+    /// an active interaction that should keep the timer alive.
+    ///
+    /// @param transition the pause transition to update
+    /// @param duration the new transition duration
+    /// @param restartIfRunning whether a running transition should restart after the duration changes
+    public static void updatePauseDuration(
+            PauseTransition transition,
+            Duration duration,
+            boolean restartIfRunning
+    ) {
+        Objects.requireNonNull(transition, "transition");
+        Objects.requireNonNull(duration, "duration");
+
+        boolean running = transition.getStatus() == Animation.Status.RUNNING;
+        if (running) {
+            transition.stop();
+        }
+
+        transition.setDuration(duration);
+
+        if (running && restartIfRunning) {
+            transition.playFromStart();
         }
     }
 
