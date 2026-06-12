@@ -179,35 +179,19 @@ public class M3Icon extends Labeled {
     /// @return the icon font family token property
     public final StyleableObjectProperty<@Nullable String> iconFontFamilyProperty() {
         if (iconFontFamily == null) {
-            iconFontFamily = new StyleableObjectProperty<>(DEFAULT_ICON_FONT_FAMILY) {
-                /// Applies updated icon font family tokens.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_ICON_FONT_FAMILY);
-                        return;
+            iconFontFamily = M3Css.styleableObjectProperty(
+                    DEFAULT_ICON_FONT_FAMILY,
+                    this,
+                    "iconFontFamily",
+                    StyleableProperties.ICON_FONT_FAMILY,
+                    () -> {
+                        if (iconFontFamilyProperty().get() == null) {
+                            iconFontFamilyProperty().set(DEFAULT_ICON_FONT_FAMILY);
+                            return;
+                        }
+                        updateFont();
                     }
-                    updateFont();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Icon.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "iconFontFamily";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Icon, @Nullable String> getCssMetaData() {
-                    return StyleableProperties.ICON_FONT_FAMILY;
-                }
-            };
+            );
         }
         return iconFontFamily;
     }
@@ -231,33 +215,16 @@ public class M3Icon extends Labeled {
     /// @return the icon size token property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
-            iconSize = new StyleableDoubleProperty(DEFAULT_ICON_SIZE) {
-                /// Applies updated icon size tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "iconSize");
-                    updateFont();
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Icon.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "iconSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Icon, Number> getCssMetaData() {
-                    return StyleableProperties.ICON_SIZE;
-                }
-            };
+            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_SIZE,
+                    this,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    () -> {
+                        updateFont();
+                        updateMetrics();
+                    }
+            );
         }
         return iconSize;
     }
@@ -281,35 +248,19 @@ public class M3Icon extends Labeled {
     /// @return the icon font weight token property
     public final StyleableObjectProperty<@Nullable FontWeight> iconFontWeightProperty() {
         if (iconFontWeight == null) {
-            iconFontWeight = new StyleableObjectProperty<>(DEFAULT_ICON_FONT_WEIGHT) {
-                /// Applies updated icon font weight tokens.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_ICON_FONT_WEIGHT);
-                        return;
+            iconFontWeight = M3Css.styleableObjectProperty(
+                    DEFAULT_ICON_FONT_WEIGHT,
+                    this,
+                    "iconFontWeight",
+                    StyleableProperties.ICON_FONT_WEIGHT,
+                    () -> {
+                        if (iconFontWeightProperty().get() == null) {
+                            iconFontWeightProperty().set(DEFAULT_ICON_FONT_WEIGHT);
+                            return;
+                        }
+                        updateFont();
                     }
-                    updateFont();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Icon.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "iconFontWeight";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Icon, @Nullable FontWeight> getCssMetaData() {
-                    return StyleableProperties.ICON_FONT_WEIGHT;
-                }
-            };
+            );
         }
         return iconFontWeight;
     }
@@ -426,7 +377,7 @@ public class M3Icon extends Labeled {
                     /// Returns whether this property can be set by CSS.
                     @Override
                     public boolean isSettable(M3Icon control) {
-                        return !control.iconFontFamilyProperty().isBound();
+                        return M3Css.isSettable(control.iconFontFamilyProperty());
                     }
 
                     /// Returns the styleable property for a control.
@@ -466,7 +417,7 @@ public class M3Icon extends Labeled {
                     /// Returns whether this property can be set by CSS.
                     @Override
                     public boolean isSettable(M3Icon control) {
-                        return !control.iconFontWeightProperty().isBound();
+                        return M3Css.isSettable(control.iconFontWeightProperty());
                     }
 
                     /// Returns the styleable property for a control.

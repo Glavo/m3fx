@@ -794,31 +794,13 @@ public class M3ListItem extends Control {
             String name,
             CssMetaData<M3ListItem, Number> cssMetaData
     ) {
-        return new StyleableDoubleProperty(initialValue) {
-            /// Validates updated token values.
-            @Override
-            protected void invalidated() {
-                set(M3Css.nonNegative(get(), name));
-            }
-
-            /// Returns the owning bean.
-            @Override
-            public Object getBean() {
-                return M3ListItem.this;
-            }
-
-            /// Returns the property name.
-            @Override
-            public String getName() {
-                return name;
-            }
-
-            /// Returns the CSS metadata for this property.
-            @Override
-            public CssMetaData<M3ListItem, Number> getCssMetaData() {
-                return cssMetaData;
-            }
-        };
+        return M3Css.nonNegativeStyleableDoubleProperty(
+                initialValue,
+                this,
+                name,
+                cssMetaData,
+                this::requestLayout
+        );
     }
 
     /// CSS metadata for m3fx list item component tokens.

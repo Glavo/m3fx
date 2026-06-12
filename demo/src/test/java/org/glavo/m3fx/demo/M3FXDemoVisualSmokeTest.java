@@ -9,6 +9,8 @@ import javafx.event.EventType;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Orientation;
+import javafx.geometry.Point2D;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -250,11 +252,26 @@ final class M3FXDemoVisualSmokeTest {
     /// The tolerance used when checking text input adornment centering.
     private static final double TEXT_INPUT_SLOT_CENTER_TOLERANCE = 5.0;
 
+    /// The tolerance used when checking rendered text input ink centering.
+    private static final double TEXT_INPUT_INK_CENTER_TOLERANCE = 3.0;
+
+    /// The lowest acceptable rendered ink center ratio for outlined fields with a floating label.
+    private static final double OUTLINED_FLOATING_INK_MINIMUM_CENTER_RATIO = 0.46;
+
+    /// The highest acceptable rendered ink center ratio for outlined fields with a floating label.
+    private static final double OUTLINED_FLOATING_INK_MAXIMUM_CENTER_RATIO = 0.70;
+
+    /// The tolerance used when checking rendered selection-control pixel centering.
+    private static final double SELECTION_PIXEL_CENTER_TOLERANCE = 1.25;
+
+    /// The tolerance used when checking square rendered selection-control pixel shapes.
+    private static final double SELECTION_PIXEL_SHAPE_TOLERANCE = 2.0;
+
     /// The lowest acceptable vertical center ratio for single-line input text.
-    private static final double INPUT_TEXT_MINIMUM_CENTER_RATIO = 0.33;
+    private static final double INPUT_TEXT_MINIMUM_CENTER_RATIO = 0.40;
 
     /// The highest acceptable vertical center ratio for single-line input text.
-    private static final double INPUT_TEXT_MAXIMUM_CENTER_RATIO = 0.70;
+    private static final double INPUT_TEXT_MAXIMUM_CENTER_RATIO = 0.66;
 
     /// The hover pseudo-class used when rendering synthetic interaction snapshots.
     private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
@@ -4348,6 +4365,22 @@ final class M3FXDemoVisualSmokeTest {
                     () -> pageTitle + " fixed target glyph is off-center: target="
                             + node + ", glyph=" + renderedGlyph + ", dx=" + dx + ", dy=" + dy
                             + ", targetBounds=" + targetBounds + ", glyphBounds=" + glyphBounds);
+
+            if (renderedGlyph instanceof Text) {
+                Rectangle2D inkBounds = renderedNodePixelBoundsInScene(
+                        renderedGlyph,
+                        pageTitle + " fixed target glyph"
+                );
+                double inkCenterX = inkBounds.getMinX() + inkBounds.getWidth() / 2.0;
+                double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
+                double pixelDx = Math.abs(targetBounds.getCenterX() - inkCenterX);
+                double pixelDy = Math.abs(targetBounds.getCenterY() - inkCenterY);
+                assertTrue(pixelDx <= 4.0 && pixelDy <= 4.0,
+                        () -> pageTitle + " fixed target rendered ink is off-center: target="
+                                + node + ", glyph=" + renderedGlyph + ", pixelDx=" + pixelDx
+                                + ", pixelDy=" + pixelDy + ", targetBounds=" + targetBounds
+                                + ", inkBounds=" + inkBounds);
+            }
         });
     }
 
@@ -4386,9 +4419,14 @@ final class M3FXDemoVisualSmokeTest {
                 return;
             }
 
-            double topRoom = textBounds.getMinY() - inputBounds.getMinY();
-            double bottomRoom = inputBounds.getMaxY() - textBounds.getMaxY();
-            double centerRatio = (textBounds.getCenterY() - inputBounds.getMinY()) / inputBounds.getHeight();
+            Rectangle2D inkBounds = renderedNodePixelBoundsInScene(
+                    text,
+                    pageTitle + " text input glyph"
+            );
+            double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
+            double topRoom = inkBounds.getMinY() - inputBounds.getMinY();
+            double bottomRoom = inputBounds.getMaxY() - inkBounds.getMaxY();
+            double centerRatio = (inkCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
             assertTrue(topRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
                             && bottomRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
                             && centerRatio >= INPUT_TEXT_MINIMUM_CENTER_RATIO
@@ -4396,8 +4434,45 @@ final class M3FXDemoVisualSmokeTest {
                     () -> pageTitle + " text input glyph has unsafe vertical geometry: text="
                             + text.getText() + ", topRoom=" + topRoom + ", bottomRoom=" + bottomRoom
                             + ", centerRatio=" + centerRatio + ", inputBounds=" + inputBounds
-                            + ", textBounds=" + textBounds);
+                            + ", textBounds=" + textBounds + ", inkBounds=" + inkBounds);
+            if (isOutlinedTextInputWithVisibleText(input)) {
+                assertOutlinedTextInputInkCentered(input, inkBounds, inputBounds, pageTitle);
+            }
         });
+    }
+
+    /// Returns whether a single-line text input should keep its rendered text centered inside an outlined field.
+    private static boolean isOutlinedTextInputWithVisibleText(TextInputControl input) {
+        return input instanceof M3TextInput textInput
+                && textInput.getVariant() == M3TextInputVariant.OUTLINED
+                && input.getText() != null
+                && !input.getText().isBlank();
+    }
+
+    /// Verifies that an outlined text input's rendered ink center matches its active label state.
+    private static void assertOutlinedTextInputInkCentered(
+            TextInputControl input,
+            Rectangle2D inkBounds,
+            Bounds inputBounds,
+            String pageTitle
+    ) {
+        double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
+        @Nullable M3TextInputLayout layout = nearestAncestorOfType(input, M3TextInputLayout.class);
+        if (layout != null && layout.isLabelFloating()) {
+            double centerRatio = (inkCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
+            assertTrue(centerRatio >= OUTLINED_FLOATING_INK_MINIMUM_CENTER_RATIO
+                            && centerRatio <= OUTLINED_FLOATING_INK_MAXIMUM_CENTER_RATIO,
+                    () -> pageTitle + " outlined floating-label text input ink is outside its content slot: input="
+                            + input + ", inputBounds=" + inputBounds + ", inkBounds=" + inkBounds
+                            + ", centerRatio=" + centerRatio);
+            return;
+        }
+
+        double inputCenterY = inputBounds.getCenterY();
+        assertTrue(Math.abs(inputCenterY - inkCenterY) <= TEXT_INPUT_INK_CENTER_TOLERANCE,
+                () -> pageTitle + " outlined text input ink is vertically off-center: input="
+                        + input + ", inputBounds=" + inputBounds + ", inkBounds=" + inkBounds
+                        + ", delta=" + Math.abs(inputCenterY - inkCenterY));
     }
 
     /// Verifies the real Checkboxes demo page state matrix and indicator geometry.
@@ -4509,21 +4584,46 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that selection-control indicators keep their active pieces centered in real rendered geometry.
     private static void assertSelectionIndicatorsCentered(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
+        AtomicReference<@Nullable WritableImage> snapshotReference = new AtomicReference<>();
         visitVisibleNodes(scene.getRoot(), node -> {
             if (node instanceof M3CheckBox checkBox && hasRenderableBounds(checkBox)) {
                 assertCheckboxMarkCentered(checkBox, sceneBounds, pageTitle);
             } else if (node instanceof M3RadioButton radioButton && hasRenderableBounds(radioButton)) {
-                assertRadioDotCentered(radioButton, sceneBounds, pageTitle);
+                assertRadioDotCentered(
+                        radioButton,
+                        sceneBounds,
+                        selectionGeometrySnapshot(scene, snapshotReference),
+                        pageTitle
+                );
             } else if (node instanceof M3Switch switchControl && hasRenderableBounds(switchControl)) {
                 assertSwitchThumbInsideTrack(
                         switchControl,
                         sceneBounds,
+                        selectionGeometrySnapshot(scene, snapshotReference),
                         pageTitle
                 );
             } else if (node instanceof M3Slider slider && hasRenderableBounds(slider)) {
-                assertSliderTrackThumbGeometry(slider, sceneBounds, pageTitle);
+                assertSliderTrackThumbGeometry(
+                        slider,
+                        sceneBounds,
+                        selectionGeometrySnapshot(scene, snapshotReference),
+                        pageTitle
+                );
             }
         });
+    }
+
+    /// Returns the shared snapshot used by selection-control pixel geometry checks.
+    private static WritableImage selectionGeometrySnapshot(
+            Scene scene,
+            AtomicReference<@Nullable WritableImage> snapshotReference
+    ) {
+        WritableImage image = snapshotReference.get();
+        if (image == null) {
+            image = snapshot(scene);
+            snapshotReference.set(image);
+        }
+        return image;
     }
 
     /// Verifies that navigation badges stay compact and anchored instead of stretching over the selected indicator.
@@ -4940,8 +5040,9 @@ final class M3FXDemoVisualSmokeTest {
             assertTrue(vectorIcon.getStyleClass().contains(expectedIconColorStyle),
                     () -> description + " icon button should use the Material app bar icon color "
                             + expectedIconColorStyle + ": " + vectorIcon.getStyleClass());
-            assertAppBarIconIdentity(vectorIcon, expectedIconNames[index], description);
-            assertAppBarIconButtonGeometry(iconButton, graphic, vectorIcon, description);
+            String expectedIconName = expectedIconNames[index];
+            assertAppBarIconIdentity(vectorIcon, expectedIconName, description);
+            assertAppBarIconButtonGeometry(iconButton, graphic, vectorIcon, expectedIconName, description);
         }
     }
 
@@ -4969,6 +5070,7 @@ final class M3FXDemoVisualSmokeTest {
             M3IconButton iconButton,
             Node graphic,
             Node vectorIcon,
+            String expectedIconName,
             String description
     ) {
         Bounds buttonBounds = iconButton.localToScene(iconButton.getBoundsInLocal());
@@ -5002,6 +5104,7 @@ final class M3FXDemoVisualSmokeTest {
                 () -> description + " icon viewport is vertically off-center inside its action target: button="
                         + buttonBounds + ", viewport=" + viewportBounds);
         assertAppBarIconHasVisiblePaint(vectorIcon, description);
+        assertAppBarIconRenderedShape(viewport, expectedIconName, description);
     }
 
     /// Verifies that an app bar icon renders visible SVG pixels with contrast against its app bar container.
@@ -5028,6 +5131,63 @@ final class M3FXDemoVisualSmokeTest {
                         + iconColor + ", background=" + containerColor);
     }
 
+    /// Verifies that a rendered app bar icon has the expected shape footprint inside its 24 dp viewport.
+    private static void assertAppBarIconRenderedShape(Node viewport, String expectedIconName, String description) {
+        WritableImage image = snapshotNode(viewport);
+        Color background = image.getPixelReader().getColor(0, 0);
+        Rectangle2D pixels = contrastingPixelBounds(
+                image,
+                background,
+                0.04,
+                description + " " + expectedIconName + " icon"
+        );
+        double width = pixels.getWidth();
+        double height = pixels.getHeight();
+        double centerX = pixels.getMinX() + width / 2.0;
+        double centerY = pixels.getMinY() + height / 2.0;
+
+        assertEquals(image.getWidth() / 2.0, centerX, DEMO_ICON_CENTER_TOLERANCE,
+                () -> description + " " + expectedIconName
+                        + " rendered pixels are horizontally off-center in the icon viewport: pixels=" + pixels);
+        assertEquals(image.getHeight() / 2.0, centerY, DEMO_ICON_CENTER_TOLERANCE,
+                () -> description + " " + expectedIconName
+                        + " rendered pixels are vertically off-center in the icon viewport: pixels=" + pixels);
+
+        switch (expectedIconName) {
+            case "menu" -> {
+                assertTrue(width >= 15.0,
+                        () -> description + " menu icon should render wide horizontal bars: pixels=" + pixels);
+                assertTrue(height >= 9.0 && height <= 15.0,
+                        () -> description + " menu icon rendered height is outside the expected bar stack: pixels="
+                                + pixels);
+                assertTrue(width / height >= 1.2,
+                        () -> description + " menu icon should be wider than tall: pixels=" + pixels);
+            }
+            case "more" -> {
+                assertTrue(width <= 8.0,
+                        () -> description + " more icon should render as a narrow vertical dot column: pixels="
+                                + pixels);
+                assertTrue(height >= 15.0,
+                        () -> description + " more icon rendered height is too small: pixels=" + pixels);
+                assertTrue(height / width >= 2.0,
+                        () -> description + " more icon should be much taller than wide: pixels=" + pixels);
+            }
+            case "add", "search", "back", "favorite" -> {
+                assertTrue(width >= 13.0,
+                        () -> description + " " + expectedIconName + " icon rendered width is too small: pixels="
+                                + pixels);
+                assertTrue(height >= 13.0,
+                        () -> description + " " + expectedIconName + " icon rendered height is too small: pixels="
+                                + pixels);
+                assertTrue(width / height >= 0.75 && width / height <= 1.6,
+                        () -> description + " " + expectedIconName
+                                + " icon rendered aspect ratio is outside the expected vector footprint: pixels="
+                                + pixels);
+            }
+            default -> throw new IllegalArgumentException("Unsupported app bar icon shape check: " + expectedIconName);
+        }
+    }
+
     /// Verifies that a node snapshot contains non-transparent rendered pixels.
     private static void assertNodeSnapshotHasOpaquePixels(Node node, String description) {
         WritableImage image = snapshotNode(node);
@@ -5045,6 +5205,75 @@ final class M3FXDemoVisualSmokeTest {
                 () -> description + " snapshot has too few opaque pixels: opaque="
                         + finalOpaquePixels + ", minimum=" + minimumOpaquePixels
                         + ", size=" + image.getWidth() + "x" + image.getHeight());
+    }
+
+    /// Returns the opaque pixel bounds for a transparent-background node snapshot.
+    private static Rectangle2D opaquePixelBounds(WritableImage image, String description) {
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                if (image.getPixelReader().getColor(x, y).getOpacity() > 0.1) {
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+        }
+
+        assertTrue(maxX >= minX && maxY >= minY,
+                () -> description + " snapshot has no opaque pixels: size="
+                        + image.getWidth() + "x" + image.getHeight());
+        return new Rectangle2D(minX, minY, maxX - minX + 1.0, maxY - minY + 1.0);
+    }
+
+    /// Returns the non-transparent rendered pixel bounds of a node mapped to scene coordinates.
+    private static Rectangle2D renderedNodePixelBoundsInScene(Node node, String description) {
+        WritableImage image = snapshotNode(node);
+        Rectangle2D pixels = opaquePixelBounds(image, description);
+        Bounds sceneBounds = node.localToScene(node.getBoundsInLocal());
+        double scaleX = sceneBounds.getWidth() / image.getWidth();
+        double scaleY = sceneBounds.getHeight() / image.getHeight();
+        return new Rectangle2D(
+                sceneBounds.getMinX() + pixels.getMinX() * scaleX,
+                sceneBounds.getMinY() + pixels.getMinY() * scaleY,
+                pixels.getWidth() * scaleX,
+                pixels.getHeight() * scaleY
+        );
+    }
+
+    /// Returns the bounds of pixels in an image that contrast with the supplied reference color.
+    private static Rectangle2D contrastingPixelBounds(
+            WritableImage image,
+            Color reference,
+            double minimumDistance,
+            String description
+    ) {
+        int minX = (int) image.getWidth();
+        int minY = (int) image.getHeight();
+        int maxX = -1;
+        int maxY = -1;
+
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                if (color.getOpacity() > 0.1 && colorDistance(color, reference) >= minimumDistance) {
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+        }
+
+        assertTrue(maxX >= minX && maxY >= minY,
+                () -> description + " snapshot has no contrasting pixels: size="
+                        + image.getWidth() + "x" + image.getHeight());
+        return new Rectangle2D(minX, minY, maxX - minX + 1.0, maxY - minY + 1.0);
     }
 
     /// Returns the nearest top or bottom app bar region containing a node.
@@ -5120,7 +5349,12 @@ final class M3FXDemoVisualSmokeTest {
     }
 
     /// Verifies that a radio button dot shares the same rendered center as its ring.
-    private static void assertRadioDotCentered(Node root, Bounds sceneBounds, String pageTitle) {
+    private static void assertRadioDotCentered(
+            Node root,
+            Bounds sceneBounds,
+            WritableImage image,
+            String pageTitle
+    ) {
         @Nullable Node container = root.lookup(".m3-radio-ring");
         @Nullable Node indicator = root.lookup(".m3-radio-dot");
         if (container == null || indicator == null || !hasRenderableBounds(container) || !hasRenderableBounds(indicator)) {
@@ -5137,10 +5371,31 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(dx <= 0.75 && dy <= 0.75,
                 () -> pageTitle + " radio dot is off-center: dx=" + dx + ", dy=" + dy
                         + ", containerBounds=" + containerBounds + ", indicatorBounds=" + indicatorBounds);
+        if (indicator.getOpacity() <= 0.2) {
+            return;
+        }
+
+        Color dotReference = sampledNodeBackgroundColor(image, indicator);
+        Point2D renderedCenter = contrastingPixelCentroid(image, indicator, dotReference, 0.03);
+        Rectangle2D renderedBounds = contrastingPixelBounds(image, indicator, dotReference, 0.03);
+        double renderedDx = Math.abs(containerBounds.getCenterX() - renderedCenter.getX());
+        double renderedDy = Math.abs(containerBounds.getCenterY() - renderedCenter.getY());
+        assertTrue(renderedDx <= SELECTION_PIXEL_CENTER_TOLERANCE
+                        && renderedDy <= SELECTION_PIXEL_CENTER_TOLERANCE,
+                () -> pageTitle + " rendered radio dot pixels are off-center: dx=" + renderedDx
+                        + ", dy=" + renderedDy + ", ringBounds=" + containerBounds
+                        + ", dotPixels=" + renderedBounds);
+        assertTrue(Math.abs(renderedBounds.getWidth() - renderedBounds.getHeight()) <= SELECTION_PIXEL_SHAPE_TOLERANCE,
+                () -> pageTitle + " rendered radio dot pixels are not square: " + renderedBounds);
     }
 
     /// Verifies that a switch thumb stays vertically centered and inside its track.
-    private static void assertSwitchThumbInsideTrack(Node root, Bounds sceneBounds, String pageTitle) {
+    private static void assertSwitchThumbInsideTrack(
+            Node root,
+            Bounds sceneBounds,
+            WritableImage image,
+            String pageTitle
+    ) {
         @Nullable Node track = root.lookup(".m3-switch-track");
         @Nullable Node thumb = root.lookup(".m3-switch-thumb");
         if (track == null || thumb == null || !hasRenderableBounds(track) || !hasRenderableBounds(thumb)) {
@@ -5158,10 +5413,40 @@ final class M3FXDemoVisualSmokeTest {
                         && thumbBounds.getMaxX() <= trackBounds.getMaxX() + 0.75,
                 () -> pageTitle + " switch thumb has unsafe geometry: dy=" + dy
                         + ", trackBounds=" + trackBounds + ", thumbBounds=" + thumbBounds);
+
+        @Nullable Node stateLayer = root.lookup(".m3-state-layer-container");
+        if (stateLayer != null && hasRenderableBounds(stateLayer)) {
+            Bounds stateLayerBounds = stateLayer.localToScene(stateLayer.getBoundsInLocal());
+            assertEquals(stateLayerBounds.getWidth(), stateLayerBounds.getHeight(), 0.75,
+                    () -> pageTitle + " switch state layer should stay square: " + stateLayerBounds);
+            assertEquals(thumbBounds.getCenterX(), stateLayerBounds.getCenterX(), 1.0,
+                    () -> pageTitle + " switch state layer should track thumb center horizontally: stateLayer="
+                            + stateLayerBounds + ", thumb=" + thumbBounds);
+            assertEquals(thumbBounds.getCenterY(), stateLayerBounds.getCenterY(), 1.0,
+                    () -> pageTitle + " switch state layer should track thumb center vertically: stateLayer="
+                            + stateLayerBounds + ", thumb=" + thumbBounds);
+        }
+
+        if (root.isDisabled()) {
+            return;
+        }
+        Color thumbReference = sampledNodeBackgroundColor(image, thumb);
+        Rectangle2D thumbPixels = contrastingPixelBounds(image, thumb, thumbReference, 0.02);
+        double thumbPixelCenterY = thumbPixels.getMinY() + thumbPixels.getHeight() / 2.0;
+        assertTrue(Math.abs(thumbBounds.getCenterY() - thumbPixelCenterY) <= SELECTION_PIXEL_CENTER_TOLERANCE,
+                () -> pageTitle + " rendered switch thumb pixels are vertically off-center: thumb="
+                        + thumbBounds + ", thumbPixels=" + thumbPixels);
+        assertTrue(Math.abs(thumbPixels.getWidth() - thumbPixels.getHeight()) <= SELECTION_PIXEL_SHAPE_TOLERANCE,
+                () -> pageTitle + " rendered switch thumb pixels are not square: " + thumbPixels);
     }
 
     /// Verifies that a slider track, active track, and thumb match the current value and orientation.
-    private static void assertSliderTrackThumbGeometry(M3Slider slider, Bounds sceneBounds, String pageTitle) {
+    private static void assertSliderTrackThumbGeometry(
+            M3Slider slider,
+            Bounds sceneBounds,
+            WritableImage image,
+            String pageTitle
+    ) {
         @Nullable Node track = slider.lookup(".track");
         @Nullable Node activeTrack = slider.lookup(".active-track");
         @Nullable Node thumb = slider.lookup(".thumb");
@@ -5213,6 +5498,7 @@ final class M3FXDemoVisualSmokeTest {
             assertEquals(trackBounds.getMaxY(), activeBounds.getMaxY(), 1.25,
                     () -> pageTitle + " vertical slider active track should end at the track bottom: activeTrack="
                             + activeBounds + ", track=" + trackBounds);
+            assertSliderThumbPixelsCentered(image, thumb, thumbBounds, pageTitle);
             return;
         }
 
@@ -5244,6 +5530,29 @@ final class M3FXDemoVisualSmokeTest {
                     () -> pageTitle + " horizontal slider active track should start at the track leading edge: "
                             + activeBounds);
         }
+        assertSliderThumbPixelsCentered(image, thumb, thumbBounds, pageTitle);
+    }
+
+    /// Verifies that the slider thumb's rendered pixels are centered inside its layout bounds.
+    private static void assertSliderThumbPixelsCentered(
+            WritableImage image,
+            Node thumb,
+            Bounds thumbBounds,
+            String pageTitle
+    ) {
+        if (thumb.isDisabled()) {
+            return;
+        }
+        Color thumbReference = sampledNodeBackgroundColor(image, thumb);
+        Rectangle2D thumbPixels = contrastingPixelBounds(image, thumb, thumbReference, 0.02);
+        double renderedCenterX = thumbPixels.getMinX() + thumbPixels.getWidth() / 2.0;
+        double renderedCenterY = thumbPixels.getMinY() + thumbPixels.getHeight() / 2.0;
+        assertTrue(Math.abs(thumbBounds.getCenterX() - renderedCenterX) <= SELECTION_PIXEL_CENTER_TOLERANCE
+                        && Math.abs(thumbBounds.getCenterY() - renderedCenterY) <= SELECTION_PIXEL_CENTER_TOLERANCE,
+                () -> pageTitle + " rendered slider thumb pixels are off-center: thumb="
+                        + thumbBounds + ", thumbPixels=" + thumbPixels);
+        assertTrue(Math.abs(thumbPixels.getWidth() - thumbPixels.getHeight()) <= SELECTION_PIXEL_SHAPE_TOLERANCE,
+                () -> pageTitle + " rendered slider thumb pixels are not square: " + thumbPixels);
     }
 
     /// Returns the current slider value normalized to the `[0, 1]` range.
@@ -6425,6 +6734,94 @@ final class M3FXDemoVisualSmokeTest {
                 .replace('&', ' ')
                 .replaceAll("[^a-z0-9]+", "-")
                 .replaceAll("(^-|-$)", "");
+    }
+
+    /// Returns the centroid of rendered pixels inside a node that contrast with the reference color.
+    private static Point2D contrastingPixelCentroid(
+            WritableImage image,
+            Node node,
+            Color reference,
+            double minimumDistance
+    ) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
+        int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
+        int endX = Math.min((int) image.getWidth(), (int) Math.ceil(bounds.getMaxX()));
+        int endY = Math.min((int) image.getHeight(), (int) Math.ceil(bounds.getMaxY()));
+        double totalWeight = 0.0;
+        double weightedX = 0.0;
+        double weightedY = 0.0;
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                double distance = colorDistance(color, reference);
+                if (color.getOpacity() > 0.1 && distance >= minimumDistance) {
+                    double weight = color.getOpacity() * Math.min(1.0, distance);
+                    totalWeight += weight;
+                    weightedX += (x + 0.5) * weight;
+                    weightedY += (y + 0.5) * weight;
+                }
+            }
+        }
+
+        assertTrue(totalWeight > 0.0, () -> "No contrasting pixels found for " + node);
+        return new Point2D(weightedX / totalWeight, weightedY / totalWeight);
+    }
+
+    /// Returns the rendered-pixel bounds inside a node that contrast with its sampled local background.
+    private static Rectangle2D contrastingPixelBounds(
+            WritableImage image,
+            Node node,
+            double minimumDistance
+    ) {
+        return contrastingPixelBounds(image, node, sampledNodeBackgroundColor(image, node), minimumDistance);
+    }
+
+    /// Returns the rendered-pixel bounds inside a node that contrast with the supplied reference color.
+    private static Rectangle2D contrastingPixelBounds(
+            WritableImage image,
+            Node node,
+            Color reference,
+            double minimumDistance
+    ) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
+        int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
+        int endX = Math.min((int) image.getWidth(), (int) Math.ceil(bounds.getMaxX()));
+        int endY = Math.min((int) image.getHeight(), (int) Math.ceil(bounds.getMaxY()));
+        int minX = endX;
+        int minY = endY;
+        int maxX = startX - 1;
+        int maxY = startY - 1;
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                if (color.getOpacity() > 0.1 && colorDistance(color, reference) >= minimumDistance) {
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+        }
+
+        assertTrue(maxX >= minX && maxY >= minY, () -> "No contrasting pixels found for " + node);
+        return new Rectangle2D(minX, minY, maxX - minX + 1.0, maxY - minY + 1.0);
+    }
+
+    /// Samples the local background near a node before measuring rendered ink pixels.
+    private static Color sampledNodeBackgroundColor(WritableImage image, Node node) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        int x = clampPixelCoordinate((int) Math.floor(bounds.getMinX()), (int) image.getWidth());
+        int y = clampPixelCoordinate((int) Math.floor(bounds.getMinY()), (int) image.getHeight());
+        return image.getPixelReader().getColor(x, y);
+    }
+
+    /// Clamps one pixel coordinate to a readable image index.
+    private static int clampPixelCoordinate(int coordinate, int dimension) {
+        return Math.max(0, Math.min(dimension - 1, coordinate));
     }
 
     /// Returns a simple RGB distance between two colors.

@@ -96,31 +96,13 @@ public class M3DialogPane extends DialogPane {
     /// @return the dialog container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
-            containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "containerShape"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3DialogPane.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3DialogPane, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SHAPE;
-                }
-            };
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestLayout
+            );
         }
         return containerShape;
     }
@@ -144,32 +126,13 @@ public class M3DialogPane extends DialogPane {
     /// @return the dialog content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
-            contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "contentPadding"));
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3DialogPane.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "contentPadding";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3DialogPane, Number> getCssMetaData() {
-                    return StyleableProperties.CONTENT_PADDING;
-                }
-            };
+            contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTENT_PADDING,
+                    this,
+                    "contentPadding",
+                    StyleableProperties.CONTENT_PADDING,
+                    this::updateMetrics
+            );
         }
         return contentPadding;
     }

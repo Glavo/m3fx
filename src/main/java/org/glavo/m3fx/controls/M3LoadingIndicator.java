@@ -203,32 +203,13 @@ public class M3LoadingIndicator extends Control {
     /// @return the styleable container size property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
-            containerSize = new StyleableDoubleProperty(DEFAULT_CONTAINER_SIZE) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerSize");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3LoadingIndicator.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3LoadingIndicator, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SIZE;
-                }
-            };
+            containerSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SIZE,
+                    this,
+                    "containerSize",
+                    StyleableProperties.CONTAINER_SIZE,
+                    this::updateMetrics
+            );
         }
         return containerSize;
     }
@@ -252,32 +233,13 @@ public class M3LoadingIndicator extends Control {
     /// @return the styleable active indicator size property
     public final StyleableDoubleProperty indicatorSizeProperty() {
         if (indicatorSize == null) {
-            indicatorSize = new StyleableDoubleProperty(DEFAULT_INDICATOR_SIZE) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "indicatorSize");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3LoadingIndicator.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "indicatorSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3LoadingIndicator, Number> getCssMetaData() {
-                    return StyleableProperties.INDICATOR_SIZE;
-                }
-            };
+            indicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_INDICATOR_SIZE,
+                    this,
+                    "indicatorSize",
+                    StyleableProperties.INDICATOR_SIZE,
+                    this::requestLayout
+            );
         }
         return indicatorSize;
     }

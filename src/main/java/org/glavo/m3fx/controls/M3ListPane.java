@@ -96,6 +96,9 @@ public class M3ListPane extends Control {
     /// The selected-state listeners installed on list items.
     private final Map<M3ListItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
+    /// The reachability listeners installed on list items.
+    private final Map<M3ListItem, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+
     /// Handles list item actions by applying the configured selection policy.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
@@ -261,6 +264,9 @@ public class M3ListPane extends Control {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
             throw new IllegalArgumentException("item must belong to this list");
+        }
+        if (!isSelectableListItem(item)) {
+            throw new IllegalArgumentException("item must be selectable");
         }
 
         if (getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
@@ -519,7 +525,7 @@ public class M3ListPane extends Control {
         }
 
         if (getSelectionMode() == M3ListSelectionMode.SINGLE) {
-            @Nullable M3ListItem item = M3Accessible.firstSelectionTarget(getItems(), M3ListItem.class, parameters);
+            @Nullable M3ListItem item = firstAccessibleSelectableItem(parameters);
             if (item == null) {
                 clearSelection();
             } else {
@@ -531,7 +537,7 @@ public class M3ListPane extends Control {
         updatingSelection = true;
         try {
             for (Node child : getItems()) {
-                if (child instanceof M3ListItem item) {
+                if (child instanceof M3ListItem item && isSelectableListItem(item)) {
                     item.setSelected(M3Accessible.containsSelectionTarget(item, parameters));
                 }
             }
@@ -551,6 +557,11 @@ public class M3ListPane extends Control {
                 handleItemSelectedChanged(item, newValue);
         selectedListeners.put(item, listener);
         item.selectedProperty().addListener(listener);
+        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
+                handleItemReachabilityChanged(item);
+        reachabilityListeners.put(item, reachabilityListener);
+        item.disabledProperty().addListener(reachabilityListener);
+        item.visibleProperty().addListener(reachabilityListener);
     }
 
     /// Removes action and selected-state listeners from a list item.
@@ -560,13 +571,18 @@ public class M3ListPane extends Control {
         if (listener != null) {
             item.selectedProperty().removeListener(listener);
         }
+        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(item);
+        if (reachabilityListener != null) {
+            item.disabledProperty().removeListener(reachabilityListener);
+            item.visibleProperty().removeListener(reachabilityListener);
+        }
     }
 
     /// Applies the configured selection policy to a list item action.
     private void handleItemAction(ActionEvent event) {
         if (!(event.getSource() instanceof M3ListItem item)
                 || !getItems().contains(item)
-                || item.isDisabled()) {
+                || !isSelectableListItem(item)) {
             return;
         }
 
@@ -590,6 +606,16 @@ public class M3ListPane extends Control {
             return;
         }
 
+        if (!isSelectableListItem(item)) {
+            if (selected) {
+                setItemSelected(item, false);
+                if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE) {
+                    selectFirstItemIfNeeded();
+                }
+            }
+            return;
+        }
+
         if (selected && getSelectionMode() == M3ListSelectionMode.SINGLE) {
             selectOnly(item);
             return;
@@ -603,6 +629,17 @@ public class M3ListPane extends Control {
         } else {
             enforceSelectionPolicy();
         }
+    }
+
+    /// Keeps selection and accessibility state consistent when an item becomes unreachable.
+    private void handleItemReachabilityChanged(M3ListItem item) {
+        clearTypeAheadBuffer();
+        if (item.isSelected() && !isSelectableListItem(item)) {
+            setItemSelected(item, false);
+        }
+        enforceSelectionPolicy();
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Enforces selection invariants for the current selection mode.
@@ -631,13 +668,18 @@ public class M3ListPane extends Control {
 
     /// Sets one list item's selected state and refreshes selected item state.
     private void setItemSelected(M3ListItem item, boolean selected) {
+        setItemSelectedWithoutRefresh(item, selected);
+        refreshSelectedItems();
+    }
+
+    /// Sets one list item's selected state without refreshing the aggregate selected item list.
+    private void setItemSelectedWithoutRefresh(M3ListItem item, boolean selected) {
         updatingSelection = true;
         try {
             item.setSelected(selected);
         } finally {
             updatingSelection = false;
         }
-        refreshSelectedItems();
     }
 
     /// Selects one item and clears selection from the remaining list items.
@@ -661,7 +703,11 @@ public class M3ListPane extends Control {
         selectedItems.clear();
         for (Node child : getItems()) {
             if (child instanceof M3ListItem item && item.isSelected()) {
-                selectedItems.add(item);
+                if (isSelectableListItem(item)) {
+                    selectedItems.add(item);
+                } else {
+                    setItemSelectedWithoutRefresh(item, false);
+                }
             }
         }
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
@@ -675,6 +721,24 @@ public class M3ListPane extends Control {
     /// Returns the first list item child.
     private @Nullable M3ListItem firstItem() {
         return M3SelectionNavigation.first(getItems(), M3ListItem.class);
+    }
+
+    /// Returns the first selectable list item referenced by accessibility parameters.
+    private @Nullable M3ListItem firstAccessibleSelectableItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Node child : getItems()) {
+            if (child instanceof M3ListItem item
+                    && isSelectableListItem(item)
+                    && M3Accessible.containsSelectionTarget(item, parameters)) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a list item can currently participate in selection.
+    private static boolean isSelectableListItem(M3ListItem item) {
+        return !item.isDisabled() && item.isVisible();
     }
 
     /// Creates the default Material Design 3 list skin.

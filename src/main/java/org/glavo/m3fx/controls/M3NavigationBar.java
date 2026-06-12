@@ -80,6 +80,9 @@ public class M3NavigationBar extends Control {
     /// The selected-state listeners installed on navigation items.
     private final Map<M3NavigationItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
+    /// The reachability listeners installed on navigation items.
+    private final Map<M3NavigationItem, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+
     /// Updates navigation item selection listeners when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
@@ -210,6 +213,9 @@ public class M3NavigationBar extends Control {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
             throw new IllegalArgumentException("item must belong to this navigation bar");
+        }
+        if (!isSelectableNavigationItem(item)) {
+            throw new IllegalArgumentException("item must be selectable");
         }
         selectItem(item);
     }
@@ -350,7 +356,7 @@ public class M3NavigationBar extends Control {
     /// Applies the selected navigation item supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
         @Nullable M3NavigationItem item =
-                M3Accessible.firstSelectionTarget(getItems(), M3NavigationItem.class, parameters);
+                firstAccessibleSelectableItem(parameters);
         if (item == null) {
             clearSelection();
         } else {
@@ -364,6 +370,11 @@ public class M3NavigationBar extends Control {
                 handleItemSelectedChanged(item, newValue);
         selectedListeners.put(item, listener);
         item.selectedProperty().addListener(listener);
+        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
+                handleItemReachabilityChanged(item);
+        reachabilityListeners.put(item, reachabilityListener);
+        item.disabledProperty().addListener(reachabilityListener);
+        item.visibleProperty().addListener(reachabilityListener);
     }
 
     /// Removes the selected-state listener from a navigation item.
@@ -372,11 +383,26 @@ public class M3NavigationBar extends Control {
         if (listener != null) {
             item.selectedProperty().removeListener(listener);
         }
+        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(item);
+        if (reachabilityListener != null) {
+            item.disabledProperty().removeListener(reachabilityListener);
+            item.visibleProperty().removeListener(reachabilityListener);
+        }
     }
 
     /// Keeps externally changed item selected states mutually exclusive.
     private void handleItemSelectedChanged(M3NavigationItem item, boolean selected) {
         if (updatingSelection) {
+            return;
+        }
+
+        if (!isSelectableNavigationItem(item)) {
+            if (selected) {
+                setItemSelected(item, false);
+                if (!isAllowEmptySelection()) {
+                    selectFirstItemIfNeeded();
+                }
+            }
             return;
         }
 
@@ -388,6 +414,16 @@ public class M3NavigationBar extends Control {
                 selectFirstItemIfNeeded();
             }
         }
+    }
+
+    /// Keeps selection and accessibility state consistent when an item becomes unreachable.
+    private void handleItemReachabilityChanged(M3NavigationItem item) {
+        if (item.isSelected() && !isSelectableNavigationItem(item)) {
+            setItemSelected(item, false);
+        }
+        enforceSelectionPolicy();
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Enforces single-selection and non-empty selection invariants.
@@ -412,6 +448,22 @@ public class M3NavigationBar extends Control {
         selectItem(firstItem);
     }
 
+    /// Sets one navigation item's selected state and refreshes selected item state.
+    private void setItemSelected(M3NavigationItem item, boolean selected) {
+        setItemSelectedWithoutRefresh(item, selected);
+        refreshSelectedItems();
+    }
+
+    /// Sets one navigation item's selected state without refreshing the aggregate selected item list.
+    private void setItemSelectedWithoutRefresh(M3NavigationItem item, boolean selected) {
+        updatingSelection = true;
+        try {
+            item.setSelected(selected);
+        } finally {
+            updatingSelection = false;
+        }
+    }
+
     /// Selects an item and clears selection from the remaining navigation items.
     private void selectItem(@Nullable M3NavigationItem item) {
         updatingSelection = true;
@@ -433,7 +485,11 @@ public class M3NavigationBar extends Control {
         selectedItems.clear();
         for (Node child : getItems()) {
             if (child instanceof M3NavigationItem item && item.isSelected()) {
-                selectedItems.add(item);
+                if (isSelectableNavigationItem(item)) {
+                    selectedItems.add(item);
+                } else {
+                    setItemSelectedWithoutRefresh(item, false);
+                }
             }
         }
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
@@ -447,6 +503,24 @@ public class M3NavigationBar extends Control {
     /// Returns the first navigation item child.
     private @Nullable M3NavigationItem firstNavigationItem() {
         return M3SelectionNavigation.first(getItems(), M3NavigationItem.class);
+    }
+
+    /// Returns the first selectable item referenced by accessibility parameters.
+    private @Nullable M3NavigationItem firstAccessibleSelectableItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Node child : getItems()) {
+            if (child instanceof M3NavigationItem item
+                    && isSelectableNavigationItem(item)
+                    && M3Accessible.containsSelectionTarget(item, parameters)) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a navigation item can currently participate in selection.
+    private static boolean isSelectableNavigationItem(M3NavigationItem item) {
+        return !item.isDisabled() && item.isVisible();
     }
 
     /// Creates the default Material Design 3 navigation bar skin.

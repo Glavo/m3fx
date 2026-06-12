@@ -129,31 +129,14 @@ public class M3ButtonGroup extends Control {
     /// @return the styleable child spacing property
     public final StyleableDoubleProperty spacingProperty() {
         if (spacing == null) {
-            spacing = new StyleableDoubleProperty(DEFAULT_SPACING) {
-                /// Validates updated spacing values.
-                @Override
-                protected void invalidated() {
-                    M3Css.finite(get(), "spacing");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ButtonGroup.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "spacing";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ButtonGroup, Number> getCssMetaData() {
-                    return StyleableProperties.SPACING;
-                }
-            };
+            spacing = M3Css.finiteStyleableDoubleProperty(
+                    DEFAULT_SPACING,
+                    this,
+                    "spacing",
+                    StyleableProperties.SPACING,
+                    () -> {
+                    }
+            );
         }
         return spacing;
     }

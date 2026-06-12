@@ -522,11 +522,16 @@ public class M3ListView<T> extends Control {
         }
     }
 
-    /// Moves list keyboard focus to the supplied item index and scrolls it into view.
+    /// Moves list keyboard focus to the supplied enabled visible item index and scrolls it into view.
+    ///
+    /// Disabled or invisible node items are not reachable by keyboard traversal, so requests for those rows are ignored.
     ///
     /// @param index the data item index to focus
     public final void focusIndex(int index) {
         checkItemIndex(index);
+        if (!isIndexNavigable(index)) {
+            return;
+        }
         updateFocusedIndex(index, true);
     }
 
@@ -659,9 +664,9 @@ public class M3ListView<T> extends Control {
         );
     }
 
-    /// Applies the configured selection policy to a cell activation.
+    /// Applies the configured selection policy to a reachable cell activation.
     void activateIndex(int index) {
-        if (index < 0 || index >= getItems().size()) {
+        if (!isIndexNavigable(index)) {
             return;
         }
         switch (getSelectionMode()) {
@@ -780,7 +785,7 @@ public class M3ListView<T> extends Control {
         if (index < 0) {
             index = getSelectedIndex();
         }
-        if (index < 0 || index >= getItems().size()) {
+        if (!isIndexNavigable(index)) {
             return;
         }
 
@@ -832,6 +837,10 @@ public class M3ListView<T> extends Control {
                         && M3Accessible.containsNode(visibleItem, focusOwner)) {
                     return focusOwner;
                 }
+                return visibleItem;
+            }
+            visibleItem = skin.getVisibleItem(index);
+            if (visibleItem != null) {
                 return visibleItem;
             }
         }
@@ -1124,10 +1133,12 @@ public class M3ListView<T> extends Control {
         selectedIndices.removeIf(index -> index < 0 || index >= size);
     }
 
-    /// Clears the focused index when it no longer points at a data item.
+    /// Clears the focused index when it no longer points at a reachable data item.
     private void trimFocusedIndex() {
         int index = focusedIndex.get();
         if (index >= getItems().size()) {
+            updateFocusedIndex(-1, false);
+        } else if (index >= 0 && !isIndexNavigable(index)) {
             updateFocusedIndex(-1, false);
         } else if (index >= 0) {
             focusedItem.set(getItems().get(index));

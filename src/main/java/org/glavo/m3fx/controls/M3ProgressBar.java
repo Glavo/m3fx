@@ -186,32 +186,13 @@ public class M3ProgressBar extends Control {
     /// @return the styleable progress track thickness property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
-            trackThickness = new StyleableDoubleProperty(DEFAULT_TRACK_THICKNESS) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "trackThickness");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressBar.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "trackThickness";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
-                    return StyleableProperties.TRACK_THICKNESS;
-                }
-            };
+            trackThickness = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TRACK_THICKNESS,
+                    this,
+                    "trackThickness",
+                    StyleableProperties.TRACK_THICKNESS,
+                    this::updateMetrics
+            );
         }
         return trackThickness;
     }
@@ -235,31 +216,13 @@ public class M3ProgressBar extends Control {
     /// @return the styleable progress track shape property
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
-            trackShape = new StyleableDoubleProperty(DEFAULT_TRACK_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "trackShape");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressBar.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "trackShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
-                    return StyleableProperties.TRACK_SHAPE;
-                }
-            };
+            trackShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TRACK_SHAPE,
+                    this,
+                    "trackShape",
+                    StyleableProperties.TRACK_SHAPE,
+                    this::requestLayout
+            );
         }
         return trackShape;
     }
@@ -283,33 +246,16 @@ public class M3ProgressBar extends Control {
     /// @return the styleable wavy progress amplitude property
     public final StyleableDoubleProperty waveAmplitudeProperty() {
         if (waveAmplitude == null) {
-            waveAmplitude = new StyleableDoubleProperty(DEFAULT_WAVE_AMPLITUDE) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "waveAmplitude");
-                    updateMetrics();
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressBar.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "waveAmplitude";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
-                    return StyleableProperties.WAVE_AMPLITUDE;
-                }
-            };
+            waveAmplitude = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_WAVE_AMPLITUDE,
+                    this,
+                    "waveAmplitude",
+                    StyleableProperties.WAVE_AMPLITUDE,
+                    () -> {
+                        updateMetrics();
+                        requestLayout();
+                    }
+            );
         }
         return waveAmplitude;
     }
@@ -333,32 +279,13 @@ public class M3ProgressBar extends Control {
     /// @return the styleable wavy progress wavelength property
     public final StyleableDoubleProperty wavelengthProperty() {
         if (wavelength == null) {
-            wavelength = new StyleableDoubleProperty(DEFAULT_WAVELENGTH) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "wavelength");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressBar.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "wavelength";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
-                    return StyleableProperties.WAVELENGTH;
-                }
-            };
+            wavelength = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_WAVELENGTH,
+                    this,
+                    "wavelength",
+                    StyleableProperties.WAVELENGTH,
+                    this::requestLayout
+            );
         }
         return wavelength;
     }
@@ -382,32 +309,13 @@ public class M3ProgressBar extends Control {
     /// @return the styleable active-to-track gap property
     public final StyleableDoubleProperty trackGapProperty() {
         if (trackGap == null) {
-            trackGap = new StyleableDoubleProperty(DEFAULT_TRACK_GAP) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "trackGap");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressBar.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "trackGap";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
-                    return StyleableProperties.TRACK_GAP;
-                }
-            };
+            trackGap = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TRACK_GAP,
+                    this,
+                    "trackGap",
+                    StyleableProperties.TRACK_GAP,
+                    this::requestLayout
+            );
         }
         return trackGap;
     }
@@ -431,32 +339,13 @@ public class M3ProgressBar extends Control {
     /// @return the styleable stop indicator size property
     public final StyleableDoubleProperty stopSizeProperty() {
         if (stopSize == null) {
-            stopSize = new StyleableDoubleProperty(DEFAULT_STOP_SIZE) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "stopSize");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressBar.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "stopSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressBar, Number> getCssMetaData() {
-                    return StyleableProperties.STOP_SIZE;
-                }
-            };
+            stopSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_STOP_SIZE,
+                    this,
+                    "stopSize",
+                    StyleableProperties.STOP_SIZE,
+                    this::requestLayout
+            );
         }
         return stopSize;
     }

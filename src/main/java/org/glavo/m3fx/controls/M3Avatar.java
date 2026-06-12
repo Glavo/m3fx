@@ -172,32 +172,13 @@ public class M3Avatar extends Control {
     /// @return the avatar container size property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
-            containerSize = new StyleableDoubleProperty(DEFAULT_CONTAINER_SIZE) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "containerSize"));
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Avatar.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Avatar, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SIZE;
-                }
-            };
+            containerSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SIZE,
+                    this,
+                    "containerSize",
+                    StyleableProperties.CONTAINER_SIZE,
+                    this::updateMetrics
+            );
         }
         return containerSize;
     }

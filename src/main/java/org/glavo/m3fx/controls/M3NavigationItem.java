@@ -185,32 +185,13 @@ public class M3NavigationItem extends ButtonBase {
     /// @return the styleable navigation item container height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
-            containerHeight = new StyleableDoubleProperty(DEFAULT_CONTAINER_HEIGHT) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerHeight");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3NavigationItem.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerHeight";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3NavigationItem, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_HEIGHT;
-                }
-            };
+            containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_HEIGHT,
+                    this,
+                    "containerHeight",
+                    StyleableProperties.CONTAINER_HEIGHT,
+                    this::updateMetrics
+            );
         }
         return containerHeight;
     }
@@ -234,32 +215,13 @@ public class M3NavigationItem extends ButtonBase {
     /// @return the styleable navigation item width property
     public final StyleableDoubleProperty itemWidthProperty() {
         if (itemWidth == null) {
-            itemWidth = new StyleableDoubleProperty(DEFAULT_ITEM_WIDTH) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "itemWidth");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3NavigationItem.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "itemWidth";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3NavigationItem, Number> getCssMetaData() {
-                    return StyleableProperties.ITEM_WIDTH;
-                }
-            };
+            itemWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ITEM_WIDTH,
+                    this,
+                    "itemWidth",
+                    StyleableProperties.ITEM_WIDTH,
+                    this::updateMetrics
+            );
         }
         return itemWidth;
     }
@@ -283,32 +245,13 @@ public class M3NavigationItem extends ButtonBase {
     /// @return the styleable selected indicator width property
     public final StyleableDoubleProperty indicatorWidthProperty() {
         if (indicatorWidth == null) {
-            indicatorWidth = new StyleableDoubleProperty(DEFAULT_INDICATOR_WIDTH) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "indicatorWidth");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3NavigationItem.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "indicatorWidth";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3NavigationItem, Number> getCssMetaData() {
-                    return StyleableProperties.INDICATOR_WIDTH;
-                }
-            };
+            indicatorWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_INDICATOR_WIDTH,
+                    this,
+                    "indicatorWidth",
+                    StyleableProperties.INDICATOR_WIDTH,
+                    this::requestLayout
+            );
         }
         return indicatorWidth;
     }
@@ -332,32 +275,13 @@ public class M3NavigationItem extends ButtonBase {
     /// @return the styleable selected indicator height property
     public final StyleableDoubleProperty indicatorHeightProperty() {
         if (indicatorHeight == null) {
-            indicatorHeight = new StyleableDoubleProperty(DEFAULT_INDICATOR_HEIGHT) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "indicatorHeight");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3NavigationItem.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "indicatorHeight";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3NavigationItem, Number> getCssMetaData() {
-                    return StyleableProperties.INDICATOR_HEIGHT;
-                }
-            };
+            indicatorHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_INDICATOR_HEIGHT,
+                    this,
+                    "indicatorHeight",
+                    StyleableProperties.INDICATOR_HEIGHT,
+                    this::requestLayout
+            );
         }
         return indicatorHeight;
     }
@@ -381,32 +305,13 @@ public class M3NavigationItem extends ButtonBase {
     /// @return the styleable selected indicator shape property
     public final StyleableDoubleProperty indicatorShapeProperty() {
         if (indicatorShape == null) {
-            indicatorShape = new StyleableDoubleProperty(DEFAULT_INDICATOR_SHAPE) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "indicatorShape");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3NavigationItem.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "indicatorShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3NavigationItem, Number> getCssMetaData() {
-                    return StyleableProperties.INDICATOR_SHAPE;
-                }
-            };
+            indicatorShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_INDICATOR_SHAPE,
+                    this,
+                    "indicatorShape",
+                    StyleableProperties.INDICATOR_SHAPE,
+                    this::requestLayout
+            );
         }
         return indicatorShape;
     }
@@ -430,32 +335,13 @@ public class M3NavigationItem extends ButtonBase {
     /// @return the styleable content spacing property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
-            contentSpacing = new StyleableDoubleProperty(DEFAULT_CONTENT_SPACING) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "contentSpacing");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3NavigationItem.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "contentSpacing";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3NavigationItem, Number> getCssMetaData() {
-                    return StyleableProperties.CONTENT_SPACING;
-                }
-            };
+            contentSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTENT_SPACING,
+                    this,
+                    "contentSpacing",
+                    StyleableProperties.CONTENT_SPACING,
+                    this::requestLayout
+            );
         }
         return contentSpacing;
     }

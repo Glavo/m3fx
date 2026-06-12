@@ -473,32 +473,13 @@ public class M3Slider extends Control {
     /// @return the slider track thickness token property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
-            trackThickness = new StyleableDoubleProperty(DEFAULT_TRACK_THICKNESS) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "trackThickness"));
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Slider.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "trackThickness";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Slider, Number> getCssMetaData() {
-                    return StyleableProperties.TRACK_THICKNESS;
-                }
-            };
+            trackThickness = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TRACK_THICKNESS,
+                    this,
+                    "trackThickness",
+                    StyleableProperties.TRACK_THICKNESS,
+                    this::updateMetrics
+            );
         }
         return trackThickness;
     }
@@ -522,31 +503,13 @@ public class M3Slider extends Control {
     /// @return the slider track shape radius token property
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
-            trackShape = new StyleableDoubleProperty(DEFAULT_TRACK_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "trackShape"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Slider.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "trackShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Slider, Number> getCssMetaData() {
-                    return StyleableProperties.TRACK_SHAPE;
-                }
-            };
+            trackShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TRACK_SHAPE,
+                    this,
+                    "trackShape",
+                    StyleableProperties.TRACK_SHAPE,
+                    this::requestLayout
+            );
         }
         return trackShape;
     }
@@ -570,32 +533,13 @@ public class M3Slider extends Control {
     /// @return the slider thumb size token property
     public final StyleableDoubleProperty thumbSizeProperty() {
         if (thumbSize == null) {
-            thumbSize = new StyleableDoubleProperty(DEFAULT_THUMB_SIZE) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "thumbSize"));
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Slider.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "thumbSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Slider, Number> getCssMetaData() {
-                    return StyleableProperties.THUMB_SIZE;
-                }
-            };
+            thumbSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_THUMB_SIZE,
+                    this,
+                    "thumbSize",
+                    StyleableProperties.THUMB_SIZE,
+                    this::updateMetrics
+            );
         }
         return thumbSize;
     }
@@ -619,32 +563,13 @@ public class M3Slider extends Control {
     /// @return the preferred touch target size token property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
-            touchTargetSize = new StyleableDoubleProperty(DEFAULT_TOUCH_TARGET_SIZE) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "touchTargetSize"));
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Slider.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "touchTargetSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Slider, Number> getCssMetaData() {
-                    return StyleableProperties.TOUCH_TARGET_SIZE;
-                }
-            };
+            touchTargetSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TOUCH_TARGET_SIZE,
+                    this,
+                    "touchTargetSize",
+                    StyleableProperties.TOUCH_TARGET_SIZE,
+                    this::updateMetrics
+            );
         }
         return touchTargetSize;
     }

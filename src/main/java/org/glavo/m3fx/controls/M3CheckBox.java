@@ -212,32 +212,13 @@ public class M3CheckBox extends ButtonBase {
     /// @return the preferred touch target size property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
-            touchTargetSize = new StyleableDoubleProperty(DEFAULT_TOUCH_TARGET_SIZE) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "touchTargetSize"));
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3CheckBox.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "touchTargetSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3CheckBox, Number> getCssMetaData() {
-                    return StyleableProperties.TOUCH_TARGET_SIZE;
-                }
-            };
+            touchTargetSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TOUCH_TARGET_SIZE,
+                    this,
+                    "touchTargetSize",
+                    StyleableProperties.TOUCH_TARGET_SIZE,
+                    this::updateMetrics
+            );
         }
         return touchTargetSize;
     }

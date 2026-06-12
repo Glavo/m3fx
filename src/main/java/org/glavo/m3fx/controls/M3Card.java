@@ -212,31 +212,13 @@ public class M3Card extends Control {
     /// @return the card container shape property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
-            containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerShape");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Card.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Card, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SHAPE;
-                }
-            };
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestLayout
+            );
         }
         return containerShape;
     }
@@ -260,31 +242,13 @@ public class M3Card extends Control {
     /// @return the card content padding property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
-            contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
-                /// Validates updated padding tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "contentPadding");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Card.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "contentPadding";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Card, Number> getCssMetaData() {
-                    return StyleableProperties.CONTENT_PADDING;
-                }
-            };
+            contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTENT_PADDING,
+                    this,
+                    "contentPadding",
+                    StyleableProperties.CONTENT_PADDING,
+                    this::requestLayout
+            );
         }
         return contentPadding;
     }
@@ -308,31 +272,13 @@ public class M3Card extends Control {
     /// @return the outlined card border width property
     public final StyleableDoubleProperty outlineWidthProperty() {
         if (outlineWidth == null) {
-            outlineWidth = new StyleableDoubleProperty(DEFAULT_OUTLINE_WIDTH) {
-                /// Validates updated outline width tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "outlineWidth");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Card.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "outlineWidth";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Card, Number> getCssMetaData() {
-                    return StyleableProperties.OUTLINE_WIDTH;
-                }
-            };
+            outlineWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_OUTLINE_WIDTH,
+                    this,
+                    "outlineWidth",
+                    StyleableProperties.OUTLINE_WIDTH,
+                    this::requestLayout
+            );
         }
         return outlineWidth;
     }

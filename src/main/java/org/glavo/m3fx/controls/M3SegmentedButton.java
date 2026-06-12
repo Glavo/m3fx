@@ -134,32 +134,13 @@ public class M3SegmentedButton extends ButtonBase {
     /// @return the preferred container height token property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
-            containerHeight = new StyleableDoubleProperty(DEFAULT_CONTAINER_HEIGHT) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerHeight");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3SegmentedButton.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerHeight";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3SegmentedButton, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_HEIGHT;
-                }
-            };
+            containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_HEIGHT,
+                    this,
+                    "containerHeight",
+                    StyleableProperties.CONTAINER_HEIGHT,
+                    this::updateMetrics
+            );
         }
         return containerHeight;
     }
@@ -183,31 +164,13 @@ public class M3SegmentedButton extends ButtonBase {
     /// @return the container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
-            containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerShape");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3SegmentedButton.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3SegmentedButton, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SHAPE;
-                }
-            };
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestLayout
+            );
         }
         return containerShape;
     }
@@ -231,32 +194,13 @@ public class M3SegmentedButton extends ButtonBase {
     /// @return the horizontal content padding token property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
-            horizontalPadding = new StyleableDoubleProperty(DEFAULT_HORIZONTAL_PADDING) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "horizontalPadding");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3SegmentedButton.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "horizontalPadding";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3SegmentedButton, Number> getCssMetaData() {
-                    return StyleableProperties.HORIZONTAL_PADDING;
-                }
-            };
+            horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_HORIZONTAL_PADDING,
+                    this,
+                    "horizontalPadding",
+                    StyleableProperties.HORIZONTAL_PADDING,
+                    this::updateMetrics
+            );
         }
         return horizontalPadding;
     }

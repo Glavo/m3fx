@@ -74,6 +74,9 @@ public class M3TabBar extends Control {
     /// The selected-state listeners installed on tabs.
     private final Map<M3Tab, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
+    /// The reachability listeners installed on tabs.
+    private final Map<M3Tab, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+
     /// Updates tab selection listeners when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
@@ -178,6 +181,9 @@ public class M3TabBar extends Control {
         Objects.requireNonNull(tab, "tab");
         if (!getTabs().contains(tab)) {
             throw new IllegalArgumentException("tab must belong to this tab bar");
+        }
+        if (!isSelectableTab(tab)) {
+            throw new IllegalArgumentException("tab must be selectable");
         }
         selectTab(tab);
     }
@@ -306,7 +312,7 @@ public class M3TabBar extends Control {
 
     /// Applies the selected tab supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
-        @Nullable M3Tab tab = M3Accessible.firstSelectionTarget(getTabs(), M3Tab.class, parameters);
+        @Nullable M3Tab tab = firstAccessibleSelectableTab(parameters);
         if (tab == null) {
             clearSelection();
         } else {
@@ -320,6 +326,11 @@ public class M3TabBar extends Control {
                 handleTabSelectedChanged(tab, newValue);
         selectedListeners.put(tab, listener);
         tab.selectedProperty().addListener(listener);
+        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
+                handleTabReachabilityChanged(tab);
+        reachabilityListeners.put(tab, reachabilityListener);
+        tab.disabledProperty().addListener(reachabilityListener);
+        tab.visibleProperty().addListener(reachabilityListener);
     }
 
     /// Removes the selected-state listener from a tab.
@@ -328,11 +339,26 @@ public class M3TabBar extends Control {
         if (listener != null) {
             tab.selectedProperty().removeListener(listener);
         }
+        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(tab);
+        if (reachabilityListener != null) {
+            tab.disabledProperty().removeListener(reachabilityListener);
+            tab.visibleProperty().removeListener(reachabilityListener);
+        }
     }
 
     /// Keeps externally changed tab selected states mutually exclusive.
     private void handleTabSelectedChanged(M3Tab tab, boolean selected) {
         if (updatingSelection) {
+            return;
+        }
+
+        if (!isSelectableTab(tab)) {
+            if (selected) {
+                setTabSelected(tab, false);
+                if (!isAllowEmptySelection()) {
+                    selectFirstTabIfNeeded();
+                }
+            }
             return;
         }
 
@@ -344,6 +370,16 @@ public class M3TabBar extends Control {
                 selectFirstTabIfNeeded();
             }
         }
+    }
+
+    /// Keeps selection and accessibility state consistent when a tab becomes unreachable.
+    private void handleTabReachabilityChanged(M3Tab tab) {
+        if (tab.isSelected() && !isSelectableTab(tab)) {
+            setTabSelected(tab, false);
+        }
+        enforceSelectionPolicy();
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Enforces single-selection and non-empty selection invariants.
@@ -368,6 +404,22 @@ public class M3TabBar extends Control {
         selectTab(firstTab);
     }
 
+    /// Sets one tab's selected state and refreshes selected tab state.
+    private void setTabSelected(M3Tab tab, boolean selected) {
+        setTabSelectedWithoutRefresh(tab, selected);
+        refreshSelectedTabs();
+    }
+
+    /// Sets one tab's selected state without refreshing the aggregate selected tab list.
+    private void setTabSelectedWithoutRefresh(M3Tab tab, boolean selected) {
+        updatingSelection = true;
+        try {
+            tab.setSelected(selected);
+        } finally {
+            updatingSelection = false;
+        }
+    }
+
     /// Selects a tab and clears selection from the remaining tabs.
     private void selectTab(@Nullable M3Tab tab) {
         updatingSelection = true;
@@ -389,7 +441,11 @@ public class M3TabBar extends Control {
         selectedTabs.clear();
         for (Node child : getTabs()) {
             if (child instanceof M3Tab tab && tab.isSelected()) {
-                selectedTabs.add(tab);
+                if (isSelectableTab(tab)) {
+                    selectedTabs.add(tab);
+                } else {
+                    setTabSelectedWithoutRefresh(tab, false);
+                }
             }
         }
         selectedTab.set(selectedTabs.isEmpty() ? null : selectedTabs.get(0));
@@ -403,6 +459,24 @@ public class M3TabBar extends Control {
     /// Returns the first tab child.
     private @Nullable M3Tab firstTab() {
         return M3SelectionNavigation.first(getTabs(), M3Tab.class);
+    }
+
+    /// Returns the first selectable tab referenced by accessibility parameters.
+    private @Nullable M3Tab firstAccessibleSelectableTab(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Node child : getTabs()) {
+            if (child instanceof M3Tab tab
+                    && isSelectableTab(tab)
+                    && M3Accessible.containsSelectionTarget(tab, parameters)) {
+                return tab;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a tab can currently participate in selection.
+    private static boolean isSelectableTab(M3Tab tab) {
+        return !tab.isDisabled() && tab.isVisible();
     }
 
     /// Creates the default Material Design 3 tab bar skin.

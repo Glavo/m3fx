@@ -171,31 +171,13 @@ public class M3Surface extends Control {
     /// @return the surface container shape token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
-            containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerShape");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Surface.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Surface, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SHAPE;
-                }
-            };
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestLayout
+            );
         }
         return containerShape;
     }
@@ -219,32 +201,13 @@ public class M3Surface extends Control {
     /// @return the surface content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
-            contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
-                /// Applies updated padding tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "contentPadding");
-                    updatePadding();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Surface.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "contentPadding";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Surface, Number> getCssMetaData() {
-                    return StyleableProperties.CONTENT_PADDING;
-                }
-            };
+            contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTENT_PADDING,
+                    this,
+                    "contentPadding",
+                    StyleableProperties.CONTENT_PADDING,
+                    this::updatePadding
+            );
         }
         return contentPadding;
     }

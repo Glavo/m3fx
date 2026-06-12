@@ -83,6 +83,9 @@ public class M3NavigationDrawer extends Control {
     /// The selected-state listeners installed on drawer list items.
     private final Map<M3ListItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
+    /// The reachability listeners installed on drawer list items.
+    private final Map<M3ListItem, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+
     /// The item-list listeners installed on nested drawer groups.
     private final Map<M3NavigationDrawerGroup, ListChangeListener<M3ListItem>> groupItemsListeners =
             new HashMap<>();
@@ -227,6 +230,9 @@ public class M3NavigationDrawer extends Control {
         Objects.requireNonNull(item, "item");
         if (!containsListItem(item)) {
             throw new IllegalArgumentException("item must belong to this navigation drawer");
+        }
+        if (!isSelectableDrawerItem(item)) {
+            throw new IllegalArgumentException("item must be selectable");
         }
         selectItem(item);
     }
@@ -540,10 +546,13 @@ public class M3NavigationDrawer extends Control {
 
     /// Returns the list item referenced by accessibility selection parameters.
     private @Nullable M3ListItem accessibleSelectionTarget(Object... parameters) {
-        @Nullable M3ListItem item =
-                M3Accessible.firstSelectionTarget(flattenedContent(), M3ListItem.class, parameters);
-        if (item != null) {
-            return item;
+        Objects.requireNonNull(parameters, "parameters");
+        for (Node child : flattenedContent()) {
+            if (child instanceof M3ListItem item
+                    && isSelectableDrawerItem(item)
+                    && M3Accessible.containsSelectionTarget(item, parameters)) {
+                return item;
+            }
         }
 
         for (Node child : getItems()) {
@@ -563,14 +572,16 @@ public class M3NavigationDrawer extends Control {
             Object... parameters
     ) {
         M3ListItem headerItem = group.getHeaderItem();
-        if (M3Accessible.containsNodeTarget(headerItem, parameters)) {
+        if (isSelectableDrawerItem(headerItem) && M3Accessible.containsNodeTarget(headerItem, parameters)) {
             return headerItem;
         }
 
         for (M3ListItem item : group.getItems()) {
-            if (M3Accessible.containsNodeTarget(item, parameters)) {
+            if (!item.isDisabled() && item.isVisible() && M3Accessible.containsNodeTarget(item, parameters)) {
                 group.setExpanded(true);
-                return item;
+                if (isSelectableDrawerItem(item)) {
+                    return item;
+                }
             }
         }
         return null;
@@ -648,6 +659,11 @@ public class M3NavigationDrawer extends Control {
                 handleItemSelectedChanged(item, newValue);
         selectedListeners.put(item, listener);
         item.selectedProperty().addListener(listener);
+        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
+                handleItemReachabilityChanged(item);
+        reachabilityListeners.put(item, reachabilityListener);
+        item.disabledProperty().addListener(reachabilityListener);
+        item.visibleProperty().addListener(reachabilityListener);
     }
 
     /// Installs action, selection, and content listeners on a nested drawer group.
@@ -685,6 +701,7 @@ public class M3NavigationDrawer extends Control {
                     focusItem(group.getHeaderItem());
                 }
             }
+            enforceSelectionPolicy();
             notifyDrawerContentChanged();
         };
         groupExpandedListeners.put(group, expandedListener);
@@ -697,6 +714,11 @@ public class M3NavigationDrawer extends Control {
         ChangeListener<Boolean> listener = selectedListeners.remove(item);
         if (listener != null) {
             item.selectedProperty().removeListener(listener);
+        }
+        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(item);
+        if (reachabilityListener != null) {
+            item.disabledProperty().removeListener(reachabilityListener);
+            item.visibleProperty().removeListener(reachabilityListener);
         }
     }
 
@@ -722,7 +744,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Selects the drawer item that fired an action event.
     private void handleItemAction(ActionEvent event) {
-        if (event.getSource() instanceof M3ListItem item && containsListItem(item) && !item.isDisabled()) {
+        if (event.getSource() instanceof M3ListItem item && containsListItem(item) && isSelectableDrawerItem(item)) {
             selectItem(item);
         }
     }
@@ -733,6 +755,16 @@ public class M3NavigationDrawer extends Control {
             return;
         }
 
+        if (!isSelectableDrawerItem(item)) {
+            if (selected) {
+                setItemSelected(item, false);
+                if (!isAllowEmptySelection()) {
+                    selectFirstItemIfNeeded();
+                }
+            }
+            return;
+        }
+
         if (selected) {
             selectItem(item);
         } else if (selectedItem.get() == item) {
@@ -740,6 +772,32 @@ public class M3NavigationDrawer extends Control {
             if (!isAllowEmptySelection()) {
                 selectFirstItemIfNeeded();
             }
+        }
+    }
+
+    /// Keeps selection and accessibility state consistent when an item becomes unreachable.
+    private void handleItemReachabilityChanged(M3ListItem item) {
+        clearTypeAheadBuffer();
+        if (item.isSelected() && !isSelectableDrawerItem(item)) {
+            setItemSelected(item, false);
+        }
+        enforceSelectionPolicy();
+        notifyDrawerContentChanged();
+    }
+
+    /// Sets one drawer item's selected state and refreshes selected item state.
+    private void setItemSelected(M3ListItem item, boolean selected) {
+        setItemSelectedWithoutRefresh(item, selected);
+        refreshSelectedItems();
+    }
+
+    /// Sets one drawer item's selected state without refreshing the aggregate selected item list.
+    private void setItemSelectedWithoutRefresh(M3ListItem item, boolean selected) {
+        updatingSelection = true;
+        try {
+            item.setSelected(selected);
+        } finally {
+            updatingSelection = false;
         }
     }
 
@@ -813,7 +871,11 @@ public class M3NavigationDrawer extends Control {
         selectedItems.clear();
         for (M3ListItem item : allListItems()) {
             if (item.isSelected()) {
-                selectedItems.add(item);
+                if (isSelectableDrawerItem(item)) {
+                    selectedItems.add(item);
+                } else {
+                    setItemSelectedWithoutRefresh(item, false);
+                }
             }
         }
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
@@ -844,6 +906,11 @@ public class M3NavigationDrawer extends Control {
     /// Returns whether a list item belongs to this drawer.
     private boolean containsListItem(M3ListItem item) {
         return allListItems().contains(item);
+    }
+
+    /// Returns whether a drawer list item can currently participate in selection.
+    private boolean isSelectableDrawerItem(M3ListItem item) {
+        return !item.isDisabled() && item.isVisible() && flattenedContent().contains(item);
     }
 
     /// Returns the drawer group that owns the supplied header item.

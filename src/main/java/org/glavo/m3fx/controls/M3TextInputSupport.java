@@ -345,36 +345,13 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
             CssMetaData<C, Number> cssMetaData,
             boolean updateMetrics
     ) {
-        return new StyleableDoubleProperty(initialValue) {
-            /// Validates updated token values.
-            @Override
-            protected void invalidated() {
-                set(M3Css.nonNegative(get(), name));
-                if (updateMetrics) {
-                    updateMetrics();
-                } else {
-                    control.requestLayout();
-                }
-            }
-
-            /// Returns the owning bean.
-            @Override
-            public Object getBean() {
-                return control;
-            }
-
-            /// Returns the property name.
-            @Override
-            public String getName() {
-                return name;
-            }
-
-            /// Returns the CSS metadata for this property.
-            @Override
-            public CssMetaData<C, Number> getCssMetaData() {
-                return cssMetaData;
-            }
-        };
+        return M3Css.nonNegativeStyleableDoubleProperty(
+                initialValue,
+                control,
+                name,
+                cssMetaData,
+                updateMetrics ? this::updateMetrics : control::requestLayout
+        );
     }
 
     /// Provides a styleable double property for a text input control.

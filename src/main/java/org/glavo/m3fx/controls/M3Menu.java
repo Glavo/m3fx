@@ -95,6 +95,9 @@ public class M3Menu extends Control {
     /// The selected-state listeners installed on menu items.
     private final Map<M3MenuItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
+    /// The reachability listeners installed on menu items.
+    private final Map<M3MenuItem, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+
     /// The action listeners installed on menu items.
     private final Map<M3MenuItem, EventHandler<ActionEvent>> actionListeners = new HashMap<>();
 
@@ -331,7 +334,7 @@ public class M3Menu extends Control {
         if (!getItems().contains(item)) {
             throw new IllegalArgumentException("item must belong to this menu");
         }
-        if (!isSelectableMenuItem(item)) {
+        if (!isReachableSelectableMenuItem(item)) {
             throw new IllegalArgumentException("item must be selectable");
         }
 
@@ -347,7 +350,7 @@ public class M3Menu extends Control {
     /// @param index the child index of the selectable menu item
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
-        if (child instanceof M3MenuItem item && isSelectableMenuItem(item)) {
+        if (child instanceof M3MenuItem item && isReachableSelectableMenuItem(item)) {
             select(item);
             return;
         }
@@ -632,7 +635,7 @@ public class M3Menu extends Control {
         updatingSelection = true;
         try {
             for (Node child : getItems()) {
-                if (child instanceof M3MenuItem item && isSelectableMenuItem(item)) {
+                if (child instanceof M3MenuItem item && isReachableSelectableMenuItem(item)) {
                     item.setSelected(M3Accessible.containsSelectionTarget(item, parameters));
                 }
             }
@@ -718,6 +721,11 @@ public class M3Menu extends Control {
                 handleItemSelectedChanged(item, newValue);
         selectedListeners.put(item, listener);
         item.selectedProperty().addListener(listener);
+        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
+                handleItemReachabilityChanged(item);
+        reachabilityListeners.put(item, reachabilityListener);
+        item.disabledProperty().addListener(reachabilityListener);
+        item.visibleProperty().addListener(reachabilityListener);
     }
 
     /// Removes action and selected-state listeners from a menu item.
@@ -738,6 +746,11 @@ public class M3Menu extends Control {
         if (listener != null) {
             item.selectedProperty().removeListener(listener);
         }
+        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(item);
+        if (reachabilityListener != null) {
+            item.disabledProperty().removeListener(reachabilityListener);
+            item.visibleProperty().removeListener(reachabilityListener);
+        }
     }
 
     /// Applies menu selection policy to an item action.
@@ -746,8 +759,7 @@ public class M3Menu extends Control {
         boolean shouldForwardDetachedAction = shouldForwardDetachedAction(sourceItem, directItem);
         if (sourceItem == null
                 || !getItems().contains(sourceItem)
-                || sourceItem.isDisabled()
-                || !isSelectableMenuItem(sourceItem)) {
+                || !isReachableSelectableMenuItem(sourceItem)) {
             if (shouldForwardDetachedAction) {
                 fireEvent(new ActionEvent(event.getSource(), this));
             }
@@ -776,9 +788,12 @@ public class M3Menu extends Control {
         if (updatingSelection) {
             return;
         }
-        if (!isSelectableMenuItem(item)) {
+        if (!isReachableSelectableMenuItem(item)) {
             if (selected) {
                 setItemSelected(item, false);
+                if (!isAllowEmptySelection() && getSelectionMode() != M3MenuSelectionMode.NONE) {
+                    selectFirstItemIfNeeded();
+                }
             }
             return;
         }
@@ -796,6 +811,16 @@ public class M3Menu extends Control {
         } else {
             enforceSelectionPolicy();
         }
+    }
+
+    /// Keeps selection and accessibility state consistent when an item becomes unreachable.
+    private void handleItemReachabilityChanged(M3MenuItem item) {
+        clearTypeAheadBuffer();
+        if (item.isSelected() && !isReachableSelectableMenuItem(item)) {
+            setItemSelected(item, false);
+        }
+        enforceSelectionPolicy();
+        notifyFocusNodeChanged();
     }
 
     /// Enforces selection invariants for the current selection mode.
@@ -824,13 +849,18 @@ public class M3Menu extends Control {
 
     /// Sets one menu item's selected state and refreshes selected item state.
     private void setItemSelected(M3MenuItem item, boolean selected) {
+        setItemSelectedWithoutRefresh(item, selected);
+        refreshSelectedItems();
+    }
+
+    /// Sets one menu item's selected state without refreshing the aggregate selected item list.
+    private void setItemSelectedWithoutRefresh(M3MenuItem item, boolean selected) {
         updatingSelection = true;
         try {
             item.setSelected(selected);
         } finally {
             updatingSelection = false;
         }
-        refreshSelectedItems();
     }
 
     /// Selects one item and clears selection from the remaining menu items.
@@ -853,8 +883,12 @@ public class M3Menu extends Control {
         List<M3MenuItem> previousSelection = List.copyOf(selectedItems);
         selectedItems.clear();
         for (Node child : getItems()) {
-            if (child instanceof M3MenuItem item && isSelectableMenuItem(item) && item.isSelected()) {
-                selectedItems.add(item);
+            if (child instanceof M3MenuItem item && item.isSelected()) {
+                if (isReachableSelectableMenuItem(item)) {
+                    selectedItems.add(item);
+                } else {
+                    setItemSelectedWithoutRefresh(item, false);
+                }
             }
         }
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
@@ -998,12 +1032,15 @@ public class M3Menu extends Control {
     /// Returns a node as a selectable menu item when possible.
     private static @Nullable M3MenuItem selectableMenuItem(Node child) {
         if (child instanceof M3MenuItem item
-                && isSelectableMenuItem(item)
-                && !item.isDisabled()
-                && item.isVisible()) {
+                && isReachableSelectableMenuItem(item)) {
             return item;
         }
         return null;
+    }
+
+    /// Returns whether a menu item can currently participate in selection.
+    private static boolean isReachableSelectableMenuItem(M3MenuItem item) {
+        return isSelectableMenuItem(item) && !item.isDisabled() && item.isVisible();
     }
 
     /// Returns whether a menu item participates in selection state.

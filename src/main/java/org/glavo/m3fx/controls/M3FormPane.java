@@ -132,32 +132,13 @@ public class M3FormPane extends Control {
     /// @return the content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
-            contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
-                /// Validates content padding changes and requests layout.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "contentPadding");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FormPane.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "contentPadding";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FormPane, Number> getCssMetaData() {
-                    return StyleableProperties.CONTENT_PADDING;
-                }
-            };
+            contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTENT_PADDING,
+                    this,
+                    "contentPadding",
+                    StyleableProperties.CONTENT_PADDING,
+                    this::requestLayout
+            );
         }
         return contentPadding;
     }
@@ -181,32 +162,13 @@ public class M3FormPane extends Control {
     /// @return the row spacing token property
     public final StyleableDoubleProperty rowSpacingProperty() {
         if (rowSpacing == null) {
-            rowSpacing = new StyleableDoubleProperty(DEFAULT_ROW_SPACING) {
-                /// Validates row spacing changes and requests layout.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "rowSpacing");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FormPane.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "rowSpacing";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FormPane, Number> getCssMetaData() {
-                    return StyleableProperties.ROW_SPACING;
-                }
-            };
+            rowSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ROW_SPACING,
+                    this,
+                    "rowSpacing",
+                    StyleableProperties.ROW_SPACING,
+                    this::requestLayout
+            );
         }
         return rowSpacing;
     }

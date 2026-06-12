@@ -830,7 +830,7 @@ public class M3TextInputLayout extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleItem(accessibleFocusNode());
-            case SHOW_ITEM -> focusAccessibleItem(accessibleActionItem(parameters));
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> {
                 super.executeAccessibleAction(action, parameters);
             }
@@ -1645,29 +1645,10 @@ public class M3TextInputLayout extends Control {
 
     /// Returns the current focused input or adornment target, or `null` when focus is outside this layout.
     private @Nullable Node currentFocusNode() {
-        if (getScene() == null) {
-            return null;
-        }
-
-        @Nullable Node focusOwner = getScene().getFocusOwner();
-        if (focusOwner == null) {
-            return null;
-        }
-        if (focusOwner == this) {
+        if (isFocused()) {
             return this;
         }
-
-        int count = accessibleItemCount();
-        for (int index = 0; index < count; index++) {
-            @Nullable Node item = accessibleItemAt(index);
-            if (item != null && M3Accessible.containsNode(item, focusOwner)) {
-                @Nullable Node focusTarget = M3Accessible.focusTarget(item);
-                if (focusTarget != null) {
-                    return M3Accessible.canReach(focusOwner) ? focusOwner : focusTarget;
-                }
-            }
-        }
-        return null;
+        return M3Accessible.currentFocusTarget(this, getLeading(), getInput(), effectiveTrailing());
     }
 
     /// Returns the preferred focus item for this layout.
@@ -1687,63 +1668,10 @@ public class M3TextInputLayout extends Control {
         notifyFocusNodeChanged();
     }
 
-    /// Returns the child item referenced by accessibility action parameters.
-    private @Nullable Node accessibleActionItem(Object... parameters) {
-        Objects.requireNonNull(parameters, "parameters");
-        if (parameters.length == 0) {
-            return accessibleFocusNode();
-        }
-        if (parameters[0] instanceof Number) {
-            return accessibleItemAt(parameters);
-        }
-        for (Object parameter : parameters) {
-            @Nullable Node item = accessibleActionItem(parameter);
-            if (item != null) {
-                return item;
-            }
-        }
-        return null;
-    }
-
-    /// Returns the child item referenced by one accessibility action parameter.
-    private @Nullable Node accessibleActionItem(@Nullable Object parameter) {
-        if (parameter instanceof Number number) {
-            return accessibleItemAt(number);
-        }
-        if (parameter instanceof Node node && containsAccessibleItem(node)) {
-            return node;
-        }
-        if (parameter instanceof Iterable<?> values) {
-            for (Object value : values) {
-                @Nullable Node item = accessibleActionItem(value);
-                if (item != null) {
-                    return item;
-                }
-            }
-            return null;
-        }
-        if (parameter instanceof Object[] values) {
-            for (Object value : values) {
-                @Nullable Node item = accessibleActionItem(value);
-                if (item != null) {
-                    return item;
-                }
-            }
-        }
-        return null;
-    }
-
-    /// Returns whether the node is an input, leading, or effective trailing accessibility item.
-    private boolean containsAccessibleItem(Node node) {
-        @Nullable Node leading = getLeading();
-        @Nullable Node input = getInput();
-        @Nullable Node trailing = effectiveTrailing();
-        return node == leading
-                || node == input
-                || node == trailing
-                || leading != null && M3Accessible.containsNode(leading, node)
-                || input != null && M3Accessible.containsNode(input, node)
-                || trailing != null && M3Accessible.containsNode(trailing, node);
+    /// Shows and focuses the requested accessible child or a descendant popup target.
+    private void showAccessibleItem(Object... parameters) {
+        M3Accessible.showCurrentOrItem(this, getLeading(), getInput(), effectiveTrailing(), parameters);
+        notifyFocusNodeChanged();
     }
 
     /// Returns whether keyboard focus belongs to the supplied node or one of its descendants.

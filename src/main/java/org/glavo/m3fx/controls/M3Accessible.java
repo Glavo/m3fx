@@ -93,6 +93,70 @@ final class M3Accessible {
         return index == items.size() ? trailing : null;
     }
 
+    /// Returns the number of indexed accessibility items with three optional child slots.
+    static int itemCount(@Nullable Node first, @Nullable Node second, @Nullable Node third) {
+        return (first == null ? 0 : 1) + (second == null ? 0 : 1) + (third == null ? 0 : 1);
+    }
+
+    /// Returns the indexed accessibility item from three optional child slots.
+    static @Nullable Node itemAt(
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third,
+            Object... parameters
+    ) {
+        int index = indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+        if (first != null) {
+            if (index == 0) {
+                return first;
+            }
+            index--;
+        }
+        if (second != null) {
+            if (index == 0) {
+                return second;
+            }
+            index--;
+        }
+        return index == 0 ? third : null;
+    }
+
+    /// Returns the number of indexed accessibility items with two optional leading slots and a trailing list.
+    static int itemCount(@Nullable Node first, @Nullable Node second, ObservableList<? extends Node> items) {
+        Objects.requireNonNull(items, "items");
+        return (first == null ? 0 : 1) + (second == null ? 0 : 1) + items.size();
+    }
+
+    /// Returns the indexed accessibility item from two optional leading slots and a trailing list.
+    static @Nullable Node itemAt(
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        int index = indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+        if (first != null) {
+            if (index == 0) {
+                return first;
+            }
+            index--;
+        }
+        if (second != null) {
+            if (index == 0) {
+                return second;
+            }
+            index--;
+        }
+        return index < items.size() ? items.get(index) : null;
+    }
+
     /// Returns whether accessibility action parameters contain the requested selection target or one of its descendants.
     static boolean containsSelectionTarget(Node target, Object... parameters) {
         Objects.requireNonNull(target, "target");
@@ -153,6 +217,27 @@ final class M3Accessible {
     /// Requests focus for one of two optional indexed items.
     static void showItem(@Nullable Node first, @Nullable Node second, Object... parameters) {
         showItemOrAccessibleActionTarget(actionItem(first, second, parameters), first, second, parameters);
+    }
+
+    /// Requests focus for one of three optional indexed items.
+    static void showItem(
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third,
+            Object... parameters
+    ) {
+        showItemOrAccessibleActionTarget(actionItem(first, second, third, parameters), first, second, third, parameters);
+    }
+
+    /// Requests focus for one of two optional leading items or an indexed trailing item.
+    static void showItem(
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        showItemOrAccessibleActionTarget(actionItem(first, second, items, parameters), first, second, items, parameters);
     }
 
     /// Requests focus for the default item when no parameter is supplied, or for the requested indexed item.
@@ -226,6 +311,41 @@ final class M3Accessible {
         }
     }
 
+    /// Requests focus for the current focus target among three optional children, or for the requested item.
+    static void showCurrentOrItem(
+            Node owner,
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            showItem(currentOrFirstFocusTarget(owner, first, second, third));
+        } else {
+            showItem(first, second, third, parameters);
+        }
+    }
+
+    /// Requests focus for the current focus target in two leading slots or a trailing list.
+    static void showCurrentOrItem(
+            Node owner,
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            showItem(currentOrFirstFocusTarget(owner, first, second, items));
+        } else {
+            showItem(first, second, items, parameters);
+        }
+    }
+
     /// Requests focus for an accessibility item when it can be reached.
     static void showItem(@Nullable Node item) {
         showItemIfPresent(item);
@@ -288,6 +408,38 @@ final class M3Accessible {
     ) {
         if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(first, parameters)) {
             showAccessibleActionTarget(second, parameters);
+        }
+    }
+
+    /// Focuses a direct action target or delegates explicit reveal to any of three optional children.
+    private static void showItemOrAccessibleActionTarget(
+            @Nullable Node item,
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third,
+            Object... parameters
+    ) {
+        if (!showItemIfPresent(item)
+                && parameters.length > 0
+                && !showAccessibleActionTarget(first, parameters)
+                && !showAccessibleActionTarget(second, parameters)) {
+            showAccessibleActionTarget(third, parameters);
+        }
+    }
+
+    /// Focuses a direct action target or delegates explicit reveal to two leading slots or a trailing list.
+    private static void showItemOrAccessibleActionTarget(
+            @Nullable Node item,
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        if (!showItemIfPresent(item)
+                && parameters.length > 0
+                && !showAccessibleActionTarget(first, parameters)
+                && !showAccessibleActionTarget(second, parameters)) {
+            showAccessibleActionTarget(items, parameters);
         }
     }
 
@@ -389,6 +541,31 @@ final class M3Accessible {
         return firstTarget != null ? firstTarget : accessibleFocusTarget(second);
     }
 
+    /// Returns the first focusable target among three optional child nodes.
+    static @Nullable Node firstFocusTarget(@Nullable Node first, @Nullable Node second, @Nullable Node third) {
+        @Nullable Node firstTarget = accessibleFocusTarget(first);
+        if (firstTarget != null) {
+            return firstTarget;
+        }
+        @Nullable Node secondTarget = accessibleFocusTarget(second);
+        return secondTarget != null ? secondTarget : accessibleFocusTarget(third);
+    }
+
+    /// Returns the first focusable target among two optional child nodes and a trailing list.
+    static @Nullable Node firstFocusTarget(
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items
+    ) {
+        Objects.requireNonNull(items, "items");
+        @Nullable Node firstTarget = accessibleFocusTarget(first);
+        if (firstTarget != null) {
+            return firstTarget;
+        }
+        @Nullable Node secondTarget = accessibleFocusTarget(second);
+        return secondTarget != null ? secondTarget : firstAccessibleFocusTarget(items);
+    }
+
     /// Returns the current focus target inside the supplied item list, or the first focusable item.
     static @Nullable Node currentOrFirstFocusTarget(Node owner, ObservableList<? extends Node> items) {
         Objects.requireNonNull(owner, "owner");
@@ -444,6 +621,31 @@ final class M3Accessible {
         Objects.requireNonNull(owner, "owner");
         @Nullable Node currentTarget = currentFocusTarget(owner, first, second);
         return currentTarget != null ? currentTarget : firstFocusTarget(first, second);
+    }
+
+    /// Returns the current focus target inside three optional child nodes, or the first focusable item.
+    static @Nullable Node currentOrFirstFocusTarget(
+            Node owner,
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        @Nullable Node currentTarget = currentFocusTarget(owner, first, second, third);
+        return currentTarget != null ? currentTarget : firstFocusTarget(first, second, third);
+    }
+
+    /// Returns the current focus target inside two optional child nodes and a list, or the first focusable item.
+    static @Nullable Node currentOrFirstFocusTarget(
+            Node owner,
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        @Nullable Node currentTarget = currentFocusTarget(owner, first, second, items);
+        return currentTarget != null ? currentTarget : firstFocusTarget(first, second, items);
     }
 
     /// Returns the current focus owner when it belongs to one item in the supplied list.
@@ -556,6 +758,84 @@ final class M3Accessible {
 
         @Nullable Node firstTarget = containedFocusTarget(first, focusOwner);
         return firstTarget != null ? firstTarget : containedFocusTarget(second, focusOwner);
+    }
+
+    /// Returns the current focus owner when it belongs to one of three optional child nodes.
+    static @Nullable Node currentFocusTarget(
+            Node owner,
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        @Nullable Node externalFirstTarget = activeExternalFocusTarget(owner, first);
+        if (externalFirstTarget != null) {
+            return externalFirstTarget;
+        }
+        @Nullable Node externalSecondTarget = activeExternalFocusTarget(owner, second);
+        if (externalSecondTarget != null) {
+            return externalSecondTarget;
+        }
+        @Nullable Node externalThirdTarget = activeExternalFocusTarget(owner, third);
+        if (externalThirdTarget != null) {
+            return externalThirdTarget;
+        }
+
+        @Nullable Node focusOwner = focusOwner(owner);
+        if (focusOwner == null) {
+            return null;
+        }
+
+        @Nullable Node firstTarget = containedFocusTarget(first, focusOwner);
+        if (firstTarget != null) {
+            return firstTarget;
+        }
+        @Nullable Node secondTarget = containedFocusTarget(second, focusOwner);
+        return secondTarget != null ? secondTarget : containedFocusTarget(third, focusOwner);
+    }
+
+    /// Returns the current focus owner when it belongs to one of two optional children or a list item.
+    static @Nullable Node currentFocusTarget(
+            Node owner,
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        @Nullable Node externalFirstTarget = activeExternalFocusTarget(owner, first);
+        if (externalFirstTarget != null) {
+            return externalFirstTarget;
+        }
+        @Nullable Node externalSecondTarget = activeExternalFocusTarget(owner, second);
+        if (externalSecondTarget != null) {
+            return externalSecondTarget;
+        }
+        @Nullable Node externalItemTarget = activeExternalFocusTarget(owner, items);
+        if (externalItemTarget != null) {
+            return externalItemTarget;
+        }
+
+        @Nullable Node focusOwner = focusOwner(owner);
+        if (focusOwner == null) {
+            return null;
+        }
+
+        @Nullable Node firstTarget = containedFocusTarget(first, focusOwner);
+        if (firstTarget != null) {
+            return firstTarget;
+        }
+        @Nullable Node secondTarget = containedFocusTarget(second, focusOwner);
+        if (secondTarget != null) {
+            return secondTarget;
+        }
+        for (Node item : items) {
+            @Nullable Node itemTarget = containedFocusTarget(item, focusOwner);
+            if (itemTarget != null) {
+                return itemTarget;
+            }
+        }
+        return null;
     }
 
     /// Returns the current scene focus owner for an owner node.
@@ -1080,6 +1360,156 @@ final class M3Accessible {
         if (parameter instanceof Object[] values) {
             for (Object value : values) {
                 @Nullable Node item = actionItem(first, second, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns one of three optional items referenced by accessibility action parameters.
+    private static @Nullable Node actionItem(
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            if (accessibleFocusTarget(first) != null) {
+                return first;
+            }
+            return accessibleFocusTarget(second) != null
+                    ? second
+                    : (accessibleFocusTarget(third) == null ? null : third);
+        }
+        @Nullable Object firstParameter = parameters[0];
+        if (firstParameter instanceof Number) {
+            return itemAt(first, second, third, firstParameter);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = actionItem(first, second, third, parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns one of three optional items referenced by one accessibility action parameter.
+    private static @Nullable Node actionItem(
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third,
+            @Nullable Object parameter
+    ) {
+        if (parameter instanceof Number number) {
+            return itemAt(first, second, third, number);
+        }
+        if (parameter instanceof Node node) {
+            @Nullable Node firstTarget = containedActionTarget(first, node);
+            if (firstTarget != null) {
+                return firstTarget;
+            }
+            @Nullable Node secondTarget = containedActionTarget(second, node);
+            if (secondTarget != null) {
+                return secondTarget;
+            }
+            @Nullable Node thirdTarget = containedActionTarget(third, node);
+            if (thirdTarget != null) {
+                return thirdTarget;
+            }
+            return null;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(first, second, third, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(first, second, third, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns one of two optional leading items or a trailing-list item referenced by action parameters.
+    private static @Nullable Node actionItem(
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            if (accessibleFocusTarget(first) != null) {
+                return first;
+            }
+            @Nullable Node secondTarget = accessibleFocusTarget(second);
+            return secondTarget != null ? second : firstFocusableItem(items);
+        }
+        @Nullable Object firstParameter = parameters[0];
+        if (firstParameter instanceof Number) {
+            return itemAt(first, second, items, firstParameter);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = actionItem(first, second, items, parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns one of two optional leading items or a trailing-list item referenced by one action parameter.
+    private static @Nullable Node actionItem(
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items,
+            @Nullable Object parameter
+    ) {
+        if (parameter instanceof Number number) {
+            return itemAt(first, second, items, number);
+        }
+        if (parameter instanceof Node node) {
+            @Nullable Node firstTarget = containedActionTarget(first, node);
+            if (firstTarget != null) {
+                return firstTarget;
+            }
+            @Nullable Node secondTarget = containedActionTarget(second, node);
+            if (secondTarget != null) {
+                return secondTarget;
+            }
+            for (Node item : items) {
+                @Nullable Node target = containedActionTarget(item, node);
+                if (target != null) {
+                    return target;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(first, second, items, value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = actionItem(first, second, items, value);
                 if (item != null) {
                     return item;
                 }

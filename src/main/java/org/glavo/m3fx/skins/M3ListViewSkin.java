@@ -13,6 +13,7 @@ import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -44,6 +45,9 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// The minimum meaningful scroll value difference.
     private static final double EPSILON = 0.000001;
+
+    /// Sentinel used when no attached focused row has been reported to accessibility clients.
+    private static final int NO_MATERIALIZED_ACCESSIBLE_FOCUS = -2;
 
     /// The virtualized cell container.
     private final ListViewVirtualFlow<T> flow = new ListViewVirtualFlow<>();
@@ -85,6 +89,9 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Whether a deferred focus retry has already been queued for the next pulse.
     private boolean focusRetryScheduled;
+
+    /// The focused row index whose attached item has been reported as the accessibility focus node.
+    private int materializedAccessibleFocusIndex = NO_MATERIALIZED_ACCESSIBLE_FOCUS;
 
     /// Creates a virtualized list view skin.
     ///
@@ -142,6 +149,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             flow.layout();
         }
         focusVisibleCellIfNeeded();
+        notifyAccessibleFocusNodeMaterialized();
         scheduleFocusRetry();
     }
 
@@ -220,6 +228,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         }
         getSkinnable().requestLayout();
         focusVisibleCellIfNeeded();
+        notifyAccessibleFocusNodeMaterialized();
         scheduleFocusRetry();
     }
 
@@ -283,10 +292,10 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         return cell.getListItem();
     }
 
-    /// Returns the rendered list item only when the requested index is currently attached to the scene.
+    /// Returns the rendered list item when the requested index is currently owned by the virtual flow.
     ///
     /// @param index the data item index to query
-    /// @return the attached rendered list item node, or `null` when the row is not currently materialized
+    /// @return the rendered list item node, or `null` when the row is not currently materialized
     public @Nullable Node getAttachedVisibleItem(int index) {
         if (index < 0 || index >= getSkinnable().getItems().size()) {
             return null;
@@ -351,6 +360,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             flow.applyCss();
             flow.layout();
             focusVisibleCellIfNeeded();
+            notifyAccessibleFocusNodeMaterialized();
             if (focusRequestPending) {
                 getSkinnable().requestLayout();
             }
@@ -445,17 +455,30 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         double targetPosition = scrollPositionForIndex(index);
         if (!animated
                 || getSkinnable().getScene() == null
-                || !M3Animation.areAnimationsEnabled(getSkinnable())
-                || Double.isNaN(targetPosition)) {
+                || !M3Animation.areAnimationsEnabled(getSkinnable())) {
+            stopSmoothScrollAnimation();
+            if (Double.isNaN(targetPosition)) {
+                flow.scrollTo(index);
+            } else {
+                flow.setPosition(targetPosition);
+            }
+            flow.requestLayout();
+            layoutFlowAfterImmediateScroll();
+            return;
+        }
+
+        if (Double.isNaN(targetPosition)) {
             stopSmoothScrollAnimation();
             flow.scrollTo(index);
             flow.requestLayout();
+            layoutFlowAfterImmediateScroll();
             return;
         }
 
         if (close(flow.getPosition(), targetPosition)) {
-            flow.scrollTo(index);
+            flow.setPosition(targetPosition);
             flow.requestLayout();
+            layoutFlowAfterImmediateScroll();
             return;
         }
 
@@ -469,7 +492,50 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.requestLayout();
         if (getSkinnable().getFocusedIndex() == index) {
             focusVisibleCellIfNeeded();
+            notifyAccessibleFocusNodeMaterialized();
             scheduleFocusRetry();
+        }
+    }
+
+    /// Materializes target cells immediately after non-animated programmatic scrolls.
+    private void layoutFlowAfterImmediateScroll() {
+        if (!isSceneRefreshable()) {
+            return;
+        }
+
+        flow.applyCss();
+        flow.layout();
+    }
+
+    /// Notifies accessibility clients when the focused virtual row becomes an attached scene node.
+    private void notifyAccessibleFocusNodeMaterialized() {
+        int focusedIndex = getSkinnable().getFocusedIndex();
+        if (focusedIndex < 0) {
+            materializedAccessibleFocusIndex = NO_MATERIALIZED_ACCESSIBLE_FOCUS;
+            return;
+        }
+
+        if (getAttachedVisibleItem(focusedIndex) == null) {
+            materializedAccessibleFocusIndex = NO_MATERIALIZED_ACCESSIBLE_FOCUS;
+            return;
+        }
+
+        if (materializedAccessibleFocusIndex == focusedIndex) {
+            return;
+        }
+
+        materializedAccessibleFocusIndex = focusedIndex;
+        notifyAccessibleFocusNodeChanged();
+    }
+
+    /// Notifies the list view and its ancestors that the exposed accessibility focus node changed.
+    private void notifyAccessibleFocusNodeChanged() {
+        Node node = getSkinnable();
+        node.notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+        @Nullable Parent parent = node.getParent();
+        while (parent != null) {
+            parent.notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
+            parent = parent.getParent();
         }
     }
 
@@ -615,10 +681,10 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             }
         }
 
-        /// Returns a currently attached cell for the requested index.
+        /// Returns a current virtual flow cell for the requested index.
         private @Nullable M3ListViewCell<T> findVisibleCell(int index) {
             for (M3ListViewCell<T> cell : getCells()) {
-                if (!cell.isEmpty() && cell.getIndex() == index && cell.getScene() != null) {
+                if (!cell.isEmpty() && cell.getIndex() == index && cell.getListItem() != null) {
                     return cell;
                 }
             }
@@ -644,7 +710,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         /// Returns the height of a currently attached cell, or zero before cells are measured.
         private double visibleCellHeight() {
             for (M3ListViewCell<T> cell : getCells()) {
-                if (!cell.isEmpty() && cell.getScene() != null && cell.getHeight() > 0.0) {
+                if (!cell.isEmpty() && cell.getHeight() > 0.0) {
                     return cell.getHeight();
                 }
             }

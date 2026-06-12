@@ -167,31 +167,13 @@ public class M3FabMenu extends Control {
     /// @return the styleable action item spacing property
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
-            actionSpacing = new StyleableDoubleProperty(DEFAULT_ACTION_SPACING) {
-                /// Validates updated action item spacing values.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "actionSpacing");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FabMenu.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "actionSpacing";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FabMenu, Number> getCssMetaData() {
-                    return StyleableProperties.ACTION_SPACING;
-                }
-            };
+            actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ACTION_SPACING,
+                    this,
+                    "actionSpacing",
+                    StyleableProperties.ACTION_SPACING,
+                    this::requestLayout
+            );
         }
         return actionSpacing;
     }

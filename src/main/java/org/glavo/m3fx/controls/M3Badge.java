@@ -197,31 +197,13 @@ public class M3Badge extends Control {
     /// @return the small dot badge size property
     public final StyleableDoubleProperty smallSizeProperty() {
         if (smallSize == null) {
-            smallSize = new StyleableDoubleProperty(DEFAULT_SMALL_SIZE) {
-                /// Validates updated size tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "smallSize"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Badge.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "smallSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Badge, Number> getCssMetaData() {
-                    return StyleableProperties.SMALL_SIZE;
-                }
-            };
+            smallSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_SMALL_SIZE,
+                    this,
+                    "smallSize",
+                    StyleableProperties.SMALL_SIZE,
+                    this::requestLayout
+            );
         }
         return smallSize;
     }
@@ -245,31 +227,13 @@ public class M3Badge extends Control {
     /// @return the text badge height property
     public final StyleableDoubleProperty largeHeightProperty() {
         if (largeHeight == null) {
-            largeHeight = new StyleableDoubleProperty(DEFAULT_LARGE_HEIGHT) {
-                /// Validates updated size tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "largeHeight"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Badge.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "largeHeight";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Badge, Number> getCssMetaData() {
-                    return StyleableProperties.LARGE_HEIGHT;
-                }
-            };
+            largeHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_LARGE_HEIGHT,
+                    this,
+                    "largeHeight",
+                    StyleableProperties.LARGE_HEIGHT,
+                    this::requestLayout
+            );
         }
         return largeHeight;
     }
@@ -293,31 +257,13 @@ public class M3Badge extends Control {
     /// @return the text badge minimum width property
     public final StyleableDoubleProperty largeMinWidthProperty() {
         if (largeMinWidth == null) {
-            largeMinWidth = new StyleableDoubleProperty(DEFAULT_LARGE_MIN_WIDTH) {
-                /// Validates updated size tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "largeMinWidth"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Badge.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "largeMinWidth";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Badge, Number> getCssMetaData() {
-                    return StyleableProperties.LARGE_MIN_WIDTH;
-                }
-            };
+            largeMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_LARGE_MIN_WIDTH,
+                    this,
+                    "largeMinWidth",
+                    StyleableProperties.LARGE_MIN_WIDTH,
+                    this::requestLayout
+            );
         }
         return largeMinWidth;
     }
@@ -341,31 +287,13 @@ public class M3Badge extends Control {
     /// @return the badge container shape property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
-            containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "containerShape"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Badge.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Badge, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SHAPE;
-                }
-            };
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestLayout
+            );
         }
         return containerShape;
     }
@@ -389,31 +317,13 @@ public class M3Badge extends Control {
     /// @return the horizontal padding property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
-            horizontalPadding = new StyleableDoubleProperty(DEFAULT_HORIZONTAL_PADDING) {
-                /// Validates updated padding tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "horizontalPadding"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Badge.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "horizontalPadding";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Badge, Number> getCssMetaData() {
-                    return StyleableProperties.HORIZONTAL_PADDING;
-                }
-            };
+            horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_HORIZONTAL_PADDING,
+                    this,
+                    "horizontalPadding",
+                    StyleableProperties.HORIZONTAL_PADDING,
+                    this::requestLayout
+            );
         }
         return horizontalPadding;
     }

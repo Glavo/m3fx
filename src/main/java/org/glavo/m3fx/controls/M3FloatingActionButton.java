@@ -178,32 +178,13 @@ public class M3FloatingActionButton extends ButtonBase {
     /// @return the preferred square container size token property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
-            containerSize = new StyleableDoubleProperty(DEFAULT_CONTAINER_SIZE) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerSize");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FloatingActionButton.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FloatingActionButton, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SIZE;
-                }
-            };
+            containerSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SIZE,
+                    this,
+                    "containerSize",
+                    StyleableProperties.CONTAINER_SIZE,
+                    this::updateMetrics
+            );
         }
         return containerSize;
     }
@@ -227,31 +208,13 @@ public class M3FloatingActionButton extends ButtonBase {
     /// @return the container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
-            containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerShape");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FloatingActionButton.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FloatingActionButton, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SHAPE;
-                }
-            };
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestLayout
+            );
         }
         return containerShape;
     }
@@ -275,32 +238,13 @@ public class M3FloatingActionButton extends ButtonBase {
     /// @return the horizontal content padding token property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
-            horizontalPadding = new StyleableDoubleProperty(DEFAULT_HORIZONTAL_PADDING) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "horizontalPadding");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FloatingActionButton.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "horizontalPadding";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FloatingActionButton, Number> getCssMetaData() {
-                    return StyleableProperties.HORIZONTAL_PADDING;
-                }
-            };
+            horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_HORIZONTAL_PADDING,
+                    this,
+                    "horizontalPadding",
+                    StyleableProperties.HORIZONTAL_PADDING,
+                    this::updateMetrics
+            );
         }
         return horizontalPadding;
     }

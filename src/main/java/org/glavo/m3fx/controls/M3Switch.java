@@ -120,32 +120,13 @@ public class M3Switch extends ButtonBase {
     /// Returns the preferred touch target size token property.
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
-            touchTargetSize = new StyleableDoubleProperty(DEFAULT_TOUCH_TARGET_SIZE) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "touchTargetSize"));
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Switch.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "touchTargetSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Switch, Number> getCssMetaData() {
-                    return StyleableProperties.TOUCH_TARGET_SIZE;
-                }
-            };
+            touchTargetSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TOUCH_TARGET_SIZE,
+                    this,
+                    "touchTargetSize",
+                    StyleableProperties.TOUCH_TARGET_SIZE,
+                    this::updateMetrics
+            );
         }
         return touchTargetSize;
     }
@@ -163,31 +144,13 @@ public class M3Switch extends ButtonBase {
     /// Returns the switch track shape radius token property.
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
-            trackShape = new StyleableDoubleProperty(DEFAULT_TRACK_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "trackShape"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Switch.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "trackShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Switch, Number> getCssMetaData() {
-                    return StyleableProperties.TRACK_SHAPE;
-                }
-            };
+            trackShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TRACK_SHAPE,
+                    this,
+                    "trackShape",
+                    StyleableProperties.TRACK_SHAPE,
+                    this::requestLayout
+            );
         }
         return trackShape;
     }

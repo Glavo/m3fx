@@ -120,6 +120,9 @@ public class M3ChipGroup extends Control {
     /// The selected-state listeners installed on chips.
     private final Map<M3Chip, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
 
+    /// The reachability listeners installed on chips.
+    private final Map<M3Chip, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+
     /// Updates chip listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
@@ -233,31 +236,13 @@ public class M3ChipGroup extends Control {
     /// @return the styleable horizontal chip gap property
     public final StyleableDoubleProperty horizontalGapProperty() {
         if (horizontalGap == null) {
-            horizontalGap = new StyleableDoubleProperty(DEFAULT_HORIZONTAL_GAP) {
-                /// Validates updated horizontal gap values.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "horizontalGap");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ChipGroup.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "horizontalGap";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ChipGroup, Number> getCssMetaData() {
-                    return StyleableProperties.HORIZONTAL_GAP;
-                }
-            };
+            horizontalGap = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_HORIZONTAL_GAP,
+                    this,
+                    "horizontalGap",
+                    StyleableProperties.HORIZONTAL_GAP,
+                    this::requestLayout
+            );
         }
         return horizontalGap;
     }
@@ -281,31 +266,13 @@ public class M3ChipGroup extends Control {
     /// @return the styleable vertical chip row gap property
     public final StyleableDoubleProperty verticalGapProperty() {
         if (verticalGap == null) {
-            verticalGap = new StyleableDoubleProperty(DEFAULT_VERTICAL_GAP) {
-                /// Validates updated vertical gap values.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "verticalGap");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ChipGroup.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "verticalGap";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ChipGroup, Number> getCssMetaData() {
-                    return StyleableProperties.VERTICAL_GAP;
-                }
-            };
+            verticalGap = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_VERTICAL_GAP,
+                    this,
+                    "verticalGap",
+                    StyleableProperties.VERTICAL_GAP,
+                    this::requestLayout
+            );
         }
         return verticalGap;
     }
@@ -389,17 +356,14 @@ public class M3ChipGroup extends Control {
         if (!getItems().contains(chip)) {
             throw new IllegalArgumentException("chip must belong to this chip group");
         }
+        if (!isSelectableChip(chip)) {
+            throw new IllegalArgumentException("chip must be selectable");
+        }
 
         if (getSelectionMode() == M3ChipSelectionMode.SINGLE) {
             selectOnly(chip);
         } else {
-            updatingSelection = true;
-            try {
-                chip.setSelected(true);
-            } finally {
-                updatingSelection = false;
-            }
-            refreshSelectedChips();
+            setChipSelected(chip, true);
         }
     }
 
@@ -556,7 +520,7 @@ public class M3ChipGroup extends Control {
     /// Applies selected chips supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
         if (getSelectionMode() == M3ChipSelectionMode.SINGLE) {
-            @Nullable M3Chip chip = M3Accessible.firstSelectionTarget(getItems(), M3Chip.class, parameters);
+            @Nullable M3Chip chip = firstAccessibleSelectableChip(parameters);
             if (chip == null) {
                 clearSelection();
             } else {
@@ -568,7 +532,7 @@ public class M3ChipGroup extends Control {
         updatingSelection = true;
         try {
             for (Node child : getItems()) {
-                if (child instanceof M3Chip chip) {
+                if (child instanceof M3Chip chip && isSelectableChip(chip)) {
                     chip.setSelected(M3Accessible.containsSelectionTarget(chip, parameters));
                 }
             }
@@ -587,6 +551,11 @@ public class M3ChipGroup extends Control {
                 handleChipSelectedChanged(chip, newValue);
         selectedListeners.put(chip, listener);
         chip.selectedProperty().addListener(listener);
+        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
+                handleChipReachabilityChanged(chip);
+        reachabilityListeners.put(chip, reachabilityListener);
+        chip.disabledProperty().addListener(reachabilityListener);
+        chip.visibleProperty().addListener(reachabilityListener);
     }
 
     /// Removes the selected-state listener from a chip.
@@ -595,11 +564,26 @@ public class M3ChipGroup extends Control {
         if (listener != null) {
             chip.selectedProperty().removeListener(listener);
         }
+        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(chip);
+        if (reachabilityListener != null) {
+            chip.disabledProperty().removeListener(reachabilityListener);
+            chip.visibleProperty().removeListener(reachabilityListener);
+        }
     }
 
     /// Keeps chip selected states consistent with the current group policy.
     private void handleChipSelectedChanged(M3Chip chip, boolean selected) {
         if (updatingSelection) {
+            return;
+        }
+
+        if (!isSelectableChip(chip)) {
+            if (selected) {
+                setChipSelected(chip, false);
+                if (!isAllowEmptySelection()) {
+                    selectFirstChipIfNeeded();
+                }
+            }
             return;
         }
 
@@ -619,6 +603,16 @@ public class M3ChipGroup extends Control {
         if (!isAllowEmptySelection()) {
             selectFirstChipIfNeeded();
         }
+    }
+
+    /// Keeps selection and accessibility state consistent when a chip becomes unreachable.
+    private void handleChipReachabilityChanged(M3Chip chip) {
+        if (chip.isSelected() && !isSelectableChip(chip)) {
+            setChipSelected(chip, false);
+        }
+        enforceSelectionPolicy();
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Enforces single selection and non-empty selection invariants.
@@ -645,6 +639,22 @@ public class M3ChipGroup extends Control {
         }
     }
 
+    /// Sets one chip's selected state and refreshes selected chip state.
+    private void setChipSelected(M3Chip chip, boolean selected) {
+        setChipSelectedWithoutRefresh(chip, selected);
+        refreshSelectedChips();
+    }
+
+    /// Sets one chip's selected state without refreshing the aggregate selected chip list.
+    private void setChipSelectedWithoutRefresh(M3Chip chip, boolean selected) {
+        updatingSelection = true;
+        try {
+            chip.setSelected(selected);
+        } finally {
+            updatingSelection = false;
+        }
+    }
+
     /// Selects one chip and clears selection from the remaining chips.
     private void selectOnly(@Nullable M3Chip chip) {
         updatingSelection = true;
@@ -666,7 +676,11 @@ public class M3ChipGroup extends Control {
         selectedChips.clear();
         for (Node child : getItems()) {
             if (child instanceof M3Chip chip && chip.isSelected()) {
-                selectedChips.add(chip);
+                if (isSelectableChip(chip)) {
+                    selectedChips.add(chip);
+                } else {
+                    setChipSelectedWithoutRefresh(chip, false);
+                }
             }
         }
         selectedChip.set(selectedChips.isEmpty() ? null : selectedChips.get(0));
@@ -680,6 +694,24 @@ public class M3ChipGroup extends Control {
     /// Returns the first chip child.
     private @Nullable M3Chip firstChip() {
         return M3SelectionNavigation.first(getItems(), M3Chip.class);
+    }
+
+    /// Returns the first selectable chip referenced by accessibility parameters.
+    private @Nullable M3Chip firstAccessibleSelectableChip(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Node child : getItems()) {
+            if (child instanceof M3Chip chip
+                    && isSelectableChip(chip)
+                    && M3Accessible.containsSelectionTarget(chip, parameters)) {
+                return chip;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether a chip can currently participate in selection.
+    private static boolean isSelectableChip(M3Chip chip) {
+        return !chip.isDisabled() && chip.isVisible();
     }
 
     /// Creates the default Material Design 3 chip group skin.

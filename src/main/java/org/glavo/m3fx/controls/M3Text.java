@@ -144,35 +144,19 @@ public class M3Text extends Labeled {
     /// @return the styleable typography font family property
     public final StyleableObjectProperty<@Nullable String> typographyFontFamilyProperty() {
         if (typographyFontFamily == null) {
-            typographyFontFamily = new StyleableObjectProperty<>(DEFAULT_TYPOGRAPHY_FONT_FAMILY) {
-                /// Applies updated font family tokens.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_TYPOGRAPHY_FONT_FAMILY);
-                        return;
+            typographyFontFamily = M3Css.styleableObjectProperty(
+                    DEFAULT_TYPOGRAPHY_FONT_FAMILY,
+                    this,
+                    "typographyFontFamily",
+                    StyleableProperties.TYPOGRAPHY_FONT_FAMILY,
+                    () -> {
+                        if (typographyFontFamilyProperty().get() == null) {
+                            typographyFontFamilyProperty().set(DEFAULT_TYPOGRAPHY_FONT_FAMILY);
+                            return;
+                        }
+                        updateFont();
                     }
-                    updateFont();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Text.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "typographyFontFamily";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Text, @Nullable String> getCssMetaData() {
-                    return StyleableProperties.TYPOGRAPHY_FONT_FAMILY;
-                }
-            };
+            );
         }
         return typographyFontFamily;
     }
@@ -196,32 +180,13 @@ public class M3Text extends Labeled {
     /// @return the styleable typography font size property
     public final StyleableDoubleProperty typographyFontSizeProperty() {
         if (typographyFontSize == null) {
-            typographyFontSize = new StyleableDoubleProperty(DEFAULT_TYPOGRAPHY_FONT_SIZE) {
-                /// Applies updated font size tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "typographyFontSize");
-                    updateFont();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Text.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "typographyFontSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Text, Number> getCssMetaData() {
-                    return StyleableProperties.TYPOGRAPHY_FONT_SIZE;
-                }
-            };
+            typographyFontSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TYPOGRAPHY_FONT_SIZE,
+                    this,
+                    "typographyFontSize",
+                    StyleableProperties.TYPOGRAPHY_FONT_SIZE,
+                    this::updateFont
+            );
         }
         return typographyFontSize;
     }
@@ -245,32 +210,13 @@ public class M3Text extends Labeled {
     /// @return the styleable typography line height property
     public final StyleableDoubleProperty typographyLineHeightProperty() {
         if (typographyLineHeight == null) {
-            typographyLineHeight = new StyleableDoubleProperty(DEFAULT_TYPOGRAPHY_LINE_HEIGHT) {
-                /// Applies updated line height tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "typographyLineHeight");
-                    updateFont();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Text.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "typographyLineHeight";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Text, Number> getCssMetaData() {
-                    return StyleableProperties.TYPOGRAPHY_LINE_HEIGHT;
-                }
-            };
+            typographyLineHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TYPOGRAPHY_LINE_HEIGHT,
+                    this,
+                    "typographyLineHeight",
+                    StyleableProperties.TYPOGRAPHY_LINE_HEIGHT,
+                    this::updateFont
+            );
         }
         return typographyLineHeight;
     }
@@ -294,35 +240,19 @@ public class M3Text extends Labeled {
     /// @return the styleable typography font weight property
     public final StyleableObjectProperty<@Nullable FontWeight> typographyFontWeightProperty() {
         if (typographyFontWeight == null) {
-            typographyFontWeight = new StyleableObjectProperty<>(DEFAULT_TYPOGRAPHY_FONT_WEIGHT) {
-                /// Applies updated font weight tokens.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_TYPOGRAPHY_FONT_WEIGHT);
-                        return;
+            typographyFontWeight = M3Css.styleableObjectProperty(
+                    DEFAULT_TYPOGRAPHY_FONT_WEIGHT,
+                    this,
+                    "typographyFontWeight",
+                    StyleableProperties.TYPOGRAPHY_FONT_WEIGHT,
+                    () -> {
+                        if (typographyFontWeightProperty().get() == null) {
+                            typographyFontWeightProperty().set(DEFAULT_TYPOGRAPHY_FONT_WEIGHT);
+                            return;
+                        }
+                        updateFont();
                     }
-                    updateFont();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Text.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "typographyFontWeight";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Text, @Nullable FontWeight> getCssMetaData() {
-                    return StyleableProperties.TYPOGRAPHY_FONT_WEIGHT;
-                }
-            };
+            );
         }
         return typographyFontWeight;
     }
@@ -422,7 +352,7 @@ public class M3Text extends Labeled {
                     /// Returns whether this property can be set by CSS.
                     @Override
                     public boolean isSettable(M3Text control) {
-                        return !control.typographyFontFamilyProperty().isBound();
+                        return M3Css.isSettable(control.typographyFontFamilyProperty());
                     }
 
                     /// Returns the styleable property for a control.
@@ -462,7 +392,7 @@ public class M3Text extends Labeled {
                     /// Returns whether this property can be set by CSS.
                     @Override
                     public boolean isSettable(M3Text control) {
-                        return !control.typographyFontWeightProperty().isBound();
+                        return M3Css.isSettable(control.typographyFontWeightProperty());
                     }
 
                     /// Returns the styleable property for a control.

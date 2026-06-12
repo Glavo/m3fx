@@ -173,6 +173,12 @@ final class M3ControlStyleTest {
     /// The pulse count used after closing a virtualized list view window with a pending focus retry.
     private static final int DETACHED_LIST_FOCUS_RETRY_STABLE_PULSES = 8;
 
+    /// The lowest acceptable rendered ink center ratio for outlined fields with a floating label.
+    private static final double OUTLINED_FLOATING_INK_MINIMUM_CENTER_RATIO = 0.46;
+
+    /// The highest acceptable rendered ink center ratio for outlined fields with a floating label.
+    private static final double OUTLINED_FLOATING_INK_MAXIMUM_CENTER_RATIO = 0.70;
+
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
@@ -752,6 +758,48 @@ final class M3ControlStyleTest {
         assertEquals(3, fireCount.get());
     }
 
+    /// Verifies that floating action button graphics stay centered in fixed-size FAB containers.
+    @Test
+    void floatingActionButtonCentersGraphicContent() {
+        runOnFxThread(() -> {
+            M3FloatingActionButton small = createGraphicFab(
+                    visualIcon("add"),
+                    M3FloatingActionButtonVariant.PRIMARY,
+                    M3FloatingActionButtonSize.SMALL
+            );
+            M3FloatingActionButton regular = createGraphicFab(
+                    visualIcon("star"),
+                    M3FloatingActionButtonVariant.SECONDARY,
+                    M3FloatingActionButtonSize.REGULAR
+            );
+            M3FloatingActionButton large = createGraphicFab(
+                    visualIcon("done"),
+                    M3FloatingActionButtonVariant.TERTIARY,
+                    M3FloatingActionButtonSize.LARGE
+            );
+            FlowPane row = new FlowPane(16.0, 16.0, small, regular, large);
+            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(row, 360.0, 160.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            row.applyCss();
+            row.resize(360.0, 160.0);
+            row.layout();
+
+            assertFixedTargetControlsKeepCenteredContent(row);
+            WritableImage image = snapshotImageOnFxThread(row);
+            assertSnapshotNodeContainsContrast(image, small, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, regular, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, large, Color.WHITE, 0.04);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-fab-centering.png"
+            ));
+        });
+    }
+
     /// Verifies that interactive floating action button states keep Material variant colors.
     @Test
     void floatingActionButtonStateStylesPreserveVariantColors() {
@@ -794,6 +842,426 @@ final class M3ControlStyleTest {
         assertEquals(52.0, button.getPrefHeight(), 0.0001);
         assertEquals(18.0, button.getPadding().getLeft(), 0.0001);
         assertEquals(18.0, button.getPadding().getRight(), 0.0001);
+    }
+
+    /// Verifies that explicit component token API values survive later stylesheet passes.
+    @Test
+    void coreComponentTokenApiValuesSurviveStylesheetPasses() {
+        M3Button button = new M3Button("Button");
+        button.setStyle("-m3-container-height: 40px; -m3-container-shape: 999px; -m3-horizontal-padding: 24px;");
+        button.setContainerHeight(52.0);
+        button.setContainerShape(14.0);
+        button.setHorizontalPadding(18.0);
+
+        M3TextField textField = createTextField("Text", M3TextInputVariant.OUTLINED);
+        textField.setStyle("-m3-container-height: 56px; -m3-container-shape: 4px; -m3-horizontal-padding: 16px;");
+        textField.setContainerHeight(64.0);
+        textField.setContainerShape(12.0);
+        textField.setHorizontalPadding(22.0);
+
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        slider.setStyle(
+                "-m3-track-thickness: 4px; "
+                        + "-m3-track-shape: 999px; "
+                        + "-m3-thumb-size: 20px; "
+                        + "-m3-touch-target-size: 48px;"
+        );
+        slider.setTrackThickness(8.0);
+        slider.setTrackShape(12.0);
+        slider.setThumbSize(28.0);
+        slider.setTouchTargetSize(56.0);
+
+        M3Switch switchControl = new M3Switch("Switch");
+        switchControl.setStyle("-m3-touch-target-size: 48px; -m3-track-shape: 18px;");
+        switchControl.setTouchTargetSize(60.0);
+        switchControl.setTrackShape(10.0);
+
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        progressBar.setStyle(
+                "-m3-track-thickness: 4px; "
+                        + "-m3-track-shape: 999px; "
+                        + "-m3-wave-amplitude: 2px; "
+                        + "-m3-wavelength: 48px; "
+                        + "-m3-track-gap: 4px; "
+                        + "-m3-stop-size: 4px;"
+        );
+        progressBar.setTrackThickness(10.0);
+        progressBar.setTrackShape(5.0);
+        progressBar.setWaveAmplitude(6.0);
+        progressBar.setWavelength(36.0);
+        progressBar.setTrackGap(8.0);
+        progressBar.setStopSize(7.0);
+
+        Pane root = new Pane(button, textField, slider, switchControl, progressBar);
+        Scene scene = new Scene(root, 520.0, 320.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.applyCss();
+
+        assertEquals(52.0, button.getContainerHeight(), 0.0001);
+        assertEquals(14.0, button.getContainerShape(), 0.0001);
+        assertEquals(18.0, button.getHorizontalPadding(), 0.0001);
+        assertEquals(52.0, button.getPrefHeight(), 0.0001);
+
+        assertEquals(64.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(12.0, textField.getContainerShape(), 0.0001);
+        assertEquals(22.0, textField.getHorizontalPadding(), 0.0001);
+        assertEquals(64.0, textField.getPrefHeight(), 0.0001);
+
+        assertEquals(8.0, slider.getTrackThickness(), 0.0001);
+        assertEquals(12.0, slider.getTrackShape(), 0.0001);
+        assertEquals(28.0, slider.getThumbSize(), 0.0001);
+        assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
+        assertEquals(56.0, slider.getPrefHeight(), 0.0001);
+
+        assertEquals(60.0, switchControl.getTouchTargetSize(), 0.0001);
+        assertEquals(10.0, switchControl.getTrackShape(), 0.0001);
+        assertEquals(60.0, switchControl.getPrefHeight(), 0.0001);
+
+        assertEquals(10.0, progressBar.getTrackThickness(), 0.0001);
+        assertEquals(5.0, progressBar.getTrackShape(), 0.0001);
+        assertEquals(6.0, progressBar.getWaveAmplitude(), 0.0001);
+        assertEquals(36.0, progressBar.getWavelength(), 0.0001);
+        assertEquals(8.0, progressBar.getTrackGap(), 0.0001);
+        assertEquals(7.0, progressBar.getStopSize(), 0.0001);
+    }
+
+    /// Verifies that explicit component token API values survive full theme and profile reinstallation.
+    @Test
+    void componentTokenApiValuesSurviveThemeReinstallation() {
+        M3Button button = new M3Button("Button");
+        button.setContainerHeight(54.0);
+        button.setContainerShape(13.0);
+        button.setHorizontalPadding(19.0);
+
+        M3TextField textField = createTextField("Text", M3TextInputVariant.OUTLINED);
+        textField.setContainerHeight(62.0);
+        textField.setContainerShape(11.0);
+        textField.setHorizontalPadding(21.0);
+        textField.setVerticalPadding(9.0);
+
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        checkBox.setTouchTargetSize(52.0);
+
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        radioButton.setTouchTargetSize(50.0);
+
+        M3Switch switchControl = new M3Switch("Switch");
+        switchControl.setTouchTargetSize(58.0);
+        switchControl.setTrackShape(9.0);
+
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        slider.setTrackThickness(7.0);
+        slider.setTrackShape(11.0);
+        slider.setThumbSize(27.0);
+        slider.setTouchTargetSize(55.0);
+
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        progressBar.setTrackThickness(9.0);
+        progressBar.setTrackShape(4.0);
+        progressBar.setWaveAmplitude(5.0);
+        progressBar.setWavelength(34.0);
+        progressBar.setTrackGap(7.0);
+        progressBar.setStopSize(6.0);
+
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        progressIndicator.setTrackThickness(7.0);
+        progressIndicator.setIndicatorSize(60.0);
+        progressIndicator.setWaveAmplitude(5.0);
+        progressIndicator.setWavelength(26.0);
+        progressIndicator.setTrackGap(6.0);
+
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+        loadingIndicator.setContainerSize(62.0);
+        loadingIndicator.setIndicatorSize(42.0);
+
+        M3Icon icon = new M3Icon("A");
+        icon.setIconFontFamily("Serif");
+        icon.setIconSize(30.0);
+        icon.setIconFontWeight(600.0);
+
+        M3Text text = new M3Text("Text", M3TextRole.TITLE_MEDIUM);
+        text.setTypographyFontFamily("Serif");
+        text.setTypographyFontSize(18.0);
+        text.setTypographyLineHeight(24.0);
+        text.setTypographyFontWeight(600.0);
+
+        M3Surface surface = new M3Surface(new Label("Surface"));
+        surface.setContainerShape(18.0);
+        surface.setContentPadding(22.0);
+
+        M3Badge badge = new M3Badge("9");
+        badge.setSmallSize(7.0);
+        badge.setLargeHeight(21.0);
+        badge.setLargeMinWidth(23.0);
+        badge.setContainerShape(10.0);
+        badge.setHorizontalPadding(5.0);
+
+        M3Divider divider = new M3Divider();
+        divider.setThickness(2.0);
+        divider.setInsetStart(14.0);
+        divider.setInsetEnd(18.0);
+
+        Pane root = new Pane(
+                button,
+                textField,
+                checkBox,
+                radioButton,
+                switchControl,
+                slider,
+                progressBar,
+                progressIndicator,
+                loadingIndicator,
+                icon,
+                text,
+                surface,
+                badge,
+                divider
+        );
+        Scene scene = new Scene(root, 760.0, 480.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
+        root.applyCss();
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#6750a4"),
+                M3Profile.BASELINE_2021,
+                Brightness.DARK
+        ));
+        root.applyCss();
+
+        assertEquals(54.0, button.getContainerHeight(), 0.0001);
+        assertEquals(13.0, button.getContainerShape(), 0.0001);
+        assertEquals(19.0, button.getHorizontalPadding(), 0.0001);
+
+        assertEquals(62.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(11.0, textField.getContainerShape(), 0.0001);
+        assertEquals(21.0, textField.getHorizontalPadding(), 0.0001);
+        assertEquals(9.0, textField.getVerticalPadding(), 0.0001);
+
+        assertEquals(52.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(50.0, radioButton.getTouchTargetSize(), 0.0001);
+        assertEquals(58.0, switchControl.getTouchTargetSize(), 0.0001);
+        assertEquals(9.0, switchControl.getTrackShape(), 0.0001);
+
+        assertEquals(7.0, slider.getTrackThickness(), 0.0001);
+        assertEquals(11.0, slider.getTrackShape(), 0.0001);
+        assertEquals(27.0, slider.getThumbSize(), 0.0001);
+        assertEquals(55.0, slider.getTouchTargetSize(), 0.0001);
+
+        assertEquals(9.0, progressBar.getTrackThickness(), 0.0001);
+        assertEquals(4.0, progressBar.getTrackShape(), 0.0001);
+        assertEquals(5.0, progressBar.getWaveAmplitude(), 0.0001);
+        assertEquals(34.0, progressBar.getWavelength(), 0.0001);
+        assertEquals(7.0, progressBar.getTrackGap(), 0.0001);
+        assertEquals(6.0, progressBar.getStopSize(), 0.0001);
+
+        assertEquals(7.0, progressIndicator.getTrackThickness(), 0.0001);
+        assertEquals(60.0, progressIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(5.0, progressIndicator.getWaveAmplitude(), 0.0001);
+        assertEquals(26.0, progressIndicator.getWavelength(), 0.0001);
+        assertEquals(6.0, progressIndicator.getTrackGap(), 0.0001);
+
+        assertEquals(62.0, loadingIndicator.getContainerSize(), 0.0001);
+        assertEquals(42.0, loadingIndicator.getIndicatorSize(), 0.0001);
+
+        assertEquals("Serif", icon.getIconFontFamily());
+        assertEquals(30.0, icon.getIconSize(), 0.0001);
+        assertEquals(600.0, icon.getIconFontWeight(), 0.0001);
+
+        assertEquals("Serif", text.getTypographyFontFamily());
+        assertEquals(18.0, text.getTypographyFontSize(), 0.0001);
+        assertEquals(24.0, text.getTypographyLineHeight(), 0.0001);
+        assertEquals(600.0, text.getTypographyFontWeight(), 0.0001);
+
+        assertEquals(18.0, surface.getContainerShape(), 0.0001);
+        assertEquals(22.0, surface.getContentPadding(), 0.0001);
+
+        assertEquals(7.0, badge.getSmallSize(), 0.0001);
+        assertEquals(21.0, badge.getLargeHeight(), 0.0001);
+        assertEquals(23.0, badge.getLargeMinWidth(), 0.0001);
+        assertEquals(10.0, badge.getContainerShape(), 0.0001);
+        assertEquals(5.0, badge.getHorizontalPadding(), 0.0001);
+
+        assertEquals(2.0, divider.getThickness(), 0.0001);
+        assertEquals(14.0, divider.getInsetStart(), 0.0001);
+        assertEquals(18.0, divider.getInsetEnd(), 0.0001);
+    }
+
+    /// Verifies that extended component token API values survive later stylesheet passes.
+    @Test
+    void extendedComponentTokenApiValuesSurviveStylesheetPasses() {
+        M3FloatingActionButton fab = new M3FloatingActionButton("Create");
+        fab.setStyle("-m3-container-size: 56px; -m3-container-shape: 16px; -m3-horizontal-padding: 20px;");
+        fab.setContainerSize(72.0);
+        fab.setContainerShape(24.0);
+        fab.setHorizontalPadding(28.0);
+
+        M3Chip chip = new M3Chip("Chip");
+        chip.setStyle("-m3-container-height: 32px; -m3-container-shape: 8px; -m3-horizontal-padding: 8px;");
+        chip.setContainerHeight(40.0);
+        chip.setContainerShape(12.0);
+        chip.setHorizontalPadding(14.0);
+
+        M3IconToggleButton toggleButton = new M3IconToggleButton("A");
+        toggleButton.setStyle("-m3-container-height: 40px; -m3-container-shape: 20px;");
+        toggleButton.setContainerHeight(48.0);
+        toggleButton.setContainerShape(10.0);
+
+        M3SegmentedButton segmentedButton = new M3SegmentedButton("Day");
+        segmentedButton.setStyle("-m3-container-height: 40px; -m3-container-shape: 20px; -m3-horizontal-padding: 12px;");
+        segmentedButton.setContainerHeight(48.0);
+        segmentedButton.setContainerShape(8.0);
+        segmentedButton.setHorizontalPadding(18.0);
+
+        M3Tab tab = new M3Tab("Tab");
+        tab.setStyle(
+                "-m3-container-height: 48px; "
+                        + "-m3-tab-min-width: 72px; "
+                        + "-m3-horizontal-padding: 12px; "
+                        + "-m3-active-indicator-height: 3px; "
+                        + "-m3-active-indicator-shape: 2px;"
+        );
+        tab.setContainerHeight(56.0);
+        tab.setTabMinWidth(92.0);
+        tab.setHorizontalPadding(18.0);
+        tab.setActiveIndicatorHeight(5.0);
+        tab.setActiveIndicatorShape(4.0);
+
+        M3NavigationItem navigationItem = new M3NavigationItem("Inbox");
+        navigationItem.setStyle(
+                "-m3-container-height: 80px; "
+                        + "-m3-item-width: 80px; "
+                        + "-m3-indicator-width: 64px; "
+                        + "-m3-indicator-height: 32px; "
+                        + "-m3-indicator-shape: 16px; "
+                        + "-m3-content-spacing: 4px;"
+        );
+        navigationItem.setContainerHeight(88.0);
+        navigationItem.setItemWidth(96.0);
+        navigationItem.setIndicatorWidth(72.0);
+        navigationItem.setIndicatorHeight(36.0);
+        navigationItem.setIndicatorShape(18.0);
+        navigationItem.setContentSpacing(8.0);
+
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        progressIndicator.setStyle(
+                "-m3-track-thickness: 4px; "
+                        + "-m3-indicator-size: 48px; "
+                        + "-m3-wave-amplitude: 2px; "
+                        + "-m3-wavelength: 20px; "
+                        + "-m3-track-gap: 4px;"
+        );
+        progressIndicator.setTrackThickness(8.0);
+        progressIndicator.setIndicatorSize(64.0);
+        progressIndicator.setWaveAmplitude(6.0);
+        progressIndicator.setWavelength(28.0);
+        progressIndicator.setTrackGap(7.0);
+
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+        loadingIndicator.setStyle("-m3-container-size: 48px; -m3-indicator-size: 36px;");
+        loadingIndicator.setContainerSize(64.0);
+        loadingIndicator.setIndicatorSize(44.0);
+
+        M3Badge badge = new M3Badge("7");
+        badge.setStyle(
+                "-m3-small-size: 6px; "
+                        + "-m3-large-height: 16px; "
+                        + "-m3-large-min-width: 16px; "
+                        + "-m3-container-shape: 8px; "
+                        + "-m3-horizontal-padding: 4px;"
+        );
+        badge.setSmallSize(8.0);
+        badge.setLargeHeight(22.0);
+        badge.setLargeMinWidth(24.0);
+        badge.setContainerShape(11.0);
+        badge.setHorizontalPadding(6.0);
+
+        M3Card card = new M3Card();
+        card.setStyle("-m3-container-shape: 12px; -m3-content-padding: 16px; -m3-outline-width: 1px;");
+        card.setContainerShape(20.0);
+        card.setContentPadding(24.0);
+        card.setOutlineWidth(2.0);
+
+        M3Divider divider = new M3Divider();
+        divider.setStyle("-m3-thickness: 1px; -m3-inset-start: 8px; -m3-inset-end: 8px;");
+        divider.setThickness(2.0);
+        divider.setInsetStart(16.0);
+        divider.setInsetEnd(20.0);
+
+        Pane root = new Pane(
+                fab,
+                chip,
+                toggleButton,
+                segmentedButton,
+                tab,
+                navigationItem,
+                progressIndicator,
+                loadingIndicator,
+                badge,
+                card,
+                divider
+        );
+        Scene scene = new Scene(root, 680.0, 420.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.applyCss();
+
+        assertEquals(72.0, fab.getContainerSize(), 0.0001);
+        assertEquals(24.0, fab.getContainerShape(), 0.0001);
+        assertEquals(28.0, fab.getHorizontalPadding(), 0.0001);
+
+        assertEquals(40.0, chip.getContainerHeight(), 0.0001);
+        assertEquals(12.0, chip.getContainerShape(), 0.0001);
+        assertEquals(14.0, chip.getHorizontalPadding(), 0.0001);
+
+        assertEquals(48.0, toggleButton.getContainerHeight(), 0.0001);
+        assertEquals(10.0, toggleButton.getContainerShape(), 0.0001);
+
+        assertEquals(48.0, segmentedButton.getContainerHeight(), 0.0001);
+        assertEquals(8.0, segmentedButton.getContainerShape(), 0.0001);
+        assertEquals(18.0, segmentedButton.getHorizontalPadding(), 0.0001);
+
+        assertEquals(56.0, tab.getContainerHeight(), 0.0001);
+        assertEquals(92.0, tab.getTabMinWidth(), 0.0001);
+        assertEquals(18.0, tab.getHorizontalPadding(), 0.0001);
+        assertEquals(5.0, tab.getActiveIndicatorHeight(), 0.0001);
+        assertEquals(4.0, tab.getActiveIndicatorShape(), 0.0001);
+
+        assertEquals(88.0, navigationItem.getContainerHeight(), 0.0001);
+        assertEquals(96.0, navigationItem.getItemWidth(), 0.0001);
+        assertEquals(72.0, navigationItem.getIndicatorWidth(), 0.0001);
+        assertEquals(36.0, navigationItem.getIndicatorHeight(), 0.0001);
+        assertEquals(18.0, navigationItem.getIndicatorShape(), 0.0001);
+        assertEquals(8.0, navigationItem.getContentSpacing(), 0.0001);
+
+        assertEquals(8.0, progressIndicator.getTrackThickness(), 0.0001);
+        assertEquals(64.0, progressIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(6.0, progressIndicator.getWaveAmplitude(), 0.0001);
+        assertEquals(28.0, progressIndicator.getWavelength(), 0.0001);
+        assertEquals(7.0, progressIndicator.getTrackGap(), 0.0001);
+
+        assertEquals(64.0, loadingIndicator.getContainerSize(), 0.0001);
+        assertEquals(44.0, loadingIndicator.getIndicatorSize(), 0.0001);
+
+        assertEquals(8.0, badge.getSmallSize(), 0.0001);
+        assertEquals(22.0, badge.getLargeHeight(), 0.0001);
+        assertEquals(24.0, badge.getLargeMinWidth(), 0.0001);
+        assertEquals(11.0, badge.getContainerShape(), 0.0001);
+        assertEquals(6.0, badge.getHorizontalPadding(), 0.0001);
+
+        assertEquals(20.0, card.getContainerShape(), 0.0001);
+        assertEquals(24.0, card.getContentPadding(), 0.0001);
+        assertEquals(2.0, card.getOutlineWidth(), 0.0001);
+
+        assertEquals(2.0, divider.getThickness(), 0.0001);
+        assertEquals(16.0, divider.getInsetStart(), 0.0001);
+        assertEquals(20.0, divider.getInsetEnd(), 0.0001);
     }
 
     /// Verifies that icon buttons stay square when size tokens change.
@@ -3524,6 +3992,61 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that text input layouts route explicit reveal actions into popup-backed adornments.
+    @Test
+    void textInputLayoutRoutesAccessibleFocusThroughPopupAdornments() {
+        runOnFxThread(() -> {
+            M3MenuItem leadingTarget = new M3MenuItem("Leading target");
+            M3SubMenuItem leadingSubMenu = new M3SubMenuItem("Leading submenu", leadingTarget);
+            M3MenuButton leadingMenuButton = new M3MenuButton("Leading menu", leadingSubMenu);
+
+            M3MenuItem trailingTarget = new M3MenuItem("Trailing target");
+            M3SubMenuItem trailingSubMenu = new M3SubMenuItem("Trailing submenu", trailingTarget);
+            M3MenuButton trailingMenuButton = new M3MenuButton("Trailing menu", trailingSubMenu);
+
+            M3TextField textField = new M3TextField("abc");
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            layout.setLeading(leadingMenuButton);
+            layout.setTrailing(trailingMenuButton);
+            M3MotionSettings.setAnimationsEnabled(leadingMenuButton, false);
+            M3MotionSettings.setAnimationsEnabled(leadingSubMenu, false);
+            M3MotionSettings.setAnimationsEnabled(trailingMenuButton, false);
+            M3MotionSettings.setAnimationsEnabled(trailingSubMenu, false);
+
+            Pane root = new Pane(layout);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 640.0, 180.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, leadingTarget);
+                assertNestedPopupAccessibleFocus(layout, leadingMenuButton, leadingSubMenu, leadingTarget);
+
+                layout.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(leadingTarget.isFocused());
+                assertSame(leadingTarget, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                leadingSubMenu.hideSubMenu();
+                leadingMenuButton.hideMenu();
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, List.of(trailingTarget));
+                assertNestedPopupAccessibleFocus(layout, trailingMenuButton, trailingSubMenu, trailingTarget);
+            } finally {
+                trailingSubMenu.hideSubMenu();
+                trailingMenuButton.hideMenu();
+                leadingSubMenu.hideSubMenu();
+                leadingMenuButton.hideMenu();
+                M3MotionSettings.clearAnimationsEnabled(trailingSubMenu);
+                M3MotionSettings.clearAnimationsEnabled(trailingMenuButton);
+                M3MotionSettings.clearAnimationsEnabled(leadingSubMenu);
+                M3MotionSettings.clearAnimationsEnabled(leadingMenuButton);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that text input layouts mirror logical adornments and floating label geometry in right-to-left mode.
     @Test
     void textInputLayoutMirrorsAdornmentsAndFloatingLabelForRightToLeft() {
@@ -4743,10 +5266,11 @@ final class M3ControlStyleTest {
     @Test
     void iconTokensAreStyleable() {
         M3Icon icon = new M3Icon("A", M3IconSize.EXTRA_LARGE, M3IconVariant.TERTIARY);
-        icon.setStyle("-m3-icon-size: 28px; -m3-icon-font-weight: 700;");
+        icon.setStyle("-m3-icon-font-family: \"Serif\"; -m3-icon-size: 28px; -m3-icon-font-weight: 700;");
 
         applyCss(icon);
 
+        assertEquals("serif", icon.getIconFontFamily());
         assertEquals(28.0, icon.getIconSize(), 0.0001);
         assertEquals(700.0, icon.getIconFontWeight(), 0.0001);
         assertEquals(28.0, icon.getFont().getSize(), 0.0001);
@@ -5016,6 +5540,7 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, standard, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, tonal, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, outlined, Color.WHITE, 0.04);
+            assertFixedTargetControlsKeepCenteredContent(row);
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
                     "reports",
@@ -5227,10 +5752,20 @@ final class M3ControlStyleTest {
     @Test
     void textFontWeightTokenAcceptsUnitlessCssValue() {
         M3Text text = new M3Text("Title", M3TextRole.TITLE_MEDIUM);
+        text.setStyle(
+                "-m3-typography-font-family: \"Serif\"; "
+                        + "-m3-typography-font-size: 18px; "
+                        + "-m3-typography-line-height: 24px; "
+                        + "-m3-typography-font-weight: 700;"
+        );
 
         applyCss(text);
 
-        assertEquals(500.0, text.getTypographyFontWeight(), 0.0001);
+        assertEquals("serif", text.getTypographyFontFamily());
+        assertEquals(18.0, text.getTypographyFontSize(), 0.0001);
+        assertEquals(24.0, text.getTypographyLineHeight(), 0.0001);
+        assertEquals(700.0, text.getTypographyFontWeight(), 0.0001);
+        assertEquals(18.0, text.getFont().getSize(), 0.0001);
     }
 
     /// Verifies that surfaces expose variant, elevation, and metric tokens.
@@ -5593,6 +6128,46 @@ final class M3ControlStyleTest {
 
         assertFalse(export.isSelected());
         assertEquals(save, menu.getSelectedItem());
+    }
+
+    /// Verifies that menus reject disabled and hidden selection targets from every selection entry point.
+    @Test
+    void menuSelectionRejectsDisabledAndHiddenItems() {
+        M3MenuItem disabled = new M3MenuItem("Disabled");
+        M3MenuItem hidden = new M3MenuItem("Hidden");
+        M3MenuItem first = new M3MenuItem("First");
+        M3MenuItem second = new M3MenuItem("Second");
+        disabled.setDisable(true);
+        hidden.setVisible(false);
+        M3Menu menu = new M3Menu(disabled, hidden, first, second);
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.setAllowEmptySelection(false);
+
+        assertEquals(first, menu.getSelectedItem());
+        assertThrows(IllegalArgumentException.class, () -> menu.select(disabled));
+        assertThrows(IllegalArgumentException.class, () -> menu.select(hidden));
+        assertThrows(IllegalArgumentException.class, () -> menu.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> menu.selectIndex(1));
+
+        disabled.setSelected(true);
+        hidden.setSelected(true);
+
+        assertFalse(disabled.isSelected());
+        assertFalse(hidden.isSelected());
+        assertEquals(first, menu.getSelectedItem());
+        assertEquals(List.of(first), menu.getSelectedItems());
+
+        first.setDisable(true);
+
+        assertFalse(first.isSelected());
+        assertEquals(second, menu.getSelectedItem());
+        assertEquals(List.of(second), menu.getSelectedItems());
+
+        second.setVisible(false);
+
+        assertFalse(second.isSelected());
+        assertNull(menu.getSelectedItem());
+        assertTrue(menu.getSelectedItems().isEmpty());
     }
 
     /// Verifies that submenu item actions open locally and submenu child actions bubble to an owning menu.
@@ -6185,6 +6760,90 @@ final class M3ControlStyleTest {
                 M3MotionSettings.clearAnimationsEnabled(splitRecent);
                 menuButton.hideMenu();
                 splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that structural containers delegate explicit accessibility reveal requests into popup-backed children.
+    @Test
+    void structuralContainersRouteNestedPopupAccessibleTargets() {
+        runOnFxThread(() -> {
+            M3MenuItem formTarget = new M3MenuItem("Form archive");
+            M3SubMenuItem formSubMenu = new M3SubMenuItem("Form move", formTarget);
+            M3MenuButton formMenuButton = new M3MenuButton("Form menu", formSubMenu);
+            M3FormRow formRow = new M3FormRow("Destination", "", formMenuButton, new M3Button("Edit"));
+            M3FormSection formSection = new M3FormSection("Routing", formRow);
+            M3FormPane formPane = new M3FormPane(formSection);
+
+            M3MenuItem surfaceTarget = new M3MenuItem("Surface archive");
+            M3SubMenuItem surfaceSubMenu = new M3SubMenuItem("Surface move", surfaceTarget);
+            M3MenuButton surfaceMenuButton = new M3MenuButton("Surface menu", surfaceSubMenu);
+            M3Surface surface = new M3Surface(surfaceMenuButton);
+
+            M3MenuItem badgedTarget = new M3MenuItem("Badged archive");
+            M3SubMenuItem badgedSubMenu = new M3SubMenuItem("Badged move", badgedTarget);
+            M3MenuButton badgedMenuButton = new M3MenuButton("Badged menu", badgedSubMenu);
+            M3BadgedBox badgedBox = new M3BadgedBox(badgedMenuButton, new M3Badge("2"));
+
+            M3MenuItem bannerTarget = new M3MenuItem("Banner archive");
+            M3SubMenuItem bannerSubMenu = new M3SubMenuItem("Banner move", bannerTarget);
+            M3MenuButton bannerMenuButton = new M3MenuButton("Banner menu", bannerSubMenu);
+            M3Banner banner = createBanner("Offline", new M3Icon("!"), bannerMenuButton);
+
+            List<Node> popupOwners = List.of(
+                    formMenuButton,
+                    formSubMenu,
+                    surfaceMenuButton,
+                    surfaceSubMenu,
+                    badgedMenuButton,
+                    badgedSubMenu,
+                    bannerMenuButton,
+                    bannerSubMenu
+            );
+            Stage stage = new Stage();
+            try {
+                for (Node popupOwner : popupOwners) {
+                    M3MotionSettings.setAnimationsEnabled(popupOwner, false);
+                }
+
+                VBox root = new VBox(12.0, formPane, surface, badgedBox, banner);
+                Scene scene = new Scene(root, 560.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                formPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, List.of(formTarget));
+                assertNestedPopupAccessibleFocus(formPane, formMenuButton, formSubMenu, formTarget);
+                formSubMenu.hideSubMenu();
+                formMenuButton.hideMenu();
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, surfaceTarget);
+                assertNestedPopupAccessibleFocus(surface, surfaceMenuButton, surfaceSubMenu, surfaceTarget);
+                surfaceSubMenu.hideSubMenu();
+                surfaceMenuButton.hideMenu();
+
+                badgedBox.executeAccessibleAction(AccessibleAction.SHOW_ITEM, badgedTarget);
+                assertNestedPopupAccessibleFocus(badgedBox, badgedMenuButton, badgedSubMenu, badgedTarget);
+                badgedSubMenu.hideSubMenu();
+                badgedMenuButton.hideMenu();
+
+                banner.executeAccessibleAction(AccessibleAction.SHOW_ITEM, bannerTarget);
+                assertNestedPopupAccessibleFocus(banner, bannerMenuButton, bannerSubMenu, bannerTarget);
+            } finally {
+                bannerSubMenu.hideSubMenu();
+                bannerMenuButton.hideMenu();
+                badgedSubMenu.hideSubMenu();
+                badgedMenuButton.hideMenu();
+                surfaceSubMenu.hideSubMenu();
+                surfaceMenuButton.hideMenu();
+                formSubMenu.hideSubMenu();
+                formMenuButton.hideMenu();
+                for (Node popupOwner : popupOwners) {
+                    M3MotionSettings.clearAnimationsEnabled(popupOwner);
+                }
                 stage.close();
             }
         });
@@ -7174,6 +7833,61 @@ final class M3ControlStyleTest {
                 assertTrue(resultPrimary.isFocused());
                 assertSame(resultPrimary, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that search bars route explicit reveal actions into popup-backed leading and trailing actions.
+    @Test
+    void searchBarRoutesAccessibleFocusThroughPopupActions() {
+        runOnFxThread(() -> {
+            M3MenuItem leadingTarget = new M3MenuItem("Leading target");
+            M3SubMenuItem leadingSubMenu = new M3SubMenuItem("Leading submenu", leadingTarget);
+            M3MenuButton leadingMenuButton = new M3MenuButton("Leading menu", leadingSubMenu);
+
+            M3MenuItem trailingTarget = new M3MenuItem("Trailing target");
+            M3SubMenuItem trailingSubMenu = new M3SubMenuItem("Trailing submenu", trailingTarget);
+            M3MenuButton trailingMenuButton = new M3MenuButton("Trailing menu", trailingSubMenu);
+
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setLeading(leadingMenuButton);
+            searchBar.setTrailingActions(trailingMenuButton);
+            M3MotionSettings.setAnimationsEnabled(leadingMenuButton, false);
+            M3MotionSettings.setAnimationsEnabled(leadingSubMenu, false);
+            M3MotionSettings.setAnimationsEnabled(trailingMenuButton, false);
+            M3MotionSettings.setAnimationsEnabled(trailingSubMenu, false);
+
+            Pane root = new Pane(searchBar);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 640.0, 160.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, leadingTarget);
+                assertTrue(searchBar.isActive());
+                assertNestedPopupAccessibleFocus(searchBar, leadingMenuButton, leadingSubMenu, leadingTarget);
+
+                searchBar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(leadingTarget.isFocused());
+                assertSame(leadingTarget, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                leadingSubMenu.hideSubMenu();
+                leadingMenuButton.hideMenu();
+
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, List.of(trailingTarget));
+                assertNestedPopupAccessibleFocus(searchBar, trailingMenuButton, trailingSubMenu, trailingTarget);
+            } finally {
+                trailingSubMenu.hideSubMenu();
+                trailingMenuButton.hideMenu();
+                leadingSubMenu.hideSubMenu();
+                leadingMenuButton.hideMenu();
+                M3MotionSettings.clearAnimationsEnabled(trailingSubMenu);
+                M3MotionSettings.clearAnimationsEnabled(trailingMenuButton);
+                M3MotionSettings.clearAnimationsEnabled(leadingSubMenu);
+                M3MotionSettings.clearAnimationsEnabled(leadingMenuButton);
                 stage.close();
             }
         });
@@ -9339,6 +10053,26 @@ final class M3ControlStyleTest {
         assertEquals(56.0, slider.getPrefHeight(), 0.0001);
     }
 
+    /// Verifies that slider track shape tokens reach the rendered track regions.
+    @Test
+    void sliderSkinAppliesTrackShapeToken() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        slider.setStyle("-m3-track-shape: 12px;");
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 260.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+        root.applyCss();
+
+        Region track = lookupRegion(slider, ".track");
+        Region activeTrack = lookupRegion(slider, ".active-track");
+        assertRegionRadii(track, 12.0, 12.0, 12.0, 12.0);
+        assertRegionRadii(activeTrack, 12.0, 12.0, 12.0, 12.0);
+    }
+
     /// Verifies that focused slider states keep Material track and thumb colors.
     @Test
     void sliderStateStylesPreserveMaterialColors() {
@@ -10920,6 +11654,46 @@ final class M3ControlStyleTest {
         assertEquals(0, list.getSelectedIndex());
     }
 
+    /// Verifies that static lists reject disabled and hidden selection targets from every selection entry point.
+    @Test
+    void listPaneSelectionRejectsDisabledAndHiddenItems() {
+        M3ListItem disabled = new M3ListItem("Disabled");
+        M3ListItem hidden = new M3ListItem("Hidden");
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem second = new M3ListItem("Second");
+        disabled.setDisable(true);
+        hidden.setVisible(false);
+        M3ListPane list = new M3ListPane(disabled, hidden, first, second);
+        list.setSelectionMode(M3ListSelectionMode.SINGLE);
+        list.setAllowEmptySelection(false);
+
+        assertEquals(first, list.getSelectedItem());
+        assertThrows(IllegalArgumentException.class, () -> list.select(disabled));
+        assertThrows(IllegalArgumentException.class, () -> list.select(hidden));
+        assertThrows(IllegalArgumentException.class, () -> list.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> list.selectIndex(1));
+
+        disabled.setSelected(true);
+        hidden.setSelected(true);
+
+        assertFalse(disabled.isSelected());
+        assertFalse(hidden.isSelected());
+        assertEquals(first, list.getSelectedItem());
+        assertEquals(List.of(first), list.getSelectedItems());
+
+        first.setDisable(true);
+
+        assertFalse(first.isSelected());
+        assertEquals(second, list.getSelectedItem());
+        assertEquals(List.of(second), list.getSelectedItems());
+
+        second.setVisible(false);
+
+        assertFalse(second.isSelected());
+        assertNull(list.getSelectedItem());
+        assertTrue(list.getSelectedItems().isEmpty());
+    }
+
     /// Verifies that list section headers behave as non-selectable list content.
     @Test
     void listSectionHeadersAreNonSelectableContent() {
@@ -11594,6 +12368,37 @@ final class M3ControlStyleTest {
         assertSame(first, listView.getSelectedItem());
     }
 
+    /// Verifies that virtualized list focus APIs do not leave focus on unreachable node data items.
+    @Test
+    void listViewFocusApiRejectsDisabledAndHiddenNodeItems() {
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem disabled = new M3ListItem("Disabled");
+        M3ListItem hidden = new M3ListItem("Hidden");
+        disabled.setDisable(true);
+        hidden.setVisible(false);
+
+        M3ListView<M3ListItem> listView = new M3ListView<>(first, disabled, hidden);
+
+        listView.focusIndex(1);
+
+        assertEquals(-1, listView.getFocusedIndex());
+        assertNull(listView.getFocusedItem());
+
+        listView.focusIndex(0);
+        listView.focusIndex(2);
+
+        assertEquals(0, listView.getFocusedIndex());
+        assertSame(first, listView.getFocusedItem());
+
+        M3ListItem replacement = new M3ListItem("Replacement");
+        replacement.setDisable(true);
+
+        listView.getItems().set(0, replacement);
+
+        assertEquals(-1, listView.getFocusedIndex());
+        assertNull(listView.getFocusedItem());
+    }
+
     /// Verifies that virtualized list page navigation moves by visible rows without wrapping.
     @Test
     void listViewPageNavigationUsesVisibleRowSteps() {
@@ -11752,19 +12557,20 @@ final class M3ControlStyleTest {
 
     /// Verifies that virtualized list view keyboard and accessibility focus scrolls rows into view.
     @Test
-    void listViewFocusesVirtualizedRowsFromKeyboardAndAccessibility() {
+    void listViewFocusesVirtualizedRowsFromKeyboardAndAccessibility() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3ListView<Integer>> listViewReference = new AtomicReference<>();
 
         try {
-            runOnFxThread(() -> {
+            runOnFxThreadWhen(() -> listViewFocusNodeHasHeadline(listViewReference, "Row 99"), () -> {
                 M3ListView<Integer> listView = new M3ListView<>();
                 for (int i = 0; i < 100; i++) {
                     listView.addItem(i);
                 }
                 listView.setSelectionMode(M3ListSelectionMode.SINGLE);
                 listView.setFixedCellSize(56.0);
+                listView.setAnimatedScroll(false);
                 listView.setPrefSize(260.0, 168.0);
                 listView.setCellFactory(value -> new M3ListItem("Row " + value));
                 Pane root = new StackPane(listView);
@@ -11784,21 +12590,14 @@ final class M3ControlStyleTest {
                 listView.requestFocus();
                 listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
                 root.layout();
-            });
-
-            runOnFxThread(() -> {
+            }, () -> {
                 Pane root = Objects.requireNonNull(rootReference.get(), "root");
                 M3ListView<Integer> listView = Objects.requireNonNull(listViewReference.get(), "listView");
                 root.layout();
 
                 assertEquals(99, listView.getFocusedIndex());
                 assertEquals(99, listView.getSelectedIndex());
-                M3ListItem lastItem = Objects.requireNonNull(assertInstanceOf(
-                        M3ListItem.class,
-                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 99)
-                ));
-                assertEquals("Row 99", lastItem.getHeadlineText());
-                assertSame(listView, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertAccessibleListItemHeadline(listView, "Row 99");
                 assertTrue(listView.isFocused());
 
                 listView.clearFocus();
@@ -11814,18 +12613,14 @@ final class M3ControlStyleTest {
                 root.layout();
             });
 
-            runOnFxThread(() -> {
+            runOnFxThreadWhen(() -> listViewFocusNodeHasHeadline(listViewReference, "Row 40"), () -> {
+            }, () -> {
                 Pane root = Objects.requireNonNull(rootReference.get(), "root");
                 M3ListView<Integer> listView = Objects.requireNonNull(listViewReference.get(), "listView");
                 root.layout();
 
                 assertEquals(40, listView.getFocusedIndex());
-                M3ListItem focusedItem = Objects.requireNonNull(assertInstanceOf(
-                        M3ListItem.class,
-                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 40)
-                ));
-                assertEquals("Row 40", focusedItem.getHeadlineText());
-                assertSame(listView, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertAccessibleListItemHeadline(listView, "Row 40");
                 assertTrue(listView.isFocused());
             });
         } finally {
@@ -13641,6 +14436,60 @@ final class M3ControlStyleTest {
         assertFalse(search.isSelected());
     }
 
+    /// Verifies that navigation drawers reject disabled, hidden, and collapsed selection targets.
+    @Test
+    void navigationDrawerSelectionRejectsUnreachableItems() {
+        M3ListItem disabled = new M3ListItem("Disabled");
+        M3ListItem hidden = new M3ListItem("Hidden");
+        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Group");
+        M3ListItem collapsed = new M3ListItem("Collapsed");
+        M3ListItem fallback = new M3ListItem("Fallback");
+        disabled.setDisable(true);
+        hidden.setVisible(false);
+        group.addItem(collapsed);
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(disabled, hidden, group, fallback);
+
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+        assertThrows(IllegalArgumentException.class, () -> navigationDrawer.select(disabled));
+        assertThrows(IllegalArgumentException.class, () -> navigationDrawer.select(hidden));
+        assertThrows(IllegalArgumentException.class, () -> navigationDrawer.select(collapsed));
+        assertThrows(IllegalArgumentException.class, () -> navigationDrawer.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> navigationDrawer.selectIndex(1));
+
+        disabled.setSelected(true);
+        hidden.setSelected(true);
+        collapsed.setSelected(true);
+
+        assertFalse(disabled.isSelected());
+        assertFalse(hidden.isSelected());
+        assertFalse(collapsed.isSelected());
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+        assertEquals(List.of(group.getHeaderItem()), navigationDrawer.getSelectedItems());
+
+        group.setExpanded(true);
+        navigationDrawer.select(collapsed);
+
+        assertEquals(collapsed, navigationDrawer.getSelectedItem());
+        assertTrue(collapsed.isSelected());
+
+        collapsed.setDisable(true);
+
+        assertFalse(collapsed.isSelected());
+        assertEquals(group.getHeaderItem(), navigationDrawer.getSelectedItem());
+
+        group.getHeaderItem().setDisable(true);
+
+        assertFalse(group.getHeaderItem().isSelected());
+        assertEquals(fallback, navigationDrawer.getSelectedItem());
+        assertEquals(List.of(fallback), navigationDrawer.getSelectedItems());
+
+        fallback.setVisible(false);
+
+        assertFalse(fallback.isSelected());
+        assertNull(navigationDrawer.getSelectedItem());
+        assertTrue(navigationDrawer.getSelectedItems().isEmpty());
+    }
+
     /// Verifies that navigation drawers support collapsible destination groups.
     @Test
     void navigationDrawerSupportsCollapsibleGroups() {
@@ -14236,6 +15085,153 @@ final class M3ControlStyleTest {
         ));
         assertTrue(menuFocusEvent.isConsumed());
         assertNull(menuWithoutSelection.getSelectedItem());
+    }
+
+    /// Verifies that grouped selection containers reject disabled and hidden selection targets.
+    @Test
+    void groupedSelectionContainersRejectUnreachableSelectionTargets() {
+        M3IconToggleButton iconDisabled = new M3IconToggleButton("Disabled");
+        M3IconToggleButton iconHidden = new M3IconToggleButton("Hidden");
+        M3IconToggleButton iconFirst = new M3IconToggleButton("First");
+        M3IconToggleButton iconSecond = new M3IconToggleButton("Second");
+        iconDisabled.setDisable(true);
+        iconHidden.setVisible(false);
+        M3IconToggleButtonGroup iconGroup =
+                new M3IconToggleButtonGroup(iconDisabled, iconHidden, iconFirst, iconSecond);
+        iconGroup.setSelectionMode(M3IconToggleButtonSelectionMode.SINGLE);
+        iconGroup.setAllowEmptySelection(false);
+
+        assertEquals(iconFirst, iconGroup.getSelectedButton());
+        assertThrows(IllegalArgumentException.class, () -> iconGroup.select(iconDisabled));
+        assertThrows(IllegalArgumentException.class, () -> iconGroup.select(iconHidden));
+        assertThrows(IllegalArgumentException.class, () -> iconGroup.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> iconGroup.selectIndex(1));
+        iconDisabled.setSelected(true);
+        iconHidden.setSelected(true);
+        assertFalse(iconDisabled.isSelected());
+        assertFalse(iconHidden.isSelected());
+        assertEquals(iconFirst, iconGroup.getSelectedButton());
+        iconFirst.setDisable(true);
+        assertFalse(iconFirst.isSelected());
+        assertEquals(iconSecond, iconGroup.getSelectedButton());
+
+        M3SegmentedButton segmentDisabled = new M3SegmentedButton("Disabled");
+        M3SegmentedButton segmentHidden = new M3SegmentedButton("Hidden");
+        M3SegmentedButton segmentFirst = new M3SegmentedButton("First");
+        M3SegmentedButton segmentSecond = new M3SegmentedButton("Second");
+        segmentDisabled.setDisable(true);
+        segmentHidden.setVisible(false);
+        M3SegmentedButtonGroup segmentedGroup =
+                new M3SegmentedButtonGroup(segmentDisabled, segmentHidden, segmentFirst, segmentSecond);
+        segmentedGroup.setSelectionMode(M3SegmentedButtonSelectionMode.SINGLE);
+        segmentedGroup.setAllowEmptySelection(false);
+
+        assertEquals(segmentFirst, segmentedGroup.getSelectedButton());
+        assertThrows(IllegalArgumentException.class, () -> segmentedGroup.select(segmentDisabled));
+        assertThrows(IllegalArgumentException.class, () -> segmentedGroup.select(segmentHidden));
+        assertThrows(IllegalArgumentException.class, () -> segmentedGroup.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> segmentedGroup.selectIndex(1));
+        segmentDisabled.setSelected(true);
+        segmentHidden.setSelected(true);
+        assertFalse(segmentDisabled.isSelected());
+        assertFalse(segmentHidden.isSelected());
+        assertEquals(segmentFirst, segmentedGroup.getSelectedButton());
+        segmentFirst.setDisable(true);
+        assertFalse(segmentFirst.isSelected());
+        assertEquals(segmentSecond, segmentedGroup.getSelectedButton());
+
+        M3Chip chipDisabled = new M3Chip("Disabled");
+        M3Chip chipHidden = new M3Chip("Hidden");
+        M3Chip chipFirst = new M3Chip("First");
+        M3Chip chipSecond = new M3Chip("Second");
+        chipDisabled.setDisable(true);
+        chipHidden.setVisible(false);
+        M3ChipGroup chipGroup = new M3ChipGroup(chipDisabled, chipHidden, chipFirst, chipSecond);
+        chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
+        chipGroup.setAllowEmptySelection(false);
+
+        assertEquals(chipFirst, chipGroup.getSelectedChip());
+        assertThrows(IllegalArgumentException.class, () -> chipGroup.select(chipDisabled));
+        assertThrows(IllegalArgumentException.class, () -> chipGroup.select(chipHidden));
+        assertThrows(IllegalArgumentException.class, () -> chipGroup.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> chipGroup.selectIndex(1));
+        chipDisabled.setSelected(true);
+        chipHidden.setSelected(true);
+        assertFalse(chipDisabled.isSelected());
+        assertFalse(chipHidden.isSelected());
+        assertEquals(chipFirst, chipGroup.getSelectedChip());
+        chipFirst.setDisable(true);
+        assertFalse(chipFirst.isSelected());
+        assertEquals(chipSecond, chipGroup.getSelectedChip());
+
+        M3Tab tabDisabled = new M3Tab("Disabled");
+        M3Tab tabHidden = new M3Tab("Hidden");
+        M3Tab tabFirst = new M3Tab("First");
+        M3Tab tabSecond = new M3Tab("Second");
+        tabDisabled.setDisable(true);
+        tabHidden.setVisible(false);
+        M3TabBar tabBar = new M3TabBar(tabDisabled, tabHidden, tabFirst, tabSecond);
+        tabBar.setAllowEmptySelection(false);
+
+        assertEquals(tabFirst, tabBar.getSelectedTab());
+        assertThrows(IllegalArgumentException.class, () -> tabBar.select(tabDisabled));
+        assertThrows(IllegalArgumentException.class, () -> tabBar.select(tabHidden));
+        assertThrows(IllegalArgumentException.class, () -> tabBar.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> tabBar.selectIndex(1));
+        tabDisabled.setSelected(true);
+        tabHidden.setSelected(true);
+        assertFalse(tabDisabled.isSelected());
+        assertFalse(tabHidden.isSelected());
+        assertEquals(tabFirst, tabBar.getSelectedTab());
+        tabFirst.setDisable(true);
+        assertFalse(tabFirst.isSelected());
+        assertEquals(tabSecond, tabBar.getSelectedTab());
+
+        M3NavigationItem barDisabled = new M3NavigationItem("Disabled");
+        M3NavigationItem barHidden = new M3NavigationItem("Hidden");
+        M3NavigationItem barFirst = new M3NavigationItem("First");
+        M3NavigationItem barSecond = new M3NavigationItem("Second");
+        barDisabled.setDisable(true);
+        barHidden.setVisible(false);
+        M3NavigationBar navigationBar = new M3NavigationBar(barDisabled, barHidden, barFirst, barSecond);
+        navigationBar.setAllowEmptySelection(false);
+
+        assertEquals(barFirst, navigationBar.getSelectedItem());
+        assertThrows(IllegalArgumentException.class, () -> navigationBar.select(barDisabled));
+        assertThrows(IllegalArgumentException.class, () -> navigationBar.select(barHidden));
+        assertThrows(IllegalArgumentException.class, () -> navigationBar.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> navigationBar.selectIndex(1));
+        barDisabled.setSelected(true);
+        barHidden.setSelected(true);
+        assertFalse(barDisabled.isSelected());
+        assertFalse(barHidden.isSelected());
+        assertEquals(barFirst, navigationBar.getSelectedItem());
+        barFirst.setDisable(true);
+        assertFalse(barFirst.isSelected());
+        assertEquals(barSecond, navigationBar.getSelectedItem());
+
+        M3NavigationItem railDisabled = new M3NavigationItem("Disabled");
+        M3NavigationItem railHidden = new M3NavigationItem("Hidden");
+        M3NavigationItem railFirst = new M3NavigationItem("First");
+        M3NavigationItem railSecond = new M3NavigationItem("Second");
+        railDisabled.setDisable(true);
+        railHidden.setVisible(false);
+        M3NavigationRail navigationRail = new M3NavigationRail(railDisabled, railHidden, railFirst, railSecond);
+        navigationRail.setAllowEmptySelection(false);
+
+        assertEquals(railFirst, navigationRail.getSelectedItem());
+        assertThrows(IllegalArgumentException.class, () -> navigationRail.select(railDisabled));
+        assertThrows(IllegalArgumentException.class, () -> navigationRail.select(railHidden));
+        assertThrows(IllegalArgumentException.class, () -> navigationRail.selectIndex(0));
+        assertThrows(IllegalArgumentException.class, () -> navigationRail.selectIndex(1));
+        railDisabled.setSelected(true);
+        railHidden.setSelected(true);
+        assertFalse(railDisabled.isSelected());
+        assertFalse(railHidden.isSelected());
+        assertEquals(railFirst, navigationRail.getSelectedItem());
+        railFirst.setDisable(true);
+        assertFalse(railFirst.isSelected());
+        assertEquals(railSecond, navigationRail.getSelectedItem());
     }
 
     /// Verifies that right-to-left controls mirror horizontal keyboard focus and selection.
@@ -17082,6 +18078,7 @@ final class M3ControlStyleTest {
                                 LocalDate.of(2026, 5, 19),
                                 LocalDate.of(2026, 5, 25)
                         );
+                        M3MotionSettings.setAnimationsEnabled(field, false);
                         field.setCommonPresets(LocalDate.of(2026, 5, 19));
                         field.setPrefWidth(680.0);
 
@@ -17132,6 +18129,7 @@ final class M3ControlStyleTest {
                 @Nullable M3DateRangePickerField field = fieldReference.get();
                 if (field != null) {
                     field.hidePicker();
+                    M3MotionSettings.clearAnimationsEnabled(field);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -17155,6 +18153,7 @@ final class M3ControlStyleTest {
                                 LocalDate.of(2026, 5, 19),
                                 LocalDate.of(2026, 5, 25)
                         );
+                        M3MotionSettings.setAnimationsEnabled(field, false);
                         field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
                         field.setCommonPresets(LocalDate.of(2026, 5, 19));
                         field.setPrefWidth(680.0);
@@ -17205,6 +18204,7 @@ final class M3ControlStyleTest {
                 @Nullable M3DateRangePickerField field = fieldReference.get();
                 if (field != null) {
                     field.hidePicker();
+                    M3MotionSettings.clearAnimationsEnabled(field);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -20661,24 +21661,79 @@ final class M3ControlStyleTest {
 
     /// Verifies that fixed Material touch targets keep their rendered content centered.
     private static void assertFixedTargetControlsKeepCenteredContent(Node root) {
+        WritableImage image = snapshotImageOnFxThread(root);
         visitVisibleNodes(root, node -> {
             if (node instanceof M3IconButton button) {
                 @Nullable Node graphic = button.getGraphic();
                 if (graphic != null && (button.getText() == null || button.getText().isEmpty())) {
-                    assertNodeCentersAligned(button, graphic, 1.0);
+                    assertFixedTargetContentCentered(image, button, graphic, 1.0, 1.5);
                 }
             } else if (node instanceof M3IconToggleButton button) {
                 @Nullable Node graphic = button.getGraphic();
                 if (graphic != null) {
-                    assertNodeCentersAligned(button, graphic, 1.0);
+                    assertFixedTargetContentCentered(image, button, graphic, 1.0, 1.5);
+                }
+            } else if (node instanceof M3FloatingActionButton button) {
+                @Nullable Node graphic = button.getGraphic();
+                if (graphic != null && (button.getText() == null || button.getText().isEmpty())) {
+                    assertFixedTargetContentCentered(image, button, graphic, 1.0, 1.5);
                 }
             } else if (node instanceof ButtonBase button && isFixedTextCell(button)) {
                 @Nullable Node textNode = button.lookup(".text");
                 if (textNode != null && hasRenderableBounds(textNode)) {
-                    assertNodeCentersAligned(button, textNode, 1.0);
+                    assertFixedTargetContentCentered(image, button, textNode, 1.0, 1.5);
                 }
             }
         });
+    }
+
+    /// Verifies that both layout bounds and rendered ink stay centered in a fixed Material target.
+    private static void assertFixedTargetContentCentered(
+            WritableImage image,
+            Node container,
+            Node content,
+            double layoutTolerance,
+            double inkTolerance
+    ) {
+        assertNodeCentersAligned(container, content, layoutTolerance);
+        @Nullable Text renderedText = firstRenderedText(content);
+        if (renderedText == null || containsSvgPath(content)) {
+            return;
+        }
+
+        Point2D containerCenter = sceneCenter(container);
+        Rectangle2D inkBounds = contrastingPixelBounds(
+                image,
+                renderedText,
+                sampledNodeBackgroundColor(image, container),
+                0.04
+        );
+        double inkCenterX = inkBounds.getMinX() + inkBounds.getWidth() / 2.0;
+        double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
+        assertEquals(containerCenter.getX(), inkCenterX, inkTolerance,
+                () -> "fixed target rendered content is horizontally off-center: container="
+                        + container + ", content=" + content + ", inkBounds=" + inkBounds);
+        assertEquals(containerCenter.getY(), inkCenterY, inkTolerance,
+                () -> "fixed target rendered content is vertically off-center: container="
+                        + container + ", content=" + content + ", inkBounds=" + inkBounds);
+    }
+
+    /// Returns the first visible text node inside a rendered node subtree.
+    private static @Nullable Text firstRenderedText(Node root) {
+        if (root instanceof Text text && !text.getText().isBlank() && hasRenderableBounds(text)) {
+            return text;
+        }
+
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable Text text = firstRenderedText(child);
+                if (text != null) {
+                    return text;
+                }
+            }
+        }
+
+        return null;
     }
 
     /// Verifies that an already visible supporting row is not in an entry-transition frame.
@@ -20689,8 +21744,9 @@ final class M3ControlStyleTest {
         assertEquals(0.0, supportingRow.getTranslateY(), 0.0001);
     }
 
-    /// Verifies that single-line outlined text inputs keep entered text vertically centered.
+    /// Verifies that single-line outlined text inputs keep entered text ink vertically centered.
     private static void assertOutlinedTextInputsKeepTextCentered(Node root) {
+        WritableImage image = snapshotImageOnFxThread(root);
         visitVisibleNodes(root, node -> {
             if (!(node instanceof TextInputControl input)
                     || input instanceof M3TextArea
@@ -20704,12 +21760,21 @@ final class M3ControlStyleTest {
 
             Text text = renderedTextNode(input, input.getText());
             Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
-            Bounds textBounds = text.localToScene(text.getBoundsInLocal());
-            double inputCenterY = (inputBounds.getMinY() + inputBounds.getMaxY()) / 2.0;
-            double textCenterY = (textBounds.getMinY() + textBounds.getMaxY()) / 2.0;
+            Rectangle2D textBounds = contrastingPixelBounds(image, text, 0.04);
+            double textCenterY = textBounds.getMinY() + textBounds.getHeight() / 2.0;
+            @Nullable M3TextInputLayout layout = nearestAncestorOfType(input, M3TextInputLayout.class);
+            if (layout != null && layout.isLabelFloating()) {
+                double centerRatio = (textCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
+                assertTrue(centerRatio >= OUTLINED_FLOATING_INK_MINIMUM_CENTER_RATIO
+                                && centerRatio <= OUTLINED_FLOATING_INK_MAXIMUM_CENTER_RATIO,
+                        () -> "outlined floating-label input rendered text ink is outside its content slot: input="
+                                + inputBounds + ", text=" + textBounds + ", centerRatio=" + centerRatio);
+                return;
+            }
 
+            double inputCenterY = (inputBounds.getMinY() + inputBounds.getMaxY()) / 2.0;
             assertEquals(inputCenterY, textCenterY, 2.0,
-                    () -> "outlined input text is vertically misaligned: input="
+                    () -> "outlined input rendered text ink is vertically misaligned: input="
                             + inputBounds + ", text=" + textBounds);
         });
     }
@@ -20768,6 +21833,18 @@ final class M3ControlStyleTest {
         return root;
     }
 
+    /// Returns the nearest ancestor assignable to the requested type.
+    private static <T> @Nullable T nearestAncestorOfType(Node node, Class<T> type) {
+        @Nullable Parent parent = node.getParent();
+        while (parent != null) {
+            if (type.isInstance(parent)) {
+                return type.cast(parent);
+            }
+            parent = parent.getParent();
+        }
+        return null;
+    }
+
     /// Returns whether a button is a fixed-size date or time grid cell.
     private static boolean isFixedTextCell(ButtonBase button) {
         return button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)
@@ -20802,17 +21879,24 @@ final class M3ControlStyleTest {
 
     /// Verifies that a child node's visual center matches its container center.
     private static void assertNodeCentersAligned(Node container, Node child, double tolerance) {
+        Point2D containerCenter = sceneCenter(container);
+        Point2D childCenter = sceneCenter(child);
         Bounds containerBounds = container.localToScene(container.getLayoutBounds());
         Bounds childBounds = child.localToScene(child.getLayoutBounds());
-        double containerCenterX = (containerBounds.getMinX() + containerBounds.getMaxX()) / 2.0;
-        double containerCenterY = (containerBounds.getMinY() + containerBounds.getMaxY()) / 2.0;
-        double childCenterX = (childBounds.getMinX() + childBounds.getMaxX()) / 2.0;
-        double childCenterY = (childBounds.getMinY() + childBounds.getMaxY()) / 2.0;
 
-        assertEquals(containerCenterX, childCenterX, tolerance,
+        assertEquals(containerCenter.getX(), childCenter.getX(), tolerance,
                 () -> "containerBounds=" + containerBounds + ", childBounds=" + childBounds);
-        assertEquals(containerCenterY, childCenterY, tolerance,
+        assertEquals(containerCenter.getY(), childCenter.getY(), tolerance,
                 () -> "containerBounds=" + containerBounds + ", childBounds=" + childBounds);
+    }
+
+    /// Returns the scene-space center of a node's layout bounds.
+    private static Point2D sceneCenter(Node node) {
+        Bounds bounds = node.localToScene(node.getLayoutBounds());
+        return new Point2D(
+                (bounds.getMinX() + bounds.getMaxX()) / 2.0,
+                (bounds.getMinY() + bounds.getMaxY()) / 2.0
+        );
     }
 
     /// Verifies that a rendered child stays inside a rendered parent.
@@ -20878,6 +21962,43 @@ final class M3ControlStyleTest {
 
         assertTrue(expectedFocusNode.isFocused());
         assertSame(expectedFocusNode, control.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+    }
+
+    /// Verifies that a structural owner exposes focus from a nested popup menu target.
+    private static void assertNestedPopupAccessibleFocus(
+            Node owner,
+            M3MenuButton menuButton,
+            M3SubMenuItem subMenuItem,
+            M3MenuItem target
+    ) {
+        assertTrue(menuButton.isShowing());
+        assertTrue(subMenuItem.isSubMenuShowing());
+        assertTrue(target.isFocused());
+        assertSame(target, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertSame(target, owner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+    }
+
+    /// Returns whether a virtualized list exposes a focused row with the supplied headline.
+    private static boolean listViewFocusNodeHasHeadline(
+            AtomicReference<@Nullable M3ListView<Integer>> listViewReference,
+            String headline
+    ) {
+        @Nullable M3ListView<Integer> listView = listViewReference.get();
+        if (listView == null) {
+            return false;
+        }
+
+        @Nullable Object focusNode = listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        return focusNode instanceof M3ListItem item && headline.equals(item.getHeadlineText());
+    }
+
+    /// Asserts that a virtualized list exposes a focused row with the supplied headline.
+    private static void assertAccessibleListItemHeadline(M3ListView<?> listView, String headline) {
+        M3ListItem item = assertInstanceOf(
+                M3ListItem.class,
+                listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+        );
+        assertEquals(headline, item.getHeadlineText());
     }
 
     /// Runs a task on the FX application thread and propagates failures.
@@ -21222,6 +22343,23 @@ final class M3ControlStyleTest {
 
         assertTrue(totalWeight > 0.0, () -> "No contrasting pixels found for " + node);
         return new Point2D(weightedX / totalWeight, weightedY / totalWeight);
+    }
+
+    /// Returns the bounds of rendered pixels inside a node that contrast with its sampled local background.
+    private static Rectangle2D contrastingPixelBounds(
+            WritableImage image,
+            Node node,
+            double minimumDistance
+    ) {
+        return contrastingPixelBounds(image, node, sampledNodeBackgroundColor(image, node), minimumDistance);
+    }
+
+    /// Returns the bounds of rendered pixels inside a node that contrast with its sampled local background.
+    private static Color sampledNodeBackgroundColor(WritableImage image, Node node) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        int x = clampPixelCoordinate((int) Math.floor(bounds.getMinX()), (int) image.getWidth());
+        int y = clampPixelCoordinate((int) Math.floor(bounds.getMinY()), (int) image.getHeight());
+        return image.getPixelReader().getColor(x, y);
     }
 
     /// Returns the bounds of rendered pixels inside a node that contrast with the reference color.

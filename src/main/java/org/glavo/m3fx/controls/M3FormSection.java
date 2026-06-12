@@ -223,32 +223,13 @@ public class M3FormSection extends Control {
     /// @return the content spacing token property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
-            contentSpacing = new StyleableDoubleProperty(DEFAULT_CONTENT_SPACING) {
-                /// Validates content spacing changes and requests layout.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "contentSpacing");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FormSection.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "contentSpacing";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FormSection, Number> getCssMetaData() {
-                    return StyleableProperties.CONTENT_SPACING;
-                }
-            };
+            contentSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTENT_SPACING,
+                    this,
+                    "contentSpacing",
+                    StyleableProperties.CONTENT_SPACING,
+                    this::requestLayout
+            );
         }
         return contentSpacing;
     }

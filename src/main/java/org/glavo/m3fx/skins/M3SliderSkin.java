@@ -67,6 +67,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Requests layout after displayed position, orientation, or token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
 
+    /// Applies track shape token changes to the visible track segments.
+    private final InvalidationListener trackShapeInvalidation = observable -> updateTrackStyle();
+
     /// Updates the displayed position after value changes.
     private final InvalidationListener valueInvalidation = observable -> updateDisplayedPosition();
 
@@ -105,10 +108,12 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.orientationProperty().addListener(layoutInvalidation);
         control.effectiveNodeOrientationProperty().addListener(layoutInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
+        control.trackShapeProperty().addListener(trackShapeInvalidation);
         control.thumbSizeProperty().addListener(layoutInvalidation);
         control.touchTargetSizeProperty().addListener(layoutInvalidation);
         control.disabledProperty().addListener(disabledInvalidation);
 
+        updateTrackStyle();
         control.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.addEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
@@ -127,6 +132,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.orientationProperty().removeListener(layoutInvalidation);
         control.effectiveNodeOrientationProperty().removeListener(layoutInvalidation);
         control.trackThicknessProperty().removeListener(layoutInvalidation);
+        control.trackShapeProperty().removeListener(trackShapeInvalidation);
         control.thumbSizeProperty().removeListener(layoutInvalidation);
         control.touchTargetSizeProperty().removeListener(layoutInvalidation);
         motionSettingsObserver.dispose();
@@ -138,6 +144,29 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         stateLayer.uninstallStateTransitions();
         stateLayer.reset();
         super.dispose();
+    }
+
+    /// Applies the slider track shape token to both track segments.
+    private void updateTrackStyle() {
+        String shape = formatPixels(getSkinnable().getTrackShape());
+        track.setStyle(
+                "-fx-background-color: -m3-color-surface-container-highest;"
+                        + " -fx-background-insets: 0;"
+                        + " -fx-background-radius: " + shape + ";"
+                        + " -fx-border-color: transparent;"
+                        + " -fx-border-insets: 0;"
+                        + " -fx-border-radius: " + shape + ";"
+                        + " -fx-border-width: 0px;"
+        );
+        activeTrack.setStyle(
+                "-fx-background-color: -m3-color-primary;"
+                        + " -fx-background-insets: 0;"
+                        + " -fx-background-radius: " + shape + ";"
+                        + " -fx-border-color: transparent;"
+                        + " -fx-border-insets: 0;"
+                        + " -fx-border-radius: " + shape + ";"
+                        + " -fx-border-width: 0px;"
+        );
     }
 
     /// Computes the minimum width needed to show the touch target.
@@ -514,5 +543,13 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Clamps a normalized value position to the supported range.
     private static double clamp(double value) {
         return Math.max(0.0, Math.min(1.0, value));
+    }
+
+    /// Formats a CSS pixel value.
+    private static String formatPixels(double value) {
+        if (Math.rint(value) == value) {
+            return (long) value + "px";
+        }
+        return value + "px";
     }
 }

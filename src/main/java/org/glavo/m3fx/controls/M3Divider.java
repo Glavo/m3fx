@@ -118,31 +118,13 @@ public class M3Divider extends Control {
     /// @return the divider thickness token property
     public final StyleableDoubleProperty thicknessProperty() {
         if (thickness == null) {
-            thickness = new StyleableDoubleProperty(DEFAULT_THICKNESS) {
-                /// Validates updated thickness tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "thickness"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Divider.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "thickness";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Divider, Number> getCssMetaData() {
-                    return StyleableProperties.THICKNESS;
-                }
-            };
+            thickness = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_THICKNESS,
+                    this,
+                    "thickness",
+                    StyleableProperties.THICKNESS,
+                    this::requestLayout
+            );
         }
         return thickness;
     }
@@ -166,31 +148,13 @@ public class M3Divider extends Control {
     /// @return the leading inset token property
     public final StyleableDoubleProperty insetStartProperty() {
         if (insetStart == null) {
-            insetStart = new StyleableDoubleProperty(DEFAULT_INSET_START) {
-                /// Validates updated inset tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "insetStart"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Divider.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "insetStart";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Divider, Number> getCssMetaData() {
-                    return StyleableProperties.INSET_START;
-                }
-            };
+            insetStart = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_INSET_START,
+                    this,
+                    "insetStart",
+                    StyleableProperties.INSET_START,
+                    this::requestLayout
+            );
         }
         return insetStart;
     }
@@ -214,31 +178,13 @@ public class M3Divider extends Control {
     /// @return the trailing inset token property
     public final StyleableDoubleProperty insetEndProperty() {
         if (insetEnd == null) {
-            insetEnd = new StyleableDoubleProperty(DEFAULT_INSET_END) {
-                /// Validates updated inset tokens.
-                @Override
-                protected void invalidated() {
-                    set(M3Css.nonNegative(get(), "insetEnd"));
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Divider.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "insetEnd";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Divider, Number> getCssMetaData() {
-                    return StyleableProperties.INSET_END;
-                }
-            };
+            insetEnd = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_INSET_END,
+                    this,
+                    "insetEnd",
+                    StyleableProperties.INSET_END,
+                    this::requestLayout
+            );
         }
         return insetEnd;
     }

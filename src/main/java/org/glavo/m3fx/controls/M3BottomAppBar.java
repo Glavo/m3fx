@@ -423,32 +423,13 @@ public class M3BottomAppBar extends Control {
             String name,
             CssMetaData<M3BottomAppBar, Number> cssMetaData
     ) {
-        return new StyleableDoubleProperty(initialValue) {
-            /// Applies updated metrics when the token changes.
-            @Override
-            protected void invalidated() {
-                set(M3Css.nonNegative(get(), name));
-                updateMetrics();
-            }
-
-            /// Returns the owning bean.
-            @Override
-            public Object getBean() {
-                return M3BottomAppBar.this;
-            }
-
-            /// Returns the property name.
-            @Override
-            public String getName() {
-                return name;
-            }
-
-            /// Returns the CSS metadata for this property.
-            @Override
-            public CssMetaData<M3BottomAppBar, Number> getCssMetaData() {
-                return cssMetaData;
-            }
-        };
+        return M3Css.nonNegativeStyleableDoubleProperty(
+                initialValue,
+                this,
+                name,
+                cssMetaData,
+                this::updateMetrics
+        );
     }
 
     /// CSS metadata for m3fx bottom app bar component tokens.

@@ -300,32 +300,13 @@ public class M3FormRow extends Control {
     /// @return the label width token property
     public final StyleableDoubleProperty labelWidthProperty() {
         if (labelWidth == null) {
-            labelWidth = new StyleableDoubleProperty(DEFAULT_LABEL_WIDTH) {
-                /// Validates label width changes and requests layout.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "labelWidth");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FormRow.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "labelWidth";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FormRow, Number> getCssMetaData() {
-                    return StyleableProperties.LABEL_WIDTH;
-                }
-            };
+            labelWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_LABEL_WIDTH,
+                    this,
+                    "labelWidth",
+                    StyleableProperties.LABEL_WIDTH,
+                    this::requestLayout
+            );
         }
         return labelWidth;
     }
@@ -349,32 +330,13 @@ public class M3FormRow extends Control {
     /// @return the column spacing token property
     public final StyleableDoubleProperty columnSpacingProperty() {
         if (columnSpacing == null) {
-            columnSpacing = new StyleableDoubleProperty(DEFAULT_COLUMN_SPACING) {
-                /// Validates column spacing changes and requests layout.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "columnSpacing");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FormRow.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "columnSpacing";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FormRow, Number> getCssMetaData() {
-                    return StyleableProperties.COLUMN_SPACING;
-                }
-            };
+            columnSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_COLUMN_SPACING,
+                    this,
+                    "columnSpacing",
+                    StyleableProperties.COLUMN_SPACING,
+                    this::requestLayout
+            );
         }
         return columnSpacing;
     }
@@ -398,32 +360,13 @@ public class M3FormRow extends Control {
     /// @return the row minimum height token property
     public final StyleableDoubleProperty rowMinHeightProperty() {
         if (rowMinHeight == null) {
-            rowMinHeight = new StyleableDoubleProperty(DEFAULT_ROW_MIN_HEIGHT) {
-                /// Validates row minimum height changes and requests layout.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "rowMinHeight");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3FormRow.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "rowMinHeight";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3FormRow, Number> getCssMetaData() {
-                    return StyleableProperties.ROW_MIN_HEIGHT;
-                }
-            };
+            rowMinHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ROW_MIN_HEIGHT,
+                    this,
+                    "rowMinHeight",
+                    StyleableProperties.ROW_MIN_HEIGHT,
+                    this::requestLayout
+            );
         }
         return rowMinHeight;
     }
@@ -460,13 +403,7 @@ public class M3FormRow extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getContent(), getTrailing());
-            case SHOW_ITEM -> {
-                if (parameters.length == 0) {
-                    M3Accessible.showCurrentOrItem(this, getContent(), getTrailing());
-                } else {
-                    M3Accessible.showItem(accessibleActionItem(parameters));
-                }
-            }
+            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getContent(), getTrailing(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -512,63 +449,6 @@ public class M3FormRow extends Control {
         }
 
         return index == 0 ? getTrailing() : null;
-    }
-
-    /// Returns the row node referenced by accessibility action parameters.
-    private @Nullable Node accessibleActionItem(Object... parameters) {
-        if (parameters.length == 0) {
-            return M3Accessible.currentOrFirstFocusTarget(this, getContent(), getTrailing());
-        }
-
-        @Nullable Object firstParameter = parameters[0];
-        if (firstParameter instanceof Number) {
-            return accessibleItemAt(parameters);
-        }
-
-        for (Object parameter : parameters) {
-            @Nullable Node item = accessibleActionItem(parameter);
-            if (item != null) {
-                return item;
-            }
-        }
-        return null;
-    }
-
-    /// Returns the row node referenced by one accessibility action parameter.
-    private @Nullable Node accessibleActionItem(@Nullable Object parameter) {
-        @Nullable Node currentContent = getContent();
-        @Nullable Node currentTrailing = getTrailing();
-        if (parameter instanceof Number number) {
-            return accessibleItemAt(number);
-        }
-        if (parameter instanceof Node node) {
-            if (node == currentContent || node == currentTrailing) {
-                return node;
-            }
-            if ((currentContent != null && M3Accessible.containsNode(currentContent, node))
-                    || (currentTrailing != null && M3Accessible.containsNode(currentTrailing, node))) {
-                return node;
-            }
-            return null;
-        }
-        if (parameter instanceof Iterable<?> values) {
-            for (Object value : values) {
-                @Nullable Node item = accessibleActionItem(value);
-                if (item != null) {
-                    return item;
-                }
-            }
-            return null;
-        }
-        if (parameter instanceof Object[] values) {
-            for (Object value : values) {
-                @Nullable Node item = accessibleActionItem(value);
-                if (item != null) {
-                    return item;
-                }
-            }
-        }
-        return null;
     }
 
     /// Validates that content and trailing slots do not reference the same node.

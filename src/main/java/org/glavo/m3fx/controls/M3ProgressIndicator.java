@@ -179,32 +179,13 @@ public class M3ProgressIndicator extends Control {
     /// @return the styleable circular indicator stroke thickness property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
-            trackThickness = new StyleableDoubleProperty(DEFAULT_TRACK_THICKNESS) {
-                /// Requests layout when the stroke thickness token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "trackThickness");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressIndicator.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "trackThickness";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressIndicator, Number> getCssMetaData() {
-                    return StyleableProperties.TRACK_THICKNESS;
-                }
-            };
+            trackThickness = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TRACK_THICKNESS,
+                    this,
+                    "trackThickness",
+                    StyleableProperties.TRACK_THICKNESS,
+                    this::requestLayout
+            );
         }
         return trackThickness;
     }
@@ -228,32 +209,13 @@ public class M3ProgressIndicator extends Control {
     /// @return the styleable circular indicator size property
     public final StyleableDoubleProperty indicatorSizeProperty() {
         if (indicatorSize == null) {
-            indicatorSize = new StyleableDoubleProperty(DEFAULT_INDICATOR_SIZE) {
-                /// Applies updated metrics when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "indicatorSize");
-                    updateMetrics();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressIndicator.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "indicatorSize";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressIndicator, Number> getCssMetaData() {
-                    return StyleableProperties.INDICATOR_SIZE;
-                }
-            };
+            indicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_INDICATOR_SIZE,
+                    this,
+                    "indicatorSize",
+                    StyleableProperties.INDICATOR_SIZE,
+                    this::updateMetrics
+            );
         }
         return indicatorSize;
     }
@@ -277,32 +239,13 @@ public class M3ProgressIndicator extends Control {
     /// @return the styleable wavy progress amplitude property
     public final StyleableDoubleProperty waveAmplitudeProperty() {
         if (waveAmplitude == null) {
-            waveAmplitude = new StyleableDoubleProperty(DEFAULT_WAVE_AMPLITUDE) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "waveAmplitude");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressIndicator.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "waveAmplitude";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressIndicator, Number> getCssMetaData() {
-                    return StyleableProperties.WAVE_AMPLITUDE;
-                }
-            };
+            waveAmplitude = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_WAVE_AMPLITUDE,
+                    this,
+                    "waveAmplitude",
+                    StyleableProperties.WAVE_AMPLITUDE,
+                    this::requestLayout
+            );
         }
         return waveAmplitude;
     }
@@ -326,32 +269,13 @@ public class M3ProgressIndicator extends Control {
     /// @return the styleable wavy progress wavelength property
     public final StyleableDoubleProperty wavelengthProperty() {
         if (wavelength == null) {
-            wavelength = new StyleableDoubleProperty(DEFAULT_WAVELENGTH) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "wavelength");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressIndicator.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "wavelength";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressIndicator, Number> getCssMetaData() {
-                    return StyleableProperties.WAVELENGTH;
-                }
-            };
+            wavelength = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_WAVELENGTH,
+                    this,
+                    "wavelength",
+                    StyleableProperties.WAVELENGTH,
+                    this::requestLayout
+            );
         }
         return wavelength;
     }
@@ -375,32 +299,13 @@ public class M3ProgressIndicator extends Control {
     /// @return the styleable active-to-track gap property
     public final StyleableDoubleProperty trackGapProperty() {
         if (trackGap == null) {
-            trackGap = new StyleableDoubleProperty(DEFAULT_TRACK_GAP) {
-                /// Requests layout when the token changes.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "trackGap");
-                    requestLayout();
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3ProgressIndicator.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "trackGap";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3ProgressIndicator, Number> getCssMetaData() {
-                    return StyleableProperties.TRACK_GAP;
-                }
-            };
+            trackGap = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TRACK_GAP,
+                    this,
+                    "trackGap",
+                    StyleableProperties.TRACK_GAP,
+                    this::requestLayout
+            );
         }
         return trackGap;
     }

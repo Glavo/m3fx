@@ -296,36 +296,13 @@ public class M3Tab extends ButtonBase {
             CssMetaData<M3Tab, Number> cssMetaData,
             boolean updateMetrics
     ) {
-        return new StyleableDoubleProperty(initialValue) {
-            /// Validates updated token values.
-            @Override
-            protected void invalidated() {
-                set(M3Css.nonNegative(get(), name));
-                if (updateMetrics) {
-                    updateMetrics();
-                } else {
-                    requestLayout();
-                }
-            }
-
-            /// Returns the owning bean.
-            @Override
-            public Object getBean() {
-                return M3Tab.this;
-            }
-
-            /// Returns the property name.
-            @Override
-            public String getName() {
-                return name;
-            }
-
-            /// Returns the CSS metadata for this property.
-            @Override
-            public CssMetaData<M3Tab, Number> getCssMetaData() {
-                return cssMetaData;
-            }
-        };
+        return M3Css.nonNegativeStyleableDoubleProperty(
+                initialValue,
+                this,
+                name,
+                cssMetaData,
+                updateMetrics ? this::updateMetrics : this::requestLayout
+        );
     }
 
     /// CSS metadata for M3FX tab component tokens.

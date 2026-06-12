@@ -254,31 +254,13 @@ public class M3Snackbar extends Control {
     /// @return the snackbar container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
-            containerShape = new StyleableDoubleProperty(DEFAULT_CONTAINER_SHAPE) {
-                /// Validates updated shape tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "containerShape");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Snackbar.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "containerShape";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Snackbar, Number> getCssMetaData() {
-                    return StyleableProperties.CONTAINER_SHAPE;
-                }
-            };
+            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SHAPE,
+                    this,
+                    "containerShape",
+                    StyleableProperties.CONTAINER_SHAPE,
+                    this::requestLayout
+            );
         }
         return containerShape;
     }
@@ -302,31 +284,13 @@ public class M3Snackbar extends Control {
     /// @return the snackbar content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
-            contentPadding = new StyleableDoubleProperty(DEFAULT_CONTENT_PADDING) {
-                /// Validates updated padding tokens.
-                @Override
-                protected void invalidated() {
-                    M3Css.nonNegative(get(), "contentPadding");
-                }
-
-                /// Returns the owning bean.
-                @Override
-                public Object getBean() {
-                    return M3Snackbar.this;
-                }
-
-                /// Returns the property name.
-                @Override
-                public String getName() {
-                    return "contentPadding";
-                }
-
-                /// Returns the CSS metadata for this property.
-                @Override
-                public CssMetaData<M3Snackbar, Number> getCssMetaData() {
-                    return StyleableProperties.CONTENT_PADDING;
-                }
-            };
+            contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTENT_PADDING,
+                    this,
+                    "contentPadding",
+                    StyleableProperties.CONTENT_PADDING,
+                    this::requestLayout
+            );
         }
         return contentPadding;
     }
