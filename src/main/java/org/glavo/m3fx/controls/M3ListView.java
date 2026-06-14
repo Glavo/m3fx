@@ -832,8 +832,7 @@ public class M3ListView<T> extends Control {
                 @Nullable Node focusOwner = sceneFocusOwner();
                 if (focusOwner != null
                         && focusOwner != this
-                        && focusOwner.isVisible()
-                        && !focusOwner.isDisabled()
+                        && M3Accessible.canReach(focusOwner)
                         && M3Accessible.containsNode(visibleItem, focusOwner)) {
                     return focusOwner;
                 }
@@ -1314,7 +1313,8 @@ public class M3ListView<T> extends Control {
 
     /// Returns whether a data item can receive list keyboard navigation.
     private boolean isItemNavigable(T item) {
-        return !(item instanceof Node node) || !node.isDisabled() && node.isVisible();
+        return M3Accessible.isEffectivelyReachable(this)
+                && (!(item instanceof Node node) || M3Accessible.isEffectivelyReachable(node));
     }
 
     /// Requests visible cell state updates from the installed skin.

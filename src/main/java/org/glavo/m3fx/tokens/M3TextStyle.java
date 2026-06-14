@@ -7,6 +7,8 @@ import org.glavo.m3fx.internal.tokens.M3TextStyleImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Describes a Material Design 3 text style token.
+///
+/// See [Material Design typography](https://m3.material.io/styles/typography/overview).
 @NotNullByDefault
 public sealed interface M3TextStyle permits M3TextStyleImpl {
     /// Returns the font family name.

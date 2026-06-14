@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Objects;
 
 /// Provides reusable [M3DatePreset] factories for common date choices.
+///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DatePresets {
     /// Prevents utility class instantiation.

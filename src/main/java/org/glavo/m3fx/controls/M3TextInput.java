@@ -9,6 +9,8 @@ import javafx.css.StyleableDoubleProperty;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Common API shared by Material Design 3 single-line, password, and multiline text inputs.
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public interface M3TextInput {
     /// Returns the text input variant.

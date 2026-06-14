@@ -90,7 +90,7 @@ public class M3SearchBar extends Control {
             boolean active = get();
             pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, active);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-            if (active) {
+            if (active && M3Accessible.canReach(editor)) {
                 editor.requestFocus();
             }
             notifyFocusNodeChanged();
@@ -334,7 +334,11 @@ public class M3SearchBar extends Control {
             case FIRE -> fire();
             case REQUEST_FOCUS -> focusAccessibleItem(accessibleFocusNode());
             case SHOW_ITEM -> showAccessibleItem(parameters);
-            case EXPAND -> activate();
+            case EXPAND -> {
+                if (M3Accessible.canReach(this)) {
+                    activate();
+                }
+            }
             case COLLAPSE -> deactivate();
             case SET_TEXT -> {
                 if (parameters.length > 0 && parameters[0] instanceof String text) {
@@ -404,8 +408,13 @@ public class M3SearchBar extends Control {
 
     /// Focuses the embedded editor and enters active input state.
     private void focusEditor() {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         activate();
-        editor.requestFocus();
+        if (M3Accessible.canReach(editor)) {
+            editor.requestFocus();
+        }
         notifyFocusNodeChanged();
     }
 
@@ -421,9 +430,14 @@ public class M3SearchBar extends Control {
 
     /// Focuses an indexed child item, falling back to the editor when the item is not focusable.
     private void focusAccessibleItem(@Nullable Node item) {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         activate();
-        if (M3Accessible.focusTarget(item) == null) {
-            editor.requestFocus();
+        if (M3Accessible.structuralFocusTarget(item) == null) {
+            if (M3Accessible.canReach(editor)) {
+                editor.requestFocus();
+            }
             notifyFocusNodeChanged();
             return;
         }
@@ -433,6 +447,9 @@ public class M3SearchBar extends Control {
 
     /// Shows and focuses the requested accessible child or a descendant popup target.
     private void showAccessibleItem(Object... parameters) {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         activate();
         M3Accessible.showCurrentOrItem(this, getLeading(), editor, getTrailingActions(), parameters);
         notifyFocusNodeChanged();
@@ -448,6 +465,9 @@ public class M3SearchBar extends Control {
 
     /// Returns the current focused slot target, or `null` when focus is outside the search bar.
     private @Nullable Node currentFocusNode() {
+        if (!M3Accessible.canReach(this)) {
+            return null;
+        }
         if (isFocused()) {
             return this;
         }

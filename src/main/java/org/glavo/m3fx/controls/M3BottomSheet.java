@@ -336,9 +336,16 @@ public class M3BottomSheet extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case EXPAND -> show();
+            case EXPAND -> {
+                if (M3Accessible.canReveal(this)) {
+                    show();
+                }
+            }
             case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> {
+                if (!M3Accessible.canReveal(this)) {
+                    return;
+                }
                 show();
                 M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters);
                 notifyFocusNodeChanged();
@@ -417,7 +424,7 @@ public class M3BottomSheet extends Control {
 
     /// Requests focus for the current accessible focus target when this sheet is visible.
     private void focusAccessibleNode() {
-        if (isShown()) {
+        if (isShown() && M3Accessible.canReach(this)) {
             M3Accessible.showCurrentOrItem(this, getContent(), getActions());
             notifyFocusNodeChanged();
         }

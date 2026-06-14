@@ -602,7 +602,9 @@ public class M3Menu extends Control {
     /// Focuses a menu item and hides sibling submenu popups that no longer own focus.
     private boolean focusMenuItem(M3MenuItem item) {
         Objects.requireNonNull(item, "item");
-        if (!getItems().contains(item) || item.isDisabled() || !item.isVisible()) {
+        if (!getItems().contains(item)
+                || !M3Accessible.isEffectivelyReachable(this)
+                || !M3Accessible.isEffectivelyReachable(item)) {
             return false;
         }
 
@@ -1030,7 +1032,7 @@ public class M3Menu extends Control {
     }
 
     /// Returns a node as a selectable menu item when possible.
-    private static @Nullable M3MenuItem selectableMenuItem(Node child) {
+    private @Nullable M3MenuItem selectableMenuItem(Node child) {
         if (child instanceof M3MenuItem item
                 && isReachableSelectableMenuItem(item)) {
             return item;
@@ -1039,8 +1041,10 @@ public class M3Menu extends Control {
     }
 
     /// Returns whether a menu item can currently participate in selection.
-    private static boolean isReachableSelectableMenuItem(M3MenuItem item) {
-        return isSelectableMenuItem(item) && !item.isDisabled() && item.isVisible();
+    private boolean isReachableSelectableMenuItem(M3MenuItem item) {
+        return isSelectableMenuItem(item)
+                && M3Accessible.isEffectivelyReachable(this)
+                && M3Accessible.isEffectivelyReachable(item);
     }
 
     /// Returns whether a menu item participates in selection state.

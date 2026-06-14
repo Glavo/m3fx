@@ -106,8 +106,6 @@ public class M3LoadingIndicator extends Control {
     }
 
     /// Returns the current progress value property.
-    ///
-    /// @return the writable progress value property
     public final DoubleProperty progressProperty() {
         if (progress == null) {
             progress = new DoublePropertyBase(INDETERMINATE_PROGRESS) {
@@ -164,8 +162,6 @@ public class M3LoadingIndicator extends Control {
     }
 
     /// Returns the visual variant property.
-    ///
-    /// @return the visual variant property
     public final ObjectProperty<M3LoadingIndicatorVariant> variantProperty() {
         if (variant == null) {
             variant = new SimpleObjectProperty<>(this, "variant", M3LoadingIndicatorVariant.DEFAULT) {
@@ -199,8 +195,6 @@ public class M3LoadingIndicator extends Control {
     }
 
     /// Returns the loading indicator container size token property.
-    ///
-    /// @return the styleable container size property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -229,8 +223,6 @@ public class M3LoadingIndicator extends Control {
     }
 
     /// Returns the active indicator shape size token property.
-    ///
-    /// @return the styleable active indicator size property
     public final StyleableDoubleProperty indicatorSizeProperty() {
         if (indicatorSize == null) {
             indicatorSize = M3Css.nonNegativeStyleableDoubleProperty(

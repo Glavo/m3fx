@@ -150,7 +150,7 @@ public class M3TextInputLayout extends Control {
     /// The clear-button transition start scale.
     private static final double TRAILING_TRANSITION_START_SCALE = 0.86;
 
-    /// The wrapped text input control.
+    // The wrapped text input control.
     private final ObjectProperty<@Nullable TextInputControl> input =
             new SimpleObjectProperty<>(this, "input") {
                 /// Validates text input ownership before setting the value.
@@ -167,7 +167,7 @@ public class M3TextInputLayout extends Control {
                 }
             };
 
-    /// The field label displayed inside or above the wrapped input.
+    // The field label displayed inside or above the wrapped input.
     private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
         /// Rejects null label text values.
         @Override
@@ -183,7 +183,7 @@ public class M3TextInputLayout extends Control {
         }
     };
 
-    /// The leading adornment node.
+    // The leading adornment node.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
         /// Updates the leading slot when the node changes.
         @Override
@@ -192,7 +192,7 @@ public class M3TextInputLayout extends Control {
         }
     };
 
-    /// The trailing adornment node.
+    // The trailing adornment node.
     private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
         /// Updates the trailing slot when the node changes.
         @Override
@@ -201,7 +201,7 @@ public class M3TextInputLayout extends Control {
         }
     };
 
-    /// The supporting text displayed when no error is active.
+    // The supporting text displayed when no error is active.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
         /// Rejects null supporting text values.
         @Override
@@ -216,7 +216,7 @@ public class M3TextInputLayout extends Control {
         }
     };
 
-    /// The error text displayed above the supporting text when it is not blank.
+    // The error text displayed above the supporting text when it is not blank.
     private final StringProperty errorText = new SimpleStringProperty(this, "errorText", "") {
         /// Rejects null error text values.
         @Override
@@ -232,7 +232,7 @@ public class M3TextInputLayout extends Control {
         }
     };
 
-    /// The validator that can derive error text from the wrapped input value.
+    // The validator that can derive error text from the wrapped input value.
     private final ObjectProperty<@Nullable M3TextInputValidator> validator =
             new SimpleObjectProperty<>(this, "validator") {
                 /// Refreshes validation when a validator changes during an active validation cycle.
@@ -251,23 +251,23 @@ public class M3TextInputLayout extends Control {
     private final @UnmodifiableView ObservableList<M3TextInputValidator> validatorsView =
             FXCollections.unmodifiableObservableList(validators);
 
-    /// The last error text produced by the validator.
+    // The last error text produced by the validator.
     private final ReadOnlyStringWrapper validationErrorText =
             new ReadOnlyStringWrapper(this, "validationErrorText", "");
 
-    /// Whether validation has been explicitly run or activated by focus loss.
+    // Whether validation has been explicitly run or activated by focus loss.
     private final ReadOnlyBooleanWrapper validationActive =
             new ReadOnlyBooleanWrapper(this, "validationActive");
 
-    /// Whether validation runs after the wrapped input loses focus.
+    // Whether validation runs after the wrapped input loses focus.
     private final BooleanProperty validateOnFocusLost =
             new SimpleBooleanProperty(this, "validateOnFocusLost", true);
 
-    /// Whether validation refreshes on edits after validation has become active.
+    // Whether validation refreshes on edits after validation has become active.
     private final BooleanProperty validateOnTextChange =
             new SimpleBooleanProperty(this, "validateOnTextChange", true);
 
-    /// Whether the character counter label is visible.
+    // Whether the character counter label is visible.
     private final BooleanProperty characterCounterVisible =
             new SimpleBooleanProperty(this, "characterCounterVisible") {
                 /// Updates the supporting row when counter visibility changes.
@@ -277,7 +277,7 @@ public class M3TextInputLayout extends Control {
                 }
             };
 
-    /// Whether text is truncated to the active character limit.
+    // Whether text is truncated to the active character limit.
     private final BooleanProperty characterLimitEnforced =
             new SimpleBooleanProperty(this, "characterLimitEnforced") {
                 /// Enforces the active character limit when the policy changes.
@@ -289,7 +289,7 @@ public class M3TextInputLayout extends Control {
                 }
             };
 
-    /// Whether the built-in clear button may occupy the trailing slot.
+    // Whether the built-in clear button may occupy the trailing slot.
     private final BooleanProperty clearButtonEnabled =
             new SimpleBooleanProperty(this, "clearButtonEnabled") {
                 /// Updates the trailing slot when clear-button enablement changes.
@@ -299,7 +299,7 @@ public class M3TextInputLayout extends Control {
                 }
             };
 
-    /// The maximum character count, or `-1` when no maximum is active.
+    // The maximum character count, or `-1` when no maximum is active.
     private final IntegerProperty characterLimit = new SimpleIntegerProperty(this, "characterLimit", NO_CHARACTER_LIMIT) {
         /// Validates the character limit before setting it.
         @Override
@@ -1645,6 +1645,9 @@ public class M3TextInputLayout extends Control {
 
     /// Returns the current focused input or adornment target, or `null` when focus is outside this layout.
     private @Nullable Node currentFocusNode() {
+        if (!M3Accessible.canReach(this)) {
+            return null;
+        }
         if (isFocused()) {
             return this;
         }
@@ -1664,12 +1667,18 @@ public class M3TextInputLayout extends Control {
 
     /// Focuses an accessible child item and reports the changed focus target.
     private void focusAccessibleItem(@Nullable Node item) {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         M3Accessible.showItem(item);
         notifyFocusNodeChanged();
     }
 
     /// Shows and focuses the requested accessible child or a descendant popup target.
     private void showAccessibleItem(Object... parameters) {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         M3Accessible.showCurrentOrItem(this, getLeading(), getInput(), effectiveTrailing(), parameters);
         notifyFocusNodeChanged();
     }

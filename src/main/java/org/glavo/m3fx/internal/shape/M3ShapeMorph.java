@@ -56,12 +56,28 @@ public final class M3ShapeMorph {
     /// Matched cubic curve pairs used by this morph.
     private final CubicPair @Unmodifiable [] matches;
 
+    /// The starting polygon center x-coordinate.
+    private final double startCenterX;
+
+    /// The starting polygon center y-coordinate.
+    private final double startCenterY;
+
+    /// The ending polygon center x-coordinate.
+    private final double endCenterX;
+
+    /// The ending polygon center y-coordinate.
+    private final double endCenterY;
+
     /// Creates a morph between two rounded polygons.
     ///
     /// @param start the starting polygon
     /// @param end the ending polygon
     private M3ShapeMorph(RoundedPolygon start, RoundedPolygon end) {
         this.matches = match(start, end).toArray(CubicPair[]::new);
+        this.startCenterX = start.centerX;
+        this.startCenterY = start.centerY;
+        this.endCenterX = end.centerX;
+        this.endCenterY = end.centerY;
     }
 
     /// Returns the Material loading indicator indeterminate morph sequence.
@@ -132,10 +148,10 @@ public final class M3ShapeMorph {
     ) {
         ensurePathElements(path, matches.length);
         double scale = size * sequenceScale * extraScale;
-        double[] bounds = scratch.bounds;
-        calculateMorphedBounds(progress, scale, scratch);
-        double offsetX = centerX - (bounds[0] + bounds[2]) / 2.0;
-        double offsetY = centerY - (bounds[1] + bounds[3]) / 2.0;
+        double morphCenterX = interpolate(startCenterX, endCenterX, progress) * scale;
+        double morphCenterY = interpolate(startCenterY, endCenterY, progress) * scale;
+        double offsetX = centerX - morphCenterX;
+        double offsetY = centerY - morphCenterY;
         double rotation = rotationTurns * TWO_PI;
         double cos = Math.cos(rotation);
         double sin = Math.sin(rotation);

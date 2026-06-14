@@ -1013,7 +1013,7 @@ public class M3Tooltip extends PopupControl {
 
         /// Shows the tooltip near the target node.
         private void showTooltip() {
-            if (node.getScene() == null || node.isDisabled()) {
+            if (!M3Accessible.canReach(node)) {
                 return;
             }
 

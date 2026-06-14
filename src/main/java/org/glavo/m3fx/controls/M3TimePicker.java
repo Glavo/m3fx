@@ -85,7 +85,7 @@ public class M3TimePicker extends Control {
     /// The default minute interval shown in the minute grid.
     private static final int DEFAULT_MINUTE_STEP = 5;
 
-    /// The selected time, or `null` when no time is selected.
+    // The selected time, or `null` when no time is selected.
     private final ObjectProperty<@Nullable LocalTime> value =
             new SimpleObjectProperty<>(this, "value") {
                 /// Normalizes seconds and notifies accessibility clients.
@@ -105,7 +105,7 @@ public class M3TimePicker extends Control {
                 }
             };
 
-    /// Whether the picker displays 24-hour time.
+    // Whether the picker displays 24-hour time.
     private final BooleanProperty use24HourClock =
             new SimpleBooleanProperty(this, "use24HourClock", false) {
                 /// Notifies accessibility clients when display formatting changes.
@@ -116,7 +116,7 @@ public class M3TimePicker extends Control {
                 }
             };
 
-    /// The minute interval used by the minute selection grid.
+    // The minute interval used by the minute selection grid.
     private final IntegerProperty minuteStep = new IntegerPropertyBase(DEFAULT_MINUTE_STEP) {
         /// Validates the minute step whenever it changes.
         @Override
@@ -138,7 +138,7 @@ public class M3TimePicker extends Control {
         }
     };
 
-    /// The earliest selectable time, or `null` when there is no lower bound.
+    // The earliest selectable time, or `null` when there is no lower bound.
     private final ObjectProperty<@Nullable LocalTime> minTime =
             new SimpleObjectProperty<>(this, "minTime") {
                 /// Clears the selected value when it no longer satisfies the range.
@@ -149,7 +149,7 @@ public class M3TimePicker extends Control {
                 }
             };
 
-    /// The latest selectable time, or `null` when there is no upper bound.
+    // The latest selectable time, or `null` when there is no upper bound.
     private final ObjectProperty<@Nullable LocalTime> maxTime =
             new SimpleObjectProperty<>(this, "maxTime") {
                 /// Clears the selected value when it no longer satisfies the range.

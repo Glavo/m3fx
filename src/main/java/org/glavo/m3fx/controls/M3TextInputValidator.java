@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// Validates text entered into an [M3TextInputLayout].
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @FunctionalInterface
 @NotNullByDefault
 public interface M3TextInputValidator {

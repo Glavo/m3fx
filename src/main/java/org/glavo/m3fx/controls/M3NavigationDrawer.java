@@ -251,6 +251,9 @@ public class M3NavigationDrawer extends Control {
 
     /// Selects the first drawer list item when one exists.
     public final void selectFirst() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         M3ListItem firstItem = firstListItem();
         if (firstItem != null) {
             selectItem(firstItem);
@@ -259,6 +262,9 @@ public class M3NavigationDrawer extends Control {
 
     /// Selects the last drawer list item when one exists.
     public final void selectLast() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3ListItem lastItem = M3SelectionNavigation.last(flattenedContent(), M3ListItem.class);
         if (lastItem != null) {
             selectItem(lastItem);
@@ -267,6 +273,9 @@ public class M3NavigationDrawer extends Control {
 
     /// Selects the next drawer list item after the current selected item, wrapping at the end.
     public final void selectNext() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3ListItem nextItem =
                 M3SelectionNavigation.next(flattenedContent(), getSelectedItem(), M3ListItem.class);
         if (nextItem != null) {
@@ -276,6 +285,9 @@ public class M3NavigationDrawer extends Control {
 
     /// Selects the previous drawer list item before the current selected item, wrapping at the start.
     public final void selectPrevious() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3ListItem previousItem =
                 M3SelectionNavigation.previous(flattenedContent(), getSelectedItem(), M3ListItem.class);
         if (previousItem != null) {
@@ -577,7 +589,7 @@ public class M3NavigationDrawer extends Control {
         }
 
         for (M3ListItem item : group.getItems()) {
-            if (!item.isDisabled() && item.isVisible() && M3Accessible.containsNodeTarget(item, parameters)) {
+            if (M3Accessible.isEffectivelyReachable(item) && M3Accessible.containsNodeTarget(item, parameters)) {
                 group.setExpanded(true);
                 if (isSelectableDrawerItem(item)) {
                     return item;
@@ -621,7 +633,7 @@ public class M3NavigationDrawer extends Control {
         }
 
         for (M3ListItem item : group.getItems()) {
-            if (M3Accessible.containsNodeTarget(item, parameters)) {
+            if (M3Accessible.isEffectivelyReachable(item) && M3Accessible.containsNodeTarget(item, parameters)) {
                 group.expandForAccessibleReveal();
                 @Nullable Node target = M3Accessible.actionItem(item, parameters);
                 return target == null ? item : target;
@@ -910,7 +922,9 @@ public class M3NavigationDrawer extends Control {
 
     /// Returns whether a drawer list item can currently participate in selection.
     private boolean isSelectableDrawerItem(M3ListItem item) {
-        return !item.isDisabled() && item.isVisible() && flattenedContent().contains(item);
+        return M3Accessible.isEffectivelyReachable(this)
+                && M3Accessible.isEffectivelyReachable(item)
+                && flattenedContent().contains(item);
     }
 
     /// Returns the drawer group that owns the supplied header item.

@@ -290,7 +290,7 @@ public class M3MenuButton extends M3Button {
 
     /// Shows the menu popup below this button.
     public final void showMenu() {
-        if (isDisabled() || popup.isShowing()) {
+        if (!M3Accessible.canReach(this) || popup.isShowing()) {
             return;
         }
 
@@ -392,6 +392,9 @@ public class M3MenuButton extends M3Button {
             case SET_SELECTED_ITEMS -> menu.executeAccessibleAction(action, parameters);
             case SHOW_ITEM -> {
                 showMenu();
+                if (!popup.isShowing()) {
+                    return;
+                }
                 menu.executeAccessibleAction(action, parameters);
                 notifyPopupFocusNodeChanged();
             }
@@ -413,7 +416,9 @@ public class M3MenuButton extends M3Button {
             resetMenuAnimationState();
             if (focusOwnerOnHidden) {
                 focusOwnerOnHidden = false;
-                requestFocus();
+                if (M3Accessible.canReach(this)) {
+                    requestFocus();
+                }
             }
         });
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
@@ -434,6 +439,9 @@ public class M3MenuButton extends M3Button {
 
     /// Requests focus for this button or the currently reachable popup menu focus node.
     private void focusAccessibleNode() {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         if (!isShowing()) {
             requestFocus();
             notifyPopupFocusNodeChanged();

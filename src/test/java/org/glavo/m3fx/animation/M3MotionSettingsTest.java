@@ -65,27 +65,27 @@ final class M3MotionSettingsTest {
         FxTestUtils.runWithMotionSettingsPreserved(() -> {
             boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
             Pane node = new Pane();
-            long revision = M3MotionSettings.settingsRevisionProperty().get();
+            long revision = M3MotionSettings.revisionProperty().get();
 
             M3MotionSettings.setAnimationsEnabled(!previousAnimationsEnabled);
-            long afterGlobalAnimations = M3MotionSettings.settingsRevisionProperty().get();
+            long afterGlobalAnimations = M3MotionSettings.revisionProperty().get();
             assertTrue(afterGlobalAnimations > revision);
 
             M3MotionSettings.setMotionScheme(M3MotionScheme.expressive());
-            long afterGlobalScheme = M3MotionSettings.settingsRevisionProperty().get();
+            long afterGlobalScheme = M3MotionSettings.revisionProperty().get();
             assertTrue(afterGlobalScheme > afterGlobalAnimations);
 
             M3MotionSettings.setMotionBehavior(M3MotionBehavior.expressive());
-            long afterGlobalBehavior = M3MotionSettings.settingsRevisionProperty().get();
+            long afterGlobalBehavior = M3MotionSettings.revisionProperty().get();
             assertTrue(afterGlobalBehavior > afterGlobalScheme);
 
             M3MotionSettings.setAnimationsEnabled(node, false);
-            long afterNodeAnimations = M3MotionSettings.settingsRevisionProperty().get();
+            long afterNodeAnimations = M3MotionSettings.revisionProperty().get();
             assertTrue(afterNodeAnimations > afterGlobalBehavior);
 
             M3MotionSettings.setAnimationsEnabled(node, false);
 
-            assertEquals(afterNodeAnimations, M3MotionSettings.settingsRevisionProperty().get());
+            assertEquals(afterNodeAnimations, M3MotionSettings.revisionProperty().get());
         });
     }
 

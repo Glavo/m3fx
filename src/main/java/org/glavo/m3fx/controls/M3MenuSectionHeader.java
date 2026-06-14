@@ -7,6 +7,8 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A non-interactive Material Design 3 menu section header.
+///
+/// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public class M3MenuSectionHeader extends M3Text {
     /// The base style class for M3FX menu section headers.

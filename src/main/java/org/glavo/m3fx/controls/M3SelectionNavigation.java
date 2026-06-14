@@ -455,9 +455,9 @@ final class M3SelectionNavigation {
         return DEFAULT_PAGE_ROW_HEIGHT;
     }
 
-    /// Returns the child when it is an enabled visible instance of the requested type.
+    /// Returns the child when it is a reachable instance of the requested type.
     private static <T extends Node> @Nullable T selectable(Node child, Class<T> type) {
-        if (type.isInstance(child) && !child.isDisabled() && child.isVisible()) {
+        if (type.isInstance(child) && M3Accessible.isEffectivelyReachable(child)) {
             return type.cast(child);
         }
         return null;

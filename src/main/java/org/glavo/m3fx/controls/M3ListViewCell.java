@@ -27,6 +27,8 @@ import java.util.Objects;
 
 /// A reusable virtualized cell used by [M3ListView].
 ///
+/// See [Material Design lists](https://m3.material.io/components/lists/overview).
+///
 /// @param <T> the item type rendered by this cell
 @NotNullByDefault
 public class M3ListViewCell<T> extends IndexedCell<T> {

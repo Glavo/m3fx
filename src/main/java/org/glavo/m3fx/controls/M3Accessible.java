@@ -12,6 +12,8 @@ import javafx.scene.Scene;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Objects;
@@ -446,7 +448,7 @@ final class M3Accessible {
     /// Delegates an explicit reveal request to the first child that exposes the requested accessibility target.
     static boolean showAccessibleActionTarget(@Nullable Node item, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        if (item == null || parameters.length == 0) {
+        if (!canReach(item) || parameters.length == 0) {
             return false;
         }
 
@@ -501,12 +503,28 @@ final class M3Accessible {
         if (!canReach(item)) {
             return null;
         }
+        return focusTargetInReachableTree(item);
+    }
+
+    /// Returns a focusable item or descendant without requiring attachment to a scene.
+    ///
+    /// This helper is for structural reveal APIs that can decide which node would receive focus before a control is
+    /// attached to a live scene. Callers that actually request keyboard focus must still check [canReach].
+    static @Nullable Node structuralFocusTarget(@Nullable Node item) {
+        if (!isEffectivelyReachable(item)) {
+            return null;
+        }
+        return focusTargetInReachableTree(Objects.requireNonNull(item, "item"));
+    }
+
+    /// Returns a focusable item or descendant in an already reachable tree.
+    private static @Nullable Node focusTargetInReachableTree(Node item) {
         if (item.isFocusTraversable()) {
             return item;
         }
         if (item instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
-                @Nullable Node focusTarget = focusTarget(child);
+                @Nullable Node focusTarget = structuralFocusTarget(child);
                 if (focusTarget != null) {
                     return focusTarget;
                 }
@@ -922,7 +940,39 @@ final class M3Accessible {
 
     /// Returns whether a node can receive a direct or descendant focus request.
     static boolean canReach(@Nullable Node node) {
-        return node != null && node.isVisible() && !node.isDisabled() && node.getScene() != null;
+        return node != null && node.getScene() != null && isEffectivelyReachable(node);
+    }
+
+    /// Returns whether a node can be revealed from a collapsed or hidden-self state.
+    ///
+    /// Unlike [canReach], this allows the node itself to be invisible because several Material surfaces use
+    /// visibility to represent their collapsed state. The node may be detached for structural tests, but it must be
+    /// enabled and every ancestor must be visible and enabled.
+    static boolean canReveal(@Nullable Node node) {
+        if (node == null || node.isDisabled()) {
+            return false;
+        }
+
+        @Nullable Parent parent = node.getParent();
+        while (parent != null) {
+            if (!parent.isVisible() || parent.isDisabled()) {
+                return false;
+            }
+            parent = parent.getParent();
+        }
+        return true;
+    }
+
+    /// Returns whether a node and its ancestor chain are visible and enabled.
+    static boolean isEffectivelyReachable(@Nullable Node node) {
+        @Nullable Node current = node;
+        while (current != null) {
+            if (!current.isVisible() || current.isDisabled()) {
+                return false;
+            }
+            current = current.getParent();
+        }
+        return node != null;
     }
 
     /// Notifies a node and its ancestors that the node's exposed accessibility focus target changed.
@@ -1066,6 +1116,9 @@ final class M3Accessible {
         if (parameter instanceof Node node) {
             return containsAccessibleNode(item, node, visited);
         }
+        if (containsPickerValueTarget(item, parameter)) {
+            return true;
+        }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
                 Set<Node> branchVisited = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -1082,6 +1135,20 @@ final class M3Accessible {
                     return true;
                 }
             }
+        }
+        return false;
+    }
+
+    /// Returns whether an item can reveal the supplied picker value target through `SHOW_ITEM`.
+    private static boolean containsPickerValueTarget(Node item, @Nullable Object parameter) {
+        if (parameter instanceof LocalDate) {
+            return item instanceof M3DatePicker
+                    || item instanceof M3DateRangePicker
+                    || item instanceof M3DatePickerField
+                    || item instanceof M3DateRangePickerField;
+        }
+        if (parameter instanceof LocalTime) {
+            return item instanceof M3TimePicker || item instanceof M3TimePickerField;
         }
         return false;
     }

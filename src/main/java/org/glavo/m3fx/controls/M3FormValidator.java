@@ -12,6 +12,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.Node;
 import javafx.scene.control.TextInputControl;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -248,18 +249,14 @@ public final class M3FormValidator {
     ///
     /// @return `true` when an invalid input existed and focus was requested
     public boolean focusFirstInvalidInput() {
-        @Nullable M3TextInputLayout invalidInput = getFirstInvalidInput();
-        if (invalidInput == null) {
-            return false;
+        for (M3TextInputLayout invalidInput : invalidInputs) {
+            @Nullable Node focusTarget = invalidInputFocusTarget(invalidInput);
+            if (focusTarget != null) {
+                M3Accessible.showItem(focusTarget);
+                return true;
+            }
         }
-
-        @Nullable TextInputControl textInput = invalidInput.getInput();
-        if (textInput != null && !textInput.isDisabled()) {
-            textInput.requestFocus();
-        } else if (!invalidInput.isDisabled()) {
-            invalidInput.requestFocus();
-        }
-        return true;
+        return false;
     }
 
     /// Runs validation, focuses the first invalid input layout, and returns whether all inputs are valid.
@@ -324,6 +321,13 @@ public final class M3FormValidator {
             throw new IllegalArgumentException("input is not registered");
         }
         return validatedInput;
+    }
+
+    /// Returns the preferred reachable focus target for one invalid input.
+    private static @Nullable Node invalidInputFocusTarget(M3TextInputLayout invalidInput) {
+        @Nullable TextInputControl textInput = invalidInput.getInput();
+        @Nullable Node textInputFocusTarget = M3Accessible.structuralFocusTarget(textInput);
+        return textInputFocusTarget != null ? textInputFocusTarget : M3Accessible.structuralFocusTarget(invalidInput);
     }
 
     /// Returns a validated copy of input layout varargs.

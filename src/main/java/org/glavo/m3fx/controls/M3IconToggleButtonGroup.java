@@ -318,6 +318,9 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Selects the first toggle icon button when one exists.
     public final void selectFirst() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         M3IconToggleButton firstButton = firstButton();
         if (firstButton != null) {
             select(firstButton);
@@ -326,6 +329,9 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Selects the last toggle icon button when one exists.
     public final void selectLast() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3IconToggleButton lastButton =
                 M3SelectionNavigation.last(getItems(), M3IconToggleButton.class);
         if (lastButton != null) {
@@ -335,6 +341,9 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Selects the next toggle icon button after the current selected button, wrapping at the end.
     public final void selectNext() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3IconToggleButton nextButton =
                 M3SelectionNavigation.next(getItems(), getSelectedButton(), M3IconToggleButton.class);
         if (nextButton != null) {
@@ -344,6 +353,9 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Selects the previous toggle icon button before the current selected button, wrapping at the start.
     public final void selectPrevious() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3IconToggleButton previousButton =
                 M3SelectionNavigation.previous(getItems(), getSelectedButton(), M3IconToggleButton.class);
         if (previousButton != null) {
@@ -651,8 +663,8 @@ public class M3IconToggleButtonGroup extends Control {
     }
 
     /// Returns whether an icon toggle button can currently participate in selection.
-    private static boolean isSelectableButton(M3IconToggleButton button) {
-        return !button.isDisabled() && button.isVisible();
+    private boolean isSelectableButton(M3IconToggleButton button) {
+        return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(button);
     }
 
     /// Creates the default Material Design 3 toggle icon button group skin.

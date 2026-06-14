@@ -7,6 +7,8 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A non-interactive Material Design 3 list section header.
+///
+/// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public class M3ListSectionHeader extends M3Text {
     /// The base style class for M3FX list section headers.

@@ -64,10 +64,10 @@ public class M3BottomAppBar extends Control {
     /// The floating action slot style class.
     public static final String FLOATING_ACTION_STYLE_CLASS = "m3-bottom-app-bar-floating-action";
 
-    /// The optional floating action node property.
+    // The optional floating action node property.
     private final ObjectProperty<@Nullable Node> floatingAction = new SimpleObjectProperty<>(this, "floatingAction");
 
-    /// The floating action node alignment property.
+    // The floating action node alignment property.
     private final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignment =
             new SimpleObjectProperty<>(this, "floatingActionAlignment", M3BottomAppBarFloatingActionAlignment.END) {
                 /// Updates alignment style classes when the property changes.
@@ -85,16 +85,16 @@ public class M3BottomAppBar extends Control {
     /// The mutable regular action node list.
     private final ObservableList<Node> actions = FXCollections.observableArrayList();
 
-    /// The bottom app bar container height token.
+    // The bottom app bar container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The horizontal content padding token.
+    // The horizontal content padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The spacing token between content slots.
+    // The spacing token between content slots.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    /// The spacing token between regular action nodes.
+    // The spacing token between regular action nodes.
     private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Notifies accessibility clients when focus moves between action children.
@@ -183,8 +183,6 @@ public class M3BottomAppBar extends Control {
     }
 
     /// Returns the optional floating action node property.
-    ///
-    /// @return the floating action node property
     public final ObjectProperty<@Nullable Node> floatingActionProperty() {
         return floatingAction;
     }
@@ -204,8 +202,6 @@ public class M3BottomAppBar extends Control {
     }
 
     /// Returns the floating action node alignment property.
-    ///
-    /// @return the floating action alignment property
     public final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignmentProperty() {
         return floatingActionAlignment;
     }
@@ -225,8 +221,6 @@ public class M3BottomAppBar extends Control {
     }
 
     /// Returns the bottom app bar container height token property.
-    ///
-    /// @return the bottom app bar container height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
@@ -253,8 +247,6 @@ public class M3BottomAppBar extends Control {
     }
 
     /// Returns the horizontal content padding token property.
-    ///
-    /// @return the horizontal content padding property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = createStyleableDoubleProperty(
@@ -281,8 +273,6 @@ public class M3BottomAppBar extends Control {
     }
 
     /// Returns the spacing token property between regular actions, flexible slots, and floating action content.
-    ///
-    /// @return the content slot spacing property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = createStyleableDoubleProperty(
@@ -309,8 +299,6 @@ public class M3BottomAppBar extends Control {
     }
 
     /// Returns the spacing token property between generated regular action slots.
-    ///
-    /// @return the regular action slot spacing property
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
             actionSpacing = createStyleableDoubleProperty(

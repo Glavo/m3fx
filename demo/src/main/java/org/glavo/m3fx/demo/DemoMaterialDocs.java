@@ -14,6 +14,15 @@ final class DemoMaterialDocs {
     /// The Material Design 3 components overview URL.
     static final String COMPONENTS = ROOT + "components";
 
+    /// The Material Design color role documentation URL.
+    static final String COLOR_ROLES = ROOT + "styles/color/roles";
+
+    /// The Material Design elevation documentation URL.
+    static final String ELEVATION = styleUrl("elevation");
+
+    /// The Material Design interaction states documentation URL.
+    static final String INTERACTION_STATES = ROOT + "foundations/interaction/states/overview";
+
     /// The app bars component documentation URL.
     static final String APP_BARS = componentUrl("app-bars");
 
@@ -121,6 +130,21 @@ final class DemoMaterialDocs {
 
     /// The tooltips component documentation URL.
     static final String TOOLTIPS = componentUrl("tooltips");
+
+    /// The closest Material documentation URL for the banner demo, which has no current M3 component page.
+    static final String BANNERS = COMPONENTS;
+
+    /// The closest Material documentation URL for form layout demos.
+    static final String FORMS = TEXT_FIELDS;
+
+    /// The closest Material documentation URL for avatar color and content treatment.
+    static final String AVATARS = COLOR_ROLES;
+
+    /// The closest Material documentation URL for Material surfaces and elevation.
+    static final String SURFACES = ELEVATION;
+
+    /// The closest Material documentation URL for scrim and overlay state treatment.
+    static final String SCRIMS = INTERACTION_STATES;
 
     /// The typography style documentation URL.
     static final String TYPOGRAPHY = styleUrl("typography");

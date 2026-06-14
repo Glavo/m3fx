@@ -88,10 +88,10 @@ public class M3TopAppBar extends Control {
     /// The style class applied to each 48 dp trailing action slot.
     public static final String ACTION_SLOT_STYLE_CLASS = "m3-top-app-bar-action-slot";
 
-    /// The app bar title text property.
+    // The app bar title text property.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
-    /// The top app bar variant property.
+    // The top app bar variant property.
     private final ObjectProperty<M3TopAppBarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3TopAppBarVariant.SMALL) {
                 /// Updates variant style classes and layout metrics when the property changes.
@@ -106,7 +106,7 @@ public class M3TopAppBar extends Control {
                 }
             };
 
-    /// Whether scrollable content currently passes beneath this app bar.
+    // Whether scrollable content currently passes beneath this app bar.
     private final BooleanProperty scrolledUnder = new SimpleBooleanProperty(this, "scrolledUnder") {
         /// Updates the scroll-under pseudo-class when the property changes.
         @Override
@@ -115,34 +115,34 @@ public class M3TopAppBar extends Control {
         }
     };
 
-    /// The optional leading navigation node property.
+    // The optional leading navigation node property.
     private final ObjectProperty<@Nullable Node> navigation = new SimpleObjectProperty<>(this, "navigation");
 
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = FXCollections.observableArrayList();
 
-    /// The small and centered app bar container height token.
+    // The small and centered app bar container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The medium app bar container height token.
+    // The medium app bar container height token.
     private @Nullable StyleableDoubleProperty mediumContainerHeight;
 
-    /// The large app bar container height token.
+    // The large app bar container height token.
     private @Nullable StyleableDoubleProperty largeContainerHeight;
 
-    /// The horizontal content padding token.
+    // The horizontal content padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The medium app bar bottom content padding token.
+    // The medium app bar bottom content padding token.
     private @Nullable StyleableDoubleProperty mediumBottomPadding;
 
-    /// The large app bar bottom content padding token.
+    // The large app bar bottom content padding token.
     private @Nullable StyleableDoubleProperty largeBottomPadding;
 
-    /// The spacing token between leading, title, and trailing content slots.
+    // The spacing token between leading, title, and trailing content slots.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    /// The spacing token between trailing action nodes.
+    // The spacing token between trailing action nodes.
     private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Notifies accessibility clients when focus moves between navigation and action children.
@@ -230,8 +230,6 @@ public class M3TopAppBar extends Control {
     }
 
     /// Returns the scroll-under state property.
-    ///
-    /// @return the scroll-under property
     public final BooleanProperty scrolledUnderProperty() {
         return scrolledUnder;
     }
@@ -293,8 +291,6 @@ public class M3TopAppBar extends Control {
     }
 
     /// Returns the small and centered top app bar container height token property.
-    ///
-    /// @return the small and centered top app bar container height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
@@ -321,8 +317,6 @@ public class M3TopAppBar extends Control {
     }
 
     /// Returns the medium top app bar container height token property.
-    ///
-    /// @return the medium top app bar container height property
     public final StyleableDoubleProperty mediumContainerHeightProperty() {
         if (mediumContainerHeight == null) {
             mediumContainerHeight = createStyleableDoubleProperty(
@@ -349,8 +343,6 @@ public class M3TopAppBar extends Control {
     }
 
     /// Returns the large top app bar container height token property.
-    ///
-    /// @return the large top app bar container height property
     public final StyleableDoubleProperty largeContainerHeightProperty() {
         if (largeContainerHeight == null) {
             largeContainerHeight = createStyleableDoubleProperty(
@@ -377,8 +369,6 @@ public class M3TopAppBar extends Control {
     }
 
     /// Returns the horizontal content padding token property.
-    ///
-    /// @return the horizontal content padding property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = createStyleableDoubleProperty(
@@ -405,8 +395,6 @@ public class M3TopAppBar extends Control {
     }
 
     /// Returns the medium top app bar bottom padding token property.
-    ///
-    /// @return the medium top app bar bottom padding property
     public final StyleableDoubleProperty mediumBottomPaddingProperty() {
         if (mediumBottomPadding == null) {
             mediumBottomPadding = createStyleableDoubleProperty(
@@ -433,8 +421,6 @@ public class M3TopAppBar extends Control {
     }
 
     /// Returns the large top app bar bottom padding token property.
-    ///
-    /// @return the large top app bar bottom padding property
     public final StyleableDoubleProperty largeBottomPaddingProperty() {
         if (largeBottomPadding == null) {
             largeBottomPadding = createStyleableDoubleProperty(
@@ -461,8 +447,6 @@ public class M3TopAppBar extends Control {
     }
 
     /// Returns the spacing token property between leading, title, and trailing content slots.
-    ///
-    /// @return the content slot spacing property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = createStyleableDoubleProperty(
@@ -489,8 +473,6 @@ public class M3TopAppBar extends Control {
     }
 
     /// Returns the spacing token property between trailing action nodes.
-    ///
-    /// @return the trailing action spacing property
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
             actionSpacing = createStyleableDoubleProperty(

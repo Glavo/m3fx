@@ -344,10 +344,16 @@ public class M3SnackbarHost extends Control {
         switch (action) {
             case COLLAPSE -> dismiss();
             case REQUEST_FOCUS -> {
-                M3Accessible.showItem(currentFocusNode());
-                notifyFocusNodeChanged();
+                if (M3Accessible.canReach(this)) {
+                    M3Accessible.showItem(currentFocusNode());
+                    notifyFocusNodeChanged();
+                }
             }
-            case SHOW_ITEM -> showAccessibleSnackbar(parameters);
+            case SHOW_ITEM -> {
+                if (M3Accessible.canReveal(this)) {
+                    showAccessibleSnackbar(parameters);
+                }
+            }
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -499,6 +505,10 @@ public class M3SnackbarHost extends Control {
 
     /// Returns the preferred focus node for the current snackbar.
     private @Nullable Node currentFocusNode() {
+        if (!M3Accessible.canReach(this)) {
+            return null;
+        }
+
         @Nullable M3Snackbar currentSnackbar = getSnackbar();
         if (currentSnackbar == null || !isShowing()) {
             return null;

@@ -49,7 +49,7 @@ public class M3TabBar extends Control {
             new M3AccessibleFocusNotifier(this, () ->
                     M3Accessible.currentOrSelectionFocusTarget(this, getTabs(), getSelectedTab(), M3Tab.class));
 
-    /// The currently selected tab.
+    // The currently selected tab.
     private final ReadOnlyObjectWrapper<@Nullable M3Tab> selectedTab =
             new ReadOnlyObjectWrapper<>(this, "selectedTab");
 
@@ -60,7 +60,7 @@ public class M3TabBar extends Control {
     private final @UnmodifiableView ObservableList<M3Tab> selectedTabsView =
             FXCollections.unmodifiableObservableList(selectedTabs);
 
-    /// Whether the tab bar allows all tabs to be unselected.
+    // Whether the tab bar allows all tabs to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected tab when empty selection is disabled.
         @Override
@@ -200,6 +200,9 @@ public class M3TabBar extends Control {
 
     /// Selects the first tab when one exists.
     public final void selectFirst() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         M3Tab firstTab = firstTab();
         if (firstTab != null) {
             selectTab(firstTab);
@@ -208,6 +211,9 @@ public class M3TabBar extends Control {
 
     /// Selects the last tab when one exists.
     public final void selectLast() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3Tab lastTab = M3SelectionNavigation.last(getTabs(), M3Tab.class);
         if (lastTab != null) {
             selectTab(lastTab);
@@ -216,6 +222,9 @@ public class M3TabBar extends Control {
 
     /// Selects the next tab after the current selected tab, wrapping at the end.
     public final void selectNext() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3Tab nextTab = M3SelectionNavigation.next(getTabs(), getSelectedTab(), M3Tab.class);
         if (nextTab != null) {
             selectTab(nextTab);
@@ -224,6 +233,9 @@ public class M3TabBar extends Control {
 
     /// Selects the previous tab before the current selected tab, wrapping at the start.
     public final void selectPrevious() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3Tab previousTab =
                 M3SelectionNavigation.previous(getTabs(), getSelectedTab(), M3Tab.class);
         if (previousTab != null) {
@@ -475,8 +487,8 @@ public class M3TabBar extends Control {
     }
 
     /// Returns whether a tab can currently participate in selection.
-    private static boolean isSelectableTab(M3Tab tab) {
-        return !tab.isDisabled() && tab.isVisible();
+    private boolean isSelectableTab(M3Tab tab) {
+        return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(tab);
     }
 
     /// Creates the default Material Design 3 tab bar skin.

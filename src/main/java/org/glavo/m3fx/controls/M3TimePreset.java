@@ -10,6 +10,8 @@ import java.util.Objects;
 
 /// A labeled time that can be applied to an [M3TimePicker].
 ///
+/// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
+///
 /// @param text the text shown for the preset action
 /// @param time the time selected by the preset
 @NotNullByDefault

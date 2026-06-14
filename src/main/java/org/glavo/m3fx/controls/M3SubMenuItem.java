@@ -203,7 +203,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Shows the submenu popup beside this item.
     public final void showSubMenu() {
-        if (isDisabled()) {
+        if (!M3Accessible.canReach(this)) {
             return;
         }
         hoverOpenDelay.stop();
@@ -268,7 +268,7 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.hideSubMenusExcept(null);
         focusOwnerOnHidden = focusOwner;
         if (!popup.isShowing()) {
-            if (focusOwner) {
+            if (focusOwner && M3Accessible.canReach(this)) {
                 requestFocus();
             }
             focusOwnerOnHidden = false;
@@ -325,6 +325,9 @@ public class M3SubMenuItem extends M3MenuItem {
             case SET_SELECTED_ITEMS -> subMenu.executeAccessibleAction(action, parameters);
             case SHOW_ITEM -> {
                 showSubMenu();
+                if (!popup.isShowing()) {
+                    return;
+                }
                 subMenu.executeAccessibleAction(action, parameters);
                 notifyFocusNodeChanged();
             }
@@ -376,7 +379,9 @@ public class M3SubMenuItem extends M3MenuItem {
             resetSubMenuAnimationState();
             if (focusOwnerOnHidden) {
                 focusOwnerOnHidden = false;
-                requestFocus();
+                if (M3Accessible.canReach(this)) {
+                    requestFocus();
+                }
             }
         });
         addEventFilter(ActionEvent.ACTION, this::handleOwnActionEvent);
@@ -402,6 +407,9 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Requests focus for this item or the currently reachable submenu focus node.
     private void focusAccessibleNode() {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         if (!isSubMenuShowing()) {
             requestFocus();
             notifyFocusNodeChanged();

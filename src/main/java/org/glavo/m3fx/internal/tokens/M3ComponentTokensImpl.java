@@ -49,6 +49,7 @@ import java.util.Objects;
 /// @param avatar tokens used by avatars
 /// @param topAppBar tokens used by top app bars
 /// @param bottomAppBar tokens used by bottom app bars
+/// @param toolbar tokens used by toolbars
 /// @param navigationBar tokens used by navigation bars
 /// @param navigationRail tokens used by navigation rails
 /// @param navigationDrawer tokens used by navigation drawers
@@ -94,6 +95,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.AvatarTokens avatar,
         M3ComponentTokens.TopAppBarTokens topAppBar,
         M3ComponentTokens.BottomAppBarTokens bottomAppBar,
+        M3ComponentTokens.ToolbarTokens toolbar,
         M3ComponentTokens.NavigationBarTokens navigationBar,
         M3ComponentTokens.NavigationRailTokens navigationRail,
         M3ComponentTokens.NavigationDrawerTokens navigationDrawer,
@@ -140,6 +142,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(avatar, "avatar");
         Objects.requireNonNull(topAppBar, "topAppBar");
         Objects.requireNonNull(bottomAppBar, "bottomAppBar");
+        Objects.requireNonNull(toolbar, "toolbar");
         Objects.requireNonNull(navigationBar, "navigationBar");
         Objects.requireNonNull(navigationRail, "navigationRail");
         Objects.requireNonNull(navigationDrawer, "navigationDrawer");

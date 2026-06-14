@@ -13,6 +13,8 @@ import org.glavo.m3fx.skins.M3DisclosureIconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A compact Material Design disclosure indicator for expandable rows and destinations.
+///
+/// See [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
 @NotNullByDefault
 public final class M3DisclosureIcon extends Control {
     /// The base style class for M3FX disclosure icons.

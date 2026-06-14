@@ -7,17 +7,46 @@
 }
 
 .m3-dialog-pane .header-panel {
+    -fx-background-color: transparent;
     -fx-padding: 0 0 16px 0;
 }
 
+.m3-dialog-pane:header .header-panel {
+    -fx-background-color: transparent;
+}
+
+.dialog-pane.m3-dialog-pane:header .header-panel {
+    -fx-background-color: transparent;
+}
+
 .m3-dialog-pane .header-panel .label {
+    -fx-background-color: transparent;
     -fx-font-size: 24px;
     -fx-text-fill: -m3-color-on-surface;
 }
 
+.m3-dialog-pane:header .header-panel .label {
+    -fx-background-color: transparent;
+}
+
+.dialog-pane.m3-dialog-pane:header .header-panel .label {
+    -fx-background-color: transparent;
+}
+
 .m3-dialog-pane .content {
+    -fx-background-color: transparent;
     -fx-font-size: 14px;
     -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-dialog-pane > .content.label,
+.m3-dialog-pane:header > .content.label {
+    -fx-background-color: transparent;
+}
+
+.dialog-pane.m3-dialog-pane:header .content,
+.dialog-pane.m3-dialog-pane:header .content.label {
+    -fx-background-color: transparent;
 }
 
 .m3-dialog-pane .graphic-container {

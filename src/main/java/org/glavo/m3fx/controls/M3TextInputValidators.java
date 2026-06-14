@@ -12,6 +12,8 @@ import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
 /// Provides reusable validators for [M3TextInputLayout].
+///
+/// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3TextInputValidators {
     /// Prevents utility class instantiation.

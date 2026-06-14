@@ -225,7 +225,7 @@ public class M3Scrim extends Region {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case EXPANDED -> isShown();
-            case FOCUS_NODE -> isShown() ? this : null;
+            case FOCUS_NODE -> isShown() && M3Accessible.isEffectivelyReachable(this) ? this : null;
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -239,10 +239,14 @@ public class M3Scrim extends Region {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fire();
-            case EXPAND, SHOW_ITEM -> show();
+            case EXPAND, SHOW_ITEM -> {
+                if (M3Accessible.canReveal(this)) {
+                    show();
+                }
+            }
             case COLLAPSE -> hide();
             case REQUEST_FOCUS -> {
-                if (isShown()) {
+                if (isShown() && M3Accessible.canReach(this)) {
                     requestFocus();
                 }
             }

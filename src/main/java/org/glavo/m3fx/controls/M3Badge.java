@@ -102,8 +102,7 @@ public class M3Badge extends Control {
     ///
     /// @param count the non-negative count displayed by the badge
     public M3Badge(int count) {
-        this();
-        setCount(count);
+        this(countText(count));
     }
 
     /// Returns the badge text.
@@ -127,14 +126,12 @@ public class M3Badge extends Control {
         return text;
     }
 
-    /// Sets the badge text to a non-negative count.
-    ///
-    /// @param count the non-negative count displayed by the badge
-    public final void setCount(int count) {
+    /// Returns the text representation of a non-negative count.
+    private static String countText(int count) {
         if (count < 0) {
             throw new IllegalArgumentException("count must be non-negative");
         }
-        setText(Integer.toString(count));
+        return Integer.toString(count);
     }
 
     /// Returns the maximum display text length before an overflow suffix is used.

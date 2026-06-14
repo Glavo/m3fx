@@ -1,0 +1,48 @@
+.m3-toolbar {
+    -m3-container-height: -m3-toolbar-container-height;
+    -m3-container-width: -m3-toolbar-container-width;
+    -m3-container-shape: -m3-toolbar-container-shape;
+    -m3-item-slot-size: -m3-toolbar-item-slot-size;
+    -m3-content-padding: -m3-toolbar-content-padding;
+    -m3-item-spacing: -m3-toolbar-item-spacing;
+    -m3-toolbar-container-height: 64px;
+    -m3-toolbar-container-width: 64px;
+    -m3-toolbar-container-shape: 28px;
+    -m3-toolbar-item-slot-size: 48px;
+    -m3-toolbar-content-padding: 8px;
+    -m3-toolbar-item-spacing: 0px;
+    -fx-background-insets: 0;
+    -fx-background-radius: -m3-container-shape;
+}
+
+.m3-toolbar-standard {
+    -fx-background-color: -m3-color-surface-container;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-effect: null;
+}
+
+.m3-toolbar-floating {
+    -fx-background-color: -m3-color-surface-container-high;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-background-radius: -m3-container-shape;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 3);
+}
+
+.m3-toolbar-docked {
+    -fx-background-color: -m3-color-surface-container;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-background-radius: 0;
+    -fx-effect: null;
+}
+
+.m3-toolbar-vertical {
+    -fx-background-radius: -m3-container-shape;
+}
+
+.m3-toolbar-vertical.m3-toolbar-docked {
+    -fx-background-radius: 0;
+}
+
+.m3-toolbar-item-slot {
+    -fx-alignment: center;
+}

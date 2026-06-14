@@ -54,10 +54,19 @@ public class M3DialogPane extends DialogPane {
     /// The default dialog content padding.
     private static final double DEFAULT_CONTENT_PADDING = 24.0;
 
-    // The styleable dialog container shape token.
+    /// The inline style declaration managed by the container shape token.
+    private @Nullable String managedContainerShapeStyle;
+
+    /// Whether the current style change is produced by managed metric synchronization.
+    private boolean updatingManagedStyle;
+
+    /// Whether the managed container shape style must be synchronized before the next layout pass.
+    private boolean containerShapeStyleDirty;
+
+    /// The styleable dialog container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // The styleable dialog content padding token.
+    /// The styleable dialog content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Reports focused dialog content or action changes to accessibility clients.
@@ -72,6 +81,11 @@ public class M3DialogPane extends DialogPane {
         contentTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
         contentProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         getButtonTypes().addListener((ListChangeListener<ButtonType>) change -> notifyAccessibleItemsChanged());
+        styleProperty().addListener((observable, oldValue, newValue) -> {
+            if (!updatingManagedStyle && managedContainerShapeStyle != null) {
+                requestContainerShapeStyleSync();
+            }
+        });
         focusNotifier.start();
         updateMetrics();
         updateAccessibleText();
@@ -101,7 +115,7 @@ public class M3DialogPane extends DialogPane {
                     this,
                     "containerShape",
                     StyleableProperties.CONTAINER_SHAPE,
-                    this::requestLayout
+                    this::updateContainerShape
             );
         }
         return containerShape;
@@ -229,10 +243,89 @@ public class M3DialogPane extends DialogPane {
         return M3Stylesheets.controlStylesheet("dialog.css");
     }
 
+    /// Lays out the dialog pane after synchronizing managed shape styles.
+    @Override
+    protected void layoutChildren() {
+        synchronizeContainerShapeStyle();
+        super.layoutChildren();
+    }
+
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double padding = getContentPadding();
         setPadding(new Insets(padding));
+    }
+
+    /// Requests a style pass when the runtime container shape token changes.
+    private void updateContainerShape() {
+        requestContainerShapeStyleSync();
+    }
+
+    /// Requests managed container shape synchronization before layout.
+    private void requestContainerShapeStyleSync() {
+        containerShapeStyleDirty = true;
+        requestLayout();
+    }
+
+    /// Synchronizes the resolved background radius with the current container shape token.
+    private void synchronizeContainerShapeStyle() {
+        if (!containerShapeStyleDirty || updatingManagedStyle) {
+            return;
+        }
+        containerShapeStyleDirty = false;
+        String baseStyle = removeManagedContainerShapeStyle(getStyle());
+        String nextManagedStyle = "-fx-background-radius: " + formatPixels(getContainerShape()) + ";";
+        String nextStyle = mergeStyles(baseStyle, nextManagedStyle);
+        managedContainerShapeStyle = nextManagedStyle;
+        if (nextStyle.equals(getStyle())) {
+            return;
+        }
+
+        updatingManagedStyle = true;
+        try {
+            setStyle(nextStyle);
+            if (getScene() != null) {
+                applyCss();
+            }
+        } finally {
+            updatingManagedStyle = false;
+        }
+    }
+
+    /// Removes the previous managed background-radius declaration from a style string.
+    private String removeManagedContainerShapeStyle(String style) {
+        @Nullable String managedStyle = managedContainerShapeStyle;
+        if (managedStyle == null || style.isBlank()) {
+            return style;
+        }
+
+        int index = style.indexOf(managedStyle);
+        if (index < 0) {
+            return style;
+        }
+
+        String before = style.substring(0, index).stripTrailing();
+        String after = style.substring(index + managedStyle.length()).stripLeading();
+        return mergeStyles(before, after);
+    }
+
+    /// Formats a token value as a CSS pixel size.
+    private static String formatPixels(double value) {
+        if (Math.rint(value) == value) {
+            return Long.toString((long) value) + "px";
+        }
+        return Double.toString(value) + "px";
+    }
+
+    /// Merges two inline style fragments.
+    private static String mergeStyles(String first, String second) {
+        if (first.isBlank()) {
+            return second;
+        }
+        if (second.isBlank()) {
+            return first;
+        }
+        return first.stripTrailing() + " " + second.stripLeading();
     }
 
     /// Updates the accessibility label from the dialog header and content text.

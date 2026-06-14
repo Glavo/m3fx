@@ -737,12 +737,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             return false;
         }
         if (parsedStart != null && parsedEnd != null && parsedStart.isAfter(parsedEnd)) {
-            setRangeErrors();
+            updateRangeErrors();
             return false;
         }
         if (parsedStart != null && picker.isDateDisabled(parsedStart)
                 || parsedEnd != null && picker.isDateDisabled(parsedEnd)) {
-            setRangeErrors();
+            updateRangeErrors();
             return false;
         }
 
@@ -753,7 +753,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Shows the picker popup when this field is attached to a window.
     public void showPicker() {
-        if (isDisabled() || popup.isShowing()) {
+        if (!M3Accessible.canReach(this) || popup.isShowing()) {
             return;
         }
 
@@ -1112,7 +1112,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     }
 
     /// Applies range error text to the editors that currently contain dates.
-    private void setRangeErrors() {
+    private void updateRangeErrors() {
         startInputLayout.setErrorText(getRangeErrorText());
         if (!endEditor.getText().isBlank()) {
             endInputLayout.setErrorText(getRangeErrorText());
@@ -1201,8 +1201,14 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
     private void showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         boolean preservePopupFocus = popup.isShowing() && parameters.length == 0 && popupFocusOwner() != null;
         showPicker();
+        if (!popup.isShowing()) {
+            return;
+        }
         if (!preservePopupFocus) {
             forwardPickerAccessibleAction(action, false, parameters);
         }
@@ -1250,6 +1256,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Requests focus for the field's current editor or popup focus target.
     private void focusAccessibleNode() {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         M3Accessible.showItem(focusNode());
         notifyFocusNodeChanged();
         popupFocusNotifier.refresh();
@@ -1345,7 +1354,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         @Nullable M3TextField editor = focusEditorOnHidden;
         focusEditorOnHidden = null;
         popupOwnerEditor = null;
-        if (editor != null) {
+        if (M3Accessible.canReach(editor)) {
             editor.requestFocus();
         }
         notifyFocusNodeChanged();

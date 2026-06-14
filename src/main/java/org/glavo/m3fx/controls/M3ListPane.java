@@ -290,6 +290,9 @@ public class M3ListPane extends Control {
 
     /// Selects the first list item when one exists.
     public final void selectFirst() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         M3ListItem firstItem = firstItem();
         if (firstItem != null) {
             select(firstItem);
@@ -298,6 +301,9 @@ public class M3ListPane extends Control {
 
     /// Selects the last list item when one exists.
     public final void selectLast() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3ListItem lastItem = M3SelectionNavigation.last(getItems(), M3ListItem.class);
         if (lastItem != null) {
             select(lastItem);
@@ -306,6 +312,9 @@ public class M3ListPane extends Control {
 
     /// Selects the next list item after the current selected item, wrapping at the end.
     public final void selectNext() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3ListItem nextItem =
                 M3SelectionNavigation.next(getItems(), getSelectedItem(), M3ListItem.class);
         if (nextItem != null) {
@@ -315,6 +324,9 @@ public class M3ListPane extends Control {
 
     /// Selects the previous list item before the current selected item, wrapping at the start.
     public final void selectPrevious() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3ListItem previousItem =
                 M3SelectionNavigation.previous(getItems(), getSelectedItem(), M3ListItem.class);
         if (previousItem != null) {
@@ -737,8 +749,8 @@ public class M3ListPane extends Control {
     }
 
     /// Returns whether a list item can currently participate in selection.
-    private static boolean isSelectableListItem(M3ListItem item) {
-        return !item.isDisabled() && item.isVisible();
+    private boolean isSelectableListItem(M3ListItem item) {
+        return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(item);
     }
 
     /// Creates the default Material Design 3 list skin.

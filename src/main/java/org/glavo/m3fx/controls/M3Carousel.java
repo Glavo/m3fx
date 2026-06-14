@@ -595,8 +595,8 @@ public class M3Carousel extends Control {
     }
 
     /// Returns whether a node can be targeted by navigation.
-    private static boolean isSelectable(Node item) {
-        return item.isVisible() && !item.isDisabled();
+    private boolean isSelectable(Node item) {
+        return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(item);
     }
 
     /// Validates a carousel item array.

@@ -294,7 +294,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                 && (button.getContentDisplay() == ContentDisplay.GRAPHIC_ONLY
                 || text == null
                 || text.isEmpty())) {
-            centerNodeInArea(graphic, x, y, width, height);
+            centerGraphicOnlyContent(graphic, x, y, width, height);
             return;
         }
 
@@ -304,6 +304,25 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                 centerNodeInArea(textNode, x, y, width, height);
             }
         }
+    }
+
+    /// Centers graphic-only content in the correct Material visual container.
+    private void centerGraphicOnlyContent(Node graphic, double x, double y, double width, double height) {
+        C button = getSkinnable();
+        if (button instanceof M3FloatingActionButton) {
+            double controlWidth = button.getWidth();
+            double controlHeight = button.getHeight();
+            if (controlWidth <= 0.0) {
+                controlWidth = button.getLayoutBounds().getWidth();
+            }
+            if (controlHeight <= 0.0) {
+                controlHeight = button.getLayoutBounds().getHeight();
+            }
+            centerNodeInArea(graphic, 0.0, 0.0, controlWidth, controlHeight);
+            return;
+        }
+
+        centerNodeInArea(graphic, x, y, width, height);
     }
 
     /// Centers a child node inside the supplied skin layout area.

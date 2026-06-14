@@ -49,13 +49,13 @@ public class M3Switch extends ButtonBase {
     /// The default switch track shape radius.
     private static final double DEFAULT_TRACK_SHAPE = 999.0;
 
-    /// The styleable touch target size token.
+    // The styleable touch target size token.
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
-    /// The styleable switch track shape token.
+    // The styleable switch track shape token.
     private @Nullable StyleableDoubleProperty trackShape;
 
-    /// The selected state property.
+    // The selected state property.
     private @Nullable BooleanProperty selected;
 
     /// Creates an empty switch.

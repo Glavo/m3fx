@@ -386,7 +386,19 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
 
     /// Returns whether a day cell is visible to users and accessibility clients.
     private static boolean isAccessibleDayCell(DateCellButton dayCell) {
-        return dayCell.isVisible() && !dayCell.isMouseTransparent();
+        return isEffectivelyReachable(dayCell) && !dayCell.isMouseTransparent();
+    }
+
+    /// Returns whether a node and its ancestor chain are visible and enabled.
+    private static boolean isEffectivelyReachable(Node node) {
+        @Nullable Node current = node;
+        while (current != null) {
+            if (!current.isVisible() || current.isDisabled()) {
+                return false;
+            }
+            current = current.getParent();
+        }
+        return true;
     }
 
     /// Adds or removes a style class.

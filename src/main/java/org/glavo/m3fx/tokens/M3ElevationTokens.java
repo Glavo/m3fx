@@ -7,6 +7,8 @@ import org.glavo.m3fx.internal.tokens.M3ElevationTokensImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 elevation system tokens.
+///
+/// See [Material Design elevation](https://m3.material.io/styles/elevation/overview).
 @NotNullByDefault
 public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
     /// Returns elevation level zero.

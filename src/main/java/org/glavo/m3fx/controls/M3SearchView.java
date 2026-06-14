@@ -449,6 +449,9 @@ public class M3SearchView extends Control {
 
     /// Shows and focuses the result referenced by accessibility action parameters.
     private void showAccessibleResult(Object... parameters) {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         @Nullable Node currentFocusNode = currentDefaultShowItemFocusNode();
         activate();
         if (parameters.length == 0) {
@@ -481,6 +484,9 @@ public class M3SearchView extends Control {
 
     /// Focuses the next result relative to the current focus owner.
     private boolean focusNextResult() {
+        if (!M3Accessible.canReach(this)) {
+            return false;
+        }
         if (!isActive()) {
             activate();
         }
@@ -494,6 +500,9 @@ public class M3SearchView extends Control {
 
     /// Focuses the previous result or returns focus to the editor from the first result.
     private boolean focusPreviousResult() {
+        if (!M3Accessible.canReach(this)) {
+            return false;
+        }
         int currentIndex = focusedResultIndex();
         if (currentIndex < 0) {
             return false;
@@ -510,6 +519,9 @@ public class M3SearchView extends Control {
 
     /// Focuses the first reachable result.
     private boolean focusFirstResult() {
+        if (!M3Accessible.canReach(this)) {
+            return false;
+        }
         if (!isActive()) {
             activate();
         }
@@ -518,6 +530,9 @@ public class M3SearchView extends Control {
 
     /// Focuses the last reachable result.
     private boolean focusLastResult() {
+        if (!M3Accessible.canReach(this)) {
+            return false;
+        }
         if (!isActive()) {
             activate();
         }
@@ -545,6 +560,9 @@ public class M3SearchView extends Control {
 
     /// Focuses a result at an index when it can be reached.
     private boolean focusResultAt(int index) {
+        if (!M3Accessible.canReach(this)) {
+            return false;
+        }
         @Nullable Node focusTarget = focusTargetAt(index);
         if (focusTarget == null) {
             return false;
@@ -652,7 +670,7 @@ public class M3SearchView extends Control {
 
     /// Returns the focus target for the indexed result when it can be reached.
     private @Nullable Node focusTargetAt(int index) {
-        if (index < 0 || index >= getResults().size()) {
+        if (!M3Accessible.canReach(this) || index < 0 || index >= getResults().size()) {
             return null;
         }
         return M3Accessible.focusTarget(getResults().get(index));
@@ -668,6 +686,9 @@ public class M3SearchView extends Control {
 
     /// Focuses the current accessibility focus node, or the embedded editor when focus is outside this search view.
     private void focusAccessibleNode() {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         @Nullable Node focusNode = currentFocusNode();
         activate();
         M3Accessible.showItem(focusNode == null ? getEditor() : focusNode);
@@ -676,6 +697,9 @@ public class M3SearchView extends Control {
 
     /// Returns the current focused child target, or `null` when focus is outside this search view.
     private @Nullable Node currentFocusNode() {
+        if (!M3Accessible.canReach(this)) {
+            return null;
+        }
         @Nullable Node resultFocusNode = M3Accessible.currentFocusTarget(this, getResults());
         if (resultFocusNode != null) {
             return resultFocusNode;
@@ -685,6 +709,9 @@ public class M3SearchView extends Control {
 
     /// Returns the current target that a parameterless `SHOW_ITEM` should preserve.
     private @Nullable Node currentDefaultShowItemFocusNode() {
+        if (!M3Accessible.canReach(this)) {
+            return null;
+        }
         @Nullable Node resultFocusNode = M3Accessible.currentFocusTarget(this, getResults());
         if (resultFocusNode != null) {
             return resultFocusNode;
@@ -716,7 +743,7 @@ public class M3SearchView extends Control {
 
     /// Returns the index of the result containing current keyboard focus.
     private int focusedResultIndex() {
-        if (getScene() == null) {
+        if (!M3Accessible.canReach(this)) {
             return -1;
         }
 

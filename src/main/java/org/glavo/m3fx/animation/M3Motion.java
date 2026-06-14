@@ -8,6 +8,8 @@ import javafx.util.Duration;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Material Design 3 motion easing and duration constants for JavaFX animations.
+///
+/// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public final class M3Motion {
     /// A linear animation curve.

@@ -423,7 +423,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Shows the picker popup when this field is attached to a window.
     public final void showPicker() {
-        if (isDisabled() || popup.isShowing()) {
+        if (!M3Accessible.canReach(this) || popup.isShowing()) {
             return;
         }
 
@@ -731,8 +731,14 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
     private void showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         boolean preservePopupFocus = popup.isShowing() && parameters.length == 0 && popupFocusOwner() != null;
         showPicker();
+        if (!popup.isShowing()) {
+            return;
+        }
         if (!preservePopupFocus) {
             forwardPickerAccessibleAction(action, parameters);
         }
@@ -757,6 +763,9 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Requests focus for the current editor, open button, or popup focus target.
     private void focusAccessibleNode() {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         M3Accessible.showItem(focusNode());
         notifyFocusNodeChanged();
         popupFocusNotifier.refresh();
@@ -839,7 +848,9 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         resetPopupAnimationState();
         if (focusEditorOnHidden) {
             focusEditorOnHidden = false;
-            editor.requestFocus();
+            if (M3Accessible.canReach(editor)) {
+                editor.requestFocus();
+            }
         }
     }
 

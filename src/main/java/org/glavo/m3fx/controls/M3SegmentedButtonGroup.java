@@ -340,6 +340,9 @@ public class M3SegmentedButtonGroup extends Control {
 
     /// Selects the first segmented button when one exists.
     public final void selectFirst() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         M3SegmentedButton firstButton = firstButton();
         if (firstButton != null) {
             select(firstButton);
@@ -348,6 +351,9 @@ public class M3SegmentedButtonGroup extends Control {
 
     /// Selects the last segmented button when one exists.
     public final void selectLast() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3SegmentedButton lastButton =
                 M3SelectionNavigation.last(getItems(), M3SegmentedButton.class);
         if (lastButton != null) {
@@ -357,6 +363,9 @@ public class M3SegmentedButtonGroup extends Control {
 
     /// Selects the next segmented button after the current selected button, wrapping at the end.
     public final void selectNext() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3SegmentedButton nextButton =
                 M3SelectionNavigation.next(getItems(), getSelectedButton(), M3SegmentedButton.class);
         if (nextButton != null) {
@@ -366,6 +375,9 @@ public class M3SegmentedButtonGroup extends Control {
 
     /// Selects the previous segmented button before the current selected button, wrapping at the start.
     public final void selectPrevious() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3SegmentedButton previousButton =
                 M3SelectionNavigation.previous(getItems(), getSelectedButton(), M3SegmentedButton.class);
         if (previousButton != null) {
@@ -684,8 +696,8 @@ public class M3SegmentedButtonGroup extends Control {
     }
 
     /// Returns whether a segmented button can currently participate in selection.
-    private static boolean isSelectableButton(M3SegmentedButton button) {
-        return !button.isDisabled() && button.isVisible();
+    private boolean isSelectableButton(M3SegmentedButton button) {
+        return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(button);
     }
 
     /// Applies first, middle, last, or single segment style classes.

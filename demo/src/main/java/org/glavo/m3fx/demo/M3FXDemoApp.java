@@ -137,6 +137,8 @@ import org.glavo.m3fx.controls.M3TimePickerDialog;
 import org.glavo.m3fx.controls.M3TimePickerField;
 import org.glavo.m3fx.controls.M3TimePresets;
 import org.glavo.m3fx.controls.M3Tooltip;
+import org.glavo.m3fx.controls.M3Toolbar;
+import org.glavo.m3fx.controls.M3ToolbarVariant;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.controls.M3ValidationSummary;
@@ -445,15 +447,15 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Switches", "Switch", "Switch", "On, off, and disabled switch states", DemoMaterialDocs.SWITCH, this::createSwitchesPage),
                 new DemoPage("Tabs", "Tabs", "Tabs", "Primary tabs with animated active indicators", DemoMaterialDocs.TABS, this::createTabsPage),
                 new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", DemoMaterialDocs.TEXT_FIELDS, this::createTextFieldsPage),
-                new DemoPage("Toolbars", "Toolbars", "Toolbars", "Bottom app bars with actions and floating actions", DemoMaterialDocs.TOOLBARS, this::createBottomAppBarsPage),
+                new DemoPage("Toolbars", "Toolbars", "Toolbars", "Standard, floating, docked, and vertical action toolbars", DemoMaterialDocs.TOOLBARS, this::createToolbarsPage),
                 new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", DemoMaterialDocs.TOOLTIPS, this::createTooltipsPage),
-                new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", this::createBannersPage),
-                new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", this::createFormsPage),
+                new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", DemoMaterialDocs.BANNERS, this::createBannersPage),
+                new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", DemoMaterialDocs.FORMS, this::createFormsPage),
                 new DemoPage("Typography", "Typography", ADDITIONAL_DEMOS_GROUP, "Token-driven Material type roles", DemoMaterialDocs.TYPOGRAPHY, this::createTypographyPage),
                 new DemoPage("Icons", "Icons", ADDITIONAL_DEMOS_GROUP, "Size roles and semantic icon colors", DemoMaterialDocs.ICONS, this::createIconsPage),
-                new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_GROUP, "Initials and graphic avatar slots", this::createAvatarsPage),
-                new DemoPage("Surfaces", "Surfaces", ADDITIONAL_DEMOS_GROUP, "Color containers, shape, padding, and elevation", this::createSurfacesPage),
-                new DemoPage("Scrims", "Scrims", ADDITIONAL_DEMOS_GROUP, "Modal overlays and dismiss actions", this::createScrimsPage)
+                new DemoPage("Avatars", "Avatars", ADDITIONAL_DEMOS_GROUP, "Initials and graphic avatar slots", DemoMaterialDocs.AVATARS, this::createAvatarsPage),
+                new DemoPage("Surfaces", "Surfaces", ADDITIONAL_DEMOS_GROUP, "Color containers, shape, padding, and elevation", DemoMaterialDocs.SURFACES, this::createSurfacesPage),
+                new DemoPage("Scrims", "Scrims", ADDITIONAL_DEMOS_GROUP, "Modal overlays and dismiss actions", DemoMaterialDocs.SCRIMS, this::createScrimsPage)
         );
     }
 
@@ -614,14 +616,11 @@ public final class M3FXDemoApp extends Application {
         header.getStyleClass().add("demo-page-header");
         header.setAlignment(Pos.CENTER_LEFT);
 
-        @Nullable String materialUrl = page.materialUrl();
-        if (materialUrl != null) {
-            M3Button docsButton = new M3Button("Material docs");
-            docsButton.setVariant(M3ButtonVariant.OUTLINED);
-            docsButton.getStyleClass().add("demo-page-doc-link");
-            docsButton.setOnAction(event -> openMaterialPage(materialUrl));
-            header.getChildren().add(docsButton);
-        }
+        M3Button docsButton = new M3Button("Material docs");
+        docsButton.setVariant(M3ButtonVariant.OUTLINED);
+        docsButton.getStyleClass().add("demo-page-doc-link");
+        docsButton.setOnAction(event -> openMaterialPage(page.materialUrl()));
+        header.getChildren().add(docsButton);
 
         return header;
     }
@@ -648,10 +647,7 @@ public final class M3FXDemoApp extends Application {
     @Unmodifiable Map<String, String> demoPageMaterialUrlsForTesting() {
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
         for (DemoPage page : pages) {
-            @Nullable String materialUrl = page.materialUrl();
-            if (materialUrl != null) {
-                result.put(page.title(), materialUrl);
-            }
+            result.put(page.title(), page.materialUrl());
         }
         return Collections.unmodifiableMap(result);
     }
@@ -1482,6 +1478,52 @@ public final class M3FXDemoApp extends Application {
         );
     }
 
+    /// Creates the toolbar component page.
+    private Node createToolbarsPage() {
+        M3Toolbar standard = createToolbar(
+                M3ToolbarVariant.STANDARD,
+                Orientation.HORIZONTAL,
+                "archive",
+                "share",
+                "edit",
+                "more"
+        );
+        M3Toolbar floating = createToolbar(
+                M3ToolbarVariant.FLOATING,
+                Orientation.HORIZONTAL,
+                "bold",
+                "italic",
+                "underline",
+                "tune",
+                "visibility"
+        );
+        M3Toolbar docked = createToolbar(
+                M3ToolbarVariant.DOCKED,
+                Orientation.HORIZONTAL,
+                "home",
+                "search",
+                "notifications",
+                "person"
+        );
+        docked.setMaxWidth(Double.MAX_VALUE);
+
+        M3Toolbar vertical = createToolbar(
+                M3ToolbarVariant.FLOATING,
+                Orientation.VERTICAL,
+                "search",
+                "favorite",
+                "settings",
+                "more"
+        );
+
+        return createGallery(
+                createShowcaseGroup("Standard", standard),
+                createShowcaseGroup("Floating", floating),
+                createFullWidthShowcaseGroup("Docked", createToolbarPreview(docked)),
+                createShowcaseGroup("Vertical", vertical)
+        );
+    }
+
     /// Creates the bottom app bar component page.
     private Node createBottomAppBarsPage() {
         M3BottomAppBar end = createBottomAppBar();
@@ -2206,6 +2248,23 @@ public final class M3FXDemoApp extends Application {
         return group;
     }
 
+    /// Creates one showcase group whose samples use the full content width.
+    private static VBox createFullWidthShowcaseGroup(String title, Node... nodes) {
+        Label label = new Label(title);
+        label.getStyleClass().add("demo-group-title");
+
+        VBox stack = new VBox(16.0);
+        stack.getStyleClass().add("demo-stacked-flow");
+        stack.setFillWidth(true);
+        stack.setMaxWidth(Double.MAX_VALUE);
+        stack.getChildren().addAll(nodes);
+
+        VBox group = new VBox(10.0, label, stack);
+        group.getStyleClass().add("demo-showcase-group");
+        group.setMaxWidth(Double.MAX_VALUE);
+        return group;
+    }
+
     /// Creates the app bar showcase group whose samples are stacked and expanded to the available width.
     private static VBox createAppBarShowcaseGroup(String title, Node... nodes) {
         Label label = new Label(title);
@@ -2522,6 +2581,19 @@ public final class M3FXDemoApp extends Application {
         return new M3TabBar(firstTab, new M3Tab(second), new M3Tab(third));
     }
 
+    /// Creates a toolbar sample.
+    private static M3Toolbar createToolbar(M3ToolbarVariant variant, Orientation orientation, String... iconNames) {
+        Objects.requireNonNull(iconNames, "iconNames");
+
+        M3Toolbar toolbar = new M3Toolbar();
+        toolbar.setVariant(variant);
+        toolbar.setOrientation(orientation);
+        for (String iconName : iconNames) {
+            toolbar.addItem(createToolbarIconButton(iconName));
+        }
+        return toolbar;
+    }
+
     /// Creates a top app bar sample.
     private static M3TopAppBar createTopAppBar(
             String title,
@@ -2553,6 +2625,17 @@ public final class M3FXDemoApp extends Application {
     private static VBox createBottomAppBarPreview(M3BottomAppBar bottomAppBar) {
         VBox preview = createAppBarPreview();
         preview.getChildren().add(bottomAppBar);
+        return preview;
+    }
+
+    /// Creates a preview surface for a toolbar sample.
+    private static StackPane createToolbarPreview(M3Toolbar toolbar) {
+        StackPane preview = new StackPane(toolbar);
+        preview.getStyleClass().add("demo-toolbar-preview");
+        preview.setMinWidth(560.0);
+        preview.setPrefWidth(760.0);
+        preview.setMaxWidth(Double.MAX_VALUE);
+        StackPane.setAlignment(toolbar, Pos.CENTER_LEFT);
         return preview;
     }
 
@@ -2775,6 +2858,14 @@ public final class M3FXDemoApp extends Application {
         return new M3IconButton(icon);
     }
 
+    /// Creates a sample icon button for toolbar action slots.
+    private static M3IconButton createToolbarIconButton(String iconName) {
+        Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName));
+        M3IconButton button = new M3IconButton(icon);
+        button.setAccessibleText(toolbarIconAccessibleText(iconName));
+        return button;
+    }
+
     /// Creates a sample icon button for leading app bar slots.
     private static M3IconButton createLeadingAppBarIconButton(String iconName) {
         Node icon = createIconViewport(DemoIcons.onSurface(iconName), "demo-app-bar-icon");
@@ -2801,6 +2892,28 @@ public final class M3FXDemoApp extends Application {
             case "more" -> "More options";
             case "search" -> "Search";
             default -> throw new IllegalArgumentException("Unknown app bar icon: " + iconName);
+        };
+    }
+
+    /// Returns the accessible action text used by toolbar icon buttons.
+    private static String toolbarIconAccessibleText(String iconName) {
+        return switch (iconName) {
+            case "archive" -> "Archive";
+            case "bold" -> "Bold";
+            case "edit" -> "Edit";
+            case "favorite" -> "Favorite";
+            case "home" -> "Home";
+            case "italic" -> "Italic";
+            case "more" -> "More options";
+            case "notifications" -> "Notifications";
+            case "person" -> "Account";
+            case "search" -> "Search";
+            case "settings" -> "Settings";
+            case "share" -> "Share";
+            case "tune" -> "Tune";
+            case "underline" -> "Underline";
+            case "visibility" -> "Visibility";
+            default -> throw new IllegalArgumentException("Unknown toolbar icon: " + iconName);
         };
     }
 
@@ -3458,7 +3571,7 @@ public final class M3FXDemoApp extends Application {
     /// @param navigationTitle the page title displayed in the sidebar
     /// @param sidebarSection the sidebar section containing this page
     /// @param subtitle the page subtitle
-    /// @param materialUrl the Material Design documentation URL, or `null` when no matching page exists
+    /// @param materialUrl the Material Design documentation URL for the page or its closest related guidance
     /// @param contentFactory the factory used to create page content on demand
     @NotNullByDefault
     private record DemoPage(
@@ -3466,34 +3579,23 @@ public final class M3FXDemoApp extends Application {
             String navigationTitle,
             String sidebarSection,
             String subtitle,
-            @Nullable String materialUrl,
+            String materialUrl,
             Supplier<Node> contentFactory
     ) {
-        /// Creates a demo page descriptor with a sidebar title and section.
-        private DemoPage(
-                String title,
-                String navigationTitle,
-                String sidebarSection,
-                String subtitle,
-                Supplier<Node> contentFactory
-        ) {
-            this(title, navigationTitle, sidebarSection, subtitle, null, contentFactory);
-        }
-
         /// Creates a demo page descriptor with a sidebar title, section, and documentation URL.
         private DemoPage(
                 String title,
                 String navigationTitle,
                 String sidebarSection,
                 String subtitle,
-                @Nullable String materialUrl,
+                String materialUrl,
                 Supplier<Node> contentFactory
         ) {
             this.title = Objects.requireNonNull(title, "title");
             this.navigationTitle = Objects.requireNonNull(navigationTitle, "navigationTitle");
             this.sidebarSection = Objects.requireNonNull(sidebarSection, "sidebarSection");
             this.subtitle = Objects.requireNonNull(subtitle, "subtitle");
-            this.materialUrl = materialUrl;
+            this.materialUrl = Objects.requireNonNull(materialUrl, "materialUrl");
             this.contentFactory = Objects.requireNonNull(contentFactory, "contentFactory");
         }
 

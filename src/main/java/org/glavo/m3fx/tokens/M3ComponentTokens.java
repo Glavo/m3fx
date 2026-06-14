@@ -213,6 +213,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the bottom app bar component tokens
     BottomAppBarTokens bottomAppBar();
 
+    /// Returns tokens used by toolbars.
+    ///
+    /// @return the toolbar component tokens
+    ToolbarTokens toolbar();
+
     /// Returns tokens used by navigation bars.
     ///
     /// @return the navigation bar component tokens
@@ -274,6 +279,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param avatar the avatar component tokens
     /// @param topAppBar the top app bar component tokens
     /// @param bottomAppBar the bottom app bar component tokens
+    /// @param toolbar the toolbar component tokens
     /// @param navigationBar the navigation bar component tokens
     /// @param navigationRail the navigation rail component tokens
     /// @param navigationDrawer the navigation drawer component tokens
@@ -319,6 +325,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             AvatarTokens avatar,
             TopAppBarTokens topAppBar,
             BottomAppBarTokens bottomAppBar,
+            ToolbarTokens toolbar,
             NavigationBarTokens navigationBar,
             NavigationRailTokens navigationRail,
             NavigationDrawerTokens navigationDrawer,
@@ -364,6 +371,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 avatar,
                 topAppBar,
                 bottomAppBar,
+                toolbar,
                 navigationBar,
                 navigationRail,
                 navigationDrawer,
@@ -510,6 +518,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double bottomAppBarActionSpacing = 0.0;
         double topAppBarMediumBottomPadding = density.apply(expressive ? 24.0 : 20.0);
         double topAppBarLargeBottomPadding = density.apply(expressive ? 32.0 : 28.0);
+        double toolbarContainerHeight = density.apply(expressive ? 72.0 : 64.0);
+        double toolbarContainerWidth = density.apply(expressive ? 72.0 : 64.0);
+        double toolbarContainerShape = expressive ? shapeTokens.extraLarge() : shapeTokens.large();
+        double toolbarItemSlotSize = density.apply(expressive ? 56.0 : 48.0);
+        double toolbarContentPadding = density.apply(expressive ? 10.0 : 8.0);
+        double toolbarItemSpacing = density.apply(expressive ? 4.0 : 0.0);
         double buttonHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
         double textButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
         double groupedButtonHorizontalPadding = density.apply(expressive ? 22.0 : 20.0);
@@ -751,6 +765,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         bottomAppBarContentSpacing,
                         bottomAppBarActionSpacing
                 ),
+                new ToolbarTokens(
+                        toolbarContainerHeight,
+                        toolbarContainerWidth,
+                        toolbarContainerShape,
+                        toolbarItemSlotSize,
+                        toolbarContentPadding,
+                        toolbarItemSpacing
+                ),
                 new NavigationBarTokens(
                         navigationBarHeight,
                         navigationItemWidth,
@@ -845,6 +867,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, avatar());
         append(builder, topAppBar());
         append(builder, bottomAppBar());
+        append(builder, toolbar());
         append(builder, navigationBar());
         append(builder, navigationRail());
         append(builder, navigationDrawer());
@@ -1027,6 +1050,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 topAppBar()
         );
         appendBottomAppBarRule(builder, ".m3-bottom-app-bar", bottomAppBar());
+        appendToolbarRule(builder, ".m3-toolbar", toolbar());
         appendNavigationBarRule(builder, ".m3-navigation-bar", navigationBar());
         appendNavigationItemRule(builder, ".m3-navigation-item", navigationBar());
         appendNavigationIndicatorRule(builder, ".m3-navigation-item-indicator", navigationBar());
@@ -1423,6 +1447,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-bottom-app-bar-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-bottom-app-bar-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         M3TokenCss.append(builder, "-m3-bottom-app-bar-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+    }
+
+    /// Appends toolbar token declarations.
+    private static void append(StringBuilder builder, ToolbarTokens tokens) {
+        M3TokenCss.append(builder, "-m3-toolbar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, "-m3-toolbar-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        M3TokenCss.append(builder, "-m3-toolbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        M3TokenCss.append(builder, "-m3-toolbar-item-slot-size", M3TokenCss.pixels(tokens.itemSlotSize()));
+        M3TokenCss.append(builder, "-m3-toolbar-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        M3TokenCss.append(builder, "-m3-toolbar-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
     }
 
     /// Appends navigation bar token declarations.
@@ -2524,6 +2558,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends a toolbar token CSS rule.
+    private static void appendToolbarRule(StringBuilder builder, String selector, ToolbarTokens tokens) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-toolbar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-toolbar-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        appendDeclaration(builder, "-m3-toolbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-toolbar-item-slot-size", M3TokenCss.pixels(tokens.itemSlotSize()));
+        appendDeclaration(builder, "-m3-toolbar-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        appendDeclaration(builder, "-m3-toolbar-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-m3-item-slot-size", M3TokenCss.pixels(tokens.itemSlotSize()));
+        appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        endRule(builder);
+    }
+
     /// Appends a navigation bar token CSS rule.
     private static void appendNavigationBarRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
         beginRule(builder, selector);
@@ -3543,6 +3596,34 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(contentSpacing, "contentSpacing");
             validateNonNegative(actionSpacing, "actionSpacing");
+        }
+    }
+
+    /// Tokens used by toolbars.
+    ///
+    /// @param containerHeight the horizontal toolbar container height
+    /// @param containerWidth the vertical toolbar container width
+    /// @param containerShape the toolbar container radius
+    /// @param itemSlotSize the minimum action slot width and height
+    /// @param contentPadding the padding around the toolbar item flow
+    /// @param itemSpacing the spacing between action slots
+    @NotNullByDefault
+    record ToolbarTokens(
+            double containerHeight,
+            double containerWidth,
+            double containerShape,
+            double itemSlotSize,
+            double contentPadding,
+            double itemSpacing
+    ) {
+        /// Creates toolbar tokens.
+        public ToolbarTokens {
+            validateNonNegative(containerHeight, "containerHeight");
+            validateNonNegative(containerWidth, "containerWidth");
+            validateNonNegative(containerShape, "containerShape");
+            validateNonNegative(itemSlotSize, "itemSlotSize");
+            validateNonNegative(contentPadding, "contentPadding");
+            validateNonNegative(itemSpacing, "itemSpacing");
         }
     }
 

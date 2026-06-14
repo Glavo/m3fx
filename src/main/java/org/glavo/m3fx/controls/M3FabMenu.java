@@ -286,11 +286,22 @@ public class M3FabMenu extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case FIRE -> toggle();
-            case EXPAND -> show();
+            case FIRE -> {
+                if (M3Accessible.canReach(this)) {
+                    toggle();
+                }
+            }
+            case EXPAND -> {
+                if (M3Accessible.canReach(this)) {
+                    show();
+                }
+            }
             case SHOW_ITEM -> showAccessibleItem(parameters);
             case COLLAPSE -> hide();
             case REQUEST_FOCUS -> {
+                if (!M3Accessible.canReach(this)) {
+                    return;
+                }
                 M3Accessible.showItem(accessibleFocusNode());
                 notifyFocusNodeChanged();
             }
@@ -355,12 +366,15 @@ public class M3FabMenu extends Control {
     /// Returns the currently focusable action items followed by the toggle button.
     private List<Node> focusTargets() {
         ArrayList<Node> targets = new ArrayList<>();
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return targets;
+        }
         for (Node item : getItems()) {
-            if (item.isVisible() && item.isFocusTraversable() && !item.isDisabled()) {
+            if (item.isFocusTraversable() && M3Accessible.isEffectivelyReachable(item)) {
                 targets.add(item);
             }
         }
-        if (toggleButton.isVisible() && toggleButton.isFocusTraversable() && !toggleButton.isDisabled()) {
+        if (toggleButton.isFocusTraversable() && M3Accessible.isEffectivelyReachable(toggleButton)) {
             targets.add(toggleButton);
         }
         return targets;
@@ -417,6 +431,9 @@ public class M3FabMenu extends Control {
     /// Shows the action menu and focuses the requested action, preserving a currently focused action by default.
     private void showAccessibleItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         @Nullable Node target = parameters.length == 0
                 ? currentActionFocusNode()
                 : M3Accessible.actionItem(getItems(), parameters);

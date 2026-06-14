@@ -178,6 +178,12 @@
     -fx-background-radius: 0px;
 }
 
+.demo-toolbar-preview {
+    -fx-padding: 12px;
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 12px;
+}
+
 .demo-top-app-bar-preview {
     -fx-background-color: -m3-color-surface;
 }

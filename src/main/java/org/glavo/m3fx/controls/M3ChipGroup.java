@@ -381,6 +381,9 @@ public class M3ChipGroup extends Control {
 
     /// Selects the first chip when one exists.
     public final void selectFirst() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         M3Chip firstChip = firstChip();
         if (firstChip != null) {
             select(firstChip);
@@ -389,6 +392,9 @@ public class M3ChipGroup extends Control {
 
     /// Selects the last chip when one exists.
     public final void selectLast() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3Chip lastChip = M3SelectionNavigation.last(getItems(), M3Chip.class);
         if (lastChip != null) {
             select(lastChip);
@@ -397,6 +403,9 @@ public class M3ChipGroup extends Control {
 
     /// Selects the next chip after the current selected chip, wrapping at the end.
     public final void selectNext() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3Chip nextChip = M3SelectionNavigation.next(getItems(), getSelectedChip(), M3Chip.class);
         if (nextChip != null) {
             select(nextChip);
@@ -405,6 +414,9 @@ public class M3ChipGroup extends Control {
 
     /// Selects the previous chip before the current selected chip, wrapping at the start.
     public final void selectPrevious() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3Chip previousChip =
                 M3SelectionNavigation.previous(getItems(), getSelectedChip(), M3Chip.class);
         if (previousChip != null) {
@@ -710,8 +722,8 @@ public class M3ChipGroup extends Control {
     }
 
     /// Returns whether a chip can currently participate in selection.
-    private static boolean isSelectableChip(M3Chip chip) {
-        return !chip.isDisabled() && chip.isVisible();
+    private boolean isSelectableChip(M3Chip chip) {
+        return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(chip);
     }
 
     /// Creates the default Material Design 3 chip group skin.

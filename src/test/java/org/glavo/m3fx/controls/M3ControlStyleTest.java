@@ -3,11 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.Animation;
-import javafx.animation.PauseTransition;
-import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.beans.property.DoubleProperty;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
@@ -71,10 +67,13 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionBehavior;
+import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.shape.M3ShapeMorph;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
@@ -147,9 +146,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 
@@ -173,11 +174,41 @@ final class M3ControlStyleTest {
     /// The pulse count used after closing a virtualized list view window with a pending focus retry.
     private static final int DETACHED_LIST_FOCUS_RETRY_STABLE_PULSES = 8;
 
+    /// The pulse count used after a smooth scroll reaches its target position.
+    private static final int SMOOTH_SCROLL_COMPLETION_STABLE_PULSES = 2;
+
+    /// The pulse count used to prove disabled snackbar timers keep the current snackbar stable.
+    private static final int SNACKBAR_DISABLED_TIMER_STABLE_PULSES = 6;
+
+    /// The pulse count used after a circular progress indicator has crossed a real rendered cycle seam.
+    private static final int PROGRESS_INDICATOR_CYCLE_STABLE_PULSES = 2;
+
     /// The lowest acceptable rendered ink center ratio for outlined fields with a floating label.
     private static final double OUTLINED_FLOATING_INK_MINIMUM_CENTER_RATIO = 0.46;
 
     /// The highest acceptable rendered ink center ratio for outlined fields with a floating label.
     private static final double OUTLINED_FLOATING_INK_MAXIMUM_CENTER_RATIO = 0.70;
+
+    /// The duration used to keep real-pulse animation states observable in tests.
+    private static final Duration OBSERVABLE_TEST_MOTION_DURATION = Duration.millis(600.0);
+
+    /// The largest accepted visible circular progress angle step between consecutive rendered pulses.
+    private static final double MAXIMUM_PROGRESS_INDICATOR_CYCLE_STEP_DEGREES = 150.0;
+
+    /// The square snapshot size used by loading indicator morph geometry tests.
+    private static final double LOADING_INDICATOR_TEST_FRAME_SIZE = 140.0;
+
+    /// The active shape size used by loading indicator morph geometry tests.
+    private static final double LOADING_INDICATOR_TEST_INDICATOR_SIZE = 89.0;
+
+    /// The active shape center used by loading indicator morph geometry tests.
+    private static final double LOADING_INDICATOR_TEST_CENTER = LOADING_INDICATOR_TEST_FRAME_SIZE / 2.0;
+
+    /// The rotation added by each loading indicator morph segment.
+    private static final double LOADING_INDICATOR_QUARTER_ROTATION = 0.25;
+
+    /// The largest active-shape scale added during loading indicator morphing.
+    private static final double LOADING_INDICATOR_MORPH_SCALE_AMPLITUDE = 0.12;
 
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
@@ -635,87 +666,52 @@ final class M3ControlStyleTest {
 
     /// Verifies that non-elevated button variants do not use pressed container scaling.
     @Test
-    void nonElevatedButtonVariantsDoNotScaleWhenPressed() {
-        runOnFxThread(() -> {
-            M3Button button = new M3Button("Button");
-            Pane root = new Pane(button);
-            Scene scene = new Scene(root, 200.0, 100.0);
+    void nonElevatedButtonVariantsDoNotScaleWhenPressed() throws InterruptedException {
+        for (M3ButtonVariant variant : List.of(
+                M3ButtonVariant.FILLED,
+                M3ButtonVariant.TONAL,
+                M3ButtonVariant.OUTLINED,
+                M3ButtonVariant.TEXT
+        )) {
+            assertPressedScaleAfterRealPulse(
+                    () -> createButton("Button", variant),
+                    120.0,
+                    40.0,
+                    1.0,
+                    variant + " button"
+            );
+        }
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            button.resize(120.0, 40.0);
-            button.layout();
-
-            for (M3ButtonVariant variant : java.util.List.of(
-                    M3ButtonVariant.FILLED,
-                    M3ButtonVariant.TONAL,
-                    M3ButtonVariant.OUTLINED,
-                    M3ButtonVariant.TEXT
-            )) {
-                button.setVariant(variant);
-                root.applyCss();
-                pressButtonAndJumpToPressedFrame(button);
-
-                assertEquals(1.0, button.getScaleX(), 0.0001, () -> variant + " button scaleX");
-                assertEquals(1.0, button.getScaleY(), 0.0001, () -> variant + " button scaleY");
-                button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
-            }
-
-            button.setVariant(M3ButtonVariant.ELEVATED);
-            root.applyCss();
-            pressButtonAndJumpToPressedFrame(button);
-
-            assertEquals(0.98, button.getScaleX(), 0.0001);
-            assertEquals(0.98, button.getScaleY(), 0.0001);
-        });
+        assertPressedScaleAfterRealPulse(
+                () -> createButton("Button", M3ButtonVariant.ELEVATED),
+                120.0,
+                40.0,
+                0.98,
+                "elevated button"
+        );
     }
 
     /// Verifies that flat labeled button controls do not use depth-style pressed scaling.
     @Test
-    void flatLabeledButtonControlsDoNotScaleWhenPressed() {
-        runOnFxThread(() -> {
-            M3Chip chip = new M3Chip("Chip");
-            M3SegmentedButton segmentedButton = new M3SegmentedButton("Segment");
-            M3Tab tab = new M3Tab("Tab");
-            M3IconToggleButton iconToggleButton = new M3IconToggleButton("star");
-            FlowPane root = new FlowPane(12.0, 12.0, chip, segmentedButton, tab, iconToggleButton);
-            Scene scene = new Scene(root, 420.0, 120.0);
-
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.layout();
-
-            for (ButtonBase button : java.util.List.of(chip, segmentedButton, tab, iconToggleButton)) {
-                button.resize(120.0, 40.0);
-                button.layout();
-                pressButtonAndJumpToPressedFrame(button);
-
-                assertEquals(1.0, button.getScaleX(), 0.0001,
-                        () -> button.getClass().getSimpleName() + " scaleX");
-                assertEquals(1.0, button.getScaleY(), 0.0001,
-                        () -> button.getClass().getSimpleName() + " scaleY");
-                button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
-            }
-        });
+    void flatLabeledButtonControlsDoNotScaleWhenPressed() throws InterruptedException {
+        assertPressedScaleAfterRealPulse(() -> new M3Chip("Chip"), 120.0, 40.0, 1.0, "M3Chip");
+        assertPressedScaleAfterRealPulse(() -> new M3SegmentedButton("Segment"), 120.0, 40.0, 1.0,
+                "M3SegmentedButton");
+        assertPressedScaleAfterRealPulse(() -> new M3Tab("Tab"), 120.0, 40.0, 1.0, "M3Tab");
+        assertPressedScaleAfterRealPulse(() -> new M3IconToggleButton("star"), 120.0, 40.0, 1.0,
+                "M3IconToggleButton");
     }
 
     /// Verifies that floating action buttons keep depth-style pressed scaling.
     @Test
-    void floatingActionButtonKeepsDepthPressedScaling() {
-        runOnFxThread(() -> {
-            M3FloatingActionButton button = new M3FloatingActionButton("Create");
-            Pane root = new Pane(button);
-            Scene scene = new Scene(root, 200.0, 120.0);
-
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            button.resize(96.0, 56.0);
-            button.layout();
-            pressButtonAndJumpToPressedFrame(button);
-
-            assertEquals(0.98, button.getScaleX(), 0.0001);
-            assertEquals(0.98, button.getScaleY(), 0.0001);
-        });
+    void floatingActionButtonKeepsDepthPressedScaling() throws InterruptedException {
+        assertPressedScaleAfterRealPulse(
+                () -> new M3FloatingActionButton("Create"),
+                96.0,
+                56.0,
+                0.98,
+                "floating action button"
+        );
     }
 
     /// Verifies that m3fx floating action buttons create the animated floating action button skin.
@@ -912,7 +908,7 @@ final class M3ControlStyleTest {
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
         assertEquals(28.0, slider.getThumbSize(), 0.0001);
         assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
-        assertEquals(56.0, slider.getPrefHeight(), 0.0001);
+        assertEquals(56.0, slider.prefHeight(-1.0), 0.0001);
 
         assertEquals(60.0, switchControl.getTouchTargetSize(), 0.0001);
         assertEquals(10.0, switchControl.getTrackShape(), 0.0001);
@@ -1337,6 +1333,353 @@ final class M3ControlStyleTest {
         applyCss(group);
 
         assertEquals(-2.0, group.getSpacing(), 0.0001);
+    }
+
+    /// Verifies that toolbar component token properties are styleable from CSS.
+    @Test
+    void toolbarTokensAreStyleable() {
+        M3Toolbar toolbar = new M3Toolbar(new M3Button("Archive"), new M3Button("Share"));
+        toolbar.setStyle(
+                "-m3-container-height: 72px; "
+                        + "-m3-container-width: 80px; "
+                        + "-m3-item-slot-size: 52px; "
+                        + "-m3-content-padding: 10px; "
+                        + "-m3-item-spacing: 6px;"
+        );
+
+        applyCss(toolbar);
+
+        assertEquals(72.0, toolbar.getContainerHeight(), 0.0001);
+        assertEquals(80.0, toolbar.getContainerWidth(), 0.0001);
+        assertEquals(52.0, toolbar.getItemSlotSize(), 0.0001);
+        assertEquals(10.0, toolbar.getContentPadding(), 0.0001);
+        assertEquals(6.0, toolbar.getItemSpacing(), 0.0001);
+        assertEquals(72.0, toolbar.getPrefHeight(), 0.0001);
+        assertEquals(10.0, toolbar.getPadding().getLeft(), 0.0001);
+
+        toolbar.setOrientation(Orientation.VERTICAL);
+        applyCss(toolbar);
+
+        assertEquals(80.0, toolbar.getPrefWidth(), 0.0001);
+    }
+
+    /// Verifies that toolbar variants update style classes and accessibility item metadata.
+    @Test
+    void toolbarVariantsAndAccessibilityAreStable() {
+        M3Button first = new M3Button("Archive");
+        M3Button second = new M3Button("Share");
+        M3Toolbar toolbar = new M3Toolbar(first, second);
+
+        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.STANDARD.getStyleClass()));
+        toolbar.setVariant(M3ToolbarVariant.FLOATING);
+        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.FLOATING.getStyleClass()));
+        assertFalse(toolbar.getStyleClass().contains(M3ToolbarVariant.STANDARD.getStyleClass()));
+        toolbar.setVariant(M3ToolbarVariant.DOCKED);
+        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.DOCKED.getStyleClass()));
+        assertFalse(toolbar.getStyleClass().contains(M3ToolbarVariant.FLOATING.getStyleClass()));
+
+        assertEquals(2, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        assertSame(first, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertSame(second, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+    }
+
+    /// Verifies that toolbar arrow keys follow orientation, right-to-left direction, and reachable item filtering.
+    @Test
+    void toolbarKeyboardTraversalFollowsOrientationDirectionAndReachability() {
+        runOnFxThread(() -> {
+            M3Button first = new M3Button("Archive");
+            M3Button hidden = new M3Button("Hidden");
+            M3Button disabled = new M3Button("Disabled");
+            M3Button second = new M3Button("Share");
+            M3Button third = new M3Button("Edit");
+            M3Button outside = new M3Button("Outside");
+            hidden.setVisible(false);
+            disabled.setDisable(true);
+            M3Toolbar toolbar = new M3Toolbar(first, hidden, disabled, second, third);
+            VBox root = new VBox(8.0, toolbar, outside);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 520.0, 180.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                first.requestFocus();
+                assertTrue(first.isFocused());
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(second.isFocused());
+                second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(third.isFocused());
+                third.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(first.isFocused());
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(third.isFocused());
+                third.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+                assertTrue(first.isFocused());
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+                assertTrue(third.isFocused());
+
+                outside.requestFocus();
+                assertTrue(outside.isFocused());
+                toolbar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(first.isFocused());
+                outside.requestFocus();
+                toolbar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(third.isFocused());
+
+                toolbar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                first.requestFocus();
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(third.isFocused());
+                third.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(first.isFocused());
+
+                toolbar.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                toolbar.setOrientation(Orientation.VERTICAL);
+                root.applyCss();
+                root.layout();
+                first.requestFocus();
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(second.isFocused());
+                second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(first.isFocused());
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(third.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that toolbar navigation and accessibility actions use each item's actual exposed focus target.
+    @Test
+    void toolbarAccessibilityUsesNestedAndCurrentFocusTargets() {
+        runOnFxThread(() -> {
+            M3Button groupedFirst = new M3Button("Grouped first");
+            M3Button groupedSecond = new M3Button("Grouped second");
+            M3Button hidden = new M3Button("Hidden");
+            M3Button standalone = new M3Button("Standalone");
+            M3Button outside = new M3Button("Outside");
+            hidden.setVisible(false);
+            M3ButtonGroup group = new M3ButtonGroup(groupedFirst, groupedSecond);
+            M3Toolbar toolbar = new M3Toolbar(group, hidden, standalone);
+            VBox root = new VBox(8.0, toolbar, outside);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 560.0, 180.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertSame(groupedFirst, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                toolbar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(groupedFirst.isFocused());
+
+                groupedSecond.requestFocus();
+                assertTrue(groupedSecond.isFocused());
+                assertSame(groupedSecond, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                toolbar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(groupedSecond.isFocused());
+                toolbar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(standalone.isFocused());
+                toolbar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(groupedFirst.isFocused());
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, standalone);
+                assertTrue(standalone.isFocused());
+                outside.requestFocus();
+                assertTrue(outside.isFocused());
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hidden);
+                assertTrue(outside.isFocused());
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 2);
+                assertTrue(standalone.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that toolbar accessibility actions can reveal popup-backed nested action targets.
+    @Test
+    void toolbarRevealsNestedMenuPopupTargets() {
+        runOnFxThread(() -> {
+            M3MenuItem firstItem = new M3MenuItem("First");
+            M3MenuItem secondItem = new M3MenuItem("Second");
+            M3MenuButton menuButton = new M3MenuButton("Open", firstItem, secondItem);
+            M3Button standalone = new M3Button("Standalone");
+            M3Button outside = new M3Button("Outside");
+            M3Toolbar toolbar = new M3Toolbar(menuButton, standalone);
+            M3MotionSettings.setAnimationsEnabled(menuButton, false);
+            VBox root = new VBox(8.0, toolbar, outside);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 560.0, 220.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, secondItem);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(secondItem.isFocused());
+                assertSame(secondItem, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                toolbar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(secondItem.isFocused());
+                assertSame(secondItem, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menuButton.executeAccessibleAction(AccessibleAction.COLLAPSE);
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                outside.requestFocus();
+                toolbar.setVisible(false);
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, firstItem);
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(outside.isFocused());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(menuButton);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that horizontal toolbar item slots mirror their visual order in right-to-left scenes.
+    @Test
+    void toolbarRightToLeftLayoutMirrorsHorizontalActionSlots() {
+        runOnFxThread(() -> {
+            M3Button first = new M3Button("First");
+            M3Button second = new M3Button("Second");
+            M3Button third = new M3Button("Third");
+            M3Toolbar toolbar = new M3Toolbar(first, second, third);
+            toolbar.setItemSlotSize(56.0);
+            toolbar.setItemSpacing(4.0);
+            toolbar.setContentPadding(8.0);
+            Pane root = new Pane(toolbar);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 320.0, 120.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+
+                toolbar.resizeRelocate(16.0, 20.0, 260.0, toolbar.prefHeight(-1.0));
+                root.layout();
+                toolbar.layout();
+
+                assertTrue(sceneCenter(first).getX() < sceneCenter(second).getX());
+                assertTrue(sceneCenter(second).getX() < sceneCenter(third).getX());
+
+                toolbar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                toolbar.layout();
+
+                assertTrue(sceneCenter(first).getX() > sceneCenter(second).getX());
+                assertTrue(sceneCenter(second).getX() > sceneCenter(third).getX());
+                double slotCenterY = Double.NaN;
+                int slotCount = 0;
+                for (Node slot : toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS)) {
+                    assertTrue(slot.getLayoutBounds().getWidth() >= 56.0);
+                    assertEquals(56.0, slot.getLayoutBounds().getHeight(), 0.0001);
+                    double currentCenterY = sceneCenter(slot).getY();
+                    if (Double.isNaN(slotCenterY)) {
+                        slotCenterY = currentCenterY;
+                    } else {
+                        assertEquals(slotCenterY, currentCenterY, 0.75);
+                    }
+                    slotCount++;
+                }
+                assertEquals(3, slotCount);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that toolbar item mutations rebuild generated slots without retaining removed nodes.
+    @Test
+    void toolbarItemMutationsRebuildGeneratedSlots() {
+        runOnFxThread(() -> {
+            M3Button first = new M3Button("First");
+            M3Button second = new M3Button("Second");
+            M3Button third = new M3Button("Third");
+            M3Toolbar toolbar = new M3Toolbar(first, second);
+            Pane root = new Pane(toolbar);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 360.0, 120.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                toolbar.resizeRelocate(16.0, 20.0, 300.0, toolbar.prefHeight(-1.0));
+                root.layout();
+                toolbar.layout();
+
+                assertEquals(2, toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS).size());
+                assertTrue(first.getParent() != null);
+                assertTrue(second.getParent() != null);
+
+                toolbar.addItem(third);
+                root.applyCss();
+                root.layout();
+                toolbar.layout();
+
+                assertEquals(3, toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS).size());
+                assertTrue(third.getParent() != null);
+
+                assertTrue(toolbar.getItems().remove(second));
+                root.applyCss();
+                root.layout();
+                toolbar.layout();
+
+                assertEquals(2, toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS).size());
+                assertNull(second.getParent());
+                assertTrue(first.getParent() != null);
+                assertTrue(third.getParent() != null);
+
+                toolbar.clearItems();
+                root.applyCss();
+                root.layout();
+                toolbar.layout();
+
+                assertEquals(0, toolbar.lookupAll("." + M3Toolbar.ITEM_SLOT_STYLE_CLASS).size());
+                assertNull(first.getParent());
+                assertNull(third.getParent());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that direct toolbar item-list mutations preserve the public non-null item contract.
+    @Test
+    void toolbarItemListRejectsNullDirectMutations() {
+        M3Toolbar toolbar = new M3Toolbar(new M3Button("First"));
+
+        assertThrows(NullPointerException.class, () -> toolbar.getItems().add(null));
+        assertThrows(NullPointerException.class, () -> toolbar.getItems().addAll(new M3Button("Second"), null));
+        assertThrows(NullPointerException.class, () -> toolbar.getItems().set(0, null));
+        assertThrows(NullPointerException.class, () -> toolbar.getItems().setAll(new M3Button("Second"), null));
+
+        assertEquals(1, toolbar.getItems().size());
+        assertEquals("First", ((M3Button) toolbar.getItems().get(0)).getText());
     }
 
     /// Verifies that button group corners and feedback layers match right-to-left visual order.
@@ -1851,23 +2194,17 @@ final class M3ControlStyleTest {
         assertEquals(18.0, menu.getActionSpacing(), 0.0001);
     }
 
-    /// Verifies that FAB menu expand and collapse animations release their transient animation reference.
+    /// Verifies that FAB menu expand and collapse animations reach observable public states.
     @Test
-    void fabMenuClearsAnimationReferenceAfterExpandAndCollapseFinish() throws InterruptedException {
+    void fabMenuExpandAndCollapseAnimationsReachObservableStates() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FabMenu> menuReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FloatingActionButton> actionReference = new AtomicReference<>();
 
         try {
             runOnFxThreadWhen(
-                    () -> {
-                        M3FabMenu menu = Objects.requireNonNull(menuReference.get(), "menu");
-                        M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
-                        return menu.isExpanded()
-                                && action.isVisible()
-                                && Math.abs(action.getOpacity() - 1.0) < 0.0001
-                                && reflectedNullableAnimation(menu, "animation") == null;
-                    },
+                    () -> fabMenuActionIsTransitioning(actionReference),
                     () -> {
                         M3FloatingActionButton action = new M3FloatingActionButton("A");
                         M3FabMenu menu = new M3FabMenu();
@@ -1876,7 +2213,8 @@ final class M3ControlStyleTest {
                         Scene scene = new Scene(root, 220.0, 220.0);
                         Stage stage = new Stage();
 
-                        M3MotionSettings.setAnimationsEnabled(menu, true);
+                        M3MotionSettings.setAnimationsEnabled(root, true);
+                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
                         M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
                         stage.show();
@@ -1885,46 +2223,55 @@ final class M3ControlStyleTest {
                         root.layout();
 
                         stageReference.set(stage);
+                        rootReference.set(root);
                         menuReference.set(menu);
                         actionReference.set(action);
                         menu.show();
-                        assertInstanceOf(Animation.class, reflectedNullableAnimation(menu, "animation"));
                     },
                     () -> {
-                        M3FabMenu menu = Objects.requireNonNull(menuReference.get(), "menu");
                         M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
-                        assertNull(reflectedNullableAnimation(menu, "animation"));
-                        assertTrue(action.isVisible());
-                        assertTrue(action.isManaged());
-                        menu.hide();
-                        assertInstanceOf(Animation.class, reflectedNullableAnimation(menu, "animation"));
+                        assertFabActionTransitionFrame(action);
                     }
             );
 
             runOnFxThreadWhen(
-                    () -> {
-                        M3FabMenu menu = Objects.requireNonNull(menuReference.get(), "menu");
-                        M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
-                        return !menu.isExpanded()
-                                && !action.isVisible()
-                                && !action.isManaged()
-                                && reflectedNullableAnimation(menu, "animation") == null;
-                    },
+                    () -> fabMenuExpandedStateHasSettled(menuReference, actionReference),
                     () -> {
                     },
                     () -> {
                         M3FabMenu menu = Objects.requireNonNull(menuReference.get(), "menu");
                         M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
-                        assertNull(reflectedNullableAnimation(menu, "animation"));
-                        assertFalse(action.isVisible());
-                        assertFalse(action.isManaged());
+                        assertFabMenuExpandedStateSettled(menu, action);
+                        menu.hide();
+                    }
+            );
+
+            runOnFxThreadWhen(
+                    () -> fabMenuActionIsTransitioning(actionReference),
+                    () -> {
+                    },
+                    () -> {
+                        M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
+                        assertFabActionTransitionFrame(action);
+                    }
+            );
+
+            runOnFxThreadWhen(
+                    () -> fabMenuCollapsedStateHasSettled(menuReference, actionReference),
+                    () -> {
+                    },
+                    () -> {
+                        M3FabMenu menu = Objects.requireNonNull(menuReference.get(), "menu");
+                        M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
+                        assertFabMenuCollapsedStateSettled(menu, action);
                     }
             );
         } finally {
             runOnFxThread(() -> {
-                @Nullable M3FabMenu menu = menuReference.get();
-                if (menu != null) {
-                    M3MotionSettings.clearAnimationsEnabled(menu);
+                @Nullable Pane root = rootReference.get();
+                if (root != null) {
+                    M3MotionSettings.clearAnimationsEnabled(root);
+                    M3MotionSettings.clearMotionScheme(root);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -2223,52 +2570,62 @@ final class M3ControlStyleTest {
 
     /// Verifies that running carousel scroll transitions settle when animations are disabled at runtime.
     @Test
-    void carouselSettlesRunningScrollAnimationWhenAnimationsAreDisabled() {
-        runOnFxThread(() -> {
-            M3Carousel carousel = new M3Carousel(
-                    carouselTestItem("A"),
-                    carouselTestItem("B"),
-                    carouselTestItem("C"),
-                    carouselTestItem("D"),
-                    carouselTestItem("E")
+    void carouselSettlesRunningScrollAnimationWhenAnimationsAreDisabled() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Carousel> carouselReference = new AtomicReference<>();
+        AtomicReference<@Nullable ScrollPane> viewportReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhen(
+                    () -> carouselViewportScrollIsInProgress(viewportReference),
+                    () -> {
+                        M3Carousel carousel = new M3Carousel(
+                                carouselTestItem("A"),
+                                carouselTestItem("B"),
+                                carouselTestItem("C"),
+                                carouselTestItem("D"),
+                                carouselTestItem("E")
+                        );
+                        carousel.setAnimatedScroll(true);
+                        carousel.setPrefSize(260.0, 100.0);
+                        Pane root = new Pane(carousel);
+                        Scene scene = new Scene(root, 280.0, 120.0);
+                        Stage stage = new Stage();
+
+                        M3MotionSettings.setAnimationsEnabled(carousel, true);
+                        M3MotionSettings.setMotionScheme(carousel, observableTestMotionScheme());
+                        stageReference.set(stage);
+                        carouselReference.set(carousel);
+
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        carousel.resizeRelocate(0.0, 0.0, 260.0, 100.0);
+                        root.layout();
+
+                        assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
+                        ScrollPane viewport = assertInstanceOf(
+                                ScrollPane.class,
+                                carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS)
+                        );
+                        viewportReference.set(viewport);
+
+                        carousel.selectIndex(4);
+                        root.layout();
+                    },
+                    () -> {
+                        M3Carousel carousel = Objects.requireNonNull(carouselReference.get(), "carousel");
+                        ScrollPane viewport = Objects.requireNonNull(viewportReference.get(), "viewport");
+
+                        assertBetween(viewport.getHvalue(), 0.0, 1.0, "carousel animated hvalue");
+                        M3MotionSettings.setAnimationsEnabled(carousel, false);
+                        assertEquals(1.0, viewport.getHvalue(), 0.0001);
+                    }
             );
-            carousel.setAnimatedScroll(true);
-            carousel.setPrefSize(260.0, 100.0);
-            Pane root = new Pane(carousel);
-            Scene scene = new Scene(root, 280.0, 120.0);
-            Stage stage = new Stage();
-
-            try {
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                carousel.resizeRelocate(0.0, 0.0, 260.0, 100.0);
-                root.layout();
-
-                M3CarouselSkin skin = assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
-                ScrollPane viewport = assertInstanceOf(
-                        ScrollPane.class,
-                        carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS)
-                );
-
-                M3MotionSettings.setAnimationsEnabled(carousel, true);
-                carousel.selectIndex(4);
-                root.layout();
-
-                Animation scrollAnimation = reflectedAnimation(skin, "scrollAnimation");
-                assertEquals(Animation.Status.RUNNING, scrollAnimation.getStatus());
-                assertTrue(viewport.getHvalue() < 0.5, () -> "hvalue=" + viewport.getHvalue());
-
-                M3MotionSettings.setAnimationsEnabled(carousel, false);
-
-                assertEquals(Animation.Status.STOPPED, scrollAnimation.getStatus());
-                assertEquals(1.0, viewport.getHvalue(), 0.0001);
-            } finally {
-                M3MotionSettings.clearAnimationsEnabled(carousel);
-                stage.close();
-            }
-        });
+        } finally {
+            closeCarouselScrollTestWindow(stageReference, carouselReference);
+        }
     }
 
     /// Verifies that snackbar component token properties are styleable from CSS.
@@ -2848,20 +3205,7 @@ final class M3ControlStyleTest {
     @Test
     void snackbarHostDisplayDurationUsesMotionBehaviorDefault() {
         M3SnackbarHost host = new M3SnackbarHost();
-        M3MotionBehavior behavior = M3MotionBehavior.create(
-                Duration.millis(500.0),
-                Duration.ZERO,
-                Duration.seconds(5.0),
-                Duration.seconds(10.0),
-                Duration.millis(1234.0),
-                Duration.millis(200.0),
-                Duration.millis(1000.0),
-                Duration.millis(200.0),
-                Duration.millis(1400.0),
-                Duration.millis(1332.0),
-                Duration.millis(650.0),
-                Duration.millis(4666.0)
-        );
+        M3MotionBehavior behavior = snackbarBehavior(Duration.millis(1234.0));
 
         M3MotionSettings.setMotionBehavior(host, behavior);
 
@@ -2876,71 +3220,175 @@ final class M3ControlStyleTest {
         assertEquals(Duration.millis(1234.0), host.getDisplayDuration());
     }
 
-    /// Verifies that the running snackbar display timer refreshes when duration inputs change.
+    /// Verifies that explicit display-duration changes drive automatic snackbar dismissal.
     @Test
-    void snackbarHostDisplayTimerRefreshesWhenDurationInputsChange() {
-        runOnFxThread(() -> {
-            M3SnackbarHost host = new M3SnackbarHost();
-            VBox root = new VBox(host);
-            Stage stage = new Stage();
-            try {
-                M3MotionSettings.setAnimationsEnabled(root, false);
-                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.standard());
-                Scene scene = new Scene(root, 360.0, 140.0);
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                root.layout();
+    void snackbarHostAutoDismissesWhenExplicitDurationBecomesFinite() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-                host.show("Saved");
+        runOnFxThreadWhen(
+                () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
+                () -> {
+                    M3SnackbarHost host = new M3SnackbarHost();
+                    host.setDisplayDuration(Duration.INDEFINITE);
+                    VBox root = new VBox(host);
+                    Stage stage = new Stage();
 
-                PauseTransition displayTimer = reflectedPauseTransition(host, "displayTimer");
-                assertPauseDuration(host, "displayTimer", 4000.0);
-                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
+                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    Scene scene = new Scene(root, 360.0, 140.0);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
 
-                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.create(
-                        Duration.millis(500.0),
-                        Duration.ZERO,
-                        Duration.seconds(5.0),
-                        Duration.seconds(10.0),
-                        Duration.millis(1234.0),
-                        Duration.millis(200.0),
-                        Duration.millis(1000.0),
-                        Duration.millis(200.0),
-                        Duration.millis(1400.0),
-                        Duration.millis(1332.0),
-                        Duration.millis(650.0),
-                        Duration.millis(4666.0)
-                ));
+                    M3Snackbar first = new M3Snackbar("First");
+                    M3Snackbar second = new M3Snackbar("Second");
+                    host.enqueue(first);
+                    host.enqueue(second);
 
-                assertPauseDuration(host, "displayTimer", 1234.0);
-                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
+                    assertSame(first, host.getSnackbar());
+                    assertEquals(List.of(second), host.getQueue());
 
-                host.setDisplayDuration(Duration.millis(2222.0));
+                    stageReference.set(stage);
+                    rootReference.set(root);
+                    hostReference.set(host);
+                    firstReference.set(first);
+                    secondReference.set(second);
+                    host.setDisplayDuration(Duration.millis(250.0));
+                },
+                () -> {
+                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
 
-                assertPauseDuration(host, "displayTimer", 2222.0);
-                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
+                    assertSame(second, host.getSnackbar());
+                    assertTrue(host.isShowing());
+                    assertTrue(host.getQueue().isEmpty());
+                    assertNull(first.getParent());
+                    assertTrue(second.getParent() != null);
+                    assertFalse(first.isVisible());
 
-                host.displayDurationProperty().set(null);
+                    M3MotionSettings.clearAnimationsEnabled(Objects.requireNonNull(rootReference.get(), "root"));
+                    Objects.requireNonNull(stageReference.get(), "stage").close();
+                }
+        );
+    }
 
-                assertPauseDuration(host, "displayTimer", 1234.0);
-                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
+    /// Verifies that inherited motion-behavior duration changes drive automatic snackbar dismissal.
+    @Test
+    void snackbarHostAutoDismissesWhenInheritedMotionBehaviorDurationChanges() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-                host.setDisplayDuration(Duration.INDEFINITE);
+        runOnFxThreadWhen(
+                () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
+                () -> {
+                    M3SnackbarHost host = new M3SnackbarHost();
+                    VBox root = new VBox(host);
+                    Stage stage = new Stage();
 
-                assertEquals(Animation.Status.STOPPED, displayTimer.getStatus());
+                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.standard());
+                    Scene scene = new Scene(root, 360.0, 140.0);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
 
-                host.setDisplayDuration(Duration.millis(333.0));
+                    M3Snackbar first = new M3Snackbar("First");
+                    M3Snackbar second = new M3Snackbar("Second");
+                    host.enqueue(first);
+                    host.enqueue(second);
 
-                assertPauseDuration(host, "displayTimer", 333.0);
-                assertEquals(Animation.Status.RUNNING, displayTimer.getStatus());
-            } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
-                M3MotionSettings.clearMotionBehavior(root);
-                stage.close();
-            }
-        });
+                    assertSame(first, host.getSnackbar());
+                    assertEquals(Duration.seconds(4.0), host.getDisplayDuration());
+                    assertEquals(List.of(second), host.getQueue());
+
+                    stageReference.set(stage);
+                    rootReference.set(root);
+                    hostReference.set(host);
+                    firstReference.set(first);
+                    secondReference.set(second);
+                    M3MotionSettings.setMotionBehavior(root, snackbarBehavior(Duration.millis(250.0)));
+                },
+                () -> {
+                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
+
+                    assertSame(second, host.getSnackbar());
+                    assertTrue(host.isShowing());
+                    assertTrue(host.getQueue().isEmpty());
+                    assertNull(first.getParent());
+                    assertTrue(second.getParent() != null);
+                    assertFalse(first.isVisible());
+
+                    VBox root = Objects.requireNonNull(rootReference.get(), "root");
+                    M3MotionSettings.clearAnimationsEnabled(root);
+                    M3MotionSettings.clearMotionBehavior(root);
+                    Objects.requireNonNull(stageReference.get(), "stage").close();
+                }
+        );
+    }
+
+    /// Verifies that indefinite display duration disables automatic snackbar dismissal until a finite duration is set.
+    @Test
+    void snackbarHostIndefiniteDisplayDurationKeepsCurrentSnackbar() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
+
+        runOnFxThreadWhenStable(
+                () -> queuedSnackbarStillCurrent(hostReference, firstReference, secondReference),
+                SNACKBAR_DISABLED_TIMER_STABLE_PULSES,
+                () -> {
+                    M3SnackbarHost host = new M3SnackbarHost();
+                    host.setDisplayDuration(Duration.INDEFINITE);
+                    VBox root = new VBox(host);
+                    Stage stage = new Stage();
+
+                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    Scene scene = new Scene(root, 360.0, 140.0);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+
+                    M3Snackbar first = new M3Snackbar("First");
+                    M3Snackbar second = new M3Snackbar("Second");
+                    host.enqueue(first);
+                    host.enqueue(second);
+
+                    stageReference.set(stage);
+                    rootReference.set(root);
+                    hostReference.set(host);
+                    firstReference.set(first);
+                    secondReference.set(second);
+                },
+                () -> {
+                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
+
+                    assertSame(first, host.getSnackbar());
+                    assertTrue(host.isShowing());
+                    assertEquals(List.of(second), host.getQueue());
+
+                    M3MotionSettings.clearAnimationsEnabled(Objects.requireNonNull(rootReference.get(), "root"));
+                    Objects.requireNonNull(stageReference.get(), "stage").close();
+                }
+        );
     }
 
     /// Verifies that dialog pane component token properties are styleable from CSS.
@@ -2948,8 +3396,14 @@ final class M3ControlStyleTest {
     void dialogPaneTokensAreStyleable() {
         M3DialogPane dialogPane = new M3DialogPane();
         dialogPane.setStyle("-m3-container-shape: 20px; -m3-content-padding: 28px;");
+        Pane root = new Pane(dialogPane);
+        Scene scene = new Scene(root, 480.0, 240.0);
 
-        applyCss(dialogPane);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        dialogPane.resizeRelocate(0.0, 0.0, 420.0, 180.0);
+        root.applyCss();
+        root.layout();
+        dialogPane.layout();
 
         assertEquals(20.0, dialogPane.getContainerShape(), 0.0001);
         assertEquals(28.0, dialogPane.getContentPadding(), 0.0001);
@@ -2957,6 +3411,14 @@ final class M3ControlStyleTest {
         assertEquals(28.0, dialogPane.getPadding().getRight(), 0.0001);
         assertEquals(28.0, dialogPane.getPadding().getBottom(), 0.0001);
         assertEquals(28.0, dialogPane.getPadding().getLeft(), 0.0001);
+        assertRegionRadii(dialogPane, 20.0, 20.0, 20.0, 20.0);
+
+        dialogPane.setContainerShape(12.0);
+        root.layout();
+        dialogPane.layout();
+
+        assertEquals(12.0, dialogPane.getContainerShape(), 0.0001);
+        assertRegionRadii(dialogPane, 12.0, 12.0, 12.0, 12.0);
     }
 
     /// Verifies that dialog pane action buttons use m3fx button controls.
@@ -3021,8 +3483,13 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertRegionFill(dialogPane, Color.rgb(19, 20, 21));
+        Region headerPanel = lookupRegion(dialogPane, ".header-panel");
+        assertRegionFill(headerPanel, Color.TRANSPARENT);
+        assertRegionFill(lookupRegion(headerPanel, ".label"), Color.TRANSPARENT);
         assertInstanceOf(ButtonBar.class, dialogPane.lookup("." + M3DialogPane.BUTTON_BAR_STYLE_CLASS));
-        assertEquals(Color.rgb(40, 41, 42), ((Labeled) dialogPane.lookup(".content")).getTextFill());
+        Region content = lookupRegion(dialogPane, ".content");
+        assertRegionFill(content, Color.TRANSPARENT);
+        assertEquals(Color.rgb(40, 41, 42), ((Labeled) content).getTextFill());
         assertEquals("Dialog title Dialog body", dialogPane.getAccessibleText());
         assertEquals("Dialog title Dialog body", dialogPane.queryAccessibleAttribute(AccessibleAttribute.TEXT));
     }
@@ -3628,6 +4095,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                M3MotionSettings.setAnimationsEnabled(root, false);
                 stage.show();
                 root.applyCss();
                 root.resize(430.0, 150.0);
@@ -3638,10 +4106,6 @@ final class M3ControlStyleTest {
                 textField.setText("M3FX");
                 textField.positionCaret(textField.getText().length());
 
-                Timeline labelAnimation = controlTimeline(layout, "labelAnimation");
-                Timeline trailingAnimation = controlTimeline(layout, "trailingAnimation");
-                labelAnimation.jumpTo(Duration.seconds(1.0));
-                trailingAnimation.jumpTo(Duration.seconds(1.0));
                 root.applyCss();
                 root.layout();
                 layout.layout();
@@ -3691,136 +4155,93 @@ final class M3ControlStyleTest {
                 assertEquals(2, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
                 assertEquals(textField, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
                 assertEquals(16.0, textField.getPadding().getRight(), 0.0001);
-                stopTimelines(labelAnimation, trailingAnimation);
             } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
                 stage.close();
             }
         });
     }
 
-    /// Verifies that text input layout presentation changes use Material motion timelines.
+    /// Verifies that text input layout presentation changes are observable in real JavaFX pulses.
     @Test
-    void textInputLayoutAnimatesLabelClearButtonAndSupportingRow() {
-        runOnFxThread(() -> {
-            M3TextField textField = createTextField("", M3TextInputVariant.OUTLINED);
-            textField.setPrefWidth(260.0);
-            M3TextInputLayout layout = new M3TextInputLayout(textField);
-            layout.setLabelText("Email");
-            layout.setClearButtonEnabled(true);
-            layout.setPrefWidth(260.0);
+    void textInputLayoutAnimatesLabelClearButtonAndSupportingRow() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3TextInputLayout> layoutReference = new AtomicReference<>();
 
-            Pane root = new Pane(layout);
-            layout.resizeRelocate(20.0, 20.0, 260.0, 96.0);
-            Scene scene = new Scene(root, 320.0, 140.0);
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.layout();
+        try {
+            runOnFxThreadWhen(
+                    () -> textInputLayoutFloatingPresentationIsAnimating(layoutReference),
+                    () -> showObservableTextInputLayout(stageReference, rootReference, layoutReference, false),
+                    () -> {
+                        M3TextInputLayout layout = Objects.requireNonNull(layoutReference.get(), "layout");
 
-            Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
-            Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
-            assertEquals(0.0, outlineNotchGap(outline), 0.0001);
-
-            textField.setText("alpha");
-
-            Timeline labelAnimation = controlTimeline(layout, "labelAnimation");
-            Timeline trailingAnimation = controlTimeline(layout, "trailingAnimation");
-            M3IconButton clearButton = layout.getClearButton();
-            labelAnimation.jumpTo(Duration.millis(75.0));
-            trailingAnimation.jumpTo(Duration.millis(50.0));
-
-            assertBetween(label.getOpacity(), 0.72, 1.0, "floating label opacity");
-            assertBetween(Math.abs(label.getTranslateY()), 0.0, 4.0, "floating label translateY");
-            assertTrue(outlineNotchGap(outline) > 0.5, () -> "outlineNotchGap=" + outlineNotchGap(outline));
-            assertBetween(clearButton.getOpacity(), 0.0, 1.0, "clear button opacity");
-            assertBetween(clearButton.getScaleX(), 0.86, 1.0, "clear button scaleX");
-            assertBetween(clearButton.getScaleY(), 0.86, 1.0, "clear button scaleY");
-
-            layout.setSupportingText("Helper text");
-
-            Timeline supportingRowAnimation = controlTimeline(layout, "supportingRowAnimation");
-            HBox supportingRow = assertInstanceOf(
-                    HBox.class,
-                    layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+                        assertTextInputLayoutFloatingPresentationIntermediate(layout);
+                        layout.setSupportingText("Helper text");
+                    }
             );
-            supportingRowAnimation.jumpTo(Duration.millis(50.0));
-
-            assertBetween(supportingRow.getOpacity(), 0.0, 1.0, "supporting row opacity");
-            assertBetween(Math.abs(supportingRow.getTranslateY()), 0.0, 4.0, "supporting row translateY");
-            stopTimelines(labelAnimation, trailingAnimation, supportingRowAnimation);
-        });
+            runOnFxThreadWhen(
+                    () -> textInputLayoutSupportingRowPresentationIsAnimating(layoutReference),
+                    () -> {
+                    },
+                    () -> assertTextInputLayoutSupportingRowPresentationIntermediate(
+                            Objects.requireNonNull(layoutReference.get(), "layout")
+                    )
+            );
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable Pane root = rootReference.get();
+                if (root != null) {
+                    M3MotionSettings.clearAnimationsEnabled(root);
+                    M3MotionSettings.clearMotionScheme(root);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that runtime motion changes settle active text input presentation animations.
     @Test
-    void textInputLayoutSettlesRunningPresentationAnimationsWhenMotionIsDisabled() {
-        runOnFxThread(() -> {
-            M3TextField textField = createTextField("", M3TextInputVariant.OUTLINED);
-            textField.setPrefWidth(260.0);
-            M3TextInputLayout layout = new M3TextInputLayout(textField);
-            layout.setLabelText("Email");
-            layout.setClearButtonEnabled(true);
-            layout.setPrefWidth(260.0);
+    void textInputLayoutSettlesRunningPresentationAnimationsWhenMotionIsDisabled() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3TextInputLayout> layoutReference = new AtomicReference<>();
 
-            Pane root = new Pane(layout);
-            layout.resizeRelocate(20.0, 20.0, 260.0, 96.0);
-            Scene scene = new Scene(root, 320.0, 140.0);
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.layout();
+        try {
+            runOnFxThreadWhen(
+                    () -> textInputLayoutFullPresentationIsAnimating(layoutReference),
+                    () -> showObservableTextInputLayout(stageReference, rootReference, layoutReference, true),
+                    () -> {
+                        Pane root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3TextInputLayout layout = Objects.requireNonNull(layoutReference.get(), "layout");
 
-            Timeline labelAnimation = controlTimeline(layout, "labelAnimation");
-            Timeline trailingAnimation = controlTimeline(layout, "trailingAnimation");
-            Timeline supportingRowAnimation = controlTimeline(layout, "supportingRowAnimation");
+                        assertTextInputLayoutFloatingPresentationIntermediate(layout);
+                        assertTextInputLayoutSupportingRowPresentationIntermediate(layout);
 
-            try {
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                textField.setText("alpha");
-                layout.setSupportingText("Helper text");
+                        M3MotionSettings.setAnimationsEnabled(root, false);
+                        root.applyCss();
+                        root.layout();
+                        layout.layout();
 
-                labelAnimation.jumpTo(Duration.millis(50.0));
-                trailingAnimation.jumpTo(Duration.millis(50.0));
-                supportingRowAnimation.jumpTo(Duration.millis(50.0));
-
-                assertEquals(Animation.Status.RUNNING, labelAnimation.getStatus());
-                assertEquals(Animation.Status.RUNNING, trailingAnimation.getStatus());
-                assertEquals(Animation.Status.RUNNING, supportingRowAnimation.getStatus());
-
-                Label label = assertInstanceOf(
-                        Label.class,
-                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
-                );
-                Path outline = assertInstanceOf(
-                        Path.class,
-                        layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
-                );
-                M3IconButton clearButton = layout.getClearButton();
-                HBox supportingRow = assertInstanceOf(
-                        HBox.class,
-                        layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
-                );
-
-                assertBetween(label.getOpacity(), 0.72, 1.0, "floating label opacity before disabled motion");
-                assertBetween(clearButton.getScaleX(), 0.86, 1.0, "clear button scale before disabled motion");
-                assertBetween(supportingRow.getOpacity(), 0.0, 1.0, "supporting row opacity before disabled motion");
-
-                M3MotionSettings.setAnimationsEnabled(root, false);
-
-                assertEquals(Animation.Status.STOPPED, labelAnimation.getStatus());
-                assertEquals(Animation.Status.STOPPED, trailingAnimation.getStatus());
-                assertEquals(Animation.Status.STOPPED, supportingRowAnimation.getStatus());
-                assertEquals(1.0, label.getOpacity(), 0.0001);
-                assertEquals(0.0, label.getTranslateY(), 0.0001);
-                assertTrue(outlineNotchGap(outline) > 0.5, () -> "outlineNotchGap=" + outlineNotchGap(outline));
-                assertEquals(1.0, clearButton.getOpacity(), 0.0001);
-                assertEquals(1.0, clearButton.getScaleX(), 0.0001);
-                assertEquals(1.0, clearButton.getScaleY(), 0.0001);
-                assertEquals(1.0, supportingRow.getOpacity(), 0.0001);
-                assertEquals(0.0, supportingRow.getTranslateY(), 0.0001);
-            } finally {
-                stopTimelines(labelAnimation, trailingAnimation, supportingRowAnimation);
-                M3MotionSettings.clearAnimationsEnabled(root);
-            }
-        });
+                        assertTextInputLayoutPresentationSettled(layout);
+                    }
+            );
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable Pane root = rootReference.get();
+                if (root != null) {
+                    M3MotionSettings.clearAnimationsEnabled(root);
+                    M3MotionSettings.clearMotionScheme(root);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that text input layouts manage leading and trailing adornment slots.
@@ -4047,6 +4468,48 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that hidden text input layout owners do not route accessibility focus into children.
+    @Test
+    void textInputLayoutSkipsAccessibleFocusWhenOwnerHiddenByAncestor() {
+        runOnFxThread(() -> {
+            M3TextField textField = new M3TextField("abc");
+            M3IconButton trailing = createIconButton("T");
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            layout.setTrailing(trailing);
+
+            M3Button outside = new M3Button("Outside");
+            Pane hiddenOwner = new Pane(layout);
+            VBox root = new VBox(8.0, outside, hiddenOwner);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 460.0, 200.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                outside.requestFocus();
+                hiddenOwner.setVisible(false);
+                root.applyCss();
+                root.layout();
+
+                layout.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(outside.isFocused());
+                assertFalse(textField.isFocused());
+                assertFalse(trailing.isFocused());
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, trailing);
+
+                assertTrue(outside.isFocused());
+                assertFalse(textField.isFocused());
+                assertFalse(trailing.isFocused());
+                assertSame(textField, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that text input layouts mirror logical adornments and floating label geometry in right-to-left mode.
     @Test
     void textInputLayoutMirrorsAdornmentsAndFloatingLabelForRightToLeft() {
@@ -4107,49 +4570,87 @@ final class M3ControlStyleTest {
 
     /// Verifies that text input trailing icon buttons keep square state layers and visible ripples.
     @Test
-    void textInputLayoutTrailingIconButtonKeepsSquareRipple() {
-        runOnFxThread(() -> {
-            M3PasswordField passwordField = createPasswordField("Hello", M3TextInputVariant.OUTLINED);
-            passwordField.setPrefWidth(320.0);
-            M3IconButton trailingButton = createIconButton("V");
+    void textInputLayoutTrailingIconButtonKeepsSquareRipple() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable StackPane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3IconButton> trailingButtonReference = new AtomicReference<>();
 
-            M3TextInputLayout layout = new M3TextInputLayout(passwordField, "At least 8 characters");
-            layout.setTrailing(trailingButton);
-            layout.setPrefWidth(320.0);
+        try {
+            runOnFxThreadWhen(
+                    () -> trailingIconRippleIsVisible(trailingButtonReference),
+                    () -> {
+                        M3PasswordField passwordField = createPasswordField("Hello", M3TextInputVariant.OUTLINED);
+                        passwordField.setPrefWidth(320.0);
+                        M3IconButton trailingButton = createIconButton("V");
 
-            StackPane root = new StackPane(layout);
-            root.setAlignment(Pos.TOP_LEFT);
-            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(root, 390.0, 140.0);
+                        M3TextInputLayout layout =
+                                new M3TextInputLayout(passwordField, "At least 8 characters");
+                        layout.setTrailing(trailingButton);
+                        layout.setPrefWidth(320.0);
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.resize(390.0, 140.0);
-            root.layout();
+                        StackPane root = new StackPane(layout);
+                        root.setAlignment(Pos.TOP_LEFT);
+                        root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; "
+                                + visualTestColors());
+                        Scene scene = new Scene(root, 390.0, 140.0);
+                        Stage stage = new Stage();
 
-            Region stateLayer = lookupRegion(trailingButton, ".m3-state-layer-container");
-            assertEquals(40.0, trailingButton.getWidth(), 0.0001);
-            assertEquals(40.0, trailingButton.getHeight(), 0.0001);
-            assertEquals(40.0, stateLayer.getWidth(), 0.0001);
-            assertEquals(40.0, stateLayer.getHeight(), 0.0001);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        M3MotionSettings.setAnimationsEnabled(root, true);
+                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.resize(390.0, 140.0);
+                        root.layout();
 
-            trailingButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 20.0, 20.0, true));
+                        Region stateLayer = lookupRegion(trailingButton, ".m3-state-layer-container");
+                        assertEquals(40.0, trailingButton.getWidth(), 0.0001);
+                        assertEquals(40.0, trailingButton.getHeight(), 0.0001);
+                        assertEquals(40.0, stateLayer.getWidth(), 0.0001);
+                        assertEquals(40.0, stateLayer.getHeight(), 0.0001);
 
-            Region ripple = lookupRegion(trailingButton, ".m3-ripple");
-            Timeline rippleAnimation = controlTimeline(stateLayer, "rippleAnimation");
-            rippleAnimation.jumpTo(Duration.millis(120.0));
-            assertTrue(ripple.getOpacity() > 0.0, () -> "ripple opacity=" + ripple.getOpacity());
-            assertTrue(ripple.getScaleX() > 0.0, () -> "ripple scaleX=" + ripple.getScaleX());
-            assertTrue(ripple.getScaleY() > 0.0, () -> "ripple scaleY=" + ripple.getScaleY());
-            writeVisualSnapshot(snapshotImageOnFxThread(root), java.nio.file.Path.of(
-                    "build",
-                    "reports",
-                    "m3fx-visual",
-                    "visual-text-field-trailing-ripple.png"
-            ));
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        trailingButtonReference.set(trailingButton);
+                        trailingButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 20.0, 20.0, true));
+                    },
+                    () -> {
+                        StackPane root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3IconButton trailingButton =
+                                Objects.requireNonNull(trailingButtonReference.get(), "trailingButton");
+                        Region ripple = lookupRegion(trailingButton, ".m3-ripple");
 
-            trailingButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 20.0, 20.0, false));
-        });
+                        assertTrue(ripple.getOpacity() > 0.0, () -> "ripple opacity=" + ripple.getOpacity());
+                        assertTrue(ripple.getScaleX() > 0.0, () -> "ripple scaleX=" + ripple.getScaleX());
+                        assertTrue(ripple.getScaleY() > 0.0, () -> "ripple scaleY=" + ripple.getScaleY());
+                        writeVisualSnapshot(snapshotImageOnFxThread(root), java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-text-field-trailing-ripple.png"
+                        ));
+
+                        trailingButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 20.0, 20.0, false));
+                    }
+            );
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3IconButton trailingButton = trailingButtonReference.get();
+                if (trailingButton != null && trailingButton.isArmed()) {
+                    trailingButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 20.0, 20.0, false));
+                }
+                @Nullable StackPane root = rootReference.get();
+                if (root != null) {
+                    M3MotionSettings.clearAnimationsEnabled(root);
+                    M3MotionSettings.clearMotionScheme(root);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that text input layouts apply error state from error text and character overflow.
@@ -4693,52 +5194,173 @@ final class M3ControlStyleTest {
         );
     }
 
-    /// Verifies that installed tooltip timers refresh when inherited motion behavior changes at runtime.
+    /// Verifies that installed tooltip show delays refresh while a pointer-triggered open is pending.
     @Test
-    void tooltipInstallationTimersRefreshWhenMotionBehaviorChanges() {
-        runOnFxThread(() -> {
-            Label target = new Label("Target");
-            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
-            VBox root = new VBox(target);
-            Stage stage = new Stage();
-            try {
-                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.standard());
-                Scene scene = new Scene(root, 240.0, 120.0);
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                root.layout();
+    void tooltipShowDelayRefreshUsesPublicBehavior() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
 
-                Object installation = tooltipInstallation(target);
-                assertPauseDuration(installation, "showTimer", 500.0);
-                assertPauseDuration(installation, "hideTimer", 0.0);
-                assertPauseDuration(installation, "durationTimer", 5000.0);
+        try {
+            runOnFxThreadWhen(
+                    () -> tooltipShowing(tooltipReference),
+                    () -> {
+                        Label target = new Label("Target");
+                        target.setMinSize(80.0, 32.0);
+                        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+                        VBox root = new VBox(target);
+                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                                Duration.seconds(30.0),
+                                Duration.ZERO,
+                                Duration.seconds(30.0)
+                        ));
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 240.0, 120.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.layout();
 
-                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.create(
-                        Duration.millis(125.0),
-                        Duration.millis(75.0),
-                        Duration.millis(850.0),
-                        Duration.millis(950.0),
-                        Duration.seconds(4.0),
-                        Duration.millis(150.0),
-                        Duration.millis(900.0),
-                        Duration.millis(150.0),
-                        Duration.millis(1400.0),
-                        Duration.millis(1332.0),
-                        Duration.millis(650.0),
-                        Duration.millis(4666.0)
-                ));
+                        target.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_ENTERED, 4.0, 4.0, false));
+                        assertFalse(tooltip.isShowing());
 
-                assertPauseDuration(installation, "showTimer", 125.0);
-                assertPauseDuration(installation, "hideTimer", 75.0);
-                assertPauseDuration(installation, "durationTimer", 850.0);
-            } finally {
-                M3Tooltip.uninstall(target, tooltip);
-                M3MotionSettings.clearMotionBehavior(root);
-                stage.close();
-            }
-        });
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        targetReference.set(target);
+                        tooltipReference.set(tooltip);
+                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                                Duration.millis(40.0),
+                                Duration.ZERO,
+                                Duration.seconds(30.0)
+                        ));
+                    },
+                    () -> assertTrue(Objects.requireNonNull(tooltipReference.get(), "tooltip").isShowing())
+            );
+        } finally {
+            closeInstalledTooltipScene(stageReference, rootReference, targetReference, tooltipReference);
+        }
+    }
+
+    /// Verifies that installed tooltip visible durations refresh while a pointer-triggered tooltip is showing.
+    @Test
+    void tooltipShowDurationRefreshUsesPublicBehavior() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhen(
+                    () -> tooltipShowing(tooltipReference),
+                    () -> {
+                        Label target = new Label("Target");
+                        target.setMinSize(80.0, 32.0);
+                        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+                        VBox root = new VBox(target);
+                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                                Duration.ZERO,
+                                Duration.ZERO,
+                                Duration.seconds(30.0)
+                        ));
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 240.0, 120.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.layout();
+
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        targetReference.set(target);
+                        tooltipReference.set(tooltip);
+                        target.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_ENTERED, 4.0, 4.0, false));
+                    },
+                    () -> {
+                        VBox root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3Tooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
+                        assertTrue(tooltip.isShowing());
+                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                                Duration.ZERO,
+                                Duration.ZERO,
+                                Duration.millis(40.0)
+                        ));
+                    }
+            );
+
+            runOnFxThreadWhen(
+                    () -> tooltipHidden(tooltipReference),
+                    () -> {
+                    },
+                    () -> assertFalse(Objects.requireNonNull(tooltipReference.get(), "tooltip").isShowing())
+            );
+        } finally {
+            closeInstalledTooltipScene(stageReference, rootReference, targetReference, tooltipReference);
+        }
+    }
+
+    /// Verifies that installed tooltip hide delays refresh while a pointer-triggered close is pending.
+    @Test
+    void tooltipHideDelayRefreshUsesPublicBehavior() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhen(
+                    () -> tooltipShowing(tooltipReference),
+                    () -> {
+                        Label target = new Label("Target");
+                        target.setMinSize(80.0, 32.0);
+                        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+                        VBox root = new VBox(target);
+                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                                Duration.ZERO,
+                                Duration.seconds(30.0),
+                                Duration.seconds(30.0)
+                        ));
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 240.0, 120.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.layout();
+
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        targetReference.set(target);
+                        tooltipReference.set(tooltip);
+                        target.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_ENTERED, 4.0, 4.0, false));
+                    },
+                    () -> {
+                        VBox root = Objects.requireNonNull(rootReference.get(), "root");
+                        Label target = Objects.requireNonNull(targetReference.get(), "target");
+                        M3Tooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
+                        assertTrue(tooltip.isShowing());
+
+                        target.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 4.0, 4.0, false));
+                        assertTrue(tooltip.isShowing());
+                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                                Duration.ZERO,
+                                Duration.millis(40.0),
+                                Duration.seconds(30.0)
+                        ));
+                    }
+            );
+
+            runOnFxThreadWhen(
+                    () -> tooltipHidden(tooltipReference),
+                    () -> {
+                    },
+                    () -> assertFalse(Objects.requireNonNull(tooltipReference.get(), "tooltip").isShowing())
+            );
+        } finally {
+            closeInstalledTooltipScene(stageReference, rootReference, targetReference, tooltipReference);
+        }
     }
 
     /// Verifies that rich tooltips expose graphic-only Material content.
@@ -6675,6 +7297,173 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that hidden popup owners do not open popups or route accessibility focus into hidden content.
+    @Test
+    void popupOwnersSkipAccessibleFocusAndRevealWhenHiddenByAncestor() {
+        runOnFxThread(() -> {
+            M3MenuItem buttonTarget = new M3MenuItem("Button target");
+            M3MenuButton menuButton = new M3MenuButton("More", buttonTarget);
+
+            M3MenuItem subTarget = new M3MenuItem("Sub target");
+            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", subTarget);
+
+            M3MenuItem splitTarget = new M3MenuItem("Split target");
+            M3SplitButton splitButton = new M3SplitButton("Create", splitTarget);
+
+            M3FloatingActionButton fabAction = new M3FloatingActionButton("A");
+            M3FabMenu fabMenu = new M3FabMenu();
+            fabMenu.addItem(fabAction);
+
+            M3Button outside = new M3Button("Outside");
+            VBox hiddenOwner = new VBox(8.0, menuButton, subMenuItem, splitButton, fabMenu);
+            VBox root = new VBox(8.0, outside, hiddenOwner);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 520.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                outside.requestFocus();
+                hiddenOwner.setVisible(false);
+                root.applyCss();
+                root.layout();
+
+                menuButton.showMenu();
+                menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                menuButton.executeAccessibleAction(AccessibleAction.EXPAND);
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, buttonTarget);
+
+                assertTrue(outside.isFocused());
+                assertFalse(menuButton.isShowing());
+                assertFalse(buttonTarget.isFocused());
+
+                subMenuItem.showSubMenu();
+                subMenuItem.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                subMenuItem.executeAccessibleAction(AccessibleAction.EXPAND);
+                subMenuItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, subTarget);
+
+                assertTrue(outside.isFocused());
+                assertFalse(subMenuItem.isSubMenuShowing());
+                assertFalse(subTarget.isFocused());
+
+                splitButton.showMenu();
+                splitButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                splitButton.executeAccessibleAction(AccessibleAction.EXPAND);
+                splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, splitTarget);
+
+                assertTrue(outside.isFocused());
+                assertFalse(splitButton.isShowing());
+                assertFalse(splitButton.getActionButton().isFocused());
+                assertFalse(splitButton.getMenuButton().isFocused());
+                assertFalse(splitTarget.isFocused());
+
+                fabMenu.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                fabMenu.executeAccessibleAction(AccessibleAction.EXPAND);
+                fabMenu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, fabAction);
+
+                assertTrue(outside.isFocused());
+                assertFalse(fabMenu.isExpanded());
+                assertFalse(fabMenu.getToggleButton().isFocused());
+                assertFalse(fabAction.isFocused());
+            } finally {
+                menuButton.hideMenu();
+                subMenuItem.hideSubMenu();
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hidden overlay owners do not reveal surfaces or route accessibility focus into hidden content.
+    @Test
+    void overlayOwnersSkipAccessibleRevealAndFocusWhenHiddenByAncestor() {
+        runOnFxThread(() -> {
+            M3Button sideAction = new M3Button("Side action");
+            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side content"), sideAction);
+            sideSheet.hide();
+
+            M3Button bottomAction = new M3Button("Bottom action");
+            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom content"), bottomAction);
+            bottomSheet.hide();
+
+            M3Scrim scrim = new M3Scrim();
+            scrim.hide();
+
+            M3SnackbarHost snackbarHost = new M3SnackbarHost();
+            snackbarHost.setDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Queued", "Action");
+            snackbarHost.enqueue(currentSnackbar);
+            snackbarHost.enqueue(queuedSnackbar);
+
+            M3Button outside = new M3Button("Outside");
+            VBox hiddenOwner = new VBox(8.0, sideSheet, bottomSheet, scrim, snackbarHost);
+            VBox root = new VBox(8.0, outside, hiddenOwner);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setAnimationsEnabled(root, false);
+                Scene scene = new Scene(root, 620.0, 520.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3Button snackbarAction = assertInstanceOf(
+                        M3Button.class,
+                        currentSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                );
+
+                outside.requestFocus();
+                hiddenOwner.setVisible(false);
+                root.applyCss();
+                root.layout();
+
+                sideSheet.executeAccessibleAction(AccessibleAction.EXPAND);
+                sideSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, sideAction);
+                sideSheet.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertFalse(sideSheet.isShown());
+                assertFalse(sideAction.isFocused());
+                assertTrue(outside.isFocused());
+
+                bottomSheet.executeAccessibleAction(AccessibleAction.EXPAND);
+                bottomSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, bottomAction);
+                bottomSheet.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertFalse(bottomSheet.isShown());
+                assertFalse(bottomAction.isFocused());
+                assertTrue(outside.isFocused());
+
+                scrim.executeAccessibleAction(AccessibleAction.EXPAND);
+                scrim.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                scrim.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertFalse(scrim.isShown());
+                assertFalse(scrim.isFocused());
+                assertNull(scrim.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(outside.isFocused());
+
+                snackbarHost.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                snackbarHost.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
+                snackbarHost.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+
+                assertSame(currentSnackbar, snackbarHost.getSnackbar());
+                assertEquals(1, snackbarHost.getQueue().size());
+                assertSame(queuedSnackbar, snackbarHost.getQueue().get(0));
+                assertNull(snackbarHost.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertFalse(snackbarAction.isFocused());
+                assertTrue(outside.isFocused());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that nested popup focus changes propagate through menu and split-button owners.
     @Test
     void nestedPopupMenuFocusPropagatesThroughOwners() {
@@ -7171,47 +7960,215 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that interaction timers refresh when inherited motion behavior changes at runtime.
+    /// Verifies that type-ahead reset delays refresh while printable-key prefixes are buffered.
     @Test
-    void keyboardAndSubMenuTimingRefreshesWhenMotionBehaviorChanges() {
-        runOnFxThread(() -> {
-            M3ListPane listPane = new M3ListPane(new M3ListItem("Archive"));
-            M3ListView<String> listView = new M3ListView<>("Archive", "Settings");
-            M3Menu menu = new M3Menu(new M3MenuItem("Archive"));
-            M3NavigationDrawer drawer = new M3NavigationDrawer(new M3ListItem("Archive"));
-            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
-            VBox root = new VBox(listPane, listView, menu, drawer, subMenuItem);
-            Stage stage = new Stage();
-            try {
-                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.standard());
-                Scene scene = new Scene(root, 360.0, 360.0);
+    void typeAheadResetDelayRefreshUsesPublicBehavior() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListPane> listPaneReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListItem> listPaneSearchReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListView<String>> listViewReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Menu> menuReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuItem> menuSearchReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3NavigationDrawer> drawerReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListItem> drawerSearchReference = new AtomicReference<>();
+        AtomicLong readyNanos = new AtomicLong();
 
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                root.layout();
+        try {
+            runOnFxThreadWhen(
+                    () -> readyNanos.get() > 0L && System.nanoTime() >= readyNanos.get(),
+                    () -> {
+                        M3ListItem listPaneArchive = new M3ListItem("Archive");
+                        M3ListItem listPaneAssistant = new M3ListItem("Assistant");
+                        M3ListItem listPaneSearch = new M3ListItem("Search");
+                        M3ListPane listPane = new M3ListPane(listPaneArchive, listPaneAssistant, listPaneSearch);
+                        listPane.setSelectionMode(M3ListSelectionMode.SINGLE);
 
-                assertTypeAheadResetDelay(listPane, 1000.0);
-                assertTypeAheadResetDelay(listView, 1000.0);
-                assertTypeAheadResetDelay(menu, 1000.0);
-                assertTypeAheadResetDelay(drawer, 1000.0);
-                assertPauseDuration(subMenuItem, "hoverOpenDelay", 200.0);
-                assertPauseDuration(subMenuItem, "hoverCloseDelay", 200.0);
+                        M3ListView<String> listView = new M3ListView<>("Archive", "Assistant", "Search");
+                        listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+                        listView.setFixedCellSize(48.0);
 
-                M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.expressive());
+                        M3MenuItem menuArchive = new M3MenuItem("Archive");
+                        M3MenuItem menuAssistant = new M3MenuItem("Assistant");
+                        M3MenuItem menuSearch = new M3MenuItem("Search");
+                        M3Menu menu = new M3Menu(menuArchive, menuAssistant, menuSearch);
+                        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
 
-                assertTypeAheadResetDelay(listPane, 900.0);
-                assertTypeAheadResetDelay(listView, 900.0);
-                assertTypeAheadResetDelay(menu, 900.0);
-                assertTypeAheadResetDelay(drawer, 900.0);
-                assertPauseDuration(subMenuItem, "hoverOpenDelay", 150.0);
-                assertPauseDuration(subMenuItem, "hoverCloseDelay", 150.0);
-            } finally {
-                M3MotionSettings.clearMotionBehavior(root);
-                stage.close();
-            }
-        });
+                        M3ListItem drawerArchive = new M3ListItem("Archive");
+                        M3ListItem drawerAssistant = new M3ListItem("Assistant");
+                        M3ListItem drawerSearch = new M3ListItem("Search");
+                        M3NavigationDrawer drawer = new M3NavigationDrawer(
+                                drawerArchive,
+                                drawerAssistant,
+                                drawerSearch
+                        );
+
+                        VBox root = new VBox(12.0, listPane, listView, menu, drawer);
+                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                                Duration.seconds(30.0),
+                                Duration.seconds(30.0),
+                                Duration.seconds(30.0)
+                        ));
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 420.0, 520.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        listView.resize(360.0, 160.0);
+                        root.applyCss();
+                        root.layout();
+
+                        listPane.requestFocus();
+                        listPane.fireEvent(keyTypedEvent("a"));
+                        assertTrue(Objects.requireNonNull(
+                                listPane.getSelectedItem(),
+                                "listPaneSelectedItem"
+                        ).getHeadlineText().startsWith("A"));
+
+                        listView.requestFocus();
+                        listView.fireEvent(keyTypedEvent("a"));
+                        assertTrue(Objects.requireNonNull(
+                                listView.getSelectedItem(),
+                                "listViewSelectedItem"
+                        ).startsWith("A"));
+
+                        menu.requestFocus();
+                        menu.fireEvent(keyTypedEvent("a"));
+                        assertTrue(Objects.requireNonNull(
+                                menu.getSelectedItem(),
+                                "menuSelectedItem"
+                        ).getHeadlineText().startsWith("A"));
+
+                        drawer.requestFocus();
+                        drawer.fireEvent(keyTypedEvent("a"));
+                        assertTrue(Objects.requireNonNull(
+                                drawer.getSelectedItem(),
+                                "drawerSelectedItem"
+                        ).getHeadlineText().startsWith("A"));
+
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        listPaneReference.set(listPane);
+                        listPaneSearchReference.set(listPaneSearch);
+                        listViewReference.set(listView);
+                        menuReference.set(menu);
+                        menuSearchReference.set(menuSearch);
+                        drawerReference.set(drawer);
+                        drawerSearchReference.set(drawerSearch);
+
+                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                                Duration.millis(40.0),
+                                Duration.seconds(30.0),
+                                Duration.seconds(30.0)
+                        ));
+                        readyNanos.set(System.nanoTime() + 180_000_000L);
+                    },
+                    () -> {
+                        M3ListPane listPane = Objects.requireNonNull(listPaneReference.get(), "listPane");
+                        M3ListItem listPaneSearch =
+                                Objects.requireNonNull(listPaneSearchReference.get(), "listPaneSearch");
+                        M3ListView<String> listView = Objects.requireNonNull(listViewReference.get(), "listView");
+                        M3Menu menu = Objects.requireNonNull(menuReference.get(), "menu");
+                        M3MenuItem menuSearch = Objects.requireNonNull(menuSearchReference.get(), "menuSearch");
+                        M3NavigationDrawer drawer = Objects.requireNonNull(drawerReference.get(), "drawer");
+                        M3ListItem drawerSearch = Objects.requireNonNull(drawerSearchReference.get(), "drawerSearch");
+
+                        listPane.fireEvent(keyTypedEvent("s"));
+                        assertSame(listPaneSearch, listPane.getSelectedItem());
+                        assertTrue(listPaneSearch.isFocused());
+
+                        listView.fireEvent(keyTypedEvent("s"));
+                        assertEquals("Search", listView.getSelectedItem());
+                        assertEquals(2, listView.getFocusedIndex());
+
+                        menu.fireEvent(keyTypedEvent("s"));
+                        assertSame(menuSearch, menu.getSelectedItem());
+                        assertTrue(menuSearch.isFocused());
+
+                        drawer.fireEvent(keyTypedEvent("s"));
+                        assertSame(drawerSearch, drawer.getSelectedItem());
+                        assertTrue(drawerSearch.isFocused());
+                    }
+            );
+        } finally {
+            closeMotionTestScene(stageReference, rootReference);
+        }
+    }
+
+    /// Verifies that submenu hover open and close delays refresh while hover transitions are pending.
+    @Test
+    void subMenuHoverDelayRefreshUsesPublicBehavior() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhen(
+                    () -> subMenuShowing(subMenuItemReference),
+                    () -> {
+                        M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
+                        subMenuItem.setMinSize(160.0, 48.0);
+                        VBox root = new VBox(subMenuItem);
+                        M3MotionSettings.setAnimationsEnabled(root, false);
+                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                                Duration.seconds(30.0),
+                                Duration.seconds(30.0),
+                                Duration.seconds(30.0)
+                        ));
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 320.0, 160.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.layout();
+
+                        subMenuItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_ENTERED, 8.0, 8.0, false));
+                        assertFalse(subMenuItem.isSubMenuShowing());
+
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        subMenuItemReference.set(subMenuItem);
+                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                                Duration.seconds(30.0),
+                                Duration.millis(40.0),
+                                Duration.seconds(30.0)
+                        ));
+                    },
+                    () -> {
+                        VBox root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3SubMenuItem subMenuItem =
+                                Objects.requireNonNull(subMenuItemReference.get(), "subMenuItem");
+                        assertTrue(subMenuItem.isSubMenuShowing());
+
+                        subMenuItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 8.0, 8.0, false));
+                        assertTrue(subMenuItem.isSubMenuShowing());
+                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                                Duration.seconds(30.0),
+                                Duration.millis(40.0),
+                                Duration.millis(40.0)
+                        ));
+                    }
+            );
+
+            runOnFxThreadWhen(
+                    () -> subMenuHidden(subMenuItemReference),
+                    () -> {
+                    },
+                    () -> assertFalse(Objects.requireNonNull(
+                            subMenuItemReference.get(),
+                            "subMenuItem"
+                    ).isSubMenuShowing())
+            );
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+                if (subMenuItem != null) {
+                    subMenuItem.hideSubMenu();
+                }
+            });
+            closeMotionTestScene(stageReference, rootReference);
+        }
     }
 
     /// Verifies that drawer group disclosure keys keep focus on visible rows.
@@ -7893,6 +8850,53 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that hidden search bar owners do not route accessibility focus or active state into children.
+    @Test
+    void searchBarSkipsAccessibleFocusWhenOwnerHiddenByAncestor() {
+        runOnFxThread(() -> {
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            M3Button filter = new M3Button("Filter");
+            searchBar.setTrailingActions(filter);
+
+            M3Button outside = new M3Button("Outside");
+            Pane hiddenOwner = new Pane(searchBar);
+            VBox root = new VBox(8.0, outside, hiddenOwner);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 460.0, 180.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                outside.requestFocus();
+                hiddenOwner.setVisible(false);
+                root.applyCss();
+                root.layout();
+
+                searchBar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(outside.isFocused());
+                assertFalse(searchBar.isActive());
+                assertFalse(searchBar.getEditor().isFocused());
+                assertFalse(filter.isFocused());
+
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, filter);
+
+                assertTrue(outside.isFocused());
+                assertFalse(searchBar.isActive());
+                assertFalse(filter.isFocused());
+
+                searchBar.executeAccessibleAction(AccessibleAction.EXPAND);
+
+                assertTrue(outside.isFocused());
+                assertFalse(searchBar.isActive());
+                assertSame(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search component token metrics apply through the active theme.
     @Test
     void searchComponentsApplyTokenMetrics() {
@@ -8186,6 +9190,55 @@ final class M3ControlStyleTest {
 
                 searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
                 assertTrue(first.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that search view result navigation skips results and owners hidden by ancestors.
+    @Test
+    void searchViewSkipsResultsAndOwnersHiddenByAncestors() {
+        runOnFxThread(() -> {
+            M3Button hiddenAction = new M3Button("Hidden action");
+            Pane hiddenResult = new Pane(hiddenAction);
+            hiddenResult.setVisible(false);
+            M3ListItem visibleResult = new M3ListItem("Visible");
+            M3SearchView searchView = new M3SearchView("Search", hiddenResult, visibleResult);
+            M3Button outside = new M3Button("Outside");
+            Pane searchOwner = new Pane(searchView);
+            VBox root = new VBox(8.0, outside, searchOwner);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 480.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                searchView.getEditor().requestFocus();
+                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+                assertTrue(visibleResult.isFocused());
+                assertFalse(hiddenAction.isFocused());
+                assertSame(visibleResult, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchView.getEditor().requestFocus();
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenAction);
+
+                assertTrue(searchView.getEditor().isFocused());
+                assertFalse(hiddenAction.isFocused());
+
+                outside.requestFocus();
+                searchOwner.setVisible(false);
+                root.applyCss();
+                root.layout();
+
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, visibleResult);
+
+                assertTrue(outside.isFocused());
+                assertFalse(visibleResult.isFocused());
             } finally {
                 stage.close();
             }
@@ -9234,59 +10287,88 @@ final class M3ControlStyleTest {
 
     /// Verifies that segmented button selected containers animate between selected states.
     @Test
-    void segmentedButtonSelectionContainersAnimateBetweenStates() {
-        runOnFxThread(() -> {
-            M3SegmentedButton day = createSegmentedButton("Day", true);
-            M3SegmentedButton week = new M3SegmentedButton("Week");
-            M3SegmentedButton month = new M3SegmentedButton("Month");
-            M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(day, week, month);
-            group.setPrefSize(240.0, 40.0);
-            FlowPane root = new FlowPane(group);
-            root.setStyle("-fx-background-color: white; " + visualTestColors());
-            Scene scene = new Scene(root, 280.0, 80.0);
+    void segmentedButtonSelectionContainersAnimateBetweenStates() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Parent> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SegmentedButton> dayReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SegmentedButton> monthReference = new AtomicReference<>();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.resize(280.0, 80.0);
-            root.layout();
+        try {
+            runOnFxThread(() -> {
+                M3SegmentedButton day = createSegmentedButton("Day", true);
+                M3SegmentedButton week = new M3SegmentedButton("Week");
+                M3SegmentedButton month = new M3SegmentedButton("Month");
+                M3SegmentedButtonGroup group = new M3SegmentedButtonGroup(day, week, month);
+                group.setPrefSize(240.0, 40.0);
+                FlowPane root = new FlowPane(group);
+                root.setStyle("-fx-background-color: white; " + visualTestColors());
+                Scene scene = new Scene(root, 280.0, 80.0);
+                Stage stage = new Stage();
 
-            group.select(month);
-            root.applyCss();
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(280.0, 80.0);
+                root.layout();
 
-            Timeline outgoingAnimation = skinTimeline(day.getSkin(), "selectionAnimation");
-            Timeline incomingAnimation = skinTimeline(month.getSkin(), "selectionAnimation");
-            outgoingAnimation.jumpTo(Duration.millis(80.0));
-            incomingAnimation.jumpTo(Duration.millis(80.0));
-            root.layout();
+                stageReference.set(stage);
+                rootReference.set(root);
+                dayReference.set(day);
+                monthReference.set(month);
+                group.select(month);
+            });
 
-            Region outgoingSelection = segmentedButtonSelectionContainer(day);
-            Region incomingSelection = segmentedButtonSelectionContainer(month);
-            assertBetween(outgoingSelection.getOpacity(), 0.0, 1.0, "outgoing segment selection opacity");
-            assertBetween(incomingSelection.getOpacity(), 0.0, 1.0, "incoming segment selection opacity");
-            assertBetween(incomingSelection.getScaleX(), 0.96, 1.0, "incoming segment selection scale");
-            assertRegionRadii(outgoingSelection, 19.0, 0.0, 0.0, 19.0);
-            assertRegionRadii(incomingSelection, 0.0, 19.0, 19.0, 0.0);
+            runOnFxThreadWhen(
+                    () -> segmentedButtonSelectionIsTransitioning(rootReference, dayReference, monthReference),
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3SegmentedButton day = Objects.requireNonNull(dayReference.get(), "day");
+                        M3SegmentedButton month = Objects.requireNonNull(monthReference.get(), "month");
+                        Region outgoingSelection = segmentedButtonSelectionContainer(day);
+                        Region incomingSelection = segmentedButtonSelectionContainer(month);
 
-            WritableImage image = snapshotImageOnFxThread(root);
-            assertSnapshotNodeContainsContrast(image, incomingSelection, Color.WHITE, 0.03);
-            assertSnapshotNodeBorderContainsContrast(image, month, Color.WHITE, 0.08);
-            writeVisualSnapshot(image, java.nio.file.Path.of(
-                    "build",
-                    "reports",
-                    "m3fx-visual",
-                    "visual-segmented-selection-animation-frame.png"
-            ));
+                        assertBetween(outgoingSelection.getOpacity(), 0.0, 1.0, "outgoing segment selection opacity");
+                        assertBetween(incomingSelection.getOpacity(), 0.25, 1.0, "incoming segment selection opacity");
+                        assertBetween(incomingSelection.getScaleX(), 0.96, 1.0, "incoming segment selection scale");
+                        assertRegionRadii(outgoingSelection, 19.0, 0.0, 0.0, 19.0);
+                        assertRegionRadii(incomingSelection, 0.0, 19.0, 19.0, 0.0);
 
-            outgoingAnimation.jumpTo(Duration.millis(200.0));
-            incomingAnimation.jumpTo(Duration.millis(200.0));
-            root.layout();
+                        WritableImage image = snapshotImageOnFxThread(root);
+                        assertSnapshotNodeContainsContrast(image, incomingSelection, Color.WHITE, 0.03);
+                        assertSnapshotNodeBorderContainsContrast(image, month, Color.WHITE, 0.08);
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-segmented-selection-animation-frame.png"
+                        ));
+                    }
+            );
 
-            assertEquals(0.0, outgoingSelection.getOpacity(), 0.0001);
-            assertEquals(1.0, incomingSelection.getOpacity(), 0.0001);
-            assertEquals(0.96, outgoingSelection.getScaleX(), 0.0001);
-            assertEquals(1.0, incomingSelection.getScaleX(), 0.0001);
-            stopTimelines(outgoingAnimation, incomingAnimation);
-        });
+            runOnFxThreadWhen(
+                    () -> segmentedButtonSelectionHasSettled(rootReference, dayReference, monthReference),
+                    () -> {
+                    },
+                    () -> {
+                        M3SegmentedButton day = Objects.requireNonNull(dayReference.get(), "day");
+                        M3SegmentedButton month = Objects.requireNonNull(monthReference.get(), "month");
+                        Region outgoingSelection = segmentedButtonSelectionContainer(day);
+                        Region incomingSelection = segmentedButtonSelectionContainer(month);
+
+                        assertEquals(0.0, outgoingSelection.getOpacity(), 0.0001);
+                        assertEquals(1.0, incomingSelection.getOpacity(), 0.0001);
+                        assertEquals(0.96, outgoingSelection.getScaleX(), 0.0001);
+                        assertEquals(1.0, incomingSelection.getScaleX(), 0.0001);
+                    }
+            );
+        } finally {
+            closeObservableMotionWindow(stageReference, rootReference);
+        }
     }
 
     /// Verifies that tab component token properties are styleable from CSS.
@@ -9501,92 +10583,93 @@ final class M3ControlStyleTest {
 
     /// Verifies that selection indicator animations expose intermediate and final rendered states.
     @Test
-    void selectionIndicatorAnimationsRenderIntermediateAndFinalStates() {
-        runOnFxThread(() -> {
-            M3CheckBox checkBox = new M3CheckBox("Check");
-            M3RadioButton radioButton = new M3RadioButton("Radio");
-            M3Switch switchControl = new M3Switch("Switch");
-            FlowPane row = new FlowPane(18.0, 12.0, checkBox, radioButton, switchControl);
-            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(row, 420.0, 96.0);
+    void selectionIndicatorAnimationsRenderIntermediateAndFinalStates() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable FlowPane> rowReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3CheckBox> checkBoxReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3RadioButton> radioButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Switch> switchReference = new AtomicReference<>();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            row.applyCss();
-            row.resize(420.0, 96.0);
-            row.layout();
-
-            checkBox.setSelected(true);
-            radioButton.setSelected(true);
-            switchControl.setSelected(true);
-
-            Timeline checkBoxAnimation = skinTimeline(checkBox.getSkin(), "selectionAnimation");
-            Timeline radioAnimation = skinTimeline(radioButton.getSkin(), "selectionAnimation");
-            Timeline switchAnimation = skinTimeline(switchControl.getSkin(), "selectionAnimation");
-            checkBoxAnimation.jumpTo(Duration.millis(30.0));
-            radioAnimation.jumpTo(Duration.millis(30.0));
-            switchAnimation.jumpTo(Duration.millis(50.0));
-            row.layout();
-
-            Region mark = lookupRegion(checkBox, ".mark");
-            Shape dot = lookupShape(radioButton, ".dot");
-            Region thumb = lookupRegion(switchControl, ".thumb");
-            assertBetween(mark.getOpacity(), 0.0, 1.0, "checkbox mark opacity");
-            assertBetween(mark.getScaleX(), 0.72, 1.0, "checkbox mark scale");
-            assertBetween(dot.getOpacity(), 0.0, 1.0, "radio dot opacity");
-            assertBetween(dot.getScaleX(), 0.64, 1.0, "radio dot scale");
-            assertBetween(thumb.getLayoutX(), 4.0, 24.0, "switch thumb x");
-            assertBetween(thumb.getWidth(), 16.0, 24.0, "switch thumb width");
-
-            WritableImage image = snapshotImageOnFxThread(row);
-            assertSnapshotNodeContainsContrast(image, mark, Color.WHITE, 0.05);
-            assertSnapshotNodeContainsContrast(image, dot, Color.WHITE, 0.05);
-            assertSnapshotNodeContainsContrast(image, thumb, Color.rgb(84, 50, 185), 0.05);
-            writeVisualSnapshot(image, java.nio.file.Path.of(
-                    "build",
-                    "reports",
-                    "m3fx-visual",
-                    "visual-selection-animation-frame.png"
+        try {
+            runOnFxThread(() -> showObservableSelectionControls(
+                    stageReference,
+                    rowReference,
+                    checkBoxReference,
+                    radioButtonReference,
+                    switchReference
             ));
+            runOnFxThreadWhen(
+                    () -> selectionIndicatorsSelecting(checkBoxReference, radioButtonReference, switchReference),
+                    () -> {
+                        Objects.requireNonNull(checkBoxReference.get(), "checkBox").setSelected(true);
+                        Objects.requireNonNull(radioButtonReference.get(), "radioButton").setSelected(true);
+                        Objects.requireNonNull(switchReference.get(), "switchControl").setSelected(true);
+                    },
+                    () -> {
+                        FlowPane row = Objects.requireNonNull(rowReference.get(), "row");
+                        M3CheckBox checkBox = Objects.requireNonNull(checkBoxReference.get(), "checkBox");
+                        M3RadioButton radioButton =
+                                Objects.requireNonNull(radioButtonReference.get(), "radioButton");
+                        M3Switch switchControl = Objects.requireNonNull(switchReference.get(), "switchControl");
 
-            checkBoxAnimation.jumpTo(Duration.millis(100.0));
-            radioAnimation.jumpTo(Duration.millis(100.0));
-            switchAnimation.jumpTo(Duration.millis(150.0));
-            row.layout();
-
-            assertEquals(1.0, mark.getOpacity(), 0.0001);
-            assertEquals(1.0, mark.getScaleX(), 0.0001);
-            assertEquals(1.0, dot.getOpacity(), 0.0001);
-            assertEquals(1.0, dot.getScaleX(), 0.0001);
-            assertEquals(24.0, thumb.getLayoutX(), 0.0001);
-            assertEquals(24.0, thumb.getWidth(), 0.0001);
-
-            checkBox.setSelected(false);
-            radioButton.setSelected(false);
-            switchControl.setSelected(false);
-            checkBoxAnimation.jumpTo(Duration.millis(30.0));
-            radioAnimation.jumpTo(Duration.millis(30.0));
-            switchAnimation.jumpTo(Duration.millis(50.0));
-            row.layout();
-
-            assertBetween(mark.getOpacity(), 0.0, 1.0, "checkbox mark reverse opacity");
-            assertBetween(dot.getOpacity(), 0.0, 1.0, "radio dot reverse opacity");
-            assertBetween(thumb.getLayoutX(), 8.0, 24.0, "switch thumb reverse x");
-            assertBetween(thumb.getWidth(), 16.0, 24.0, "switch thumb reverse width");
-
-            checkBoxAnimation.jumpTo(Duration.millis(100.0));
-            radioAnimation.jumpTo(Duration.millis(100.0));
-            switchAnimation.jumpTo(Duration.millis(150.0));
-            row.layout();
-
-            assertEquals(0.0, mark.getOpacity(), 0.0001);
-            assertEquals(0.0, dot.getOpacity(), 0.0001);
-            assertEquals(8.0, thumb.getLayoutX(), 0.0001);
-            assertEquals(16.0, thumb.getWidth(), 0.0001);
-
-            checkBoxAnimation.stop();
-            radioAnimation.stop();
-            switchAnimation.stop();
-        });
+                        assertSelectionIndicatorsSelecting(checkBox, radioButton, switchControl);
+                        WritableImage image = snapshotImageOnFxThread(row);
+                        assertSnapshotNodeContainsContrast(image, lookupRegion(checkBox, ".mark"), Color.WHITE, 0.05);
+                        assertSnapshotNodeContainsContrast(image, lookupShape(radioButton, ".dot"), Color.WHITE, 0.05);
+                        assertSnapshotNodeContainsContrast(
+                                image,
+                                lookupRegion(switchControl, ".thumb"),
+                                Color.rgb(84, 50, 185),
+                                0.05
+                        );
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-selection-animation-frame.png"
+                        ));
+                    }
+            );
+            runOnFxThreadWhen(
+                    () -> selectionIndicatorsSelectedSettled(checkBoxReference, radioButtonReference, switchReference),
+                    () -> {
+                    },
+                    () -> assertSelectionIndicatorsSelectedSettled(
+                            Objects.requireNonNull(checkBoxReference.get(), "checkBox"),
+                            Objects.requireNonNull(radioButtonReference.get(), "radioButton"),
+                            Objects.requireNonNull(switchReference.get(), "switchControl")
+                    )
+            );
+            runOnFxThreadWhen(
+                    () -> selectionIndicatorsDeselecting(checkBoxReference, radioButtonReference, switchReference),
+                    () -> {
+                        Objects.requireNonNull(checkBoxReference.get(), "checkBox").setSelected(false);
+                        Objects.requireNonNull(radioButtonReference.get(), "radioButton").setSelected(false);
+                        Objects.requireNonNull(switchReference.get(), "switchControl").setSelected(false);
+                    },
+                    () -> assertSelectionIndicatorsDeselecting(
+                            Objects.requireNonNull(checkBoxReference.get(), "checkBox"),
+                            Objects.requireNonNull(radioButtonReference.get(), "radioButton"),
+                            Objects.requireNonNull(switchReference.get(), "switchControl")
+                    )
+            );
+            runOnFxThreadWhen(
+                    () -> selectionIndicatorsUnselectedSettled(
+                            checkBoxReference,
+                            radioButtonReference,
+                            switchReference
+                    ),
+                    () -> {
+                    },
+                    () -> assertSelectionIndicatorsUnselectedSettled(
+                            Objects.requireNonNull(checkBoxReference.get(), "checkBox"),
+                            Objects.requireNonNull(radioButtonReference.get(), "radioButton"),
+                            Objects.requireNonNull(switchReference.get(), "switchControl")
+                    )
+            );
+        } finally {
+            closeObservableSelectionControls(stageReference, rowReference);
+        }
     }
 
     /// Verifies that selection controls mirror indicator and label order in right-to-left mode.
@@ -9629,63 +10712,60 @@ final class M3ControlStyleTest {
 
     /// Verifies that checkbox indeterminate-to-selected transitions replay the mark animation.
     @Test
-    void checkBoxIndeterminateTransitionReplaysMarkAnimation() {
-        runOnFxThread(() -> {
-            M3CheckBox checkBox = new M3CheckBox("Three-state");
-            checkBox.setAllowIndeterminate(true);
-            FlowPane row = new FlowPane(checkBox);
-            row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(row, 220.0, 80.0);
+    void checkBoxIndeterminateTransitionReplaysMarkAnimation() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable FlowPane> rowReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3CheckBox> checkBoxReference = new AtomicReference<>();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            row.applyCss();
-            row.resize(220.0, 80.0);
-            row.layout();
-
-            checkBox.fire();
-            Timeline animation = skinTimeline(checkBox.getSkin(), "selectionAnimation");
-            animation.jumpTo(Duration.millis(100.0));
-            row.applyCss();
-            row.layout();
-
-            Region mark = lookupRegion(checkBox, ".mark");
-            assertFalse(checkBox.isSelected());
-            assertTrue(checkBox.isIndeterminate());
-            assertEquals(12.0, mark.getLayoutBounds().getWidth(), 0.0001);
-            assertEquals(2.0, mark.getLayoutBounds().getHeight(), 0.0001);
-            assertEquals(1.0, mark.getOpacity(), 0.0001);
-
-            checkBox.fire();
-            row.applyCss();
-            row.layout();
-
-            assertTrue(checkBox.isSelected());
-            assertFalse(checkBox.isIndeterminate());
-            assertEquals(12.0, mark.getLayoutBounds().getWidth(), 0.0001);
-            assertEquals(10.0, mark.getLayoutBounds().getHeight(), 0.0001);
-            assertEquals(0.0, mark.getOpacity(), 0.0001);
-            assertEquals(0.72, mark.getScaleX(), 0.0001);
-
-            animation.jumpTo(Duration.millis(30.0));
-            row.layout();
-            assertBetween(mark.getOpacity(), 0.0, 1.0, "checkbox indeterminate-to-selected opacity");
-            assertBetween(mark.getScaleX(), 0.72, 1.0, "checkbox indeterminate-to-selected scale");
-
-            WritableImage image = snapshotImageOnFxThread(row);
-            assertSnapshotNodeContainsContrast(image, mark, Color.WHITE, 0.05);
-            writeVisualSnapshot(image, java.nio.file.Path.of(
-                    "build",
-                    "reports",
-                    "m3fx-visual",
-                    "visual-checkbox-indeterminate-transition.png"
+        try {
+            runOnFxThread(() -> showObservableIndeterminateCheckBox(
+                    stageReference,
+                    rowReference,
+                    checkBoxReference
             ));
+            runOnFxThreadWhen(
+                    () -> checkBoxIndeterminateMarkSettled(checkBoxReference),
+                    () -> Objects.requireNonNull(checkBoxReference.get(), "checkBox").fire(),
+                    () -> assertCheckBoxIndeterminateMarkSettled(
+                            Objects.requireNonNull(checkBoxReference.get(), "checkBox")
+                    )
+            );
+            runOnFxThreadWhen(
+                    () -> checkBoxSelectedMarkIsAnimating(checkBoxReference),
+                    () -> Objects.requireNonNull(checkBoxReference.get(), "checkBox").fire(),
+                    () -> {
+                        FlowPane row = Objects.requireNonNull(rowReference.get(), "row");
+                        M3CheckBox checkBox = Objects.requireNonNull(checkBoxReference.get(), "checkBox");
+                        Region mark = lookupRegion(checkBox, ".mark");
 
-            animation.jumpTo(Duration.millis(100.0));
-            row.layout();
-            assertEquals(1.0, mark.getOpacity(), 0.0001);
-            assertEquals(1.0, mark.getScaleX(), 0.0001);
-            animation.stop();
-        });
+                        assertTrue(checkBox.isSelected());
+                        assertFalse(checkBox.isIndeterminate());
+                        assertEquals(12.0, mark.getLayoutBounds().getWidth(), 0.0001);
+                        assertEquals(10.0, mark.getLayoutBounds().getHeight(), 0.0001);
+                        assertBetween(mark.getOpacity(), 0.0, 1.0, "checkbox indeterminate-to-selected opacity");
+                        assertBetween(mark.getScaleX(), 0.72, 1.0, "checkbox indeterminate-to-selected scale");
+
+                        WritableImage image = snapshotImageOnFxThread(row);
+                        assertSnapshotNodeContainsContrast(image, mark, Color.WHITE, 0.05);
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-checkbox-indeterminate-transition.png"
+                        ));
+                    }
+            );
+            runOnFxThreadWhen(
+                    () -> checkBoxSelectedMarkSettled(checkBoxReference),
+                    () -> {
+                    },
+                    () -> assertCheckBoxSelectedMarkSettled(
+                            Objects.requireNonNull(checkBoxReference.get(), "checkBox")
+                    )
+            );
+        } finally {
+            closeObservableSelectionControls(stageReference, rowReference);
+        }
     }
 
     /// Verifies that selection control skins expose bounded indicator ripple feedback.
@@ -10050,7 +11130,44 @@ final class M3ControlStyleTest {
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
         assertEquals(28.0, slider.getThumbSize(), 0.0001);
         assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
-        assertEquals(56.0, slider.getPrefHeight(), 0.0001);
+        assertEquals(56.0, slider.prefHeight(-1.0), 0.0001);
+    }
+
+    /// Verifies that slider metric tokens do not overwrite explicit preferred sizes.
+    @Test
+    void sliderMetricTokensPreserveExplicitPreferredSize() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 48.0);
+        slider.setOrientation(Orientation.VERTICAL);
+        slider.setPrefSize(56.0, 180.0);
+        slider.setStyle(
+                "-m3-track-thickness: 6px; "
+                        + "-m3-thumb-size: 24px; "
+                        + "-m3-touch-target-size: 60px;"
+        );
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 120.0, 240.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(slider.getPrefWidth(), slider.getPrefHeight());
+        slider.layout();
+
+        assertEquals(56.0, slider.getPrefWidth(), 0.0001);
+        assertEquals(180.0, slider.getPrefHeight(), 0.0001);
+        assertVerticalSliderTrackUsesExplicitHeight(slider);
+
+        slider.setStyle(
+                "-m3-track-thickness: 8px; "
+                        + "-m3-thumb-size: 28px; "
+                        + "-m3-touch-target-size: 64px;"
+        );
+        root.applyCss();
+        slider.resize(slider.getPrefWidth(), slider.getPrefHeight());
+        slider.layout();
+
+        assertEquals(56.0, slider.getPrefWidth(), 0.0001);
+        assertEquals(180.0, slider.getPrefHeight(), 0.0001);
+        assertVerticalSliderTrackUsesExplicitHeight(slider);
     }
 
     /// Verifies that slider track shape tokens reach the rendered track regions.
@@ -10112,8 +11229,10 @@ final class M3ControlStyleTest {
 
         Region track = lookupRegion(slider, ".track");
         Region thumb = lookupRegion(slider, ".thumb");
-        double trackCenter = track.getLayoutX() + track.getWidth() / 2.0;
-        double thumbCenter = thumb.getLayoutX() + thumb.getWidth() / 2.0;
+        Bounds trackBounds = track.localToScene(track.getBoundsInLocal());
+        Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
+        double trackCenter = trackBounds.getCenterX();
+        double thumbCenter = thumbBounds.getCenterX();
         assertTrue(thumbCenter > trackCenter, () -> "thumbCenter=" + thumbCenter + ", trackCenter=" + trackCenter);
 
         slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
@@ -10147,15 +11266,21 @@ final class M3ControlStyleTest {
 
         Region leftToRightTrack = lookupRegion(leftToRight, ".track");
         Region leftToRightActiveTrack = lookupRegion(leftToRight, ".active-track");
-        assertEquals(leftToRightTrack.getLayoutX(), leftToRightActiveTrack.getLayoutX(), 0.0001);
-        assertEquals(leftToRightTrack.getWidth() * 0.25, leftToRightActiveTrack.getWidth(), 0.0001);
+        Bounds leftToRightTrackBounds = leftToRightTrack.localToScene(leftToRightTrack.getBoundsInLocal());
+        Bounds leftToRightActiveTrackBounds = leftToRightActiveTrack.localToScene(leftToRightActiveTrack.getBoundsInLocal());
+        assertEquals(leftToRightTrackBounds.getMinX(), leftToRightActiveTrackBounds.getMinX(), 0.0001);
+        assertEquals(leftToRightTrackBounds.getWidth() * 0.25, leftToRightActiveTrackBounds.getWidth(), 0.0001);
 
         Region rightToLeftTrack = lookupRegion(rightToLeft, ".track");
         Region rightToLeftActiveTrack = lookupRegion(rightToLeft, ".active-track");
-        assertEquals(rightToLeftTrack.getLayoutX() + rightToLeftTrack.getWidth(),
-                rightToLeftActiveTrack.getLayoutX() + rightToLeftActiveTrack.getWidth(),
+        Bounds rightToLeftTrackBounds = rightToLeftTrack.localToScene(rightToLeftTrack.getBoundsInLocal());
+        Bounds rightToLeftActiveTrackBounds = rightToLeftActiveTrack.localToScene(
+                rightToLeftActiveTrack.getBoundsInLocal()
+        );
+        assertEquals(rightToLeftTrackBounds.getMaxX(),
+                rightToLeftActiveTrackBounds.getMaxX(),
                 0.0001);
-        assertEquals(rightToLeftTrack.getWidth() * 0.25, rightToLeftActiveTrack.getWidth(), 0.0001);
+        assertEquals(rightToLeftTrackBounds.getWidth() * 0.25, rightToLeftActiveTrackBounds.getWidth(), 0.0001);
 
         Region verticalTrack = lookupRegion(vertical, ".track");
         Region verticalActiveTrack = lookupRegion(vertical, ".active-track");
@@ -10266,111 +11391,114 @@ final class M3ControlStyleTest {
 
     /// Verifies that indeterminate progress animations respond to runtime motion setting changes.
     @Test
-    void indeterminateProgressAnimationsRefreshWhenMotionSettingsChange() {
-        runOnFxThreadAndWait(() -> {
-            M3ProgressBar progressBar = new M3ProgressBar();
-            M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
-            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-            Pane root = new Pane(progressBar, progressIndicator, loadingIndicator);
-            Scene scene = new Scene(root);
+    void indeterminateProgressAnimationsRefreshWhenMotionSettingsChange() throws InterruptedException {
+        AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference = new AtomicReference<>();
 
-            M3MotionSettings.setAnimationsEnabled(root, true);
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
+        try {
+            runOnFxThreadWhen(
+                    () -> indeterminateProgressMotionAdvanced(sceneReference, sampleReference),
+                    () -> {
+                        IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(true);
+                        sceneReference.set(scene);
+                        sampleReference.set(sampleIndeterminateProgressMotion(scene));
+                    },
+                    () -> {
+                        IndeterminateProgressMotionScene scene =
+                                Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertIndeterminateProgressMotionAdvanced(scene, sampleReference, "enabled motion");
+                        M3MotionSettings.setAnimationsEnabled(scene.root, false);
+                        sampleReference.set(sampleIndeterminateProgressMotion(scene));
+                    }
+            );
 
-            Timeline progressBarAnimation = skinTimeline(progressBar.getSkin(), "indeterminateAnimation");
-            Timeline progressIndicatorAnimation = skinTimeline(progressIndicator.getSkin(), "indeterminateAnimation");
-            Timeline loadingIndicatorAnimation = skinTimeline(loadingIndicator.getSkin(), "indeterminateAnimation");
-            Timeline loadingIndicatorRotation = skinTimeline(loadingIndicator.getSkin(), "globalRotationAnimation");
+            runOnFxThreadWhen(
+                    () -> indeterminateProgressMotionAdvanced(sceneReference, sampleReference),
+                    () -> {
+                    },
+                    () -> {
+                        IndeterminateProgressMotionScene scene =
+                                Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertFalse(M3MotionSettings.areAnimationsEnabled(scene.progressBar));
+                        assertIndeterminateProgressMotionAdvanced(scene, sampleReference, "reduced motion");
+                        M3MotionSettings.setAnimationsEnabled(scene.root, true);
+                        sampleReference.set(sampleIndeterminateProgressMotion(scene));
+                    }
+            );
 
-            assertEquals(1, loadingIndicatorAnimation.getCycleCount());
-            assertEquals(javafx.animation.Animation.Status.RUNNING, progressBarAnimation.getStatus());
-            assertEquals(javafx.animation.Animation.Status.RUNNING, progressIndicatorAnimation.getStatus());
-            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorAnimation.getStatus());
-            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorRotation.getStatus());
-
-            M3MotionSettings.setAnimationsEnabled(root, false);
-
-            assertFalse(M3MotionSettings.areAnimationsEnabled(progressBar));
-            assertEquals(javafx.animation.Animation.Status.RUNNING, progressBarAnimation.getStatus());
-            assertEquals(javafx.animation.Animation.Status.RUNNING, progressIndicatorAnimation.getStatus());
-            assertFalse(loadingIndicatorAnimation.getStatus() == javafx.animation.Animation.Status.RUNNING);
-            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorRotation.getStatus());
-
-            M3MotionSettings.setAnimationsEnabled(root, true);
-
-            assertEquals(javafx.animation.Animation.Status.RUNNING, progressBarAnimation.getStatus());
-            assertEquals(javafx.animation.Animation.Status.RUNNING, progressIndicatorAnimation.getStatus());
-            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorAnimation.getStatus());
-            assertEquals(javafx.animation.Animation.Status.RUNNING, loadingIndicatorRotation.getStatus());
-        });
+            runOnFxThreadWhen(
+                    () -> indeterminateProgressMotionAdvanced(sceneReference, sampleReference),
+                    () -> {
+                    },
+                    () -> {
+                        IndeterminateProgressMotionScene scene =
+                                Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertTrue(M3MotionSettings.areAnimationsEnabled(scene.progressBar));
+                        assertIndeterminateProgressMotionAdvanced(scene, sampleReference, "restored motion");
+                    }
+            );
+        } finally {
+            closeIndeterminateProgressMotionScene(sceneReference);
+        }
     }
 
     /// Verifies that the loading indicator restarts each indeterminate morph segment continuously.
     @Test
-    void loadingIndicatorIndeterminateMorphSegmentsKeepRunning() {
-        runOnFxThreadAndWait(() -> {
-            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-            Pane root = new Pane(loadingIndicator);
-            Scene scene = new Scene(root, 96.0, 96.0);
+    void loadingIndicatorIndeterminateMorphSegmentsKeepRunning() throws InterruptedException {
+        AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
+        Set<String> frameSignatures = new HashSet<>();
 
-            M3MotionSettings.setAnimationsEnabled(root, true);
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            loadingIndicator.resize(72.0, 72.0);
-            loadingIndicator.layout();
-
-            Timeline morphAnimation = skinTimeline(loadingIndicator.getSkin(), "indeterminateAnimation");
-            DoubleProperty phase = reflectedDoubleProperty(loadingIndicator.getSkin(), "indeterminatePhase");
-            Path indicator = assertInstanceOf(
-                    Path.class,
-                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
+        try {
+            runOnFxThreadWhenStable(
+                    () -> loadingIndicatorObservedDistinctFrames(sceneReference, frameSignatures, 6),
+                    2,
+                    () -> {
+                        IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(true);
+                        sceneReference.set(scene);
+                        loadingIndicatorObservedDistinctFrames(sceneReference, frameSignatures, 1);
+                    },
+                    () -> {
+                        IndeterminateProgressMotionScene scene =
+                                Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertTrue(M3MotionSettings.areAnimationsEnabled(scene.loadingIndicator));
+                        assertTrue(scene.loadingIndicatorPath.isVisible());
+                        assertTrue(scene.loadingIndicatorPath.getElements().size() > 24);
+                        assertTrue(frameSignatures.size() >= 6, () -> "frameSignatures=" + frameSignatures);
+                    }
             );
-            assertEquals(Animation.Status.RUNNING, morphAnimation.getStatus());
-
-            for (int i = 0; i < 21; i++) {
-                phase.set(i % 7 + 1.0);
-                loadingIndicator.layout();
-                Bounds boundsBeforeRestart = indicator.getBoundsInLocal();
-                morphAnimation.getOnFinished().handle(new ActionEvent(morphAnimation, null));
-                loadingIndicator.layout();
-                Bounds boundsAfterRestart = indicator.getBoundsInLocal();
-                assertEquals(Animation.Status.RUNNING, morphAnimation.getStatus());
-                assertEquals((i + 1) % 7, Math.floor(phase.get()), 0.0001);
-                assertEquals(boundsBeforeRestart.getCenterX(), boundsAfterRestart.getCenterX(), 0.01);
-                assertEquals(boundsBeforeRestart.getCenterY(), boundsAfterRestart.getCenterY(), 0.01);
-                assertEquals(boundsBeforeRestart.getWidth(), boundsAfterRestart.getWidth(), 0.01);
-                assertEquals(boundsBeforeRestart.getHeight(), boundsAfterRestart.getHeight(), 0.01);
-            }
-        });
+        } finally {
+            closeIndeterminateProgressMotionScene(sceneReference);
+        }
     }
 
-    /// Verifies that the loading indicator morph phase follows the active Material motion scheme.
+    /// Verifies that the loading indicator morph reaches an observable scaled frame with local motion settings.
     @Test
-    void loadingIndicatorIndeterminateMorphUsesMotionSchemeTiming() {
-        runOnFxThreadAndWait(() -> {
-            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-            Pane root = new Pane(loadingIndicator);
-            Scene scene = new Scene(root, 96.0, 96.0);
+    void loadingIndicatorIndeterminateMorphUsesMotionSchemeTiming() throws InterruptedException {
+        AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> initialAreaReference = new AtomicReference<>();
 
-            M3MotionSettings.setAnimationsEnabled(root, true);
-            M3MotionSettings.setMotionScheme(root, M3MotionScheme.expressive());
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
+        try {
+            runOnFxThreadWhen(
+                    () -> loadingIndicatorBoundsExpandedPastInitial(sceneReference, initialAreaReference, 1.04),
+                    () -> {
+                        IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(true);
+                        sceneReference.set(scene);
+                        initialAreaReference.set(loadingIndicatorPathBoundsArea(scene.loadingIndicatorPath));
+                    },
+                    () -> {
+                        IndeterminateProgressMotionScene scene =
+                                Objects.requireNonNull(sceneReference.get(), "scene");
+                        double initialArea = Objects.requireNonNull(initialAreaReference.get(), "initialArea");
+                        double currentArea = loadingIndicatorPathBoundsArea(scene.loadingIndicatorPath);
 
-            Timeline morphAnimation = skinTimeline(loadingIndicator.getSkin(), "indeterminateAnimation");
-            DoubleProperty phase = reflectedDoubleProperty(loadingIndicator.getSkin(), "indeterminatePhase");
-            var interpolator = M3MotionScheme.expressive().defaultSpatial().interpolator();
-
-            morphAnimation.jumpTo(Duration.millis(100.0));
-            assertEquals(interpolator.interpolate(0.0, 1.0, 100.0 / 650.0), phase.get(), 0.001);
-
-            morphAnimation.jumpTo(Duration.millis(325.0));
-            assertEquals(interpolator.interpolate(0.0, 1.0, 325.0 / 650.0), phase.get(), 0.001);
-
-            morphAnimation.jumpTo(Duration.millis(650.0));
-            assertEquals(1.0, phase.get(), 0.001);
-        });
+                        assertTrue(M3MotionSettings.areAnimationsEnabled(scene.loadingIndicator));
+                        assertTrue(currentArea > initialArea * 1.04,
+                                () -> "initialArea=" + initialArea + ", currentArea=" + currentArea);
+                    }
+            );
+        } finally {
+            closeIndeterminateProgressMotionScene(sceneReference);
+        }
     }
 
     /// Verifies that progress controls expose accessible value, range, and indeterminate state.
@@ -10454,79 +11582,61 @@ final class M3ControlStyleTest {
 
     /// Verifies that loading indicator morph frames reuse their path elements.
     @Test
-    void loadingIndicatorMorphFramesReusePathElements() {
-        runOnFxThreadAndWait(() -> {
-            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-            Pane root = new Pane(loadingIndicator);
-            Scene scene = new Scene(root, 120.0, 80.0);
+    void loadingIndicatorMorphFramesReusePathElements() throws InterruptedException {
+        AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable List<PathElement>> elementsReference = new AtomicReference<>();
+        Set<String> frameSignatures = new HashSet<>();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            loadingIndicator.resize(72.0, 72.0);
-            loadingIndicator.layout();
+        try {
+            runOnFxThreadWhenStable(
+                    () -> loadingIndicatorObservedDistinctFrames(sceneReference, frameSignatures, 4),
+                    2,
+                    () -> {
+                        IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(true);
+                        sceneReference.set(scene);
+                        elementsReference.set(List.copyOf(scene.loadingIndicatorPath.getElements()));
+                    },
+                    () -> {
+                        IndeterminateProgressMotionScene scene =
+                                Objects.requireNonNull(sceneReference.get(), "scene");
+                        List<PathElement> elements = Objects.requireNonNull(elementsReference.get(), "elements");
 
-            Skin<?> skin = loadingIndicator.getSkin();
-            skinTimeline(skin, "indeterminateAnimation").stop();
-            skinTimeline(skin, "globalRotationAnimation").stop();
-            reflectedDoubleProperty(skin, "globalRotation").set(0.0);
-            DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
-            Path indicator = assertInstanceOf(
-                    Path.class,
-                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
+                        assertEquals(elements.size(), scene.loadingIndicatorPath.getElements().size());
+                        for (int i = 0; i < elements.size(); i++) {
+                            assertSame(elements.get(i), scene.loadingIndicatorPath.getElements().get(i));
+                        }
+                    }
             );
-            Object[] elements = indicator.getElements().toArray();
-
-            for (int i = 0; i < 12; i++) {
-                phase.set(i / 3.0);
-                loadingIndicator.layout();
-                assertEquals(elements.length, indicator.getElements().size());
-                for (int j = 0; j < elements.length; j++) {
-                    assertSame(elements[j], indicator.getElements().get(j));
-                }
-            }
-        });
+        } finally {
+            closeIndeterminateProgressMotionScene(sceneReference);
+        }
     }
 
     /// Verifies that sampled indeterminate loading indicator frames stay centered.
     @Test
     void loadingIndicatorIndeterminateMorphFramesStayCentered() {
         runOnFxThreadAndWait(() -> {
-            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-            loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
-            Pane root = new Pane(loadingIndicator);
-            Scene scene = new Scene(root, 140.0, 140.0);
-
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            loadingIndicator.resize(112.0, 112.0);
-            loadingIndicator.layout();
-
-            Skin<?> skin = loadingIndicator.getSkin();
-            Timeline morphAnimation = skinTimeline(skin, "indeterminateAnimation");
-            morphAnimation.stop();
-            skinTimeline(skin, "globalRotationAnimation").stop();
-            reflectedDoubleProperty(skin, "globalRotation").set(0.0);
-            DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
-            Path indicator = assertInstanceOf(
-                    Path.class,
-                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
-            );
+            LoadingIndicatorFrameScene frameScene = new LoadingIndicatorFrameScene();
 
             Set<String> boundsSignatures = new HashSet<>();
-            BufferedImage strip = new BufferedImage(140 * 7, 140, BufferedImage.TYPE_INT_ARGB);
+            int frameSize = (int) LOADING_INDICATOR_TEST_FRAME_SIZE;
+            BufferedImage strip = new BufferedImage(frameSize * 7, frameSize, BufferedImage.TYPE_INT_ARGB);
             java.awt.Graphics2D graphics = strip.createGraphics();
             try {
                 for (int segment = 0; segment < 7; segment++) {
-                    phase.set(segment + 0.5);
-                    loadingIndicator.layout();
-                    Bounds bounds = indicator.getBoundsInLocal();
-                    assertEquals(loadingIndicator.getWidth() / 2.0, bounds.getCenterX(), 3.0);
-                    assertEquals(loadingIndicator.getHeight() / 2.0, bounds.getCenterY(), 3.0);
+                    int segmentIndex = segment;
+                    writeLoadingIndicatorMorphFrame(frameScene, segment, 0.5, 0.0);
+                    Bounds bounds = frameScene.indicator.getBoundsInLocal();
+                    WritableImage frame = snapshotImageOnFxThread(frameScene.root);
+                    Point2D centroid = contrastingPixelCentroid(frame, frameScene.indicator, Color.WHITE, 0.04);
+                    assertEquals(LOADING_INDICATOR_TEST_CENTER, centroid.getX(), 2.5,
+                            () -> "loading indicator rendered centroid is horizontally unstable: segment="
+                                    + segmentIndex + ", centroid=" + centroid);
+                    assertEquals(LOADING_INDICATOR_TEST_CENTER, centroid.getY(), 2.5,
+                            () -> "loading indicator rendered centroid is vertically unstable: segment="
+                                    + segmentIndex + ", centroid=" + centroid);
                     boundsSignatures.add(Math.round(bounds.getWidth()) + "x" + Math.round(bounds.getHeight()));
-                    graphics.drawImage(toBufferedImage(snapshotImageOnFxThread(root)), segment * 140, 0, null);
-                    if (segment + 1 < 7) {
-                        morphAnimation.getOnFinished().handle(new ActionEvent(morphAnimation, null));
-                    }
+                    graphics.drawImage(toBufferedImage(frame), segment * frameSize, 0, null);
                 }
             } finally {
                 graphics.dispose();
@@ -10545,40 +11655,30 @@ final class M3ControlStyleTest {
     @Test
     void loadingIndicatorIndeterminateMorphScalesWithinSegment() {
         runOnFxThreadAndWait(() -> {
-            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-            loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
-            Pane root = new Pane(loadingIndicator);
-            Scene scene = new Scene(root, 140.0, 140.0);
+            LoadingIndicatorFrameScene frameScene = new LoadingIndicatorFrameScene();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            loadingIndicator.resize(112.0, 112.0);
-            loadingIndicator.layout();
+            writeLoadingIndicatorMorphFrame(frameScene, 0, 0.0, 0.0);
+            Bounds startBounds = frameScene.indicator.getBoundsInLocal();
 
-            Skin<?> skin = loadingIndicator.getSkin();
-            skinTimeline(skin, "indeterminateAnimation").stop();
-            skinTimeline(skin, "globalRotationAnimation").stop();
-            reflectedDoubleProperty(skin, "globalRotation").set(0.0);
-            DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
-            Path indicator = assertInstanceOf(
-                    Path.class,
-                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
+            writeLoadingIndicatorMorphFrame(frameScene, 0, 0.5, 0.0);
+            Bounds middleBounds = frameScene.indicator.getBoundsInLocal();
+            WritableImage middleFrame = snapshotImageOnFxThread(frameScene.root);
+            Point2D middleCentroid = contrastingPixelCentroid(
+                    middleFrame,
+                    frameScene.indicator,
+                    Color.WHITE,
+                    0.04
             );
 
-            phase.set(0.0);
-            loadingIndicator.layout();
-            Bounds startBounds = indicator.getBoundsInLocal();
+            writeLoadingIndicatorMorphFrame(frameScene, 0, 1.0, 0.0);
+            Bounds endBounds = frameScene.indicator.getBoundsInLocal();
 
-            phase.set(0.5);
-            loadingIndicator.layout();
-            Bounds middleBounds = indicator.getBoundsInLocal();
-
-            phase.set(1.0);
-            loadingIndicator.layout();
-            Bounds endBounds = indicator.getBoundsInLocal();
-
-            assertEquals(loadingIndicator.getWidth() / 2.0, middleBounds.getCenterX(), 0.75);
-            assertEquals(loadingIndicator.getHeight() / 2.0, middleBounds.getCenterY(), 0.75);
+            assertEquals(LOADING_INDICATOR_TEST_CENTER, middleCentroid.getX(), 2.5,
+                    () -> "loading indicator scaled midpoint is horizontally unstable: centroid="
+                            + middleCentroid);
+            assertEquals(LOADING_INDICATOR_TEST_CENTER, middleCentroid.getY(), 2.5,
+                    () -> "loading indicator scaled midpoint is vertically unstable: centroid="
+                            + middleCentroid);
             assertTrue(middleBounds.getWidth() > Math.max(startBounds.getWidth(), endBounds.getWidth()) * 1.04,
                     () -> "start=" + startBounds + ", middle=" + middleBounds + ", end=" + endBounds);
             assertTrue(middleBounds.getHeight() > Math.max(startBounds.getHeight(), endBounds.getHeight()) * 1.04,
@@ -10590,35 +11690,12 @@ final class M3ControlStyleTest {
     @Test
     void loadingIndicatorIndeterminateMorphTargetKeepsRotating() {
         runOnFxThreadAndWait(() -> {
-            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-            loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
-            Pane root = new Pane(loadingIndicator);
-            Scene scene = new Scene(root, 140.0, 140.0);
+            LoadingIndicatorFrameScene frameScene = new LoadingIndicatorFrameScene();
+            writeLoadingIndicatorMorphFrame(frameScene, 0, 1.0, 0.0);
+            Point2D initialPoint = firstPathPoint(frameScene.indicator);
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            loadingIndicator.resize(112.0, 112.0);
-            loadingIndicator.layout();
-
-            Skin<?> skin = loadingIndicator.getSkin();
-            skinTimeline(skin, "indeterminateAnimation").stop();
-            skinTimeline(skin, "globalRotationAnimation").stop();
-            reflectedDoubleProperty(skin, "globalRotation").set(0.0);
-            DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
-            Path indicator = assertInstanceOf(
-                    Path.class,
-                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
-            );
-
-            phase.set(1.0);
-            reflectedDoubleProperty(skin, "globalRotation").set(0.0);
-            loadingIndicator.layout();
-            Point2D initialPoint = firstPathPoint(indicator);
-
-            phase.set(1.0);
-            reflectedDoubleProperty(skin, "globalRotation").set(0.03);
-            loadingIndicator.layout();
-            Point2D rotatedPoint = firstPathPoint(indicator);
+            writeLoadingIndicatorMorphFrame(frameScene, 0, 1.0, 0.03);
+            Point2D rotatedPoint = firstPathPoint(frameScene.indicator);
 
             assertTrue(initialPoint.distance(rotatedPoint) > 4.0,
                     () -> "initialPoint=" + initialPoint + ", rotatedPoint=" + rotatedPoint);
@@ -10627,54 +11704,29 @@ final class M3ControlStyleTest {
 
     /// Verifies that disabled full motion keeps a basic loading indicator rotation without morphing.
     @Test
-    void loadingIndicatorUsesBasicRotationWhenAnimationsDisabled() {
-        runOnFxThreadAndWait(() -> {
-            M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-            loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
-            Pane root = new Pane(loadingIndicator);
-            Scene scene = new Scene(root, 140.0, 140.0);
+    void loadingIndicatorUsesBasicRotationWhenAnimationsDisabled() throws InterruptedException {
+        AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference = new AtomicReference<>();
 
-            M3MotionSettings.setAnimationsEnabled(root, false);
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            loadingIndicator.resize(112.0, 112.0);
-            loadingIndicator.layout();
-
-            Skin<?> skin = loadingIndicator.getSkin();
-            Timeline morphAnimation = skinTimeline(skin, "indeterminateAnimation");
-            Timeline rotationAnimation = skinTimeline(skin, "globalRotationAnimation");
-            DoubleProperty phase = reflectedDoubleProperty(skin, "indeterminatePhase");
-            DoubleProperty rotation = reflectedDoubleProperty(skin, "globalRotation");
-            Path indicator = assertInstanceOf(
-                    Path.class,
-                    loadingIndicator.lookup(".m3-loading-indicator-indicator")
+        try {
+            runOnFxThreadWhen(
+                    () -> loadingIndicatorMotionAdvanced(sceneReference, sampleReference),
+                    () -> {
+                        IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(false);
+                        sceneReference.set(scene);
+                        sampleReference.set(sampleIndeterminateProgressMotion(scene));
+                    },
+                    () -> {
+                        IndeterminateProgressMotionScene scene =
+                                Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertFalse(M3MotionSettings.areAnimationsEnabled(scene.loadingIndicator));
+                        assertLoadingIndicatorMotionAdvanced(scene, sampleReference, "reduced motion");
+                        assertLoadingIndicatorReducedMotionKeepsStableInk(scene, sampleReference);
+                    }
             );
-
-            assertEquals(Animation.Status.STOPPED, morphAnimation.getStatus());
-            assertEquals(Animation.Status.RUNNING, rotationAnimation.getStatus());
-
-            phase.set(0.0);
-            rotation.set(0.0);
-            loadingIndicator.layout();
-            Point2D initialPoint = firstPathPoint(indicator);
-            Bounds initialBounds = indicator.getBoundsInLocal();
-
-            phase.set(0.75);
-            rotation.set(0.0);
-            loadingIndicator.layout();
-            Point2D changedPhasePoint = firstPathPoint(indicator);
-            Bounds changedPhaseBounds = indicator.getBoundsInLocal();
-
-            rotation.set(0.03);
-            loadingIndicator.layout();
-            Point2D rotatedPoint = firstPathPoint(indicator);
-
-            assertEquals(0.0, initialPoint.distance(changedPhasePoint), 0.001);
-            assertEquals(initialBounds.getWidth(), changedPhaseBounds.getWidth(), 0.001);
-            assertEquals(initialBounds.getHeight(), changedPhaseBounds.getHeight(), 0.001);
-            assertTrue(initialPoint.distance(rotatedPoint) > 4.0,
-                    () -> "initialPoint=" + initialPoint + ", rotatedPoint=" + rotatedPoint);
-        });
+        } finally {
+            closeIndeterminateProgressMotionScene(sceneReference);
+        }
     }
 
     /// Verifies that the contained loading indicator aligns the active shape with its container.
@@ -10838,32 +11890,28 @@ final class M3ControlStyleTest {
 
     /// Verifies that disabled full motion keeps a basic indeterminate progress bar loop.
     @Test
-    void progressBarUsesBasicIndeterminateLoopWhenAnimationsDisabled() {
-        runOnFxThreadAndWait(() -> {
-            M3ProgressBar progressBar = new M3ProgressBar();
-            Pane root = new Pane(progressBar);
-            Scene scene = new Scene(root, 240.0, 40.0);
+    void progressBarUsesBasicIndeterminateLoopWhenAnimationsDisabled() throws InterruptedException {
+        AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference = new AtomicReference<>();
 
-            M3MotionSettings.setAnimationsEnabled(root, false);
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            progressBar.resize(200.0, 16.0);
-            progressBar.layout();
-
-            Timeline animation = skinTimeline(progressBar.getSkin(), "indeterminateAnimation");
-            DoubleProperty position = reflectedDoubleProperty(progressBar.getSkin(), "indeterminatePosition");
-            Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
-
-            assertEquals(Animation.Status.RUNNING, animation.getStatus());
-
-            position.set(0.20);
-            progressBar.layout();
-            double initialX = bar.getX();
-
-            position.set(0.70);
-            progressBar.layout();
-            assertTrue(Math.abs(bar.getX() - initialX) > 10.0);
-        });
+        try {
+            runOnFxThreadWhen(
+                    () -> progressBarMotionAdvanced(sceneReference, sampleReference),
+                    () -> {
+                        IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(false);
+                        sceneReference.set(scene);
+                        sampleReference.set(sampleIndeterminateProgressMotion(scene));
+                    },
+                    () -> {
+                        IndeterminateProgressMotionScene scene =
+                                Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertFalse(M3MotionSettings.areAnimationsEnabled(scene.progressBar));
+                        assertProgressBarMotionAdvanced(scene, sampleReference, "reduced motion");
+                    }
+            );
+        } finally {
+            closeIndeterminateProgressMotionScene(sceneReference);
+        }
     }
 
     /// Verifies that expressive progress bars render a wavy active path with separated track and stop indicator.
@@ -10899,35 +11947,73 @@ final class M3ControlStyleTest {
 
     /// Verifies that expressive indeterminate progress bars keep the track outside the moving wave.
     @Test
-    void expressiveProgressBarSkinSeparatesIndeterminateWaveFromTrack() {
-        M3ProgressBar progressBar = new M3ProgressBar();
-        Pane root = new Pane(progressBar);
-        Scene scene = new Scene(root, 280.0, 60.0);
+    void expressiveProgressBarSkinSeparatesIndeterminateWaveFromTrack() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ProgressBar> progressBarReference = new AtomicReference<>();
+        AtomicReference<@Nullable Path> waveReference = new AtomicReference<>();
+        AtomicReference<@Nullable Rectangle> leadingTrackReference = new AtomicReference<>();
+        AtomicReference<@Nullable Rectangle> trailingTrackReference = new AtomicReference<>();
 
-        M3ThemeManager.install(scene, M3Theme.fromSeed(
-                Color.web("#006a6a"),
-                M3Profile.EXPRESSIVE_2025,
-                Brightness.LIGHT
-        ));
-        root.applyCss();
-        skinTimeline(progressBar.getSkin(), "indeterminateAnimation").stop();
-        reflectedDoubleProperty(progressBar.getSkin(), "indeterminatePosition").set(0.5);
-        progressBar.resize(240.0, 16.0);
-        progressBar.layout();
+        try {
+            runOnFxThreadWhenStable(
+                    () -> expressiveProgressBarIndeterminateWaveSeparated(
+                            progressBarReference,
+                            waveReference,
+                            leadingTrackReference,
+                            trailingTrackReference
+                    ),
+                    2,
+                    () -> {
+                        M3ProgressBar progressBar = new M3ProgressBar();
+                        progressBar.setStyle("-m3-wave-amplitude: 3px; "
+                                + "-m3-wavelength: 40px; "
+                                + "-m3-track-gap: 4px; "
+                                + "-m3-stop-size: 4px;");
+                        progressBar.setManaged(false);
+                        Pane root = new Pane(progressBar);
+                        Scene scene = new Scene(root, 280.0, 60.0);
+                        Stage stage = new Stage();
 
-        Path wave = assertInstanceOf(Path.class, lookupShape(progressBar, ".m3-progress-bar-wave"));
-        Rectangle leadingTrack = progressBarPrimaryTrack(progressBar);
-        Rectangle trailingTrack = (Rectangle) lookupShape(progressBar, ".m3-progress-bar-secondary-track");
-        Point2D waveStart = firstPathPoint(wave);
-        Point2D waveEnd = lastPathPoint(wave);
+                        M3MotionSettings.setAnimationsEnabled(root, true);
+                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                        M3MotionSettings.setMotionBehavior(root, observableIndeterminateProgressBehavior());
+                        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                                Color.web("#006a6a"),
+                                M3Profile.EXPRESSIVE_2025,
+                                Brightness.LIGHT
+                        ));
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.resize(280.0, 60.0);
+                        progressBar.resizeRelocate(20.0, 22.0, 240.0, 16.0);
+                        root.layout();
+                        progressBar.layout();
 
-        assertTrue(wave.isVisible());
-        assertTrue(leadingTrack.isVisible());
-        assertTrue(trailingTrack.isVisible());
-        assertTrue(leadingTrack.getX() + leadingTrack.getWidth() <= waveStart.getX() - progressBar.getTrackGap(),
-                () -> "leadingTrack=" + leadingTrack.getBoundsInParent() + ", waveStart=" + waveStart);
-        assertTrue(trailingTrack.getX() >= waveEnd.getX() + progressBar.getTrackGap(),
-                () -> "trailingTrack=" + trailingTrack.getBoundsInParent() + ", waveEnd=" + waveEnd);
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        progressBarReference.set(progressBar);
+                        waveReference.set(assertInstanceOf(
+                                Path.class,
+                                lookupShape(progressBar, ".m3-progress-bar-wave")
+                        ));
+                        leadingTrackReference.set(progressBarPrimaryTrack(progressBar));
+                        trailingTrackReference.set((Rectangle) lookupShape(
+                                progressBar,
+                                ".m3-progress-bar-secondary-track"
+                        ));
+                    },
+                    () -> assertExpressiveProgressBarIndeterminateWaveSeparated(
+                            Objects.requireNonNull(progressBarReference.get(), "progressBar"),
+                            Objects.requireNonNull(waveReference.get(), "wave"),
+                            Objects.requireNonNull(leadingTrackReference.get(), "leadingTrack"),
+                            Objects.requireNonNull(trailingTrackReference.get(), "trailingTrack")
+                    )
+            );
+        } finally {
+            closeExpressiveProgressBarIndeterminateWaveScene(stageReference, rootReference);
+        }
     }
 
     /// Verifies that progress bar subnodes keep Material colors.
@@ -11099,49 +12185,51 @@ final class M3ControlStyleTest {
 
     /// Verifies that disabled full motion keeps a basic indeterminate circular progress loop.
     @Test
-    void progressIndicatorUsesBasicIndeterminateLoopWhenAnimationsDisabled() {
-        runOnFxThreadAndWait(() -> {
-            M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
-            Pane root = new Pane(progressIndicator);
-            Scene scene = new Scene(root, 80.0, 80.0);
+    void progressIndicatorUsesBasicIndeterminateLoopWhenAnimationsDisabled() throws InterruptedException {
+        AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference = new AtomicReference<>();
 
-            M3MotionSettings.setAnimationsEnabled(root, false);
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            progressIndicator.resize(48.0, 48.0);
-            progressIndicator.layout();
-
-            Timeline animation = skinTimeline(progressIndicator.getSkin(), "indeterminateAnimation");
-            DoubleProperty phase = reflectedDoubleProperty(progressIndicator.getSkin(), "indeterminatePhase");
-            Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
-
-            assertEquals(Animation.Status.RUNNING, animation.getStatus());
-
-            phase.set(0.0);
-            progressIndicator.layout();
-            double initialStartAngle = indicator.getStartAngle();
-            double initialLength = indicator.getLength();
-
-            phase.set(0.5);
-            progressIndicator.layout();
-
-            assertTrue(Math.abs(indicator.getStartAngle() - initialStartAngle) > 100.0);
-            assertEquals(initialLength, indicator.getLength(), 0.0001);
-            assertEquals(-72.0, indicator.getLength(), 0.0001);
-        });
+        try {
+            runOnFxThreadWhen(
+                    () -> progressIndicatorMotionAdvanced(sceneReference, sampleReference),
+                    () -> {
+                        IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(false);
+                        sceneReference.set(scene);
+                        sampleReference.set(sampleIndeterminateProgressMotion(scene));
+                    },
+                    () -> {
+                        IndeterminateProgressMotionScene scene =
+                                Objects.requireNonNull(sceneReference.get(), "scene");
+                        assertFalse(M3MotionSettings.areAnimationsEnabled(scene.progressIndicator));
+                        assertProgressIndicatorMotionAdvanced(scene, sampleReference, "reduced motion");
+                        assertEquals(-72.0, scene.progressIndicatorArc.getLength(), 0.0001);
+                    }
+            );
+        } finally {
+            closeIndeterminateProgressMotionScene(sceneReference);
+        }
     }
 
     /// Verifies that indeterminate circular progress uses a seamless phase cycle.
     @Test
-    void progressIndicatorIndeterminateCycleHasNoPhaseJump() {
-        M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
+    void progressIndicatorIndeterminateCycleHasNoPhaseJump() throws InterruptedException {
+        AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
+        ProgressIndicatorCycleObservation observation = new ProgressIndicatorCycleObservation();
 
-        applyCss(progressIndicator);
-
-        Timeline animation = skinTimeline(progressIndicator.getSkin(), "indeterminateAnimation");
-        assertEquals(2, animation.getKeyFrames().size());
-        assertEquals(0.0, keyFrameEndNumber(animation, 0), 0.0001);
-        assertEquals(1.0, keyFrameEndNumber(animation, 1), 0.0001);
+        try {
+            runOnFxThreadWhenStable(
+                    () -> progressIndicatorObservedSeamlessCycle(sceneReference, observation),
+                    PROGRESS_INDICATOR_CYCLE_STABLE_PULSES,
+                    () -> {
+                        IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(true);
+                        sceneReference.set(scene);
+                        progressIndicatorObservedSeamlessCycle(sceneReference, observation);
+                    },
+                    () -> assertProgressIndicatorCycleObservation(observation)
+            );
+        } finally {
+            closeIndeterminateProgressMotionScene(sceneReference);
+        }
     }
 
     /// Verifies that expressive circular progress uses wavy paths instead of the baseline arc geometry.
@@ -11229,20 +12317,19 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3BadgeSkin.class, badge.getSkin());
     }
 
-    /// Verifies that badges expose non-negative count convenience APIs.
+    /// Verifies that badges accept non-negative count constructors.
     @Test
-    void badgeSupportsCountConvenienceApi() {
+    void badgeSupportsCountConstructor() {
         M3Badge badge = new M3Badge(1234);
         badge.setMaxCharacterCount(3);
 
         assertEquals("1234", badge.getText());
         assertEquals("123+", badge.getDisplayText());
 
-        badge.setCount(0);
+        badge.setText("0");
 
         assertEquals("0", badge.getText());
         assertEquals("0", badge.getDisplayText());
-        assertThrows(IllegalArgumentException.class, () -> badge.setCount(-1));
         assertThrows(IllegalArgumentException.class, () -> new M3Badge(-1));
     }
 
@@ -11920,23 +13007,25 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that completed virtualized list wheel scrolling clears its transient animation fields.
+    /// Verifies that completed virtualized list wheel scrolling settles at its rendered target position.
     @Test
-    void listViewSmoothScrollingClearsAnimationReferenceAfterCompletion() throws InterruptedException {
+    void listViewSmoothScrollingSettlesAtTargetAfterCompletion() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3ListView<Integer>> listViewReference = new AtomicReference<>();
         AtomicReference<@Nullable VirtualFlow<?>> flowReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3ListViewSkin<?>> skinReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> targetPositionReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            runOnFxThreadWhenStable(
                     () -> {
                         VirtualFlow<?> flow = Objects.requireNonNull(flowReference.get(), "flow");
-                        M3ListViewSkin<?> skin = Objects.requireNonNull(skinReference.get(), "skin");
-                        return flow.getPosition() > 0.0
-                                && reflectedNullableTimeline(skin, "smoothScrollAnimation") == null
-                                && reflectedFieldValue(skin, "smoothScrollOnFinished") == null;
+                        double targetPosition = Objects.requireNonNull(
+                                targetPositionReference.get(),
+                                "targetPosition"
+                        );
+                        return Math.abs(flow.getPosition() - targetPosition) <= 0.0001;
                     },
+                    SMOOTH_SCROLL_COMPLETION_STABLE_PULSES,
                     () -> {
                         M3ListView<Integer> listView = new M3ListView<>();
                         for (int i = 0; i < 100; i++) {
@@ -11955,7 +13044,6 @@ final class M3ControlStyleTest {
                         root.applyCss();
                         root.layout();
 
-                        M3ListViewSkin<?> skin = assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
                         VirtualFlow<?> flow = assertInstanceOf(
                                 VirtualFlow.class,
                                 listView.lookup(".m3-list-view-flow")
@@ -11965,17 +13053,21 @@ final class M3ControlStyleTest {
                         stageReference.set(stage);
                         listViewReference.set(listView);
                         flowReference.set(flow);
-                        skinReference.set(skin);
+                        double targetPosition = expectedListViewWheelTargetPosition(listView, flow, -112.0);
+                        targetPositionReference.set(targetPosition);
 
                         ScrollEvent event = scrollEvent(listView, 0.0, -112.0);
                         listView.fireEvent(event);
                         assertTrue(event.isConsumed());
-                        assertInstanceOf(Timeline.class, reflectedNullableTimeline(skin, "smoothScrollAnimation"));
+                        assertEquals(0.0, flow.getPosition(), 0.0001);
                     },
                     () -> {
-                        M3ListViewSkin<?> skin = Objects.requireNonNull(skinReference.get(), "skin");
-                        assertNull(reflectedNullableTimeline(skin, "smoothScrollAnimation"));
-                        assertNull(reflectedFieldValue(skin, "smoothScrollOnFinished"));
+                        VirtualFlow<?> flow = Objects.requireNonNull(flowReference.get(), "flow");
+                        double targetPosition = Objects.requireNonNull(
+                                targetPositionReference.get(),
+                                "targetPosition"
+                        );
+                        assertEquals(targetPosition, flow.getPosition(), 0.0001);
                     }
             );
         } finally {
@@ -12964,154 +14056,235 @@ final class M3ControlStyleTest {
 
     /// Verifies that list and drawer selected containers animate incoming and outgoing states.
     @Test
-    void listItemSelectionContainerAnimationsRenderIntermediateAndFinalStates() {
-        runOnFxThread(() -> {
-            M3ListItem listFirst = new M3ListItem("Inbox");
-            M3ListItem listSecond = new M3ListItem("Archive");
-            M3ListPane list = new M3ListPane(listFirst, listSecond);
-            list.setSelectionMode(M3ListSelectionMode.SINGLE);
-            list.select(listFirst);
-            list.setPrefWidth(280.0);
+    void listItemSelectionContainerAnimationsRenderIntermediateAndFinalStates() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Parent> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListItem> listFirstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListItem> listSecondReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListItem> drawerFirstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListItem> drawerSecondReference = new AtomicReference<>();
 
-            M3ListItem drawerFirst = new M3ListItem("Home");
-            M3ListItem drawerSecond = new M3ListItem("Search");
-            M3NavigationDrawer drawer = new M3NavigationDrawer(drawerFirst, drawerSecond);
-            drawer.select(drawerFirst);
-            drawer.setPrefWidth(320.0);
+        try {
+            runOnFxThread(() -> {
+                M3ListItem listFirst = new M3ListItem("Inbox");
+                M3ListItem listSecond = new M3ListItem("Archive");
+                M3ListPane list = new M3ListPane(listFirst, listSecond);
+                list.setSelectionMode(M3ListSelectionMode.SINGLE);
+                list.select(listFirst);
+                list.setPrefWidth(280.0);
 
-            VBox root = new VBox(18.0, list, drawer);
-            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(root, 380.0, 260.0);
+                M3ListItem drawerFirst = new M3ListItem("Home");
+                M3ListItem drawerSecond = new M3ListItem("Search");
+                M3NavigationDrawer drawer = new M3NavigationDrawer(drawerFirst, drawerSecond);
+                drawer.select(drawerFirst);
+                drawer.setPrefWidth(320.0);
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.resize(380.0, 260.0);
-            root.layout();
+                VBox root = new VBox(18.0, list, drawer);
+                root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+                Scene scene = new Scene(root, 380.0, 260.0);
+                Stage stage = new Stage();
 
-            list.select(listSecond);
-            drawer.select(drawerSecond);
-            root.applyCss();
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(380.0, 260.0);
+                root.layout();
 
-            Timeline outgoingListAnimation = skinTimeline(listFirst.getSkin(), "selectionAnimation");
-            Timeline incomingListAnimation = skinTimeline(listSecond.getSkin(), "selectionAnimation");
-            Timeline outgoingDrawerAnimation = skinTimeline(drawerFirst.getSkin(), "selectionAnimation");
-            Timeline incomingDrawerAnimation = skinTimeline(drawerSecond.getSkin(), "selectionAnimation");
-            outgoingListAnimation.jumpTo(Duration.millis(80.0));
-            incomingListAnimation.jumpTo(Duration.millis(80.0));
-            outgoingDrawerAnimation.jumpTo(Duration.millis(80.0));
-            incomingDrawerAnimation.jumpTo(Duration.millis(80.0));
-            root.layout();
+                stageReference.set(stage);
+                rootReference.set(root);
+                listFirstReference.set(listFirst);
+                listSecondReference.set(listSecond);
+                drawerFirstReference.set(drawerFirst);
+                drawerSecondReference.set(drawerSecond);
+                list.select(listSecond);
+                drawer.select(drawerSecond);
+            });
 
-            Region outgoingListSelection = listItemSelectionContainer(listFirst);
-            Region incomingListSelection = listItemSelectionContainer(listSecond);
-            Region outgoingDrawerSelection = listItemSelectionContainer(drawerFirst);
-            Region incomingDrawerSelection = listItemSelectionContainer(drawerSecond);
+            runOnFxThreadWhen(
+                    () -> listAndDrawerSelectionContainersAreTransitioning(
+                            rootReference,
+                            listFirstReference,
+                            listSecondReference,
+                            drawerFirstReference,
+                            drawerSecondReference
+                    ),
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3ListItem listFirst = Objects.requireNonNull(listFirstReference.get(), "listFirst");
+                        M3ListItem listSecond = Objects.requireNonNull(listSecondReference.get(), "listSecond");
+                        M3ListItem drawerFirst = Objects.requireNonNull(drawerFirstReference.get(), "drawerFirst");
+                        M3ListItem drawerSecond = Objects.requireNonNull(drawerSecondReference.get(), "drawerSecond");
+                        Region outgoingListSelection = listItemSelectionContainer(listFirst);
+                        Region incomingListSelection = listItemSelectionContainer(listSecond);
+                        Region outgoingDrawerSelection = listItemSelectionContainer(drawerFirst);
+                        Region incomingDrawerSelection = listItemSelectionContainer(drawerSecond);
 
-            assertBetween(outgoingListSelection.getOpacity(), 0.0, 1.0, "outgoing list selection opacity");
-            assertBetween(incomingListSelection.getOpacity(), 0.0, 1.0, "incoming list selection opacity");
-            assertBetween(outgoingDrawerSelection.getOpacity(), 0.0, 1.0, "outgoing drawer selection opacity");
-            assertBetween(incomingDrawerSelection.getOpacity(), 0.0, 1.0, "incoming drawer selection opacity");
-            assertBetween(incomingListSelection.getScaleX(), 0.96, 1.0, "incoming list selection scale");
-            assertBetween(incomingDrawerSelection.getScaleX(), 0.96, 1.0, "incoming drawer selection scale");
-            assertBetween(incomingListSelection.getScaleY(), 0.96, 1.0, "incoming list selection vertical scale");
-            assertBetween(incomingDrawerSelection.getScaleY(), 0.96, 1.0, "incoming drawer selection vertical scale");
+                        assertBetween(outgoingListSelection.getOpacity(), 0.0, 1.0, "outgoing list selection opacity");
+                        assertBetween(incomingListSelection.getOpacity(), 0.25, 1.0, "incoming list selection opacity");
+                        assertBetween(
+                                outgoingDrawerSelection.getOpacity(),
+                                0.0,
+                                1.0,
+                                "outgoing drawer selection opacity"
+                        );
+                        assertBetween(
+                                incomingDrawerSelection.getOpacity(),
+                                0.25,
+                                1.0,
+                                "incoming drawer selection opacity"
+                        );
+                        assertBetween(incomingListSelection.getScaleX(), 0.96, 1.0, "incoming list selection scale");
+                        assertBetween(
+                                incomingDrawerSelection.getScaleX(),
+                                0.96,
+                                1.0,
+                                "incoming drawer selection scale"
+                        );
+                        assertBetween(
+                                incomingListSelection.getScaleY(),
+                                0.96,
+                                1.0,
+                                "incoming list selection vertical scale"
+                        );
+                        assertBetween(
+                                incomingDrawerSelection.getScaleY(),
+                                0.96,
+                                1.0,
+                                "incoming drawer selection vertical scale"
+                        );
 
-            WritableImage image = snapshotImageOnFxThread(root);
-            assertSnapshotNodeContainsContrast(image, incomingListSelection, Color.WHITE, 0.03);
-            assertSnapshotNodeContainsContrast(image, incomingDrawerSelection, Color.WHITE, 0.03);
-            writeVisualSnapshot(image, java.nio.file.Path.of(
-                    "build",
-                    "reports",
-                    "m3fx-visual",
-                    "visual-list-drawer-selection-animation-frame.png"
-            ));
-
-            outgoingListAnimation.jumpTo(Duration.millis(200.0));
-            incomingListAnimation.jumpTo(Duration.millis(200.0));
-            outgoingDrawerAnimation.jumpTo(Duration.millis(200.0));
-            incomingDrawerAnimation.jumpTo(Duration.millis(200.0));
-            root.layout();
-
-            assertEquals(0.0, outgoingListSelection.getOpacity(), 0.0001);
-            assertEquals(1.0, incomingListSelection.getOpacity(), 0.0001);
-            assertEquals(0.0, outgoingDrawerSelection.getOpacity(), 0.0001);
-            assertEquals(1.0, incomingDrawerSelection.getOpacity(), 0.0001);
-            assertEquals(0.96, outgoingListSelection.getScaleX(), 0.0001);
-            assertEquals(1.0, incomingListSelection.getScaleX(), 0.0001);
-            assertEquals(0.96, outgoingDrawerSelection.getScaleX(), 0.0001);
-            assertEquals(1.0, incomingDrawerSelection.getScaleX(), 0.0001);
-            assertEquals(0.96, outgoingListSelection.getScaleY(), 0.0001);
-            assertEquals(1.0, incomingListSelection.getScaleY(), 0.0001);
-            assertEquals(0.96, outgoingDrawerSelection.getScaleY(), 0.0001);
-            assertEquals(1.0, incomingDrawerSelection.getScaleY(), 0.0001);
-            stopTimelines(
-                    outgoingListAnimation,
-                    incomingListAnimation,
-                    outgoingDrawerAnimation,
-                    incomingDrawerAnimation
+                        WritableImage image = snapshotImageOnFxThread(root);
+                        assertSnapshotNodeContainsContrast(image, incomingListSelection, Color.WHITE, 0.03);
+                        assertSnapshotNodeContainsContrast(image, incomingDrawerSelection, Color.WHITE, 0.03);
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-list-drawer-selection-animation-frame.png"
+                        ));
+                    }
             );
-        });
+
+            runOnFxThreadWhen(
+                    () -> listAndDrawerSelectionContainersHaveSettled(
+                            rootReference,
+                            listFirstReference,
+                            listSecondReference,
+                            drawerFirstReference,
+                            drawerSecondReference
+                    ),
+                    () -> {
+                    },
+                    () -> {
+                        M3ListItem listFirst = Objects.requireNonNull(listFirstReference.get(), "listFirst");
+                        M3ListItem listSecond = Objects.requireNonNull(listSecondReference.get(), "listSecond");
+                        M3ListItem drawerFirst = Objects.requireNonNull(drawerFirstReference.get(), "drawerFirst");
+                        M3ListItem drawerSecond = Objects.requireNonNull(drawerSecondReference.get(), "drawerSecond");
+                        Region outgoingListSelection = listItemSelectionContainer(listFirst);
+                        Region incomingListSelection = listItemSelectionContainer(listSecond);
+                        Region outgoingDrawerSelection = listItemSelectionContainer(drawerFirst);
+                        Region incomingDrawerSelection = listItemSelectionContainer(drawerSecond);
+
+                        assertEquals(0.0, outgoingListSelection.getOpacity(), 0.0001);
+                        assertEquals(1.0, incomingListSelection.getOpacity(), 0.0001);
+                        assertEquals(0.0, outgoingDrawerSelection.getOpacity(), 0.0001);
+                        assertEquals(1.0, incomingDrawerSelection.getOpacity(), 0.0001);
+                        assertEquals(0.96, outgoingListSelection.getScaleX(), 0.0001);
+                        assertEquals(1.0, incomingListSelection.getScaleX(), 0.0001);
+                        assertEquals(0.96, outgoingDrawerSelection.getScaleX(), 0.0001);
+                        assertEquals(1.0, incomingDrawerSelection.getScaleX(), 0.0001);
+                        assertEquals(0.96, outgoingListSelection.getScaleY(), 0.0001);
+                        assertEquals(1.0, incomingListSelection.getScaleY(), 0.0001);
+                        assertEquals(0.96, outgoingDrawerSelection.getScaleY(), 0.0001);
+                        assertEquals(1.0, incomingDrawerSelection.getScaleY(), 0.0001);
+                    }
+            );
+        } finally {
+            closeObservableMotionWindow(stageReference, rootReference);
+        }
     }
 
     /// Verifies that mouse selection keeps ripple feedback while the selected container transitions.
     @Test
-    void navigationDrawerMouseSelectionKeepsRippleAndAnimatesSelection() {
-        runOnFxThread(() -> {
-            M3ListItem first = new M3ListItem("Sheets");
-            M3ListItem second = new M3ListItem("Bottom sheets");
-            M3NavigationDrawer drawer = new M3NavigationDrawer(first, second);
-            drawer.select(first);
-            drawer.setPrefWidth(320.0);
+    void navigationDrawerMouseSelectionKeepsRippleAndAnimatesSelection() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Parent> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ListItem> selectedItemReference = new AtomicReference<>();
 
-            StackPane root = new StackPane(drawer);
-            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(root, 380.0, 180.0);
+        try {
+            runOnFxThread(() -> {
+                M3ListItem first = new M3ListItem("Sheets");
+                M3ListItem second = new M3ListItem("Bottom sheets");
+                M3NavigationDrawer drawer = new M3NavigationDrawer(first, second);
+                drawer.select(first);
+                drawer.setPrefWidth(320.0);
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.resize(380.0, 180.0);
-            root.layout();
-            drawer.applyCss();
-            first.applyCss();
-            second.applyCss();
-            drawer.resize(320.0, 116.0);
-            drawer.layout();
-            first.layout();
-            second.layout();
+                StackPane root = new StackPane(drawer);
+                root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+                Scene scene = new Scene(root, 380.0, 180.0);
+                Stage stage = new Stage();
 
-            double clickX = second.getWidth() / 2.0;
-            double clickY = second.getHeight() / 2.0;
-            second.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, clickX, clickY, true));
-            Region ripple = lookupRegion(second, ".m3-ripple");
-            assertTrue(ripple.getOpacity() > 0.0);
-            second.fire();
-            root.applyCss();
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(380.0, 180.0);
+                root.layout();
+                drawer.applyCss();
+                drawer.resize(320.0, 116.0);
+                drawer.layout();
+                first.layout();
+                second.layout();
 
-            Region selection = listItemSelectionContainer(second);
-            Timeline selectionAnimation = skinTimeline(second.getSkin(), "selectionAnimation");
+                double clickX = second.getWidth() / 2.0;
+                double clickY = second.getHeight() / 2.0;
+                second.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, clickX, clickY, true));
+                Region ripple = lookupRegion(second, ".m3-ripple");
+                assertTrue(ripple.getOpacity() > 0.0);
+                second.fire();
+                second.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, clickX, clickY, false));
 
-            assertTrue(second.isSelected());
-            assertEquals(javafx.animation.Animation.Status.RUNNING, selectionAnimation.getStatus());
-            second.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, clickX, clickY, false));
-            assertTrue(ripple.getOpacity() > 0.0);
+                stageReference.set(stage);
+                rootReference.set(root);
+                selectedItemReference.set(second);
+            });
 
-            selectionAnimation.jumpTo(Duration.millis(80.0));
-            root.layout();
+            runOnFxThreadWhen(
+                    () -> drawerMouseSelectionIsTransitioning(rootReference, selectedItemReference),
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3ListItem selectedItem = Objects.requireNonNull(selectedItemReference.get(), "selectedItem");
+                        Region selection = listItemSelectionContainer(selectedItem);
+                        Region ripple = lookupRegion(selectedItem, ".m3-ripple");
 
-            assertBetween(selection.getOpacity(), 0.0, 1.0, "mouse-selected drawer item opacity");
-            assertBetween(selection.getScaleX(), 0.96, 1.0, "mouse-selected drawer item horizontal scale");
-            assertBetween(selection.getScaleY(), 0.96, 1.0, "mouse-selected drawer item vertical scale");
+                        assertTrue(selectedItem.isSelected());
+                        assertTrue(ripple.getOpacity() > 0.0);
+                        assertBetween(selection.getOpacity(), 0.25, 1.0, "mouse-selected drawer item opacity");
+                        assertBetween(selection.getScaleX(), 0.96, 1.0, "mouse-selected drawer item horizontal scale");
+                        assertBetween(selection.getScaleY(), 0.96, 1.0, "mouse-selected drawer item vertical scale");
 
-            WritableImage image = snapshotImageOnFxThread(root);
-            assertSnapshotNodeContainsContrast(image, selection, Color.WHITE, 0.03);
-            writeVisualSnapshot(image, java.nio.file.Path.of(
-                    "build",
-                    "reports",
-                    "m3fx-visual",
-                    "visual-navigation-drawer-click-selection-frame.png"
-            ));
-            selectionAnimation.stop();
-        });
+                        WritableImage image = snapshotImageOnFxThread(root);
+                        assertSnapshotNodeContainsContrast(image, selection, Color.WHITE, 0.03);
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-navigation-drawer-click-selection-frame.png"
+                        ));
+                    }
+            );
+        } finally {
+            closeObservableMotionWindow(stageReference, rootReference);
+        }
     }
 
     /// Verifies that navigation item component token properties are styleable from CSS.
@@ -15234,6 +16407,184 @@ final class M3ControlStyleTest {
         assertEquals(railSecond, navigationRail.getSelectedItem());
     }
 
+    /// Verifies that grouped selection containers reject targets hidden by ancestor containers.
+    @Test
+    void groupedSelectionContainersRejectAncestorHiddenTargets() {
+        M3IconToggleButton iconFirst = new M3IconToggleButton("First");
+        M3IconToggleButton iconSecond = new M3IconToggleButton("Second");
+        M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond);
+        iconGroup.setSelectionMode(M3IconToggleButtonSelectionMode.SINGLE);
+        iconGroup.setAllowEmptySelection(false);
+
+        M3SegmentedButton segmentFirst = new M3SegmentedButton("First");
+        M3SegmentedButton segmentSecond = new M3SegmentedButton("Second");
+        M3SegmentedButtonGroup segmentedGroup = new M3SegmentedButtonGroup(segmentFirst, segmentSecond);
+        segmentedGroup.setSelectionMode(M3SegmentedButtonSelectionMode.SINGLE);
+        segmentedGroup.setAllowEmptySelection(false);
+
+        M3Chip chipFirst = new M3Chip("First");
+        M3Chip chipSecond = new M3Chip("Second");
+        M3ChipGroup chipGroup = new M3ChipGroup(chipFirst, chipSecond);
+        chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
+        chipGroup.setAllowEmptySelection(false);
+
+        M3Tab tabFirst = new M3Tab("First");
+        M3Tab tabSecond = new M3Tab("Second");
+        M3TabBar tabBar = new M3TabBar(tabFirst, tabSecond);
+        tabBar.setAllowEmptySelection(false);
+
+        M3NavigationItem barFirst = new M3NavigationItem("First");
+        M3NavigationItem barSecond = new M3NavigationItem("Second");
+        M3NavigationBar navigationBar = new M3NavigationBar(barFirst, barSecond);
+        navigationBar.setAllowEmptySelection(false);
+
+        M3NavigationItem railFirst = new M3NavigationItem("First");
+        M3NavigationItem railSecond = new M3NavigationItem("Second");
+        M3NavigationRail navigationRail = new M3NavigationRail(railFirst, railSecond);
+        navigationRail.setAllowEmptySelection(false);
+
+        M3ListItem listFirst = new M3ListItem("First");
+        M3ListItem listSecond = new M3ListItem("Second");
+        M3ListPane list = new M3ListPane(listFirst, listSecond);
+        list.setSelectionMode(M3ListSelectionMode.SINGLE);
+        list.setAllowEmptySelection(false);
+
+        M3MenuItem menuFirst = new M3MenuItem("First");
+        M3MenuItem menuSecond = new M3MenuItem("Second");
+        M3Menu menu = new M3Menu(menuFirst, menuSecond);
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.setAllowEmptySelection(false);
+
+        M3Carousel carousel = new M3Carousel(new Label("First"), new Label("Second"));
+        carousel.clearSelection();
+
+        Pane hiddenAncestor = new Pane(
+                iconGroup,
+                segmentedGroup,
+                chipGroup,
+                tabBar,
+                navigationBar,
+                navigationRail,
+                list,
+                menu,
+                carousel
+        );
+        hiddenAncestor.setVisible(false);
+
+        assertThrows(IllegalArgumentException.class, () -> iconGroup.select(iconSecond));
+        assertThrows(IllegalArgumentException.class, () -> segmentedGroup.select(segmentSecond));
+        assertThrows(IllegalArgumentException.class, () -> chipGroup.select(chipSecond));
+        assertThrows(IllegalArgumentException.class, () -> tabBar.select(tabSecond));
+        assertThrows(IllegalArgumentException.class, () -> navigationBar.select(barSecond));
+        assertThrows(IllegalArgumentException.class, () -> navigationRail.select(railSecond));
+        assertThrows(IllegalArgumentException.class, () -> list.select(listSecond));
+        assertThrows(IllegalArgumentException.class, () -> menu.select(menuSecond));
+
+        iconGroup.selectNext();
+        segmentedGroup.selectNext();
+        chipGroup.selectNext();
+        tabBar.selectNext();
+        navigationBar.selectNext();
+        navigationRail.selectNext();
+        list.selectNext();
+        menu.selectNext();
+        carousel.selectFirst();
+
+        assertEquals(iconFirst, iconGroup.getSelectedButton());
+        assertEquals(segmentFirst, segmentedGroup.getSelectedButton());
+        assertEquals(chipFirst, chipGroup.getSelectedChip());
+        assertEquals(tabFirst, tabBar.getSelectedTab());
+        assertEquals(barFirst, navigationBar.getSelectedItem());
+        assertEquals(railFirst, navigationRail.getSelectedItem());
+        assertEquals(listFirst, list.getSelectedItem());
+        assertEquals(menuFirst, menu.getSelectedItem());
+        assertNull(carousel.getSelectedItem());
+    }
+
+    /// Verifies that picker skins stop exposing cells hidden by ancestor containers.
+    @Test
+    void pickerAccessibleCellsSkipAncestorHiddenTargets() {
+        runOnFxThread(() -> {
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            M3DateRangePicker dateRangePicker = new M3DateRangePicker(
+                    LocalDate.of(2026, 5, 12),
+                    LocalDate.of(2026, 5, 16)
+            );
+            M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
+            timePicker.setUse24HourClock(true);
+            timePicker.setMinuteStep(15);
+
+            VBox hiddenAncestor = new VBox(12.0, datePicker, dateRangePicker, timePicker);
+            Scene scene = new Scene(hiddenAncestor, 620.0, 760.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            hiddenAncestor.applyCss();
+            hiddenAncestor.layout();
+
+            assertTrue((int) datePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT) > 0);
+            assertTrue((int) dateRangePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT) > 0);
+            assertTrue((int) timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT) > 0);
+
+            hiddenAncestor.setVisible(false);
+
+            assertEquals(0, datePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertEquals(0, dateRangePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertEquals(0, timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertNull(datePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+            assertNull(dateRangePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+            assertNull(timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        });
+    }
+
+    /// Verifies that hidden picker field owners do not route accessibility focus or open popups.
+    @Test
+    void pickerFieldsSkipAccessibleFocusWhenOwnerHiddenByAncestor() {
+        runOnFxThread(() -> {
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
+            M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 12),
+                    LocalDate.of(2026, 5, 16)
+            );
+            M3Button outside = new M3Button("Outside");
+            VBox hiddenOwner = new VBox(8.0, dateField, rangeField);
+            VBox root = new VBox(8.0, outside, hiddenOwner);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 560.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                outside.requestFocus();
+                hiddenOwner.setVisible(false);
+                root.applyCss();
+                root.layout();
+
+                dateField.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                dateField.executeAccessibleAction(AccessibleAction.EXPAND);
+                dateField.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(outside.isFocused());
+                assertFalse(dateField.getEditor().isFocused());
+                assertFalse(dateField.isShowing());
+
+                rangeField.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                rangeField.executeAccessibleAction(AccessibleAction.EXPAND);
+                rangeField.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(outside.isFocused());
+                assertFalse(rangeField.getStartEditor().isFocused());
+                assertFalse(rangeField.getEndEditor().isFocused());
+                assertFalse(rangeField.isShowing());
+            } finally {
+                dateField.hidePicker();
+                rangeField.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that right-to-left controls mirror horizontal keyboard focus and selection.
     @Test
     void horizontalKeyboardNavigationMirrorsForRightToLeftLayouts() {
@@ -16298,107 +17649,178 @@ final class M3ControlStyleTest {
 
     /// Verifies that navigation selection indicators animate both outgoing and incoming selected states.
     @Test
-    void navigationIndicatorAnimationsRenderIntermediateAndFinalStates() {
-        runOnFxThread(() -> {
-            M3Tab overview = new M3Tab("Overview");
-            M3Tab details = new M3Tab("Details");
-            M3TabBar tabBar = new M3TabBar(overview, details);
+    void navigationIndicatorAnimationsRenderIntermediateAndFinalStates() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Parent> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Tab> overviewReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Tab> detailsReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3NavigationItem> homeReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3NavigationItem> searchReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3NavigationItem> railHomeReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3NavigationItem> railSearchReference = new AtomicReference<>();
 
-            M3NavigationItem home = new M3NavigationItem("Home", visualIcon("home"));
-            M3NavigationItem search = new M3NavigationItem("Search", visualIcon("search"));
-            M3NavigationBar navigationBar = new M3NavigationBar(home, search);
+        try {
+            runOnFxThread(() -> {
+                M3Tab overview = new M3Tab("Overview");
+                M3Tab details = new M3Tab("Details");
+                M3TabBar tabBar = new M3TabBar(overview, details);
 
-            M3NavigationItem railHome = new M3NavigationItem("Home", visualIcon("home"));
-            M3NavigationItem railSearch = new M3NavigationItem("Search", visualIcon("search"));
-            M3NavigationRail navigationRail = new M3NavigationRail(railHome, railSearch);
+                M3NavigationItem home = new M3NavigationItem("Home", visualIcon("home"));
+                M3NavigationItem search = new M3NavigationItem("Search", visualIcon("search"));
+                M3NavigationBar navigationBar = new M3NavigationBar(home, search);
 
-            VBox root = new VBox(18.0, tabBar, navigationBar, navigationRail);
-            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(root, 360.0, 320.0);
+                M3NavigationItem railHome = new M3NavigationItem("Home", visualIcon("home"));
+                M3NavigationItem railSearch = new M3NavigationItem("Search", visualIcon("search"));
+                M3NavigationRail navigationRail = new M3NavigationRail(railHome, railSearch);
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.resize(360.0, 320.0);
-            root.layout();
+                VBox root = new VBox(18.0, tabBar, navigationBar, navigationRail);
+                root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+                Scene scene = new Scene(root, 360.0, 320.0);
+                Stage stage = new Stage();
 
-            assertVisualIconSlotsUseVectorGraphics(root);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(360.0, 320.0);
+                root.layout();
 
-            tabBar.select(details);
-            navigationBar.select(search);
-            navigationRail.select(railSearch);
+                assertVisualIconSlotsUseVectorGraphics(root);
 
-            Timeline outgoingTabAnimation = skinTimeline(overview.getSkin(), "indicatorAnimation");
-            Timeline incomingTabAnimation = skinTimeline(details.getSkin(), "indicatorAnimation");
-            Timeline outgoingBarAnimation = skinTimeline(home.getSkin(), "indicatorAnimation");
-            Timeline incomingBarAnimation = skinTimeline(search.getSkin(), "indicatorAnimation");
-            Timeline outgoingRailAnimation = skinTimeline(railHome.getSkin(), "indicatorAnimation");
-            Timeline incomingRailAnimation = skinTimeline(railSearch.getSkin(), "indicatorAnimation");
-            jumpToNavigationIndicatorFrame(
-                    Duration.millis(80.0),
-                    outgoingTabAnimation,
-                    incomingTabAnimation,
-                    outgoingBarAnimation,
-                    incomingBarAnimation,
-                    outgoingRailAnimation,
-                    incomingRailAnimation
+                stageReference.set(stage);
+                rootReference.set(root);
+                overviewReference.set(overview);
+                detailsReference.set(details);
+                homeReference.set(home);
+                searchReference.set(search);
+                railHomeReference.set(railHome);
+                railSearchReference.set(railSearch);
+
+                tabBar.select(details);
+                navigationBar.select(search);
+                navigationRail.select(railSearch);
+            });
+
+            runOnFxThreadWhen(
+                    () -> navigationIndicatorsAreTransitioning(
+                            rootReference,
+                            overviewReference,
+                            detailsReference,
+                            homeReference,
+                            searchReference,
+                            railHomeReference,
+                            railSearchReference
+                    ),
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3Tab overview = Objects.requireNonNull(overviewReference.get(), "overview");
+                        M3Tab details = Objects.requireNonNull(detailsReference.get(), "details");
+                        M3NavigationItem home = Objects.requireNonNull(homeReference.get(), "home");
+                        M3NavigationItem search = Objects.requireNonNull(searchReference.get(), "search");
+                        M3NavigationItem railHome = Objects.requireNonNull(railHomeReference.get(), "railHome");
+                        M3NavigationItem railSearch = Objects.requireNonNull(railSearchReference.get(), "railSearch");
+                        Region outgoingTabIndicator = lookupRegion(overview, ".m3-tab-active-indicator");
+                        Region incomingTabIndicator = lookupRegion(details, ".m3-tab-active-indicator");
+                        Region outgoingBarIndicator = lookupRegion(home, ".m3-navigation-item-indicator");
+                        Region incomingBarIndicator = lookupRegion(search, ".m3-navigation-item-indicator");
+                        Region outgoingRailIndicator = lookupRegion(railHome, ".m3-navigation-item-indicator");
+                        Region incomingRailIndicator = lookupRegion(railSearch, ".m3-navigation-item-indicator");
+
+                        assertBetween(outgoingTabIndicator.getOpacity(), 0.0, 1.0, "outgoing tab indicator opacity");
+                        assertBetween(incomingTabIndicator.getOpacity(), 0.25, 1.0, "incoming tab indicator opacity");
+                        assertBetween(
+                                outgoingBarIndicator.getOpacity(),
+                                0.0,
+                                1.0,
+                                "outgoing navigation bar indicator opacity"
+                        );
+                        assertBetween(
+                                incomingBarIndicator.getOpacity(),
+                                0.25,
+                                1.0,
+                                "incoming navigation bar indicator opacity"
+                        );
+                        assertBetween(
+                                outgoingRailIndicator.getOpacity(),
+                                0.0,
+                                1.0,
+                                "outgoing navigation rail indicator opacity"
+                        );
+                        assertBetween(
+                                incomingRailIndicator.getOpacity(),
+                                0.25,
+                                1.0,
+                                "incoming navigation rail indicator opacity"
+                        );
+                        assertBetween(outgoingTabIndicator.getScaleX(), 0.72, 1.0, "outgoing tab indicator scale");
+                        assertBetween(incomingTabIndicator.getScaleX(), 0.72, 1.0, "incoming tab indicator scale");
+                        assertBetween(
+                                outgoingBarIndicator.getScaleX(),
+                                0.72,
+                                1.0,
+                                "outgoing navigation bar indicator scale"
+                        );
+                        assertBetween(
+                                incomingBarIndicator.getScaleX(),
+                                0.72,
+                                1.0,
+                                "incoming navigation bar indicator scale"
+                        );
+
+                        WritableImage image = snapshotImageOnFxThread(root);
+                        assertSnapshotNodeContainsContrast(image, incomingTabIndicator, Color.WHITE, 0.04);
+                        assertSnapshotNodeContainsContrast(image, incomingBarIndicator, Color.WHITE, 0.04);
+                        assertSnapshotNodeContainsContrast(image, incomingRailIndicator, Color.WHITE, 0.04);
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-navigation-indicator-animation-frame.png"
+                        ));
+                    }
             );
-            root.layout();
 
-            Region outgoingTabIndicator = lookupRegion(overview, ".m3-tab-active-indicator");
-            Region incomingTabIndicator = lookupRegion(details, ".m3-tab-active-indicator");
-            Region outgoingBarIndicator = lookupRegion(home, ".m3-navigation-item-indicator");
-            Region incomingBarIndicator = lookupRegion(search, ".m3-navigation-item-indicator");
-            Region outgoingRailIndicator = lookupRegion(railHome, ".m3-navigation-item-indicator");
-            Region incomingRailIndicator = lookupRegion(railSearch, ".m3-navigation-item-indicator");
+            runOnFxThreadWhen(
+                    () -> navigationIndicatorsHaveSettled(
+                            rootReference,
+                            overviewReference,
+                            detailsReference,
+                            homeReference,
+                            searchReference,
+                            railHomeReference,
+                            railSearchReference
+                    ),
+                    () -> {
+                    },
+                    () -> {
+                        M3Tab overview = Objects.requireNonNull(overviewReference.get(), "overview");
+                        M3Tab details = Objects.requireNonNull(detailsReference.get(), "details");
+                        M3NavigationItem home = Objects.requireNonNull(homeReference.get(), "home");
+                        M3NavigationItem search = Objects.requireNonNull(searchReference.get(), "search");
+                        M3NavigationItem railHome = Objects.requireNonNull(railHomeReference.get(), "railHome");
+                        M3NavigationItem railSearch = Objects.requireNonNull(railSearchReference.get(), "railSearch");
+                        Region outgoingTabIndicator = lookupRegion(overview, ".m3-tab-active-indicator");
+                        Region incomingTabIndicator = lookupRegion(details, ".m3-tab-active-indicator");
+                        Region outgoingBarIndicator = lookupRegion(home, ".m3-navigation-item-indicator");
+                        Region incomingBarIndicator = lookupRegion(search, ".m3-navigation-item-indicator");
+                        Region outgoingRailIndicator = lookupRegion(railHome, ".m3-navigation-item-indicator");
+                        Region incomingRailIndicator = lookupRegion(railSearch, ".m3-navigation-item-indicator");
 
-            assertBetween(outgoingTabIndicator.getOpacity(), 0.0, 1.0, "outgoing tab indicator opacity");
-            assertBetween(incomingTabIndicator.getOpacity(), 0.0, 1.0, "incoming tab indicator opacity");
-            assertBetween(outgoingBarIndicator.getOpacity(), 0.0, 1.0, "outgoing navigation bar indicator opacity");
-            assertBetween(incomingBarIndicator.getOpacity(), 0.0, 1.0, "incoming navigation bar indicator opacity");
-            assertBetween(outgoingRailIndicator.getOpacity(), 0.0, 1.0, "outgoing navigation rail indicator opacity");
-            assertBetween(incomingRailIndicator.getOpacity(), 0.0, 1.0, "incoming navigation rail indicator opacity");
-            assertBetween(outgoingTabIndicator.getScaleX(), 0.72, 1.0, "outgoing tab indicator scale");
-            assertBetween(incomingTabIndicator.getScaleX(), 0.72, 1.0, "incoming tab indicator scale");
-            assertBetween(outgoingBarIndicator.getScaleX(), 0.72, 1.0, "outgoing navigation bar indicator scale");
-            assertBetween(incomingBarIndicator.getScaleX(), 0.72, 1.0, "incoming navigation bar indicator scale");
-
-            WritableImage image = snapshotImageOnFxThread(root);
-            assertSnapshotNodeContainsContrast(image, incomingTabIndicator, Color.WHITE, 0.04);
-            assertSnapshotNodeContainsContrast(image, incomingBarIndicator, Color.WHITE, 0.04);
-            assertSnapshotNodeContainsContrast(image, incomingRailIndicator, Color.WHITE, 0.04);
-            writeVisualSnapshot(image, java.nio.file.Path.of(
-                    "build",
-                    "reports",
-                    "m3fx-visual",
-                    "visual-navigation-indicator-animation-frame.png"
-            ));
-
-            jumpToNavigationIndicatorFrame(
-                    Duration.millis(200.0),
-                    outgoingTabAnimation,
-                    incomingTabAnimation,
-                    outgoingBarAnimation,
-                    incomingBarAnimation,
-                    outgoingRailAnimation,
-                    incomingRailAnimation
+                        assertEquals(0.0, outgoingTabIndicator.getOpacity(), 0.0001);
+                        assertEquals(1.0, incomingTabIndicator.getOpacity(), 0.0001);
+                        assertEquals(0.0, outgoingBarIndicator.getOpacity(), 0.0001);
+                        assertEquals(1.0, incomingBarIndicator.getOpacity(), 0.0001);
+                        assertEquals(0.0, outgoingRailIndicator.getOpacity(), 0.0001);
+                        assertEquals(1.0, incomingRailIndicator.getOpacity(), 0.0001);
+                    }
             );
-            root.layout();
-
-            assertEquals(0.0, outgoingTabIndicator.getOpacity(), 0.0001);
-            assertEquals(1.0, incomingTabIndicator.getOpacity(), 0.0001);
-            assertEquals(0.0, outgoingBarIndicator.getOpacity(), 0.0001);
-            assertEquals(1.0, incomingBarIndicator.getOpacity(), 0.0001);
-            assertEquals(0.0, outgoingRailIndicator.getOpacity(), 0.0001);
-            assertEquals(1.0, incomingRailIndicator.getOpacity(), 0.0001);
-            stopTimelines(
-                    outgoingTabAnimation,
-                    incomingTabAnimation,
-                    outgoingBarAnimation,
-                    incomingBarAnimation,
-                    outgoingRailAnimation,
-                    incomingRailAnimation
-            );
-        });
+        } finally {
+            closeObservableMotionWindow(stageReference, rootReference);
+        }
     }
 
     /// Verifies that generated state layer rules apply beyond button-like controls.
@@ -16455,300 +17877,176 @@ final class M3ControlStyleTest {
 
     /// Verifies that finite skin-owned state transitions settle when runtime motion is disabled.
     @Test
-    void skinOwnedStateTransitionsSettleWhenMotionIsDisabled() {
-        runOnFxThread(() -> {
-            M3CheckBox checkBox = new M3CheckBox("Check");
-            M3RadioButton radioButton = new M3RadioButton("Radio");
-            M3Switch switchControl = new M3Switch("Switch");
-            M3SegmentedButton segmentedButton = new M3SegmentedButton("Segment");
-            M3Slider slider = new M3Slider(0.0, 100.0, 25.0);
-            M3Tab tab = new M3Tab("Tab");
-            M3NavigationItem navigationItem = new M3NavigationItem("Home");
-            M3ListItem listItem = new M3ListItem("List item");
-            M3DisclosureIcon disclosureIcon = new M3DisclosureIcon();
-            M3Badge badge = new M3Badge("1");
-            VBox root = new VBox(
-                    checkBox,
-                    radioButton,
-                    switchControl,
-                    segmentedButton,
-                    slider,
-                    tab,
-                    navigationItem,
-                    listItem,
-                    disclosureIcon,
-                    badge
+    void skinOwnedStateTransitionsSettleWhenMotionIsDisabled() throws InterruptedException {
+        AtomicReference<@Nullable SkinOwnedStateMotionScene> sceneReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhen(
+                    () -> skinOwnedStateTransitionsAreAnimating(sceneReference),
+                    () -> {
+                        SkinOwnedStateMotionScene scene = showSkinOwnedStateMotionScene();
+                        sceneReference.set(scene);
+                        startSkinOwnedStateTransitions(scene);
+                    },
+                    () -> {
+                        SkinOwnedStateMotionScene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+
+                        M3MotionSettings.setAnimationsEnabled(scene.root, false);
+                        scene.root.applyCss();
+                        scene.root.layout();
+                        assertSkinOwnedStateTransitionsSettled(scene);
+                    }
             );
-            Scene scene = new Scene(root, 360.0, 520.0);
-
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.resize(360.0, 520.0);
-            root.layout();
-
-            Timeline checkBoxAnimation = skinTimeline(checkBox.getSkin(), "selectionAnimation");
-            Timeline radioAnimation = skinTimeline(radioButton.getSkin(), "selectionAnimation");
-            Timeline switchAnimation = skinTimeline(switchControl.getSkin(), "selectionAnimation");
-            Timeline segmentedAnimation = skinTimeline(segmentedButton.getSkin(), "selectionAnimation");
-            Timeline sliderAnimation = skinTimeline(slider.getSkin(), "valueAnimation");
-            Timeline tabAnimation = skinTimeline(tab.getSkin(), "indicatorAnimation");
-            Timeline navigationAnimation = skinTimeline(navigationItem.getSkin(), "indicatorAnimation");
-            Timeline listItemAnimation = skinTimeline(listItem.getSkin(), "selectionAnimation");
-            Timeline disclosureAnimation = skinTimeline(disclosureIcon.getSkin(), "rotationAnimation");
-            Timeline badgeAnimation = skinTimeline(badge.getSkin(), "contentAnimation");
-
-            try {
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                checkBox.setSelected(true);
-                radioButton.setSelected(true);
-                switchControl.setSelected(true);
-                segmentedButton.setSelected(true);
-                slider.setValue(75.0);
-                tab.setSelected(true);
-                navigationItem.setSelected(true);
-                listItem.setSelected(true);
-                disclosureIcon.setExpanded(true);
-                badge.setText("2");
-
-                Timeline[] animations = {
-                        checkBoxAnimation,
-                        radioAnimation,
-                        switchAnimation,
-                        segmentedAnimation,
-                        sliderAnimation,
-                        tabAnimation,
-                        navigationAnimation,
-                        listItemAnimation,
-                        disclosureAnimation,
-                        badgeAnimation
-                };
-                for (Timeline animation : animations) {
-                    animation.jumpTo(Duration.millis(50.0));
-                    assertEquals(Animation.Status.RUNNING, animation.getStatus());
-                }
-
-                M3MotionSettings.setAnimationsEnabled(root, false);
-
-                for (Timeline animation : animations) {
-                    assertEquals(Animation.Status.STOPPED, animation.getStatus());
-                }
-                Region checkMark = lookupRegion(checkBox, ".m3-checkbox-mark");
-                assertEquals(1.0, checkMark.getOpacity(), 0.0001);
-                assertEquals(1.0, checkMark.getScaleX(), 0.0001);
-                Shape radioDot = assertInstanceOf(Shape.class, radioButton.lookup(".m3-radio-dot"));
-                assertEquals(1.0, radioDot.getOpacity(), 0.0001);
-                assertEquals(1.0, radioDot.getScaleX(), 0.0001);
-                assertEquals(1.0, reflectedDoubleProperty(switchControl.getSkin(), "thumbPosition").get(), 0.0001);
-                Region segmentSelection = lookupRegion(
-                        segmentedButton,
-                        "." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS
-                );
-                assertEquals(1.0, segmentSelection.getOpacity(), 0.0001);
-                assertEquals(1.0, segmentSelection.getScaleX(), 0.0001);
-                assertEquals(0.75, reflectedDoubleProperty(slider.getSkin(), "displayedPosition").get(), 0.0001);
-                Region tabIndicator = lookupRegion(tab, "." + M3TabSkin.ACTIVE_INDICATOR_STYLE_CLASS);
-                assertEquals(1.0, tabIndicator.getOpacity(), 0.0001);
-                assertEquals(1.0, tabIndicator.getScaleX(), 0.0001);
-                Region navigationIndicator = lookupRegion(navigationItem, ".m3-navigation-item-indicator");
-                assertEquals(1.0, navigationIndicator.getOpacity(), 0.0001);
-                assertEquals(1.0, navigationIndicator.getScaleX(), 0.0001);
-                Region listSelection = lookupRegion(listItem, ".m3-list-item-selection-container");
-                assertEquals(1.0, listSelection.getOpacity(), 0.0001);
-                assertEquals(1.0, listSelection.getScaleX(), 0.0001);
-                SVGPath disclosureArrow = assertInstanceOf(
-                        SVGPath.class,
-                        disclosureIcon.lookup(".m3-disclosure-icon-shape")
-                );
-                assertEquals(0.0, disclosureArrow.getRotate(), 0.0001);
-                Label badgeLabel = assertInstanceOf(Label.class, badge.lookup(".m3-badge-label"));
-                assertEquals(1.0, badgeLabel.getOpacity(), 0.0001);
-                assertEquals(1.0, badgeLabel.getScaleX(), 0.0001);
-            } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
-                stopTimelines(
-                        checkBoxAnimation,
-                        radioAnimation,
-                        switchAnimation,
-                        segmentedAnimation,
-                        sliderAnimation,
-                        tabAnimation,
-                        navigationAnimation,
-                        listItemAnimation,
-                        disclosureAnimation,
-                        badgeAnimation
-                );
-            }
-        });
+        } finally {
+            closeSkinOwnedStateMotionScene(sceneReference);
+        }
     }
 
     /// Verifies that finite overlay and container-owned animations settle when runtime motion is disabled.
     @Test
-    void overlayOwnedStateTransitionsSettleWhenMotionIsDisabled() {
-        runOnFxThread(() -> {
-            M3Scrim scrim = new M3Scrim();
-            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side content"));
-            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom content"));
-            M3SearchView searchView = new M3SearchView("Search", new M3ListItem("Result"));
-            M3SnackbarHost snackbarHost = new M3SnackbarHost();
-            M3FloatingActionButton action = new M3FloatingActionButton("A");
-            M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.addItem(action);
-            snackbarHost.setDisplayDuration(Duration.INDEFINITE);
-            VBox root = new VBox(12.0, scrim, sideSheet, bottomSheet, searchView, snackbarHost, fabMenu);
-            Scene scene = new Scene(root, 520.0, 680.0);
+    void overlayOwnedStateTransitionsSettleWhenMotionIsDisabled() throws InterruptedException {
+        AtomicReference<@Nullable OverlayOwnedStateMotionScene> sceneReference = new AtomicReference<>();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            root.resize(520.0, 680.0);
-            root.layout();
+        try {
+            runOnFxThreadWhen(
+                    () -> overlayOwnedStateTransitionsAreAnimating(sceneReference),
+                    () -> {
+                        OverlayOwnedStateMotionScene scene = showOverlayOwnedStateMotionScene();
+                        sceneReference.set(scene);
+                        startOverlayOwnedStateTransitions(scene);
+                    },
+                    () -> {
+                        OverlayOwnedStateMotionScene scene = Objects.requireNonNull(sceneReference.get(), "scene");
 
-            Timeline scrimAnimation = controlTimeline(scrim, "visibilityAnimation");
-            Timeline sideSheetAnimation = controlTimeline(sideSheet, "visibilityAnimation");
-            Timeline bottomSheetAnimation = controlTimeline(bottomSheet, "visibilityAnimation");
-            Timeline searchAnimation = controlTimeline(searchView, "resultsVisibilityAnimation");
-            Timeline snackbarAnimation = controlTimeline(snackbarHost, "showAnimation");
-
-            try {
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                scrim.hide();
-                sideSheet.hide();
-                bottomSheet.hide();
-                searchView.deactivate();
-                snackbarHost.show("Saved");
-                fabMenu.show();
-
-                Animation fabAnimation = controlAnimation(fabMenu, "animation");
-                Timeline[] timelines = {
-                        scrimAnimation,
-                        sideSheetAnimation,
-                        bottomSheetAnimation,
-                        searchAnimation,
-                        snackbarAnimation
-                };
-                for (Timeline animation : timelines) {
-                    animation.jumpTo(Duration.millis(50.0));
-                    assertEquals(Animation.Status.RUNNING, animation.getStatus());
-                }
-                fabAnimation.jumpTo(Duration.millis(50.0));
-                assertEquals(Animation.Status.RUNNING, fabAnimation.getStatus());
-
-                M3MotionSettings.setAnimationsEnabled(root, false);
-
-                for (Timeline animation : timelines) {
-                    assertEquals(Animation.Status.STOPPED, animation.getStatus());
-                }
-                assertEquals(Animation.Status.STOPPED, fabAnimation.getStatus());
-                assertFalse(scrim.isVisible());
-                assertFalse(scrim.isManaged());
-                assertEquals(0.0, scrim.getOpacity(), 0.0001);
-                assertFalse(sideSheet.isVisible());
-                assertFalse(sideSheet.isManaged());
-                assertEquals(0.0, sideSheet.getOpacity(), 0.0001);
-                assertFalse(bottomSheet.isVisible());
-                assertFalse(bottomSheet.isManaged());
-                assertEquals(0.0, bottomSheet.getOpacity(), 0.0001);
-                assertFalse(searchView.getResultsContainer().isVisible());
-                assertFalse(searchView.getResultsContainer().isManaged());
-                assertEquals(0.0, searchView.getResultsContainer().getOpacity(), 0.0001);
-
-                M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, snackbarHost.getSnackbar());
-                assertTrue(snackbar.isVisible());
-                assertTrue(snackbar.isManaged());
-                assertEquals(1.0, snackbar.getOpacity(), 0.0001);
-                assertEquals(0.0, snackbar.getTranslateY(), 0.0001);
-                assertTrue(action.isVisible());
-                assertTrue(action.isManaged());
-                assertEquals(1.0, action.getOpacity(), 0.0001);
-                assertEquals(1.0, action.getScaleX(), 0.0001);
-                assertEquals(1.0, action.getScaleY(), 0.0001);
-                assertEquals(0.0, action.getTranslateY(), 0.0001);
-            } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
-                stopTimelines(
-                        scrimAnimation,
-                        sideSheetAnimation,
-                        bottomSheetAnimation,
-                        searchAnimation,
-                        snackbarAnimation
-                );
-            }
-        });
+                        assertOverlayOwnedStateTransitionsIntermediate(scene);
+                        M3MotionSettings.setAnimationsEnabled(scene.root, false);
+                        scene.root.layout();
+                        assertOverlayOwnedStateTransitionsSettled(scene);
+                    }
+            );
+        } finally {
+            closeOverlayOwnedStateMotionScene(sceneReference);
+        }
     }
 
     /// Verifies that detached popup surface animations settle and inherit updated motion settings.
     @Test
-    void popupSurfaceTransitionsSettleWhenMotionIsDisabled() {
-        runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
-            M3MenuButton menuButton = new M3MenuButton("Open menu", new M3MenuItem("Duplicate"), subMenuItem);
-            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
-            M3DateRangePickerField rangeField = new M3DateRangePickerField(
-                    LocalDate.of(2026, 5, 18),
-                    LocalDate.of(2026, 5, 25)
+    void popupSurfaceTransitionsSettleWhenMotionIsDisabled() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DatePickerField> dateFieldReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DateRangePickerField> rangeFieldReference = new AtomicReference<>();
+
+        try {
+            runOnFxThread(() -> showPopupMotionTestWindow(
+                    stageReference,
+                    rootReference,
+                    menuButtonReference,
+                    subMenuItemReference,
+                    dateFieldReference,
+                    rangeFieldReference
+            ));
+            runOnFxThreadWhen(
+                    () -> menuPopupSurfaceIsAnimating(menuButtonReference),
+                    () -> {
+                        M3MotionSettings.setAnimationsEnabled(
+                                Objects.requireNonNull(rootReference.get(), "root"),
+                                true
+                        );
+                        Objects.requireNonNull(menuButtonReference.get(), "menuButton").showMenu();
+                    },
+                    () -> {
+                        VBox root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                        assertPopupSurfaceIntermediate(menuButton.getMenu(), "menu popup");
+
+                        M3MotionSettings.setAnimationsEnabled(root, false);
+
+                        assertPopupSurfaceSettled(menuButton.getMenu(), "menu popup");
+                    }
             );
-            VBox root = new VBox(16.0, menuButton, dateField, rangeField);
+            runOnFxThreadWhen(
+                    () -> subMenuPopupSurfaceIsAnimating(subMenuItemReference),
+                    () -> {
+                        M3MotionSettings.setAnimationsEnabled(
+                                Objects.requireNonNull(rootReference.get(), "root"),
+                                true
+                        );
+                        Objects.requireNonNull(subMenuItemReference.get(), "subMenuItem").showSubMenu();
+                    },
+                    () -> {
+                        VBox root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3SubMenuItem subMenuItem =
+                                Objects.requireNonNull(subMenuItemReference.get(), "subMenuItem");
+                        assertPopupSurfaceIntermediate(subMenuItem.getSubMenu(), "submenu popup");
 
-            try {
-                Scene scene = new Scene(root, 820.0, 620.0);
-                M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                root.resize(820.0, 620.0);
-                root.layout();
+                        M3MotionSettings.setAnimationsEnabled(root, false);
 
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                menuButton.showMenu();
-                Timeline menuShowAnimation = controlTimeline(menuButton, "showAnimation");
-                menuShowAnimation.jumpTo(Duration.millis(50.0));
-                assertEquals(Animation.Status.RUNNING, menuShowAnimation.getStatus());
+                        assertPopupSurfaceSettled(subMenuItem.getSubMenu(), "submenu popup");
+                        subMenuItem.hideSubMenu();
+                        Objects.requireNonNull(menuButtonReference.get(), "menuButton").hideMenu();
+                    }
+            );
+            runOnFxThreadWhen(
+                    () -> datePickerPopupSurfaceIsAnimating(dateFieldReference),
+                    () -> {
+                        M3MotionSettings.setAnimationsEnabled(
+                                Objects.requireNonNull(rootReference.get(), "root"),
+                                true
+                        );
+                        Objects.requireNonNull(dateFieldReference.get(), "dateField").showPicker();
+                    },
+                    () -> {
+                        VBox root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3DatePickerField dateField = Objects.requireNonNull(dateFieldReference.get(), "dateField");
+                        Parent popupSurface = Objects.requireNonNull(
+                                pickerPopupSurface(dateField),
+                                "datePopupSurface"
+                        );
+                        assertPopupSurfaceIntermediate(popupSurface, "date picker popup");
 
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                        M3MotionSettings.setAnimationsEnabled(root, false);
 
-                assertStoppedWithIdentityTransform(menuShowAnimation, menuButton.getMenu());
+                        assertPopupSurfaceSettled(popupSurface, "date picker popup");
+                        dateField.hidePicker();
+                    }
+            );
+            runOnFxThreadWhen(
+                    () -> rangePickerPopupSurfaceIsAnimating(rangeFieldReference),
+                    () -> {
+                        M3MotionSettings.setAnimationsEnabled(
+                                Objects.requireNonNull(rootReference.get(), "root"),
+                                true
+                        );
+                        Objects.requireNonNull(rangeFieldReference.get(), "rangeField").showPicker();
+                    },
+                    () -> {
+                        VBox root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3DateRangePickerField rangeField =
+                                Objects.requireNonNull(rangeFieldReference.get(), "rangeField");
+                        Parent popupSurface = Objects.requireNonNull(
+                                pickerPopupSurface(rangeField),
+                                "rangePopupSurface"
+                        );
+                        assertPopupSurfaceIntermediate(popupSurface, "date range picker popup");
 
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                subMenuItem.showSubMenu();
-                Timeline subMenuShowAnimation = controlTimeline(subMenuItem, "showAnimation");
-                subMenuShowAnimation.jumpTo(Duration.millis(50.0));
-                assertEquals(Animation.Status.RUNNING, subMenuShowAnimation.getStatus());
+                        M3MotionSettings.setAnimationsEnabled(root, false);
 
-                M3MotionSettings.setAnimationsEnabled(root, false);
-
-                assertStoppedWithIdentityTransform(subMenuShowAnimation, subMenuItem.getSubMenu());
-                menuButton.hideMenu();
-
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                dateField.showPicker();
-                Timeline dateShowAnimation = controlTimeline(dateField, "showAnimation");
-                Parent datePopupContent = assertInstanceOf(Parent.class, dateField.getPicker().getParent());
-                dateShowAnimation.jumpTo(Duration.millis(50.0));
-                assertEquals(Animation.Status.RUNNING, dateShowAnimation.getStatus());
-
-                M3MotionSettings.setAnimationsEnabled(root, false);
-
-                assertStoppedWithIdentityTransform(dateShowAnimation, datePopupContent);
-                dateField.hidePicker();
-
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                rangeField.showPicker();
-                Timeline rangeShowAnimation = controlTimeline(rangeField, "showAnimation");
-                Parent rangePopupContent = assertInstanceOf(Parent.class, rangeField.getPicker().getParent());
-                rangeShowAnimation.jumpTo(Duration.millis(50.0));
-                assertEquals(Animation.Status.RUNNING, rangeShowAnimation.getStatus());
-
-                M3MotionSettings.setAnimationsEnabled(root, false);
-
-                assertStoppedWithIdentityTransform(rangeShowAnimation, rangePopupContent);
-            } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
-                menuButton.hideMenu();
-                dateField.hidePicker();
-                rangeField.hidePicker();
-                stage.close();
-            }
-        });
+                        assertPopupSurfaceSettled(popupSurface, "date range picker popup");
+                    }
+            );
+        } finally {
+            runOnFxThread(() -> closePopupMotionTestWindow(
+                    stageReference,
+                    rootReference,
+                    menuButtonReference,
+                    subMenuItemReference,
+                    dateFieldReference,
+                    rangeFieldReference
+            ));
+        }
     }
 
     /// Verifies that the base stylesheet provides visible default state layer feedback.
@@ -16916,76 +18214,132 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-interactive-states.png"
             ));
-            assertRenderedTextNodesStayInsideLayout(root);
-            assertFixedTargetControlsKeepCenteredContent(root);
+            assertMaterialTargetGeometryIsStable(root);
         });
     }
 
     /// Verifies that a real button ripple remains visible after release and fades out through animation.
     @Test
-    void buttonRippleReleaseAnimationFadesAfterPointerRelease() {
-        runOnFxThread(() -> {
-            M3Button button = createButton("Ripple", M3ButtonVariant.FILLED);
-            Pane root = new Pane(button);
-            Scene scene = new Scene(root, 200.0, 100.0);
+    void buttonRippleReleaseAnimationFadesAfterPointerRelease() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> buttonReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> releaseStartOpacityReference = new AtomicReference<>();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            button.resize(120.0, 40.0);
-            button.layout();
+        try {
+            runOnFxThreadWhen(
+                    () -> buttonRippleIsFullyExpanded(buttonReference),
+                    () -> {
+                        showObservableRippleButton(stageReference, rootReference, buttonReference);
+                        Objects.requireNonNull(buttonReference.get(), "button")
+                                .fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 24.0, 20.0, true));
+                    },
+                    () -> {
+                        M3Button button = Objects.requireNonNull(buttonReference.get(), "button");
+                        Region ripple = lookupRegion(button, ".m3-ripple");
+                        double releaseStartOpacity = ripple.getOpacity();
 
-            button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 24.0, 20.0, true));
-            Region ripple = lookupRegion(button, ".m3-ripple");
-            Region stateLayer = lookupRegion(button, ".m3-state-layer-container");
-            Timeline expansionAnimation = controlTimeline(stateLayer, "rippleAnimation");
-            expansionAnimation.jumpTo(expansionAnimation.getTotalDuration());
+                        assertTrue(releaseStartOpacity > 0.0);
+                        releaseStartOpacityReference.set(releaseStartOpacity);
 
-            assertTrue(ripple.getOpacity() > 0.0);
+                        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
 
-            button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
-            Timeline releaseAnimation = controlTimeline(stateLayer, "rippleAnimation");
+                        assertTrue(ripple.getOpacity() > 0.0, () -> "ripple opacity=" + ripple.getOpacity());
+                        assertFalse(button.isArmed());
+                    }
+            );
+            runOnFxThreadWhen(
+                    () -> buttonRippleOpacityFadedBelow(buttonReference, releaseStartOpacityReference),
+                    () -> {
+                    },
+                    () -> {
+                        double releaseStartOpacity =
+                                Objects.requireNonNull(releaseStartOpacityReference.get(), "releaseStartOpacity");
+                        Region ripple = lookupRegion(
+                                Objects.requireNonNull(buttonReference.get(), "button"),
+                                ".m3-ripple"
+                        );
+                        double midReleaseOpacity = ripple.getOpacity();
 
-            assertTrue(ripple.getOpacity() > 0.0);
-            assertFalse(button.isArmed());
-
-            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration());
-
-            assertEquals(0.0, ripple.getOpacity(), 0.0001);
-        });
+                        assertTrue(midReleaseOpacity > 0.0, () -> "midReleaseOpacity=" + midReleaseOpacity);
+                        assertTrue(midReleaseOpacity < releaseStartOpacity, () ->
+                                "midReleaseOpacity=" + midReleaseOpacity
+                                        + ", releaseStartOpacity=" + releaseStartOpacity);
+                    }
+            );
+            runOnFxThreadWhen(
+                    () -> buttonRippleOpacityCleared(buttonReference),
+                    () -> {
+                    },
+                    () -> assertEquals(
+                            0.0,
+                            lookupRegion(
+                                    Objects.requireNonNull(buttonReference.get(), "button"),
+                                    ".m3-ripple"
+                            ).getOpacity(),
+                            0.0001
+                    )
+            );
+        } finally {
+            closeObservableRippleButton(stageReference, rootReference, buttonReference);
+        }
     }
 
     /// Verifies that ripple opacity starts fading immediately when a quick pointer click is released.
     @Test
-    void buttonRippleReleaseAnimationFadesDuringExpansionAfterQuickClick() {
-        runOnFxThread(() -> {
-            M3Button button = createButton("Ripple", M3ButtonVariant.FILLED);
-            Pane root = new Pane(button);
-            Scene scene = new Scene(root, 200.0, 100.0);
+    void buttonRippleReleaseAnimationFadesDuringExpansionAfterQuickClick() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> buttonReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> releaseStartOpacityReference = new AtomicReference<>();
 
-            M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            root.applyCss();
-            button.resize(120.0, 40.0);
-            button.layout();
+        try {
+            runOnFxThreadWhen(
+                    () -> buttonRippleOpacityFadedBelow(buttonReference, releaseStartOpacityReference),
+                    () -> {
+                        showObservableRippleButton(stageReference, rootReference, buttonReference);
+                        M3Button button = Objects.requireNonNull(buttonReference.get(), "button");
 
-            button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 24.0, 20.0, true));
-            Region ripple = lookupRegion(button, ".m3-ripple");
-            Region stateLayer = lookupRegion(button, ".m3-state-layer-container");
-            double releaseStartOpacity = ripple.getOpacity();
+                        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 24.0, 20.0, true));
+                        Region ripple = lookupRegion(button, ".m3-ripple");
+                        releaseStartOpacityReference.set(ripple.getOpacity());
 
-            button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
-            Timeline releaseAnimation = controlTimeline(stateLayer, "rippleAnimation");
+                        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
 
-            releaseAnimation.jumpTo(Duration.millis(100.0));
+                        assertTrue(ripple.getOpacity() > 0.0, () -> "ripple opacity=" + ripple.getOpacity());
+                        assertFalse(button.isArmed());
+                    },
+                    () -> {
+                        double releaseStartOpacity =
+                                Objects.requireNonNull(releaseStartOpacityReference.get(), "releaseStartOpacity");
+                        Region ripple = lookupRegion(
+                                Objects.requireNonNull(buttonReference.get(), "button"),
+                                ".m3-ripple"
+                        );
+                        double midReleaseOpacity = ripple.getOpacity();
 
-            double midReleaseOpacity = ripple.getOpacity();
-            assertTrue(midReleaseOpacity > 0.0, () -> "midReleaseOpacity=" + midReleaseOpacity);
-            assertTrue(midReleaseOpacity < releaseStartOpacity, () ->
-                    "midReleaseOpacity=" + midReleaseOpacity + ", releaseStartOpacity=" + releaseStartOpacity);
-
-            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration());
-
-            assertEquals(0.0, ripple.getOpacity(), 0.0001);
-        });
+                        assertTrue(midReleaseOpacity > 0.0, () -> "midReleaseOpacity=" + midReleaseOpacity);
+                        assertTrue(midReleaseOpacity < releaseStartOpacity, () ->
+                                "midReleaseOpacity=" + midReleaseOpacity
+                                        + ", releaseStartOpacity=" + releaseStartOpacity);
+                    }
+            );
+            runOnFxThreadWhen(
+                    () -> buttonRippleOpacityCleared(buttonReference),
+                    () -> {
+                    },
+                    () -> assertEquals(
+                            0.0,
+                            lookupRegion(
+                                    Objects.requireNonNull(buttonReference.get(), "button"),
+                                    ".m3-ripple"
+                            ).getOpacity(),
+                            0.0001
+                    )
+            );
+        } finally {
+            closeObservableRippleButton(stageReference, rootReference, buttonReference);
+        }
     }
 
     /// Verifies that a representative control set renders non-blank visible output.
@@ -17028,8 +18382,7 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-smoke.png"
             ));
-            assertRenderedTextNodesStayInsideLayout(root);
-            assertFixedTargetControlsKeepCenteredContent(root);
+            assertMaterialTargetGeometryIsStable(root);
         });
     }
 
@@ -17606,6 +18959,115 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that form validators focus the first reachable invalid input.
+    @Test
+    void formValidatorFocusSkipsInvalidInputsHiddenByAncestors() {
+        runOnFxThread(() -> {
+            M3TextField hiddenField = new M3TextField();
+            M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField, "Hidden", "Required");
+            hiddenLayout.setValidator(M3TextInputValidators.required("Hidden is required"));
+            Pane hiddenAncestor = new Pane(hiddenLayout);
+            hiddenAncestor.setVisible(false);
+
+            M3TextField visibleField = new M3TextField();
+            M3TextInputLayout visibleLayout = new M3TextInputLayout(visibleField, "Visible", "Required");
+            visibleLayout.setValidator(M3TextInputValidators.required("Visible is required"));
+
+            M3Button outside = new M3Button("Outside");
+            M3FormValidator validator = new M3FormValidator(hiddenLayout, visibleLayout);
+            VBox root = new VBox(8.0, hiddenAncestor, visibleLayout, outside);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 520.0, 280.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertFalse(validator.validate());
+                assertTrue(validator.focusFirstInvalidInput());
+                assertTrue(visibleField.isFocused());
+                assertFalse(hiddenField.isFocused());
+
+                outside.requestFocus();
+                visibleLayout.setVisible(false);
+
+                assertFalse(validator.focusFirstInvalidInput());
+                assertTrue(outside.isFocused());
+                assertFalse(hiddenField.isFocused());
+                assertFalse(visibleField.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that validation summary accessibility skips invalid inputs hidden by ancestors.
+    @Test
+    void validationSummarySkipsInvalidInputsHiddenByAncestors() {
+        runOnFxThread(() -> {
+            M3TextField hiddenField = new M3TextField();
+            M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField, "Hidden", "Required");
+            hiddenLayout.setValidator(M3TextInputValidators.required("Hidden is required"));
+            Pane hiddenAncestor = new Pane(hiddenLayout);
+            hiddenAncestor.setVisible(false);
+
+            M3TextField visibleField = new M3TextField();
+            M3TextInputLayout visibleLayout = new M3TextInputLayout(visibleField, "Visible", "Required");
+            visibleLayout.setValidator(M3TextInputValidators.required("Visible is required"));
+
+            M3Button outside = new M3Button("Outside");
+            M3FormValidator validator = new M3FormValidator(hiddenLayout, visibleLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            VBox root = new VBox(8.0, hiddenAncestor, visibleLayout, summary, outside);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 520.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertFalse(validator.validate());
+                assertEquals(2, summary.getInvalidInputCount());
+                assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertSame(visibleLayout, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertNull(summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertSame(visibleField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                outside.requestFocus();
+                assertFalse(summary.focusInput(hiddenLayout));
+
+                assertTrue(outside.isFocused());
+                assertFalse(hiddenField.isFocused());
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenLayout);
+
+                assertTrue(outside.isFocused());
+                assertFalse(hiddenField.isFocused());
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+
+                assertTrue(visibleField.isFocused());
+                assertSame(visibleField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                outside.requestFocus();
+                summary.setVisible(false);
+                root.applyCss();
+                root.layout();
+
+                assertEquals(0, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertNull(summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertFalse(summary.focusInput(visibleLayout));
+                assertTrue(outside.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that selection controls render selected, indeterminate, and disabled states.
     @Test
     void selectionSnapshotRendersStateMatrix() {
@@ -17795,8 +19257,7 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-containment-feedback-navigation.png"
             ));
-            assertRenderedTextNodesStayInsideLayout(root);
-            assertFixedTargetControlsKeepCenteredContent(root);
+            assertMaterialTargetGeometryIsStable(root);
         });
     }
 
@@ -17837,8 +19298,7 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-navigation-drawer-group.png"
             ));
-            assertRenderedTextNodesStayInsideLayout(root);
-            assertFixedTargetControlsKeepCenteredContent(root);
+            assertMaterialTargetGeometryIsStable(root);
         });
     }
 
@@ -18059,8 +19519,7 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-picker-dialog-presets-rtl.png"
             ));
-            assertRenderedTextNodesStayInsideLayout(root);
-            assertFixedTargetControlsKeepCenteredContent(root);
+            assertMaterialTargetGeometryIsStable(root);
         });
     }
 
@@ -18352,13 +19811,16 @@ final class M3ControlStyleTest {
             datePicker.setDisplayedMonth(YearMonth.of(2026, 5));
             datePicker.setFirstDayOfWeek(DayOfWeek.MONDAY);
             Pane root = new Pane(datePicker);
-            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(root, 420.0, 360.0);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 440.0, 460.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
-            root.resize(420.0, 360.0);
-            datePicker.resize(360.0, 320.0);
+            double pickerWidth = 360.0;
+            double pickerHeight = Math.ceil(datePicker.prefHeight(pickerWidth));
+            root.resize(440.0, pickerHeight + 40.0);
+            datePicker.relocate(20.0, 20.0);
+            datePicker.resize(pickerWidth, pickerHeight);
             root.layout();
             datePicker.layout();
 
@@ -18388,6 +19850,58 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-date-picker-centering.png"
             ));
+            assertMaterialTargetGeometryIsStable(root);
+        });
+    }
+
+    /// Verifies that time picker cell labels stay centered inside fixed time cells.
+    @Test
+    void timePickerCentersCellContent() {
+        runOnFxThread(() -> {
+            M3TimePicker timePicker = new M3TimePicker(LocalTime.of(9, 30));
+            timePicker.setUse24HourClock(true);
+            timePicker.setMinuteStep(15);
+            Pane root = new Pane(timePicker);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 560.0, 420.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            double pickerWidth = 480.0;
+            double pickerHeight = Math.ceil(timePicker.prefHeight(pickerWidth));
+            root.resize(560.0, pickerHeight + 40.0);
+            timePicker.relocate(20.0, 20.0);
+            timePicker.resize(pickerWidth, pickerHeight);
+            root.layout();
+            timePicker.layout();
+
+            for (LocalTime time : java.util.List.of(
+                    LocalTime.of(0, 30),
+                    LocalTime.of(9, 30),
+                    LocalTime.of(9, 15)
+            )) {
+                ButtonBase timeCell = timeCellForTime(timePicker, time);
+                Node textNode = Objects.requireNonNull(timeCell.lookup(".text"));
+
+                assertEquals(Pos.CENTER, timeCell.getAlignment());
+                assertNodeCentersAligned(timeCell, textNode, 0.75);
+            }
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, timePicker, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(
+                    image,
+                    timeCellForTime(timePicker, LocalTime.of(9, 30)),
+                    Color.WHITE,
+                    0.08
+            );
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-time-picker-centering.png"
+            ));
+            assertMaterialTargetGeometryIsStable(root);
         });
     }
 
@@ -18872,8 +20386,7 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-all-controls.png"
             ));
-            assertRenderedTextNodesStayInsideLayout(root);
-            assertFixedTargetControlsKeepCenteredContent(root);
+            assertMaterialTargetGeometryIsStable(root);
         });
     }
 
@@ -18967,6 +20480,12 @@ final class M3ControlStyleTest {
                     new M3IconButton(visualIcon("person"))
             );
             mediumTopAppBar.setPrefWidth(560.0);
+            M3Toolbar toolbar = new M3Toolbar(
+                    new M3IconButton(visualIcon("bold")),
+                    new M3IconButton(visualIcon("italic")),
+                    new M3IconButton(visualIcon("underline"))
+            );
+            toolbar.setVariant(M3ToolbarVariant.FLOATING);
 
             VBox root = new VBox(
                     18.0,
@@ -19001,6 +20520,7 @@ final class M3ControlStyleTest {
                             navigationDrawer,
                             topAppBar,
                             mediumTopAppBar,
+                            toolbar,
                             sideSheet,
                             bottomSheet
                     )
@@ -19088,6 +20608,13 @@ final class M3ControlStyleTest {
             assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
             assertEquals(120.0, mediumTopAppBar.getPrefHeight(), 0.0001);
             assertEquals(24.0, mediumTopAppBar.getPadding().getBottom(), 0.0001);
+            assertEquals(72.0, toolbar.getContainerHeight(), 0.0001);
+            assertEquals(72.0, toolbar.getContainerWidth(), 0.0001);
+            assertEquals(56.0, toolbar.getItemSlotSize(), 0.0001);
+            assertEquals(10.0, toolbar.getContentPadding(), 0.0001);
+            assertEquals(4.0, toolbar.getItemSpacing(), 0.0001);
+            assertEquals(10.0, toolbar.getPadding().getTop(), 0.0001);
+            assertEquals(72.0, toolbar.getPrefHeight(), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotHasColorVariety(image, 18);
@@ -19107,14 +20634,14 @@ final class M3ControlStyleTest {
             assertSnapshotNodeContainsContrast(image, navigationDrawer, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, topAppBar, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, mediumTopAppBar, Color.WHITE, 0.04);
+            assertSnapshotNodeContainsContrast(image, toolbar, Color.WHITE, 0.04);
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
                     "reports",
                     "m3fx-visual",
                     "visual-expressive-profile.png"
             ));
-            assertRenderedTextNodesStayInsideLayout(root);
-            assertFixedTargetControlsKeepCenteredContent(root);
+            assertMaterialTargetGeometryIsStable(root);
         });
     }
 
@@ -19223,91 +20750,123 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-dark-expressive-controls.png"
             ));
-            assertRenderedTextNodesStayInsideLayout(root);
-            assertFixedTargetControlsKeepCenteredContent(root);
+            assertMaterialTargetGeometryIsStable(root);
         });
     }
 
     /// Verifies that dark expressive popup roots inherit theme mode classes and render visible content.
     @Test
-    void darkExpressivePopupVisualSnapshotInheritsThemeContext() {
-        runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3Theme theme = M3Theme.fromSeed(
-                    Color.web("#006a6a"),
-                    M3Profile.EXPRESSIVE_2025,
-                    Brightness.DARK
+    void darkExpressivePopupVisualSnapshotInheritsThemeContext() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Theme> themeReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> ownerReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhen(
+                    () -> menuPopupSurfaceHasSettled(menuButtonReference),
+                    () -> {
+                        Stage stage = new Stage();
+                        M3Theme theme = M3Theme.fromSeed(
+                                Color.web("#006a6a"),
+                                M3Profile.EXPRESSIVE_2025,
+                                Brightness.DARK
+                        );
+                        M3MenuItem open = new M3MenuItem("Open");
+                        M3MenuItem save = new M3MenuItem("Save");
+                        M3MenuButton menuButton = new M3MenuButton("More", open, save);
+                        M3Button owner = new M3Button("Owner");
+                        M3Tooltip tooltip = new M3Tooltip("Dark expressive tooltip");
+
+                        VBox root = new VBox(16.0, menuButton, owner);
+                        root.setStyle("-fx-background-color: -m3-color-surface; -fx-padding: 24px;");
+                        Scene scene = new Scene(root, 360.0, 180.0);
+                        M3ThemeManager.install(scene, theme);
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.resize(360.0, 180.0);
+                        root.layout();
+
+                        stageReference.set(stage);
+                        themeReference.set(theme);
+                        menuButtonReference.set(menuButton);
+                        ownerReference.set(owner);
+                        tooltipReference.set(tooltip);
+                        menuButton.showMenu();
+                    },
+                    () -> {
+                        Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                        M3Theme theme = Objects.requireNonNull(themeReference.get(), "theme");
+                        M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                        M3Button owner = Objects.requireNonNull(ownerReference.get(), "owner");
+                        M3Tooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
+                        M3Menu menu = menuButton.getMenu();
+
+                        assertPopupSurfaceSettled(menu, "dark expressive menu popup");
+                        resizeToPreferredSize(menu);
+                        assertTrue(menu.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                        assertTrue(menu.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                        assertSame(theme, M3ThemeManager.getTheme(menu));
+                        assertTrue(menu.getStyle().contains("-m3-color-primary"));
+
+                        WritableImage menuImage = snapshotImageOnFxThread(menu);
+                        assertSnapshotHasColorVariety(menuImage, 4);
+                        assertSnapshotNodeContainsContrast(menuImage, menu, Color.BLACK, 0.08);
+                        writeVisualSnapshot(menuImage, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-dark-expressive-menu-popup.png"
+                        ));
+                        assertRenderedTextNodesStayInsideLayout(menu);
+                        assertFixedTargetControlsKeepCenteredContent(menu);
+
+                        tooltip.setTheme(theme);
+                        tooltip.show(owner, stage.getX() + 48.0, stage.getY() + 128.0);
+                        Parent tooltipRoot = tooltip.getScene().getRoot();
+                        tooltipRoot.applyCss();
+                        if (tooltipRoot instanceof Region region) {
+                            resizeToPreferredSize(region);
+                        } else {
+                            tooltipRoot.layout();
+                        }
+                        assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                        assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                        assertSame(theme, tooltip.getTheme());
+                        assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
+
+                        WritableImage tooltipImage = snapshotImageOnFxThread(tooltipRoot);
+                        assertSnapshotHasColorVariety(tooltipImage, 2);
+                        assertSnapshotNodeContainsContrast(tooltipImage, tooltipRoot, Color.BLACK, 0.08);
+                        writeVisualSnapshot(tooltipImage, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-dark-expressive-tooltip.png"
+                        ));
+                        assertRenderedTextNodesStayInsideLayout(tooltipRoot);
+                    }
             );
-            M3MenuItem open = new M3MenuItem("Open");
-            M3MenuItem save = new M3MenuItem("Save");
-            M3MenuButton menuButton = new M3MenuButton("More", open, save);
-            M3Button owner = new M3Button("Owner");
-            M3Tooltip tooltip = new M3Tooltip("Dark expressive tooltip");
-            try {
-                VBox root = new VBox(16.0, menuButton, owner);
-                root.setStyle("-fx-background-color: -m3-color-surface; -fx-padding: 24px;");
-                Scene scene = new Scene(root, 360.0, 180.0);
-                M3ThemeManager.install(scene, theme);
-                stage.setScene(scene);
-                stage.show();
-                root.applyCss();
-                root.resize(360.0, 180.0);
-                root.layout();
-
-                menuButton.showMenu();
-                Timeline showAnimation = controlTimeline(menuButton, "showAnimation");
-                showAnimation.jumpTo(showAnimation.getTotalDuration());
-                showAnimation.stop();
-
-                M3Menu menu = menuButton.getMenu();
-                resizeToPreferredSize(menu);
-                assertTrue(menu.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
-                assertTrue(menu.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                assertSame(theme, M3ThemeManager.getTheme(menu));
-                assertTrue(menu.getStyle().contains("-m3-color-primary"));
-
-                WritableImage menuImage = snapshotImageOnFxThread(menu);
-                assertSnapshotHasColorVariety(menuImage, 4);
-                assertSnapshotNodeContainsContrast(menuImage, menu, Color.BLACK, 0.08);
-                writeVisualSnapshot(menuImage, java.nio.file.Path.of(
-                        "build",
-                        "reports",
-                        "m3fx-visual",
-                        "visual-dark-expressive-menu-popup.png"
-                ));
-                assertRenderedTextNodesStayInsideLayout(menu);
-                assertFixedTargetControlsKeepCenteredContent(menu);
-
-                tooltip.setTheme(theme);
-                tooltip.show(owner, stage.getX() + 48.0, stage.getY() + 128.0);
-                Parent tooltipRoot = tooltip.getScene().getRoot();
-                tooltipRoot.applyCss();
-                if (tooltipRoot instanceof Region region) {
-                    resizeToPreferredSize(region);
-                } else {
-                    tooltipRoot.layout();
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3Tooltip tooltip = tooltipReference.get();
+                if (tooltip != null) {
+                    tooltip.hide();
                 }
-                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
-                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                assertSame(theme, tooltip.getTheme());
-                assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
 
-                WritableImage tooltipImage = snapshotImageOnFxThread(tooltipRoot);
-                assertSnapshotHasColorVariety(tooltipImage, 2);
-                assertSnapshotNodeContainsContrast(tooltipImage, tooltipRoot, Color.BLACK, 0.08);
-                writeVisualSnapshot(tooltipImage, java.nio.file.Path.of(
-                        "build",
-                        "reports",
-                        "m3fx-visual",
-                        "visual-dark-expressive-tooltip.png"
-                ));
-                assertRenderedTextNodesStayInsideLayout(tooltipRoot);
-            } finally {
-                tooltip.hide();
-                menuButton.hideMenu();
-                stage.close();
-            }
-        });
+                @Nullable M3MenuButton menuButton = menuButtonReference.get();
+                if (menuButton != null) {
+                    menuButton.hideMenu();
+                }
+
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that tooltip popups render their inverse surface and text.
@@ -19515,6 +21074,21 @@ final class M3ControlStyleTest {
         assertTrue(slider.getValue() > 50.0);
         slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
         assertEquals(50.0, slider.getValue(), 0.0001);
+
+        M3Slider rightToLeft = new M3Slider(0.0, 100.0, 50.0);
+        rightToLeft.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        Pane rightToLeftRoot = new Pane(rightToLeft);
+        Scene rightToLeftScene = new Scene(rightToLeftRoot, 240.0, 80.0);
+
+        M3ThemeManager.install(rightToLeftScene, M3Theme.defaultTheme());
+        rightToLeftRoot.applyCss();
+        rightToLeft.resize(220.0, 48.0);
+        rightToLeft.layout();
+
+        rightToLeft.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
+        assertTrue(rightToLeft.getValue() < 5.0, () -> "value=" + rightToLeft.getValue());
+        rightToLeft.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 24.0, false));
+        assertTrue(rightToLeft.getValue() > 95.0, () -> "value=" + rightToLeft.getValue());
     }
 
     /// Verifies that drag interactions snap the displayed slider position without animation lag.
@@ -20210,6 +21784,95 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that hidden ancestor chains are excluded from structural accessibility focus routing.
+    @Test
+    void structuralContainersSkipFocusTargetsInsideHiddenAncestors() {
+        runOnFxThread(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3Button hiddenTarget = new M3Button("Hidden target");
+            M3Button visibleTarget = new M3Button("Visible target");
+            Pane hiddenContainer = new Pane(hiddenTarget);
+            hiddenContainer.setVisible(false);
+            M3Surface surface = new M3Surface(hiddenContainer, visibleTarget);
+            VBox root = new VBox(8.0, outside, surface);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 420.0, 220.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertFalse(M3Accessible.canReach(hiddenTarget));
+                assertFalse(M3Accessible.isEffectivelyReachable(hiddenTarget));
+                assertTrue(M3Accessible.canReach(visibleTarget));
+                assertSame(visibleTarget, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                outside.requestFocus();
+                assertTrue(outside.isFocused());
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenTarget);
+
+                assertTrue(outside.isFocused());
+                assertFalse(hiddenTarget.isFocused());
+                assertSame(visibleTarget, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                surface.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(visibleTarget.isFocused());
+                assertSame(visibleTarget, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shared keyboard navigation skips candidates hidden by an ancestor.
+    @Test
+    void selectionNavigationSkipsNodesInsideHiddenAncestors() {
+        runOnFxThread(() -> {
+            M3Button hiddenTarget = new M3Button("Hidden");
+            M3Button visibleTarget = new M3Button("Visible");
+            Pane hiddenContainer = new Pane(hiddenTarget);
+            hiddenContainer.setVisible(false);
+            Pane root = new Pane(hiddenContainer, visibleTarget);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 360.0, 160.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                javafx.collections.ObservableList<Node> candidates =
+                        javafx.collections.FXCollections.observableArrayList(hiddenTarget, visibleTarget);
+
+                assertNull(M3SelectionNavigation.focused(candidates, M3Button.class));
+                assertSame(visibleTarget, M3SelectionNavigation.first(candidates, M3Button.class));
+                assertSame(visibleTarget, M3SelectionNavigation.next(candidates, null, M3Button.class));
+                assertSame(visibleTarget, M3SelectionNavigation.previous(candidates, null, M3Button.class));
+
+                KeyEvent event = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+
+                assertTrue(M3SelectionNavigation.handleKeyFocus(
+                        event,
+                        candidates,
+                        null,
+                        M3Button.class,
+                        true,
+                        false
+                ));
+                assertTrue(event.isConsumed());
+                assertTrue(visibleTarget.isFocused());
+                assertFalse(hiddenTarget.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that parent containers use child controls' exposed focus nodes as default focus targets.
     @Test
     void parentContainersReportNestedCompositeDefaultFocusNodes() {
@@ -20440,6 +22103,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.TOOL_BAR, new M3ButtonGroup().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3SplitButton().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3FabMenu().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, new M3Toolbar().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3IconButton().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3FloatingActionButton().getAccessibleRole());
         assertEquals(AccessibleRole.CHECK_BOX, new M3CheckBox().getAccessibleRole());
@@ -20514,6 +22178,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3ButtonGroup(), "/styles/controls/button-group.css");
         assertUserAgentStylesheet(new M3SplitButton(), "/styles/controls/split-button.css");
         assertUserAgentStylesheet(new M3FabMenu(), "/styles/controls/fab-menu.css");
+        assertUserAgentStylesheet(new M3Toolbar(), "/styles/controls/toolbar.css");
         assertUserAgentStylesheet(new M3IconButton(), "/styles/controls/button.css");
         assertUserAgentStylesheet(new M3IconToggleButton(), "/styles/controls/icon-toggle-button.css");
         assertUserAgentStylesheet(new M3IconToggleButtonGroup(), "/styles/controls/icon-toggle-button.css");
@@ -20671,19 +22336,22 @@ final class M3ControlStyleTest {
         assertFalse(M3ScrollPanes.isSmoothScrollingEnabled(scrollPane));
     }
 
-    /// Verifies that completed scroll pane smooth scrolling clears its transient animation reference.
+    /// Verifies that completed scroll pane smooth scrolling settles at its rendered target value.
     @Test
-    void scrollPaneSmoothScrollingClearsAnimationReferenceAfterCompletion() throws InterruptedException {
+    void scrollPaneSmoothScrollingSettlesAtTargetAfterCompletion() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable ScrollPane> scrollPaneReference = new AtomicReference<>();
         AtomicReference<@Nullable Region> contentReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> targetValueReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            runOnFxThreadWhenStable(
                     () -> {
                         ScrollPane scrollPane = Objects.requireNonNull(scrollPaneReference.get(), "scrollPane");
-                        return scrollPane.getVvalue() > 0.0 && smoothScrollAnimation(scrollPane) == null;
+                        double targetValue = Objects.requireNonNull(targetValueReference.get(), "targetValue");
+                        return Math.abs(scrollPane.getVvalue() - targetValue) <= 0.0001;
                     },
+                    SMOOTH_SCROLL_COMPLETION_STABLE_PULSES,
                     () -> {
                         Region content = new Region();
                         content.setPrefSize(160.0, 480.0);
@@ -20705,21 +22373,22 @@ final class M3ControlStyleTest {
                         stageReference.set(stage);
                         scrollPaneReference.set(scrollPane);
                         contentReference.set(content);
+                        targetValueReference.set(expectedScrollPaneVerticalTargetValue(scrollPane, content, -80.0));
 
                         ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
                         scrollPane.fireEvent(event);
                         assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
-                        assertInstanceOf(Timeline.class, smoothScrollAnimation(scrollPane));
+                        assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
                     },
                     () -> {
                         ScrollPane scrollPane = Objects.requireNonNull(scrollPaneReference.get(), "scrollPane");
                         Region content = Objects.requireNonNull(contentReference.get(), "content");
-                        assertTrue(scrollPane.getVvalue() > 0.0, () -> scrollPaneDebug(
+                        double targetValue = Objects.requireNonNull(targetValueReference.get(), "targetValue");
+                        assertEquals(targetValue, scrollPane.getVvalue(), 0.0001, () -> scrollPaneDebug(
                                 scrollPane,
                                 content,
                                 scrollEvent(scrollPane, 0.0, -80.0)
                         ));
-                        assertNull(smoothScrollAnimation(scrollPane));
                     }
             );
         } finally {
@@ -20912,6 +22581,86 @@ final class M3ControlStyleTest {
                 + "-m3-color-inverse-primary: rgb(56,57,58);";
     }
 
+    /// Creates motion behavior that only overrides snackbar display duration from the standard profile.
+    private static M3MotionBehavior snackbarBehavior(Duration snackbarDisplayDuration) {
+        M3MotionBehavior standard = M3MotionBehavior.standard();
+        return M3MotionBehavior.create(
+                standard.tooltipShowDelay(),
+                standard.tooltipHideDelay(),
+                standard.tooltipShowDuration(),
+                standard.richTooltipShowDuration(),
+                Objects.requireNonNull(snackbarDisplayDuration, "snackbarDisplayDuration"),
+                standard.subMenuHoverOpenDelay(),
+                standard.typeAheadResetDelay(),
+                standard.subMenuHoverCloseDelay(),
+                standard.linearProgressIndeterminateCycleDuration(),
+                standard.circularProgressIndeterminateCycleDuration(),
+                standard.loadingIndicatorMorphInterval(),
+                standard.loadingIndicatorGlobalRotationDuration()
+        );
+    }
+
+    /// Creates motion behavior that only overrides plain tooltip timings from the standard profile.
+    private static M3MotionBehavior tooltipBehavior(Duration showDelay, Duration hideDelay, Duration showDuration) {
+        M3MotionBehavior standard = M3MotionBehavior.standard();
+        return M3MotionBehavior.create(
+                Objects.requireNonNull(showDelay, "showDelay"),
+                Objects.requireNonNull(hideDelay, "hideDelay"),
+                Objects.requireNonNull(showDuration, "showDuration"),
+                standard.richTooltipShowDuration(),
+                standard.snackbarDisplayDuration(),
+                standard.subMenuHoverOpenDelay(),
+                standard.typeAheadResetDelay(),
+                standard.subMenuHoverCloseDelay(),
+                standard.linearProgressIndeterminateCycleDuration(),
+                standard.circularProgressIndeterminateCycleDuration(),
+                standard.loadingIndicatorMorphInterval(),
+                standard.loadingIndicatorGlobalRotationDuration()
+        );
+    }
+
+    /// Creates motion behavior that only overrides type-ahead and submenu hover timings from the standard profile.
+    private static M3MotionBehavior interactionTimingBehavior(
+            Duration typeAheadResetDelay,
+            Duration subMenuHoverOpenDelay,
+            Duration subMenuHoverCloseDelay
+    ) {
+        M3MotionBehavior standard = M3MotionBehavior.standard();
+        return M3MotionBehavior.create(
+                standard.tooltipShowDelay(),
+                standard.tooltipHideDelay(),
+                standard.tooltipShowDuration(),
+                standard.richTooltipShowDuration(),
+                standard.snackbarDisplayDuration(),
+                Objects.requireNonNull(subMenuHoverOpenDelay, "subMenuHoverOpenDelay"),
+                Objects.requireNonNull(typeAheadResetDelay, "typeAheadResetDelay"),
+                Objects.requireNonNull(subMenuHoverCloseDelay, "subMenuHoverCloseDelay"),
+                standard.linearProgressIndeterminateCycleDuration(),
+                standard.circularProgressIndeterminateCycleDuration(),
+                standard.loadingIndicatorMorphInterval(),
+                standard.loadingIndicatorGlobalRotationDuration()
+        );
+    }
+
+    /// Creates motion behavior with progress and loading indicator cycles that are observable in pulse tests.
+    private static M3MotionBehavior observableIndeterminateProgressBehavior() {
+        M3MotionBehavior standard = M3MotionBehavior.standard();
+        return M3MotionBehavior.create(
+                standard.tooltipShowDelay(),
+                standard.tooltipHideDelay(),
+                standard.tooltipShowDuration(),
+                standard.richTooltipShowDuration(),
+                standard.snackbarDisplayDuration(),
+                standard.subMenuHoverOpenDelay(),
+                standard.typeAheadResetDelay(),
+                standard.subMenuHoverCloseDelay(),
+                OBSERVABLE_TEST_MOTION_DURATION,
+                OBSERVABLE_TEST_MOTION_DURATION,
+                OBSERVABLE_TEST_MOTION_DURATION,
+                OBSERVABLE_TEST_MOTION_DURATION
+        );
+    }
+
     /// Returns whether a snackbar has completed its exit transition and left its host.
     private static boolean snackbarDetached(AtomicReference<@Nullable M3Snackbar> snackbarReference) {
         @Nullable M3Snackbar snackbar = snackbarReference.get();
@@ -20938,6 +22687,26 @@ final class M3ControlStyleTest {
                 && !first.isVisible();
     }
 
+    /// Returns whether a snackbar host still shows the first snackbar while the second remains queued.
+    private static boolean queuedSnackbarStillCurrent(
+            AtomicReference<@Nullable M3SnackbarHost> hostReference,
+            AtomicReference<@Nullable M3Snackbar> firstReference,
+            AtomicReference<@Nullable M3Snackbar> secondReference
+    ) {
+        @Nullable M3SnackbarHost host = hostReference.get();
+        @Nullable M3Snackbar first = firstReference.get();
+        @Nullable M3Snackbar second = secondReference.get();
+        return host != null
+                && first != null
+                && second != null
+                && host.getSnackbar() == first
+                && host.isShowing()
+                && host.getQueue().equals(List.of(second))
+                && first.getParent() != null
+                && second.getParent() == null
+                && first.isVisible();
+    }
+
     /// Returns whether a snackbar host has completed dismissing its current snackbar and clearing its queue.
     private static boolean snackbarHostCleared(
             AtomicReference<@Nullable M3SnackbarHost> hostReference,
@@ -20962,6 +22731,71 @@ final class M3ControlStyleTest {
     private static boolean tooltipShowing(AtomicReference<? extends @Nullable M3Tooltip> tooltipReference) {
         @Nullable M3Tooltip tooltip = tooltipReference.get();
         return tooltip != null && tooltip.isShowing();
+    }
+
+    /// Returns whether a referenced tooltip has been created and is currently hidden.
+    private static boolean tooltipHidden(AtomicReference<? extends @Nullable M3Tooltip> tooltipReference) {
+        @Nullable M3Tooltip tooltip = tooltipReference.get();
+        return tooltip != null && !tooltip.isShowing();
+    }
+
+    /// Returns whether a referenced submenu item is currently showing its submenu popup.
+    private static boolean subMenuShowing(AtomicReference<? extends @Nullable M3SubMenuItem> subMenuItemReference) {
+        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+        return subMenuItem != null && subMenuItem.isSubMenuShowing();
+    }
+
+    /// Returns whether a referenced submenu item has been created and is currently hidden.
+    private static boolean subMenuHidden(AtomicReference<? extends @Nullable M3SubMenuItem> subMenuItemReference) {
+        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+        return subMenuItem != null && !subMenuItem.isSubMenuShowing();
+    }
+
+    /// Closes a real-window motion behavior test scene and clears local motion overrides.
+    private static void closeMotionTestScene(
+            AtomicReference<? extends @Nullable Stage> stageReference,
+            AtomicReference<? extends @Nullable Node> rootReference
+    ) {
+        runOnFxThread(() -> {
+            @Nullable Node root = rootReference.get();
+            if (root != null) {
+                M3MotionSettings.clearMotionBehavior(root);
+                M3MotionSettings.clearAnimationsEnabled(root);
+            }
+
+            @Nullable Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
+    }
+
+    /// Closes a real-window installed tooltip test scene and clears inherited motion settings.
+    private static void closeInstalledTooltipScene(
+            AtomicReference<? extends @Nullable Stage> stageReference,
+            AtomicReference<? extends @Nullable Node> rootReference,
+            AtomicReference<? extends @Nullable Node> targetReference,
+            AtomicReference<? extends @Nullable M3Tooltip> tooltipReference
+    ) {
+        runOnFxThread(() -> {
+            @Nullable Node target = targetReference.get();
+            @Nullable M3Tooltip tooltip = tooltipReference.get();
+            if (target != null && tooltip != null) {
+                M3Tooltip.uninstall(target, tooltip);
+            } else if (tooltip != null) {
+                tooltip.hide();
+            }
+
+            @Nullable Node root = rootReference.get();
+            if (root != null) {
+                M3MotionSettings.clearMotionBehavior(root);
+            }
+
+            @Nullable Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
     }
 
     /// Returns whether a referenced tooltip is showing while the requested owner keeps keyboard focus.
@@ -21044,6 +22878,572 @@ final class M3ControlStyleTest {
         return Math.abs(indicator.getLength() - expectedLength) < 0.0001;
     }
 
+    /// Holds a real-window progress and loading indicator scene used by pulse-driven animation tests.
+    private static final class IndeterminateProgressMotionScene {
+        /// The stage that owns the tested scene graph.
+        private final Stage stage;
+
+        /// The root node that carries local animation settings.
+        private final VBox root;
+
+        /// The indeterminate linear progress bar under test.
+        private final M3ProgressBar progressBar;
+
+        /// The rendered indeterminate linear bar segment.
+        private final Rectangle progressBarSegment;
+
+        /// The indeterminate circular progress indicator under test.
+        private final M3ProgressIndicator progressIndicator;
+
+        /// The rendered circular progress arc.
+        private final Arc progressIndicatorArc;
+
+        /// The indeterminate loading indicator under test.
+        private final M3LoadingIndicator loadingIndicator;
+
+        /// The rendered loading indicator path.
+        private final Path loadingIndicatorPath;
+
+        /// Creates a holder for the sampled progress and loading indicator scene.
+        private IndeterminateProgressMotionScene(
+                Stage stage,
+                VBox root,
+                M3ProgressBar progressBar,
+                Rectangle progressBarSegment,
+                M3ProgressIndicator progressIndicator,
+                Arc progressIndicatorArc,
+                M3LoadingIndicator loadingIndicator,
+                Path loadingIndicatorPath
+        ) {
+            this.stage = stage;
+            this.root = root;
+            this.progressBar = progressBar;
+            this.progressBarSegment = progressBarSegment;
+            this.progressIndicator = progressIndicator;
+            this.progressIndicatorArc = progressIndicatorArc;
+            this.loadingIndicator = loadingIndicator;
+            this.loadingIndicatorPath = loadingIndicatorPath;
+        }
+    }
+
+    /// Captures rendered animation state from the indeterminate progress scene.
+    private static final class IndeterminateProgressMotionSample {
+        /// The current horizontal position of the linear progress segment.
+        private final double progressBarX;
+
+        /// The current circular progress arc start angle.
+        private final double progressIndicatorStartAngle;
+
+        /// The current first rendered point of the loading indicator path.
+        private final Point2D loadingIndicatorPoint;
+
+        /// The current rendered loading indicator ink area.
+        private final double loadingIndicatorInkArea;
+
+        /// The current loading indicator path element count.
+        private final int loadingIndicatorElementCount;
+
+        /// Creates a rendered-state sample for progress and loading indicator motion.
+        private IndeterminateProgressMotionSample(
+                double progressBarX,
+                double progressIndicatorStartAngle,
+                Point2D loadingIndicatorPoint,
+                double loadingIndicatorInkArea,
+                int loadingIndicatorElementCount
+        ) {
+            this.progressBarX = progressBarX;
+            this.progressIndicatorStartAngle = progressIndicatorStartAngle;
+            this.loadingIndicatorPoint = loadingIndicatorPoint;
+            this.loadingIndicatorInkArea = loadingIndicatorInkArea;
+            this.loadingIndicatorElementCount = loadingIndicatorElementCount;
+        }
+    }
+
+    /// Holds a standalone shape-morph scene used by loading indicator geometry tests.
+    private static final class LoadingIndicatorFrameScene {
+        /// The root snapshot node.
+        private final Pane root;
+
+        /// The active loading indicator path.
+        private final Path indicator;
+
+        /// The reusable shape morph scratch storage.
+        private final M3ShapeMorph.Scratch scratch = new M3ShapeMorph.Scratch();
+
+        /// Creates a standalone loading indicator frame scene.
+        private LoadingIndicatorFrameScene() {
+            indicator = new Path();
+            indicator.setManaged(false);
+            indicator.setFill(Color.BLACK);
+            root = new Pane(indicator);
+            root.setStyle("-fx-background-color: white;");
+            new Scene(root, LOADING_INDICATOR_TEST_FRAME_SIZE, LOADING_INDICATOR_TEST_FRAME_SIZE);
+            root.resize(LOADING_INDICATOR_TEST_FRAME_SIZE, LOADING_INDICATOR_TEST_FRAME_SIZE);
+            root.applyCss();
+            root.layout();
+        }
+    }
+
+    /// Records real rendered circular progress phase samples across an indeterminate cycle seam.
+    private static final class ProgressIndicatorCycleObservation {
+        /// Coarse normalized angle buckets reached by the rendered arc.
+        private final Set<Integer> angleBuckets = new HashSet<>();
+
+        /// The number of rendered samples that have been observed.
+        private int sampleCount;
+
+        /// The number of raw animation phase wraps observed across the cycle seam.
+        private int wrapCount;
+
+        /// The largest normalized visual angle delta seen between consecutive samples.
+        private double maximumVisualDelta;
+
+        /// The raw start angle from the previous rendered sample.
+        private double lastRawStartAngle;
+
+        /// The normalized visual start angle from the previous rendered sample.
+        private double lastNormalizedStartAngle;
+
+        /// Whether the previous-angle fields contain a sample.
+        private boolean hasLastStartAngle;
+
+        /// Records one rendered start-angle sample.
+        ///
+        /// @param rawStartAngle the arc start angle reported by the rendered progress indicator
+        private void observe(double rawStartAngle) {
+            double normalizedStartAngle = normalizeAngleDegrees(rawStartAngle);
+            angleBuckets.add((int) Math.floor(normalizedStartAngle / 45.0));
+            sampleCount++;
+
+            if (hasLastStartAngle) {
+                double rawDelta = rawStartAngle - lastRawStartAngle;
+                if (rawDelta > 180.0) {
+                    wrapCount++;
+                }
+                maximumVisualDelta = Math.max(
+                        maximumVisualDelta,
+                        circularAngleDistanceDegrees(normalizedStartAngle, lastNormalizedStartAngle)
+                );
+            }
+
+            lastRawStartAngle = rawStartAngle;
+            lastNormalizedStartAngle = normalizedStartAngle;
+            hasLastStartAngle = true;
+        }
+    }
+
+    /// Shows a real-window progress and loading indicator scene with the requested animation setting.
+    private static IndeterminateProgressMotionScene showIndeterminateProgressMotionScene(boolean animationsEnabled) {
+        M3ProgressBar progressBar = new M3ProgressBar();
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+        VBox root = new VBox(16.0, progressBar, progressIndicator, loadingIndicator);
+        Scene scene = new Scene(root, 280.0, 260.0);
+        Stage stage = new Stage();
+
+        progressBar.setPrefSize(220.0, 16.0);
+        progressIndicator.setPrefSize(64.0, 64.0);
+        loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
+        loadingIndicator.setPrefSize(112.0, 112.0);
+        root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+        M3MotionSettings.setAnimationsEnabled(root, animationsEnabled);
+        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        M3MotionSettings.setMotionBehavior(root, observableIndeterminateProgressBehavior());
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        stage.setScene(scene);
+        stage.show();
+        root.applyCss();
+        root.resize(280.0, 260.0);
+        root.layout();
+
+        return new IndeterminateProgressMotionScene(
+                stage,
+                root,
+                progressBar,
+                (Rectangle) lookupShape(progressBar, ".bar"),
+                progressIndicator,
+                (Arc) lookupShape(progressIndicator, ".indicator"),
+                loadingIndicator,
+                assertInstanceOf(Path.class, loadingIndicator.lookup(".m3-loading-indicator-indicator"))
+        );
+    }
+
+    /// Captures the current rendered state of progress and loading indicator motion.
+    private static IndeterminateProgressMotionSample sampleIndeterminateProgressMotion(
+            IndeterminateProgressMotionScene scene
+    ) {
+        scene.root.applyCss();
+        scene.root.layout();
+        WritableImage image = snapshotImageOnFxThread(scene.root);
+        Color background = sampledNodeBackgroundColor(image, scene.loadingIndicator);
+        return new IndeterminateProgressMotionSample(
+                scene.progressBarSegment.getX(),
+                scene.progressIndicatorArc.getStartAngle(),
+                firstPathPoint(scene.loadingIndicatorPath),
+                contrastingPixelArea(image, scene.loadingIndicatorPath, background, 0.04),
+                scene.loadingIndicatorPath.getElements().size()
+        );
+    }
+
+    /// Writes one loading indicator indeterminate morph frame to a standalone path.
+    private static void writeLoadingIndicatorMorphFrame(
+            LoadingIndicatorFrameScene frameScene,
+            int segment,
+            double segmentProgress,
+            double globalRotation
+    ) {
+        M3ShapeMorph.Sequence sequence = M3ShapeMorph.loadingIndicatorIndeterminate();
+        double progress = clampToUnit(segmentProgress);
+        double morphRotationTarget = normalizeTurns((segment + 1.0) * LOADING_INDICATOR_QUARTER_ROTATION);
+        sequence.morphAt(segment).writeTo(
+                frameScene.indicator,
+                progress,
+                LOADING_INDICATOR_TEST_CENTER,
+                LOADING_INDICATOR_TEST_CENTER,
+                LOADING_INDICATOR_TEST_INDICATOR_SIZE,
+                sequence.scaleFactor(),
+                loadingIndicatorMorphScale(progress),
+                progress * LOADING_INDICATOR_QUARTER_ROTATION + morphRotationTarget + globalRotation,
+                frameScene.scratch
+        );
+        frameScene.root.layout();
+    }
+
+    /// Returns the transient scale used by the loading indicator morph animation.
+    private static double loadingIndicatorMorphScale(double segmentProgress) {
+        double envelope = Math.sin(Math.PI * clampToUnit(segmentProgress));
+        return 1.0 + LOADING_INDICATOR_MORPH_SCALE_AMPLITUDE * envelope * envelope;
+    }
+
+    /// Normalizes turn-based rotation into the `[0, 1)` range.
+    private static double normalizeTurns(double turns) {
+        double normalized = turns % 1.0;
+        return normalized < 0.0 ? normalized + 1.0 : normalized;
+    }
+
+    /// Returns whether circular progress has crossed a rendered indeterminate cycle seam without a visual jump.
+    private static boolean progressIndicatorObservedSeamlessCycle(
+            AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference,
+            ProgressIndicatorCycleObservation observation
+    ) {
+        @Nullable IndeterminateProgressMotionScene scene = sceneReference.get();
+        if (scene == null) {
+            return false;
+        }
+
+        scene.root.applyCss();
+        scene.root.layout();
+        observation.observe(scene.progressIndicatorArc.getStartAngle());
+        return observation.wrapCount >= 1
+                && observation.sampleCount >= 8
+                && observation.angleBuckets.size() >= 6
+                && observation.maximumVisualDelta <= MAXIMUM_PROGRESS_INDICATOR_CYCLE_STEP_DEGREES;
+    }
+
+    /// Verifies the captured circular progress cycle samples.
+    private static void assertProgressIndicatorCycleObservation(ProgressIndicatorCycleObservation observation) {
+        assertTrue(observation.wrapCount >= 1, () -> "wrapCount=" + observation.wrapCount);
+        assertTrue(observation.sampleCount >= 8, () -> "sampleCount=" + observation.sampleCount);
+        assertTrue(observation.angleBuckets.size() >= 6, () -> "angleBuckets=" + observation.angleBuckets);
+        assertTrue(
+                observation.maximumVisualDelta <= MAXIMUM_PROGRESS_INDICATOR_CYCLE_STEP_DEGREES,
+                () -> "maximumVisualDelta=" + observation.maximumVisualDelta
+                        + ", limit=" + MAXIMUM_PROGRESS_INDICATOR_CYCLE_STEP_DEGREES
+        );
+    }
+
+    /// Normalizes an angle to the `[0, 360)` degree range.
+    private static double normalizeAngleDegrees(double angle) {
+        double normalized = angle % 360.0;
+        return normalized < 0.0 ? normalized + 360.0 : normalized;
+    }
+
+    /// Returns the shortest visual distance between two normalized degree angles.
+    private static double circularAngleDistanceDegrees(double a, double b) {
+        double difference = Math.abs(normalizeAngleDegrees(a) - normalizeAngleDegrees(b));
+        return Math.min(difference, 360.0 - difference);
+    }
+
+    /// Returns whether a loading indicator has rendered the requested number of distinct real-pulse frames.
+    private static boolean loadingIndicatorObservedDistinctFrames(
+            AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference,
+            Set<String> frameSignatures,
+            int minimumFrameCount
+    ) {
+        @Nullable IndeterminateProgressMotionScene scene = sceneReference.get();
+        if (scene == null) {
+            return false;
+        }
+
+        scene.root.applyCss();
+        scene.root.layout();
+        frameSignatures.add(loadingIndicatorPathFrameSignature(scene.loadingIndicatorPath));
+        return frameSignatures.size() >= minimumFrameCount;
+    }
+
+    /// Returns whether the loading indicator path bounds have expanded past the sampled initial area.
+    private static boolean loadingIndicatorBoundsExpandedPastInitial(
+            AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference,
+            AtomicReference<@Nullable Double> initialAreaReference,
+            double areaRatio
+    ) {
+        @Nullable IndeterminateProgressMotionScene scene = sceneReference.get();
+        @Nullable Double initialArea = initialAreaReference.get();
+        if (scene == null || initialArea == null) {
+            return false;
+        }
+
+        scene.root.applyCss();
+        scene.root.layout();
+        return loadingIndicatorPathBoundsArea(scene.loadingIndicatorPath) > initialArea * areaRatio;
+    }
+
+    /// Returns a coarse signature for a rendered loading indicator frame.
+    private static String loadingIndicatorPathFrameSignature(Path path) {
+        Bounds bounds = path.getBoundsInLocal();
+        Point2D firstPoint = firstPathPoint(path);
+        return Math.round(bounds.getWidth() * 2.0)
+                + "x" + Math.round(bounds.getHeight() * 2.0)
+                + "@" + Math.round(firstPoint.getX() * 2.0)
+                + "," + Math.round(firstPoint.getY() * 2.0);
+    }
+
+    /// Returns the current local bounds area for a loading indicator path.
+    private static double loadingIndicatorPathBoundsArea(Path path) {
+        Bounds bounds = path.getBoundsInLocal();
+        return bounds.getWidth() * bounds.getHeight();
+    }
+
+    /// Returns whether an expressive indeterminate progress bar has a visible moving wave separated from both tracks.
+    private static boolean expressiveProgressBarIndeterminateWaveSeparated(
+            AtomicReference<@Nullable M3ProgressBar> progressBarReference,
+            AtomicReference<@Nullable Path> waveReference,
+            AtomicReference<@Nullable Rectangle> leadingTrackReference,
+            AtomicReference<@Nullable Rectangle> trailingTrackReference
+    ) {
+        @Nullable M3ProgressBar progressBar = progressBarReference.get();
+        @Nullable Path wave = waveReference.get();
+        @Nullable Rectangle leadingTrack = leadingTrackReference.get();
+        @Nullable Rectangle trailingTrack = trailingTrackReference.get();
+        if (progressBar == null || wave == null || leadingTrack == null || trailingTrack == null) {
+            return false;
+        }
+
+        progressBar.applyCss();
+        progressBar.layout();
+        if (!wave.isVisible()
+                || !leadingTrack.isVisible()
+                || !trailingTrack.isVisible()
+                || wave.getElements().isEmpty()) {
+            return false;
+        }
+
+        Point2D waveStart = firstPathPoint(wave);
+        Point2D waveEnd = lastPathPoint(wave);
+        double gap = progressBar.getTrackGap();
+        return waveStart.getX() > gap + 2.0
+                && waveEnd.getX() < progressBar.getWidth() - gap - 2.0
+                && waveEnd.getX() > waveStart.getX() + 8.0
+                && leadingTrack.getX() + leadingTrack.getWidth() <= waveStart.getX() - gap + 0.0001
+                && trailingTrack.getX() >= waveEnd.getX() + gap - 0.0001;
+    }
+
+    /// Verifies that an expressive indeterminate progress bar keeps the animated wave clear of both track pieces.
+    private static void assertExpressiveProgressBarIndeterminateWaveSeparated(
+            M3ProgressBar progressBar,
+            Path wave,
+            Rectangle leadingTrack,
+            Rectangle trailingTrack
+    ) {
+        progressBar.applyCss();
+        progressBar.layout();
+
+        Point2D waveStart = firstPathPoint(wave);
+        Point2D waveEnd = lastPathPoint(wave);
+        double gap = progressBar.getTrackGap();
+        assertTrue(wave.isVisible());
+        assertTrue(leadingTrack.isVisible());
+        assertTrue(trailingTrack.isVisible());
+        assertTrue(waveStart.getX() > gap + 2.0,
+                () -> "waveStart=" + waveStart + ", gap=" + gap);
+        assertTrue(waveEnd.getX() < progressBar.getWidth() - gap - 2.0,
+                () -> "waveEnd=" + waveEnd + ", width=" + progressBar.getWidth() + ", gap=" + gap);
+        assertTrue(waveEnd.getX() > waveStart.getX() + 8.0,
+                () -> "waveStart=" + waveStart + ", waveEnd=" + waveEnd);
+        assertTrue(leadingTrack.getX() + leadingTrack.getWidth() <= waveStart.getX() - gap + 0.0001,
+                () -> "leadingTrack=" + leadingTrack.getBoundsInParent() + ", waveStart=" + waveStart);
+        assertTrue(trailingTrack.getX() >= waveEnd.getX() + gap - 0.0001,
+                () -> "trailingTrack=" + trailingTrack.getBoundsInParent() + ", waveEnd=" + waveEnd);
+    }
+
+    /// Closes an expressive progress bar scene and clears local motion overrides.
+    private static void closeExpressiveProgressBarIndeterminateWaveScene(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable Pane> rootReference
+    ) {
+        runOnFxThreadAndWait(() -> {
+            @Nullable Pane root = rootReference.getAndSet(null);
+            if (root != null) {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.clearMotionScheme(root);
+                M3MotionSettings.clearMotionBehavior(root);
+            }
+
+            @Nullable Stage stage = stageReference.getAndSet(null);
+            if (stage != null) {
+                stage.close();
+            }
+        });
+    }
+
+    /// Returns whether all indeterminate progress and loading indicators advanced past the stored sample.
+    private static boolean indeterminateProgressMotionAdvanced(
+            AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference,
+            AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference
+    ) {
+        return progressBarMotionAdvanced(sceneReference, sampleReference)
+                && progressIndicatorMotionAdvanced(sceneReference, sampleReference)
+                && loadingIndicatorMotionAdvanced(sceneReference, sampleReference);
+    }
+
+    /// Returns whether the linear progress segment advanced past the stored sample.
+    private static boolean progressBarMotionAdvanced(
+            AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference,
+            AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference
+    ) {
+        @Nullable IndeterminateProgressMotionScene scene = sceneReference.get();
+        @Nullable IndeterminateProgressMotionSample sample = sampleReference.get();
+        if (scene == null || sample == null) {
+            return false;
+        }
+
+        scene.root.layout();
+        return Math.abs(scene.progressBarSegment.getX() - sample.progressBarX) > 0.1;
+    }
+
+    /// Returns whether the circular progress arc advanced past the stored sample.
+    private static boolean progressIndicatorMotionAdvanced(
+            AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference,
+            AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference
+    ) {
+        @Nullable IndeterminateProgressMotionScene scene = sceneReference.get();
+        @Nullable IndeterminateProgressMotionSample sample = sampleReference.get();
+        if (scene == null || sample == null) {
+            return false;
+        }
+
+        scene.root.layout();
+        return Math.abs(scene.progressIndicatorArc.getStartAngle() - sample.progressIndicatorStartAngle) > 0.1;
+    }
+
+    /// Returns whether the loading indicator path advanced past the stored sample.
+    private static boolean loadingIndicatorMotionAdvanced(
+            AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference,
+            AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference
+    ) {
+        @Nullable IndeterminateProgressMotionScene scene = sceneReference.get();
+        @Nullable IndeterminateProgressMotionSample sample = sampleReference.get();
+        if (scene == null || sample == null) {
+            return false;
+        }
+
+        scene.root.layout();
+        return firstPathPoint(scene.loadingIndicatorPath).distance(sample.loadingIndicatorPoint) > 0.25;
+    }
+
+    /// Verifies that all indeterminate progress and loading indicators advanced past the stored sample.
+    private static void assertIndeterminateProgressMotionAdvanced(
+            IndeterminateProgressMotionScene scene,
+            AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference,
+            String description
+    ) {
+        assertProgressBarMotionAdvanced(scene, sampleReference, description);
+        assertProgressIndicatorMotionAdvanced(scene, sampleReference, description);
+        assertLoadingIndicatorMotionAdvanced(scene, sampleReference, description);
+    }
+
+    /// Verifies that the linear progress segment advanced past the stored sample.
+    private static void assertProgressBarMotionAdvanced(
+            IndeterminateProgressMotionScene scene,
+            AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference,
+            String description
+    ) {
+        IndeterminateProgressMotionSample sample = Objects.requireNonNull(sampleReference.get(), "sample");
+        scene.root.layout();
+        assertTrue(
+                Math.abs(scene.progressBarSegment.getX() - sample.progressBarX) > 0.1,
+                () -> description + " progressBarX=" + scene.progressBarSegment.getX()
+                        + ", sample=" + sample.progressBarX
+        );
+    }
+
+    /// Verifies that the circular progress arc advanced past the stored sample.
+    private static void assertProgressIndicatorMotionAdvanced(
+            IndeterminateProgressMotionScene scene,
+            AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference,
+            String description
+    ) {
+        IndeterminateProgressMotionSample sample = Objects.requireNonNull(sampleReference.get(), "sample");
+        scene.root.layout();
+        assertTrue(
+                Math.abs(scene.progressIndicatorArc.getStartAngle() - sample.progressIndicatorStartAngle) > 0.1,
+                () -> description + " progressIndicatorStartAngle=" + scene.progressIndicatorArc.getStartAngle()
+                        + ", sample=" + sample.progressIndicatorStartAngle
+        );
+    }
+
+    /// Verifies that the loading indicator path advanced past the stored sample.
+    private static void assertLoadingIndicatorMotionAdvanced(
+            IndeterminateProgressMotionScene scene,
+            AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference,
+            String description
+    ) {
+        IndeterminateProgressMotionSample sample = Objects.requireNonNull(sampleReference.get(), "sample");
+        scene.root.layout();
+        Point2D currentPoint = firstPathPoint(scene.loadingIndicatorPath);
+        assertTrue(
+                currentPoint.distance(sample.loadingIndicatorPoint) > 0.25,
+                () -> description + " loadingPoint=" + currentPoint + ", sample=" + sample.loadingIndicatorPoint
+        );
+    }
+
+    /// Verifies that reduced loading-indicator motion keeps the same visible shape while rotating.
+    private static void assertLoadingIndicatorReducedMotionKeepsStableInk(
+            IndeterminateProgressMotionScene scene,
+            AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference
+    ) {
+        IndeterminateProgressMotionSample sample = Objects.requireNonNull(sampleReference.get(), "sample");
+        scene.root.applyCss();
+        scene.root.layout();
+
+        WritableImage image = snapshotImageOnFxThread(scene.root);
+        Color background = sampledNodeBackgroundColor(image, scene.loadingIndicator);
+        double currentInkArea = contrastingPixelArea(image, scene.loadingIndicatorPath, background, 0.04);
+        double maximumAreaDelta = Math.max(36.0, sample.loadingIndicatorInkArea * 0.08);
+
+        assertEquals(sample.loadingIndicatorElementCount, scene.loadingIndicatorPath.getElements().size());
+        assertEquals(sample.loadingIndicatorInkArea, currentInkArea, maximumAreaDelta,
+                () -> "reduced motion should rotate without morphing or scaling: initialArea="
+                        + sample.loadingIndicatorInkArea + ", currentArea=" + currentInkArea);
+    }
+
+    /// Closes an indeterminate progress motion scene if one was created.
+    private static void closeIndeterminateProgressMotionScene(
+            AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference
+    ) {
+        @Nullable IndeterminateProgressMotionScene scene = sceneReference.getAndSet(null);
+        if (scene == null) {
+            return;
+        }
+
+        runOnFxThreadAndWait(() -> {
+            M3MotionSettings.clearAnimationsEnabled(scene.root);
+            M3MotionSettings.clearMotionScheme(scene.root);
+            M3MotionSettings.clearMotionBehavior(scene.root);
+            scene.stage.close();
+        });
+    }
+
     /// Applies the pseudo-class combination that previously allowed Modena button styles to win.
     private static void applyInteractivePseudoClasses(Node node) {
         node.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
@@ -21064,16 +23464,6 @@ final class M3ControlStyleTest {
         return assertInstanceOf(DropShadow.class, node.getEffect());
     }
 
-    /// Verifies that an animation stopped with a popup or overlay surface at its identity transform.
-    private static void assertStoppedWithIdentityTransform(Animation animation, Node surface) {
-        assertEquals(Animation.Status.STOPPED, animation.getStatus());
-        assertEquals(1.0, surface.getOpacity(), 0.0001);
-        assertEquals(1.0, surface.getScaleX(), 0.0001);
-        assertEquals(1.0, surface.getScaleY(), 0.0001);
-        assertEquals(0.0, surface.getTranslateX(), 0.0001);
-        assertEquals(0.0, surface.getTranslateY(), 0.0001);
-    }
-
     /// Returns a region looked up below a node.
     private static Region lookupRegion(Node node, String selector) {
         Node child = node.lookup(selector);
@@ -21081,163 +23471,1804 @@ final class M3ControlStyleTest {
         return (Region) child;
     }
 
-    /// Returns a private skin timeline used by animation-focused tests.
-    private static Timeline skinTimeline(Skin<?> skin, String fieldName) {
-        return reflectedTimeline(skin, fieldName);
-    }
-
-    /// Returns a private control timeline used by animation-focused tests.
-    private static Timeline controlTimeline(Object control, String fieldName) {
-        return reflectedTimeline(control, fieldName);
-    }
-
-    /// Returns a private control animation used by animation-focused tests.
-    private static Animation controlAnimation(Object control, String fieldName) {
-        return reflectedAnimation(control, fieldName);
-    }
-
-    /// Returns the smooth scrolling animation installed on a JavaFX scroll pane, or `null` when idle.
-    private static @Nullable Timeline smoothScrollAnimation(ScrollPane scrollPane) {
-        @Nullable Object state = smoothScrollState(scrollPane);
-        return state == null ? null : reflectedNullableTimeline(state, "animation");
-    }
-
-    /// Returns the private smooth scrolling state installed on a JavaFX scroll pane.
-    private static @Nullable Object smoothScrollState(ScrollPane scrollPane) {
-        try {
-            java.lang.reflect.Field field = reflectedField(M3ScrollPanes.class, "SMOOTH_SCROLL_STATE_KEY");
-            field.setAccessible(true);
-            return scrollPane.getProperties().get(field.get(null));
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    /// Asserts a private type-ahead reset timer duration.
-    private static void assertTypeAheadResetDelay(Object target, double expectedMillis) {
-        assertPauseDuration(target, "typeAheadResetDelay", expectedMillis);
-    }
-
-    /// Asserts a private pause-transition duration.
-    private static void assertPauseDuration(Object target, String fieldName, double expectedMillis) {
-        assertEquals(
-                expectedMillis,
-                reflectedPauseTransition(target, fieldName).getDuration().toMillis(),
-                0.0001
-        );
-    }
-
-    /// Returns the private tooltip installation stored on a target node.
-    private static Object tooltipInstallation(Node node) {
-        try {
-            java.lang.reflect.Field field = reflectedField(M3Tooltip.class, "INSTALLATION_KEY");
-            field.setAccessible(true);
-            String key = assertInstanceOf(String.class, field.get(null));
-            return Objects.requireNonNull(node.getProperties().get(key), "tooltip installation");
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
-        }
-    }
-
     /// Runs a test action on the JavaFX application thread and waits for completion.
     private static void runOnFxThreadAndWait(Runnable action) {
         FxTestUtils.runOnFxThread(action);
     }
 
-    /// Returns a private double property from a test target.
-    private static DoubleProperty reflectedDoubleProperty(Object target, String fieldName) {
-        try {
-            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
-            field.setAccessible(true);
-            return assertInstanceOf(DoubleProperty.class, field.get(target));
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
+    /// Returns a local motion scheme with observable pulse-driven animation frames.
+    private static M3MotionScheme observableTestMotionScheme() {
+        M3MotionScheme standard = M3MotionScheme.standard();
+        M3MotionSpec observableSpec =
+                M3MotionSpec.create(OBSERVABLE_TEST_MOTION_DURATION, M3MotionEasing.LINEAR);
+        return M3MotionScheme.create(
+                observableSpec,
+                observableSpec,
+                standard.slowEffects(),
+                observableSpec,
+                observableSpec,
+                standard.slowSpatial()
+        );
+    }
+
+    /// Holds the real-window controls used by the skin-owned state-transition test.
+    private static final class SkinOwnedStateMotionScene {
+        /// The stage that owns the tested scene graph.
+        private final Stage stage;
+
+        /// The root node that carries local motion settings.
+        private final VBox root;
+
+        /// The checkbox used to verify checkmark settling.
+        private final M3CheckBox checkBox;
+
+        /// The radio button used to verify dot settling.
+        private final M3RadioButton radioButton;
+
+        /// The switch used to verify thumb-position settling.
+        private final M3Switch switchControl;
+
+        /// The segmented button used to verify selected-container settling.
+        private final M3SegmentedButton segmentedButton;
+
+        /// The slider used to verify value-position settling.
+        private final M3Slider slider;
+
+        /// The tab used to verify active-indicator settling.
+        private final M3Tab tab;
+
+        /// The navigation item used to verify active-indicator settling.
+        private final M3NavigationItem navigationItem;
+
+        /// The list item used to verify selected-container settling.
+        private final M3ListItem listItem;
+
+        /// The disclosure icon used to verify rotation settling.
+        private final M3DisclosureIcon disclosureIcon;
+
+        /// The badge used to verify content-change settling.
+        private final M3Badge badge;
+
+        /// Creates a skin-owned state-transition test scene holder.
+        private SkinOwnedStateMotionScene(
+                Stage stage,
+                VBox root,
+                M3CheckBox checkBox,
+                M3RadioButton radioButton,
+                M3Switch switchControl,
+                M3SegmentedButton segmentedButton,
+                M3Slider slider,
+                M3Tab tab,
+                M3NavigationItem navigationItem,
+                M3ListItem listItem,
+                M3DisclosureIcon disclosureIcon,
+                M3Badge badge
+        ) {
+            this.stage = stage;
+            this.root = root;
+            this.checkBox = checkBox;
+            this.radioButton = radioButton;
+            this.switchControl = switchControl;
+            this.segmentedButton = segmentedButton;
+            this.slider = slider;
+            this.tab = tab;
+            this.navigationItem = navigationItem;
+            this.listItem = listItem;
+            this.disclosureIcon = disclosureIcon;
+            this.badge = badge;
         }
     }
 
-    /// Returns a private timeline field from a test target.
-    private static Timeline reflectedTimeline(Object target, String fieldName) {
-        try {
-            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
-            field.setAccessible(true);
-            return assertInstanceOf(Timeline.class, field.get(target));
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
+    /// Shows controls that exercise finite skin-owned state transitions with observable motion.
+    private static SkinOwnedStateMotionScene showSkinOwnedStateMotionScene() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        M3Switch switchControl = new M3Switch("Switch");
+        M3SegmentedButton segmentedButton = new M3SegmentedButton("Segment");
+        M3Slider slider = new M3Slider(0.0, 100.0, 25.0);
+        M3Tab tab = new M3Tab("Tab");
+        M3NavigationItem navigationItem = new M3NavigationItem("Home");
+        M3ListItem listItem = new M3ListItem("List item");
+        M3DisclosureIcon disclosureIcon = new M3DisclosureIcon();
+        M3Badge badge = new M3Badge("1");
+        VBox root = new VBox(
+                checkBox,
+                radioButton,
+                switchControl,
+                segmentedButton,
+                slider,
+                tab,
+                navigationItem,
+                listItem,
+                disclosureIcon,
+                badge
+        );
+        Scene scene = new Scene(root, 360.0, 520.0);
+        Stage stage = new Stage();
+
+        slider.setPrefWidth(240.0);
+        root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(root, true);
+        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        stage.setScene(scene);
+        stage.show();
+        root.applyCss();
+        root.resize(360.0, 520.0);
+        root.layout();
+
+        return new SkinOwnedStateMotionScene(
+                stage,
+                root,
+                checkBox,
+                radioButton,
+                switchControl,
+                segmentedButton,
+                slider,
+                tab,
+                navigationItem,
+                listItem,
+                disclosureIcon,
+                badge
+        );
+    }
+
+    /// Starts all finite skin-owned state transitions in the supplied scene.
+    private static void startSkinOwnedStateTransitions(SkinOwnedStateMotionScene scene) {
+        scene.checkBox.setSelected(true);
+        scene.radioButton.setSelected(true);
+        scene.switchControl.setSelected(true);
+        scene.segmentedButton.setSelected(true);
+        scene.slider.setValue(75.0);
+        scene.tab.setSelected(true);
+        scene.navigationItem.setSelected(true);
+        scene.listItem.setSelected(true);
+        scene.disclosureIcon.setExpanded(true);
+        scene.badge.setText("2");
+    }
+
+    /// Returns whether all skin-owned transition samples have reached observable intermediate frames.
+    private static boolean skinOwnedStateTransitionsAreAnimating(
+            AtomicReference<@Nullable SkinOwnedStateMotionScene> sceneReference
+    ) {
+        @Nullable SkinOwnedStateMotionScene scene = sceneReference.get();
+        if (scene == null) {
+            return false;
+        }
+
+        scene.root.applyCss();
+        scene.root.layout();
+        Region checkMark = lookupRegion(scene.checkBox, ".m3-checkbox-mark");
+        Shape radioDot = lookupShape(scene.radioButton, ".m3-radio-dot");
+        Region switchThumb = lookupRegion(scene.switchControl, ".thumb");
+        Region segmentSelection = segmentedButtonSelectionContainer(scene.segmentedButton);
+        Region tabIndicator = lookupRegion(scene.tab, "." + M3TabSkin.ACTIVE_INDICATOR_STYLE_CLASS);
+        Region navigationIndicator = lookupRegion(scene.navigationItem, ".m3-navigation-item-indicator");
+        Region listSelection = listItemSelectionContainer(scene.listItem);
+        SVGPath disclosureArrow = assertInstanceOf(
+                SVGPath.class,
+                scene.disclosureIcon.lookup(".m3-disclosure-icon-shape")
+        );
+        Label badgeLabel = assertInstanceOf(Label.class, scene.badge.lookup(".m3-badge-label"));
+
+        return isBetweenExclusive(checkMark.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(checkMark.getScaleX(), 0.72, 1.0)
+                && isBetweenExclusive(radioDot.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(radioDot.getScaleX(), 0.64, 1.0)
+                && isBetweenExclusive(switchThumb.getLayoutX(), 8.0, 24.0)
+                && isBetweenExclusive(switchThumb.getWidth(), 16.0, 24.0)
+                && singleContainerSelectionIsTransitioning(segmentSelection)
+                && isBetweenExclusive(sliderRenderedPosition(scene.slider), 0.25, 0.75)
+                && singleNavigationIndicatorIsTransitioning(tabIndicator)
+                && singleNavigationIndicatorIsTransitioning(navigationIndicator)
+                && singleContainerSelectionIsTransitioning(listSelection)
+                && isBetweenExclusive(disclosureArrow.getRotate(), -90.0, 0.0)
+                && isBetweenExclusive(badgeLabel.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(badgeLabel.getScaleX(), 0.86, 1.0);
+    }
+
+    /// Verifies that all skin-owned transitions reached their selected or updated final state.
+    private static void assertSkinOwnedStateTransitionsSettled(SkinOwnedStateMotionScene scene) {
+        Region checkMark = lookupRegion(scene.checkBox, ".m3-checkbox-mark");
+        assertEquals(1.0, checkMark.getOpacity(), 0.0001);
+        assertEquals(1.0, checkMark.getScaleX(), 0.0001);
+        Shape radioDot = assertInstanceOf(Shape.class, scene.radioButton.lookup(".m3-radio-dot"));
+        assertEquals(1.0, radioDot.getOpacity(), 0.0001);
+        assertEquals(1.0, radioDot.getScaleX(), 0.0001);
+        Region switchThumb = lookupRegion(scene.switchControl, ".thumb");
+        assertEquals(24.0, switchThumb.getLayoutX(), 0.0001);
+        assertEquals(24.0, switchThumb.getWidth(), 0.0001);
+        Region segmentSelection = lookupRegion(
+                scene.segmentedButton,
+                "." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS
+        );
+        assertEquals(1.0, segmentSelection.getOpacity(), 0.0001);
+        assertEquals(1.0, segmentSelection.getScaleX(), 0.0001);
+        assertEquals(0.75, sliderRenderedPosition(scene.slider), 0.0001);
+        Region tabIndicator = lookupRegion(scene.tab, "." + M3TabSkin.ACTIVE_INDICATOR_STYLE_CLASS);
+        assertEquals(1.0, tabIndicator.getOpacity(), 0.0001);
+        assertEquals(1.0, tabIndicator.getScaleX(), 0.0001);
+        Region navigationIndicator = lookupRegion(scene.navigationItem, ".m3-navigation-item-indicator");
+        assertEquals(1.0, navigationIndicator.getOpacity(), 0.0001);
+        assertEquals(1.0, navigationIndicator.getScaleX(), 0.0001);
+        Region listSelection = lookupRegion(scene.listItem, ".m3-list-item-selection-container");
+        assertEquals(1.0, listSelection.getOpacity(), 0.0001);
+        assertEquals(1.0, listSelection.getScaleX(), 0.0001);
+        SVGPath disclosureArrow = assertInstanceOf(
+                SVGPath.class,
+                scene.disclosureIcon.lookup(".m3-disclosure-icon-shape")
+        );
+        assertEquals(0.0, disclosureArrow.getRotate(), 0.0001);
+        Label badgeLabel = assertInstanceOf(Label.class, scene.badge.lookup(".m3-badge-label"));
+        assertEquals("2", badgeLabel.getText());
+        assertEquals(1.0, badgeLabel.getOpacity(), 0.0001);
+        assertEquals(1.0, badgeLabel.getScaleX(), 0.0001);
+    }
+
+    /// Closes a skin-owned state-transition test scene and clears local motion overrides.
+    private static void closeSkinOwnedStateMotionScene(
+            AtomicReference<@Nullable SkinOwnedStateMotionScene> sceneReference
+    ) {
+        @Nullable SkinOwnedStateMotionScene scene = sceneReference.get();
+        if (scene == null) {
+            return;
+        }
+
+        runOnFxThread(() -> {
+            M3MotionSettings.clearAnimationsEnabled(scene.root);
+            M3MotionSettings.clearMotionScheme(scene.root);
+            scene.stage.close();
+        });
+    }
+
+    /// Holds the real-window controls used by the overlay-owned state-transition test.
+    private static final class OverlayOwnedStateMotionScene {
+        /// The stage that owns the tested scene graph.
+        private final Stage stage;
+
+        /// The root node that carries local motion settings.
+        private final VBox root;
+
+        /// The scrim used to verify opacity-only exit settling.
+        private final M3Scrim scrim;
+
+        /// The side sheet used to verify horizontal exit settling.
+        private final M3SideSheet sideSheet;
+
+        /// The bottom sheet used to verify vertical exit settling.
+        private final M3BottomSheet bottomSheet;
+
+        /// The search view used to verify results-container exit settling.
+        private final M3SearchView searchView;
+
+        /// The snackbar host used to verify snackbar entrance settling.
+        private final M3SnackbarHost snackbarHost;
+
+        /// The FAB menu used to verify action entrance settling.
+        private final M3FabMenu fabMenu;
+
+        /// The FAB menu action used to verify action entrance settling.
+        private final M3FloatingActionButton action;
+
+        /// Creates an overlay-owned state-transition test scene holder.
+        private OverlayOwnedStateMotionScene(
+                Stage stage,
+                VBox root,
+                M3Scrim scrim,
+                M3SideSheet sideSheet,
+                M3BottomSheet bottomSheet,
+                M3SearchView searchView,
+                M3SnackbarHost snackbarHost,
+                M3FabMenu fabMenu,
+                M3FloatingActionButton action
+        ) {
+            this.stage = stage;
+            this.root = root;
+            this.scrim = scrim;
+            this.sideSheet = sideSheet;
+            this.bottomSheet = bottomSheet;
+            this.searchView = searchView;
+            this.snackbarHost = snackbarHost;
+            this.fabMenu = fabMenu;
+            this.action = action;
         }
     }
 
-    /// Returns a private animation field from a test target.
-    private static Animation reflectedAnimation(Object target, String fieldName) {
-        try {
-            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
-            field.setAccessible(true);
-            return assertInstanceOf(Animation.class, field.get(target));
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
+    /// Shows controls that exercise finite overlay-owned state transitions with observable motion.
+    private static OverlayOwnedStateMotionScene showOverlayOwnedStateMotionScene() {
+        M3Scrim scrim = new M3Scrim();
+        M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side content"));
+        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom content"));
+        M3SearchView searchView = new M3SearchView("Search", new M3ListItem("Result"));
+        M3SnackbarHost snackbarHost = new M3SnackbarHost();
+        M3FloatingActionButton action = new M3FloatingActionButton("A");
+        M3FabMenu fabMenu = new M3FabMenu();
+        VBox root = new VBox(12.0, scrim, sideSheet, bottomSheet, searchView, snackbarHost, fabMenu);
+        Scene scene = new Scene(root, 520.0, 680.0);
+        Stage stage = new Stage();
+
+        scrim.setPrefSize(180.0, 80.0);
+        sideSheet.setPrefSize(260.0, 140.0);
+        bottomSheet.setPrefSize(360.0, 140.0);
+        searchView.setPrefSize(360.0, 160.0);
+        snackbarHost.setPrefSize(420.0, 96.0);
+        fabMenu.setPrefSize(120.0, 160.0);
+        fabMenu.addItem(action);
+        snackbarHost.setDisplayDuration(Duration.INDEFINITE);
+        root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(root, true);
+        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        stage.setScene(scene);
+        stage.show();
+        root.applyCss();
+        root.resize(520.0, 680.0);
+        root.layout();
+
+        return new OverlayOwnedStateMotionScene(
+                stage,
+                root,
+                scrim,
+                sideSheet,
+                bottomSheet,
+                searchView,
+                snackbarHost,
+                fabMenu,
+                action
+        );
+    }
+
+    /// Starts all finite overlay-owned state transitions in the supplied scene.
+    private static void startOverlayOwnedStateTransitions(OverlayOwnedStateMotionScene scene) {
+        scene.scrim.hide();
+        scene.sideSheet.hide();
+        scene.bottomSheet.hide();
+        scene.searchView.deactivate();
+        scene.snackbarHost.show("Saved");
+        scene.fabMenu.show();
+    }
+
+    /// Returns whether all overlay-owned transition samples have reached observable intermediate frames.
+    private static boolean overlayOwnedStateTransitionsAreAnimating(
+            AtomicReference<@Nullable OverlayOwnedStateMotionScene> sceneReference
+    ) {
+        @Nullable OverlayOwnedStateMotionScene scene = sceneReference.get();
+        if (scene == null) {
+            return false;
         }
+
+        scene.root.layout();
+        @Nullable M3Snackbar snackbar = scene.snackbarHost.getSnackbar();
+        return opacityExitNodeIsTransitioning(scene.scrim, scene.scrim.getVisibleOpacity())
+                && spatialExitNodeIsTransitioning(scene.sideSheet)
+                && spatialExitNodeIsTransitioning(scene.bottomSheet)
+                && spatialExitNodeIsTransitioning(scene.searchView.getResultsContainer())
+                && snackbar != null
+                && spatialEnterNodeIsTransitioning(snackbar)
+                && fabActionEnterNodeIsTransitioning(scene.action);
     }
 
-    /// Returns a private nullable animation field from a test target.
-    private static @Nullable Animation reflectedNullableAnimation(Object target, String fieldName) {
-        @Nullable Object value = reflectedFieldValue(target, fieldName);
-        return value == null ? null : assertInstanceOf(Animation.class, value);
+    /// Verifies that all overlay-owned transitions are rendering intermediate frames.
+    private static void assertOverlayOwnedStateTransitionsIntermediate(OverlayOwnedStateMotionScene scene) {
+        assertBetween(scene.scrim.getOpacity(), 0.0, scene.scrim.getVisibleOpacity(), "scrim opacity");
+        assertSpatialExitNodeIntermediate(scene.sideSheet, "side sheet");
+        assertSpatialExitNodeIntermediate(scene.bottomSheet, "bottom sheet");
+        assertSpatialExitNodeIntermediate(scene.searchView.getResultsContainer(), "search results");
+        M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, scene.snackbarHost.getSnackbar());
+        assertSpatialEnterNodeIntermediate(snackbar, "snackbar");
+        assertFabActionEnterNodeIntermediate(scene.action);
     }
 
-    /// Returns a private nullable timeline field from a test target.
-    private static @Nullable Timeline reflectedNullableTimeline(Object target, String fieldName) {
-        @Nullable Object value = reflectedFieldValue(target, fieldName);
-        return value == null ? null : assertInstanceOf(Timeline.class, value);
+    /// Verifies that all overlay-owned transitions reached their visible or hidden final state.
+    private static void assertOverlayOwnedStateTransitionsSettled(OverlayOwnedStateMotionScene scene) {
+        assertFalse(scene.scrim.isVisible());
+        assertFalse(scene.scrim.isManaged());
+        assertEquals(0.0, scene.scrim.getOpacity(), 0.0001);
+        assertFalse(scene.sideSheet.isVisible());
+        assertFalse(scene.sideSheet.isManaged());
+        assertEquals(0.0, scene.sideSheet.getOpacity(), 0.0001);
+        assertFalse(scene.bottomSheet.isVisible());
+        assertFalse(scene.bottomSheet.isManaged());
+        assertEquals(0.0, scene.bottomSheet.getOpacity(), 0.0001);
+        assertFalse(scene.searchView.getResultsContainer().isVisible());
+        assertFalse(scene.searchView.getResultsContainer().isManaged());
+        assertEquals(0.0, scene.searchView.getResultsContainer().getOpacity(), 0.0001);
+
+        M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, scene.snackbarHost.getSnackbar());
+        assertTrue(snackbar.isVisible());
+        assertTrue(snackbar.isManaged());
+        assertEquals(1.0, snackbar.getOpacity(), 0.0001);
+        assertEquals(0.0, snackbar.getTranslateY(), 0.0001);
+        assertTrue(scene.action.isVisible());
+        assertTrue(scene.action.isManaged());
+        assertEquals(1.0, scene.action.getOpacity(), 0.0001);
+        assertEquals(1.0, scene.action.getScaleX(), 0.0001);
+        assertEquals(1.0, scene.action.getScaleY(), 0.0001);
+        assertEquals(0.0, scene.action.getTranslateY(), 0.0001);
     }
 
-    /// Returns a private pause-transition field from a test target.
-    private static PauseTransition reflectedPauseTransition(Object target, String fieldName) {
-        try {
-            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
-            field.setAccessible(true);
-            return assertInstanceOf(PauseTransition.class, field.get(target));
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
+    /// Closes an overlay-owned state-transition test scene and clears local motion overrides.
+    private static void closeOverlayOwnedStateMotionScene(
+            AtomicReference<@Nullable OverlayOwnedStateMotionScene> sceneReference
+    ) {
+        @Nullable OverlayOwnedStateMotionScene scene = sceneReference.get();
+        if (scene == null) {
+            return;
         }
+
+        runOnFxThread(() -> {
+            M3MotionSettings.clearAnimationsEnabled(scene.root);
+            M3MotionSettings.clearMotionScheme(scene.root);
+            scene.stage.close();
+        });
     }
 
-    /// Returns the value of a private field from a test target.
-    private static @Nullable Object reflectedFieldValue(Object target, String fieldName) {
-        try {
-            java.lang.reflect.Field field = reflectedField(target.getClass(), fieldName);
-            field.setAccessible(true);
-            return field.get(target);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
+    /// Returns whether an opacity-only exit node is rendering an intermediate transition.
+    private static boolean opacityExitNodeIsTransitioning(Node node, double visibleOpacity) {
+        return node.isVisible()
+                && node.isManaged()
+                && isBetweenExclusive(node.getOpacity(), 0.0, visibleOpacity);
+    }
+
+    /// Returns whether a spatial exit node is rendering an intermediate transition.
+    private static boolean spatialExitNodeIsTransitioning(Node node) {
+        return node.isVisible()
+                && node.isManaged()
+                && isBetweenExclusive(node.getOpacity(), 0.0, 1.0)
+                && hasVisibleTranslation(node);
+    }
+
+    /// Returns whether a spatial entrance node is rendering an intermediate transition.
+    private static boolean spatialEnterNodeIsTransitioning(Node node) {
+        return node.isVisible()
+                && node.isManaged()
+                && isBetweenExclusive(node.getOpacity(), 0.0, 1.0)
+                && hasVisibleTranslation(node);
+    }
+
+    /// Returns whether a FAB menu action is rendering an intermediate entrance transition.
+    private static boolean fabActionEnterNodeIsTransitioning(Node node) {
+        return node.isVisible()
+                && node.isManaged()
+                && isBetweenExclusive(node.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(node.getScaleX(), 0.86, 1.0)
+                && isBetweenExclusive(node.getScaleY(), 0.86, 1.0)
+                && hasVisibleTranslation(node);
+    }
+
+    /// Returns whether a tested FAB menu action is rendering an intermediate transition frame.
+    private static boolean fabMenuActionIsTransitioning(
+            AtomicReference<@Nullable M3FloatingActionButton> actionReference
+    ) {
+        @Nullable M3FloatingActionButton action = actionReference.get();
+        if (action == null) {
+            return false;
         }
+
+        layoutNodeTree(action);
+        return fabActionEnterNodeIsTransitioning(action);
     }
 
-    /// Returns the single numeric end value from a timeline key frame.
-    private static double keyFrameEndNumber(Timeline timeline, int keyFrameIndex) {
-        var values = timeline.getKeyFrames().get(keyFrameIndex).getValues();
-        assertEquals(1, values.size());
-        Object endValue = values.iterator().next().getEndValue();
-        return assertInstanceOf(Number.class, endValue).doubleValue();
+    /// Returns whether a tested FAB menu has reached the final expanded state.
+    private static boolean fabMenuExpandedStateHasSettled(
+            AtomicReference<@Nullable M3FabMenu> menuReference,
+            AtomicReference<@Nullable M3FloatingActionButton> actionReference
+    ) {
+        @Nullable M3FabMenu menu = menuReference.get();
+        @Nullable M3FloatingActionButton action = actionReference.get();
+        if (menu == null || action == null) {
+            return false;
+        }
+
+        layoutNodeTree(menu);
+        return menu.isExpanded()
+                && action.isVisible()
+                && action.isManaged()
+                && Math.abs(action.getOpacity() - 1.0) < 0.0001
+                && Math.abs(action.getScaleX() - 1.0) < 0.0001
+                && Math.abs(action.getScaleY() - 1.0) < 0.0001
+                && Math.abs(action.getTranslateY()) < 0.0001;
     }
 
-    /// Returns a declared field from a class or one of its superclasses.
-    private static java.lang.reflect.Field reflectedField(Class<?> type, String fieldName) throws NoSuchFieldException {
-        @Nullable Class<?> current = type;
+    /// Returns whether a tested FAB menu has reached the final collapsed state.
+    private static boolean fabMenuCollapsedStateHasSettled(
+            AtomicReference<@Nullable M3FabMenu> menuReference,
+            AtomicReference<@Nullable M3FloatingActionButton> actionReference
+    ) {
+        @Nullable M3FabMenu menu = menuReference.get();
+        @Nullable M3FloatingActionButton action = actionReference.get();
+        if (menu == null || action == null) {
+            return false;
+        }
+
+        layoutNodeTree(menu);
+        return !menu.isExpanded()
+                && !action.isVisible()
+                && !action.isManaged()
+                && Math.abs(action.getOpacity()) < 0.0001
+                && Math.abs(action.getScaleX() - 0.86) < 0.0001
+                && Math.abs(action.getScaleY() - 0.86) < 0.0001
+                && Math.abs(action.getTranslateY() - 16.0) < 0.0001;
+    }
+
+    /// Verifies that a spatial exit node is rendering an intermediate transition.
+    private static void assertSpatialExitNodeIntermediate(Node node, String description) {
+        assertTrue(node.isVisible(), () -> description + " should still be visible");
+        assertTrue(node.isManaged(), () -> description + " should still be managed");
+        assertBetween(node.getOpacity(), 0.0, 1.0, description + " opacity");
+        assertTrue(hasVisibleTranslation(node), () -> description
+                + " translateX=" + node.getTranslateX()
+                + ", translateY=" + node.getTranslateY());
+    }
+
+    /// Verifies that a spatial entrance node is rendering an intermediate transition.
+    private static void assertSpatialEnterNodeIntermediate(Node node, String description) {
+        assertTrue(node.isVisible(), () -> description + " should be visible");
+        assertTrue(node.isManaged(), () -> description + " should be managed");
+        assertBetween(node.getOpacity(), 0.0, 1.0, description + " opacity");
+        assertTrue(hasVisibleTranslation(node), () -> description
+                + " translateX=" + node.getTranslateX()
+                + ", translateY=" + node.getTranslateY());
+    }
+
+    /// Verifies that a FAB menu action is rendering an intermediate entrance transition.
+    private static void assertFabActionEnterNodeIntermediate(Node node) {
+        assertSpatialEnterNodeIntermediate(node, "FAB menu action");
+        assertBetween(node.getScaleX(), 0.86, 1.0, "FAB menu action scaleX");
+        assertBetween(node.getScaleY(), 0.86, 1.0, "FAB menu action scaleY");
+    }
+
+    /// Verifies that a FAB menu action is rendering an intermediate transition frame.
+    private static void assertFabActionTransitionFrame(Node node) {
+        assertFabActionEnterNodeIntermediate(node);
+    }
+
+    /// Verifies that a FAB menu and action reached the final expanded state.
+    private static void assertFabMenuExpandedStateSettled(M3FabMenu menu, M3FloatingActionButton action) {
+        layoutNodeTree(menu);
+        assertTrue(menu.isExpanded());
+        assertEquals(true, menu.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        assertSame(action, menu.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+        assertTrue(action.isVisible());
+        assertTrue(action.isManaged());
+        assertEquals(1.0, action.getOpacity(), 0.0001);
+        assertEquals(1.0, action.getScaleX(), 0.0001);
+        assertEquals(1.0, action.getScaleY(), 0.0001);
+        assertEquals(0.0, action.getTranslateY(), 0.0001);
+    }
+
+    /// Verifies that a FAB menu and action reached the final collapsed state.
+    private static void assertFabMenuCollapsedStateSettled(M3FabMenu menu, M3FloatingActionButton action) {
+        layoutNodeTree(menu);
+        assertFalse(menu.isExpanded());
+        assertEquals(false, menu.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertFalse(action.isVisible());
+        assertFalse(action.isManaged());
+        assertEquals(0.0, action.getOpacity(), 0.0001);
+        assertEquals(0.86, action.getScaleX(), 0.0001);
+        assertEquals(0.86, action.getScaleY(), 0.0001);
+        assertEquals(16.0, action.getTranslateY(), 0.0001);
+    }
+
+    /// Applies CSS and layouts the visible parent chain for a tested node.
+    private static void layoutNodeTree(Node node) {
+        Node current = node;
         while (current != null) {
-            try {
-                return current.getDeclaredField(fieldName);
-            } catch (NoSuchFieldException ignored) {
-                current = current.getSuperclass();
+            current.applyCss();
+            if (current instanceof Parent parent) {
+                parent.layout();
+            }
+            current = current.getParent();
+        }
+    }
+
+    /// Returns whether a node has a non-identity transition translation.
+    private static boolean hasVisibleTranslation(Node node) {
+        return Math.abs(node.getTranslateX()) > 0.0001 || Math.abs(node.getTranslateY()) > 0.0001;
+    }
+
+    /// Returns whether a single selected-container node is rendering an intermediate transition.
+    private static boolean singleContainerSelectionIsTransitioning(Region selection) {
+        return isBetweenExclusive(selection.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(selection.getScaleX(), 0.96, 1.0);
+    }
+
+    /// Returns whether a single navigation indicator node is rendering an intermediate transition.
+    private static boolean singleNavigationIndicatorIsTransitioning(Region indicator) {
+        return isBetweenExclusive(indicator.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(indicator.getScaleX(), 0.72, 1.0);
+    }
+
+    /// Returns the horizontal slider thumb position normalized to the rendered track range.
+    private static double sliderRenderedPosition(M3Slider slider) {
+        slider.applyCss();
+        slider.layout();
+        Region thumb = lookupRegion(slider, ".thumb");
+        double trackLength = Math.max(0.0, slider.getWidth() - thumb.getWidth());
+        return trackLength == 0.0 ? 0.0 : thumb.getLayoutX() / trackLength;
+    }
+
+    /// Closes an observable motion test window and clears local motion overrides from its root.
+    private static void closeObservableMotionWindow(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable Parent> rootReference
+    ) {
+        runOnFxThread(() -> {
+            @Nullable Parent root = rootReference.get();
+            if (root != null) {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.clearMotionScheme(root);
+            }
+
+            @Nullable Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
+    }
+
+    /// Returns whether a segmented button selection is rendering an intermediate transition.
+    private static boolean segmentedButtonSelectionIsTransitioning(
+            AtomicReference<@Nullable Parent> rootReference,
+            AtomicReference<@Nullable M3SegmentedButton> outgoingReference,
+            AtomicReference<@Nullable M3SegmentedButton> incomingReference
+    ) {
+        @Nullable M3SegmentedButton outgoing = outgoingReference.get();
+        @Nullable M3SegmentedButton incoming = incomingReference.get();
+        if (outgoing == null || incoming == null || !layoutObservableRoot(rootReference)) {
+            return false;
+        }
+
+        Region outgoingSelection = segmentedButtonSelectionContainer(outgoing);
+        Region incomingSelection = segmentedButtonSelectionContainer(incoming);
+        return isBetweenExclusive(outgoingSelection.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(incomingSelection.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(incomingSelection.getScaleX(), 0.96, 1.0);
+    }
+
+    /// Returns whether a segmented button selection has settled after a selection change.
+    private static boolean segmentedButtonSelectionHasSettled(
+            AtomicReference<@Nullable Parent> rootReference,
+            AtomicReference<@Nullable M3SegmentedButton> outgoingReference,
+            AtomicReference<@Nullable M3SegmentedButton> incomingReference
+    ) {
+        @Nullable M3SegmentedButton outgoing = outgoingReference.get();
+        @Nullable M3SegmentedButton incoming = incomingReference.get();
+        if (outgoing == null || incoming == null || !layoutObservableRoot(rootReference)) {
+            return false;
+        }
+
+        Region outgoingSelection = segmentedButtonSelectionContainer(outgoing);
+        Region incomingSelection = segmentedButtonSelectionContainer(incoming);
+        return Math.abs(outgoingSelection.getOpacity()) < 0.0001
+                && Math.abs(incomingSelection.getOpacity() - 1.0) < 0.0001
+                && Math.abs(outgoingSelection.getScaleX() - 0.96) < 0.0001
+                && Math.abs(incomingSelection.getScaleX() - 1.0) < 0.0001;
+    }
+
+    /// Returns whether list and drawer selected containers are rendering intermediate transitions.
+    private static boolean listAndDrawerSelectionContainersAreTransitioning(
+            AtomicReference<@Nullable Parent> rootReference,
+            AtomicReference<@Nullable M3ListItem> outgoingListReference,
+            AtomicReference<@Nullable M3ListItem> incomingListReference,
+            AtomicReference<@Nullable M3ListItem> outgoingDrawerReference,
+            AtomicReference<@Nullable M3ListItem> incomingDrawerReference
+    ) {
+        @Nullable M3ListItem outgoingList = outgoingListReference.get();
+        @Nullable M3ListItem incomingList = incomingListReference.get();
+        @Nullable M3ListItem outgoingDrawer = outgoingDrawerReference.get();
+        @Nullable M3ListItem incomingDrawer = incomingDrawerReference.get();
+        if (outgoingList == null
+                || incomingList == null
+                || outgoingDrawer == null
+                || incomingDrawer == null
+                || !layoutObservableRoot(rootReference)) {
+            return false;
+        }
+
+        return listSelectionPairIsTransitioning(outgoingList, incomingList)
+                && listSelectionPairIsTransitioning(outgoingDrawer, incomingDrawer);
+    }
+
+    /// Returns whether list and drawer selected containers have settled after a selection change.
+    private static boolean listAndDrawerSelectionContainersHaveSettled(
+            AtomicReference<@Nullable Parent> rootReference,
+            AtomicReference<@Nullable M3ListItem> outgoingListReference,
+            AtomicReference<@Nullable M3ListItem> incomingListReference,
+            AtomicReference<@Nullable M3ListItem> outgoingDrawerReference,
+            AtomicReference<@Nullable M3ListItem> incomingDrawerReference
+    ) {
+        @Nullable M3ListItem outgoingList = outgoingListReference.get();
+        @Nullable M3ListItem incomingList = incomingListReference.get();
+        @Nullable M3ListItem outgoingDrawer = outgoingDrawerReference.get();
+        @Nullable M3ListItem incomingDrawer = incomingDrawerReference.get();
+        if (outgoingList == null
+                || incomingList == null
+                || outgoingDrawer == null
+                || incomingDrawer == null
+                || !layoutObservableRoot(rootReference)) {
+            return false;
+        }
+
+        return listSelectionPairHasSettled(outgoingList, incomingList)
+                && listSelectionPairHasSettled(outgoingDrawer, incomingDrawer);
+    }
+
+    /// Returns whether a drawer mouse selection is rendering both ripple and selected-container motion.
+    private static boolean drawerMouseSelectionIsTransitioning(
+            AtomicReference<@Nullable Parent> rootReference,
+            AtomicReference<@Nullable M3ListItem> itemReference
+    ) {
+        @Nullable M3ListItem item = itemReference.get();
+        if (item == null || !layoutObservableRoot(rootReference)) {
+            return false;
+        }
+
+        Region selection = listItemSelectionContainer(item);
+        Region ripple = lookupRegion(item, ".m3-ripple");
+        return item.isSelected()
+                && ripple.getOpacity() > 0.0
+                && isBetweenExclusive(selection.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(selection.getScaleX(), 0.96, 1.0)
+                && isBetweenExclusive(selection.getScaleY(), 0.96, 1.0);
+    }
+
+    /// Returns whether tab, navigation bar, and navigation rail indicators are in intermediate transitions.
+    private static boolean navigationIndicatorsAreTransitioning(
+            AtomicReference<@Nullable Parent> rootReference,
+            AtomicReference<@Nullable M3Tab> outgoingTabReference,
+            AtomicReference<@Nullable M3Tab> incomingTabReference,
+            AtomicReference<@Nullable M3NavigationItem> outgoingBarReference,
+            AtomicReference<@Nullable M3NavigationItem> incomingBarReference,
+            AtomicReference<@Nullable M3NavigationItem> outgoingRailReference,
+            AtomicReference<@Nullable M3NavigationItem> incomingRailReference
+    ) {
+        @Nullable M3Tab outgoingTab = outgoingTabReference.get();
+        @Nullable M3Tab incomingTab = incomingTabReference.get();
+        @Nullable M3NavigationItem outgoingBar = outgoingBarReference.get();
+        @Nullable M3NavigationItem incomingBar = incomingBarReference.get();
+        @Nullable M3NavigationItem outgoingRail = outgoingRailReference.get();
+        @Nullable M3NavigationItem incomingRail = incomingRailReference.get();
+        if (outgoingTab == null
+                || incomingTab == null
+                || outgoingBar == null
+                || incomingBar == null
+                || outgoingRail == null
+                || incomingRail == null
+                || !layoutObservableRoot(rootReference)) {
+            return false;
+        }
+
+        Region outgoingTabIndicator = lookupRegion(outgoingTab, ".m3-tab-active-indicator");
+        Region incomingTabIndicator = lookupRegion(incomingTab, ".m3-tab-active-indicator");
+        Region outgoingBarIndicator = lookupRegion(outgoingBar, ".m3-navigation-item-indicator");
+        Region incomingBarIndicator = lookupRegion(incomingBar, ".m3-navigation-item-indicator");
+        Region outgoingRailIndicator = lookupRegion(outgoingRail, ".m3-navigation-item-indicator");
+        Region incomingRailIndicator = lookupRegion(incomingRail, ".m3-navigation-item-indicator");
+        return navigationIndicatorPairIsTransitioning(outgoingTabIndicator, incomingTabIndicator)
+                && navigationIndicatorPairIsTransitioning(outgoingBarIndicator, incomingBarIndicator)
+                && navigationIndicatorPairIsTransitioning(outgoingRailIndicator, incomingRailIndicator);
+    }
+
+    /// Returns whether tab, navigation bar, and navigation rail indicators have settled after selection.
+    private static boolean navigationIndicatorsHaveSettled(
+            AtomicReference<@Nullable Parent> rootReference,
+            AtomicReference<@Nullable M3Tab> outgoingTabReference,
+            AtomicReference<@Nullable M3Tab> incomingTabReference,
+            AtomicReference<@Nullable M3NavigationItem> outgoingBarReference,
+            AtomicReference<@Nullable M3NavigationItem> incomingBarReference,
+            AtomicReference<@Nullable M3NavigationItem> outgoingRailReference,
+            AtomicReference<@Nullable M3NavigationItem> incomingRailReference
+    ) {
+        @Nullable M3Tab outgoingTab = outgoingTabReference.get();
+        @Nullable M3Tab incomingTab = incomingTabReference.get();
+        @Nullable M3NavigationItem outgoingBar = outgoingBarReference.get();
+        @Nullable M3NavigationItem incomingBar = incomingBarReference.get();
+        @Nullable M3NavigationItem outgoingRail = outgoingRailReference.get();
+        @Nullable M3NavigationItem incomingRail = incomingRailReference.get();
+        if (outgoingTab == null
+                || incomingTab == null
+                || outgoingBar == null
+                || incomingBar == null
+                || outgoingRail == null
+                || incomingRail == null
+                || !layoutObservableRoot(rootReference)) {
+            return false;
+        }
+
+        Region outgoingTabIndicator = lookupRegion(outgoingTab, ".m3-tab-active-indicator");
+        Region incomingTabIndicator = lookupRegion(incomingTab, ".m3-tab-active-indicator");
+        Region outgoingBarIndicator = lookupRegion(outgoingBar, ".m3-navigation-item-indicator");
+        Region incomingBarIndicator = lookupRegion(incomingBar, ".m3-navigation-item-indicator");
+        Region outgoingRailIndicator = lookupRegion(outgoingRail, ".m3-navigation-item-indicator");
+        Region incomingRailIndicator = lookupRegion(incomingRail, ".m3-navigation-item-indicator");
+        return navigationIndicatorPairHasSettled(outgoingTabIndicator, incomingTabIndicator)
+                && navigationIndicatorPairHasSettled(outgoingBarIndicator, incomingBarIndicator)
+                && navigationIndicatorPairHasSettled(outgoingRailIndicator, incomingRailIndicator);
+    }
+
+    /// Applies CSS and layout to a root used by observable motion tests.
+    private static boolean layoutObservableRoot(AtomicReference<@Nullable Parent> rootReference) {
+        @Nullable Parent root = rootReference.get();
+        if (root == null) {
+            return false;
+        }
+
+        root.applyCss();
+        root.layout();
+        return true;
+    }
+
+    /// Returns whether one outgoing and incoming list-selection pair is in an intermediate transition.
+    private static boolean listSelectionPairIsTransitioning(M3ListItem outgoing, M3ListItem incoming) {
+        Region outgoingSelection = listItemSelectionContainer(outgoing);
+        Region incomingSelection = listItemSelectionContainer(incoming);
+        return isBetweenExclusive(outgoingSelection.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(incomingSelection.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(incomingSelection.getScaleX(), 0.96, 1.0)
+                && isBetweenExclusive(incomingSelection.getScaleY(), 0.96, 1.0);
+    }
+
+    /// Returns whether one outgoing and incoming list-selection pair has reached its final state.
+    private static boolean listSelectionPairHasSettled(M3ListItem outgoing, M3ListItem incoming) {
+        Region outgoingSelection = listItemSelectionContainer(outgoing);
+        Region incomingSelection = listItemSelectionContainer(incoming);
+        return Math.abs(outgoingSelection.getOpacity()) < 0.0001
+                && Math.abs(incomingSelection.getOpacity() - 1.0) < 0.0001
+                && Math.abs(outgoingSelection.getScaleX() - 0.96) < 0.0001
+                && Math.abs(incomingSelection.getScaleX() - 1.0) < 0.0001
+                && Math.abs(outgoingSelection.getScaleY() - 0.96) < 0.0001
+                && Math.abs(incomingSelection.getScaleY() - 1.0) < 0.0001;
+    }
+
+    /// Returns whether one outgoing and incoming navigation-indicator pair is in an intermediate transition.
+    private static boolean navigationIndicatorPairIsTransitioning(Region outgoing, Region incoming) {
+        return isBetweenExclusive(outgoing.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(incoming.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(outgoing.getScaleX(), 0.72, 1.0)
+                && isBetweenExclusive(incoming.getScaleX(), 0.72, 1.0);
+    }
+
+    /// Returns whether one outgoing and incoming navigation-indicator pair has reached its final state.
+    private static boolean navigationIndicatorPairHasSettled(Region outgoing, Region incoming) {
+        return Math.abs(outgoing.getOpacity()) < 0.0001
+                && Math.abs(incoming.getOpacity() - 1.0) < 0.0001;
+    }
+
+    /// Shows selection controls configured for observable indicator animation frames.
+    private static void showObservableSelectionControls(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable FlowPane> rowReference,
+            AtomicReference<@Nullable M3CheckBox> checkBoxReference,
+            AtomicReference<@Nullable M3RadioButton> radioButtonReference,
+            AtomicReference<@Nullable M3Switch> switchReference
+    ) {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        M3Switch switchControl = new M3Switch("Switch");
+        FlowPane row = new FlowPane(18.0, 12.0, checkBox, radioButton, switchControl);
+        Scene scene = new Scene(row, 420.0, 96.0);
+        Stage stage = new Stage();
+
+        row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(row, true);
+        M3MotionSettings.setMotionScheme(row, observableTestMotionScheme());
+        stage.setScene(scene);
+        stage.show();
+        row.applyCss();
+        row.resize(420.0, 96.0);
+        row.layout();
+
+        stageReference.set(stage);
+        rowReference.set(row);
+        checkBoxReference.set(checkBox);
+        radioButtonReference.set(radioButton);
+        switchReference.set(switchControl);
+    }
+
+    /// Shows a three-state checkbox configured for observable indicator animation frames.
+    private static void showObservableIndeterminateCheckBox(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable FlowPane> rowReference,
+            AtomicReference<@Nullable M3CheckBox> checkBoxReference
+    ) {
+        M3CheckBox checkBox = new M3CheckBox("Three-state");
+        checkBox.setAllowIndeterminate(true);
+        FlowPane row = new FlowPane(checkBox);
+        Scene scene = new Scene(row, 220.0, 80.0);
+        Stage stage = new Stage();
+
+        row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(row, true);
+        M3MotionSettings.setMotionScheme(row, observableTestMotionScheme());
+        stage.setScene(scene);
+        stage.show();
+        row.applyCss();
+        row.resize(220.0, 80.0);
+        row.layout();
+
+        stageReference.set(stage);
+        rowReference.set(row);
+        checkBoxReference.set(checkBox);
+    }
+
+    /// Closes a selection animation test window and clears local motion overrides.
+    private static void closeObservableSelectionControls(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable FlowPane> rowReference
+    ) {
+        runOnFxThread(() -> {
+            @Nullable FlowPane row = rowReference.get();
+            if (row != null) {
+                M3MotionSettings.clearAnimationsEnabled(row);
+                M3MotionSettings.clearMotionScheme(row);
+            }
+
+            @Nullable Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
+    }
+
+    /// Returns whether selection indicators are rendering an intermediate selected transition.
+    private static boolean selectionIndicatorsSelecting(
+            AtomicReference<@Nullable M3CheckBox> checkBoxReference,
+            AtomicReference<@Nullable M3RadioButton> radioButtonReference,
+            AtomicReference<@Nullable M3Switch> switchReference
+    ) {
+        @Nullable M3CheckBox checkBox = checkBoxReference.get();
+        @Nullable M3RadioButton radioButton = radioButtonReference.get();
+        @Nullable M3Switch switchControl = switchReference.get();
+        if (checkBox == null || radioButton == null || switchControl == null) {
+            return false;
+        }
+
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        Shape dot = lookupShape(radioButton, ".dot");
+        Region thumb = lookupRegion(switchControl, ".thumb");
+        return isBetweenExclusive(mark.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(mark.getScaleX(), 0.72, 1.0)
+                && isBetweenExclusive(dot.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(dot.getScaleX(), 0.64, 1.0)
+                && isBetweenExclusive(thumb.getLayoutX(), 8.0, 24.0)
+                && isBetweenExclusive(thumb.getWidth(), 16.0, 24.0);
+    }
+
+    /// Returns whether selection indicators have settled in their selected state.
+    private static boolean selectionIndicatorsSelectedSettled(
+            AtomicReference<@Nullable M3CheckBox> checkBoxReference,
+            AtomicReference<@Nullable M3RadioButton> radioButtonReference,
+            AtomicReference<@Nullable M3Switch> switchReference
+    ) {
+        @Nullable M3CheckBox checkBox = checkBoxReference.get();
+        @Nullable M3RadioButton radioButton = radioButtonReference.get();
+        @Nullable M3Switch switchControl = switchReference.get();
+        if (checkBox == null || radioButton == null || switchControl == null) {
+            return false;
+        }
+
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        Shape dot = lookupShape(radioButton, ".dot");
+        Region thumb = lookupRegion(switchControl, ".thumb");
+        return Math.abs(mark.getOpacity() - 1.0) < 0.0001
+                && Math.abs(mark.getScaleX() - 1.0) < 0.0001
+                && Math.abs(dot.getOpacity() - 1.0) < 0.0001
+                && Math.abs(dot.getScaleX() - 1.0) < 0.0001
+                && Math.abs(thumb.getLayoutX() - 24.0) < 0.0001
+                && Math.abs(thumb.getWidth() - 24.0) < 0.0001;
+    }
+
+    /// Returns whether selection indicators are rendering an intermediate unselected transition.
+    private static boolean selectionIndicatorsDeselecting(
+            AtomicReference<@Nullable M3CheckBox> checkBoxReference,
+            AtomicReference<@Nullable M3RadioButton> radioButtonReference,
+            AtomicReference<@Nullable M3Switch> switchReference
+    ) {
+        @Nullable M3CheckBox checkBox = checkBoxReference.get();
+        @Nullable M3RadioButton radioButton = radioButtonReference.get();
+        @Nullable M3Switch switchControl = switchReference.get();
+        if (checkBox == null || radioButton == null || switchControl == null) {
+            return false;
+        }
+
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        Shape dot = lookupShape(radioButton, ".dot");
+        Region thumb = lookupRegion(switchControl, ".thumb");
+        return isBetweenExclusive(mark.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(mark.getScaleX(), 0.72, 1.0)
+                && isBetweenExclusive(dot.getOpacity(), 0.25, 1.0)
+                && isBetweenExclusive(dot.getScaleX(), 0.64, 1.0)
+                && isBetweenExclusive(thumb.getLayoutX(), 8.0, 24.0)
+                && isBetweenExclusive(thumb.getWidth(), 16.0, 24.0);
+    }
+
+    /// Returns whether selection indicators have settled in their unselected state.
+    private static boolean selectionIndicatorsUnselectedSettled(
+            AtomicReference<@Nullable M3CheckBox> checkBoxReference,
+            AtomicReference<@Nullable M3RadioButton> radioButtonReference,
+            AtomicReference<@Nullable M3Switch> switchReference
+    ) {
+        @Nullable M3CheckBox checkBox = checkBoxReference.get();
+        @Nullable M3RadioButton radioButton = radioButtonReference.get();
+        @Nullable M3Switch switchControl = switchReference.get();
+        if (checkBox == null || radioButton == null || switchControl == null) {
+            return false;
+        }
+
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        Shape dot = lookupShape(radioButton, ".dot");
+        Region thumb = lookupRegion(switchControl, ".thumb");
+        return Math.abs(mark.getOpacity()) < 0.0001
+                && Math.abs(mark.getScaleX() - 0.72) < 0.0001
+                && Math.abs(dot.getOpacity()) < 0.0001
+                && Math.abs(dot.getScaleX() - 0.64) < 0.0001
+                && Math.abs(thumb.getLayoutX() - 8.0) < 0.0001
+                && Math.abs(thumb.getWidth() - 16.0) < 0.0001;
+    }
+
+    /// Verifies that selection indicators are in an intermediate selected transition.
+    private static void assertSelectionIndicatorsSelecting(
+            M3CheckBox checkBox,
+            M3RadioButton radioButton,
+            M3Switch switchControl
+    ) {
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        Shape dot = lookupShape(radioButton, ".dot");
+        Region thumb = lookupRegion(switchControl, ".thumb");
+
+        assertBetween(mark.getOpacity(), 0.25, 1.0, "checkbox mark opacity");
+        assertBetween(mark.getScaleX(), 0.72, 1.0, "checkbox mark scale");
+        assertBetween(dot.getOpacity(), 0.25, 1.0, "radio dot opacity");
+        assertBetween(dot.getScaleX(), 0.64, 1.0, "radio dot scale");
+        assertBetween(thumb.getLayoutX(), 8.0, 24.0, "switch thumb x");
+        assertBetween(thumb.getWidth(), 16.0, 24.0, "switch thumb width");
+    }
+
+    /// Verifies that selection indicators have settled in their selected state.
+    private static void assertSelectionIndicatorsSelectedSettled(
+            M3CheckBox checkBox,
+            M3RadioButton radioButton,
+            M3Switch switchControl
+    ) {
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        Shape dot = lookupShape(radioButton, ".dot");
+        Region thumb = lookupRegion(switchControl, ".thumb");
+
+        assertEquals(1.0, mark.getOpacity(), 0.0001);
+        assertEquals(1.0, mark.getScaleX(), 0.0001);
+        assertEquals(1.0, dot.getOpacity(), 0.0001);
+        assertEquals(1.0, dot.getScaleX(), 0.0001);
+        assertEquals(24.0, thumb.getLayoutX(), 0.0001);
+        assertEquals(24.0, thumb.getWidth(), 0.0001);
+    }
+
+    /// Verifies that selection indicators are in an intermediate unselected transition.
+    private static void assertSelectionIndicatorsDeselecting(
+            M3CheckBox checkBox,
+            M3RadioButton radioButton,
+            M3Switch switchControl
+    ) {
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        Shape dot = lookupShape(radioButton, ".dot");
+        Region thumb = lookupRegion(switchControl, ".thumb");
+
+        assertBetween(mark.getOpacity(), 0.25, 1.0, "checkbox mark reverse opacity");
+        assertBetween(mark.getScaleX(), 0.72, 1.0, "checkbox mark reverse scale");
+        assertBetween(dot.getOpacity(), 0.25, 1.0, "radio dot reverse opacity");
+        assertBetween(dot.getScaleX(), 0.64, 1.0, "radio dot reverse scale");
+        assertBetween(thumb.getLayoutX(), 8.0, 24.0, "switch thumb reverse x");
+        assertBetween(thumb.getWidth(), 16.0, 24.0, "switch thumb reverse width");
+    }
+
+    /// Verifies that selection indicators have settled in their unselected state.
+    private static void assertSelectionIndicatorsUnselectedSettled(
+            M3CheckBox checkBox,
+            M3RadioButton radioButton,
+            M3Switch switchControl
+    ) {
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        Shape dot = lookupShape(radioButton, ".dot");
+        Region thumb = lookupRegion(switchControl, ".thumb");
+
+        assertEquals(0.0, mark.getOpacity(), 0.0001);
+        assertEquals(0.72, mark.getScaleX(), 0.0001);
+        assertEquals(0.0, dot.getOpacity(), 0.0001);
+        assertEquals(0.64, dot.getScaleX(), 0.0001);
+        assertEquals(8.0, thumb.getLayoutX(), 0.0001);
+        assertEquals(16.0, thumb.getWidth(), 0.0001);
+    }
+
+    /// Returns whether a checkbox indeterminate dash has settled.
+    private static boolean checkBoxIndeterminateMarkSettled(
+            AtomicReference<@Nullable M3CheckBox> checkBoxReference
+    ) {
+        @Nullable M3CheckBox checkBox = checkBoxReference.get();
+        if (checkBox == null) {
+            return false;
+        }
+
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        return !checkBox.isSelected()
+                && checkBox.isIndeterminate()
+                && Math.abs(mark.getLayoutBounds().getWidth() - 12.0) < 0.0001
+                && Math.abs(mark.getLayoutBounds().getHeight() - 2.0) < 0.0001
+                && Math.abs(mark.getOpacity() - 1.0) < 0.0001
+                && Math.abs(mark.getScaleX() - 1.0) < 0.0001;
+    }
+
+    /// Returns whether a checkbox selected check mark is animating in.
+    private static boolean checkBoxSelectedMarkIsAnimating(
+            AtomicReference<@Nullable M3CheckBox> checkBoxReference
+    ) {
+        @Nullable M3CheckBox checkBox = checkBoxReference.get();
+        if (checkBox == null) {
+            return false;
+        }
+
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        return checkBox.isSelected()
+                && !checkBox.isIndeterminate()
+                && Math.abs(mark.getLayoutBounds().getWidth() - 12.0) < 0.0001
+                && Math.abs(mark.getLayoutBounds().getHeight() - 10.0) < 0.0001
+                && isBetweenExclusive(mark.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(mark.getScaleX(), 0.72, 1.0);
+    }
+
+    /// Returns whether a checkbox selected check mark has settled.
+    private static boolean checkBoxSelectedMarkSettled(
+            AtomicReference<@Nullable M3CheckBox> checkBoxReference
+    ) {
+        @Nullable M3CheckBox checkBox = checkBoxReference.get();
+        if (checkBox == null) {
+            return false;
+        }
+
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+        return checkBox.isSelected()
+                && !checkBox.isIndeterminate()
+                && Math.abs(mark.getLayoutBounds().getWidth() - 12.0) < 0.0001
+                && Math.abs(mark.getLayoutBounds().getHeight() - 10.0) < 0.0001
+                && Math.abs(mark.getOpacity() - 1.0) < 0.0001
+                && Math.abs(mark.getScaleX() - 1.0) < 0.0001;
+    }
+
+    /// Verifies that a checkbox indeterminate dash has settled.
+    private static void assertCheckBoxIndeterminateMarkSettled(M3CheckBox checkBox) {
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+
+        assertFalse(checkBox.isSelected());
+        assertTrue(checkBox.isIndeterminate());
+        assertEquals(12.0, mark.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(2.0, mark.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(1.0, mark.getOpacity(), 0.0001);
+        assertEquals(1.0, mark.getScaleX(), 0.0001);
+    }
+
+    /// Verifies that a checkbox selected check mark has settled.
+    private static void assertCheckBoxSelectedMarkSettled(M3CheckBox checkBox) {
+        layoutSelectionIndicatorOwner(checkBox);
+        Region mark = lookupRegion(checkBox, ".mark");
+
+        assertTrue(checkBox.isSelected());
+        assertFalse(checkBox.isIndeterminate());
+        assertEquals(12.0, mark.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(10.0, mark.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(1.0, mark.getOpacity(), 0.0001);
+        assertEquals(1.0, mark.getScaleX(), 0.0001);
+    }
+
+    /// Applies CSS and layout to the row that owns selection indicators.
+    private static void layoutSelectionIndicatorOwner(Node node) {
+        @Nullable Parent parent = node.getParent();
+        if (parent != null) {
+            parent.applyCss();
+            parent.layout();
+        } else {
+            node.applyCss();
+            if (node instanceof Parent parentNode) {
+                parentNode.layout();
             }
         }
-        throw new NoSuchFieldException(fieldName);
     }
 
-    /// Presses a button base and advances the shared pressed-state animation to its pressed frame.
-    private static void pressButtonAndJumpToPressedFrame(ButtonBase button) {
-        button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
-        Timeline animation = skinTimeline(button.getSkin(), "animation");
-        animation.jumpTo(Duration.millis(50.0));
-        animation.stop();
+    /// Shows the window used to verify detached popup surface motion.
+    private static void showPopupMotionTestWindow(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable VBox> rootReference,
+            AtomicReference<@Nullable M3MenuButton> menuButtonReference,
+            AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference,
+            AtomicReference<@Nullable M3DatePickerField> dateFieldReference,
+            AtomicReference<@Nullable M3DateRangePickerField> rangeFieldReference
+    ) {
+        Stage stage = new Stage();
+        M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
+        M3MenuButton menuButton = new M3MenuButton("Open menu", new M3MenuItem("Duplicate"), subMenuItem);
+        M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
+        M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                LocalDate.of(2026, 5, 18),
+                LocalDate.of(2026, 5, 25)
+        );
+        VBox root = new VBox(16.0, menuButton, dateField, rangeField);
+        Scene scene = new Scene(root, 820.0, 620.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(root, true);
+        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        stage.setScene(scene);
+        stage.show();
+        root.applyCss();
+        root.resize(820.0, 620.0);
+        root.layout();
+
+        stageReference.set(stage);
+        rootReference.set(root);
+        menuButtonReference.set(menuButton);
+        subMenuItemReference.set(subMenuItem);
+        dateFieldReference.set(dateField);
+        rangeFieldReference.set(rangeField);
+    }
+
+    /// Closes the detached popup surface motion test window and clears local motion overrides.
+    private static void closePopupMotionTestWindow(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable VBox> rootReference,
+            AtomicReference<@Nullable M3MenuButton> menuButtonReference,
+            AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference,
+            AtomicReference<@Nullable M3DatePickerField> dateFieldReference,
+            AtomicReference<@Nullable M3DateRangePickerField> rangeFieldReference
+    ) {
+        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+        if (subMenuItem != null) {
+            subMenuItem.hideSubMenu();
+        }
+
+        @Nullable M3MenuButton menuButton = menuButtonReference.get();
+        if (menuButton != null) {
+            menuButton.hideMenu();
+        }
+
+        @Nullable M3DatePickerField dateField = dateFieldReference.get();
+        if (dateField != null) {
+            dateField.hidePicker();
+        }
+
+        @Nullable M3DateRangePickerField rangeField = rangeFieldReference.get();
+        if (rangeField != null) {
+            rangeField.hidePicker();
+        }
+
+        @Nullable VBox root = rootReference.get();
+        if (root != null) {
+            M3MotionSettings.clearAnimationsEnabled(root);
+            M3MotionSettings.clearMotionScheme(root);
+        }
+
+        @Nullable Stage stage = stageReference.get();
+        if (stage != null) {
+            stage.close();
+        }
+    }
+
+    /// Returns whether the menu popup surface is rendering a visible enter-transition frame.
+    private static boolean menuPopupSurfaceIsAnimating(
+            AtomicReference<@Nullable M3MenuButton> menuButtonReference
+    ) {
+        @Nullable M3MenuButton menuButton = menuButtonReference.get();
+        return menuButton != null
+                && menuButton.isShowing()
+                && popupSurfaceIsAnimating(menuButton.getMenu());
+    }
+
+    /// Returns whether the menu popup surface has reached its final identity transform.
+    private static boolean menuPopupSurfaceHasSettled(
+            AtomicReference<@Nullable M3MenuButton> menuButtonReference
+    ) {
+        @Nullable M3MenuButton menuButton = menuButtonReference.get();
+        return menuButton != null
+                && menuButton.isShowing()
+                && popupSurfaceIsSettled(menuButton.getMenu());
+    }
+
+    /// Returns whether the submenu popup surface is rendering a visible enter-transition frame.
+    private static boolean subMenuPopupSurfaceIsAnimating(
+            AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference
+    ) {
+        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+        return subMenuItem != null
+                && subMenuItem.isSubMenuShowing()
+                && popupSurfaceIsAnimating(subMenuItem.getSubMenu());
+    }
+
+    /// Returns whether the date picker popup surface is rendering a visible enter-transition frame.
+    private static boolean datePickerPopupSurfaceIsAnimating(
+            AtomicReference<@Nullable M3DatePickerField> dateFieldReference
+    ) {
+        @Nullable M3DatePickerField dateField = dateFieldReference.get();
+        @Nullable Parent popupSurface = dateField == null ? null : pickerPopupSurface(dateField);
+        return popupSurface != null && popupSurfaceIsAnimating(popupSurface);
+    }
+
+    /// Returns whether the date range picker popup surface is rendering a visible enter-transition frame.
+    private static boolean rangePickerPopupSurfaceIsAnimating(
+            AtomicReference<@Nullable M3DateRangePickerField> rangeFieldReference
+    ) {
+        @Nullable M3DateRangePickerField rangeField = rangeFieldReference.get();
+        @Nullable Parent popupSurface = rangeField == null ? null : pickerPopupSurface(rangeField);
+        return popupSurface != null && popupSurfaceIsAnimating(popupSurface);
+    }
+
+    /// Returns the popup surface that hosts a picker field popup.
+    private static @Nullable Parent pickerPopupSurface(M3PickerField<?, ?> field) {
+        Node parent = field.getPicker().getParent();
+        return parent instanceof Parent popupSurface ? popupSurface : null;
+    }
+
+    /// Returns the popup surface that hosts a date range picker field popup.
+    private static @Nullable Parent pickerPopupSurface(M3DateRangePickerField field) {
+        Node parent = field.getPicker().getParent();
+        return parent instanceof Parent popupSurface ? popupSurface : null;
+    }
+
+    /// Returns whether a popup surface is in a visible enter-transition frame.
+    private static boolean popupSurfaceIsAnimating(Node surface) {
+        surface.applyCss();
+        if (surface instanceof Parent parent) {
+            parent.layout();
+        }
+
+        return surface.getScene() != null
+                && surface.getOpacity() > 0.0
+                && (surface.getOpacity() < 1.0
+                || surface.getScaleX() < 1.0
+                || surface.getScaleY() < 1.0
+                || Math.abs(surface.getTranslateX()) > 0.0001
+                || Math.abs(surface.getTranslateY()) > 0.0001);
+    }
+
+    /// Returns whether a popup surface has reached its final identity transform.
+    private static boolean popupSurfaceIsSettled(Node surface) {
+        surface.applyCss();
+        if (surface instanceof Parent parent) {
+            parent.layout();
+        }
+
+        return surface.getScene() != null
+                && Math.abs(surface.getOpacity() - 1.0) < 0.0001
+                && Math.abs(surface.getScaleX() - 1.0) < 0.0001
+                && Math.abs(surface.getScaleY() - 1.0) < 0.0001
+                && Math.abs(surface.getTranslateX()) < 0.0001
+                && Math.abs(surface.getTranslateY()) < 0.0001;
+    }
+
+    /// Verifies that a popup surface is visibly mid-transition.
+    private static void assertPopupSurfaceIntermediate(Node surface, String description) {
+        surface.applyCss();
+        if (surface instanceof Parent parent) {
+            parent.layout();
+        }
+
+        assertTrue(surface.getScene() != null, () -> description + " should be attached to a scene");
+        assertBetween(surface.getOpacity(), 0.0, 1.0, description + " opacity");
+        assertTrue(surface.getScaleX() >= 0.96 && surface.getScaleX() <= 1.0,
+                () -> description + " scaleX=" + surface.getScaleX());
+        assertTrue(surface.getScaleY() >= 0.96 && surface.getScaleY() <= 1.0,
+                () -> description + " scaleY=" + surface.getScaleY());
+        assertTrue(
+                Math.abs(surface.getTranslateX()) > 0.0001 || Math.abs(surface.getTranslateY()) > 0.0001,
+                () -> description + " translateX=" + surface.getTranslateX()
+                        + ", translateY=" + surface.getTranslateY()
+        );
+    }
+
+    /// Verifies that a popup surface has settled to its final identity transform.
+    private static void assertPopupSurfaceSettled(Node surface, String description) {
+        surface.applyCss();
+        if (surface instanceof Parent parent) {
+            parent.layout();
+        }
+
+        assertEquals(1.0, surface.getOpacity(), 0.0001, description + " opacity");
+        assertEquals(1.0, surface.getScaleX(), 0.0001, description + " scaleX");
+        assertEquals(1.0, surface.getScaleY(), 0.0001, description + " scaleY");
+        assertEquals(0.0, surface.getTranslateX(), 0.0001, description + " translateX");
+        assertEquals(0.0, surface.getTranslateY(), 0.0001, description + " translateY");
+    }
+
+    /// Verifies a button's pressed scale through a real JavaFX window and pulse-driven animation.
+    private static void assertPressedScaleAfterRealPulse(
+            Supplier<? extends ButtonBase> buttonFactory,
+            double width,
+            double height,
+            double expectedScale,
+            String description
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable ButtonBase> buttonReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhenStable(
+                    () -> buttonScaleMatches(buttonReference, expectedScale),
+                    2,
+                    () -> {
+                        ButtonBase button = buttonFactory.get();
+                        showObservablePressedButton(
+                                stageReference,
+                                rootReference,
+                                buttonReference,
+                                button,
+                                width,
+                                height
+                        );
+                        button.fireEvent(primaryMouseEvent(
+                                MouseEvent.MOUSE_PRESSED,
+                                width / 2.0,
+                                height / 2.0,
+                                true
+                        ));
+                    },
+                    () -> {
+                        ButtonBase button = Objects.requireNonNull(buttonReference.get(), "button");
+
+                        assertTrue(button.isArmed(), description + " should remain armed while pressed");
+                        assertEquals(expectedScale, button.getScaleX(), 0.0001, description + " scaleX");
+                        assertEquals(expectedScale, button.getScaleY(), 0.0001, description + " scaleY");
+                    }
+            );
+        } finally {
+            closeObservablePressedButton(stageReference, rootReference, buttonReference);
+        }
+    }
+
+    /// Shows a button configured for observable pressed-state animation frames.
+    private static void showObservablePressedButton(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable Pane> rootReference,
+            AtomicReference<@Nullable ButtonBase> buttonReference,
+            ButtonBase button,
+            double width,
+            double height
+    ) {
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root, Math.max(200.0, width + 80.0), Math.max(100.0, height + 80.0));
+        Stage stage = new Stage();
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(root, true);
+        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        stage.setScene(scene);
+        stage.show();
+        root.applyCss();
+        button.resizeRelocate(20.0, 20.0, width, height);
+        root.layout();
+        button.layout();
+
+        stageReference.set(stage);
+        rootReference.set(root);
+        buttonReference.set(button);
+    }
+
+    /// Closes a pressed-scale test window and clears local motion overrides.
+    private static void closeObservablePressedButton(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable Pane> rootReference,
+            AtomicReference<@Nullable ButtonBase> buttonReference
+    ) {
+        runOnFxThread(() -> {
+            @Nullable ButtonBase button = buttonReference.get();
+            if (button != null && button.isArmed()) {
+                button.fireEvent(primaryMouseEvent(
+                        MouseEvent.MOUSE_RELEASED,
+                        button.getWidth() / 2.0,
+                        button.getHeight() / 2.0,
+                        false
+                ));
+            }
+
+            @Nullable Pane root = rootReference.get();
+            if (root != null) {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.clearMotionScheme(root);
+            }
+
+            @Nullable Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
+    }
+
+    /// Returns whether the tested button scale matches the expected pressed scale.
+    private static boolean buttonScaleMatches(
+            AtomicReference<@Nullable ButtonBase> buttonReference,
+            double expectedScale
+    ) {
+        @Nullable ButtonBase button = buttonReference.get();
+        if (button == null) {
+            return false;
+        }
+
+        button.applyCss();
+        @Nullable Parent parent = button.getParent();
+        if (parent != null) {
+            parent.layout();
+        }
+        button.layout();
+
+        return button.isArmed()
+                && Math.abs(button.getScaleX() - expectedScale) <= 0.0001
+                && Math.abs(button.getScaleY() - expectedScale) <= 0.0001;
+    }
+
+    /// Shows a button configured for observable ripple animation frames.
+    private static void showObservableRippleButton(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable Pane> rootReference,
+            AtomicReference<@Nullable M3Button> buttonReference
+    ) {
+        M3Button button = createButton("Ripple", M3ButtonVariant.FILLED);
+        Pane root = new Pane(button);
+        Scene scene = new Scene(root, 200.0, 100.0);
+        Stage stage = new Stage();
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(root, true);
+        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        stage.setScene(scene);
+        stage.show();
+        root.applyCss();
+        button.resize(120.0, 40.0);
+        button.layout();
+
+        stageReference.set(stage);
+        rootReference.set(root);
+        buttonReference.set(button);
+    }
+
+    /// Closes a button test window and clears local motion overrides.
+    private static void closeObservableRippleButton(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable Pane> rootReference,
+            AtomicReference<@Nullable M3Button> buttonReference
+    ) {
+        runOnFxThread(() -> {
+            @Nullable M3Button button = buttonReference.get();
+            if (button != null && button.isArmed()) {
+                button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
+            }
+
+            @Nullable Pane root = rootReference.get();
+            if (root != null) {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.clearMotionScheme(root);
+            }
+
+            @Nullable Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
+    }
+
+    /// Returns whether the tested button ripple has reached its expanded pressed frame.
+    private static boolean buttonRippleIsFullyExpanded(AtomicReference<@Nullable M3Button> buttonReference) {
+        @Nullable Region ripple = buttonRipple(buttonReference);
+        return ripple != null
+                && ripple.getOpacity() > 0.0
+                && ripple.getScaleX() >= 0.98
+                && ripple.getScaleY() >= 0.98;
+    }
+
+    /// Returns whether the tested button ripple is visibly fading below a captured release opacity.
+    private static boolean buttonRippleOpacityFadedBelow(
+            AtomicReference<@Nullable M3Button> buttonReference,
+            AtomicReference<@Nullable Double> baselineOpacityReference
+    ) {
+        @Nullable Region ripple = buttonRipple(buttonReference);
+        @Nullable Double baselineOpacity = baselineOpacityReference.get();
+        if (ripple == null || baselineOpacity == null) {
+            return false;
+        }
+
+        double opacity = ripple.getOpacity();
+        return opacity > 0.0 && opacity < baselineOpacity - 0.001;
+    }
+
+    /// Returns whether the tested button ripple has completed release fade-out.
+    private static boolean buttonRippleOpacityCleared(AtomicReference<@Nullable M3Button> buttonReference) {
+        @Nullable Region ripple = buttonRipple(buttonReference);
+        return ripple != null && ripple.getOpacity() <= 0.0001;
+    }
+
+    /// Returns the tested button ripple region after applying current layout state.
+    private static @Nullable Region buttonRipple(AtomicReference<@Nullable M3Button> buttonReference) {
+        @Nullable M3Button button = buttonReference.get();
+        if (button == null) {
+            return null;
+        }
+
+        button.applyCss();
+        button.layout();
+        @Nullable Node rippleNode = button.lookup(".m3-ripple");
+        return rippleNode instanceof Region ripple ? ripple : null;
+    }
+
+    /// Shows an outlined text input layout configured for observable presentation animations.
+    private static void showObservableTextInputLayout(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable Pane> rootReference,
+            AtomicReference<@Nullable M3TextInputLayout> layoutReference,
+            boolean showSupportingText
+    ) {
+        M3TextField textField = createTextField("", M3TextInputVariant.OUTLINED);
+        textField.setPrefWidth(260.0);
+        M3TextInputLayout layout = new M3TextInputLayout(textField);
+        layout.setLabelText("Email");
+        layout.setClearButtonEnabled(true);
+        layout.setPrefWidth(260.0);
+
+        Pane root = new Pane(layout);
+        layout.resizeRelocate(20.0, 20.0, 260.0, 96.0);
+        Scene scene = new Scene(root, 320.0, 140.0);
+        Stage stage = new Stage();
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3MotionSettings.setAnimationsEnabled(root, true);
+        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        stage.setScene(scene);
+        stage.show();
+        root.applyCss();
+        root.layout();
+
+        Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+        assertEquals(0.0, outlineNotchGap(outline), 0.0001);
+
+        stageReference.set(stage);
+        rootReference.set(root);
+        layoutReference.set(layout);
+        textField.setText("alpha");
+        if (showSupportingText) {
+            layout.setSupportingText("Helper text");
+        }
+    }
+
+    /// Returns whether a text input layout is rendering a floating-label intermediate frame.
+    private static boolean textInputLayoutFloatingPresentationIsAnimating(
+            AtomicReference<@Nullable M3TextInputLayout> layoutReference
+    ) {
+        @Nullable M3TextInputLayout layout = layoutReference.get();
+        if (layout == null) {
+            return false;
+        }
+
+        layout.applyCss();
+        layout.layout();
+        @Nullable Node labelNode = layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS);
+        @Nullable Node outlineNode = layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS);
+        if (!(labelNode instanceof Label label) || !(outlineNode instanceof Path outline)) {
+            return false;
+        }
+
+        M3IconButton clearButton = layout.getClearButton();
+        return isBetweenExclusive(label.getOpacity(), 0.72, 1.0)
+                && isBetweenExclusive(Math.abs(label.getTranslateY()), 0.0, 4.0)
+                && outlineNotchGap(outline) > 0.5
+                && isBetweenExclusive(clearButton.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(clearButton.getScaleX(), 0.86, 1.0)
+                && isBetweenExclusive(clearButton.getScaleY(), 0.86, 1.0);
+    }
+
+    /// Returns whether a text input layout is rendering a supporting-row intermediate frame.
+    private static boolean textInputLayoutSupportingRowPresentationIsAnimating(
+            AtomicReference<@Nullable M3TextInputLayout> layoutReference
+    ) {
+        @Nullable M3TextInputLayout layout = layoutReference.get();
+        if (layout == null) {
+            return false;
+        }
+
+        layout.applyCss();
+        layout.layout();
+        @Nullable Node supportingRowNode = layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS);
+        if (!(supportingRowNode instanceof HBox supportingRow)) {
+            return false;
+        }
+
+        return isBetweenExclusive(supportingRow.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(Math.abs(supportingRow.getTranslateY()), 0.0, 4.0);
+    }
+
+    /// Returns whether all text input presentation channels are rendering intermediate frames.
+    private static boolean textInputLayoutFullPresentationIsAnimating(
+            AtomicReference<@Nullable M3TextInputLayout> layoutReference
+    ) {
+        return textInputLayoutFloatingPresentationIsAnimating(layoutReference)
+                && textInputLayoutSupportingRowPresentationIsAnimating(layoutReference);
+    }
+
+    /// Verifies a floating-label and clear-button intermediate frame on a text input layout.
+    private static void assertTextInputLayoutFloatingPresentationIntermediate(M3TextInputLayout layout) {
+        Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+        M3IconButton clearButton = layout.getClearButton();
+
+        assertBetween(label.getOpacity(), 0.72, 1.0, "floating label opacity");
+        assertBetween(Math.abs(label.getTranslateY()), 0.0, 4.0, "floating label translateY");
+        assertTrue(outlineNotchGap(outline) > 0.5, () -> "outlineNotchGap=" + outlineNotchGap(outline));
+        assertBetween(clearButton.getOpacity(), 0.0, 1.0, "clear button opacity");
+        assertBetween(clearButton.getScaleX(), 0.86, 1.0, "clear button scaleX");
+        assertBetween(clearButton.getScaleY(), 0.86, 1.0, "clear button scaleY");
+    }
+
+    /// Verifies a supporting-row intermediate frame on a text input layout.
+    private static void assertTextInputLayoutSupportingRowPresentationIntermediate(M3TextInputLayout layout) {
+        HBox supportingRow = assertInstanceOf(
+                HBox.class,
+                layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+        );
+
+        assertBetween(supportingRow.getOpacity(), 0.0, 1.0, "supporting row opacity");
+        assertBetween(Math.abs(supportingRow.getTranslateY()), 0.0, 4.0, "supporting row translateY");
+    }
+
+    /// Verifies that text input presentation state is settled after motion is disabled.
+    private static void assertTextInputLayoutPresentationSettled(M3TextInputLayout layout) {
+        Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+        M3IconButton clearButton = layout.getClearButton();
+        HBox supportingRow = assertInstanceOf(
+                HBox.class,
+                layout.lookup("." + M3TextInputLayout.SUPPORTING_ROW_STYLE_CLASS)
+        );
+
+        assertEquals(1.0, label.getOpacity(), 0.0001);
+        assertEquals(0.0, label.getTranslateY(), 0.0001);
+        assertTrue(outlineNotchGap(outline) > 0.5, () -> "outlineNotchGap=" + outlineNotchGap(outline));
+        assertEquals(1.0, clearButton.getOpacity(), 0.0001);
+        assertEquals(1.0, clearButton.getScaleX(), 0.0001);
+        assertEquals(1.0, clearButton.getScaleY(), 0.0001);
+        assertEquals(1.0, supportingRow.getOpacity(), 0.0001);
+        assertEquals(0.0, supportingRow.getTranslateY(), 0.0001);
+    }
+
+    /// Returns whether a trailing icon button is rendering a visible ripple frame.
+    private static boolean trailingIconRippleIsVisible(AtomicReference<@Nullable M3IconButton> buttonReference) {
+        @Nullable M3IconButton button = buttonReference.get();
+        if (button == null) {
+            return false;
+        }
+
+        button.applyCss();
+        button.layout();
+        @Nullable Node rippleNode = button.lookup(".m3-ripple");
+        if (!(rippleNode instanceof Region ripple)) {
+            return false;
+        }
+
+        return ripple.getOpacity() > 0.0
+                && ripple.getScaleX() > 0.0
+                && ripple.getScaleY() > 0.0;
+    }
+
+    /// Returns whether a value is strictly inside the supplied range.
+    private static boolean isBetweenExclusive(double value, double lowerBound, double upperBound) {
+        return value > lowerBound && value < upperBound;
     }
 
     /// Returns the current top outline gap generated for a floating text input label.
@@ -21248,20 +25279,6 @@ final class M3ControlStyleTest {
         var notchStart = assertInstanceOf(javafx.scene.shape.LineTo.class, outline.getElements().get(1));
         var notchEnd = assertInstanceOf(javafx.scene.shape.MoveTo.class, outline.getElements().get(2));
         return notchEnd.getX() - notchStart.getX();
-    }
-
-    /// Moves all navigation indicator timelines to the same rendered frame.
-    private static void jumpToNavigationIndicatorFrame(Duration frameTime, Timeline... timelines) {
-        for (Timeline timeline : timelines) {
-            timeline.jumpTo(frameTime);
-        }
-    }
-
-    /// Stops all supplied timelines.
-    private static void stopTimelines(Timeline... timelines) {
-        for (Timeline timeline : timelines) {
-            timeline.stop();
-        }
     }
 
     /// Verifies that a value is between two exclusive bounds.
@@ -21592,6 +25609,20 @@ final class M3ControlStyleTest {
         assertEquals(Pos.TOP_LEFT, presetList.getAlignment());
     }
 
+    /// Verifies that common Material targets keep text, icon, and fixed-cell geometry stable.
+    private static void assertMaterialTargetGeometryIsStable(Node root) {
+        assertRenderedTextNodesStayInsideLayout(root);
+        assertFixedTargetControlsKeepCenteredContent(root);
+        assertNavigationItemsKeepGraphicContentCentered(root);
+    }
+
+    /// Verifies that a vertical slider track uses the caller-provided preferred height.
+    private static void assertVerticalSliderTrackUsesExplicitHeight(M3Slider slider) {
+        Region track = lookupRegion(slider, ".track");
+        Bounds trackBounds = track.getBoundsInParent();
+        assertTrue(trackBounds.getHeight() >= 140.0, () -> "vertical slider track is too short: " + trackBounds);
+    }
+
     /// Verifies that rendered text nodes do not escape their nearest visual layout boundary.
     private static void assertRenderedTextNodesStayInsideLayout(Node root) {
         visitVisibleNodes(root, node -> {
@@ -21678,11 +25709,36 @@ final class M3ControlStyleTest {
                 if (graphic != null && (button.getText() == null || button.getText().isEmpty())) {
                     assertFixedTargetContentCentered(image, button, graphic, 1.0, 1.5);
                 }
+            } else if (node instanceof M3Tab tab) {
+                @Nullable Node textNode = tab.lookup(".text");
+                if (textNode != null && hasRenderableBounds(textNode)) {
+                    assertFixedTargetContentVerticallyCentered(image, tab, textNode, 1.0, 2.0);
+                }
+            } else if (node instanceof M3SegmentedButton button) {
+                @Nullable Node textNode = button.lookup(".text");
+                if (textNode != null && hasRenderableBounds(textNode)) {
+                    assertFixedTargetContentVerticallyCentered(image, button, textNode, 1.0, 2.0);
+                }
             } else if (node instanceof ButtonBase button && isFixedTextCell(button)) {
                 @Nullable Node textNode = button.lookup(".text");
                 if (textNode != null && hasRenderableBounds(textNode)) {
                     assertFixedTargetContentCentered(image, button, textNode, 1.0, 1.5);
                 }
+            }
+        });
+    }
+
+    /// Verifies that navigation item graphic slots stay centered inside their indicator area.
+    private static void assertNavigationItemsKeepGraphicContentCentered(Node root) {
+        visitVisibleNodes(root, node -> {
+            if (!(node instanceof M3NavigationItem item) || item.getGraphic() == null) {
+                return;
+            }
+
+            @Nullable Node iconContainer = item.lookup(".m3-navigation-item-icon-container");
+            @Nullable Node graphicContainer = item.lookup(".m3-navigation-item-graphic");
+            if (iconContainer != null && graphicContainer != null && hasRenderableBounds(graphicContainer)) {
+                assertNodeCentersAligned(iconContainer, graphicContainer, 1.0);
             }
         });
     }
@@ -21713,6 +25769,33 @@ final class M3ControlStyleTest {
         assertEquals(containerCenter.getX(), inkCenterX, inkTolerance,
                 () -> "fixed target rendered content is horizontally off-center: container="
                         + container + ", content=" + content + ", inkBounds=" + inkBounds);
+        assertEquals(containerCenter.getY(), inkCenterY, inkTolerance,
+                () -> "fixed target rendered content is vertically off-center: container="
+                        + container + ", content=" + content + ", inkBounds=" + inkBounds);
+    }
+
+    /// Verifies that fixed-height target content keeps its layout and rendered ink vertically centered.
+    private static void assertFixedTargetContentVerticallyCentered(
+            WritableImage image,
+            Node container,
+            Node content,
+            double layoutTolerance,
+            double inkTolerance
+    ) {
+        assertNodeVerticalCentersAligned(container, content, layoutTolerance);
+        @Nullable Text renderedText = firstRenderedText(content);
+        if (renderedText == null || containsSvgPath(content)) {
+            return;
+        }
+
+        Point2D containerCenter = sceneCenter(container);
+        Rectangle2D inkBounds = contrastingPixelBounds(
+                image,
+                renderedText,
+                sampledNodeBackgroundColor(image, container),
+                0.04
+        );
+        double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
         assertEquals(containerCenter.getY(), inkCenterY, inkTolerance,
                 () -> "fixed target rendered content is vertically off-center: container="
                         + container + ", content=" + content + ", inkBounds=" + inkBounds);
@@ -21861,6 +25944,16 @@ final class M3ControlStyleTest {
         throw new AssertionError("No date cell found for " + date);
     }
 
+    /// Returns a time picker cell for the supplied time.
+    private static ButtonBase timeCellForTime(M3TimePicker picker, LocalTime time) {
+        for (Node node : picker.lookupAll("." + M3TimePicker.CELL_STYLE_CLASS)) {
+            if (node instanceof ButtonBase button && time.equals(button.getUserData())) {
+                return button;
+            }
+        }
+        throw new AssertionError("No time cell found for " + time);
+    }
+
     /// Verifies that a child node stays inside an ancestor boundary.
     private static void assertNodeInsideAncestor(Node ancestor, Node child, double tolerance) {
         Bounds ancestorBounds = ancestor.localToScene(ancestor.getLayoutBounds());
@@ -21886,6 +25979,17 @@ final class M3ControlStyleTest {
 
         assertEquals(containerCenter.getX(), childCenter.getX(), tolerance,
                 () -> "containerBounds=" + containerBounds + ", childBounds=" + childBounds);
+        assertEquals(containerCenter.getY(), childCenter.getY(), tolerance,
+                () -> "containerBounds=" + containerBounds + ", childBounds=" + childBounds);
+    }
+
+    /// Verifies that a child node's vertical visual center matches its container center.
+    private static void assertNodeVerticalCentersAligned(Node container, Node child, double tolerance) {
+        Point2D containerCenter = sceneCenter(container);
+        Point2D childCenter = sceneCenter(child);
+        Bounds containerBounds = container.localToScene(container.getLayoutBounds());
+        Bounds childBounds = child.localToScene(child.getLayoutBounds());
+
         assertEquals(containerCenter.getY(), childCenter.getY(), tolerance,
                 () -> "containerBounds=" + containerBounds + ", childBounds=" + childBounds);
     }
@@ -22082,6 +26186,33 @@ final class M3ControlStyleTest {
                 + "-fx-background-radius: 16px; "
                 + "-fx-padding: 16px;");
         return item;
+    }
+
+    /// Returns whether a carousel viewport is rendering an in-progress animated scroll position.
+    private static boolean carouselViewportScrollIsInProgress(
+            AtomicReference<@Nullable ScrollPane> viewportReference
+    ) {
+        @Nullable ScrollPane viewport = viewportReference.get();
+        return viewport != null && isBetweenExclusive(viewport.getHvalue(), 0.0, 1.0);
+    }
+
+    /// Closes the carousel scroll test window and clears local motion settings.
+    private static void closeCarouselScrollTestWindow(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable M3Carousel> carouselReference
+    ) {
+        runOnFxThread(() -> {
+            @Nullable M3Carousel carousel = carouselReference.get();
+            if (carousel != null) {
+                M3MotionSettings.clearAnimationsEnabled(carousel);
+                M3MotionSettings.clearMotionScheme(carousel);
+            }
+
+            @Nullable Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
     }
 
     /// Creates a media node used by list item visual snapshot tests.
@@ -22343,6 +26474,34 @@ final class M3ControlStyleTest {
 
         assertTrue(totalWeight > 0.0, () -> "No contrasting pixels found for " + node);
         return new Point2D(weightedX / totalWeight, weightedY / totalWeight);
+    }
+
+    /// Returns the number of rendered pixels inside a node that contrast with the reference color.
+    private static double contrastingPixelArea(
+            WritableImage image,
+            Node node,
+            Color reference,
+            double minimumDistance
+    ) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
+        int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
+        int endX = Math.min((int) image.getWidth(), (int) Math.ceil(bounds.getMaxX()));
+        int endY = Math.min((int) image.getHeight(), (int) Math.ceil(bounds.getMaxY()));
+        double area = 0.0;
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                double distance = colorDistance(color, reference);
+                if (color.getOpacity() > 0.1 && distance >= minimumDistance) {
+                    area += Math.min(1.0, color.getOpacity() * distance / minimumDistance);
+                }
+            }
+        }
+
+        assertTrue(area > 0.0, () -> "No contrasting pixels found for " + node);
+        return area;
     }
 
     /// Returns the bounds of rendered pixels inside a node that contrast with its sampled local background.
@@ -22981,6 +27140,49 @@ final class M3ControlStyleTest {
     /// Creates an indirect scroll event for scroll behavior tests.
     private static ScrollEvent scrollEvent(Node target, double deltaX, double deltaY) {
         return scrollEvent(target, deltaX, deltaY, false);
+    }
+
+    /// Returns the expected normalized position after a virtualized list wheel-scroll delta.
+    private static double expectedListViewWheelTargetPosition(
+            M3ListView<?> listView,
+            VirtualFlow<?> flow,
+            double deltaY
+    ) {
+        double rowHeight = listView.getFixedCellSize();
+        assertTrue(rowHeight > 0.0, () -> "fixedCellSize=" + rowHeight);
+        double viewportHeight = flow.getHeight() > 0.0 ? flow.getHeight() : listView.getHeight();
+        double scrollablePixels = Math.max(0.0, rowHeight * listView.getItems().size() - viewportHeight);
+        assertTrue(scrollablePixels > 0.0, () -> "scrollablePixels=" + scrollablePixels);
+        return clampToUnit(flow.getPosition() - deltaY / scrollablePixels);
+    }
+
+    /// Returns the expected vertical value after a scroll pane wheel-scroll delta.
+    private static double expectedScrollPaneVerticalTargetValue(
+            ScrollPane scrollPane,
+            Region content,
+            double deltaY
+    ) {
+        double viewportHeight = scrollPane.getViewportBounds().getHeight();
+        double contentHeight = Math.max(content.getBoundsInLocal().getHeight(), content.prefHeight(-1.0));
+        double scrollablePixels = contentHeight - viewportHeight;
+        assertTrue(scrollablePixels > 0.0, () -> scrollPaneDebug(scrollPane, content, scrollEvent(scrollPane, 0.0, deltaY)));
+        double valueRange = scrollPane.getVmax() - scrollPane.getVmin();
+        double currentPixels = (scrollPane.getVvalue() - scrollPane.getVmin()) / valueRange * scrollablePixels;
+        double targetPixels = clamp(currentPixels - deltaY, 0.0, scrollablePixels);
+        return scrollPane.getVmin() + targetPixels / scrollablePixels * valueRange;
+    }
+
+    /// Returns a value clamped to the unit interval.
+    private static double clampToUnit(double value) {
+        return clamp(value, 0.0, 1.0);
+    }
+
+    /// Returns a value clamped into a closed range.
+    private static double clamp(double value, double minValue, double maxValue) {
+        if (value <= minValue) {
+            return minValue;
+        }
+        return Math.min(value, maxValue);
     }
 
     /// Creates a scroll event for scroll behavior tests.

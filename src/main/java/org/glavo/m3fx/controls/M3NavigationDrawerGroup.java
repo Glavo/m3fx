@@ -27,6 +27,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /// A collapsible Material Design 3 navigation drawer destination group.
+///
+/// See [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
 @NotNullByDefault
 public final class M3NavigationDrawerGroup extends Control {
     /// The base style class for M3FX navigation drawer groups.

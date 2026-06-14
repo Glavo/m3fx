@@ -1,0 +1,744 @@
+// Copyright (c) 2026 Glavo
+// SPDX-License-Identifier: Apache-2.0
+
+package org.glavo.m3fx.controls;
+
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ModifiableObservableListBase;
+import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
+import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.skins.M3ToolbarSkin;
+import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
+/// A Material Design 3 toolbar for related actions.
+///
+/// `M3Toolbar` hosts a row or column of action nodes and applies Material container, padding, spacing, shape, and
+/// elevation tokens. It is intended for compact tool palettes, contextual editing actions, and docked tool areas
+/// where the actions should be navigable as one toolbar.
+///
+/// See [Material Design toolbars](https://m3.material.io/components/toolbars/overview).
+@NotNullByDefault
+public class M3Toolbar extends Control {
+    /// The base style class for M3FX toolbars.
+    public static final String STYLE_CLASS = "m3-toolbar";
+
+    /// The toolbar item slot style class.
+    public static final String ITEM_SLOT_STYLE_CLASS = "m3-toolbar-item-slot";
+
+    /// The default toolbar orientation.
+    private static final Orientation DEFAULT_ORIENTATION = Orientation.HORIZONTAL;
+
+    /// The default toolbar variant.
+    private static final M3ToolbarVariant DEFAULT_VARIANT = M3ToolbarVariant.STANDARD;
+
+    /// The default horizontal toolbar container height in pixels.
+    private static final double DEFAULT_CONTAINER_HEIGHT = 64.0;
+
+    /// The default vertical toolbar container width in pixels.
+    private static final double DEFAULT_CONTAINER_WIDTH = 64.0;
+
+    /// The default item slot size in pixels.
+    private static final double DEFAULT_ITEM_SLOT_SIZE = 48.0;
+
+    /// The default toolbar content padding in pixels.
+    private static final double DEFAULT_CONTENT_PADDING = 8.0;
+
+    /// The default toolbar item spacing in pixels.
+    private static final double DEFAULT_ITEM_SPACING = 0.0;
+
+    /// The mutable toolbar item list.
+    private final ObservableList<Node> items = new NonNullNodeList();
+
+    /// The toolbar visual variant backing property.
+    private final ObjectProperty<M3ToolbarVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", DEFAULT_VARIANT) {
+                /// Updates variant style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_VARIANT);
+                        return;
+                    }
+                    updateVariantStyle();
+                }
+            };
+
+    /// The toolbar layout orientation backing property.
+    private final ObjectProperty<Orientation> orientation =
+            new SimpleObjectProperty<>(this, "orientation", DEFAULT_ORIENTATION) {
+                /// Updates orientation style classes and layout metrics when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_ORIENTATION);
+                        return;
+                    }
+                    updateOrientationStyle();
+                    updateMetrics();
+                }
+            };
+
+    /// The styleable horizontal toolbar height backing property.
+    private @Nullable StyleableDoubleProperty containerHeight;
+
+    /// The styleable vertical toolbar width backing property.
+    private @Nullable StyleableDoubleProperty containerWidth;
+
+    /// The styleable item slot size backing property.
+    private @Nullable StyleableDoubleProperty itemSlotSize;
+
+    /// The styleable content padding backing property.
+    private @Nullable StyleableDoubleProperty contentPadding;
+
+    /// The styleable item spacing backing property.
+    private @Nullable StyleableDoubleProperty itemSpacing;
+
+    /// Notifies accessibility clients when focus moves between toolbar actions.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
+
+    /// Updates accessibility and layout after toolbar item changes.
+    private final ListChangeListener<Node> itemsListener = change -> handleItemsChanged();
+
+    /// Creates an empty toolbar.
+    public M3Toolbar() {
+        initialize();
+    }
+
+    /// Creates a toolbar with the supplied items.
+    ///
+    /// @param items the initial toolbar items
+    public M3Toolbar(Node... items) {
+        initialize();
+        addItems(items);
+    }
+
+    /// Returns the mutable toolbar item list.
+    ///
+    /// @return the mutable toolbar item list
+    public final ObservableList<Node> getItems() {
+        return items;
+    }
+
+    /// Adds one toolbar item.
+    ///
+    /// @param item the toolbar item to add
+    public final void addItem(Node item) {
+        getItems().add(Objects.requireNonNull(item, "item"));
+    }
+
+    /// Adds toolbar items after validating the item array.
+    ///
+    /// @param items the toolbar items to add
+    public final void addItems(Node... items) {
+        validateItems(items);
+        getItems().addAll(items);
+    }
+
+    /// Replaces all toolbar items.
+    ///
+    /// @param items the replacement toolbar items
+    public final void setItems(Node... items) {
+        validateItems(items);
+        getItems().setAll(items);
+    }
+
+    /// Removes all toolbar items.
+    public final void clearItems() {
+        getItems().clear();
+    }
+
+    /// Returns the toolbar visual variant.
+    ///
+    /// @return the toolbar visual variant
+    public final M3ToolbarVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the toolbar visual variant.
+    ///
+    /// @param variant the toolbar visual variant
+    public final void setVariant(M3ToolbarVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the toolbar visual variant property.
+    ///
+    /// @return the toolbar visual variant property
+    public final ObjectProperty<M3ToolbarVariant> variantProperty() {
+        return variant;
+    }
+
+    /// Returns the toolbar layout orientation.
+    ///
+    /// @return the toolbar layout orientation
+    public final Orientation getOrientation() {
+        return orientation.get();
+    }
+
+    /// Sets the toolbar layout orientation.
+    ///
+    /// @param orientation the toolbar layout orientation
+    public final void setOrientation(Orientation orientation) {
+        this.orientation.set(Objects.requireNonNull(orientation, "orientation"));
+    }
+
+    /// Returns the toolbar layout orientation property.
+    ///
+    /// @return the toolbar layout orientation property
+    public final ObjectProperty<Orientation> orientationProperty() {
+        return orientation;
+    }
+
+    /// Returns the horizontal toolbar container height token.
+    ///
+    /// @return the horizontal toolbar container height in pixels
+    public final double getContainerHeight() {
+        return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
+    }
+
+    /// Sets the horizontal toolbar container height token.
+    ///
+    /// @param containerHeight the horizontal toolbar container height in pixels
+    public final void setContainerHeight(double containerHeight) {
+        containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
+    }
+
+    /// Returns the horizontal toolbar container height token property.
+    ///
+    /// @return the horizontal toolbar container height token property
+    public final StyleableDoubleProperty containerHeightProperty() {
+        if (containerHeight == null) {
+            containerHeight = createStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_HEIGHT,
+                    "containerHeight",
+                    StyleableProperties.CONTAINER_HEIGHT
+            );
+        }
+        return containerHeight;
+    }
+
+    /// Returns the vertical toolbar container width token.
+    ///
+    /// @return the vertical toolbar container width in pixels
+    public final double getContainerWidth() {
+        return containerWidth == null ? DEFAULT_CONTAINER_WIDTH : containerWidth.get();
+    }
+
+    /// Sets the vertical toolbar container width token.
+    ///
+    /// @param containerWidth the vertical toolbar container width in pixels
+    public final void setContainerWidth(double containerWidth) {
+        containerWidthProperty().set(M3Css.nonNegative(containerWidth, "containerWidth"));
+    }
+
+    /// Returns the vertical toolbar container width token property.
+    ///
+    /// @return the vertical toolbar container width token property
+    public final StyleableDoubleProperty containerWidthProperty() {
+        if (containerWidth == null) {
+            containerWidth = createStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_WIDTH,
+                    "containerWidth",
+                    StyleableProperties.CONTAINER_WIDTH
+            );
+        }
+        return containerWidth;
+    }
+
+    /// Returns the toolbar item slot size token.
+    ///
+    /// @return the toolbar item slot size in pixels
+    public final double getItemSlotSize() {
+        return itemSlotSize == null ? DEFAULT_ITEM_SLOT_SIZE : itemSlotSize.get();
+    }
+
+    /// Sets the toolbar item slot size token.
+    ///
+    /// @param itemSlotSize the toolbar item slot size in pixels
+    public final void setItemSlotSize(double itemSlotSize) {
+        itemSlotSizeProperty().set(M3Css.nonNegative(itemSlotSize, "itemSlotSize"));
+    }
+
+    /// Returns the toolbar item slot size token property.
+    ///
+    /// @return the toolbar item slot size token property
+    public final StyleableDoubleProperty itemSlotSizeProperty() {
+        if (itemSlotSize == null) {
+            itemSlotSize = createStyleableDoubleProperty(
+                    DEFAULT_ITEM_SLOT_SIZE,
+                    "itemSlotSize",
+                    StyleableProperties.ITEM_SLOT_SIZE
+            );
+        }
+        return itemSlotSize;
+    }
+
+    /// Returns the toolbar content padding token.
+    ///
+    /// @return the toolbar content padding in pixels
+    public final double getContentPadding() {
+        return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
+    }
+
+    /// Sets the toolbar content padding token.
+    ///
+    /// @param contentPadding the toolbar content padding in pixels
+    public final void setContentPadding(double contentPadding) {
+        contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
+    }
+
+    /// Returns the toolbar content padding token property.
+    ///
+    /// @return the toolbar content padding token property
+    public final StyleableDoubleProperty contentPaddingProperty() {
+        if (contentPadding == null) {
+            contentPadding = createStyleableDoubleProperty(
+                    DEFAULT_CONTENT_PADDING,
+                    "contentPadding",
+                    StyleableProperties.CONTENT_PADDING
+            );
+        }
+        return contentPadding;
+    }
+
+    /// Returns the toolbar item spacing token.
+    ///
+    /// @return the toolbar item spacing in pixels
+    public final double getItemSpacing() {
+        return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
+    }
+
+    /// Sets the toolbar item spacing token.
+    ///
+    /// @param itemSpacing the toolbar item spacing in pixels
+    public final void setItemSpacing(double itemSpacing) {
+        itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
+    }
+
+    /// Returns the toolbar item spacing token property.
+    ///
+    /// @return the toolbar item spacing token property
+    public final StyleableDoubleProperty itemSpacingProperty() {
+        if (itemSpacing == null) {
+            itemSpacing = createStyleableDoubleProperty(
+                    DEFAULT_ITEM_SPACING,
+                    "itemSpacing",
+                    StyleableProperties.ITEM_SPACING
+            );
+        }
+        return itemSpacing;
+    }
+
+    /// Returns the user-agent stylesheet for M3FX toolbars.
+    ///
+    /// @return the user-agent stylesheet for M3FX toolbars
+    @Override
+    public String getUserAgentStylesheet() {
+        return M3Stylesheets.controlStylesheet("toolbar.css");
+    }
+
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    ///
+    /// @return the CSS metadata for this control
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
+    /// Returns accessibility attributes for toolbar items.
+    @Override
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        Objects.requireNonNull(attribute, "attribute");
+        return switch (attribute) {
+            case ITEM_COUNT -> getItems().size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
+            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getItems());
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Executes accessibility actions for toolbar item children.
+    @Override
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+        Objects.requireNonNull(action, "action");
+        switch (action) {
+            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getItems());
+            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getItems(), parameters);
+            default -> super.executeAccessibleAction(action, parameters);
+        }
+    }
+
+    /// Creates the default Material Design 3 toolbar skin.
+    @Override
+    protected Skin<?> createDefaultSkin() {
+        return new M3ToolbarSkin(this);
+    }
+
+    /// Initializes style classes, accessibility metadata, and item listeners.
+    private void initialize() {
+        M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.TOOL_BAR);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        getItems().addListener(itemsListener);
+        focusNotifier.start();
+        updateVariantStyle();
+        updateOrientationStyle();
+        updateMetrics();
+    }
+
+    /// Handles keyboard traversal between focusable toolbar items.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        Objects.requireNonNull(event, "event");
+        if (!isNavigationKey(event.getCode())) {
+            return;
+        }
+
+        @Nullable Node target = navigationTarget(event.getCode());
+        if (target == null) {
+            return;
+        }
+
+        target.requestFocus();
+        event.consume();
+    }
+
+    /// Returns whether a key participates in toolbar item traversal.
+    private boolean isNavigationKey(KeyCode keyCode) {
+        return switch (keyCode) {
+            case LEFT, RIGHT -> getOrientation() == Orientation.HORIZONTAL;
+            case UP, DOWN -> getOrientation() == Orientation.VERTICAL;
+            case HOME, END -> true;
+            default -> false;
+        };
+    }
+
+    /// Returns the toolbar focus target selected by a navigation key.
+    private @Nullable Node navigationTarget(KeyCode keyCode) {
+        List<Node> targets = navigationTargets();
+        if (targets.isEmpty()) {
+            return null;
+        }
+
+        int focusedIndex = focusedTargetIndex(targets);
+        return switch (keyCode) {
+            case HOME -> targets.get(0);
+            case END -> targets.get(targets.size() - 1);
+            case LEFT -> horizontalTarget(targets, focusedIndex, false);
+            case RIGHT -> horizontalTarget(targets, focusedIndex, true);
+            case UP -> verticalTarget(targets, focusedIndex, false);
+            case DOWN -> verticalTarget(targets, focusedIndex, true);
+            default -> null;
+        };
+    }
+
+    /// Returns the target for a horizontal arrow key.
+    private @Nullable Node horizontalTarget(List<Node> focusableItems, int focusedIndex, boolean rightKey) {
+        if (focusedIndex < 0) {
+            return focusableItems.get(M3SelectionNavigation.isRightToLeft(this) != rightKey
+                    ? 0
+                    : focusableItems.size() - 1);
+        }
+
+        boolean forward = M3SelectionNavigation.isRightToLeft(this) != rightKey;
+        return adjacentTarget(focusableItems, focusedIndex, forward);
+    }
+
+    /// Returns the target for a vertical arrow key.
+    private @Nullable Node verticalTarget(List<Node> focusableItems, int focusedIndex, boolean downKey) {
+        if (focusedIndex < 0) {
+            return focusableItems.get(downKey ? 0 : focusableItems.size() - 1);
+        }
+        return adjacentTarget(focusableItems, focusedIndex, downKey);
+    }
+
+    /// Returns the adjacent focusable item, wrapping at toolbar ends.
+    private static Node adjacentTarget(List<Node> focusableItems, int focusedIndex, boolean forward) {
+        int itemCount = focusableItems.size();
+        int targetIndex = Math.floorMod(focusedIndex + (forward ? 1 : -1), itemCount);
+        return focusableItems.get(targetIndex);
+    }
+
+    /// Returns the index of the focused toolbar target.
+    private int focusedTargetIndex(List<Node> targets) {
+        @Nullable Scene scene = getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        for (int index = 0; index < targets.size(); index++) {
+            Node target = targets.get(index);
+            if (target.isFocused() || focusOwner != null && M3Accessible.containsNode(target, focusOwner)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /// Returns reachable toolbar focus targets in logical list order.
+    private @Unmodifiable List<Node> navigationTargets() {
+        List<Node> targets = new ArrayList<>();
+        for (Node item : getItems()) {
+            @Nullable Node target = M3Accessible.accessibleFocusTarget(item);
+            if (target != null) {
+                targets.add(target);
+            }
+        }
+        return List.copyOf(targets);
+    }
+
+    /// Handles item list changes.
+    private void handleItemsChanged() {
+        requestLayout();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
+    }
+
+    /// Applies the active toolbar variant style class.
+    private void updateVariantStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getVariant().getStyleClass(),
+                M3ToolbarVariant.STANDARD.getStyleClass(),
+                M3ToolbarVariant.FLOATING.getStyleClass(),
+                M3ToolbarVariant.DOCKED.getStyleClass()
+        );
+    }
+
+    /// Applies the active toolbar orientation style class.
+    private void updateOrientationStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getOrientation() == Orientation.HORIZONTAL ? "m3-toolbar-horizontal" : "m3-toolbar-vertical",
+                "m3-toolbar-horizontal",
+                "m3-toolbar-vertical"
+        );
+    }
+
+    /// Applies size-related component tokens to JavaFX layout properties.
+    private void updateMetrics() {
+        double contentPadding = getContentPadding();
+        setPadding(new Insets(contentPadding));
+        if (getOrientation() == Orientation.HORIZONTAL) {
+            setMinHeight(getContainerHeight());
+            setPrefHeight(getContainerHeight());
+            setMinWidth(USE_COMPUTED_SIZE);
+            setPrefWidth(USE_COMPUTED_SIZE);
+        } else {
+            setMinWidth(getContainerWidth());
+            setPrefWidth(getContainerWidth());
+            setMinHeight(USE_COMPUTED_SIZE);
+            setPrefHeight(USE_COMPUTED_SIZE);
+        }
+        requestLayout();
+    }
+
+    /// Creates a non-negative CSS-backed size token property.
+    private StyleableDoubleProperty createStyleableDoubleProperty(
+            double initialValue,
+            String name,
+            CssMetaData<M3Toolbar, Number> cssMetaData
+    ) {
+        return M3Css.nonNegativeStyleableDoubleProperty(
+                initialValue,
+                this,
+                name,
+                cssMetaData,
+                this::updateMetrics
+        );
+    }
+
+    /// Validates a toolbar item array.
+    private static void validateItems(Node... items) {
+        Objects.requireNonNull(items, "items");
+        for (Node item : items) {
+            Objects.requireNonNull(item, "item");
+        }
+    }
+
+    /// Validates a toolbar item collection before a bulk list mutation is applied.
+    private static void validateItems(Collection<? extends Node> items) {
+        Objects.requireNonNull(items, "items");
+        for (Node item : items) {
+            Objects.requireNonNull(item, "item");
+        }
+    }
+
+    /// Observable toolbar item list that rejects null values through direct list mutations.
+    @NotNullByDefault
+    private static final class NonNullNodeList extends ModifiableObservableListBase<Node> {
+        /// The backing storage for toolbar items.
+        private final List<Node> backing = new ArrayList<>();
+
+        /// Returns the item at the requested index.
+        @Override
+        public Node get(int index) {
+            return backing.get(index);
+        }
+
+        /// Returns the number of toolbar items.
+        @Override
+        public int size() {
+            return backing.size();
+        }
+
+        /// Adds all supplied items after validating the complete array.
+        @Override
+        public boolean addAll(Node... elements) {
+            validateItems(elements);
+            return super.addAll(elements);
+        }
+
+        /// Adds all supplied items after validating the complete collection.
+        @Override
+        public boolean addAll(Collection<? extends Node> elements) {
+            validateItems(elements);
+            return super.addAll(elements);
+        }
+
+        /// Inserts all supplied items after validating the complete collection.
+        @Override
+        public boolean addAll(int index, Collection<? extends Node> elements) {
+            validateItems(elements);
+            return super.addAll(index, elements);
+        }
+
+        /// Replaces all items after validating the complete array.
+        @Override
+        public boolean setAll(Node... elements) {
+            validateItems(elements);
+            return super.setAll(elements);
+        }
+
+        /// Replaces all items after validating the complete collection.
+        @Override
+        public boolean setAll(Collection<? extends Node> elements) {
+            validateItems(elements);
+            return super.setAll(elements);
+        }
+
+        /// Adds one already validated item to the backing storage.
+        @Override
+        protected void doAdd(int index, Node element) {
+            backing.add(index, Objects.requireNonNull(element, "item"));
+        }
+
+        /// Replaces one item in the backing storage.
+        @Override
+        protected Node doSet(int index, Node element) {
+            return backing.set(index, Objects.requireNonNull(element, "item"));
+        }
+
+        /// Removes one item from the backing storage.
+        @Override
+        protected Node doRemove(int index) {
+            return backing.remove(index);
+        }
+    }
+
+    /// CSS metadata for M3FX toolbar component tokens.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for horizontal toolbar container height.
+        private static final CssMetaData<M3Toolbar, Number> CONTAINER_HEIGHT =
+                createSizeCssMetaData("-m3-container-height", DEFAULT_CONTAINER_HEIGHT,
+                        M3Toolbar::containerHeightProperty);
+
+        /// CSS metadata for vertical toolbar container width.
+        private static final CssMetaData<M3Toolbar, Number> CONTAINER_WIDTH =
+                createSizeCssMetaData("-m3-container-width", DEFAULT_CONTAINER_WIDTH,
+                        M3Toolbar::containerWidthProperty);
+
+        /// CSS metadata for toolbar item slot size.
+        private static final CssMetaData<M3Toolbar, Number> ITEM_SLOT_SIZE =
+                createSizeCssMetaData("-m3-item-slot-size", DEFAULT_ITEM_SLOT_SIZE,
+                        M3Toolbar::itemSlotSizeProperty);
+
+        /// CSS metadata for toolbar content padding.
+        private static final CssMetaData<M3Toolbar, Number> CONTENT_PADDING =
+                createSizeCssMetaData("-m3-content-padding", DEFAULT_CONTENT_PADDING,
+                        M3Toolbar::contentPaddingProperty);
+
+        /// CSS metadata for toolbar item spacing.
+        private static final CssMetaData<M3Toolbar, Number> ITEM_SPACING =
+                createSizeCssMetaData("-m3-item-spacing", DEFAULT_ITEM_SPACING,
+                        M3Toolbar::itemSpacingProperty);
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(CONTAINER_HEIGHT);
+            styleables.add(CONTAINER_WIDTH);
+            styleables.add(ITEM_SLOT_SIZE);
+            styleables.add(CONTENT_PADDING);
+            styleables.add(ITEM_SPACING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
+        }
+
+        /// Prevents CSS metadata holder instantiation.
+        private StyleableProperties() {
+        }
+
+        /// Creates CSS metadata for a non-negative size token.
+        private static CssMetaData<M3Toolbar, Number> createSizeCssMetaData(
+                String property,
+                double initialValue,
+                StyleablePropertyAccessor accessor
+        ) {
+            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
+                /// Returns whether this property can be set by CSS.
+                @Override
+                public boolean isSettable(M3Toolbar control) {
+                    return M3Css.isSettable(accessor.property(control));
+                }
+
+                /// Returns the styleable property for a control.
+                @Override
+                public StyleableProperty<Number> getStyleableProperty(M3Toolbar control) {
+                    return accessor.property(control);
+                }
+            };
+        }
+
+        /// Provides access to a styleable toolbar size token property.
+        @FunctionalInterface
+        private interface StyleablePropertyAccessor {
+            /// Returns the property for the supplied toolbar.
+            StyleableDoubleProperty property(M3Toolbar control);
+        }
+    }
+}

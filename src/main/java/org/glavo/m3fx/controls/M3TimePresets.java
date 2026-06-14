@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Objects;
 
 /// Provides reusable [M3TimePreset] factories for common time choices.
+///
+/// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public final class M3TimePresets {
     /// Prevents utility class instantiation.

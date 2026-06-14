@@ -10,6 +10,8 @@ import java.util.Objects;
 
 /// A labeled date that can be applied to an [M3DatePicker].
 ///
+/// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
+///
 /// @param text the text shown for the preset action
 /// @param date the date selected by the preset
 @NotNullByDefault

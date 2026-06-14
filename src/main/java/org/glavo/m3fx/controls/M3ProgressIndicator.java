@@ -71,22 +71,22 @@ public class M3ProgressIndicator extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    // The current progress value.
+    /// The current progress value.
     private @Nullable DoubleProperty progress;
 
-    // The styleable circular indicator stroke thickness token.
+    /// The styleable circular indicator stroke thickness token.
     private @Nullable StyleableDoubleProperty trackThickness;
 
-    // The styleable indicator size token.
+    /// The styleable indicator size token.
     private @Nullable StyleableDoubleProperty indicatorSize;
 
-    // The styleable wave amplitude token.
+    /// The styleable wave amplitude token.
     private @Nullable StyleableDoubleProperty waveAmplitude;
 
-    // The styleable wavelength token.
+    /// The styleable wavelength token.
     private @Nullable StyleableDoubleProperty wavelength;
 
-    // The styleable active-to-track gap token.
+    /// The styleable active-to-track gap token.
     private @Nullable StyleableDoubleProperty trackGap;
 
     /// Creates an indeterminate progress indicator.

@@ -234,6 +234,9 @@ public class M3NavigationRail extends Control {
 
     /// Selects the first navigation item when one exists.
     public final void selectFirst() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         M3NavigationItem firstItem = firstNavigationItem();
         if (firstItem != null) {
             selectItem(firstItem);
@@ -242,6 +245,9 @@ public class M3NavigationRail extends Control {
 
     /// Selects the last navigation item when one exists.
     public final void selectLast() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3NavigationItem lastItem =
                 M3SelectionNavigation.last(getItems(), M3NavigationItem.class);
         if (lastItem != null) {
@@ -251,6 +257,9 @@ public class M3NavigationRail extends Control {
 
     /// Selects the next navigation item after the current selected item, wrapping at the end.
     public final void selectNext() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3NavigationItem nextItem =
                 M3SelectionNavigation.next(getItems(), getSelectedItem(), M3NavigationItem.class);
         if (nextItem != null) {
@@ -260,6 +269,9 @@ public class M3NavigationRail extends Control {
 
     /// Selects the previous navigation item before the current selected item, wrapping at the start.
     public final void selectPrevious() {
+        if (!M3Accessible.isEffectivelyReachable(this)) {
+            return;
+        }
         @Nullable M3NavigationItem previousItem =
                 M3SelectionNavigation.previous(getItems(), getSelectedItem(), M3NavigationItem.class);
         if (previousItem != null) {
@@ -518,8 +530,8 @@ public class M3NavigationRail extends Control {
     }
 
     /// Returns whether a navigation item can currently participate in selection.
-    private static boolean isSelectableNavigationItem(M3NavigationItem item) {
-        return !item.isDisabled() && item.isVisible();
+    private boolean isSelectableNavigationItem(M3NavigationItem item) {
+        return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(item);
     }
 
     /// Creates the default Material Design 3 navigation rail skin.

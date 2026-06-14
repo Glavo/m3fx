@@ -3,11 +3,12 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.theme.M3Theme;
@@ -16,8 +17,12 @@ import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.glavo.m3fx.tokens.M3TokenSet;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,6 +36,7 @@ final class M3StateLayerTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+        Platform.setImplicitExit(false);
     }
 
     /// Verifies that owner-state hover opacity is reached through an animation.
@@ -237,74 +243,130 @@ final class M3StateLayerTest {
 
     /// Verifies that ripples remain visible until explicitly released.
     @Test
-    void rippleHoldsUntilReleaseThenFades() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane root = new Pane();
-            M3StateLayer stateLayer = new M3StateLayer();
-            root.getChildren().add(stateLayer);
-            Scene scene = new Scene(root, 100.0, 40.0);
+    void rippleHoldsUntilReleaseThenFades() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3StateLayer> stateLayerReference = new AtomicReference<>();
+        AtomicReference<@Nullable Region> rippleReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> releaseOpacityReference = new AtomicReference<>();
 
-            root.applyCss();
-            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
-            stateLayer.playRipple(20.0, 20.0);
+        try {
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> rippleReachedExpandedFrame(rippleReference),
+                    2,
+                    () -> showRippleStateLayer(stageReference, stateLayerReference, rippleReference, 20.0, 20.0),
+                    () -> {
+                        M3StateLayer stateLayer = Objects.requireNonNull(
+                                stateLayerReference.get(),
+                                "stateLayer"
+                        );
+                        Region ripple = Objects.requireNonNull(rippleReference.get(), "ripple");
+                        double releaseOpacity = ripple.getOpacity();
 
-            Region ripple = lookupRegion(stateLayer, ".m3-ripple");
-            Timeline expansionAnimation = reflectedTimeline(stateLayer, "rippleAnimation");
-            expansionAnimation.jumpTo(expansionAnimation.getTotalDuration());
+                        assertTrue(releaseOpacity > 0.1);
+                        assertEquals(1.0, ripple.getScaleX(), 0.0001);
+                        assertEquals(1.0, ripple.getScaleY(), 0.0001);
 
-            assertTrue(ripple.getOpacity() > 0.1);
-            assertEquals(1.0, ripple.getScaleX(), 0.0001);
-            assertEquals(1.0, ripple.getScaleY(), 0.0001);
+                        releaseOpacityReference.set(releaseOpacity);
+                        stateLayer.releaseRipple();
 
-            stateLayer.releaseRipple();
-            Timeline releaseAnimation = reflectedTimeline(stateLayer, "rippleAnimation");
-            assertTrue(ripple.getOpacity() > 0.1);
-            assertTrue(stateLayer.isRippleAnimationRunning());
+                        assertTrue(ripple.getOpacity() > 0.1);
+                        assertTrue(stateLayer.isRippleAnimationRunning());
+                    }
+            );
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> rippleOpacityFadedBelow(rippleReference, releaseOpacityReference),
+                    () -> {
+                    },
+                    () -> assertTrue(
+                            Objects.requireNonNull(rippleReference.get(), "ripple").getOpacity() > 0.0
+                    )
+            );
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> rippleCleared(rippleReference),
+                    2,
+                    () -> {
+                    },
+                    () -> {
+                        M3StateLayer stateLayer = Objects.requireNonNull(
+                                stateLayerReference.get(),
+                                "stateLayer"
+                        );
+                        Region ripple = Objects.requireNonNull(rippleReference.get(), "ripple");
 
-            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration().divide(2.0));
-
-            assertTrue(ripple.getOpacity() > 0.0);
-
-            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration());
-
-            assertEquals(0.0, ripple.getOpacity(), 0.0001);
-        });
+                        assertEquals(0.0, ripple.getOpacity(), 0.0001);
+                        assertEquals(1.0, ripple.getScaleX(), 0.0001);
+                        assertEquals(1.0, ripple.getScaleY(), 0.0001);
+                        assertFalse(stateLayer.isRippleAnimationRunning());
+                    }
+            );
+        } finally {
+            closeRippleStateLayer(stageReference);
+        }
     }
 
     /// Verifies that an early release lets the ripple expand while it fades.
     @Test
-    void rippleReleasedBeforeExpansionCompletesStillExpandsWhileFading() {
-        FxTestUtils.runOnFxThread(() -> {
-            Pane root = new Pane();
-            M3StateLayer stateLayer = new M3StateLayer();
-            root.getChildren().add(stateLayer);
-            Scene scene = new Scene(root, 100.0, 40.0);
+    void rippleReleasedBeforeExpansionCompletesStillExpandsWhileFading() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3StateLayer> stateLayerReference = new AtomicReference<>();
+        AtomicReference<@Nullable Region> rippleReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> startScaleReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> startOpacityReference = new AtomicReference<>();
 
-            root.applyCss();
-            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
-            stateLayer.playRipple(12.0, 20.0);
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> rippleExpandsWhileFading(rippleReference, startScaleReference, startOpacityReference),
+                    () -> {
+                        showRippleStateLayer(stageReference, stateLayerReference, rippleReference, 12.0, 20.0);
 
-            Region ripple = lookupRegion(stateLayer, ".m3-ripple");
-            double startScale = Math.max(ripple.getScaleX(), ripple.getScaleY());
-            double startOpacity = ripple.getOpacity();
-            stateLayer.releaseRipple();
-            Timeline releaseAnimation = reflectedTimeline(stateLayer, "rippleAnimation");
+                        M3StateLayer stateLayer = Objects.requireNonNull(
+                                stateLayerReference.get(),
+                                "stateLayer"
+                        );
+                        Region ripple = Objects.requireNonNull(rippleReference.get(), "ripple");
 
-            assertTrue(ripple.getOpacity() > 0.1);
-            assertTrue(stateLayer.isRippleAnimationRunning());
+                        startScaleReference.set(rippleScale(ripple));
+                        startOpacityReference.set(ripple.getOpacity());
+                        stateLayer.releaseRipple();
 
-            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration().divide(2.0));
+                        assertTrue(ripple.getOpacity() > 0.1);
+                        assertTrue(stateLayer.isRippleAnimationRunning());
+                    },
+                    () -> {
+                        Region ripple = Objects.requireNonNull(rippleReference.get(), "ripple");
 
-            assertTrue(Math.max(ripple.getScaleX(), ripple.getScaleY()) > startScale);
-            assertTrue(ripple.getOpacity() > 0.0);
-            assertTrue(ripple.getOpacity() < startOpacity);
+                        assertTrue(rippleScale(ripple) > Objects.requireNonNull(
+                                startScaleReference.get(),
+                                "startScale"
+                        ));
+                        assertTrue(ripple.getOpacity() > 0.0);
+                        assertTrue(ripple.getOpacity() < Objects.requireNonNull(
+                                startOpacityReference.get(),
+                                "startOpacity"
+                        ));
+                    }
+            );
+            FxTestUtils.runOnFxThreadWhenStable(
+                    () -> rippleCleared(rippleReference),
+                    2,
+                    () -> {
+                    },
+                    () -> {
+                        M3StateLayer stateLayer = Objects.requireNonNull(
+                                stateLayerReference.get(),
+                                "stateLayer"
+                        );
+                        Region ripple = Objects.requireNonNull(rippleReference.get(), "ripple");
 
-            releaseAnimation.jumpTo(releaseAnimation.getTotalDuration());
-
-            assertEquals(0.0, ripple.getOpacity(), 0.0001);
-            assertEquals(1.0, ripple.getScaleX(), 0.0001);
-            assertEquals(1.0, ripple.getScaleY(), 0.0001);
-        });
+                        assertEquals(0.0, ripple.getOpacity(), 0.0001);
+                        assertEquals(1.0, ripple.getScaleX(), 0.0001);
+                        assertEquals(1.0, ripple.getScaleY(), 0.0001);
+                        assertFalse(stateLayer.isRippleAnimationRunning());
+                    }
+            );
+        } finally {
+            closeRippleStateLayer(stageReference);
+        }
     }
 
     /// Returns a region looked up below a node.
@@ -314,14 +376,94 @@ final class M3StateLayerTest {
         return (Region) child;
     }
 
-    /// Returns a private timeline field from a state layer.
-    private static Timeline reflectedTimeline(M3StateLayer stateLayer, String fieldName) {
-        try {
-            java.lang.reflect.Field field = M3StateLayer.class.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            return assertInstanceOf(Timeline.class, field.get(stateLayer));
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
+    /// Shows a real-window state layer and starts a ripple from the supplied origin.
+    private static void showRippleStateLayer(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable M3StateLayer> stateLayerReference,
+            AtomicReference<@Nullable Region> rippleReference,
+            double originX,
+            double originY
+    ) {
+        Pane root = new Pane();
+        M3StateLayer stateLayer = new M3StateLayer();
+        root.getChildren().add(stateLayer);
+        Scene scene = new Scene(root, 100.0, 40.0);
+        Stage stage = new Stage();
+
+        stage.setScene(scene);
+        stage.show();
+        root.applyCss();
+        root.resize(100.0, 40.0);
+        root.layout();
+        stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+        stateLayer.playRipple(originX, originY);
+
+        stageReference.set(stage);
+        stateLayerReference.set(stateLayer);
+        rippleReference.set(lookupRegion(stateLayer, ".m3-ripple"));
+    }
+
+    /// Closes a state-layer ripple test window.
+    private static void closeRippleStateLayer(AtomicReference<@Nullable Stage> stageReference) {
+        FxTestUtils.runOnFxThread(() -> {
+            @Nullable Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
+    }
+
+    /// Returns whether the ripple reached the expanded press-held frame.
+    private static boolean rippleReachedExpandedFrame(AtomicReference<@Nullable Region> rippleReference) {
+        @Nullable Region ripple = rippleReference.get();
+        return ripple != null
+                && ripple.getOpacity() > 0.1
+                && ripple.getScaleX() >= 0.999
+                && ripple.getScaleY() >= 0.999;
+    }
+
+    /// Returns whether the ripple has visibly faded below the captured release opacity.
+    private static boolean rippleOpacityFadedBelow(
+            AtomicReference<@Nullable Region> rippleReference,
+            AtomicReference<@Nullable Double> baselineOpacityReference
+    ) {
+        @Nullable Region ripple = rippleReference.get();
+        @Nullable Double baselineOpacity = baselineOpacityReference.get();
+        if (ripple == null || baselineOpacity == null) {
+            return false;
         }
+
+        double opacity = ripple.getOpacity();
+        return opacity > 0.0 && opacity < baselineOpacity - 0.001;
+    }
+
+    /// Returns whether an early-released ripple is still expanding while it fades.
+    private static boolean rippleExpandsWhileFading(
+            AtomicReference<@Nullable Region> rippleReference,
+            AtomicReference<@Nullable Double> startScaleReference,
+            AtomicReference<@Nullable Double> startOpacityReference
+    ) {
+        @Nullable Region ripple = rippleReference.get();
+        @Nullable Double startScale = startScaleReference.get();
+        @Nullable Double startOpacity = startOpacityReference.get();
+        if (ripple == null || startScale == null || startOpacity == null) {
+            return false;
+        }
+
+        double opacity = ripple.getOpacity();
+        return rippleScale(ripple) > startScale + 0.001
+                && opacity > 0.0
+                && opacity < startOpacity - 0.001;
+    }
+
+    /// Returns whether the ripple finished its release animation.
+    private static boolean rippleCleared(AtomicReference<@Nullable Region> rippleReference) {
+        @Nullable Region ripple = rippleReference.get();
+        return ripple != null && ripple.getOpacity() <= 0.0001;
+    }
+
+    /// Returns the larger current ripple scale.
+    private static double rippleScale(Region ripple) {
+        return Math.max(ripple.getScaleX(), ripple.getScaleY());
     }
 }

@@ -423,7 +423,19 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
 
     /// Returns whether a time cell is visible to users and accessibility clients.
     private static boolean isAccessibleCell(Node cell) {
-        return cell.isVisible() && !cell.isMouseTransparent();
+        return isEffectivelyReachable(cell) && !cell.isMouseTransparent();
+    }
+
+    /// Returns whether a node and its ancestor chain are visible and enabled.
+    private static boolean isEffectivelyReachable(Node node) {
+        @Nullable Node current = node;
+        while (current != null) {
+            if (!current.isVisible() || current.isDisabled()) {
+                return false;
+            }
+            current = current.getParent();
+        }
+        return true;
     }
 
     /// Formats an hour for the active display mode.

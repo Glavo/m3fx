@@ -651,11 +651,9 @@ public class M3Slider extends Control {
         updateMetrics();
     }
 
-    /// Applies size-related component tokens to JavaFX layout properties.
+    /// Requests layout after size-related component tokens change.
     private void updateMetrics() {
-        double size = Math.max(getTouchTargetSize(), Math.max(getThumbSize(), getTrackThickness()));
-        setMinHeight(size);
-        setPrefHeight(size);
+        requestLayout();
     }
 
     /// Clamps the current value after a range change.

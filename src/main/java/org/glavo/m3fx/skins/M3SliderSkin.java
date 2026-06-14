@@ -261,12 +261,11 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double trackLength = Math.max(0.0, width - thumbSize);
         double trackX = x + thumbSize / 2.0;
         double trackY = y + (height - trackThickness) / 2.0;
-        double visualPosition = horizontalVisualPosition(position);
-        double thumbX = trackX + trackLength * visualPosition - thumbSize / 2.0;
+        double thumbX = trackX + trackLength * position - thumbSize / 2.0;
         double thumbY = y + (height - thumbSize) / 2.0;
 
         track.resizeRelocate(trackX, trackY, trackLength, trackThickness);
-        layoutHorizontalActiveTrack(trackX, trackY, trackLength, trackThickness, visualPosition);
+        layoutHorizontalActiveTrack(trackX, trackY, trackLength, trackThickness, position);
         stateLayer.layoutLayer(
                 thumbX + thumbSize / 2.0 - getSkinnable().getTouchTargetSize() / 2.0,
                 y + (height - getSkinnable().getTouchTargetSize()) / 2.0,
@@ -305,23 +304,16 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbSize);
     }
 
-    /// Positions the active horizontal track segment for the current visual direction.
+    /// Positions the active horizontal track segment in logical local coordinates.
     private void layoutHorizontalActiveTrack(
             double trackX,
             double trackY,
             double trackLength,
             double trackThickness,
-            double visualPosition
+            double position
     ) {
-        double activeLength;
-        double activeX;
-        if (isHorizontalRightToLeft()) {
-            activeLength = trackLength * (1.0 - visualPosition);
-            activeX = trackX + trackLength - activeLength;
-        } else {
-            activeLength = trackLength * visualPosition;
-            activeX = trackX;
-        }
+        double activeLength = trackLength * position;
+        double activeX = trackX;
         activeTrack.resizeRelocate(activeX, trackY, Math.max(0.0, activeLength), trackThickness);
     }
 
@@ -469,8 +461,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             return 0.0;
         }
         double start = thumbSize / 2.0;
-        double physicalPosition = clamp((point.getX() - start) / length);
-        return isHorizontalRightToLeft() ? 1.0 - physicalPosition : physicalPosition;
+        return clamp((point.getX() - start) / length);
     }
 
     /// Converts a slider value to a normalized position.
@@ -481,11 +472,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             return 0.0;
         }
         return clamp((value - slider.getMin()) / range);
-    }
-
-    /// Returns a horizontal position after applying right-to-left visual mirroring.
-    private double horizontalVisualPosition(double position) {
-        return isHorizontalRightToLeft() ? 1.0 - position : position;
     }
 
     /// Returns whether this slider currently mirrors horizontal value geometry.

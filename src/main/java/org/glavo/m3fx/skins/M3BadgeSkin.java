@@ -49,6 +49,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
     /// @param control the badge controlled by this skin
     public M3BadgeSkin(M3Badge control) {
         super(control);
+        label.setManaged(false);
         label.getStyleClass().add("m3-badge-label");
         getChildren().add(label);
 
@@ -78,6 +79,88 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         badge.containerShapeProperty().removeListener(metricsInvalidation);
         badge.horizontalPaddingProperty().removeListener(metricsInvalidation);
         super.dispose();
+    }
+
+    /// Computes the minimum badge width from the active badge token state.
+    @Override
+    protected double computeMinWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return computePrefWidth(height, topInset, rightInset, bottomInset, leftInset);
+    }
+
+    /// Computes the minimum badge height from the active badge token state.
+    @Override
+    protected double computeMinHeight(
+            double width,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return computePrefHeight(width, topInset, rightInset, bottomInset, leftInset);
+    }
+
+    /// Computes the preferred badge width from the active badge token state.
+    @Override
+    protected double computePrefWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return leftInset + computeBadgeWidth(height) + rightInset;
+    }
+
+    /// Computes the preferred badge height from the active badge token state.
+    @Override
+    protected double computePrefHeight(
+            double width,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return topInset + computeBadgeHeight() + bottomInset;
+    }
+
+    /// Computes the maximum badge width from the active badge token state.
+    @Override
+    protected double computeMaxWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return computePrefWidth(height, topInset, rightInset, bottomInset, leftInset);
+    }
+
+    /// Computes the maximum badge height from the active badge token state.
+    @Override
+    protected double computeMaxHeight(
+            double width,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return computePrefHeight(width, topInset, rightInset, bottomInset, leftInset);
+    }
+
+    /// Lays out the label with the explicit dot or text badge size instead of inheriting label text metrics.
+    @Override
+    protected void layoutChildren(double contentX, double contentY, double contentWidth, double contentHeight) {
+        double labelWidth = snapSizeX(computeBadgeWidth(contentHeight));
+        double labelHeight = snapSizeY(computeBadgeHeight());
+        double labelX = snapPositionX(contentX + (contentWidth - labelWidth) / 2.0);
+        double labelY = snapPositionY(contentY + (contentHeight - labelHeight) / 2.0);
+        label.resizeRelocate(labelX, labelY, labelWidth, labelHeight);
     }
 
     /// Updates text and layout together after display text changes.
@@ -115,6 +198,22 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
             label.setPadding(new Insets(0.0, badge.getHorizontalPadding(), 0.0, badge.getHorizontalPadding()));
             label.setStyle("-fx-background-radius: " + formatPixels(badge.getContainerShape()) + ";");
         }
+        getSkinnable().requestLayout();
+    }
+
+    /// Computes the visual badge width for the current text state.
+    private double computeBadgeWidth(double height) {
+        M3Badge badge = getSkinnable();
+        if (badge.getDisplayText().isEmpty()) {
+            return badge.getSmallSize();
+        }
+        return Math.max(badge.getLargeMinWidth(), label.prefWidth(height));
+    }
+
+    /// Computes the visual badge height for the current text state.
+    private double computeBadgeHeight() {
+        M3Badge badge = getSkinnable();
+        return badge.getDisplayText().isEmpty() ? badge.getSmallSize() : badge.getLargeHeight();
     }
 
     /// Animates badge content after the rendered display text changes.

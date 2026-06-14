@@ -138,17 +138,14 @@ public final class M3MotionSettings {
 
     /// Returns a read-only revision property that changes when any global or node-local motion setting changes.
     ///
-    /// Controls with long-running animations can observe this property and refresh their animation state when
-    /// applications change animation switches, motion schemes, or behavior timings at runtime.
-    ///
-    /// @return the read-only motion settings revision property
-    public static ReadOnlyLongProperty settingsRevisionProperty() {
+    /// @return the read-only settings revision property
+    public static ReadOnlyLongProperty revisionProperty() {
         return readOnlySettingsRevision;
     }
 
     /// Adds a listener that is called whenever global or node-local motion settings change.
     ///
-    /// The listener is notified synchronously after [settingsRevisionProperty] increments. Unlike a JavaFX
+    /// The listener is notified synchronously after [revisionProperty] increments. Unlike a JavaFX
     /// invalidation listener attached directly to the property, this listener is called for every settings change
     /// even when the property value has not been read between changes.
     ///

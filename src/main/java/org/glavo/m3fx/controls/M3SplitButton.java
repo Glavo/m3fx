@@ -453,6 +453,9 @@ public class M3SplitButton extends Control {
 
     /// Requests focus for the currently active split button focus branch.
     private void focusAccessibleNode() {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         if (isShowing()) {
             menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
         } else {
@@ -463,6 +466,9 @@ public class M3SplitButton extends Control {
 
     /// Focuses a requested split button part or delegates menu-item targets to the popup menu.
     private void showAccessibleItem(Object... parameters) {
+        if (!M3Accessible.canReach(this)) {
+            return;
+        }
         if (parameters.length == 0) {
             if (isShowing()) {
                 menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
