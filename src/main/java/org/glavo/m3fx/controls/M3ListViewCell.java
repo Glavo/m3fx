@@ -35,6 +35,9 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     /// The base style class for M3FX list view cells.
     public static final String STYLE_CLASS = "m3-list-view-cell";
 
+    /// The property key that stores a row item style before copied theme declarations are applied.
+    private static final String BASE_STYLE_PROPERTY_KEY = M3ListViewCell.class.getName() + ".baseStyle";
+
     /// The pseudo-class used when this virtualized row owns logical keyboard focus.
     private static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
 
@@ -156,10 +159,28 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
 
     /// Copies the current list view theme context into a virtualized row for early CSS passes.
     private void copyThemeContext(M3ListItem itemNode) {
+        preserveBaseStyle(itemNode);
         @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(getListView());
         if (themeRoot != null) {
             M3ThemeManager.copyThemeContext(themeRoot, itemNode);
+        } else {
+            clearThemeContext(itemNode);
         }
+    }
+
+    /// Preserves the row item style that existed before copied theme declarations were applied.
+    private static void preserveBaseStyle(M3ListItem itemNode) {
+        if (!itemNode.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {
+            itemNode.getProperties().put(BASE_STYLE_PROPERTY_KEY, itemNode.getStyle());
+        }
+    }
+
+    /// Clears copied theme metadata and restores the row item base style.
+    private static void clearThemeContext(M3ListItem itemNode) {
+        M3ThemeManager.clearThemeStyleClasses(itemNode);
+        itemNode.getProperties().remove(M3ThemeManager.THEME_PROPERTY_KEY);
+        Object baseStyleValue = itemNode.getProperties().get(BASE_STYLE_PROPERTY_KEY);
+        itemNode.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
     }
 
     /// Returns whether the owning list view is in a scene whose window is still visible.
@@ -197,6 +218,15 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
         updateSelected(selected);
         if (listItem != null) {
             listItem.setSelected(selected);
+        }
+    }
+
+    /// Reapplies the current list view theme context to the rendered row item.
+    public final void refreshThemeContext() {
+        if (listItem != null) {
+            copyThemeContext(listItem);
+            listItem.applyCss();
+            listItem.layout();
         }
     }
 

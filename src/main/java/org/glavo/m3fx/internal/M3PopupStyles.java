@@ -23,6 +23,9 @@ public final class M3PopupStyles {
     /// The M3FX token root style class used by fallback token declarations outside JavaFX scene roots.
     public static final String FALLBACK_ROOT_STYLE_CLASS = "m3-fallback-root";
 
+    /// The property key that stores a popup root style before copied theme declarations are applied.
+    private static final String BASE_STYLE_PROPERTY_KEY = M3PopupStyles.class.getName() + ".baseStyle";
+
     /// Prevents utility class instantiation.
     private M3PopupStyles() {
     }
@@ -49,8 +52,11 @@ public final class M3PopupStyles {
             addStylesheet(popupRoot, Objects.requireNonNull(stylesheet, "stylesheet"));
         }
         addFallbackRootStyleClass(popupRoot);
+        preserveBaseStyle(popupRoot);
         if (themeRoot != null) {
             M3ThemeManager.copyThemeContext(themeRoot, popupRoot);
+        } else {
+            restoreBaseStyle(popupRoot);
         }
     }
 
@@ -94,5 +100,24 @@ public final class M3PopupStyles {
         if (!styleClasses.contains(FALLBACK_ROOT_STYLE_CLASS)) {
             styleClasses.add(FALLBACK_ROOT_STYLE_CLASS);
         }
+    }
+
+    /// Preserves the popup root style that should be restored when no copied theme context is available.
+    ///
+    /// @param popupRoot the popup-hosted root whose base style should be preserved
+    private static void preserveBaseStyle(Parent popupRoot) {
+        if (!popupRoot.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {
+            popupRoot.getProperties().put(BASE_STYLE_PROPERTY_KEY, popupRoot.getStyle());
+        }
+    }
+
+    /// Restores the popup root style and removes copied theme metadata.
+    ///
+    /// @param popupRoot the popup-hosted root whose copied theme context should be cleared
+    private static void restoreBaseStyle(Parent popupRoot) {
+        M3ThemeManager.clearThemeStyleClasses(popupRoot);
+        popupRoot.getProperties().remove(M3ThemeManager.THEME_PROPERTY_KEY);
+        Object baseStyleValue = popupRoot.getProperties().get(BASE_STYLE_PROPERTY_KEY);
+        popupRoot.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
     }
 }

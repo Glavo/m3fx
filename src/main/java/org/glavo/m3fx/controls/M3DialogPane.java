@@ -380,11 +380,20 @@ public class M3DialogPane extends DialogPane {
         Objects.requireNonNull(parameters, "parameters");
         @Nullable Node item = accessibleActionOrCurrentItem(parameters);
         if (item != null) {
-            M3Accessible.showItem(item);
+            if (!M3Accessible.showAccessibleActionTarget(item, parameters)) {
+                M3Accessible.showItem(item);
+            }
             return;
         }
 
-        M3Accessible.showAccessibleActionTarget(getContent(), parameters);
+        if (M3Accessible.showAccessibleActionTarget(getContent(), parameters)) {
+            return;
+        }
+        for (ButtonType buttonType : getButtonTypes()) {
+            if (M3Accessible.showAccessibleActionTarget(lookupButton(buttonType), parameters)) {
+                return;
+            }
+        }
     }
 
     /// Returns the item requested by accessibility action parameters.
@@ -421,6 +430,16 @@ public class M3DialogPane extends DialogPane {
             @Nullable Node content = getContent();
             if (content != null && M3Accessible.containsNode(content, node)) {
                 return node;
+            }
+            if (content != null && M3Accessible.containsAccessibleActionTarget(content, node)) {
+                return content;
+            }
+            for (ButtonType buttonType : getButtonTypes()) {
+                @Nullable Node button = lookupButton(buttonType);
+                if (button != null && (M3Accessible.containsNode(button, node)
+                        || M3Accessible.containsAccessibleActionTarget(button, node))) {
+                    return button;
+                }
             }
             return null;
         }
@@ -482,6 +501,13 @@ public class M3DialogPane extends DialogPane {
         @Nullable Node externalContentFocusTarget = M3Accessible.activeExternalFocusTarget(this, content);
         if (externalContentFocusTarget != null) {
             return externalContentFocusTarget;
+        }
+        for (ButtonType buttonType : getButtonTypes()) {
+            @Nullable Node externalButtonFocusTarget =
+                    M3Accessible.activeExternalFocusTarget(this, lookupButton(buttonType));
+            if (externalButtonFocusTarget != null) {
+                return externalButtonFocusTarget;
+            }
         }
         if (focusOwner == null) {
             return null;

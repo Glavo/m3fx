@@ -230,7 +230,7 @@ public class M3Snackbar extends Control {
         switch (action) {
             case FIRE -> fireAction();
             case REQUEST_FOCUS -> focusAccessibleNode();
-            case SHOW_ITEM -> M3Accessible.showItem(accessibleActionButton(parameters));
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -334,6 +334,17 @@ public class M3Snackbar extends Control {
 
     /// Returns the preferred action focus node when one is rendered.
     private @Nullable Node accessibleFocusNode() {
+        @Nullable Node actionButton = renderedActionButton();
+        if (actionButton == null) {
+            return null;
+        }
+
+        @Nullable Node externalTarget = M3Accessible.activeExternalFocusTarget(this, actionButton);
+        return externalTarget == null ? actionButton : externalTarget;
+    }
+
+    /// Returns the rendered action button when one is visible.
+    private @Nullable Node renderedActionButton() {
         @Nullable M3SnackbarSkin skin = materialSkin();
         return skin == null ? null : skin.getActionButton();
     }
@@ -346,7 +357,7 @@ public class M3Snackbar extends Control {
     /// Returns the action button for an accessibility item index.
     private @Nullable Node actionButtonAt(Object... parameters) {
         int index = M3Accessible.indexParameter(parameters);
-        return index == 0 ? accessibleFocusNode() : null;
+        return index == 0 ? renderedActionButton() : null;
     }
 
     /// Returns the action button referenced by accessibility action parameters.
@@ -359,11 +370,25 @@ public class M3Snackbar extends Control {
             return actionButtonAt(parameters);
         }
 
-        @Nullable Node actionButton = accessibleFocusNode();
+        @Nullable Node actionButton = renderedActionButton();
         if (actionButton == null) {
             return null;
         }
         return M3Accessible.actionItem(actionButton, parameters);
+    }
+
+    /// Focuses the snackbar action or delegates to nested action-owned popup targets.
+    private void showAccessibleItem(Object... parameters) {
+        @Nullable Node actionButton = accessibleActionButton(parameters);
+        if (actionButton != null) {
+            M3Accessible.showItem(actionButton);
+            return;
+        }
+
+        @Nullable Node focusNode = accessibleFocusNode();
+        if (parameters.length > 0 && focusNode != null) {
+            M3Accessible.showAccessibleActionTarget(focusNode, parameters);
+        }
     }
 
     /// Returns the installed Material snackbar skin.

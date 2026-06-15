@@ -334,9 +334,6 @@ final class M3FXDemoVisualSmokeTest {
     /// The style class used by animated Material ripple nodes.
     private static final String RIPPLE_STYLE_CLASS = "m3-ripple";
 
-    /// The JavaFX pulse count used after switching theme-sensitive pages before layout-sensitive assertions.
-    private static final int THEME_LAYOUT_PULSES = 3;
-
     /// The JavaFX pulse count required after a final visual state first becomes true.
     private static final int SETTLED_STATE_PULSES = 2;
 
@@ -1234,6 +1231,8 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
         AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
         AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> ownerPopupSnapshotReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> subMenuSnapshotReference = new AtomicReference<>();
 
         runOnFxThread(() -> {
             Stage stage = new Stage();
@@ -1296,12 +1295,13 @@ final class M3FXDemoVisualSmokeTest {
                     menuButtonReference.set(menuButton);
                 });
 
-                runOnFxThreadWhenStable(() -> {
+                runOnFxThreadWhenNodeSnapshotStable(() -> {
                     @Nullable M3MenuButton menuButton = menuButtonReference.get();
-                    return menuButton != null
-                            && menuButton.isShowing()
-                            && popupRootSettled(menuButton.getMenu());
-                }, SETTLED_STATE_PULSES, () -> {
+                    return menuButton == null ? null : menuButton.getMenu();
+                }, ownerPopupSnapshotReference, () -> {
+                    @Nullable M3MenuButton menuButton = menuButtonReference.get();
+                    return menuButton != null && menuButton.isShowing() && popupRootSettled(menuButton.getMenu());
+                }, "Menus owner popup settled frame", () -> {
                     M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
                     menuButton.showMenu();
                 }, () -> {
@@ -1317,7 +1317,10 @@ final class M3FXDemoVisualSmokeTest {
                     assertNotNull(requireMenuItemWithText(ownerMenu, "Rename"), "popup rename item");
                     assertNotNull(requireMenuItemWithText(ownerMenu, "Delete"), "popup delete item");
 
-                    WritableImage ownerPopupImage = snapshotNode(ownerMenu);
+                    WritableImage ownerPopupImage = Objects.requireNonNull(
+                            ownerPopupSnapshotReference.get(),
+                            "Menus owner popup snapshot"
+                    );
                     writeVisualSnapshot(ownerPopupImage, Path.of(
                             "build",
                             "reports",
@@ -1336,12 +1339,15 @@ final class M3FXDemoVisualSmokeTest {
                     subMenuItemReference.set(subMenuItem);
                 });
 
-                runOnFxThreadWhenStable(() -> {
+                runOnFxThreadWhenNodeSnapshotStable(() -> {
+                    @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+                    return subMenuItem == null ? null : subMenuItem.getSubMenu();
+                }, subMenuSnapshotReference, () -> {
                     @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
                     return subMenuItem != null
                             && subMenuItem.isSubMenuShowing()
                             && popupRootSettled(subMenuItem.getSubMenu());
-                }, SETTLED_STATE_PULSES, () -> {
+                }, "Menus nested submenu settled frame", () -> {
                 }, () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
@@ -1359,7 +1365,10 @@ final class M3FXDemoVisualSmokeTest {
                     assertNotNull(requireMenuItemWithText(subMenu, "Archive"), "submenu archive item");
                     assertNotNull(requireMenuItemWithText(subMenu, "Inbox"), "submenu inbox item");
 
-                    WritableImage subMenuImage = snapshotNode(subMenu);
+                    WritableImage subMenuImage = Objects.requireNonNull(
+                            subMenuSnapshotReference.get(),
+                            "Menus nested submenu snapshot"
+                    );
                     writeVisualSnapshot(subMenuImage, Path.of(
                             "build",
                             "reports",
@@ -2563,13 +2572,17 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenStable(() -> popupRootSettled(popupRootReference.get()), SETTLED_STATE_PULSES, () -> {
+        runOnFxThreadWhenNodeSnapshotStable(
+                popupRootReference::get,
+                settledReference,
+                () -> popupRootSettled(popupRootReference.get()),
+                "split button popup settled frame",
+                () -> {
         }, () -> {
             M3SplitButton target = Objects.requireNonNull(targetReference.get(), "split button");
             assertTrue(target.isShowing());
             Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "split button popup");
             layoutPopupRoot(popupRoot);
-            settledReference.set(snapshotNode(popupRoot));
             writeAnimationSnapshot(
                     Objects.requireNonNull(settledReference.get(), "settled split button popup snapshot"),
                     "split-button-popup",
@@ -2656,15 +2669,17 @@ final class M3FXDemoVisualSmokeTest {
             layoutPopupRoot(menuButton.getMenu());
         });
 
-        runOnFxThreadWhenStable(() -> {
+        runOnFxThreadWhenNodeSnapshotStable(() -> {
+            @Nullable M3MenuButton menuButton = menuButtonReference.get();
+            return menuButton == null ? null : menuButton.getMenu();
+        }, ownerMenuReference, () -> {
             @Nullable M3MenuButton menuButton = menuButtonReference.get();
             return menuButton != null && popupRootSettled(menuButton.getMenu());
-        }, SETTLED_STATE_PULSES, () -> {
+        }, "nested owner menu settled frame", () -> {
         }, () -> {
             M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
             assertTrue(menuButton.isShowing());
             layoutPopupRoot(menuButton.getMenu());
-            ownerMenuReference.set(snapshotNode(menuButton.getMenu()));
             writeAnimationSnapshot(
                     Objects.requireNonNull(ownerMenuReference.get(), "owner menu snapshot"),
                     "nested-menu-owner",
@@ -2700,10 +2715,13 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenStable(() -> {
+        runOnFxThreadWhenNodeSnapshotStable(() -> {
+            @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+            return subMenuItem == null ? null : subMenuItem.getSubMenu();
+        }, settledReference, () -> {
             @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
             return subMenuItem != null && popupRootSettled(subMenuItem.getSubMenu());
-        }, SETTLED_STATE_PULSES, () -> {
+        }, "nested submenu settled frame", () -> {
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menu button");
@@ -2716,7 +2734,6 @@ final class M3FXDemoVisualSmokeTest {
             assertPopupThemeContext(scene.getRoot(), subMenuItem.getSubMenu(), "nested submenu");
             assertPopupSurfaceSize(menuButton.getMenu(), "owner menu");
             assertPopupSurfaceSize(subMenuItem.getSubMenu(), "nested submenu");
-            settledReference.set(snapshotNode(subMenuItem.getSubMenu()));
             writeAnimationSnapshot(
                     Objects.requireNonNull(settledReference.get(), "settled submenu snapshot"),
                     "nested-submenu",
@@ -2820,13 +2837,17 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenStable(() -> popupRootSettled(popupRootReference.get()), SETTLED_STATE_PULSES, () -> {
+        runOnFxThreadWhenNodeSnapshotStable(
+                popupRootReference::get,
+                settledReference,
+                () -> popupRootSettled(popupRootReference.get()),
+                "date picker field popup settled frame",
+                () -> {
         }, () -> {
             M3DatePickerField target = Objects.requireNonNull(targetReference.get(), "date picker field");
             assertTrue(target.isShowing());
             Node popupRoot = Objects.requireNonNull(popupRootReference.get(), "date picker field popup");
             layoutPopupRoot(popupRoot);
-            settledReference.set(snapshotNode(popupRoot));
             writeAnimationSnapshot(
                     Objects.requireNonNull(settledReference.get(), "settled date picker popup snapshot"),
                     "date-picker-field-popup",
@@ -3548,10 +3569,13 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> popupReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(() -> {
+        runOnFxThreadWhenNodeSnapshotStable(() -> {
+            @Nullable M3RichTooltip tooltip = tooltipReference.get();
+            return tooltip == null || tooltip.getScene() == null ? null : tooltip.getScene().getRoot();
+        }, popupReference, () -> {
             @Nullable M3RichTooltip tooltip = tooltipReference.get();
             return tooltip != null && tooltip.isShowing() && tooltip.getScene() != null;
-        }, () -> {
+        }, "rich tooltip popup settled frame", () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Tooltips");
@@ -3583,7 +3607,6 @@ final class M3FXDemoVisualSmokeTest {
             layoutPopupRoot(popupRoot);
             assertTooltipNearOwner(owner, popupRoot);
             assertRichTooltipActionInsidePopup(popupRoot);
-            popupReference.set(snapshotNode(popupRoot));
             writeAnimationSnapshot(
                     Objects.requireNonNull(popupReference.get(), "rich tooltip snapshot"),
                     "rich-tooltip",
@@ -3626,7 +3649,10 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> dialogSnapshotReference = new AtomicReference<>();
 
-        runOnFxThreadWhenStable(() -> {
+        runOnFxThreadWhenNodeSnapshotStable(() -> {
+            @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
+            return dialog == null ? null : dialog.getDialogPane();
+        }, dialogSnapshotReference, () -> {
             @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
             if (dialog == null || !dialog.isShowing()) {
                 return false;
@@ -3638,7 +3664,7 @@ final class M3FXDemoVisualSmokeTest {
                     && dialogPane.getScene().getWindow().isShowing()
                     && dialogPane.getLayoutBounds().getWidth() > 0.0
                     && dialogPane.getLayoutBounds().getHeight() > 0.0;
-        }, SETTLED_STATE_PULSES, () -> {
+        }, "dialog popup settled frame", () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3Dialog<ButtonType> dialog = new M3Dialog<>(
                     "M3FX Demo Dialog",
@@ -3659,9 +3685,11 @@ final class M3FXDemoVisualSmokeTest {
             dialogPane.applyCss();
             dialogPane.layout();
             assertDialogPaneStaysCompact(ownerScene, dialogPane);
-            WritableImage dialogImage = snapshotNode(dialogPane);
+            WritableImage dialogImage = Objects.requireNonNull(
+                    dialogSnapshotReference.get(),
+                    "dialog popup snapshot"
+            );
             assertDialogPopupHeaderUsesContainerSurface(dialogImage);
-            dialogSnapshotReference.set(dialogImage);
             writeAnimationSnapshot(
                     Objects.requireNonNull(dialogSnapshotReference.get(), "dialog popup snapshot"),
                     "dialog-popup",
@@ -8021,6 +8049,57 @@ final class M3FXDemoVisualSmokeTest {
 
             return captureNodeFrameChangedFrom(node, baseline, frameReference, diagnostics, description);
         }, () -> "Timed out waiting for node snapshot visual change: " + diagnostics.get(), setup, verification);
+    }
+
+    /// Runs setup and verifies after a referenced node snapshot stops visibly changing between pulses.
+    private static void runOnFxThreadWhenNodeSnapshotStable(
+            Supplier<@Nullable Node> nodeSupplier,
+            AtomicReference<@Nullable WritableImage> frameReference,
+            BooleanSupplier additionalCondition,
+            String description,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        AtomicReference<@Nullable WritableImage> previousFrameReference = new AtomicReference<>();
+        AtomicReference<String> diagnostics = new AtomicReference<>("visual snapshot stability wait has not run yet");
+        runOnFxThreadWhenStable(() -> {
+            @Nullable Node node = nodeSupplier.get();
+            if (node == null) {
+                diagnostics.set(description + " node reference is not set");
+                return false;
+            }
+            if (node.getScene() == null) {
+                diagnostics.set(description + " node is not attached to a scene: " + node);
+                return false;
+            }
+            if (!additionalCondition.getAsBoolean()) {
+                diagnostics.set(description + " additional stability condition is not satisfied for " + node);
+                return false;
+            }
+
+            layoutPopupRoot(node);
+            WritableImage frame = snapshotNode(node);
+            @Nullable WritableImage previousFrame = previousFrameReference.get();
+            previousFrameReference.set(frame);
+            frameReference.set(frame);
+            if (previousFrame == null) {
+                diagnostics.set(description + " captured first stability frame for " + node);
+                return false;
+            }
+
+            int changedPixels = countSnapshotChangedPixels(previousFrame, frame);
+            int minimumChangedPixels = minimumSnapshotChangedPixels(previousFrame, frame);
+            if (changedPixels >= minimumChangedPixels) {
+                diagnostics.set(description + " is still changing: changed="
+                        + changedPixels + ", minimum=" + minimumChangedPixels
+                        + ", size=" + frame.getWidth() + "x" + frame.getHeight());
+                return false;
+            }
+
+            diagnostics.set(description + " snapshot is stable for " + node);
+            return true;
+        }, SETTLED_STATE_PULSES, () -> "Timed out waiting for stable node snapshot: " + diagnostics.get(),
+                setup, verification);
     }
 
     /// Runs setup and verifies after a referenced node area visibly changes from a baseline snapshot.

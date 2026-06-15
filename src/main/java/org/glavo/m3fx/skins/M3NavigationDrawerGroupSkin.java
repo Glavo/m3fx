@@ -12,6 +12,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -70,6 +71,10 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private final ChangeListener<Boolean> expandedListener =
             (observable, oldValue, newValue) -> setExpandedState(newValue, shouldAnimateExpansion());
 
+    /// Requests layout when the effective node orientation changes at runtime.
+    private final ChangeListener<NodeOrientation> orientationListener = (observable, oldValue, newValue) ->
+            getSkinnable().requestLayout();
+
     /// Whether child items are currently mounted in the viewport.
     private boolean childItemsMounted;
 
@@ -88,6 +93,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         getChildren().addAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
         control.expandedProperty().addListener(expandedListener);
+        control.effectiveNodeOrientationProperty().addListener(orientationListener);
         setExpandedState(control.isExpanded(), false);
     }
 
@@ -98,6 +104,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         getSkinnable().getItems().removeListener(itemsListener);
         motionSettingsObserver.dispose();
         getSkinnable().expandedProperty().removeListener(expandedListener);
+        getSkinnable().effectiveNodeOrientationProperty().removeListener(orientationListener);
         childViewport.nodeOrientationProperty().unbind();
         childrenContainer.nodeOrientationProperty().unbind();
         childrenContainer.getChildren().clear();

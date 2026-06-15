@@ -90,7 +90,7 @@ public class M3SearchBar extends Control {
             boolean active = get();
             pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, active);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
-            if (active && M3Accessible.canReach(editor)) {
+            if (active && !suppressActiveEditorFocus && M3Accessible.canReach(editor)) {
                 editor.requestFocus();
             }
             notifyFocusNodeChanged();
@@ -102,6 +102,9 @@ public class M3SearchBar extends Control {
 
     /// The mutable trailing action list.
     private final ObservableList<Node> trailingActions = FXCollections.observableArrayList();
+
+    /// Whether the next active-state change should avoid moving focus into the embedded editor.
+    private boolean suppressActiveEditorFocus;
 
     /// Notifies accessibility clients when focus moves between search bar slots.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -450,9 +453,20 @@ public class M3SearchBar extends Control {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return;
         }
-        activate();
+        activateWithoutEditorFocus();
         M3Accessible.showCurrentOrItem(this, getLeading(), editor, getTrailingActions(), parameters);
         notifyFocusNodeChanged();
+    }
+
+    /// Moves the search bar into its active state while preserving the current accessibility child focus.
+    private void activateWithoutEditorFocus() {
+        boolean previousSuppressActiveEditorFocus = suppressActiveEditorFocus;
+        suppressActiveEditorFocus = true;
+        try {
+            activate();
+        } finally {
+            suppressActiveEditorFocus = previousSuppressActiveEditorFocus;
+        }
     }
 
     /// Returns the current accessibility focus node.

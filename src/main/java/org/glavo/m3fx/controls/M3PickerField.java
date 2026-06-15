@@ -28,9 +28,8 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3PopupStyles;
+import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -144,6 +143,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// The popup window used for picker display.
     private final Popup popup = new Popup();
+
+    /// Keeps the detached picker popup synchronized with the owner scene and theme context while visible.
+    private final M3PopupContextSynchronizer popupContextSynchronizer =
+            new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
 
     // Whether the popup picker is currently showing.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
@@ -432,10 +435,12 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             return;
         }
 
-        preparePopupForShow(scene);
+        popupContextSynchronizer.start();
+        preparePopupForShow();
         @Nullable M3PopupPositioning.Placement placement =
                 M3PopupPositioning.menuBelowOrAbove(inputLayout, popupContent, POPUP_OFFSET_Y);
         if (placement == null) {
+            popupContextSynchronizer.stop();
             return;
         }
 
@@ -784,14 +789,9 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         }
     }
 
-    /// Copies scene styles and theme declarations into the popup-hosted picker.
-    private void preparePopupForShow(Scene scene) {
-        M3PopupStyles.preparePopupRoot(
-                popupContent,
-                scene.getStylesheets(),
-                M3ThemeResolver.findThemeRoot(this),
-                M3Stylesheets.controlStylesheet("picker-field.css")
-        );
+    /// Copies owner motion, CSS, and minimum-width state into the popup-hosted picker.
+    private void preparePopupForShow() {
+        popupContextSynchronizer.sync();
         M3Animation.copyResolvedMotionSettings(this, popupContent);
         double fieldWidth = Math.max(0.0, inputLayout.getWidth());
         popupContent.setMinWidth(Math.max(fieldWidth, popupContent.minWidth(-1.0)));
@@ -841,6 +841,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Handles popup hidden cleanup and optional focus return.
     private void handlePopupHidden() {
+        popupContextSynchronizer.stop();
         showing.set(false);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         notifyFocusNodeChanged();

@@ -96,11 +96,27 @@ public class M3ListItem extends Control {
     private final StringProperty trailingSupportingText =
             new SimpleStringProperty(this, "trailingSupportingText", "");
 
-    // The leading content node property.
-    private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading");
+    /// The leading content node property.
+    private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
+        /// Updates accessibility slots when leading content changes.
+        @Override
+        protected void invalidated() {
+            notifyAccessibleSlotsChanged();
+        }
+    };
 
-    // The trailing content node property.
-    private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing");
+    /// The trailing content node property.
+    private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
+        /// Updates accessibility slots when trailing content changes.
+        @Override
+        protected void invalidated() {
+            notifyAccessibleSlotsChanged();
+        }
+    };
+
+    /// Notifies accessibility clients when focus moves between the row and its leading or trailing slots.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
     // The leading content slot size.
     private final ObjectProperty<M3ListItemSlotSize> leadingSlotSize =
@@ -186,6 +202,7 @@ public class M3ListItem extends Control {
         M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         setFocusTraversable(true);
+        focusNotifier.start();
         setHeadlineText(headlineText);
         updateLineCount();
         updateAccessibleText();
@@ -491,6 +508,9 @@ public class M3ListItem extends Control {
         return switch (attribute) {
             case SELECTED -> isSelected();
             case INDEX -> M3Accessible.indexInParent(this);
+            case ITEM_COUNT -> M3Accessible.itemCount(getLeading(), getTrailing());
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getLeading(), getTrailing(), parameters);
+            case FOCUS_NODE -> accessibleFocusNode();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -501,8 +521,37 @@ public class M3ListItem extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fire();
+            case REQUEST_FOCUS -> M3Accessible.showItem(accessibleFocusNode());
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Returns the current list row or slot accessibility focus node.
+    private @Nullable Node accessibleFocusNode() {
+        @Nullable Node currentTarget = M3Accessible.currentFocusTarget(this, getLeading(), getTrailing());
+        if (currentTarget != null) {
+            return currentTarget;
+        }
+        @Nullable Node itemTarget = M3Accessible.focusTarget(this);
+        return itemTarget != null ? itemTarget : M3Accessible.firstFocusTarget(getLeading(), getTrailing());
+    }
+
+    /// Focuses the current row or slot target, or an explicitly requested slot target.
+    private void showAccessibleItem(Object... parameters) {
+        if (parameters.length == 0) {
+            M3Accessible.showItem(accessibleFocusNode());
+        } else {
+            M3Accessible.showCurrentOrItem(this, getLeading(), getTrailing(), parameters);
+        }
+    }
+
+    /// Notifies accessibility clients that leading or trailing accessibility slots changed.
+    private void notifyAccessibleSlotsChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Returns the one-line item height token.

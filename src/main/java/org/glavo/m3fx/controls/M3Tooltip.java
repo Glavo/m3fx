@@ -9,12 +9,14 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.BooleanPropertyBase;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.MapChangeListener;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ObjectPropertyBase;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Bounds;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -37,6 +39,8 @@ import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 tooltip.
@@ -394,6 +398,18 @@ public class M3Tooltip extends PopupControl {
         return new M3TooltipSkin(this);
     }
 
+    /// Shows this tooltip and synchronizes popup content direction with the owner node.
+    ///
+    /// @param ownerNode the node that owns the popup
+    /// @param anchorX the screen x coordinate for the popup anchor
+    /// @param anchorY the screen y coordinate for the popup anchor
+    @Override
+    public void show(Node ownerNode, double anchorX, double anchorY) {
+        Objects.requireNonNull(ownerNode, "ownerNode");
+        super.show(ownerNode, anchorX, anchorY);
+        syncPopupNodeOrientation(ownerNode);
+    }
+
     /// Adds base style classes and Material timing defaults.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -547,12 +563,21 @@ public class M3Tooltip extends PopupControl {
         return Double.toString(value) + "px";
     }
 
+    /// Synchronizes popup content direction from the owner node while the tooltip is showing.
+    private void syncPopupNodeOrientation(Node ownerNode) {
+        Objects.requireNonNull(ownerNode, "ownerNode");
+        @Nullable Scene scene = getScene();
+        if (scene == null || scene.getRoot() == null) {
+            return;
+        }
+        scene.getRoot().setNodeOrientation(ownerNode.getEffectiveNodeOrientation());
+    }
+
     /// Installs a listener that keeps inherited tooltip themes in sync with the target node scene.
     private static void installThemeInheritance(Node node, M3Tooltip tooltip) {
         uninstallThemeInheritance(node);
 
         SceneThemeListener listener = new SceneThemeListener(node, tooltip);
-        node.sceneProperty().addListener(listener);
         node.getProperties().put(THEME_INHERITANCE_LISTENER_KEY, listener);
     }
 
@@ -560,7 +585,7 @@ public class M3Tooltip extends PopupControl {
     private static void uninstallThemeInheritance(Node node) {
         Object listener = node.getProperties().remove(THEME_INHERITANCE_LISTENER_KEY);
         if (listener instanceof SceneThemeListener sceneThemeListener) {
-            node.sceneProperty().removeListener(sceneThemeListener);
+            sceneThemeListener.dispose();
         }
     }
 
@@ -608,6 +633,25 @@ public class M3Tooltip extends PopupControl {
                 && tooltipInstallation.hasActivePopupInteraction();
     }
 
+    /// Returns whether an installed interactive tooltip exposes an action target requested by accessibility
+    /// parameters.
+    static boolean containsInstalledTooltipActionTarget(Node node, Object... parameters) {
+        Objects.requireNonNull(node, "node");
+        Objects.requireNonNull(parameters, "parameters");
+        Object installation = node.getProperties().get(INSTALLATION_KEY);
+        return installation instanceof TooltipInstallation tooltipInstallation
+                && tooltipInstallation.containsInteractiveFocusTarget(parameters);
+    }
+
+    /// Shows an installed interactive tooltip and focuses the requested action target.
+    static boolean showInstalledTooltipActionTarget(Node node, Object... parameters) {
+        Objects.requireNonNull(node, "node");
+        Objects.requireNonNull(parameters, "parameters");
+        Object installation = node.getProperties().get(INSTALLATION_KEY);
+        return installation instanceof TooltipInstallation tooltipInstallation
+                && tooltipInstallation.showInteractiveFocusTarget(parameters);
+    }
+
     /// Installs an accessible help binding on the tooltip target.
     private static void installAccessibleHelp(Node node, M3Tooltip tooltip) {
         uninstallAccessibleHelp(node);
@@ -649,6 +693,49 @@ public class M3Tooltip extends PopupControl {
     /// Requests focus for the first interactive popup target.
     boolean focusFirstInteractiveTarget() {
         return focusInteractiveTarget(firstInteractiveFocusTarget());
+    }
+
+    /// Returns the interactive popup target referenced by accessibility action parameters.
+    protected @Nullable Node interactiveFocusTargetFor(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            @Nullable Node target = interactiveFocusTargetFor(parameter);
+            if (target != null) {
+                return target;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the interactive popup target referenced by one accessibility action parameter.
+    private @Nullable Node interactiveFocusTargetFor(@Nullable Object parameter) {
+        if (parameter instanceof Node node) {
+            return interactiveFocusTargetFor(node);
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node target = interactiveFocusTargetFor(value);
+                if (target != null) {
+                    return target;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node target = interactiveFocusTargetFor(value);
+                if (target != null) {
+                    return target;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the interactive popup target for a requested node.
+    protected @Nullable Node interactiveFocusTargetFor(Node requestedNode) {
+        Objects.requireNonNull(requestedNode, "requestedNode");
+        return null;
     }
 
     /// Moves focus inside interactive popup content or back to the owner node.
@@ -748,6 +835,10 @@ public class M3Tooltip extends PopupControl {
         /// Handles owner node scene changes.
         private final ChangeListener<@Nullable Scene> ownerSceneListener = this::handleOwnerSceneChanged;
 
+        /// Handles owner node orientation changes while the tooltip popup is showing.
+        private final ChangeListener<NodeOrientation> ownerNodeOrientationListener =
+                this::handleOwnerNodeOrientationChanged;
+
         /// Handles focus changes on the target node.
         private final ChangeListener<Boolean> focusListener = this::handleFocusedChanged;
 
@@ -773,6 +864,7 @@ public class M3Tooltip extends PopupControl {
             node.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().addListener(focusListener);
             node.sceneProperty().addListener(ownerSceneListener);
+            node.effectiveNodeOrientationProperty().addListener(ownerNodeOrientationListener);
             tooltip.showingProperty().addListener(showingListener);
             installOwnerSceneFilter(node.getScene());
         }
@@ -786,6 +878,7 @@ public class M3Tooltip extends PopupControl {
             node.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().removeListener(focusListener);
             node.sceneProperty().removeListener(ownerSceneListener);
+            node.effectiveNodeOrientationProperty().removeListener(ownerNodeOrientationListener);
             tooltip.showingProperty().removeListener(showingListener);
             motionSettingsObserver.dispose();
             uninstallOwnerSceneFilter();
@@ -809,6 +902,17 @@ public class M3Tooltip extends PopupControl {
         ) {
             uninstallOwnerSceneFilter();
             installOwnerSceneFilter(newValue);
+        }
+
+        /// Synchronizes visible tooltip popup direction when the owner direction changes.
+        private void handleOwnerNodeOrientationChanged(
+                ObservableValue<? extends NodeOrientation> observable,
+                NodeOrientation oldValue,
+                NodeOrientation newValue
+        ) {
+            if (tooltip.isShowing()) {
+                tooltip.syncPopupNodeOrientation(node);
+            }
         }
 
         /// Schedules tooltip display after pointer entry.
@@ -896,6 +1000,9 @@ public class M3Tooltip extends PopupControl {
                 Boolean oldValue,
                 Boolean newValue
         ) {
+            if (newValue) {
+                tooltip.syncPopupNodeOrientation(node);
+            }
             if (newValue && tooltip.isInteractive()) {
                 installTooltipHoverHandlers();
             } else {
@@ -952,6 +1059,37 @@ public class M3Tooltip extends PopupControl {
                     && M3Accessible.containsNode(popupRoot, focusOwner)
                     ? focusOwner
                     : null;
+        }
+
+        /// Returns whether this installation exposes the requested interactive target.
+        private boolean containsInteractiveFocusTarget(Object... parameters) {
+            return tooltip.isInteractive() && tooltip.interactiveFocusTargetFor(parameters) != null;
+        }
+
+        /// Shows the tooltip and focuses the requested interactive target.
+        private boolean showInteractiveFocusTarget(Object... parameters) {
+            if (!containsInteractiveFocusTarget(parameters)) {
+                return false;
+            }
+
+            showTimer.stop();
+            hideTimer.stop();
+            durationTimer.stop();
+            if (!tooltip.isShowing()) {
+                showTooltip();
+            }
+            if (!tooltip.isShowing()) {
+                return false;
+            }
+
+            @Nullable Node target = tooltip.interactiveFocusTargetFor(parameters);
+            if (!focusInteractiveTarget(target)) {
+                return false;
+            }
+            hideTimer.stop();
+            durationTimer.stop();
+            notifyOwnerFocusNodeChanged();
+            return true;
         }
 
         /// Returns whether pointer or keyboard focus is currently inside the tooltip popup.
@@ -1231,7 +1369,7 @@ public class M3Tooltip extends PopupControl {
         }
     }
 
-    /// Listens for target node scene changes and reapplies inherited tooltip themes.
+    /// Listens for target node scene and theme-root changes and reapplies inherited tooltip themes.
     @NotNullByDefault
     private static final class SceneThemeListener implements ChangeListener<@Nullable Scene> {
         /// The node whose hierarchy supplies inherited theme values.
@@ -1240,10 +1378,39 @@ public class M3Tooltip extends PopupControl {
         /// The tooltip receiving inherited theme values.
         private final M3Tooltip tooltip;
 
+        /// Handles runtime scene-root theme changes.
+        private final MapChangeListener<Object, Object> sceneRootPropertiesListener =
+                this::handleThemeRootPropertiesChanged;
+
+        /// Handles replacement of the scene root that can supply scene-level theme values.
+        private final ChangeListener<Parent> sceneRootListener = this::handleSceneRootChanged;
+
+        /// Handles runtime local ancestor theme changes.
+        private final MapChangeListener<Object, Object> ancestorThemeRootPropertiesListener =
+                this::handleThemeRootPropertiesChanged;
+
+        /// Handles direct parent changes on the target node.
+        private final ChangeListener<@Nullable Parent> ownerParentListener = this::handleParentChainChanged;
+
+        /// Handles parent-chain changes on observed owner ancestors.
+        private final ChangeListener<@Nullable Parent> ancestorParentListener = this::handleParentChainChanged;
+
+        /// The scene currently observed for root replacement.
+        private @Nullable Scene observedScene;
+
+        /// The scene root currently observed for scene-level theme changes.
+        private @Nullable Parent observedSceneRoot;
+
+        /// The parent-chain nodes currently observed for local theme changes.
+        private final List<Parent> observedAncestorThemeRoots = new ArrayList<>();
+
         /// Creates a scene listener for a tooltip.
         private SceneThemeListener(Node node, M3Tooltip tooltip) {
             this.node = node;
             this.tooltip = tooltip;
+            node.sceneProperty().addListener(this);
+            node.parentProperty().addListener(ownerParentListener);
+            refreshThemeRootSubscriptions();
         }
 
         /// Reapplies the target node theme when the target node enters or leaves a scene.
@@ -1253,7 +1420,105 @@ public class M3Tooltip extends PopupControl {
                 @Nullable Scene oldValue,
                 @Nullable Scene newValue
         ) {
+            refreshThemeRootSubscriptions();
             tooltip.inheritThemeFrom(node);
         }
+
+        /// Removes listeners installed on the owner node and theme roots.
+        private void dispose() {
+            node.sceneProperty().removeListener(this);
+            node.parentProperty().removeListener(ownerParentListener);
+            clearObservedAncestorThemeRoots();
+            updateObservedScene(null);
+            updateObservedSceneRoot(null);
+        }
+
+        /// Reapplies inherited tooltip theme after an observed root theme property changes.
+        private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
+            if (Objects.equals(change.getKey(), M3ThemeManager.THEME_PROPERTY_KEY)) {
+                refreshThemeRootSubscriptions();
+                tooltip.inheritThemeFrom(node);
+            }
+        }
+
+        /// Reapplies inherited tooltip theme after the observed scene root is replaced.
+        private void handleSceneRootChanged(
+                ObservableValue<? extends Parent> observable,
+                Parent oldRoot,
+                Parent newRoot
+        ) {
+            refreshThemeRootSubscriptions();
+            tooltip.inheritThemeFrom(node);
+        }
+
+        /// Reapplies inherited tooltip theme after the target parent chain changes.
+        private void handleParentChainChanged(
+                ObservableValue<? extends @Nullable Parent> observable,
+                @Nullable Parent oldParent,
+                @Nullable Parent newParent
+        ) {
+            refreshThemeRootSubscriptions();
+            tooltip.inheritThemeFrom(node);
+        }
+
+        /// Updates the observed roots that can change the inherited tooltip theme.
+        private void refreshThemeRootSubscriptions() {
+            @Nullable Scene scene = node.getScene();
+            updateObservedScene(scene);
+            updateObservedSceneRoot(scene == null ? null : scene.getRoot());
+            updateObservedAncestorThemeRoots();
+        }
+
+        /// Replaces the observed scene root-change listener.
+        private void updateObservedScene(@Nullable Scene scene) {
+            if (observedScene == scene) {
+                return;
+            }
+            if (observedScene != null) {
+                observedScene.rootProperty().removeListener(sceneRootListener);
+            }
+            observedScene = scene;
+            if (observedScene != null) {
+                observedScene.rootProperty().addListener(sceneRootListener);
+            }
+        }
+
+        /// Updates observed parent-chain roots that may receive local themes.
+        private void updateObservedAncestorThemeRoots() {
+            clearObservedAncestorThemeRoots();
+            @Nullable Node current = node;
+            while (current != null) {
+                if (current instanceof Parent parent && parent != observedSceneRoot) {
+                    parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
+                    parent.parentProperty().addListener(ancestorParentListener);
+                    observedAncestorThemeRoots.add(parent);
+                }
+                current = current.getParent();
+            }
+        }
+
+        /// Removes property listeners from all currently observed parent-chain roots.
+        private void clearObservedAncestorThemeRoots() {
+            for (Parent root : observedAncestorThemeRoots) {
+                root.getProperties().removeListener(ancestorThemeRootPropertiesListener);
+                root.parentProperty().removeListener(ancestorParentListener);
+            }
+            observedAncestorThemeRoots.clear();
+        }
+
+        /// Replaces the observed scene root property listener.
+        private void updateObservedSceneRoot(@Nullable Parent root) {
+            if (observedSceneRoot == root) {
+                return;
+            }
+            if (observedSceneRoot != null) {
+                observedSceneRoot.getProperties().removeListener(sceneRootPropertiesListener);
+            }
+            observedSceneRoot = root;
+            if (observedSceneRoot != null) {
+                observedSceneRoot.getProperties().addListener(sceneRootPropertiesListener);
+            }
+        }
+
     }
 }

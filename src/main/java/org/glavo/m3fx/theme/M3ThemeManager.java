@@ -4,6 +4,8 @@
 package org.glavo.m3fx.theme;
 
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.css.Styleable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -14,6 +16,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,6 +69,10 @@ public final class M3ThemeManager {
     /// The map from scenes to their generated theme stylesheet URL.
     private static final Map<Scene, String> THEME_STYLESHEETS = Collections.synchronizedMap(new WeakHashMap<>());
 
+    /// The map from scenes to their active scene-root theme installations.
+    private static final Map<Scene, SceneThemeInstallation> SCENE_THEME_INSTALLATIONS =
+            Collections.synchronizedMap(new WeakHashMap<>());
+
     /// Prevents utility class instantiation.
     private M3ThemeManager() {
     }
@@ -75,7 +82,7 @@ public final class M3ThemeManager {
         Objects.requireNonNull(scene, "scene");
         Objects.requireNonNull(theme, "theme");
 
-        install(scene.getRoot(), theme);
+        installSceneTheme(scene, theme);
         installStylesheet(scene);
         installThemeStylesheet(scene, theme);
     }
@@ -139,7 +146,9 @@ public final class M3ThemeManager {
     public static void uninstall(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
-        uninstall(scene.getRoot());
+        if (!uninstallSceneTheme(scene)) {
+            uninstall(scene.getRoot());
+        }
         uninstallThemeStylesheet(scene);
         uninstallStylesheet(scene);
     }
@@ -289,6 +298,26 @@ public final class M3ThemeManager {
         stylesheets.add(Math.min(targetIndex, stylesheets.size()), stylesheet);
     }
 
+    /// Installs a scene-owned theme and observes scene root replacement.
+    private static void installSceneTheme(Scene scene, M3Theme theme) {
+        SceneThemeInstallation installation = SCENE_THEME_INSTALLATIONS.get(scene);
+        if (installation == null) {
+            installation = new SceneThemeInstallation(scene);
+            SCENE_THEME_INSTALLATIONS.put(scene, installation);
+        }
+        installation.install(scene, theme);
+    }
+
+    /// Stops scene-root theme observation for a scene.
+    private static boolean uninstallSceneTheme(Scene scene) {
+        @Nullable SceneThemeInstallation installation = SCENE_THEME_INSTALLATIONS.remove(scene);
+        if (installation != null) {
+            installation.dispose(scene);
+            return true;
+        }
+        return false;
+    }
+
     /// Returns the insertion index for the generated theme stylesheet.
     private static int themeStylesheetIndex(List<String> stylesheets) {
         int baseStylesheetIndex = stylesheets.indexOf(stylesheetUrl());
@@ -344,6 +373,143 @@ public final class M3ThemeManager {
     private static void copyStyleClassIfPresent(Parent sourceRoot, Parent targetRoot, String styleClass) {
         if (sourceRoot.getStyleClass().contains(styleClass)) {
             targetRoot.getStyleClass().add(styleClass);
+        }
+    }
+
+    /// Maintains scene-level theme declarations across root replacement.
+    @NotNullByDefault
+    private static final class SceneThemeInstallation {
+        /// Handles scene root replacement.
+        private final ChangeListener<Parent> rootListener = this::handleRootChanged;
+
+        /// The root state captured before applying the scene theme.
+        private @Nullable RootThemeSnapshot snapshot;
+
+        /// The current theme applied by this scene installation.
+        private @Nullable M3Theme theme;
+
+        /// Creates a scene theme installation.
+        private SceneThemeInstallation(Scene scene) {
+            scene.rootProperty().addListener(rootListener);
+        }
+
+        /// Applies or replaces the scene-owned theme.
+        private void install(Scene scene, M3Theme theme) {
+            this.theme = theme;
+            installRoot(scene.getRoot(), theme);
+        }
+
+        /// Removes the scene root listener.
+        private void dispose(Scene scene) {
+            scene.rootProperty().removeListener(rootListener);
+            restoreSnapshot();
+            theme = null;
+        }
+
+        /// Moves the installed theme from the previous scene root to the new one.
+        private void handleRootChanged(
+                ObservableValue<? extends Parent> observable,
+                Parent oldRoot,
+                Parent newRoot
+        ) {
+            restoreSnapshot();
+            @Nullable M3Theme currentTheme = theme;
+            if (currentTheme != null) {
+                installRoot(newRoot, currentTheme);
+            }
+        }
+
+        /// Applies the scene theme to one root after saving its previous theme state.
+        private void installRoot(Parent root, M3Theme theme) {
+            restoreSnapshot();
+            snapshot = new RootThemeSnapshot(root);
+            applyThemeStyleClasses(root, theme);
+            root.setStyle(mergeStyles(snapshot.baseStyle, theme.toRootStyleDeclarations()));
+            root.getProperties().put(THEME_PROPERTY_KEY, theme);
+        }
+
+        /// Restores the root state that existed before the scene theme was applied.
+        private void restoreSnapshot() {
+            @Nullable RootThemeSnapshot currentSnapshot = snapshot;
+            if (currentSnapshot != null) {
+                currentSnapshot.restore();
+                snapshot = null;
+            }
+        }
+    }
+
+    /// Captures root theme state before a scene-level theme temporarily overrides it.
+    @NotNullByDefault
+    private static final class RootThemeSnapshot {
+        /// A weak reference to the root whose state was captured.
+        private final WeakReference<Parent> rootReference;
+
+        /// The inline style before scene-level theme declarations were added.
+        private final String baseStyle;
+
+        /// Whether the root had explicit theme metadata before the scene override.
+        private final boolean hadTheme;
+
+        /// The root theme metadata before the scene override.
+        private final @Nullable M3Theme theme;
+
+        /// Whether the root had the managed root style class.
+        private final boolean hadRootStyleClass;
+
+        /// Whether the root had the managed baseline profile style class.
+        private final boolean hadBaselineProfileStyleClass;
+
+        /// Whether the root had the managed expressive profile style class.
+        private final boolean hadExpressiveProfileStyleClass;
+
+        /// Whether the root had the managed light brightness style class.
+        private final boolean hadLightBrightnessStyleClass;
+
+        /// Whether the root had the managed dark brightness style class.
+        private final boolean hadDarkBrightnessStyleClass;
+
+        /// Captures current root theme state.
+        private RootThemeSnapshot(Parent root) {
+            rootReference = new WeakReference<>(root);
+            baseStyle = root.getStyle();
+            Object themeValue = root.getProperties().get(THEME_PROPERTY_KEY);
+            hadTheme = themeValue instanceof M3Theme;
+            theme = hadTheme ? (M3Theme) themeValue : null;
+            hadRootStyleClass = root.getStyleClass().contains(ROOT_STYLE_CLASS);
+            hadBaselineProfileStyleClass = root.getStyleClass().contains(BASELINE_PROFILE_STYLE_CLASS);
+            hadExpressiveProfileStyleClass = root.getStyleClass().contains(EXPRESSIVE_PROFILE_STYLE_CLASS);
+            hadLightBrightnessStyleClass = root.getStyleClass().contains(LIGHT_BRIGHTNESS_STYLE_CLASS);
+            hadDarkBrightnessStyleClass = root.getStyleClass().contains(DARK_BRIGHTNESS_STYLE_CLASS);
+        }
+
+        /// Restores the captured theme state to the root.
+        private void restore() {
+            @Nullable Parent root = rootReference.get();
+            if (root == null) {
+                return;
+            }
+            root.setStyle(baseStyle);
+            restoreStyleClass(root, ROOT_STYLE_CLASS, hadRootStyleClass);
+            restoreStyleClass(root, BASELINE_PROFILE_STYLE_CLASS, hadBaselineProfileStyleClass);
+            restoreStyleClass(root, EXPRESSIVE_PROFILE_STYLE_CLASS, hadExpressiveProfileStyleClass);
+            restoreStyleClass(root, LIGHT_BRIGHTNESS_STYLE_CLASS, hadLightBrightnessStyleClass);
+            restoreStyleClass(root, DARK_BRIGHTNESS_STYLE_CLASS, hadDarkBrightnessStyleClass);
+            if (hadTheme && theme != null) {
+                root.getProperties().put(THEME_PROPERTY_KEY, theme);
+            } else {
+                root.getProperties().remove(THEME_PROPERTY_KEY);
+            }
+        }
+
+        /// Restores one managed style class to its captured presence.
+        private static void restoreStyleClass(Parent root, String styleClass, boolean present) {
+            if (present) {
+                if (!root.getStyleClass().contains(styleClass)) {
+                    root.getStyleClass().add(styleClass);
+                }
+            } else {
+                root.getStyleClass().remove(styleClass);
+            }
         }
     }
 }

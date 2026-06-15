@@ -3,11 +3,15 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.css.Styleable;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -52,16 +56,86 @@ final class M3ControlStyles {
             return;
         }
 
-        node.getProperties().put(FALLBACK_STYLESHEET_LISTENER_KEY, Boolean.TRUE);
-        node.sceneProperty().addListener((observable, oldScene, newScene) -> {
-            if (newScene != null) {
-                addFallbackStylesheet(newScene);
-            }
-        });
+        FallbackStylesheetInstallation installation = new FallbackStylesheetInstallation(node);
+        node.getProperties().put(FALLBACK_STYLESHEET_LISTENER_KEY, installation);
+        installation.install();
+    }
 
-        Scene scene = node.getScene();
-        if (scene != null) {
-            addFallbackStylesheet(scene);
+    /// Tracks the scene root that needs standalone fallback token declarations for one control.
+    private static final class FallbackStylesheetInstallation {
+        /// The control that requested standalone fallback token support.
+        private final Node node;
+
+        /// The listener that follows the control between scenes.
+        private final ChangeListener<@Nullable Scene> sceneListener = this::handleSceneChanged;
+
+        /// The listener that follows replacement roots inside the current scene.
+        private final ChangeListener<Parent> rootListener = this::handleRootChanged;
+
+        /// The scene whose root listener is currently installed.
+        private @Nullable Scene observedScene;
+
+        /// Creates a fallback stylesheet installation for the requested node.
+        private FallbackStylesheetInstallation(Node node) {
+            this.node = node;
+        }
+
+        /// Starts listening to the node and applies fallback styles to its current scene when present.
+        private void install() {
+            node.sceneProperty().addListener(sceneListener);
+            updateObservedScene(node.getScene());
+        }
+
+        /// Updates the observed scene when the node enters or leaves a scene.
+        private void handleSceneChanged(
+                ObservableValue<? extends @Nullable Scene> observable,
+                @Nullable Scene oldScene,
+                @Nullable Scene newScene
+        ) {
+            updateObservedScene(newScene);
+        }
+
+        /// Reapplies fallback root styling when the current scene root is replaced.
+        private void handleRootChanged(
+                ObservableValue<? extends Parent> observable,
+                Parent oldRoot,
+                Parent newRoot
+        ) {
+            applyFallbackStylesheet();
+        }
+
+        /// Moves the root listener from the previous scene to the new scene.
+        private void updateObservedScene(@Nullable Scene scene) {
+            if (observedScene != null) {
+                observedScene.rootProperty().removeListener(rootListener);
+            }
+
+            observedScene = scene;
+            if (scene != null) {
+                scene.rootProperty().addListener(rootListener);
+                applyFallbackStylesheet();
+            }
+        }
+
+        /// Applies fallback styles when the node still belongs to the observed scene root.
+        private void applyFallbackStylesheet() {
+            @Nullable Scene scene = observedScene;
+            if (scene != null && node.getScene() == scene && isInsideSceneRoot(scene)) {
+                addFallbackStylesheet(scene);
+            }
+        }
+
+        /// Returns whether the node is contained by the current scene root.
+        private boolean isInsideSceneRoot(Scene scene) {
+            Parent root = scene.getRoot();
+            @Nullable Node current = node;
+            while (current != null) {
+                if (current == root) {
+                    return true;
+                }
+                current = current.getParent();
+            }
+            return false;
         }
     }
 

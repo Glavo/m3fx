@@ -58,7 +58,7 @@ public class M3Banner extends Control {
 
     /// Notifies accessibility clients when focus moves between action children.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getActions()));
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
     /// Creates an empty banner.
     public M3Banner() {
@@ -172,7 +172,7 @@ public class M3Banner extends Control {
             case TEXT -> getText();
             case ITEM_COUNT -> M3Accessible.itemCount(getIcon(), getActions());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getIcon(), getActions(), parameters);
-            case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getActions());
+            case FOCUS_NODE -> accessibleFocusNode();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -182,14 +182,8 @@ public class M3Banner extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getActions());
-            case SHOW_ITEM -> {
-                if (parameters.length == 0) {
-                    M3Accessible.showCurrentOrItem(this, getActions());
-                } else {
-                    M3Accessible.showItem(getIcon(), getActions(), parameters);
-                }
-            }
+            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getIcon(), getActions());
+            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getIcon(), getActions(), parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -217,6 +211,11 @@ public class M3Banner extends Control {
         for (Node action : actions) {
             Objects.requireNonNull(action, "action");
         }
+    }
+
+    /// Returns the current or first reachable accessibility focus node.
+    private @Nullable Node accessibleFocusNode() {
+        return M3Accessible.currentOrFirstFocusTarget(this, getIcon(), getActions());
     }
 
     /// Updates the accessible text exposed by the banner.

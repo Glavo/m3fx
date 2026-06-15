@@ -73,6 +73,7 @@ import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.shape.M3ShapeMorph;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
@@ -215,6 +216,153 @@ final class M3ControlStyleTest {
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
+    }
+
+    /// Verifies that scene-level themes follow runtime root replacement.
+    @Test
+    void sceneThemeInstallationFollowsRootReplacement() {
+        runOnFxThread(() -> {
+            Pane firstRoot = new Pane();
+            Pane secondRoot = new Pane();
+            Pane thirdRoot = new Pane();
+            Scene scene = new Scene(firstRoot);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+
+            firstRoot.setStyle("-fx-padding: 4px;");
+            secondRoot.setStyle("-fx-background-color: white;");
+
+            M3ThemeManager.install(scene, baselineTheme);
+
+            assertThemedRoot(firstRoot, baselineTheme);
+            assertTrue(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
+            assertTrue(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(baselineTheme)));
+
+            scene.setRoot(secondRoot);
+
+            assertUnthemedRoot(firstRoot, "-fx-padding: 4px;");
+            assertThemedRoot(secondRoot, baselineTheme);
+
+            M3ThemeManager.install(scene, expressiveDarkTheme);
+
+            assertThemedRoot(secondRoot, expressiveDarkTheme);
+            assertFalse(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(baselineTheme)));
+            assertTrue(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)));
+
+            scene.setRoot(thirdRoot);
+
+            assertUnthemedRoot(secondRoot, "-fx-background-color: white;");
+            assertThemedRoot(thirdRoot, expressiveDarkTheme);
+        });
+    }
+
+    /// Verifies that uninstalling a scene theme stops future root tracking.
+    @Test
+    void sceneThemeUninstallStopsRootReplacementTracking() {
+        runOnFxThread(() -> {
+            Pane firstRoot = new Pane();
+            Pane secondRoot = new Pane();
+            Scene scene = new Scene(firstRoot);
+            M3Theme theme = M3Theme.defaultTheme();
+
+            M3ThemeManager.install(scene, theme);
+            assertThemedRoot(firstRoot, theme);
+
+            M3ThemeManager.uninstall(scene);
+
+            assertUnthemedRoot(firstRoot, "");
+            assertFalse(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
+            assertFalse(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
+
+            scene.setRoot(secondRoot);
+
+            assertUnthemedRoot(secondRoot, "");
+        });
+    }
+
+    /// Verifies that scene-level themes restore a previous local root theme after root replacement.
+    @Test
+    void sceneThemeRootReplacementRestoresPreviousLocalTheme() {
+        runOnFxThread(() -> {
+            Pane firstRoot = new Pane();
+            Pane secondRoot = new Pane();
+            firstRoot.setStyle("-fx-padding: 8px;");
+            secondRoot.setStyle("-fx-background-color: white;");
+            Scene scene = new Scene(firstRoot);
+            M3Theme localTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            M3Theme sceneTheme = M3Theme.defaultTheme();
+
+            M3ThemeManager.install(firstRoot, localTheme);
+            M3ThemeManager.install(scene, sceneTheme);
+
+            assertThemedRoot(firstRoot, sceneTheme);
+
+            scene.setRoot(secondRoot);
+
+            assertThemedRoot(firstRoot, localTheme);
+            assertTrue(firstRoot.getStyle().contains("-fx-padding: 8px;"));
+            assertThemedRoot(secondRoot, sceneTheme);
+        });
+    }
+
+    /// Verifies that uninstalling a scene-level theme restores a previous local root theme.
+    @Test
+    void sceneThemeUninstallRestoresPreviousLocalRootTheme() {
+        runOnFxThread(() -> {
+            Pane root = new Pane();
+            root.setStyle("-fx-padding: 12px;");
+            Scene scene = new Scene(root);
+            M3Theme localTheme = M3Theme.fromSeed(
+                    Color.web("#2d6b27"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            M3Theme sceneTheme = M3Theme.defaultTheme();
+
+            M3ThemeManager.install(root, localTheme);
+            M3ThemeManager.install(scene, sceneTheme);
+
+            assertThemedRoot(root, sceneTheme);
+
+            M3ThemeManager.uninstall(scene);
+
+            assertThemedRoot(root, localTheme);
+            assertTrue(root.getStyle().contains("-fx-padding: 12px;"));
+            assertFalse(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
+            assertFalse(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(sceneTheme)));
+        });
+    }
+
+    /// Asserts that a root has the expected installed theme metadata and classes.
+    private static void assertThemedRoot(Parent root, M3Theme theme) {
+        assertSame(theme, M3ThemeManager.getTheme(root));
+        assertTrue(root.getStyle().contains("-m3-color-primary"));
+        assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(theme.profile() == M3Profile.EXPRESSIVE_2025
+                ? M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS
+                : M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(root.getStyleClass().contains(theme.brightness() == Brightness.DARK
+                ? M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS
+                : M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+    }
+
+    /// Asserts that a root has no installed theme metadata and restored base style.
+    private static void assertUnthemedRoot(Parent root, String expectedStyle) {
+        assertNull(M3ThemeManager.getTheme(root));
+        assertEquals(expectedStyle, root.getStyle());
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
     }
 
     /// Verifies that standalone control stylesheets provide fallback color tokens without requiring a theme.
@@ -2205,6 +2353,7 @@ final class M3ControlStyleTest {
         try {
             runOnFxThreadWhen(
                     () -> fabMenuActionIsTransitioning(actionReference),
+                    () -> describeFabMenuActionState(actionReference, "FAB menu action never reached an intermediate expand frame"),
                     () -> {
                         M3FloatingActionButton action = new M3FloatingActionButton("A");
                         M3FabMenu menu = new M3FabMenu();
@@ -2236,6 +2385,11 @@ final class M3ControlStyleTest {
 
             runOnFxThreadWhen(
                     () -> fabMenuExpandedStateHasSettled(menuReference, actionReference),
+                    () -> describeFabMenuState(
+                            menuReference,
+                            actionReference,
+                            "FAB menu never settled expanded"
+                    ),
                     () -> {
                     },
                     () -> {
@@ -2248,6 +2402,7 @@ final class M3ControlStyleTest {
 
             runOnFxThreadWhen(
                     () -> fabMenuActionIsTransitioning(actionReference),
+                    () -> describeFabMenuActionState(actionReference, "FAB menu action never reached an intermediate collapse frame"),
                     () -> {
                     },
                     () -> {
@@ -2258,6 +2413,11 @@ final class M3ControlStyleTest {
 
             runOnFxThreadWhen(
                     () -> fabMenuCollapsedStateHasSettled(menuReference, actionReference),
+                    () -> describeFabMenuState(
+                            menuReference,
+                            actionReference,
+                            "FAB menu never settled collapsed"
+                    ),
                     () -> {
                     },
                     () -> {
@@ -2354,6 +2514,70 @@ final class M3ControlStyleTest {
 
         assertEquals(AccessibleRole.PARENT, explicitlyFocusableCard.getAccessibleRole());
         assertTrue(explicitlyFocusableCard.isFocusTraversable());
+    }
+
+    /// Verifies that cards expose content focus while preserving actionable surface focus.
+    @Test
+    void cardAccessibleFocusIncludesContentAndActionSurface() {
+        runOnFxThread(() -> {
+            M3Button passiveContent = new M3Button("Open");
+            M3Card passiveCard = new M3Card(passiveContent);
+            M3Button actionContent = new M3Button("Nested action");
+            M3Card actionCard = new M3Card(actionContent, M3CardVariant.FILLED, event -> {
+            });
+            Pane root = new Pane(passiveCard, actionCard);
+            Stage stage = new Stage();
+
+            try {
+                Scene scene = new Scene(root, 560.0, 240.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                passiveCard.resizeRelocate(24.0, 24.0, 220.0, 96.0);
+                actionCard.resizeRelocate(280.0, 24.0, 220.0, 96.0);
+                root.layout();
+
+                assertEquals(1, passiveCard.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertSame(passiveContent, passiveCard.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(passiveContent, passiveCard.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+                assertSame(passiveContent, passiveCard.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                passiveCard.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(passiveContent.isFocused());
+                assertSame(passiveContent, passiveCard.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                actionCard.requestFocus();
+
+                assertTrue(actionCard.isFocused());
+                assertSame(actionCard, actionCard.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                actionCard.executeAccessibleAction(AccessibleAction.SHOW_ITEM, actionContent);
+
+                assertTrue(actionContent.isFocused());
+                assertSame(actionContent, actionCard.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                actionCard.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(actionContent.isFocused());
+                assertSame(actionContent, actionCard.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                actionCard.requestFocus();
+                actionCard.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(actionCard.isFocused());
+                assertSame(actionCard, actionCard.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                actionCard.setContent(null);
+
+                assertEquals(0, actionCard.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertNull(actionCard.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(actionCard, actionCard.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that card skins expose bounded surface ripple feedback.
@@ -2512,6 +2736,105 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that carousel reveal requests can open installed rich tooltip action targets inside item content.
+    @Test
+    void carouselAccessibleShowItemRevealsNestedTooltipTargets() {
+        runOnFxThread(() -> {
+            M3Button firstAction = new M3Button("First action");
+            HBox firstItem = new HBox(firstAction);
+            M3Button ownerAction = new M3Button("Settings action");
+            M3Button tooltipAction = new M3Button("Details");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Settings",
+                    "Shows carousel item details.",
+                    tooltipAction
+            );
+            HBox secondItem = new HBox(ownerAction);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Pane root = new Pane(carousel);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 520.0, 160.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                carousel.resizeRelocate(0.0, 0.0, 500.0, 120.0);
+                root.applyCss();
+                root.layout();
+
+                assertFalse(tooltip.isShowing());
+
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+                root.layout();
+
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipAction.isFocused());
+                assertSame(tooltipAction, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                carousel.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertSame(tooltipAction, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                M3Tooltip.uninstall(ownerAction, tooltip);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that carousel reveal requests can open nested submenu targets inside item content.
+    @Test
+    void carouselAccessibleShowItemRevealsNestedMenuTargets() {
+        runOnFxThread(() -> {
+            M3Button firstAction = new M3Button("First action");
+            HBox firstItem = new HBox(firstAction);
+            M3MenuItem archiveItem = new M3MenuItem("Archive item");
+            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", archiveItem);
+            M3MenuButton menuButton = new M3MenuButton("Actions", subMenuItem);
+            HBox secondItem = new HBox(menuButton);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Pane root = new Pane(carousel);
+            Stage stage = new Stage();
+            try {
+                M3MotionSettings.setAnimationsEnabled(menuButton, false);
+                M3MotionSettings.setAnimationsEnabled(subMenuItem, false);
+
+                stage.setScene(new Scene(root, 520.0, 180.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                carousel.resizeRelocate(0.0, 0.0, 500.0, 120.0);
+                root.applyCss();
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+                assertFalse(subMenuItem.isSubMenuShowing());
+
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+                root.layout();
+
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertTrue(menuButton.isShowing());
+                assertTrue(subMenuItem.isSubMenuShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                carousel.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertSame(archiveItem, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                subMenuItem.hideSubMenu();
+                menuButton.hideMenu();
+                M3MotionSettings.clearAnimationsEnabled(menuButton);
+                M3MotionSettings.clearAnimationsEnabled(subMenuItem);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that carousel skins create an internal viewport and reveal selected items.
     @Test
     void carouselCreatesMaterialSkinAndScrollsSelectedItemIntoView() {
@@ -2578,6 +2901,10 @@ final class M3ControlStyleTest {
         try {
             runOnFxThreadWhen(
                     () -> carouselViewportScrollIsInProgress(viewportReference),
+                    () -> describeCarouselViewportScrollState(
+                            viewportReference,
+                            "Carousel viewport never reached an in-progress scroll frame"
+                    ),
                     () -> {
                         M3Carousel carousel = new M3Carousel(
                                 carouselTestItem("A"),
@@ -2673,6 +3000,64 @@ final class M3ControlStyleTest {
         assertThrows(NullPointerException.class, () -> banner.setText(null));
         assertThrows(NullPointerException.class, () -> banner.addAction(null));
         assertThrows(NullPointerException.class, () -> createBanner("Message", null));
+    }
+
+    /// Verifies that banner accessibility focus includes a focusable leading icon and action nodes.
+    @Test
+    void bannerAccessibleFocusIncludesIconAndActions() {
+        runOnFxThread(() -> {
+            M3Button icon = new M3Button("Icon");
+            M3Button action = new M3Button("Action");
+            M3Button outside = new M3Button("Outside");
+            M3Banner banner = createBanner("Message", icon, action);
+            VBox root = new VBox(8.0, outside, banner);
+            Stage stage = new Stage();
+
+            try {
+                Scene scene = new Scene(root, 480.0, 180.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertSame(icon, banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(action, banner.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertSame(icon, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                banner.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(icon.isFocused());
+                assertSame(icon, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                action.requestFocus();
+
+                assertTrue(action.isFocused());
+                assertSame(action, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                banner.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(action.isFocused());
+                assertSame(action, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                outside.requestFocus();
+                banner.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+
+                assertTrue(action.isFocused());
+                assertSame(action, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                outside.requestFocus();
+                banner.setIcon(null);
+                root.applyCss();
+                root.layout();
+
+                assertSame(action, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                banner.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(action.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that banner component tokens apply profile-specific layout metrics.
@@ -2958,6 +3343,10 @@ final class M3ControlStyleTest {
 
         runOnFxThreadWhen(
                 () -> snackbarDetached(snackbarReference),
+                () -> describeSnackbarState(
+                        snackbarReference,
+                        "Snackbar was not detached after dismissal"
+                ),
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
                     host.setDisplayDuration(Duration.INDEFINITE);
@@ -2989,6 +3378,12 @@ final class M3ControlStyleTest {
 
         runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
+                () -> describeSnackbarHostState(
+                        hostReference,
+                        firstReference,
+                        secondReference,
+                        "Queued snackbar was not promoted after dismissal"
+                ),
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
                     host.setDisplayDuration(Duration.INDEFINITE);
@@ -3086,6 +3481,12 @@ final class M3ControlStyleTest {
 
         runOnFxThreadWhen(
                 () -> snackbarHostCleared(hostReference, firstReference, secondReference),
+                () -> describeSnackbarHostState(
+                        hostReference,
+                        firstReference,
+                        secondReference,
+                        "Snackbar host did not clear current and queued snackbars"
+                ),
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
                     host.setDisplayDuration(Duration.INDEFINITE);
@@ -3762,6 +4163,231 @@ final class M3ControlStyleTest {
             assertSame(localTheme, M3ThemeManager.getTheme(localRoot));
             assertEquals(M3ThemeManager.themeStylesheetUrl(localTheme), pane.getStylesheets().get(1));
         });
+    }
+
+    /// Verifies that shown dialogs follow runtime owner scene theme changes.
+    @Test
+    void dialogFollowsRuntimeOwnerSceneThemeChanges() {
+        runOnFxThread(() -> {
+            Stage owner = new Stage();
+            try {
+                Pane root = new Pane();
+                Scene scene = new Scene(root);
+                M3Theme baselineTheme = M3Theme.defaultTheme();
+                M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                        Color.web("#006a6a"),
+                        M3Profile.EXPRESSIVE_2025,
+                        Brightness.DARK
+                );
+                M3Dialog<Void> dialog = new M3Dialog<>();
+                M3DialogPane pane = dialog.getM3DialogPane();
+
+                M3ThemeManager.install(scene, baselineTheme);
+                owner.setScene(scene);
+                dialog.initOwner(owner);
+                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
+
+                assertDialogPaneUsesTheme(pane, baselineTheme);
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
+
+                M3ThemeManager.uninstall(scene);
+
+                assertDialogPaneHasNoCopiedTheme(pane);
+
+                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
+            } finally {
+                owner.close();
+            }
+        });
+    }
+
+    /// Verifies that shown dialogs follow owner-scene root replacement.
+    @Test
+    void dialogFollowsRuntimeOwnerSceneRootReplacement() {
+        runOnFxThread(() -> {
+            Stage owner = new Stage();
+            try {
+                Pane firstRoot = new Pane();
+                Pane secondRoot = new Pane();
+                Pane unthemedRoot = new Pane();
+                Scene scene = new Scene(firstRoot);
+                M3Theme baselineTheme = M3Theme.defaultTheme();
+                M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                        Color.web("#006a6a"),
+                        M3Profile.EXPRESSIVE_2025,
+                        Brightness.DARK
+                );
+                M3Dialog<Void> dialog = new M3Dialog<>();
+                M3DialogPane pane = dialog.getM3DialogPane();
+
+                M3ThemeManager.install(scene, baselineTheme);
+                owner.setScene(scene);
+                dialog.initOwner(owner);
+                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
+
+                assertDialogPaneUsesTheme(pane, baselineTheme);
+
+                scene.setRoot(secondRoot);
+
+                assertDialogPaneUsesTheme(pane, baselineTheme);
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
+
+                M3ThemeManager.uninstall(scene);
+
+                assertDialogPaneHasNoCopiedTheme(pane);
+
+                scene.setRoot(unthemedRoot);
+
+                assertDialogPaneHasNoCopiedTheme(pane);
+
+                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
+            } finally {
+                owner.close();
+            }
+        });
+    }
+
+    /// Verifies that shown dialogs follow runtime local owner-node theme changes.
+    @Test
+    void dialogFollowsRuntimeOwnerNodeLocalThemeChanges() {
+        runOnFxThread(() -> {
+            Label ownerNode = new Label("Open dialog");
+            Pane localRoot = new Pane(ownerNode);
+            Pane root = new Pane(localRoot);
+            new Scene(root);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            M3DialogPane pane = dialog.getM3DialogPane();
+
+            M3ThemeManager.install(localRoot, baselineTheme);
+            dialog.initOwner(ownerNode);
+            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
+
+            assertDialogPaneUsesTheme(pane, baselineTheme);
+
+            M3ThemeManager.install(localRoot, expressiveDarkTheme);
+
+            assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
+
+            M3ThemeManager.uninstall(localRoot);
+
+            assertDialogPaneHasNoCopiedTheme(pane);
+
+            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
+        });
+    }
+
+    /// Verifies that shown dialogs follow owner-node reparenting to a different local theme root.
+    @Test
+    void dialogFollowsRuntimeOwnerNodeReparentingToLocalTheme() {
+        runOnFxThread(() -> {
+            Label ownerNode = new Label("Open dialog");
+            Pane firstLocalRoot = new Pane(ownerNode);
+            Pane secondLocalRoot = new Pane();
+            Pane root = new Pane(firstLocalRoot, secondLocalRoot);
+            new Scene(root);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            M3DialogPane pane = dialog.getM3DialogPane();
+
+            M3ThemeManager.install(firstLocalRoot, baselineTheme);
+            M3ThemeManager.install(secondLocalRoot, expressiveDarkTheme);
+            dialog.initOwner(ownerNode);
+            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
+
+            assertDialogPaneUsesTheme(pane, baselineTheme);
+
+            firstLocalRoot.getChildren().remove(ownerNode);
+            secondLocalRoot.getChildren().add(ownerNode);
+
+            assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
+
+            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
+        });
+    }
+
+    /// Verifies that shown dialogs follow runtime owner-window scene changes.
+    @Test
+    void dialogFollowsRuntimeOwnerWindowSceneChanges() {
+        runOnFxThread(() -> {
+            Stage owner = new Stage();
+            try {
+                Pane firstRoot = new Pane();
+                Scene firstScene = new Scene(firstRoot);
+                Pane secondRoot = new Pane();
+                Scene secondScene = new Scene(secondRoot);
+                Pane unthemedRoot = new Pane();
+                Scene unthemedScene = new Scene(unthemedRoot);
+                M3Theme baselineTheme = M3Theme.defaultTheme();
+                M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                        Color.web("#006a6a"),
+                        M3Profile.EXPRESSIVE_2025,
+                        Brightness.DARK
+                );
+                M3Dialog<Void> dialog = new M3Dialog<>();
+                M3DialogPane pane = dialog.getM3DialogPane();
+
+                M3ThemeManager.install(firstScene, baselineTheme);
+                M3ThemeManager.install(secondScene, expressiveDarkTheme);
+                owner.setScene(firstScene);
+                dialog.initOwner(owner);
+                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
+
+                assertDialogPaneUsesTheme(pane, baselineTheme);
+
+                owner.setScene(secondScene);
+
+                assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
+
+                owner.setScene(unthemedScene);
+
+                assertDialogPaneHasNoCopiedTheme(pane);
+
+                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
+            } finally {
+                owner.close();
+            }
+        });
+    }
+
+    /// Asserts that a Material dialog pane has copied a specific theme.
+    private static void assertDialogPaneUsesTheme(M3DialogPane pane, M3Theme theme) {
+        assertTrue(pane.getStyle().contains("-m3-color-primary"));
+        assertTrue(pane.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertTrue(pane.getStyleClass().contains(theme.profile() == M3Profile.EXPRESSIVE_2025
+                ? M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS
+                : M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertTrue(pane.getStyleClass().contains(theme.brightness() == Brightness.DARK
+                ? M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS
+                : M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+        assertEquals(M3ThemeManager.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
+    }
+
+    /// Asserts that a Material dialog pane has cleared copied theme context.
+    private static void assertDialogPaneHasNoCopiedTheme(M3DialogPane pane) {
+        assertFalse(pane.getStyle().contains("-m3-color-primary"));
+        assertFalse(pane.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertFalse(pane.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+        assertFalse(pane.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+        assertFalse(pane.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+        assertFalse(pane.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+        assertEquals(List.of(M3ThemeManager.stylesheetUrl()), pane.getStylesheets());
     }
 
     /// Verifies that dialogs initialized from detached owner nodes resolve the window owner before showing.
@@ -4536,26 +5162,8 @@ final class M3ControlStyleTest {
             root.layout();
             layout.layout();
 
-            Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
-            Region leadingSlot = lookupRegion(layout, "." + M3TextInputLayout.LEADING_STYLE_CLASS);
-            Region trailingSlot = lookupRegion(layout, "." + M3TextInputLayout.TRAILING_STYLE_CLASS);
             Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
-            Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
-
-            Bounds containerBounds = inputContainer.localToScene(inputContainer.getBoundsInLocal());
-            Bounds leadingBounds = leadingSlot.localToScene(leadingSlot.getBoundsInLocal());
-            Bounds trailingBounds = trailingSlot.localToScene(trailingSlot.getBoundsInLocal());
-            Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
-
-            assertTrue(leadingBounds.getMinX() > containerBounds.getCenterX(),
-                    () -> "leadingBounds=" + leadingBounds + ", containerBounds=" + containerBounds);
-            assertTrue(trailingBounds.getMaxX() < containerBounds.getCenterX(),
-                    () -> "trailingBounds=" + trailingBounds + ", containerBounds=" + containerBounds);
-            assertTrue(labelBounds.getCenterX() > containerBounds.getCenterX(),
-                    () -> "labelBounds=" + labelBounds + ", containerBounds=" + containerBounds);
-            assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(label));
-            assertTrue(outlineNotchGap(outline) >= labelBounds.getWidth() - 1.0,
-                    () -> "outlineNotchGap=" + outlineNotchGap(outline) + ", labelWidth=" + labelBounds.getWidth());
+            assertTextInputLayoutUsesLogicalGeometry(layout, true);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, label, Color.WHITE, 0.04);
@@ -4565,6 +5173,49 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-text-field-rtl.png"
             ));
+        });
+    }
+
+    /// Verifies that text input layouts reflow logical geometry after runtime orientation changes.
+    @Test
+    void textInputLayoutReflowsAdornmentsAndFloatingLabelAfterRuntimeOrientationChanges() {
+        runOnFxThread(() -> {
+            M3TextField textField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
+            textField.setPrefWidth(360.0);
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
+            layout.setLabelText("Outlined with text");
+            layout.setLeading(new M3Icon("T"));
+            layout.setTrailing(createIconButton("V"));
+            layout.setCharacterCounterVisible(true);
+            layout.setCharacterLimit(24);
+            layout.setPrefWidth(360.0);
+
+            StackPane root = new StackPane(layout);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 430.0, 140.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(430.0, 140.0);
+            root.layout();
+            layout.layout();
+
+            assertTextInputLayoutUsesLogicalGeometry(layout, false);
+
+            layout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            layout.layout();
+
+            assertTextInputLayoutUsesLogicalGeometry(layout, true);
+
+            layout.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            root.applyCss();
+            root.layout();
+            layout.layout();
+
+            assertTextInputLayoutUsesLogicalGeometry(layout, false);
         });
     }
 
@@ -5194,6 +5845,50 @@ final class M3ControlStyleTest {
         );
     }
 
+    /// Verifies that installed tooltip popups follow owner node orientation changes while showing.
+    @Test
+    void tooltipPopupSynchronizesOwnerNodeOrientationWhileShowing() {
+        runOnFxThread(() -> {
+            Label target = new Label("Target");
+            target.setMinSize(96.0, 32.0);
+            M3Button action = createButton("Action", M3ButtonVariant.TEXT);
+            M3RichTooltip tooltip = M3RichTooltip.install(target, "Title", "Supporting text", action);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(target);
+                Scene scene = new Scene(root, 320.0, 180.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                tooltip.show(target, stage.getX() + 80.0, stage.getY() + 80.0);
+                Node tooltipRoot = Objects.requireNonNull(tooltip.getScene(), "tooltip scene").getRoot();
+
+                assertEquals(NodeOrientation.LEFT_TO_RIGHT, tooltipRoot.getNodeOrientation());
+                assertEquals(NodeOrientation.LEFT_TO_RIGHT, action.getEffectiveNodeOrientation());
+
+                target.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                tooltipRoot.applyCss();
+
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, tooltipRoot.getNodeOrientation());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, action.getEffectiveNodeOrientation());
+
+                target.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                tooltipRoot.applyCss();
+
+                assertEquals(NodeOrientation.LEFT_TO_RIGHT, tooltipRoot.getNodeOrientation());
+                assertEquals(NodeOrientation.LEFT_TO_RIGHT, action.getEffectiveNodeOrientation());
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(target, tooltip);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that installed tooltip show delays refresh while a pointer-triggered open is pending.
     @Test
     void tooltipShowDelayRefreshUsesPublicBehavior() throws InterruptedException {
@@ -5789,6 +6484,229 @@ final class M3ControlStyleTest {
         assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
     }
 
+    /// Verifies that installed tooltips follow scene theme changes after installation.
+    @Test
+    void tooltipReinheritsRuntimeSceneThemeChanges() {
+        runOnFxThread(() -> {
+            Label target = new Label("Target");
+            Pane root = new Pane(target);
+            Scene scene = new Scene(root, 240.0, 120.0);
+            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertNull(tooltip.getTheme());
+
+                M3ThemeManager.install(scene, baselineTheme);
+
+                assertSame(baselineTheme, tooltip.getTheme());
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+
+                tooltip.show(target, stage.getX() + 48.0, stage.getY() + 96.0);
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                assertSame(expressiveDarkTheme, tooltip.getTheme());
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertTrue(tooltip.getScene().getStylesheets().contains(
+                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                ));
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(target, tooltip);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that installed tooltips follow scene root replacement while the target remains attached.
+    @Test
+    void tooltipReinheritsRuntimeSceneRootReplacement() {
+        runOnFxThread(() -> {
+            Label target = new Label("Target");
+            Pane targetContainer = new Pane(target);
+            Pane firstRoot = new Pane(targetContainer);
+            Scene scene = new Scene(firstRoot, 280.0, 140.0);
+            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, baselineTheme);
+                stage.setScene(scene);
+                stage.show();
+                firstRoot.applyCss();
+                firstRoot.layout();
+
+                assertSame(baselineTheme, tooltip.getTheme());
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+
+                tooltip.show(target, stage.getX() + 48.0, stage.getY() + 96.0);
+
+                Pane secondRoot = new Pane();
+                firstRoot.getChildren().remove(targetContainer);
+                secondRoot.getChildren().add(targetContainer);
+                scene.setRoot(secondRoot);
+
+                assertSame(baselineTheme, tooltip.getTheme());
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                assertSame(expressiveDarkTheme, tooltip.getTheme());
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertTrue(tooltip.getScene().getStylesheets().contains(
+                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                ));
+
+                M3ThemeManager.uninstall(scene);
+
+                assertNull(tooltip.getTheme());
+                assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+
+                Pane unthemedRoot = new Pane();
+                secondRoot.getChildren().remove(targetContainer);
+                unthemedRoot.getChildren().add(targetContainer);
+                scene.setRoot(unthemedRoot);
+
+                assertNull(tooltip.getTheme());
+                assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(target, tooltip);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that installed tooltips follow local parent theme changes after installation.
+    @Test
+    void tooltipReinheritsRuntimeLocalParentThemeChanges() {
+        runOnFxThread(() -> {
+            Label target = new Label("Target");
+            Pane localRoot = new Pane(target);
+            Pane root = new Pane(localRoot);
+            Scene scene = new Scene(root, 240.0, 120.0);
+            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertNull(tooltip.getTheme());
+
+                M3ThemeManager.install(localRoot, baselineTheme);
+
+                assertSame(baselineTheme, tooltip.getTheme());
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+
+                tooltip.show(target, stage.getX() + 48.0, stage.getY() + 96.0);
+
+                M3ThemeManager.install(localRoot, expressiveDarkTheme);
+
+                assertSame(expressiveDarkTheme, tooltip.getTheme());
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertTrue(tooltip.getScene().getStylesheets().contains(
+                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                ));
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(target, tooltip);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that installed tooltips follow owner subtree reparenting between local theme roots.
+    @Test
+    void tooltipReinheritsRuntimeLocalParentThemeAfterReparenting() {
+        runOnFxThread(() -> {
+            Label target = new Label("Target");
+            Pane firstLocalRoot = new Pane(target);
+            Pane secondLocalRoot = new Pane();
+            Pane root = new Pane(firstLocalRoot, secondLocalRoot);
+            Scene scene = new Scene(root, 320.0, 160.0);
+            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(firstLocalRoot, baselineTheme);
+                M3ThemeManager.install(secondLocalRoot, expressiveDarkTheme);
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertSame(baselineTheme, tooltip.getTheme());
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+
+                tooltip.show(target, stage.getX() + 48.0, stage.getY() + 96.0);
+
+                firstLocalRoot.getChildren().remove(target);
+                secondLocalRoot.getChildren().add(target);
+
+                assertSame(expressiveDarkTheme, tooltip.getTheme());
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertTrue(tooltip.getScene().getStylesheets().contains(
+                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                ));
+
+                secondLocalRoot.getChildren().remove(target);
+                root.getChildren().add(target);
+
+                assertNull(tooltip.getTheme());
+                assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertFalse(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(target, tooltip);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that avatars swap between text and graphic content.
     @Test
     void avatarOwnsTextAndGraphicContent() {
@@ -5866,6 +6784,7 @@ final class M3ControlStyleTest {
 
         assertEquals(M3IconSize.MEDIUM, icon.getSize());
         assertEquals(M3IconVariant.ON_SURFACE_VARIANT, icon.getVariant());
+        assertFalse(icon.isFocusTraversable());
         assertTrue(icon.getStyleClass().contains(M3Icon.STYLE_CLASS));
         assertTrue(icon.getStyleClass().contains(M3IconSize.MEDIUM.getStyleClass()));
         assertTrue(icon.getStyleClass().contains(M3IconVariant.ON_SURFACE_VARIANT.getStyleClass()));
@@ -7165,6 +8084,291 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that an already open menu button popup follows runtime scene theme changes.
+    @Test
+    void menuButtonPopupReinheritsRuntimeSceneThemeChanges() {
+        runOnFxThread(() -> {
+            M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Archive"));
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(menuButton);
+                Scene scene = new Scene(root, 360.0, 180.0);
+                M3ThemeManager.install(scene, baselineTheme);
+                stage.setScene(scene);
+                stage.show();
+                menuButton.resizeRelocate(24.0, 24.0, 128.0, 40.0);
+                root.applyCss();
+                root.layout();
+
+                menuButton.showMenu();
+
+                assertTrue(menuButton.isShowing());
+                assertSame(baselineTheme, M3ThemeManager.getTheme(menuButton.getMenu()));
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                M3Menu menu = menuButton.getMenu();
+                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(menu));
+                assertTrue(menu.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(menu.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertTrue(menu.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)));
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that popup theme synchronizers follow scene root replacement.
+    @Test
+    void popupContextSynchronizerReinheritsRuntimeSceneRootReplacement() {
+        runOnFxThread(() -> {
+            Label owner = new Label("Owner");
+            Pane ownerContainer = new Pane(owner);
+            Pane popupRoot = new Pane();
+            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popupRoot);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Pane firstRoot = new Pane(ownerContainer);
+            Scene scene = new Scene(firstRoot, 420.0, 220.0);
+
+            M3ThemeManager.install(scene, baselineTheme);
+            firstRoot.applyCss();
+            firstRoot.layout();
+
+            try {
+                synchronizer.start();
+
+                assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
+                assertTrue(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(baselineTheme)));
+
+                Pane secondRoot = new Pane();
+                firstRoot.getChildren().remove(ownerContainer);
+                secondRoot.getChildren().add(ownerContainer);
+                scene.setRoot(secondRoot);
+
+                assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(popupRoot));
+                assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertTrue(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)));
+
+                M3ThemeManager.uninstall(scene);
+
+                assertNull(M3ThemeManager.getTheme(popupRoot));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+
+                Pane unthemedRoot = new Pane();
+                secondRoot.getChildren().remove(ownerContainer);
+                unthemedRoot.getChildren().add(ownerContainer);
+                scene.setRoot(unthemedRoot);
+
+                assertNull(M3ThemeManager.getTheme(popupRoot));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            } finally {
+                synchronizer.stop();
+            }
+        });
+    }
+
+    /// Verifies that popup theme synchronizers follow owner subtree reparenting between local themes.
+    @Test
+    void popupContextSynchronizerReinheritsRuntimeLocalThemeAfterReparenting() {
+        runOnFxThread(() -> {
+            Label owner = new Label("Owner");
+            Pane ownerContainer = new Pane(owner);
+            Pane popupRoot = new Pane();
+            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popupRoot);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            try {
+                Pane firstLocalRoot = new Pane(ownerContainer);
+                Pane secondLocalRoot = new Pane();
+                Pane root = new Pane(firstLocalRoot, secondLocalRoot);
+                M3ThemeManager.install(firstLocalRoot, baselineTheme);
+                M3ThemeManager.install(secondLocalRoot, expressiveDarkTheme);
+                new Scene(root, 420.0, 220.0);
+                root.applyCss();
+                root.layout();
+
+                synchronizer.start();
+
+                assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
+
+                firstLocalRoot.getChildren().remove(ownerContainer);
+                secondLocalRoot.getChildren().add(ownerContainer);
+
+                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(popupRoot));
+                assertTrue(popupRoot.getStyle().contains("-m3-color-primary"));
+                assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+
+                secondLocalRoot.getChildren().remove(ownerContainer);
+                root.getChildren().add(ownerContainer);
+
+                assertNull(M3ThemeManager.getTheme(popupRoot));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            } finally {
+                synchronizer.stop();
+            }
+        });
+    }
+
+    /// Verifies that an already open submenu popup follows runtime parent menu theme changes.
+    @Test
+    void subMenuPopupReinheritsRuntimeParentMenuThemeChanges() {
+        runOnFxThread(() -> {
+            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
+            M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Duplicate"), subMenuItem);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(menuButton);
+                Scene scene = new Scene(root, 460.0, 260.0);
+                M3ThemeManager.install(scene, baselineTheme);
+                stage.setScene(scene);
+                stage.show();
+                menuButton.resizeRelocate(24.0, 24.0, 144.0, 40.0);
+                root.applyCss();
+                root.layout();
+
+                menuButton.showMenu();
+                subMenuItem.showSubMenu();
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(subMenuItem.isSubMenuShowing());
+                assertSame(baselineTheme, M3ThemeManager.getTheme(subMenuItem.getSubMenu()));
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                M3Menu subMenu = subMenuItem.getSubMenu();
+                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(subMenu));
+                assertTrue(subMenu.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(subMenu.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertTrue(subMenu.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)));
+            } finally {
+                subMenuItem.hideSubMenu();
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that an already open picker-field popup follows runtime scene theme changes.
+    @Test
+    void pickerFieldPopupReinheritsRuntimeSceneThemeChanges() {
+        runOnFxThread(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 15));
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#2d6b27"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(field);
+                Scene scene = new Scene(root, 520.0, 420.0);
+                M3ThemeManager.install(scene, baselineTheme);
+                stage.setScene(scene);
+                stage.show();
+                field.resizeRelocate(24.0, 24.0, 260.0, 64.0);
+                root.applyCss();
+                root.layout();
+
+                field.showPicker();
+                Parent popupSurface = Objects.requireNonNull(pickerPopupSurface(field), "popupSurface");
+
+                assertSame(baselineTheme, M3ThemeManager.getTheme(popupSurface));
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(popupSurface));
+                assertTrue(popupSurface.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(popupSurface.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertTrue(popupSurface.getStylesheets().contains(
+                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                ));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that an already open date-range picker-field popup follows runtime scene theme changes.
+    @Test
+    void dateRangePickerFieldPopupReinheritsRuntimeSceneThemeChanges() {
+        runOnFxThread(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 6, 15),
+                    LocalDate.of(2026, 6, 20)
+            );
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#8c4a5f"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(field);
+                Scene scene = new Scene(root, 680.0, 480.0);
+                M3ThemeManager.install(scene, baselineTheme);
+                stage.setScene(scene);
+                stage.show();
+                field.resizeRelocate(24.0, 24.0, 520.0, 72.0);
+                root.applyCss();
+                root.layout();
+
+                field.showPicker();
+                Parent popupSurface = Objects.requireNonNull(pickerPopupSurface(field), "popupSurface");
+
+                assertSame(baselineTheme, M3ThemeManager.getTheme(popupSurface));
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(popupSurface));
+                assertTrue(popupSurface.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(popupSurface.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertTrue(popupSurface.getStylesheets().contains(
+                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                ));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that menu button accessibility focus requests follow the active popup focus branch.
     @Test
     void menuButtonRoutesAccessibleFocusAcrossPopupBranches() {
@@ -7290,6 +8494,105 @@ final class M3ControlStyleTest {
 
                 assertTrue(pdf.isFocused());
             } finally {
+                export.hideSubMenu();
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that nested submenu keyboard traversal and accessible focus routing stay in the active popup branch.
+    @Test
+    void nestedSubMenuKeyboardTraversalPreservesAccessibleFocusBranch() {
+        runOnFxThread(() -> {
+            M3MenuItem pdf = new M3MenuItem("PDF");
+            M3MenuItem html = new M3MenuItem("HTML");
+            M3SubMenuItem recent = new M3SubMenuItem("Recent", pdf, html);
+            M3SubMenuItem export = new M3SubMenuItem("Export", recent);
+            M3MenuButton menuButton = new M3MenuButton("More", export);
+            Stage stage = new Stage();
+
+            try {
+                M3MotionSettings.setAnimationsEnabled(menuButton, false);
+                M3MotionSettings.setAnimationsEnabled(export, false);
+                M3MotionSettings.setAnimationsEnabled(recent, false);
+
+                Pane root = new Pane(menuButton);
+                stage.setScene(new Scene(root, 360.0, 220.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                menuButton.showMenu();
+                assertTrue(menuButton.isShowing());
+                assertSame(menuButton, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(export.isFocused());
+                assertSame(export, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                export.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(export.isSubMenuShowing());
+                assertTrue(recent.isFocused());
+                assertSame(recent, export.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(recent, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                recent.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(recent.isSubMenuShowing());
+                assertTrue(pdf.isFocused());
+                assertSame(pdf, recent.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdf, export.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdf, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(pdf.isFocused());
+                assertSame(pdf, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                pdf.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(html.isFocused());
+                assertSame(html, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                recent.getSubMenu().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertFalse(recent.isSubMenuShowing());
+                assertTrue(recent.isFocused());
+                assertTrue(export.isSubMenuShowing());
+                assertSame(recent, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                export.getSubMenu().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertFalse(export.isSubMenuShowing());
+                assertTrue(export.isFocused());
+                assertTrue(menuButton.isShowing());
+                assertSame(export, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                menuButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+
+                export.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(export.isSubMenuShowing());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, export.getSubMenu().getNodeOrientation());
+                assertTrue(recent.isFocused());
+
+                recent.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(recent.isSubMenuShowing());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, recent.getSubMenu().getNodeOrientation());
+                assertTrue(pdf.isFocused());
+                assertSame(pdf, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                recent.getSubMenu().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertFalse(recent.isSubMenuShowing());
+                assertTrue(recent.isFocused());
+                assertTrue(export.isSubMenuShowing());
+
+                export.getSubMenu().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertFalse(export.isSubMenuShowing());
+                assertTrue(export.isFocused());
+                assertTrue(menuButton.isShowing());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(menuButton);
+                M3MotionSettings.clearAnimationsEnabled(export);
+                M3MotionSettings.clearAnimationsEnabled(recent);
+                recent.hideSubMenu();
                 export.hideSubMenu();
                 menuButton.hideMenu();
                 stage.close();
@@ -7638,9 +8941,9 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that rich tooltip popup focus opened from a menu item keeps owner containers anchored to the item.
+    /// Verifies that rich tooltip popup action focus opened from a menu item is exposed through owner containers.
     @Test
-    void menuItemRichTooltipPopupFocusAnchorsOwnerStack() throws InterruptedException {
+    void menuItemRichTooltipPopupActionFocusRoutesThroughOwnerStack() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Surface> surfaceReference = new AtomicReference<>();
         AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
@@ -7696,17 +8999,15 @@ final class M3ControlStyleTest {
                         assertTrue(tooltip.isShowing());
                         assertTrue(tooltip.focusFirstInteractiveTarget());
                         assertTrue(action.isFocused());
-                        assertSame(details, menuButton.getMenu().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                        assertSame(details, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                        assertSame(details, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                        assertSame(action, menuButton.getMenu().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                        assertSame(action, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                        assertSame(action, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                         menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
 
-                        assertTrue(details.isFocused());
-                        assertSame(details, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                        assertTrue(tooltip.focusFirstInteractiveTarget());
                         assertTrue(action.isFocused());
-                        assertSame(details, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                        assertSame(action, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                        assertSame(action, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                         action.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
 
@@ -8675,6 +9976,121 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that search bar slots reflow after runtime orientation changes.
+    @Test
+    void searchBarReflowsSlotsAfterRuntimeOrientationChanges() {
+        runOnFxThread(() -> {
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            M3Button leading = new M3Button("Menu");
+            M3Button clear = new M3Button("Clear");
+            M3Button filter = new M3Button("Filter");
+            searchBar.setLeading(leading);
+            searchBar.setTrailingActions(clear, filter);
+            searchBar.setPrefWidth(360.0);
+
+            StackPane root = new StackPane(searchBar);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 430.0, 120.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(430.0, 120.0);
+                root.layout();
+                searchBar.layout();
+
+                assertSearchBarUsesLogicalGeometry(searchBar, false);
+
+                filter.requestFocus();
+                assertTrue(filter.isFocused());
+
+                searchBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                searchBar.layout();
+
+                assertSearchBarUsesLogicalGeometry(searchBar, true);
+                assertTrue(filter.isFocused());
+                assertSame(filter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchBar.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                root.applyCss();
+                root.layout();
+                searchBar.layout();
+
+                assertSearchBarUsesLogicalGeometry(searchBar, false);
+                assertTrue(filter.isFocused());
+                assertSame(filter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that active search views propagate runtime orientation changes into search bar and results.
+    @Test
+    void searchViewReflowsSearchBarAndResultsAfterRuntimeOrientationChanges() {
+        runOnFxThread(() -> {
+            M3Button leading = new M3Button("Menu");
+            M3Button filter = new M3Button("Filter");
+            M3ListItem firstResult = new M3ListItem("First result");
+            M3ListItem secondResult = new M3ListItem("Second result");
+            secondResult.setTrailing(new M3Button("Open"));
+            M3SearchView searchView = new M3SearchView("Search", firstResult, secondResult);
+            searchView.setLeading(leading);
+            searchView.setTrailingActions(filter);
+            searchView.setPrefWidth(380.0);
+            searchView.activate();
+
+            StackPane root = new StackPane(searchView);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 460.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(460.0, 260.0);
+                root.layout();
+                searchView.layout();
+
+                assertSearchViewUsesLogicalGeometry(searchView, false);
+
+                secondResult.requestFocus();
+                assertTrue(secondResult.isFocused());
+
+                searchView.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                searchView.layout();
+                secondResult.layout();
+
+                assertSearchViewUsesLogicalGeometry(searchView, true);
+                assertTrue(secondResult.isFocused());
+                assertSame(secondResult, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchView.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                root.applyCss();
+                root.layout();
+                searchView.layout();
+                secondResult.layout();
+
+                assertSearchViewUsesLogicalGeometry(searchView, false);
+                assertTrue(secondResult.isFocused());
+                assertSame(secondResult, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search controls route direct child focus and restore focus when results collapse.
     @Test
     void searchControlsRouteDirectChildFocusAndRestoreCollapseFocus() {
@@ -9111,6 +10527,73 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that search view keyboard traversal continues after runtime orientation changes.
+    @Test
+    void searchViewKeyboardNavigationSurvivesRuntimeOrientationChanges() {
+        runOnFxThread(() -> {
+            M3Button leading = new M3Button("Menu");
+            M3Button trailing = new M3Button("Filter");
+            M3ListItem first = new M3ListItem("First");
+            M3ListItem second = new M3ListItem("Second");
+            second.setTrailing(new M3Button("Open"));
+            M3SearchView searchView = new M3SearchView("Search", first, second);
+            searchView.setLeading(leading);
+            searchView.setTrailingActions(trailing);
+            searchView.setPrefWidth(380.0);
+
+            StackPane root = new StackPane(searchView);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 460.0, 260.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                searchView.layout();
+
+                searchView.getEditor().requestFocus();
+                assertTrue(searchView.getEditor().isFocused());
+                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(first.isFocused());
+                assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchView.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                searchView.layout();
+
+                assertSearchViewUsesLogicalGeometry(searchView, true);
+                assertTrue(first.isFocused());
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(searchView.getEditor().isFocused());
+                assertSame(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(first.isFocused());
+                first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(second.isFocused());
+                assertSame(second, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchView.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                root.applyCss();
+                root.layout();
+                searchView.layout();
+
+                assertSearchViewUsesLogicalGeometry(searchView, false);
+                assertTrue(second.isFocused());
+                second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(first.isFocused());
+                assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search view result navigation skips unreachable results and supports boundary keys.
     @Test
     void searchViewKeyboardNavigationSkipsUnreachableResultsAndSupportsPageKeys() {
@@ -9503,7 +10986,12 @@ final class M3ControlStyleTest {
                 && !bottomSheet.isVisible()
                 && !bottomSheet.isManaged()
                 && bottomSheet.getTranslateY() > 0.0
-                && Math.abs(bottomSheet.getOpacity()) < 0.0001, () -> {
+                && Math.abs(bottomSheet.getOpacity()) < 0.0001,
+                () -> describeSheetPairState(
+                        sideSheet,
+                        bottomSheet,
+                        "Sheets did not settle hidden after hide()"
+                ), () -> {
         }, () -> {
             assertFalse(sideSheet.isVisible());
             assertFalse(sideSheet.isManaged());
@@ -9528,7 +11016,12 @@ final class M3ControlStyleTest {
                 && Math.abs(sideSheet.getOpacity() - 1.0) < 0.0001
                 && bottomSheet.isManaged()
                 && Math.abs(bottomSheet.getTranslateY()) < 0.0001
-                && Math.abs(bottomSheet.getOpacity() - 1.0) < 0.0001, () -> {
+                && Math.abs(bottomSheet.getOpacity() - 1.0) < 0.0001,
+                () -> describeSheetPairState(
+                        sideSheet,
+                        bottomSheet,
+                        "Sheets did not settle shown after show()"
+                ), () -> {
         }, () -> {
             assertTrue(sideSheet.isManaged());
             assertEquals(0.0, sideSheet.getTranslateX(), 0.0001);
@@ -12678,6 +14171,68 @@ final class M3ControlStyleTest {
         assertEquals(4, fireCount.get());
     }
 
+    /// Verifies that list items expose leading and trailing slot focus targets.
+    @Test
+    void listItemAccessibleFocusIncludesLeadingAndTrailingSlots() {
+        runOnFxThread(() -> {
+            M3Button leading = new M3Button("Leading");
+            M3Button trailing = new M3Button("Trailing");
+            M3ListItem listItem = new M3ListItem("Headline");
+            listItem.setLeading(leading);
+            listItem.setTrailing(trailing);
+            Pane root = new Pane(listItem);
+            Stage stage = new Stage();
+
+            try {
+                Scene scene = new Scene(root, 360.0, 160.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                listItem.resizeRelocate(24.0, 24.0, 300.0, 72.0);
+                root.layout();
+
+                assertEquals(2, listItem.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertSame(leading, listItem.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(trailing, listItem.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertSame(listItem, listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                listItem.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(listItem.isFocused());
+                assertSame(listItem, listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                leading.requestFocus();
+
+                assertTrue(leading.isFocused());
+                assertSame(leading, listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                listItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertTrue(leading.isFocused());
+                assertSame(leading, listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                listItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, trailing);
+
+                assertTrue(trailing.isFocused());
+                assertSame(trailing, listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                listItem.setLeading(null);
+
+                assertEquals(1, listItem.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertSame(trailing, listItem.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertNull(listItem.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+                listItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+
+                assertTrue(trailing.isFocused());
+                assertSame(trailing, listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that lists expose item selection policies.
     @Test
     void listGroupsItemsAndKeepsSelectionPolicy() {
@@ -13832,6 +15387,259 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that virtualized list views delegate explicit reveal requests into visible row popup targets.
+    @Test
+    void listViewAccessibilityActionsRevealVisibleRowTooltipTargets() {
+        runOnFxThread(() -> {
+            AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
+            AtomicReference<@Nullable M3Button> tooltipActionReference = new AtomicReference<>();
+            M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(280.0, 168.0);
+            listView.setCellFactory(value -> {
+                M3ListItem item = new M3ListItem(value);
+                M3Button ownerAction = new M3Button("Action");
+                if ("Settings".equals(value)) {
+                    M3Button tooltipAction = new M3Button("Details");
+                    M3RichTooltip tooltip = M3RichTooltip.install(
+                            ownerAction,
+                            "Settings",
+                            "Shows row details.",
+                            tooltipAction
+                    );
+                    tooltipReference.set(tooltip);
+                    tooltipActionReference.set(tooltipAction);
+                }
+                item.setTrailing(ownerAction);
+                return item;
+            });
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 320.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
+                M3Button tooltipAction = Objects.requireNonNull(tooltipActionReference.get(), "tooltipAction");
+
+                assertFalse(tooltip.isShowing());
+
+                listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+                root.layout();
+
+                assertEquals(1, listView.getFocusedIndex());
+                assertEquals("Settings", listView.getFocusedItem());
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipAction.isFocused());
+                assertSame(tooltipAction, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                listView.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertEquals(1, listView.getFocusedIndex());
+                assertSame(tooltipAction, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that virtualized list views delegate explicit reveal requests into visible row nested menus.
+    @Test
+    void listViewAccessibilityActionsRevealVisibleRowNestedMenuTargets() {
+        runOnFxThread(() -> {
+            AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
+            AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
+            AtomicReference<@Nullable M3MenuItem> archiveItemReference = new AtomicReference<>();
+            M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(280.0, 168.0);
+            listView.setCellFactory(value -> {
+                M3ListItem item = new M3ListItem(value);
+                M3MenuItem archiveItem = new M3MenuItem("Archive item");
+                M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", archiveItem);
+                M3MenuButton menuButton = new M3MenuButton("Actions", subMenuItem);
+                if ("Settings".equals(value)) {
+                    menuButtonReference.set(menuButton);
+                    subMenuItemReference.set(subMenuItem);
+                    archiveItemReference.set(archiveItem);
+                }
+                item.setTrailing(menuButton);
+                return item;
+            });
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 320.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "subMenuItem");
+                M3MenuItem archiveItem = Objects.requireNonNull(archiveItemReference.get(), "archiveItem");
+
+                assertFalse(menuButton.isShowing());
+                assertFalse(subMenuItem.isSubMenuShowing());
+
+                listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+                root.layout();
+
+                assertEquals(1, listView.getFocusedIndex());
+                assertEquals("Settings", listView.getFocusedItem());
+                assertTrue(menuButton.isShowing());
+                assertTrue(subMenuItem.isSubMenuShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                listView.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertEquals(1, listView.getFocusedIndex());
+                assertSame(archiveItem, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that virtualized list views materialize distant data-node rows before nested menu reveal.
+    @Test
+    void listViewAccessibilityActionsRevealVirtualizedRowNestedMenuTargets() {
+        runOnFxThread(() -> {
+            M3ListView<M3ListItem> listView = new M3ListView<>();
+            AtomicReference<@Nullable M3ListItem> targetRowReference = new AtomicReference<>();
+            AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
+            AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
+            AtomicReference<@Nullable M3MenuItem> archiveItemReference = new AtomicReference<>();
+
+            for (int index = 0; index < 120; index++) {
+                M3ListItem item = new M3ListItem("Row " + index);
+                if (index == 80) {
+                    M3MenuItem archiveItem = new M3MenuItem("Archive item");
+                    M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", archiveItem);
+                    M3MenuButton menuButton = new M3MenuButton("Actions", subMenuItem);
+                    item.setTrailing(menuButton);
+                    targetRowReference.set(item);
+                    menuButtonReference.set(menuButton);
+                    subMenuItemReference.set(subMenuItem);
+                    archiveItemReference.set(archiveItem);
+                }
+                listView.addItem(item);
+            }
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(280.0, 168.0);
+            listView.setCellFactory(item -> item);
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 320.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3ListItem targetRow = Objects.requireNonNull(targetRowReference.get(), "targetRow");
+                M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "subMenuItem");
+                M3MenuItem archiveItem = Objects.requireNonNull(archiveItemReference.get(), "archiveItem");
+
+                assertNull(targetRow.getScene());
+                assertFalse(menuButton.isShowing());
+                assertFalse(subMenuItem.isSubMenuShowing());
+
+                listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 80, archiveItem);
+                root.layout();
+
+                assertEquals(80, listView.getFocusedIndex());
+                assertSame(targetRow, listView.getFocusedItem());
+                assertSame(targetRow, listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 80));
+                assertTrue(menuButton.isShowing());
+                assertTrue(subMenuItem.isSubMenuShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                listView.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertEquals(80, listView.getFocusedIndex());
+                assertSame(archiveItem, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that indexed virtualized reveal opens the picker belonging to the requested distant row.
+    @Test
+    void listViewAccessibilityActionsRevealVirtualizedRowPickerValueTargets() {
+        runOnFxThread(() -> {
+            AtomicReference<@Nullable M3DatePickerField> targetDateFieldReference = new AtomicReference<>();
+            LocalDate targetDate = LocalDate.of(2026, 5, 18);
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int index = 0; index < 120; index++) {
+                listView.addItem(index);
+            }
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(360.0, 168.0);
+            listView.setCellFactory(value -> {
+                M3ListItem item = new M3ListItem("Row " + value);
+                M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 1));
+                dateField.setDisplayedMonth(YearMonth.of(2026, 5));
+                dateField.setPrefWidth(180.0);
+                if (value == 80) {
+                    targetDateFieldReference.set(dateField);
+                }
+                item.setTrailing(dateField);
+                return item;
+            });
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 440.0, 240.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertNull(targetDateFieldReference.get());
+
+                listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 80, targetDate);
+                root.layout();
+
+                M3DatePickerField targetDateField =
+                        Objects.requireNonNull(targetDateFieldReference.get(), "targetDateField");
+                @Nullable Node activePopupTarget = M3Accessible.activeExternalFocusTarget(listView, targetDateField);
+
+                assertEquals(80, listView.getFocusedIndex());
+                assertEquals(80, listView.getFocusedItem());
+                assertTrue(targetDateField.isShowing());
+                assertTrue(activePopupTarget instanceof Node);
+                assertSame(activePopupTarget, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                listView.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertEquals(80, listView.getFocusedIndex());
+                assertSame(activePopupTarget, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that virtualized list view accessibility actions accept data item descendants.
     @Test
     void listViewAccessibilityActionsAcceptDataItemDescendants() {
@@ -13951,6 +15759,106 @@ final class M3ControlStyleTest {
         applyCss(cell);
 
         assertInstanceOf(M3ListViewCellSkin.class, cell.getSkin());
+    }
+
+    /// Verifies that visible virtualized rows follow runtime scene theme changes.
+    @Test
+    void listViewVisibleRowsReinheritRuntimeSceneThemeChanges() {
+        runOnFxThread(() -> {
+            M3ListView<String> listView = new M3ListView<>("Alpha", "Beta", "Gamma");
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(320.0, 168.0);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            StackPane root = new StackPane(listView);
+            Scene scene = new Scene(root, 360.0, 220.0);
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(scene, baselineTheme);
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3ListViewSkin<?> skin = assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
+                M3ListItem row = assertInstanceOf(
+                        M3ListItem.class,
+                        Objects.requireNonNull(skin.getAttachedVisibleItem(0), "row")
+                );
+
+                assertSame(baselineTheme, M3ThemeManager.getTheme(row));
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+                root.applyCss();
+                root.layout();
+
+                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(row));
+                assertTrue(row.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(row.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that visible virtualized rows follow local parent theme changes and clearing.
+    @Test
+    void listViewVisibleRowsReinheritRuntimeLocalParentThemeChanges() {
+        runOnFxThread(() -> {
+            M3ListView<String> listView = new M3ListView<>("Alpha", "Beta", "Gamma");
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(320.0, 168.0);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Pane localRoot = new Pane(listView);
+            StackPane root = new StackPane(localRoot);
+            Scene scene = new Scene(root, 380.0, 240.0);
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(localRoot, baselineTheme);
+                stage.setScene(scene);
+                stage.show();
+                localRoot.resizeRelocate(0.0, 0.0, 360.0, 220.0);
+                listView.resizeRelocate(20.0, 20.0, 320.0, 168.0);
+                root.applyCss();
+                root.layout();
+
+                M3ListViewSkin<?> skin = assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
+                M3ListItem row = assertInstanceOf(
+                        M3ListItem.class,
+                        Objects.requireNonNull(skin.getAttachedVisibleItem(0), "row")
+                );
+
+                assertSame(baselineTheme, M3ThemeManager.getTheme(row));
+
+                M3ThemeManager.install(localRoot, expressiveDarkTheme);
+                root.applyCss();
+                root.layout();
+
+                assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(row));
+                assertTrue(row.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(row.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+
+                M3ThemeManager.uninstall(localRoot);
+                root.applyCss();
+                root.layout();
+
+                assertNull(M3ThemeManager.getTheme(row));
+                assertFalse(row.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertFalse(row.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertFalse(row.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that virtualized list view rows are actually visible in rendered snapshots.
@@ -15949,16 +17857,7 @@ final class M3ControlStyleTest {
             group.layout();
             bottomSheets.layout();
 
-            Bounds headerBounds = group.getHeaderItem().localToScene(group.getHeaderItem().getBoundsInLocal());
-            Bounds childBounds = bottomSheets.localToScene(bottomSheets.getBoundsInLocal());
-            Region childSelection = listItemSelectionContainer(bottomSheets);
-
-            assertEquals(headerBounds.getMaxX(), childBounds.getMaxX(), 0.0001);
-            assertTrue(childBounds.getMinX() > headerBounds.getMinX() + 6.0);
-            assertEquals(headerBounds.getHeight(), childBounds.getHeight(), 0.0001);
-            assertEquals(childBounds.getWidth(), childSelection.getWidth(), 0.0001);
-            assertEquals(56.0, bottomSheets.getOneLineHeight(), 0.0001);
-            assertRegionRadii(childSelection, 28.0, 28.0, 28.0, 28.0);
+            assertDrawerGroupChildIndentUsesLeftToRightGeometry(group, bottomSheets);
 
             WritableImage image = snapshotImageOnFxThread(root);
             Color beforeChildPill = snapshotNodePixel(image, bottomSheets, -4.0, bottomSheets.getHeight() / 2.0);
@@ -15998,15 +17897,7 @@ final class M3ControlStyleTest {
             group.layout();
             bottomSheets.layout();
 
-            Bounds headerBounds = group.getHeaderItem().localToScene(group.getHeaderItem().getBoundsInLocal());
-            Bounds childBounds = bottomSheets.localToScene(bottomSheets.getBoundsInLocal());
-            Region childSelection = listItemSelectionContainer(bottomSheets);
-
-            assertEquals(headerBounds.getMinX(), childBounds.getMinX(), 0.0001);
-            assertTrue(childBounds.getMaxX() < headerBounds.getMaxX() - 6.0);
-            assertEquals(headerBounds.getHeight(), childBounds.getHeight(), 0.0001);
-            assertEquals(childBounds.getWidth(), childSelection.getWidth(), 0.0001);
-            assertRegionRadii(childSelection, 28.0, 28.0, 28.0, 28.0);
+            assertDrawerGroupChildIndentUsesRightToLeftGeometry(group, bottomSheets);
 
             WritableImage image = snapshotImageOnFxThread(root);
             Color afterChildPill =
@@ -16020,6 +17911,50 @@ final class M3ControlStyleTest {
                     "m3fx-visual",
                     "visual-navigation-drawer-child-selection-rtl.png"
             ));
+        });
+    }
+
+    /// Verifies that selected child rows mirror their indentation after runtime orientation changes.
+    @Test
+    void navigationDrawerGroupChildSelectionPillReflowsAfterRuntimeOrientationChanges() {
+        runOnFxThread(() -> {
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
+            M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
+            M3ListItem sideSheets = new M3ListItem("Side sheets");
+            group.addItems(bottomSheets, sideSheets);
+            group.setExpanded(true);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            drawer.select(bottomSheets);
+            drawer.setPrefWidth(320.0);
+
+            StackPane root = new StackPane(drawer);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 380.0, 260.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(380.0, 260.0);
+            root.layout();
+            group.layout();
+            bottomSheets.layout();
+
+            assertDrawerGroupChildIndentUsesLeftToRightGeometry(group, bottomSheets);
+
+            drawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            group.layout();
+            bottomSheets.layout();
+
+            assertDrawerGroupChildIndentUsesRightToLeftGeometry(group, bottomSheets);
+
+            drawer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            root.applyCss();
+            root.layout();
+            group.layout();
+            bottomSheets.layout();
+
+            assertDrawerGroupChildIndentUsesLeftToRightGeometry(group, bottomSheets);
         });
     }
 
@@ -23991,6 +25926,95 @@ final class M3ControlStyleTest {
                 && Math.abs(action.getTranslateY() - 16.0) < 0.0001;
     }
 
+    /// Describes the current tested FAB menu action state for timeout diagnostics.
+    private static String describeFabMenuActionState(
+            AtomicReference<@Nullable M3FloatingActionButton> actionReference,
+            String description
+    ) {
+        return description + ": " + describeNodeState(actionReference.get());
+    }
+
+    /// Describes the current tested FAB menu and action state for timeout diagnostics.
+    private static String describeFabMenuState(
+            AtomicReference<@Nullable M3FabMenu> menuReference,
+            AtomicReference<@Nullable M3FloatingActionButton> actionReference,
+            String description
+    ) {
+        @Nullable M3FabMenu menu = menuReference.get();
+        return description
+                + ": menuExpanded=" + (menu == null ? "<null>" : menu.isExpanded())
+                + ", menu=" + describeNodeState(menu)
+                + ", action=" + describeNodeState(actionReference.get());
+    }
+
+    /// Describes the current carousel viewport scroll position for timeout diagnostics.
+    private static String describeCarouselViewportScrollState(
+            AtomicReference<@Nullable ScrollPane> viewportReference,
+            String description
+    ) {
+        @Nullable ScrollPane viewport = viewportReference.get();
+        return description
+                + ": hvalue=" + (viewport == null ? "<null>" : viewport.getHvalue())
+                + ", viewport=" + describeNodeState(viewport);
+    }
+
+    /// Describes a snackbar's current attachment and visibility for timeout diagnostics.
+    private static String describeSnackbarState(
+            AtomicReference<@Nullable M3Snackbar> snackbarReference,
+            String description
+    ) {
+        @Nullable M3Snackbar snackbar = snackbarReference.get();
+        return description
+                + ": parent=" + (snackbar == null ? "<null>" : snackbar.getParent())
+                + ", snackbar=" + describeNodeState(snackbar);
+    }
+
+    /// Describes a snackbar host and its current or queued snackbars for timeout diagnostics.
+    private static String describeSnackbarHostState(
+            AtomicReference<@Nullable M3SnackbarHost> hostReference,
+            AtomicReference<@Nullable M3Snackbar> firstReference,
+            AtomicReference<@Nullable M3Snackbar> secondReference,
+            String description
+    ) {
+        @Nullable M3SnackbarHost host = hostReference.get();
+        return description
+                + ": hostShowing=" + (host == null ? "<null>" : host.isShowing())
+                + ", current=" + (host == null ? "<null>" : host.getSnackbar())
+                + ", queue=" + (host == null ? "<null>" : host.getQueue())
+                + ", host=" + describeNodeState(host)
+                + ", first=" + describeNodeState(firstReference.get())
+                + ", second=" + describeNodeState(secondReference.get());
+    }
+
+    /// Describes a side and bottom sheet pair for timeout diagnostics.
+    private static String describeSheetPairState(
+            M3SideSheet sideSheet,
+            M3BottomSheet bottomSheet,
+            String description
+    ) {
+        return description
+                + ": sideShown=" + sideSheet.isShown()
+                + ", side=" + describeNodeState(sideSheet)
+                + ", bottomShown=" + bottomSheet.isShown()
+                + ", bottom=" + describeNodeState(bottomSheet);
+    }
+
+    /// Describes a node's render-affecting state for timeout diagnostics.
+    private static String describeNodeState(@Nullable Node node) {
+        if (node == null) {
+            return "<null>";
+        }
+        return "visible=" + node.isVisible()
+                + ", managed=" + node.isManaged()
+                + ", opacity=" + node.getOpacity()
+                + ", scaleX=" + node.getScaleX()
+                + ", scaleY=" + node.getScaleY()
+                + ", translateX=" + node.getTranslateX()
+                + ", translateY=" + node.getTranslateY()
+                + ", bounds=" + node.getBoundsInParent()
+                + ", scene=" + node.getScene();
+    }
+
     /// Verifies that a spatial exit node is rendering an intermediate transition.
     private static void assertSpatialExitNodeIntermediate(Node node, String description) {
         assertTrue(node.isVisible(), () -> description + " should still be visible");
@@ -25266,6 +27290,206 @@ final class M3ControlStyleTest {
                 && ripple.getScaleY() > 0.0;
     }
 
+    /// Verifies the resolved logical slot geometry of a search bar.
+    private static void assertSearchBarUsesLogicalGeometry(M3SearchBar searchBar, boolean rightToLeft) {
+        searchBar.applyCss();
+        searchBar.layout();
+
+        Region leadingSlot = lookupRegion(searchBar, "." + M3SearchBar.LEADING_STYLE_CLASS);
+        Region trailingBox = lookupRegion(searchBar, "." + M3SearchBar.TRAILING_STYLE_CLASS);
+        TextInputControl editor = searchBar.getEditor();
+        Bounds leadingBounds = leadingSlot.localToScene(leadingSlot.getBoundsInLocal());
+        Bounds editorBounds = editor.localToScene(editor.getBoundsInLocal());
+        Bounds trailingBounds = trailingBox.localToScene(trailingBox.getBoundsInLocal());
+
+        if (rightToLeft) {
+            assertTrue(trailingBounds.getCenterX() < editorBounds.getCenterX(),
+                    () -> describeSearchBarGeometry(leadingBounds, editorBounds, trailingBounds));
+            assertTrue(editorBounds.getCenterX() < leadingBounds.getCenterX(),
+                    () -> describeSearchBarGeometry(leadingBounds, editorBounds, trailingBounds));
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, searchBar.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, editor.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, trailingBox.getEffectiveNodeOrientation());
+        } else {
+            assertTrue(leadingBounds.getCenterX() < editorBounds.getCenterX(),
+                    () -> describeSearchBarGeometry(leadingBounds, editorBounds, trailingBounds));
+            assertTrue(editorBounds.getCenterX() < trailingBounds.getCenterX(),
+                    () -> describeSearchBarGeometry(leadingBounds, editorBounds, trailingBounds));
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, searchBar.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, editor.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, trailingBox.getEffectiveNodeOrientation());
+        }
+    }
+
+    /// Verifies the resolved logical geometry of an active search view.
+    private static void assertSearchViewUsesLogicalGeometry(M3SearchView searchView, boolean rightToLeft) {
+        searchView.applyCss();
+        searchView.layout();
+
+        assertSearchBarUsesLogicalGeometry(searchView.getSearchBar(), rightToLeft);
+        assertEquals(
+                rightToLeft ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT,
+                searchView.getResultsContainer().getEffectiveNodeOrientation()
+        );
+
+        for (Node result : searchView.getResults()) {
+            assertEquals(
+                    rightToLeft ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT,
+                    result.getEffectiveNodeOrientation()
+            );
+        }
+
+        M3ListItem secondResult = assertInstanceOf(M3ListItem.class, searchView.getResults().get(1));
+        Node trailing = assertInstanceOf(Node.class, secondResult.getTrailing());
+        Bounds rowBounds = secondResult.localToScene(secondResult.getBoundsInLocal());
+        Bounds trailingBounds = trailing.localToScene(trailing.getBoundsInLocal());
+
+        if (rightToLeft) {
+            assertTrue(trailingBounds.getCenterX() < rowBounds.getCenterX(),
+                    () -> "rowBounds=" + rowBounds + ", trailingBounds=" + trailingBounds);
+        } else {
+            assertTrue(trailingBounds.getCenterX() > rowBounds.getCenterX(),
+                    () -> "rowBounds=" + rowBounds + ", trailingBounds=" + trailingBounds);
+        }
+    }
+
+    /// Describes search bar slot geometry for assertion failures.
+    private static String describeSearchBarGeometry(
+            Bounds leadingBounds,
+            Bounds editorBounds,
+            Bounds trailingBounds
+    ) {
+        return "leadingBounds=" + leadingBounds
+                + ", editorBounds=" + editorBounds
+                + ", trailingBounds=" + trailingBounds;
+    }
+
+    /// Verifies the resolved logical geometry of a text input layout.
+    private static void assertTextInputLayoutUsesLogicalGeometry(M3TextInputLayout layout, boolean rightToLeft) {
+        layout.applyCss();
+        layout.layout();
+
+        Region inputContainer = lookupRegion(layout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS);
+        Region leadingSlot = lookupRegion(layout, "." + M3TextInputLayout.LEADING_STYLE_CLASS);
+        Region trailingSlot = lookupRegion(layout, "." + M3TextInputLayout.TRAILING_STYLE_CLASS);
+        Label label = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS));
+        Label supportingLabel = assertInstanceOf(
+                Label.class,
+                layout.lookup("." + M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS)
+        );
+        Label counterLabel = assertInstanceOf(Label.class, layout.lookup("." + M3TextInputLayout.COUNTER_STYLE_CLASS));
+        Path outline = assertInstanceOf(Path.class, layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS));
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
+
+        Bounds containerBounds = inputContainer.localToScene(inputContainer.getBoundsInLocal());
+        Bounds leadingBounds = leadingSlot.localToScene(leadingSlot.getBoundsInLocal());
+        Bounds trailingBounds = trailingSlot.localToScene(trailingSlot.getBoundsInLocal());
+        Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
+        Bounds supportingBounds = supportingLabel.localToScene(supportingLabel.getBoundsInLocal());
+        Bounds counterBounds = counterLabel.localToScene(counterLabel.getBoundsInLocal());
+
+        if (rightToLeft) {
+            assertTrue(leadingBounds.getMinX() > containerBounds.getCenterX(),
+                    () -> describeTextInputLayoutGeometry(
+                            containerBounds,
+                            leadingBounds,
+                            trailingBounds,
+                            labelBounds,
+                            supportingBounds,
+                            counterBounds
+                    ));
+            assertTrue(trailingBounds.getMaxX() < containerBounds.getCenterX(),
+                    () -> describeTextInputLayoutGeometry(
+                            containerBounds,
+                            leadingBounds,
+                            trailingBounds,
+                            labelBounds,
+                            supportingBounds,
+                            counterBounds
+                    ));
+            assertTrue(labelBounds.getCenterX() > containerBounds.getCenterX(),
+                    () -> describeTextInputLayoutGeometry(
+                            containerBounds,
+                            leadingBounds,
+                            trailingBounds,
+                            labelBounds,
+                            supportingBounds,
+                            counterBounds
+                    ));
+            assertTrue(supportingBounds.getCenterX() > counterBounds.getCenterX(),
+                    () -> describeTextInputLayoutGeometry(
+                            containerBounds,
+                            leadingBounds,
+                            trailingBounds,
+                            labelBounds,
+                            supportingBounds,
+                            counterBounds
+                    ));
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, input.getEffectiveNodeOrientation());
+        } else {
+            assertTrue(leadingBounds.getMaxX() < containerBounds.getCenterX(),
+                    () -> describeTextInputLayoutGeometry(
+                            containerBounds,
+                            leadingBounds,
+                            trailingBounds,
+                            labelBounds,
+                            supportingBounds,
+                            counterBounds
+                    ));
+            assertTrue(trailingBounds.getMinX() > containerBounds.getCenterX(),
+                    () -> describeTextInputLayoutGeometry(
+                            containerBounds,
+                            leadingBounds,
+                            trailingBounds,
+                            labelBounds,
+                            supportingBounds,
+                            counterBounds
+                    ));
+            assertTrue(labelBounds.getCenterX() < containerBounds.getCenterX(),
+                    () -> describeTextInputLayoutGeometry(
+                            containerBounds,
+                            leadingBounds,
+                            trailingBounds,
+                            labelBounds,
+                            supportingBounds,
+                            counterBounds
+                    ));
+            assertTrue(supportingBounds.getCenterX() < counterBounds.getCenterX(),
+                    () -> describeTextInputLayoutGeometry(
+                            containerBounds,
+                            leadingBounds,
+                            trailingBounds,
+                            labelBounds,
+                            supportingBounds,
+                            counterBounds
+                    ));
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, input.getEffectiveNodeOrientation());
+        }
+
+        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(label));
+        assertTrue(outlineNotchGap(outline) >= labelBounds.getWidth() - 1.0,
+                () -> "outlineNotchGap=" + outlineNotchGap(outline)
+                        + ", labelBounds=" + labelBounds
+                        + ", rightToLeft=" + rightToLeft);
+    }
+
+    /// Describes text input logical layout geometry for assertion failures.
+    private static String describeTextInputLayoutGeometry(
+            Bounds containerBounds,
+            Bounds leadingBounds,
+            Bounds trailingBounds,
+            Bounds labelBounds,
+            Bounds supportingBounds,
+            Bounds counterBounds
+    ) {
+        return "containerBounds=" + containerBounds
+                + ", leadingBounds=" + leadingBounds
+                + ", trailingBounds=" + trailingBounds
+                + ", labelBounds=" + labelBounds
+                + ", supportingBounds=" + supportingBounds
+                + ", counterBounds=" + counterBounds;
+    }
+
     /// Returns whether a value is strictly inside the supplied range.
     private static boolean isBetweenExclusive(double value, double lowerBound, double upperBound) {
         return value > lowerBound && value < upperBound;
@@ -25476,6 +27700,60 @@ final class M3ControlStyleTest {
     private static void assertBorderColor(Region region, Color expectedColor) {
         assertEquals(1, region.getBorder().getStrokes().size());
         assertEquals(expectedColor, region.getBorder().getStrokes().get(0).getTopStroke());
+    }
+
+    /// Verifies that a drawer group child row uses left-to-right selected pill indentation.
+    private static void assertDrawerGroupChildIndentUsesLeftToRightGeometry(
+            M3NavigationDrawerGroup group,
+            M3ListItem child
+    ) {
+        Bounds headerBounds = group.getHeaderItem().localToScene(group.getHeaderItem().getBoundsInLocal());
+        Bounds childBounds = child.localToScene(child.getBoundsInLocal());
+        Region childSelection = listItemSelectionContainer(child);
+
+        assertEquals(headerBounds.getMaxX(), childBounds.getMaxX(), 0.0001,
+                () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
+        assertTrue(childBounds.getMinX() > headerBounds.getMinX() + 6.0,
+                () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
+        assertEquals(headerBounds.getHeight(), childBounds.getHeight(), 0.0001,
+                () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
+        assertEquals(childBounds.getWidth(), childSelection.getWidth(), 0.0001,
+                () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
+        assertEquals(56.0, child.getOneLineHeight(), 0.0001);
+        assertRegionRadii(childSelection, 28.0, 28.0, 28.0, 28.0);
+    }
+
+    /// Verifies that a drawer group child row uses right-to-left selected pill indentation.
+    private static void assertDrawerGroupChildIndentUsesRightToLeftGeometry(
+            M3NavigationDrawerGroup group,
+            M3ListItem child
+    ) {
+        Bounds headerBounds = group.getHeaderItem().localToScene(group.getHeaderItem().getBoundsInLocal());
+        Bounds childBounds = child.localToScene(child.getBoundsInLocal());
+        Region childSelection = listItemSelectionContainer(child);
+
+        assertEquals(headerBounds.getMinX(), childBounds.getMinX(), 0.0001,
+                () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
+        assertTrue(childBounds.getMaxX() < headerBounds.getMaxX() - 6.0,
+                () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
+        assertEquals(headerBounds.getHeight(), childBounds.getHeight(), 0.0001,
+                () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
+        assertEquals(childBounds.getWidth(), childSelection.getWidth(), 0.0001,
+                () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
+        assertEquals(56.0, child.getOneLineHeight(), 0.0001);
+        assertRegionRadii(childSelection, 28.0, 28.0, 28.0, 28.0);
+    }
+
+    /// Describes drawer group child indentation geometry for assertion failures.
+    private static String describeDrawerGroupChildGeometry(
+            Bounds headerBounds,
+            Bounds childBounds,
+            Region childSelection
+    ) {
+        return "headerBounds=" + headerBounds
+                + ", childBounds=" + childBounds
+                + ", childSelectionBounds=" + childSelection.getBoundsInParent()
+                + ", childSelectionWidth=" + childSelection.getWidth();
     }
 
     /// Verifies the first bottom border stroke color for a region.
@@ -26119,6 +28397,16 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThreadWhen(condition, setup, verification);
     }
 
+    /// Runs setup on the FX thread and verifies the result when a condition becomes true.
+    private static void runOnFxThreadWhen(
+            BooleanSupplier condition,
+            Supplier<String> timeoutMessage,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        FxTestUtils.runOnFxThreadWhen(condition, timeoutMessage, setup, verification);
+    }
+
     /// Runs setup on the FX thread and verifies the result after a condition remains true across pulses.
     private static void runOnFxThreadWhenStable(
             BooleanSupplier condition,
@@ -26127,6 +28415,17 @@ final class M3ControlStyleTest {
             Runnable verification
     ) throws InterruptedException {
         FxTestUtils.runOnFxThreadWhenStable(condition, stablePulseCount, setup, verification);
+    }
+
+    /// Runs setup on the FX thread and verifies the result after a condition remains true across pulses.
+    private static void runOnFxThreadWhenStable(
+            BooleanSupplier condition,
+            int stablePulseCount,
+            Supplier<String> timeoutMessage,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        FxTestUtils.runOnFxThreadWhenStable(condition, stablePulseCount, timeoutMessage, setup, verification);
     }
 
     /// Creates a section container used by visual snapshot tests.

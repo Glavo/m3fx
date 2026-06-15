@@ -14,6 +14,7 @@ import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
@@ -51,7 +52,17 @@ public class M3Card extends Control {
     private static final double DEFAULT_OUTLINE_WIDTH = 1.0;
 
     // The card content node property.
-    private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
+    private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content") {
+        /// Updates accessibility semantics when content changes.
+        @Override
+        protected void invalidated() {
+            notifyAccessibleContentChanged();
+        }
+    };
+
+    /// Notifies accessibility clients when focus moves between the card and nested content.
+    private final M3AccessibleFocusNotifier focusNotifier =
+            new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
     // The action handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
@@ -102,6 +113,7 @@ public class M3Card extends Control {
     public M3Card(@Nullable Node content) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setFocusTraversable(false);
+        focusNotifier.start();
         setContent(content);
         updateVariantStyle();
         updateActionAccessibility();
@@ -328,8 +340,55 @@ public class M3Card extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fire();
+            case REQUEST_FOCUS -> M3Accessible.showItem(accessibleFocusNode());
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Returns accessibility attributes for the card content.
+    @Override
+    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        return switch (attribute) {
+            case CONTENTS -> getContent();
+            case ITEM_COUNT -> M3Accessible.itemCount(getContent(), (Node) null, (Node) null);
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), (Node) null, (Node) null, parameters);
+            case FOCUS_NODE -> accessibleFocusNode();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    /// Returns the current card or nested content accessibility focus node.
+    private @Nullable Node accessibleFocusNode() {
+        @Nullable Node currentTarget = M3Accessible.currentFocusTarget(this, getContent(), (Node) null);
+        if (currentTarget != null) {
+            return currentTarget;
+        }
+        if (getOnAction() != null) {
+            @Nullable Node cardTarget = M3Accessible.focusTarget(this);
+            if (cardTarget != null) {
+                return cardTarget;
+            }
+        }
+        return M3Accessible.firstFocusTarget(getContent(), (Node) null);
+    }
+
+    /// Focuses the current card/content target, or an explicitly requested content target.
+    private void showAccessibleItem(Object... parameters) {
+        if (parameters.length == 0) {
+            M3Accessible.showItem(accessibleFocusNode());
+        } else {
+            M3Accessible.showCurrentOrItem(this, getContent(), (Node) null, parameters);
+        }
+    }
+
+    /// Notifies accessibility clients that the card content item changed.
+    private void notifyAccessibleContentChanged() {
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Applies the current variant style class.

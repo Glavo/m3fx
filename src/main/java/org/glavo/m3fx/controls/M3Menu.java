@@ -663,6 +663,10 @@ public class M3Menu extends Control {
         if (focusNestedAccessibleItem(parameters)) {
             return;
         }
+        if (M3Accessible.showAccessibleActionTarget(getItems(), parameters)) {
+            notifyFocusNodeChanged();
+            return;
+        }
         M3Accessible.showItem(item);
     }
 
@@ -699,6 +703,9 @@ public class M3Menu extends Control {
             return true;
         }
         for (Node item : items) {
+            if (M3Accessible.containsAccessibleActionTarget(item, parameters)) {
+                return true;
+            }
             if (item instanceof M3SubMenuItem subMenuItem
                     && containsNestedAccessibleTarget(subMenuItem.getItems(), parameters)) {
                 return true;

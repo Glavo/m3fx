@@ -436,8 +436,11 @@ public class M3Carousel extends Control {
         @Nullable Node selectedTarget = accessibleTarget(parameters);
         if (selectedTarget != null) {
             select(selectedTarget);
-            @Nullable Node focusTarget = M3Accessible.actionItem(getItems(), parameters);
-            M3Accessible.showItem(focusTarget == null ? selectedTarget : focusTarget);
+            scrollSelectedItemIntoView();
+            if (!M3Accessible.showAccessibleActionTarget(selectedTarget, parameters)) {
+                @Nullable Node focusTarget = M3Accessible.actionItem(getItems(), parameters);
+                M3Accessible.showItem(focusTarget == null ? selectedTarget : focusTarget);
+            }
             return;
         }
         scrollSelectedItemIntoView();

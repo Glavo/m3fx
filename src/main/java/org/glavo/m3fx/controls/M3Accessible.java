@@ -95,6 +95,26 @@ final class M3Accessible {
         return index == items.size() ? trailing : null;
     }
 
+    /// Returns the number of indexed accessibility items with two optional child slots.
+    static int itemCount(@Nullable Node first, @Nullable Node second) {
+        return (first == null ? 0 : 1) + (second == null ? 0 : 1);
+    }
+
+    /// Returns the indexed accessibility item from two optional child slots.
+    static @Nullable Node itemAt(@Nullable Node first, @Nullable Node second, Object... parameters) {
+        int index = indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+        if (first != null) {
+            if (index == 0) {
+                return first;
+            }
+            index--;
+        }
+        return index == 0 ? second : null;
+    }
+
     /// Returns the number of indexed accessibility items with three optional child slots.
     static int itemCount(@Nullable Node first, @Nullable Node second, @Nullable Node third) {
         return (first == null ? 0 : 1) + (second == null ? 0 : 1) + (third == null ? 0 : 1);
@@ -192,7 +212,7 @@ final class M3Accessible {
 
         for (Object parameter : parameters) {
             Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
-            if (containsAccessibleActionTarget(item, parameter, visited)) {
+            if (containsAccessibleActionTarget(item, parameter, visited, true)) {
                 return true;
             }
         }
@@ -457,8 +477,7 @@ final class M3Accessible {
             return true;
         }
 
-        if (containsAccessibleActionTarget(item, parameters)) {
-            item.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+        if (M3Tooltip.showInstalledTooltipActionTarget(item, parameters)) {
             return true;
         }
 
@@ -469,11 +488,16 @@ final class M3Accessible {
                 }
             }
         }
+
+        if (containsOwnAccessibleActionTarget(item, parameters)) {
+            item.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+            return true;
+        }
         return false;
     }
 
     /// Delegates an explicit reveal request to the first indexed child that exposes the requested target.
-    private static boolean showAccessibleActionTarget(
+    static boolean showAccessibleActionTarget(
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
@@ -493,7 +517,10 @@ final class M3Accessible {
         }
         @Nullable Object focusNode = item.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         if (focusNode instanceof Node node && canReach(node)) {
-            return node;
+            @Nullable Node focusTarget = focusTarget(node);
+            if (focusTarget != null) {
+                return focusTarget;
+            }
         }
         return focusTarget(item);
     }
@@ -871,8 +898,7 @@ final class M3Accessible {
 
         @Nullable Node tooltipFocusTarget = M3Tooltip.activeInstalledTooltipFocusTarget(item);
         if (tooltipFocusTarget != null && isActiveExternalFocusTarget(owner, tooltipFocusTarget)) {
-            @Nullable Node itemFocusTarget = focusTarget(item);
-            return itemFocusTarget != null ? itemFocusTarget : item;
+            return tooltipFocusTarget;
         }
 
         @Nullable Object focusNode = item.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
@@ -1041,7 +1067,7 @@ final class M3Accessible {
         return null;
     }
 
-    /// Returns the indexed item or the item containing the node referenced by accessibility parameters.
+    /// Returns the indexed item or the item exposing the target referenced by accessibility parameters.
     static @Nullable Node containingItem(ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
@@ -1111,10 +1137,14 @@ final class M3Accessible {
     private static boolean containsAccessibleActionTarget(
             Node item,
             @Nullable Object parameter,
-            Set<Node> visited
+            Set<Node> visited,
+            boolean includeParentChildren
     ) {
         if (parameter instanceof Node node) {
-            return containsAccessibleNode(item, node, visited);
+            return containsAccessibleNode(item, node, visited, includeParentChildren);
+        }
+        if (!visited.add(item)) {
+            return false;
         }
         if (containsPickerValueTarget(item, parameter)) {
             return true;
@@ -1122,7 +1152,7 @@ final class M3Accessible {
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
                 Set<Node> branchVisited = Collections.newSetFromMap(new IdentityHashMap<>());
-                if (containsAccessibleActionTarget(item, value, branchVisited)) {
+                if (containsAccessibleActionTarget(item, value, branchVisited, includeParentChildren)) {
                     return true;
                 }
             }
@@ -1131,9 +1161,46 @@ final class M3Accessible {
         if (parameter instanceof Object[] values) {
             for (Object value : values) {
                 Set<Node> branchVisited = Collections.newSetFromMap(new IdentityHashMap<>());
-                if (containsAccessibleActionTarget(item, value, branchVisited)) {
+                if (containsAccessibleActionTarget(item, value, branchVisited, includeParentChildren)) {
                     return true;
                 }
+            }
+        }
+        if (includeParentChildren && item instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (containsAccessibleActionTarget(child, parameter, visited, true)) {
+                    return true;
+                }
+            }
+        }
+
+        @Nullable Object itemCountValue = item.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT);
+        if (!(itemCountValue instanceof Number itemCountNumber)) {
+            return false;
+        }
+
+        int itemCount = Math.max(0, itemCountNumber.intValue());
+        for (int index = 0; index < itemCount; index++) {
+            @Nullable Object child = item.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, index);
+            if (child instanceof Node childNode
+                    && containsAccessibleActionTarget(childNode, parameter, visited, includeParentChildren)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether an item itself exposes the supplied target through its accessibility item tree.
+    private static boolean containsOwnAccessibleActionTarget(@Nullable Node item, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (item == null || parameters.length == 0) {
+            return false;
+        }
+
+        for (Object parameter : parameters) {
+            Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+            if (containsAccessibleActionTarget(item, parameter, visited, false)) {
+                return true;
             }
         }
         return false;
@@ -1154,12 +1221,28 @@ final class M3Accessible {
     }
 
     /// Returns whether an owner node exposes a requested node directly or through indexed accessibility children.
-    private static boolean containsAccessibleNode(Node owner, Node requestedNode, Set<Node> visited) {
+    private static boolean containsAccessibleNode(
+            Node owner,
+            Node requestedNode,
+            Set<Node> visited,
+            boolean includeParentChildren
+    ) {
         if (!visited.add(owner)) {
             return false;
         }
         if (owner == requestedNode || containsNode(owner, requestedNode)) {
             return true;
+        }
+        if (M3Tooltip.containsInstalledTooltipActionTarget(owner, requestedNode)) {
+            return true;
+        }
+
+        if (includeParentChildren && owner instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (containsAccessibleNode(child, requestedNode, visited, true)) {
+                    return true;
+                }
+            }
         }
 
         @Nullable Object itemCountValue = owner.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT);
@@ -1170,21 +1253,22 @@ final class M3Accessible {
         int itemCount = Math.max(0, itemCountNumber.intValue());
         for (int index = 0; index < itemCount; index++) {
             @Nullable Object child = owner.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, index);
-            if (child instanceof Node childNode && containsAccessibleNode(childNode, requestedNode, visited)) {
+            if (child instanceof Node childNode
+                    && containsAccessibleNode(childNode, requestedNode, visited, includeParentChildren)) {
                 return true;
             }
         }
         return false;
     }
 
-    /// Returns the indexed item or the item containing one referenced node.
+    /// Returns the indexed item or the item exposing one referenced target.
     private static @Nullable Node containingItem(ObservableList<? extends Node> items, @Nullable Object parameter) {
         if (parameter instanceof Number number) {
             return itemAt(items, number);
         }
         if (parameter instanceof Node node) {
             for (Node item : items) {
-                if (containsNode(item, node)) {
+                if (containsNode(item, node) || containsAccessibleActionTarget(item, node)) {
                     return item;
                 }
             }
@@ -1677,21 +1761,6 @@ final class M3Accessible {
             }
         }
         return null;
-    }
-
-    /// Returns the indexed first or second optional item.
-    private static @Nullable Node itemAt(@Nullable Node first, @Nullable Node second, Object... parameters) {
-        int index = indexParameter(parameters);
-        if (index < 0) {
-            return null;
-        }
-        if (first != null) {
-            if (index == 0) {
-                return first;
-            }
-            index--;
-        }
-        return index == 0 ? second : null;
     }
 
     /// Returns this node's index in its parent child list, or `-1` when it is detached.

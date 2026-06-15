@@ -17,6 +17,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextField;
@@ -467,19 +468,22 @@ public class M3SearchView extends Control {
             return;
         }
 
-        @Nullable Node item = accessibleResultActionItem(parameters);
-        if (item == null || M3Accessible.focusTarget(item) == null) {
-            getEditor().requestFocus();
+        if (M3Accessible.containsAccessibleActionTarget(searchBar, parameters)) {
+            searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
             notifyFocusNodeChanged();
             return;
         }
-        M3Accessible.showItem(item);
-        notifyFocusNodeChanged();
-    }
 
-    /// Returns the result referenced by accessibility action parameters.
-    private @Nullable Node accessibleResultActionItem(Object... parameters) {
-        return M3Accessible.actionItem(getResults(), parameters);
+        @Nullable Node focusOwnerBefore = getScene() == null ? null : getScene().getFocusOwner();
+        M3Accessible.showItem(getResults(), parameters);
+
+        if (getScene() != null
+                && getScene().getFocusOwner() == focusOwnerBefore
+                && currentFocusNode() == null
+                && M3Accessible.canReach(getEditor())) {
+            getEditor().requestFocus();
+        }
+        notifyFocusNodeChanged();
     }
 
     /// Focuses the next result relative to the current focus owner.
@@ -726,19 +730,23 @@ public class M3SearchView extends Control {
         return searchBarFocusNode;
     }
 
-    /// Returns the embedded search bar's current focus target when focus is inside it.
+    /// Returns the embedded search bar's current focus target when focus is inside it or one of its popups.
     private @Nullable Node currentSearchBarFocusNode() {
-        if (getScene() == null) {
-            return null;
-        }
-
-        @Nullable Node focusOwner = getScene().getFocusOwner();
-        if (focusOwner == null || !M3Accessible.containsNode(searchBar, focusOwner)) {
-            return null;
-        }
-
         @Nullable Object focusNode = searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
-        return focusNode instanceof Node node && M3Accessible.canReach(node) ? node : searchBar;
+        if (focusNode instanceof Node node && M3Accessible.canReach(node) && containsSceneFocus(node)) {
+            return node;
+        }
+
+        @Nullable Scene scene = getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        return focusOwner != null && M3Accessible.containsNode(searchBar, focusOwner) ? searchBar : null;
+    }
+
+    /// Returns whether the supplied focus target contains the focus owner of its scene.
+    private static boolean containsSceneFocus(Node focusTarget) {
+        @Nullable Scene scene = focusTarget.getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        return focusOwner != null && M3Accessible.containsNode(focusTarget, focusOwner);
     }
 
     /// Returns the index of the result containing current keyboard focus.

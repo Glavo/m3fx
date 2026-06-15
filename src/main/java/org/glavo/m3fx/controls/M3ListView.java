@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -147,6 +148,18 @@ public class M3ListView<T> extends Control {
 
     /// Clears the type-ahead prefix after the user stops typing.
     private final PauseTransition typeAheadResetDelay = new PauseTransition();
+
+    /// The row index for a deferred explicit accessibility reveal request.
+    private int pendingAccessibleRevealIndex = -1;
+
+    /// The parameters for a deferred explicit accessibility reveal request.
+    private Object @Nullable [] pendingAccessibleRevealParameters;
+
+    /// The remaining next-pulse retries for a deferred accessibility reveal request.
+    private int pendingAccessibleRevealRetries;
+
+    /// Whether a deferred accessibility reveal retry is already queued.
+    private boolean pendingAccessibleRevealScheduled;
 
     /// Updates type-ahead timing when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -814,6 +827,11 @@ public class M3ListView<T> extends Control {
 
     /// Returns the current visible focus node for accessibility clients.
     private Node accessibleFocusNode() {
+        @Nullable Node externalFocus = currentVisibleExternalFocusNode();
+        if (externalFocus != null) {
+            return externalFocus;
+        }
+
         @Nullable Node currentFocus = currentVisibleFocusNode();
         if (currentFocus != null) {
             return currentFocus;
@@ -866,6 +884,17 @@ public class M3ListView<T> extends Control {
         } else {
             requestFocus();
         }
+    }
+
+    /// Returns an active external popup focus node exposed by an attached visible row.
+    private @Nullable Node currentVisibleExternalFocusNode() {
+        if (getSkin() instanceof M3ListViewSkin<?> skin) {
+            @Nullable Node visibleItem = skin.findAttachedVisibleItem(
+                    item -> M3Accessible.activeExternalFocusTarget(this, item) != null
+            );
+            return visibleItem == null ? null : M3Accessible.activeExternalFocusTarget(this, visibleItem);
+        }
+        return null;
     }
 
     /// Returns the current scene focus owner when it belongs to an attached visible row.
@@ -921,7 +950,8 @@ public class M3ListView<T> extends Control {
                     updateFocusedIndexForAttachedNode(requestedIndex);
                     M3Accessible.showItem(requestedNode);
                 } else {
-                    focusIndex(requestedIndex);
+                    focusAccessibleIndex(requestedIndex);
+                    showMaterializedOrDeferAccessibleActionTarget(requestedIndex, parameters);
                 }
                 return;
             }
@@ -929,8 +959,153 @@ public class M3ListView<T> extends Control {
 
         int index = firstSelectionIndex(parameters);
         if (index >= 0) {
-            focusIndex(index);
+            focusAccessibleIndex(index);
+            showMaterializedOrDeferAccessibleActionTarget(index, parameters);
+            return;
         }
+
+        if (showVisibleAccessibleActionTarget(parameters)) {
+            return;
+        }
+    }
+
+    /// Moves accessibility focus to one row using synchronous scrolling so explicit nested targets are materialized.
+    private void focusAccessibleIndex(int index) {
+        updateFocusedIndex(index, true, false);
+    }
+
+    /// Delegates an explicit reveal request to an attached visible row that exposes the target.
+    private boolean showVisibleAccessibleActionTarget(Object... parameters) {
+        if (!(getSkin() instanceof M3ListViewSkin<?> skin)) {
+            return false;
+        }
+
+        @Nullable Node visibleItem = skin.findAttachedVisibleItem(
+                item -> M3Accessible.containsAccessibleActionTarget(item, parameters)
+        );
+        if (visibleItem == null || !M3Accessible.showAccessibleActionTarget(visibleItem, parameters)) {
+            return false;
+        }
+
+        int visibleIndex = visibleNodeIndex(visibleItem);
+        if (visibleIndex >= 0) {
+            updateFocusedIndexForAttachedNode(visibleIndex);
+        }
+        return true;
+    }
+
+    /// Delegates an explicit reveal request now, or retries after the virtualized row is attached.
+    private void showMaterializedOrDeferAccessibleActionTarget(int index, Object... parameters) {
+        if (showMaterializedAccessibleActionTarget(index, parameters) || !hasNonIndexRevealParameter(parameters)) {
+            return;
+        }
+
+        pendingAccessibleRevealIndex = index;
+        pendingAccessibleRevealParameters = parameters.clone();
+        pendingAccessibleRevealRetries = 8;
+        completePendingAccessibleReveal();
+    }
+
+    /// Delegates an explicit reveal request after a virtualized row has been synchronously materialized.
+    private boolean showMaterializedAccessibleActionTarget(int index, Object... parameters) {
+        if (parameters.length == 0 || !(getSkin() instanceof M3ListViewSkin<?> skin)) {
+            return false;
+        }
+
+        @Nullable Node visibleItem = skin.getAttachedVisibleItem(index);
+        if (visibleItem == null || !M3Accessible.showAccessibleActionTarget(visibleItem, parameters)) {
+            return false;
+        }
+
+        updateFocusedIndexForAttachedNode(index);
+        return true;
+    }
+
+    /// Queues a next-pulse retry for a deferred explicit accessibility reveal request.
+    private void schedulePendingAccessibleReveal() {
+        if (pendingAccessibleRevealScheduled) {
+            return;
+        }
+
+        pendingAccessibleRevealScheduled = true;
+        Platform.runLater(() -> {
+            pendingAccessibleRevealScheduled = false;
+            completePendingAccessibleReveal();
+        });
+    }
+
+    /// Completes a deferred explicit accessibility reveal request when its virtualized row is attached.
+    private void completePendingAccessibleReveal() {
+        Object @Nullable [] parameters = pendingAccessibleRevealParameters;
+        int index = pendingAccessibleRevealIndex;
+        if (parameters == null || index < 0 || getScene() == null) {
+            clearPendingAccessibleReveal();
+            return;
+        }
+
+        if (showMaterializedAccessibleActionTarget(index, parameters)) {
+            clearPendingAccessibleReveal();
+            return;
+        }
+
+        if (pendingAccessibleRevealRetries <= 0) {
+            clearPendingAccessibleReveal();
+            return;
+        }
+
+        pendingAccessibleRevealRetries--;
+        if (getSkin() instanceof M3ListViewSkin<?> skin) {
+            skin.scrollTo(index, false);
+        }
+        applyCss();
+        layout();
+        if (showMaterializedAccessibleActionTarget(index, parameters)) {
+            clearPendingAccessibleReveal();
+            return;
+        }
+        schedulePendingAccessibleReveal();
+    }
+
+    /// Clears the deferred explicit accessibility reveal request.
+    private void clearPendingAccessibleReveal() {
+        pendingAccessibleRevealIndex = -1;
+        pendingAccessibleRevealParameters = null;
+        pendingAccessibleRevealRetries = 0;
+        pendingAccessibleRevealScheduled = false;
+    }
+
+    /// Returns whether accessibility parameters include a nested target beyond a row index.
+    private boolean hasNonIndexRevealParameter(Object... parameters) {
+        for (Object parameter : parameters) {
+            if (hasNonIndexRevealParameter(parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one accessibility parameter is not only a row index.
+    private boolean hasNonIndexRevealParameter(@Nullable Object parameter) {
+        if (parameter instanceof Number) {
+            return false;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (hasNonIndexRevealParameter(value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (hasNonIndexRevealParameter(value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return parameter != null;
     }
 
     /// Returns selection indices referenced by accessibility parameters.
@@ -1165,6 +1340,11 @@ public class M3ListView<T> extends Control {
 
     /// Updates the focused data item and asks the skin to keep its cell visible.
     private void updateFocusedIndex(int index, boolean requestNodeFocus) {
+        updateFocusedIndex(index, requestNodeFocus, isAnimatedScroll());
+    }
+
+    /// Updates the focused data item and asks the skin to keep its cell visible.
+    private void updateFocusedIndex(int index, boolean requestNodeFocus, boolean animated) {
         int previousIndex = focusedIndex.get();
         @Nullable T previousItem = focusedItem.get();
         focusedIndex.set(index);
@@ -1176,7 +1356,7 @@ public class M3ListView<T> extends Control {
             requestFocus();
         }
         if (getSkin() instanceof M3ListViewSkin<?> skin) {
-            skin.refreshFocus(requestNodeFocus, isAnimatedScroll());
+            skin.refreshFocus(requestNodeFocus, animated);
         }
     }
 

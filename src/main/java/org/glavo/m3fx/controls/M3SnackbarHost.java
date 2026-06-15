@@ -542,15 +542,69 @@ public class M3SnackbarHost extends Control {
 
         if (target == getSnackbar()) {
             refreshAccessibleFocusNode();
-            M3Accessible.showItem(currentFocusNode());
+            showAccessibleSnackbarTarget(target, parameters);
             refreshAccessibleFocusNode();
             return;
         }
         if (queue.remove(target)) {
             show(target);
-            M3Accessible.showItem(currentFocusNode());
+            showAccessibleSnackbarTarget(target, parameters);
             refreshAccessibleFocusNode();
         }
+    }
+
+    /// Focuses the hosted snackbar or delegates to one of its nested action-owned targets.
+    private void showAccessibleSnackbarTarget(M3Snackbar target, Object... parameters) {
+        Objects.requireNonNull(target, "target");
+        if (parametersReferenceNestedSnackbarAction(target, parameters)) {
+            target.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+            return;
+        }
+        M3Accessible.showItem(currentFocusNode());
+    }
+
+    /// Returns whether the supplied parameters target snackbar action content instead of the snackbar item itself.
+    private static boolean parametersReferenceNestedSnackbarAction(M3Snackbar target, Object... parameters) {
+        Objects.requireNonNull(target, "target");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0 || parameters[0] instanceof Number || parametersReferenceSnackbar(target, parameters)) {
+            return false;
+        }
+        return M3Accessible.containsNodeTarget(target, parameters)
+                || M3Accessible.containsAccessibleActionTarget(target, parameters);
+    }
+
+    /// Returns whether any supplied parameter directly references the snackbar item.
+    private static boolean parametersReferenceSnackbar(M3Snackbar target, Object... parameters) {
+        for (Object parameter : parameters) {
+            if (parameterReferencesSnackbar(target, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one accessibility parameter directly references the snackbar item.
+    private static boolean parameterReferencesSnackbar(M3Snackbar target, @Nullable Object parameter) {
+        if (parameter == target) {
+            return true;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (parameterReferencesSnackbar(target, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (parameterReferencesSnackbar(target, value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /// Returns the snackbar referenced by accessibility action parameters.
@@ -567,11 +621,13 @@ public class M3SnackbarHost extends Control {
         }
 
         @Nullable M3Snackbar currentSnackbar = getSnackbar();
-        if (currentSnackbar != null && M3Accessible.containsNodeTarget(currentSnackbar, parameters)) {
+        if (currentSnackbar != null && (M3Accessible.containsNodeTarget(currentSnackbar, parameters)
+                || M3Accessible.containsAccessibleActionTarget(currentSnackbar, parameters))) {
             return currentSnackbar;
         }
         for (M3Snackbar queuedSnackbar : queue) {
-            if (M3Accessible.containsNodeTarget(queuedSnackbar, parameters)) {
+            if (M3Accessible.containsNodeTarget(queuedSnackbar, parameters)
+                    || M3Accessible.containsAccessibleActionTarget(queuedSnackbar, parameters)) {
                 return queuedSnackbar;
             }
         }

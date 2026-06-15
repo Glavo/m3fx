@@ -28,7 +28,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3PopupStyles;
+import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -74,6 +74,16 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The popup window used to host the submenu.
     private final Popup popup = new Popup();
 
+    /// Keeps the detached submenu synchronized with its owner menu or owner scene context while visible.
+    private final M3PopupContextSynchronizer popupContextSynchronizer =
+            new M3PopupContextSynchronizer(
+                    this,
+                    subMenu,
+                    this::popupStylesheetSource,
+                    this::popupThemeSource,
+                    M3Stylesheets.controlStylesheet("menu.css")
+            );
+
     // Backing property for the public read-only submenu showing state API.
     private final ReadOnlyBooleanWrapper subMenuShowing = new ReadOnlyBooleanWrapper(this, "subMenuShowing");
 
@@ -100,8 +110,8 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The pointer-exit close delay.
     private final PauseTransition hoverCloseDelay = new PauseTransition();
 
-    /// Updates the default indicator glyph when node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updateDefaultIndicatorDirection();
+    /// Updates the indicator glyph and popup menu orientation when node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> handleNodeOrientationInvalidated();
 
     /// Whether an action from the submenu is being forwarded to this item's parent menu.
     private boolean forwardingSubMenuAction = false;
@@ -221,11 +231,13 @@ public class M3SubMenuItem extends M3MenuItem {
         }
 
         hideSiblingSubMenus();
-        prepareSubMenuForPopup(scene);
+        popupContextSynchronizer.start();
+        prepareSubMenuForPopup();
         subMenu.setMinWidth(Math.max(getWidth(), subMenu.minWidth(-1.0)));
         @Nullable M3PopupPositioning.Placement placement =
                 M3PopupPositioning.subMenuBeside(this, subMenu, SUB_MENU_OFFSET_X);
         if (placement == null) {
+            popupContextSynchronizer.stop();
             return;
         }
         currentTransitionOffsetX = placement.opensToLeft()
@@ -371,6 +383,7 @@ public class M3SubMenuItem extends M3MenuItem {
         popup.setAutoHide(true);
         popup.getContent().add(subMenu);
         popup.setOnHidden(event -> {
+            popupContextSynchronizer.stop();
             pointerInsideOwner = false;
             pointerInsideSubMenu = false;
             subMenuShowing.set(false);
@@ -614,6 +627,23 @@ public class M3SubMenuItem extends M3MenuItem {
                 : M3InternalIcon.Glyph.CHEVRON_RIGHT);
     }
 
+    /// Applies effective node orientation changes to this item and any showing submenu popup.
+    private void handleNodeOrientationInvalidated() {
+        updateDefaultIndicatorDirection();
+        updateShowingSubMenuOrientation();
+    }
+
+    /// Synchronizes an already showing submenu popup with this item's effective node orientation.
+    private void updateShowingSubMenuOrientation() {
+        if (!popup.isShowing()) {
+            return;
+        }
+        subMenu.setNodeOrientation(getEffectiveNodeOrientation());
+        subMenu.applyCss();
+        subMenu.layout();
+        notifyFocusNodeChanged();
+    }
+
     /// Starts the pointer-exit close delay when the submenu is open.
     private void scheduleHoverClose() {
         if (popup.isShowing()) {
@@ -622,29 +652,25 @@ public class M3SubMenuItem extends M3MenuItem {
         }
     }
 
-    /// Copies scene styles and theme declarations into the popup-hosted submenu.
-    private void prepareSubMenuForPopup(Scene scene) {
-        M3PopupStyles.preparePopupRoot(
-                subMenu,
-                popupStylesheetSource(scene),
-                popupThemeSource(scene),
-                M3Stylesheets.controlStylesheet("menu.css")
-        );
+    /// Copies owner motion and orientation settings into the popup-hosted submenu.
+    private void prepareSubMenuForPopup() {
+        popupContextSynchronizer.sync();
         M3Animation.copyResolvedMotionSettings(this, subMenu);
         subMenu.setNodeOrientation(getEffectiveNodeOrientation());
         subMenu.applyCss();
     }
 
     /// Returns stylesheets from the owning popup menu when this item is already inside a popup branch.
-    private List<String> popupStylesheetSource(Scene scene) {
+    private @Nullable ObservableList<String> popupStylesheetSource() {
         if (ownerMenu != null && !ownerMenu.getStylesheets().isEmpty()) {
             return ownerMenu.getStylesheets();
         }
-        return scene.getStylesheets();
+        @Nullable Scene scene = getScene();
+        return scene == null ? null : scene.getStylesheets();
     }
 
     /// Returns the root that should supply looked-up theme tokens for the submenu popup.
-    private Parent popupThemeSource(Scene scene) {
+    private @Nullable Parent popupThemeSource() {
         @Nullable Parent ownerMenuThemeRoot = ownerMenu == null ? null : M3ThemeResolver.findThemeRoot(ownerMenu);
         if (ownerMenuThemeRoot != null) {
             return ownerMenuThemeRoot;
@@ -653,7 +679,8 @@ public class M3SubMenuItem extends M3MenuItem {
         if (itemThemeRoot != null) {
             return itemThemeRoot;
         }
-        return scene.getRoot();
+        @Nullable Scene scene = getScene();
+        return scene == null ? null : scene.getRoot();
     }
 
     /// Hides sibling submenu popups owned by the same parent menu.

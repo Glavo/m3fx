@@ -34,6 +34,8 @@ import java.util.Objects;
 /// `M3Icon` is an M3FX utility control rather than a standalone Material component. It renders text glyphs
 /// through a configurable icon font family, size role, font weight, and color variant so buttons, navigation
 /// items, list items, and other controls can share the same icon metrics and color tokens.
+/// Icons are not focus-traversable by default because interaction should be owned by the surrounding component
+/// such as an icon button, navigation item, menu item, or list item.
 ///
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview) and
 /// [Material Design](https://m3.material.io/).
@@ -294,6 +296,7 @@ public class M3Icon extends Labeled {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
+        setFocusTraversable(false);
         setAlignment(Pos.CENTER);
         updateSizeStyle();
         updateVariantStyle();

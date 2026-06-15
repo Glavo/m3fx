@@ -533,7 +533,7 @@ public class M3NavigationDrawer extends Control {
         @Nullable Node item = accessibleActionItem(parameters);
         if (item == null) {
             M3Accessible.showItem(content, parameters);
-        } else {
+        } else if (!M3Accessible.showAccessibleActionTarget(item, parameters)) {
             M3Accessible.showItem(item);
         }
     }
@@ -631,9 +631,14 @@ public class M3NavigationDrawer extends Control {
         if (headerTarget != null) {
             return headerTarget;
         }
+        if (M3Accessible.containsAccessibleActionTarget(headerItem, parameters)) {
+            return headerItem;
+        }
 
         for (M3ListItem item : group.getItems()) {
-            if (M3Accessible.isEffectivelyReachable(item) && M3Accessible.containsNodeTarget(item, parameters)) {
+            if (M3Accessible.isEffectivelyReachable(item)
+                    && (M3Accessible.containsNodeTarget(item, parameters)
+                    || M3Accessible.containsAccessibleActionTarget(item, parameters))) {
                 group.expandForAccessibleReveal();
                 @Nullable Node target = M3Accessible.actionItem(item, parameters);
                 return target == null ? item : target;

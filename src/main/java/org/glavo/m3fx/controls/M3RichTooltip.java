@@ -328,6 +328,21 @@ public class M3RichTooltip extends M3Tooltip {
         return null;
     }
 
+    /// Returns the action-row target that contains a requested node.
+    @Override
+    protected @Nullable Node interactiveFocusTargetFor(Node requestedNode) {
+        Objects.requireNonNull(requestedNode, "requestedNode");
+        for (Node action : actions.getChildren()) {
+            if (action == requestedNode || M3Accessible.containsNode(action, requestedNode)) {
+                if (M3Accessible.structuralFocusTarget(requestedNode) != null) {
+                    return requestedNode;
+                }
+                return M3Accessible.structuralFocusTarget(action) == null ? null : action;
+            }
+        }
+        return null;
+    }
+
     /// Returns whether the tooltip root should receive plain tooltip container metrics.
     @Override
     protected boolean usesPlainContainerStyle() {

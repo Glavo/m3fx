@@ -5,7 +5,11 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.MapChangeListener;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -19,6 +23,7 @@ import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -53,13 +58,53 @@ public class M3Dialog<R> extends Dialog<R> {
     /// The node whose local hierarchy supplies inherited theme context.
     private @Nullable Node ownerNode;
 
+    /// Handles owner-node scene changes while this dialog is observing inherited theme context.
+    private final ChangeListener<@Nullable Scene> ownerNodeSceneListener = this::handleInheritedThemeSourceChanged;
+
+    /// Handles owner-node direct parent changes while this dialog is observing inherited theme context.
+    private final ChangeListener<@Nullable Parent> ownerNodeParentListener = this::handleInheritedThemeSourceChanged;
+
+    /// Handles owner-window scene changes while this dialog is observing inherited theme context.
+    private final ChangeListener<@Nullable Scene> ownerWindowSceneListener = this::handleOwnerWindowSceneChanged;
+
+    /// Handles root changes on the currently observed owner scene.
+    private final ChangeListener<Parent> ownerSceneRootListener = this::handleOwnerSceneRootChanged;
+
+    /// Handles theme metadata changes on the owner scene root.
+    private final MapChangeListener<Object, Object> sceneRootPropertiesListener =
+            this::handleThemeRootPropertiesChanged;
+
+    /// Handles parent-chain changes on observed owner ancestors.
+    private final ChangeListener<@Nullable Parent> ancestorParentListener = this::handleInheritedThemeSourceChanged;
+
+    /// Handles theme metadata changes on owner ancestors.
+    private final MapChangeListener<Object, Object> ancestorThemeRootPropertiesListener =
+            this::handleThemeRootPropertiesChanged;
+
+    /// The owner window currently observed for scene changes.
+    private @Nullable Window observedOwnerWindow;
+
+    /// The owner scene currently observed for root changes.
+    private @Nullable Scene observedOwnerScene;
+
+    /// The owner scene root currently observed for theme metadata changes.
+    private @Nullable Parent observedSceneRoot;
+
+    /// Owner ancestors currently observed for local theme metadata and parent-chain changes.
+    private final List<Parent> observedAncestorThemeRoots = new ArrayList<>();
+
+    /// Whether inherited theme context listeners are currently registered.
+    private boolean observingInheritedThemeContext;
+
     /// Creates a Material Design 3 dialog.
     public M3Dialog() {
         installDialogPane(new M3DialogPane());
         addEventFilter(DialogEvent.DIALOG_SHOWING, event -> {
             refreshOwnerWindowFromNode();
+            startInheritedThemeContextObservation();
             applyEffectiveTheme();
         });
+        addEventFilter(DialogEvent.DIALOG_HIDDEN, event -> stopInheritedThemeContextObservation());
     }
 
     /// Creates a Material Design 3 dialog with a title.
@@ -137,8 +182,20 @@ public class M3Dialog<R> extends Dialog<R> {
     ///
     /// @param owner the node that owns this dialog
     public final void initOwner(Node owner) {
+        @Nullable Node previousOwnerNode = ownerNode;
+        if (observingInheritedThemeContext && previousOwnerNode != null) {
+            previousOwnerNode.sceneProperty().removeListener(ownerNodeSceneListener);
+            previousOwnerNode.parentProperty().removeListener(ownerNodeParentListener);
+        }
+
         ownerNode = Objects.requireNonNull(owner, "owner");
         refreshOwnerWindowFromNode();
+        if (observingInheritedThemeContext) {
+            owner.sceneProperty().addListener(ownerNodeSceneListener);
+            owner.parentProperty().addListener(ownerNodeParentListener);
+            refreshInheritedThemeContextSources();
+            applyInheritedTheme();
+        }
     }
 
     /// Initializes the JavaFX window owner from the recorded owner node when possible.
@@ -192,6 +249,170 @@ public class M3Dialog<R> extends Dialog<R> {
         return ownerScene == null ? null : M3ThemeResolver.findTheme(ownerScene);
     }
 
+    /// Starts observing inherited owner theme sources for runtime changes.
+    private void startInheritedThemeContextObservation() {
+        if (observingInheritedThemeContext) {
+            refreshInheritedThemeContextSources();
+            return;
+        }
+
+        observingInheritedThemeContext = true;
+        @Nullable Node node = ownerNode;
+        if (node != null) {
+            node.sceneProperty().addListener(ownerNodeSceneListener);
+            node.parentProperty().addListener(ownerNodeParentListener);
+        }
+        refreshInheritedThemeContextSources();
+    }
+
+    /// Stops observing inherited owner theme sources.
+    private void stopInheritedThemeContextObservation() {
+        if (!observingInheritedThemeContext) {
+            return;
+        }
+
+        observingInheritedThemeContext = false;
+        @Nullable Node node = ownerNode;
+        if (node != null) {
+            node.sceneProperty().removeListener(ownerNodeSceneListener);
+            node.parentProperty().removeListener(ownerNodeParentListener);
+        }
+        updateObservedOwnerWindow(null);
+        updateObservedOwnerScene(null);
+        updateObservedSceneRoot(null);
+        clearObservedAncestorThemeRoots();
+    }
+
+    /// Refreshes all owner roots that may provide inherited theme context.
+    private void refreshInheritedThemeContextSources() {
+        updateObservedOwnerWindow(getOwner());
+        @Nullable Scene ownerScene = ownerThemeScene();
+        updateObservedOwnerScene(ownerScene);
+        updateObservedSceneRoot(ownerScene == null ? null : ownerScene.getRoot());
+        updateObservedAncestorThemeRoots();
+    }
+
+    /// Returns the scene whose root can provide inherited scene-level theme context.
+    private @Nullable Scene ownerThemeScene() {
+        @Nullable Node node = ownerNode;
+        if (node != null && node.getScene() != null) {
+            return node.getScene();
+        }
+
+        @Nullable Window window = observedOwnerWindow;
+        return window == null ? null : window.getScene();
+    }
+
+    /// Handles changes from owner nodes or ancestor parent chains.
+    private void handleInheritedThemeSourceChanged(
+            ObservableValue<?> observable,
+            @Nullable Object oldValue,
+            @Nullable Object newValue
+    ) {
+        refreshInheritedThemeContextSources();
+        applyInheritedTheme();
+    }
+
+    /// Handles owner-window scene changes.
+    private void handleOwnerWindowSceneChanged(
+            ObservableValue<? extends @Nullable Scene> observable,
+            @Nullable Scene oldScene,
+            @Nullable Scene newScene
+    ) {
+        refreshInheritedThemeContextSources();
+        applyInheritedTheme();
+    }
+
+    /// Handles owner scene root changes.
+    private void handleOwnerSceneRootChanged(
+            ObservableValue<? extends Parent> observable,
+            Parent oldRoot,
+            Parent newRoot
+    ) {
+        refreshInheritedThemeContextSources();
+        applyInheritedTheme();
+    }
+
+    /// Handles installed-theme metadata changes on observed owner roots.
+    private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
+        if (Objects.equals(M3ThemeManager.THEME_PROPERTY_KEY, change.getKey())) {
+            refreshInheritedThemeContextSources();
+            applyInheritedTheme();
+        }
+    }
+
+    /// Reapplies the inherited owner theme when no explicit dialog theme is set.
+    private void applyInheritedTheme() {
+        if (getTheme() == null) {
+            applyEffectiveTheme();
+        }
+    }
+
+    /// Updates the observed owner window.
+    private void updateObservedOwnerWindow(@Nullable Window window) {
+        if (observedOwnerWindow == window) {
+            return;
+        }
+        if (observedOwnerWindow != null) {
+            observedOwnerWindow.sceneProperty().removeListener(ownerWindowSceneListener);
+        }
+        observedOwnerWindow = window;
+        if (observedOwnerWindow != null) {
+            observedOwnerWindow.sceneProperty().addListener(ownerWindowSceneListener);
+        }
+    }
+
+    /// Updates the observed owner scene.
+    private void updateObservedOwnerScene(@Nullable Scene scene) {
+        if (observedOwnerScene == scene) {
+            return;
+        }
+        if (observedOwnerScene != null) {
+            observedOwnerScene.rootProperty().removeListener(ownerSceneRootListener);
+        }
+        observedOwnerScene = scene;
+        if (observedOwnerScene != null) {
+            observedOwnerScene.rootProperty().addListener(ownerSceneRootListener);
+        }
+    }
+
+    /// Updates the observed owner scene root.
+    private void updateObservedSceneRoot(@Nullable Parent sceneRoot) {
+        if (observedSceneRoot == sceneRoot) {
+            return;
+        }
+        if (observedSceneRoot != null) {
+            observedSceneRoot.getProperties().removeListener(sceneRootPropertiesListener);
+        }
+        observedSceneRoot = sceneRoot;
+        if (observedSceneRoot != null) {
+            observedSceneRoot.getProperties().addListener(sceneRootPropertiesListener);
+        }
+    }
+
+    /// Updates observed owner ancestors that can receive or lose local themes.
+    private void updateObservedAncestorThemeRoots() {
+        clearObservedAncestorThemeRoots();
+        @Nullable Node current = ownerNode;
+        while (current != null) {
+            if (current instanceof Parent parent && parent != observedSceneRoot) {
+                parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
+                parent.parentProperty().addListener(ancestorParentListener);
+                observedAncestorThemeRoots.add(parent);
+            }
+            current = current.getParent();
+        }
+    }
+
+    /// Removes local-theme listeners from all observed owner ancestors.
+    private void clearObservedAncestorThemeRoots() {
+        for (Parent parent : observedAncestorThemeRoots) {
+            parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
+            parent.parentProperty().removeListener(ancestorParentListener);
+        }
+        observedAncestorThemeRoots.clear();
+    }
+
     /// Adds the shared M3FX stylesheet to the dialog pane.
     private static void installStylesheet(M3DialogPane pane) {
         M3PopupStyles.addFallbackRootStyleClass(pane);
@@ -203,12 +424,14 @@ public class M3Dialog<R> extends Dialog<R> {
     private static void applyTheme(M3DialogPane pane, @Nullable M3Theme theme) {
         if (theme == null) {
             uninstallThemeStylesheet(pane);
+            M3ThemeManager.clearThemeStyleClasses(pane);
             Object baseStyleValue = pane.getProperties().remove(BASE_STYLE_PROPERTY_KEY);
             pane.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
             return;
         }
 
         installStylesheet(pane);
+        M3ThemeManager.applyThemeStyleClasses(pane, theme);
         installThemeStylesheet(pane, theme);
 
         if (!pane.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {

@@ -419,6 +419,11 @@ public class M3FabMenu extends Control {
 
     /// Returns the current focusable menu target for accessibility clients.
     private @Nullable Node accessibleFocusNode() {
+        @Nullable Node externalTarget = activeExternalActionFocusNode();
+        if (externalTarget != null) {
+            return externalTarget;
+        }
+
         List<Node> targets = focusTargets();
         if (targets.isEmpty()) {
             return null;
@@ -437,12 +442,43 @@ public class M3FabMenu extends Control {
         @Nullable Node target = parameters.length == 0
                 ? currentActionFocusNode()
                 : M3Accessible.actionItem(getItems(), parameters);
+        boolean hasNestedTarget = parameters.length > 0
+                && target == null
+                && containsNestedAccessibleActionTarget(parameters);
+        if (parameters.length > 0 && target == null && !hasNestedTarget) {
+            return;
+        }
         show();
         if (parameters.length == 0 && target == null) {
             target = M3Accessible.actionItem(getItems());
         }
-        M3Accessible.showItem(target);
+        if (target != null) {
+            M3Accessible.showItem(target);
+        } else if (hasNestedTarget) {
+            M3Accessible.showAccessibleActionTarget(getItems(), parameters);
+        }
         notifyFocusNodeChanged();
+    }
+
+    /// Returns whether an action item exposes the requested nested accessibility target.
+    private boolean containsNestedAccessibleActionTarget(Object... parameters) {
+        for (Node item : getItems()) {
+            if (M3Accessible.containsAccessibleActionTarget(item, parameters)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns the active focus target exposed by action-owned external popup content.
+    private @Nullable Node activeExternalActionFocusNode() {
+        for (Node item : getItems()) {
+            @Nullable Node target = M3Accessible.activeExternalFocusTarget(this, item);
+            if (target != null) {
+                return target;
+            }
+        }
+        return null;
     }
 
     /// Returns the focused action item target, ignoring the menu toggle button.

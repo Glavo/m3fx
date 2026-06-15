@@ -610,6 +610,29 @@ final class M3ThemeTest {
         assertFalse(root.getProperties().containsKey(M3ThemeManager.THEME_PROPERTY_KEY));
     }
 
+    /// Verifies that standalone fallback root styling follows runtime scene-root replacement.
+    @Test
+    void standaloneControlFallbackStylesheetFollowsSceneRootReplacement() {
+        M3Button button = new M3Button("Button");
+        Scene scene = new Scene(button);
+
+        button.applyCss();
+        button.layout();
+
+        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
+        assertTrue(button.getStyleClass().contains("root"));
+
+        Pane replacementRoot = new Pane(button);
+        scene.setRoot(replacementRoot);
+        replacementRoot.applyCss();
+        replacementRoot.layout();
+
+        assertTrue(replacementRoot.getStyleClass().contains("root"));
+        assertEquals(1L, scene.getStylesheets().stream()
+                .filter(stylesheet -> stylesheet.endsWith("/styles/fallback.css"))
+                .count());
+    }
+
     /// Verifies that installing and uninstalling a theme preserves standalone fallback root styling.
     @Test
     void themeInstallationPreservesStandaloneFallbackRootStyleClass() {

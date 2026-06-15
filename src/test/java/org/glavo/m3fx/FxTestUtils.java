@@ -217,9 +217,19 @@ public final class FxTestUtils {
             Runnable setup,
             Runnable verification
     ) throws InterruptedException {
+        runOnFxThreadWhen(condition, () -> "Timed out waiting for JavaFX condition", setup, verification);
+    }
+
+    /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
+    public static void runOnFxThreadWhen(
+            BooleanSupplier condition,
+            Supplier<String> timeoutMessage,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
         List<LogRecord> warnings = captureWarningsChecked(
                 () -> runWithMotionSettingsPreservedChecked(
-                        () -> runOnFxThreadWhenWithoutCssCapture(condition, setup, verification)
+                        () -> runOnFxThreadWhenWithoutCssCapture(condition, timeoutMessage, setup, verification)
                 ),
                 "javafx.css",
                 "javafx.scene.CssStyleHelper"
@@ -234,12 +244,30 @@ public final class FxTestUtils {
             Runnable setup,
             Runnable verification
     ) throws InterruptedException {
+        runOnFxThreadWhenStable(
+                condition,
+                stablePulseCount,
+                () -> "Timed out waiting for stable JavaFX condition",
+                setup,
+                verification
+        );
+    }
+
+    /// Runs setup on the FX application thread and verifies the result after a condition stays true for pulses.
+    public static void runOnFxThreadWhenStable(
+            BooleanSupplier condition,
+            int stablePulseCount,
+            Supplier<String> timeoutMessage,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
         List<LogRecord> warnings = captureWarningsChecked(
                 () -> runWithMotionSettingsPreservedChecked(
                         () -> {
                             runOnFxThreadWhenStableWithoutCssCapture(
                                     condition,
                                     stablePulseCount,
+                                    timeoutMessage,
                                     setup,
                                     verification
                             );
@@ -255,6 +283,7 @@ public final class FxTestUtils {
     /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
     private static void runOnFxThreadWhenWithoutCssCapture(
             BooleanSupplier condition,
+            Supplier<String> timeoutMessage,
             Runnable setup,
             Runnable verification
     ) throws InterruptedException {
@@ -276,7 +305,7 @@ public final class FxTestUtils {
                                 latch.countDown();
                             } else if (now >= deadlineNanos) {
                                 stop();
-                                failure.set(new AssertionError("Timed out waiting for JavaFX condition"));
+                                failure.set(timeoutAssertion(timeoutMessage));
                                 latch.countDown();
                             }
                         } catch (Throwable e) {
@@ -299,7 +328,7 @@ public final class FxTestUtils {
             }
         });
 
-        await(latch);
+        awaitFxConditionLatch(latch, failure, timeoutMessage);
         throwIfFailed(failure.get());
     }
 
@@ -307,6 +336,7 @@ public final class FxTestUtils {
     private static void runOnFxThreadWhenStableWithoutCssCapture(
             BooleanSupplier condition,
             int stablePulseCount,
+            Supplier<String> timeoutMessage,
             Runnable setup,
             Runnable verification
     ) throws InterruptedException {
@@ -338,7 +368,7 @@ public final class FxTestUtils {
                                 }
                             } else if (now >= deadlineNanos) {
                                 stop();
-                                failure.set(new AssertionError("Timed out waiting for stable JavaFX condition"));
+                                failure.set(timeoutAssertion(timeoutMessage));
                                 latch.countDown();
                             } else {
                                 stablePulses = 0;
@@ -357,8 +387,35 @@ public final class FxTestUtils {
             }
         });
 
-        await(latch);
+        awaitFxConditionLatch(latch, failure, timeoutMessage);
         throwIfFailed(failure.get());
+    }
+
+    /// Creates a timeout assertion from the most recent FX-thread diagnostic message.
+    private static AssertionError timeoutAssertion(Supplier<String> timeoutMessage) {
+        String message;
+        try {
+            message = timeoutMessage.get();
+        } catch (RuntimeException e) {
+            AssertionError failure = new AssertionError("Timed out waiting for JavaFX condition");
+            failure.addSuppressed(e);
+            return failure;
+        }
+        if (message == null || message.isBlank()) {
+            return new AssertionError("Timed out waiting for JavaFX condition");
+        }
+        return new AssertionError(message);
+    }
+
+    /// Waits for a condition latch and reports the condition-specific timeout message if pulses stop.
+    private static void awaitFxConditionLatch(
+            CountDownLatch latch,
+            AtomicReference<@Nullable Throwable> failure,
+            Supplier<String> timeoutMessage
+    ) throws InterruptedException {
+        if (!latch.await(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS) && failure.get() == null) {
+            failure.set(timeoutAssertion(timeoutMessage));
+        }
     }
 
     /// Waits for deferred JavaFX pulse work before continuing on the test thread.
