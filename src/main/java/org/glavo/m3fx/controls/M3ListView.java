@@ -693,6 +693,10 @@ public class M3ListView<T> extends Control {
     /// Handles list keyboard navigation and focused-row activation.
     private void handleNavigationKeyPressed(KeyEvent event) {
         Objects.requireNonNull(event, "event");
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
         KeyCode code = event.getCode();
         switch (code) {
             case UP -> moveKeyboardFocus(previousIndex(navigationAnchorIndex()), event);
@@ -710,6 +714,10 @@ public class M3ListView<T> extends Control {
     /// Moves focus to the next data item whose text matches the printable-key search prefix.
     private void handleTypeAheadKeyTyped(KeyEvent event) {
         Objects.requireNonNull(event, "event");
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
         if (event.isAltDown() || event.isControlDown() || event.isMetaDown() || event.isShortcutDown()) {
             return;
         }

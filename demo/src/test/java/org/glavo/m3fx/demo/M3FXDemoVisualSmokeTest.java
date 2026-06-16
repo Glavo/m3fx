@@ -91,6 +91,7 @@ import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
 import org.glavo.m3fx.controls.M3SurfaceVariant;
 import org.glavo.m3fx.controls.M3Switch;
+import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
@@ -248,7 +249,8 @@ final class M3FXDemoVisualSmokeTest {
             M3FloatingActionButton.STYLE_CLASS,
             M3IconButton.STYLE_CLASS,
             M3IconToggleButton.STYLE_CLASS,
-            M3SegmentedButton.STYLE_CLASS
+            M3SegmentedButton.STYLE_CLASS,
+            M3Tab.STYLE_CLASS
     );
 
     /// Demo pages that should use SVG icons instead of text-placeholder icon controls in interactive slots.
@@ -4161,7 +4163,7 @@ final class M3FXDemoVisualSmokeTest {
     private static void assertDemoPageVisualGeometry(Scene scene, String pageTitle) {
         assertVisibleTextInsideScene(scene, pageTitle);
         assertVisibleMaterialControlsInsideScene(scene, pageTitle);
-        assertFixedTargetGlyphsCentered(scene.getRoot(), pageTitle);
+        assertFixedTargetGlyphsCentered(scene, pageTitle);
         assertNavigationItemIconSlotsCentered(scene, pageTitle);
         assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
         assertSelectionIndicatorsCentered(scene, pageTitle);
@@ -4643,8 +4645,9 @@ final class M3FXDemoVisualSmokeTest {
     }
 
     /// Verifies that fixed-size Material targets keep their glyph text centered.
-    private static void assertFixedTargetGlyphsCentered(Node root, String pageTitle) {
-        visitVisibleNodes(root, node -> {
+    private static void assertFixedTargetGlyphsCentered(Scene scene, String pageTitle) {
+        WritableImage image = snapshot(scene);
+        visitVisibleNodes(scene.getRoot(), node -> {
             if (!isCenteredTarget(node) || !hasRenderableBounds(node)) {
                 return;
             }
@@ -4668,9 +4671,11 @@ final class M3FXDemoVisualSmokeTest {
                             + ", targetBounds=" + targetBounds + ", glyphBounds=" + glyphBounds);
 
             if (renderedGlyph instanceof Text) {
-                Rectangle2D inkBounds = renderedNodePixelBoundsInScene(
+                Rectangle2D inkBounds = contrastingPixelBounds(
+                        image,
                         renderedGlyph,
-                        pageTitle + " fixed target glyph"
+                        sampledNodeBackgroundColor(image, node),
+                        0.04
                 );
                 double inkCenterX = inkBounds.getMinX() + inkBounds.getWidth() / 2.0;
                 double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
@@ -4681,6 +4686,12 @@ final class M3FXDemoVisualSmokeTest {
                                 + node + ", glyph=" + renderedGlyph + ", pixelDx=" + pixelDx
                                 + ", pixelDy=" + pixelDy + ", targetBounds=" + targetBounds
                                 + ", inkBounds=" + inkBounds);
+                assertRectangleInsideBounds(
+                        targetBounds,
+                        inkBounds,
+                        CONTROL_EDGE_TOLERANCE,
+                        pageTitle + " fixed target rendered ink"
+                );
             }
 
             @Nullable Node vectorIcon = firstVisibleDemoVectorIcon(node);
@@ -7808,6 +7819,22 @@ final class M3FXDemoVisualSmokeTest {
     private static boolean containsHorizontalBoundsWithTolerance(Bounds outer, Bounds inner, double tolerance) {
         return inner.getMinX() >= outer.getMinX() - tolerance
                 && inner.getMaxX() <= outer.getMaxX() + tolerance;
+    }
+
+    /// Verifies that a rendered pixel rectangle remains inside a layout bounds.
+    private static void assertRectangleInsideBounds(
+            Bounds outer,
+            Rectangle2D inner,
+            double tolerance,
+            String description
+    ) {
+        assertTrue(
+                inner.getMinX() >= outer.getMinX() - tolerance
+                        && inner.getMinY() >= outer.getMinY() - tolerance
+                        && inner.getMaxX() <= outer.getMaxX() + tolerance
+                        && inner.getMaxY() <= outer.getMaxY() + tolerance,
+                () -> description + " leaves its target bounds: pixels=" + inner + ", target=" + outer
+        );
     }
 
     /// Returns whether a node bounds touches a scroll viewport edge where partial vertical visibility is expected.

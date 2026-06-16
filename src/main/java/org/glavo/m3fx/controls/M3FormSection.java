@@ -17,6 +17,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FormSectionSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -288,7 +289,25 @@ public class M3FormSection extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         getContent().addListener(contentListener);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
+    }
+
+    /// Handles vertical keyboard traversal between section content nodes.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
+        M3FocusTraversal.handleDirectionalKeyFocus(
+                this,
+                event,
+                M3FocusTraversal.focusTargets(getContent()),
+                false,
+                true,
+                -1,
+                false
+        );
     }
 
     /// Notifies accessibility clients that indexed section content changed.

@@ -417,6 +417,10 @@ public class M3ListPane extends Control {
 
     /// Applies keyboard navigation across enabled list items.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
         if (getSelectionMode() == M3ListSelectionMode.NONE
                 || getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
             if (M3SelectionNavigation.handleKeyFocus(
@@ -463,6 +467,10 @@ public class M3ListPane extends Control {
     /// Moves focus to the next list item whose text matches the printable-key search prefix.
     private void handleTypeAheadKeyTyped(KeyEvent event) {
         Objects.requireNonNull(event, "event");
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
         if (event.isAltDown() || event.isControlDown() || event.isMetaDown() || event.isShortcutDown()) {
             return;
         }

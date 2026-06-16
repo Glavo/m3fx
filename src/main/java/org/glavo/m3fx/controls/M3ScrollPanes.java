@@ -11,8 +11,14 @@ import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TreeTableView;
+import javafx.scene.control.TreeView;
+import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -93,6 +99,42 @@ public final class M3ScrollPanes {
     /// @param scrollBar the scroll bar to style
     public static void style(ScrollBar scrollBar) {
         M3ControlStyles.add(Objects.requireNonNull(scrollBar, "scrollBar"), SCROLL_BAR_STYLE_CLASS);
+    }
+
+    /// Returns whether a scroll event target belongs directly to the supplied scroll pane.
+    ///
+    /// Nested scroll owners keep their wheel input so that virtualized controls and nested scroll panes can scroll
+    /// independently inside a styled outer [ScrollPane].
+    ///
+    /// @param scrollPane the scroll pane that owns the installed smooth scroll behavior
+    /// @param target the original scroll event target
+    /// @return `true` if the target belongs to `scrollPane` rather than to a nested scroll owner
+    static boolean isEventTargetForScrollPane(ScrollPane scrollPane, EventTarget target) {
+        Objects.requireNonNull(scrollPane, "scrollPane");
+        if (!(target instanceof Node node)) {
+            return true;
+        }
+
+        @Nullable Node current = node;
+        while (current != null && current != scrollPane) {
+            if (isNestedScrollOwner(current)) {
+                return false;
+            }
+            current = current.getParent();
+        }
+        return current == scrollPane;
+    }
+
+    /// Returns whether a node owns its own wheel scrolling inside an outer scroll pane.
+    private static boolean isNestedScrollOwner(Node node) {
+        return node instanceof ScrollPane
+                || node instanceof TextArea
+                || node instanceof VirtualFlow<?>
+                || node instanceof M3ListView<?>
+                || node instanceof ListView<?>
+                || node instanceof TreeView<?>
+                || node instanceof TableView<?>
+                || node instanceof TreeTableView<?>;
     }
 
     /// Handles smooth wheel scrolling for one JavaFX scroll pane.
@@ -216,21 +258,9 @@ public final class M3ScrollPanes {
             }
         }
 
-        /// Returns whether the event target belongs directly to this scroll pane rather than a nested scroll pane.
+        /// Returns whether the event target belongs directly to this scroll pane rather than a nested scroll owner.
         private boolean isEventForThisScrollPane(ScrollEvent event) {
-            EventTarget target = event.getTarget();
-            if (!(target instanceof Node node)) {
-                return true;
-            }
-
-            @Nullable Node current = node;
-            while (current != null && current != scrollPane) {
-                if (current instanceof ScrollPane) {
-                    return false;
-                }
-                current = current.getParent();
-            }
-            return current == scrollPane;
+            return isEventTargetForScrollPane(scrollPane, event.getTarget());
         }
 
         /// Starts an animation toward the accumulated target values.

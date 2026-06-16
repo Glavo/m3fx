@@ -7,9 +7,7 @@ import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Scene;
-import javafx.scene.Node;
 import javafx.scene.control.Label;
-import javafx.scene.control.Skin;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -20,10 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3Tooltip].
 @NotNullByDefault
-public final class M3TooltipSkin implements Skin<M3Tooltip> {
-    /// The tooltip rendered by this skin.
-    private final M3Tooltip tooltip;
-
+public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     /// The root label that renders tooltip text and graphic content.
     private final Label root = new Label();
 
@@ -43,8 +38,9 @@ public final class M3TooltipSkin implements Skin<M3Tooltip> {
 
     /// Creates a tooltip skin.
     public M3TooltipSkin(M3Tooltip tooltip) {
-        this.tooltip = tooltip;
+        super(tooltip);
 
+        getChildren().setAll(root);
         syncStyleClasses();
         M3PopupStyles.addStylesheet(root, M3Stylesheets.fallbackStylesheet());
         M3PopupStyles.addStylesheet(root, M3Stylesheets.controlStylesheet("tooltip.css"));
@@ -65,21 +61,34 @@ public final class M3TooltipSkin implements Skin<M3Tooltip> {
         updateThemeStylesheet(null, root.getScene());
     }
 
-    /// Returns the tooltip rendered by this skin.
+    /// Returns the preferred width of the rendered tooltip content.
     @Override
-    public M3Tooltip getSkinnable() {
-        return tooltip;
+    protected double computePrefWidth(double height) {
+        return snappedLeftInset() + root.prefWidth(height) + snappedRightInset();
     }
 
-    /// Returns the root node rendered inside the popup scene.
+    /// Returns the preferred height of the rendered tooltip content.
     @Override
-    public Node getNode() {
-        return root;
+    protected double computePrefHeight(double width) {
+        double horizontalInsets = snappedLeftInset() + snappedRightInset();
+        double contentWidth = width == -1.0 ? -1.0 : Math.max(0.0, width - horizontalInsets);
+        return snappedTopInset() + root.prefHeight(contentWidth) + snappedBottomInset();
+    }
+
+    /// Lays out the rendered tooltip content.
+    @Override
+    protected void layoutChildren() {
+        double contentX = snappedLeftInset();
+        double contentY = snappedTopInset();
+        double contentWidth = Math.max(0.0, getWidth() - contentX - snappedRightInset());
+        double contentHeight = Math.max(0.0, getHeight() - contentY - snappedBottomInset());
+        root.resizeRelocate(contentX, contentY, contentWidth, contentHeight);
     }
 
     /// Releases bindings and listeners installed by this skin.
     @Override
     public void dispose() {
+        M3Tooltip tooltip = getSkinnable();
         tooltip.getStyleClass().removeListener(styleClassListener);
         tooltip.themeProperty().removeListener(themeListener);
         root.sceneProperty().removeListener(sceneListener);
@@ -96,16 +105,19 @@ public final class M3TooltipSkin implements Skin<M3Tooltip> {
         root.minHeightProperty().unbind();
         root.maxHeightProperty().unbind();
         root.setGraphic(null);
+        super.dispose();
     }
 
     /// Copies current tooltip style classes onto the rendered root node.
     private void syncStyleClasses() {
+        M3Tooltip tooltip = getSkinnable();
         root.getStyleClass().setAll(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS);
         root.getStyleClass().addAll(tooltip.getStyleClass());
     }
 
     /// Installs or removes the generated theme stylesheet used by popup content.
     private void updateThemeStylesheet(@Nullable Scene oldScene, @Nullable Scene newScene) {
+        M3Tooltip tooltip = getSkinnable();
         String currentStylesheet = installedThemeStylesheet;
         if (currentStylesheet != null && oldScene != null) {
             oldScene.getStylesheets().remove(currentStylesheet);
@@ -129,6 +141,7 @@ public final class M3TooltipSkin implements Skin<M3Tooltip> {
 
     /// Resizes an already visible popup after theme CSS changes its preferred content size.
     private void resizeShowingPopup() {
+        M3Tooltip tooltip = getSkinnable();
         if (!tooltip.isShowing()) {
             return;
         }

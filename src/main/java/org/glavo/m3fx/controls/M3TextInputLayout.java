@@ -37,6 +37,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -53,8 +54,11 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 text input container with label, adornment, supporting text, validation, and counter slots.
@@ -841,6 +845,7 @@ public class M3TextInputLayout extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleSlotNavigationKey);
 
         inputContainer.getStyleClass().add(INPUT_CONTAINER_STYLE_CLASS);
         outlinePath.getStyleClass().add(OUTLINE_STYLE_CLASS);
@@ -963,6 +968,14 @@ public class M3TextInputLayout extends Control {
             newInput.requestFocus();
         }
         notifyAccessibleItemsChanged();
+    }
+
+    /// Handles keyboard focus traversal between input layout adornment slots.
+    private void handleSlotNavigationKey(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInside(this, getInput())) {
+            return;
+        }
+        M3FocusTraversal.handleHorizontalKeyFocus(this, event, slotFocusTargets());
     }
 
     /// Updates floating label state and optionally validates when focus leaves the input.
@@ -1652,6 +1665,24 @@ public class M3TextInputLayout extends Control {
             return this;
         }
         return M3Accessible.currentFocusTarget(this, getLeading(), getInput(), effectiveTrailing());
+    }
+
+    /// Returns the current reachable focus targets in logical input layout slot order.
+    private @Unmodifiable List<Node> slotFocusTargets() {
+        List<Node> targets = new ArrayList<>();
+        @Nullable Node leading = getLeading();
+        if (leading != null) {
+            targets.add(leading);
+        }
+        TextInputControl input = getInput();
+        if (input != null) {
+            targets.add(input);
+        }
+        @Nullable Node trailing = effectiveTrailing();
+        if (trailing != null) {
+            targets.add(trailing);
+        }
+        return M3FocusTraversal.focusTargets(targets);
     }
 
     /// Returns the preferred focus item for this layout.

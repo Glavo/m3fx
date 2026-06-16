@@ -29,7 +29,10 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 search bar for entering or activating search.
@@ -391,6 +394,10 @@ public class M3SearchBar extends Control {
 
     /// Handles keyboard shortcuts owned by the search bar container.
     private void handleKeyPressed(KeyEvent event) {
+        if (handleSlotNavigationKey(event)) {
+            return;
+        }
+
         switch (event.getCode()) {
             case ESCAPE -> {
                 if (isActive()) {
@@ -407,6 +414,14 @@ public class M3SearchBar extends Control {
             default -> {
             }
         }
+    }
+
+    /// Handles keyboard focus traversal between the leading slot, editor, and trailing actions.
+    private boolean handleSlotNavigationKey(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInside(this, editor)) {
+            return false;
+        }
+        return M3FocusTraversal.handleHorizontalKeyFocus(this, event, slotFocusTargets());
     }
 
     /// Focuses the embedded editor and enters active input state.
@@ -486,6 +501,18 @@ public class M3SearchBar extends Control {
             return this;
         }
         return M3Accessible.currentFocusTarget(this, getLeading(), editor, getTrailingActions());
+    }
+
+    /// Returns the current reachable focus targets in logical search bar slot order.
+    private @Unmodifiable List<Node> slotFocusTargets() {
+        List<Node> targets = new ArrayList<>();
+        @Nullable Node leading = getLeading();
+        if (leading != null) {
+            targets.add(leading);
+        }
+        targets.add(editor);
+        targets.addAll(getTrailingActions());
+        return M3FocusTraversal.focusTargets(targets);
     }
 
     /// Notifies accessibility clients that indexed child items changed.

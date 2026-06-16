@@ -23,6 +23,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
@@ -255,6 +256,11 @@ public class M3SnackbarHost extends Control {
     ///
     /// @param snackbar the snackbar to show
     public final void show(M3Snackbar snackbar) {
+        show(snackbar, currentSnackbarFocusNodeOwnsFocus());
+    }
+
+    /// Shows the supplied snackbar and optionally transfers current snackbar action focus to it.
+    private void show(M3Snackbar snackbar, boolean transferActionFocus) {
         Objects.requireNonNull(snackbar, "snackbar");
 
         displayTimer.stop();
@@ -278,6 +284,9 @@ public class M3SnackbarHost extends Control {
         showing.set(true);
         refreshAccessibleFocusNode();
         playShowAnimation(snackbar);
+        if (transferActionFocus) {
+            focusCurrentAccessibleNode();
+        }
     }
 
     /// Dismisses the currently hosted snackbar.
@@ -345,8 +354,7 @@ public class M3SnackbarHost extends Control {
             case COLLAPSE -> dismiss();
             case REQUEST_FOCUS -> {
                 if (M3Accessible.canReach(this)) {
-                    M3Accessible.showItem(currentFocusNode());
-                    notifyFocusNodeChanged();
+                    focusCurrentAccessibleNode();
                 }
             }
             case SHOW_ITEM -> {
@@ -455,13 +463,14 @@ public class M3SnackbarHost extends Control {
             return;
         }
 
+        boolean transferActionFocus = snackbarFocusNodeOwnsFocus(target);
         resetSnackbar(target);
         setSnackbar(null);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         notifyFocusNodeChanged();
-        showNextQueuedSnackbar();
+        showNextQueuedSnackbar(transferActionFocus);
     }
 
     /// Resets a snackbar after it leaves the host.
@@ -472,14 +481,14 @@ public class M3SnackbarHost extends Control {
         target.setTranslateY(0.0);
     }
 
-    /// Shows the next queued snackbar when the host is idle.
-    private void showNextQueuedSnackbar() {
+    /// Shows the next queued snackbar and optionally transfers focused action ownership to it.
+    private void showNextQueuedSnackbar(boolean transferActionFocus) {
         if (getSnackbar() != null || queue.isEmpty()) {
             return;
         }
 
         M3Snackbar nextSnackbar = queue.remove(0);
-        show(nextSnackbar);
+        show(nextSnackbar, transferActionFocus);
     }
 
     /// Returns the number of currently exposed snackbar nodes.
@@ -527,10 +536,46 @@ public class M3SnackbarHost extends Control {
         notifyFocusNodeChanged();
     }
 
+    /// Focuses the current snackbar action focus node when it is reachable.
+    private void focusCurrentAccessibleNode() {
+        M3Accessible.showItem(currentFocusNode());
+        notifyFocusNodeChanged();
+    }
+
     /// Notifies and refreshes cached accessibility focus state.
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
+    }
+
+    /// Returns whether the current snackbar's exposed action target owns keyboard focus.
+    private boolean currentSnackbarFocusNodeOwnsFocus() {
+        @Nullable M3Snackbar currentSnackbar = getSnackbar();
+        return currentSnackbar != null && snackbarFocusNodeOwnsFocus(currentSnackbar);
+    }
+
+    /// Returns whether the supplied snackbar's exposed action target owns keyboard focus.
+    private boolean snackbarFocusNodeOwnsFocus(M3Snackbar target) {
+        Objects.requireNonNull(target, "target");
+        if (!M3Accessible.canReach(this)) {
+            return false;
+        }
+
+        target.applyCss();
+        @Nullable Object focusNode = target.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        return focusNode instanceof Node node && nodeOwnsFocus(node);
+    }
+
+    /// Returns whether the supplied node or one of its descendants owns keyboard focus.
+    private static boolean nodeOwnsFocus(Node node) {
+        Objects.requireNonNull(node, "node");
+        if (node.isFocused()) {
+            return true;
+        }
+
+        @Nullable Scene scene = node.getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        return focusOwner != null && M3Accessible.containsNode(node, focusOwner);
     }
 
     /// Shows or focuses the snackbar referenced by accessibility action parameters.

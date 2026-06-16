@@ -369,6 +369,10 @@ public class M3Carousel extends Control {
 
     /// Handles keyboard selection and scrolling.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
         boolean handled = switch (event.getCode()) {
             case LEFT -> {
                 selectHorizontal(false);

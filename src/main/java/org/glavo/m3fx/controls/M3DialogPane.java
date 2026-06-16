@@ -20,9 +20,11 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
+import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -86,6 +88,7 @@ public class M3DialogPane extends DialogPane {
                 requestContainerShapeStyleSync();
             }
         });
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleActionNavigationKey);
         focusNotifier.start();
         updateMetrics();
         updateAccessibleText();
@@ -235,6 +238,19 @@ public class M3DialogPane extends DialogPane {
             button.setCancelButton(buttonData != null && buttonData.isCancelButton());
         }
         return button;
+    }
+
+    /// Handles keyboard traversal between dialog action buttons.
+    private void handleActionNavigationKey(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInside(this, getContent())) {
+            return;
+        }
+
+        M3FocusTraversal.handleHorizontalKeyFocus(
+                this,
+                event,
+                M3FocusTraversal.focusTargets(actionButtons())
+        );
     }
 
     /// Returns the user-agent stylesheet for m3fx dialog panes.
@@ -542,6 +558,18 @@ public class M3DialogPane extends DialogPane {
     /// Returns the action button at an index in button type order.
     private @Nullable Node buttonAt(int index) {
         return index >= 0 && index < getButtonTypes().size() ? lookupButton(getButtonTypes().get(index)) : null;
+    }
+
+    /// Returns the current dialog action buttons in button type order.
+    private @Unmodifiable List<Node> actionButtons() {
+        List<Node> buttons = new ArrayList<>();
+        for (ButtonType buttonType : getButtonTypes()) {
+            @Nullable Node button = lookupButton(buttonType);
+            if (button != null) {
+                buttons.add(button);
+            }
+        }
+        return List.copyOf(buttons);
     }
 
     /// Returns the default action button when one exists.

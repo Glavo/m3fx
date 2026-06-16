@@ -19,10 +19,12 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3CardSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -113,6 +115,7 @@ public class M3Card extends Control {
     public M3Card(@Nullable Node content) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setFocusTraversable(false);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
         setContent(content);
         updateVariantStyle();
@@ -371,6 +374,39 @@ public class M3Card extends Control {
             }
         }
         return M3Accessible.firstFocusTarget(getContent(), (Node) null);
+    }
+
+    /// Handles keyboard traversal between the actionable card surface and nested content.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
+        M3FocusTraversal.handleDirectionalKeyFocus(
+                this,
+                event,
+                navigationTargets(),
+                true,
+                true,
+                -1,
+                false
+        );
+    }
+
+    /// Returns reachable keyboard navigation targets in logical card order.
+    private @Unmodifiable List<Node> navigationTargets() {
+        List<Node> targets = new ArrayList<>();
+        if (getOnAction() != null) {
+            @Nullable Node cardTarget = M3Accessible.focusTarget(this);
+            if (cardTarget != null) {
+                targets.add(cardTarget);
+            }
+        }
+        @Nullable Node contentTarget = M3Accessible.accessibleFocusTarget(getContent());
+        if (contentTarget != null && contentTarget != this) {
+            targets.add(contentTarget);
+        }
+        return List.copyOf(targets);
     }
 
     /// Focuses the current card/content target, or an explicitly requested content target.

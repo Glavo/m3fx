@@ -29,6 +29,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -453,6 +454,10 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
         if (getSkinnable().isDisabled()) {
+            return;
+        }
+        if ((code == KeyCode.ENTER || code == KeyCode.SPACE)
+                && M3FocusGuards.focusOwnerInsideTextInput(getSkinnable())) {
             return;
         }
 

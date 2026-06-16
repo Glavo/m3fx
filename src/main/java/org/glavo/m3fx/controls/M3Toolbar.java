@@ -19,10 +19,8 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ToolbarSkin;
@@ -423,98 +421,18 @@ public class M3Toolbar extends Control {
     /// Handles keyboard traversal between focusable toolbar items.
     private void handleNavigationKeyPressed(KeyEvent event) {
         Objects.requireNonNull(event, "event");
-        if (!isNavigationKey(event.getCode())) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
             return;
         }
 
-        @Nullable Node target = navigationTarget(event.getCode());
-        if (target == null) {
-            return;
-        }
-
-        target.requestFocus();
-        event.consume();
-    }
-
-    /// Returns whether a key participates in toolbar item traversal.
-    private boolean isNavigationKey(KeyCode keyCode) {
-        return switch (keyCode) {
-            case LEFT, RIGHT -> getOrientation() == Orientation.HORIZONTAL;
-            case UP, DOWN -> getOrientation() == Orientation.VERTICAL;
-            case HOME, END -> true;
-            default -> false;
-        };
-    }
-
-    /// Returns the toolbar focus target selected by a navigation key.
-    private @Nullable Node navigationTarget(KeyCode keyCode) {
-        List<Node> targets = navigationTargets();
-        if (targets.isEmpty()) {
-            return null;
-        }
-
-        int focusedIndex = focusedTargetIndex(targets);
-        return switch (keyCode) {
-            case HOME -> targets.get(0);
-            case END -> targets.get(targets.size() - 1);
-            case LEFT -> horizontalTarget(targets, focusedIndex, false);
-            case RIGHT -> horizontalTarget(targets, focusedIndex, true);
-            case UP -> verticalTarget(targets, focusedIndex, false);
-            case DOWN -> verticalTarget(targets, focusedIndex, true);
-            default -> null;
-        };
-    }
-
-    /// Returns the target for a horizontal arrow key.
-    private @Nullable Node horizontalTarget(List<Node> focusableItems, int focusedIndex, boolean rightKey) {
-        if (focusedIndex < 0) {
-            return focusableItems.get(M3SelectionNavigation.isRightToLeft(this) != rightKey
-                    ? 0
-                    : focusableItems.size() - 1);
-        }
-
-        boolean forward = M3SelectionNavigation.isRightToLeft(this) != rightKey;
-        return adjacentTarget(focusableItems, focusedIndex, forward);
-    }
-
-    /// Returns the target for a vertical arrow key.
-    private @Nullable Node verticalTarget(List<Node> focusableItems, int focusedIndex, boolean downKey) {
-        if (focusedIndex < 0) {
-            return focusableItems.get(downKey ? 0 : focusableItems.size() - 1);
-        }
-        return adjacentTarget(focusableItems, focusedIndex, downKey);
-    }
-
-    /// Returns the adjacent focusable item, wrapping at toolbar ends.
-    private static Node adjacentTarget(List<Node> focusableItems, int focusedIndex, boolean forward) {
-        int itemCount = focusableItems.size();
-        int targetIndex = Math.floorMod(focusedIndex + (forward ? 1 : -1), itemCount);
-        return focusableItems.get(targetIndex);
-    }
-
-    /// Returns the index of the focused toolbar target.
-    private int focusedTargetIndex(List<Node> targets) {
-        @Nullable Scene scene = getScene();
-        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
-        for (int index = 0; index < targets.size(); index++) {
-            Node target = targets.get(index);
-            if (target.isFocused() || focusOwner != null && M3Accessible.containsNode(target, focusOwner)) {
-                return index;
-            }
-        }
-        return -1;
-    }
-
-    /// Returns reachable toolbar focus targets in logical list order.
-    private @Unmodifiable List<Node> navigationTargets() {
-        List<Node> targets = new ArrayList<>();
-        for (Node item : getItems()) {
-            @Nullable Node target = M3Accessible.accessibleFocusTarget(item);
-            if (target != null) {
-                targets.add(target);
-            }
-        }
-        return List.copyOf(targets);
+        Orientation orientation = getOrientation();
+        M3FocusTraversal.handleDirectionalKeyFocus(
+                this,
+                event,
+                M3FocusTraversal.focusTargets(getItems()),
+                orientation == Orientation.HORIZONTAL,
+                orientation == Orientation.VERTICAL
+        );
     }
 
     /// Handles item list changes.

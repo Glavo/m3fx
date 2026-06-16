@@ -339,56 +339,22 @@ public class M3FabMenu extends Control {
             return;
         }
 
-        List<Node> targets = focusTargets();
-        if (targets.isEmpty()) {
-            return;
-        }
-
-        int currentIndex = focusedTargetIndex(targets);
-        @Nullable Node target = switch (event.getCode()) {
-            case UP -> targets.get(Math.floorMod(currentIndex - 1, targets.size()));
-            case DOWN -> targets.get(Math.floorMod(currentIndex + 1, targets.size()));
-            case HOME -> targets.get(0);
-            case END -> targets.get(targets.size() - 1);
-            default -> null;
-        };
-        if (target == null) {
-            return;
-        }
-
-        if (target.isFocusTraversable()) {
-            target.requestFocus();
+        List<Node> targets = navigationTargets();
+        if (M3FocusTraversal.handleDirectionalKeyFocus(
+                this,
+                event,
+                targets,
+                false,
+                true,
+                Math.max(targets.indexOf(toggleButton), 0)
+        )) {
             notifyFocusNodeChanged();
         }
-        event.consume();
     }
 
     /// Returns the currently focusable action items followed by the toggle button.
-    private List<Node> focusTargets() {
-        ArrayList<Node> targets = new ArrayList<>();
-        if (!M3Accessible.isEffectivelyReachable(this)) {
-            return targets;
-        }
-        for (Node item : getItems()) {
-            if (item.isFocusTraversable() && M3Accessible.isEffectivelyReachable(item)) {
-                targets.add(item);
-            }
-        }
-        if (toggleButton.isFocusTraversable() && M3Accessible.isEffectivelyReachable(toggleButton)) {
-            targets.add(toggleButton);
-        }
-        return targets;
-    }
-
-    /// Returns the focused target index, using the toggle button as the default anchor.
-    private int focusedTargetIndex(List<Node> targets) {
-        for (int index = 0; index < targets.size(); index++) {
-            if (targets.get(index).isFocused()) {
-                return index;
-            }
-        }
-        int toggleIndex = targets.indexOf(toggleButton);
-        return Math.max(toggleIndex, 0);
+    private List<Node> navigationTargets() {
+        return M3FocusTraversal.focusTargets(getItems(), toggleButton);
     }
 
     /// Applies expanded state, using animation only after the control is attached to a scene.
@@ -424,12 +390,18 @@ public class M3FabMenu extends Control {
             return externalTarget;
         }
 
-        List<Node> targets = focusTargets();
+        List<Node> targets = navigationTargets();
         if (targets.isEmpty()) {
             return null;
         }
 
-        int currentIndex = focusedTargetIndex(targets);
+        int currentIndex = M3FocusTraversal.focusedTargetIndex(this, targets);
+        if (currentIndex < 0) {
+            currentIndex = targets.indexOf(toggleButton);
+        }
+        if (currentIndex < 0) {
+            currentIndex = 0;
+        }
         return M3Accessible.focusTarget(targets.get(currentIndex));
     }
 

@@ -14,6 +14,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BadgedBoxSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -245,7 +246,25 @@ public class M3BadgedBox extends Control {
         setAccessibleRole(AccessibleRole.PARENT);
         content.addListener(observable -> handleContentChanged());
         badge.addListener(observable -> handleContentChanged());
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
+    }
+
+    /// Handles horizontal keyboard traversal between the content and badge targets.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
+        M3FocusTraversal.handleDirectionalKeyFocus(
+                this,
+                event,
+                M3FocusTraversal.focusTargets(getContent(), getBadge()),
+                true,
+                false,
+                -1,
+                false
+        );
     }
 
     /// Notifies accessibility clients that content or badge children changed.

@@ -113,11 +113,13 @@ public class M3BottomSheet extends Control {
 
     /// Notifies accessibility clients when focus moves between sheet content and action children.
     private final M3AccessibleFocusNotifier focusNotifier =
-            new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(
-                    this,
-                    getContent(),
-                    getActions()
-            ));
+            new M3AccessibleFocusNotifier(this, () -> isShown()
+                    ? M3Accessible.currentOrFirstFocusTarget(
+                            this,
+                            getContent(),
+                            getActions()
+                    )
+                    : null);
 
     /// The sheet show and hide animation.
     private final Timeline visibilityAnimation = new Timeline();
@@ -388,9 +390,20 @@ public class M3BottomSheet extends Control {
                     event.consume();
                 }
             }
-            default -> {
-            }
+            default -> handleActionNavigationKey(event);
         }
+    }
+
+    /// Handles keyboard traversal between focusable sheet actions without stealing content editing keys.
+    private void handleActionNavigationKey(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInside(this, getContent())) {
+            return;
+        }
+        M3FocusTraversal.handleHorizontalKeyFocus(
+                this,
+                event,
+                M3FocusTraversal.focusTargets(getActions())
+        );
     }
 
     /// Processes shown state transitions and related focus bookkeeping.

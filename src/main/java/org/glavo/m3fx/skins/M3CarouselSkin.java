@@ -159,6 +159,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Initializes viewport style classes and scrolling policies.
     private void installViewport() {
         viewport.getStyleClass().add(M3Carousel.VIEWPORT_STYLE_CLASS);
+        M3ScrollPanes.style(viewport);
         M3ScrollPanes.enableSmoothScrolling(viewport);
         track.getStyleClass().add(M3Carousel.TRACK_STYLE_CLASS);
         viewport.setManaged(false);

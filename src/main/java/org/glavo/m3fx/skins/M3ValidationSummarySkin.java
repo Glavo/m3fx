@@ -13,6 +13,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -248,13 +249,63 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
                 event.consume();
             }
         });
-        item.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+        item.setOnKeyPressed(event -> handleItemKeyPressed(item, input, event));
+        return item;
+    }
+
+    /// Handles activation and in-summary keyboard traversal for one invalid item row.
+    private void handleItemKeyPressed(Node item, M3TextInputLayout input, KeyEvent event) {
+        switch (event.getCode()) {
+            case ENTER, SPACE -> {
                 getSkinnable().focusInput(input);
                 event.consume();
             }
-        });
-        return item;
+            case UP -> {
+                if (focusAdjacentItem(item, false)) {
+                    event.consume();
+                }
+            }
+            case DOWN -> {
+                if (focusAdjacentItem(item, true)) {
+                    event.consume();
+                }
+            }
+            case HOME -> {
+                if (focusIndexedItem(0)) {
+                    event.consume();
+                }
+            }
+            case END -> {
+                if (focusIndexedItem(items.getChildren().size() - 1)) {
+                    event.consume();
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
+    /// Moves focus to the adjacent invalid item row when one exists.
+    private boolean focusAdjacentItem(Node item, boolean forward) {
+        int currentIndex = items.getChildren().indexOf(item);
+        if (currentIndex < 0) {
+            return false;
+        }
+        return focusIndexedItem(currentIndex + (forward ? 1 : -1));
+    }
+
+    /// Moves focus to one invalid item row by rendered row index.
+    private boolean focusIndexedItem(int index) {
+        if (index < 0 || index >= items.getChildren().size()) {
+            return false;
+        }
+
+        Node item = items.getChildren().get(index);
+        if (!item.isDisabled() && item.isVisible()) {
+            item.requestFocus();
+            return item.isFocused();
+        }
+        return false;
     }
 
     /// Updates orientation-dependent summary alignments.

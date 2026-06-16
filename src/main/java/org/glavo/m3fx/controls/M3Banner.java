@@ -16,6 +16,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BannerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -201,8 +202,22 @@ public class M3Banner extends Control {
         text.addListener(observable -> updateAccessibleText());
         icon.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
         updateAccessibleText();
+    }
+
+    /// Handles keyboard traversal between focusable icon and action items.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
+        M3FocusTraversal.handleHorizontalKeyFocus(
+                this,
+                event,
+                M3FocusTraversal.focusTargets(getIcon(), getActions())
+        );
     }
 
     /// Validates a trailing action array.

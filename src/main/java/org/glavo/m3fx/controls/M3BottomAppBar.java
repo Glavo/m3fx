@@ -20,6 +20,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BottomAppBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -333,6 +334,7 @@ public class M3BottomAppBar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         floatingAction.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         focusNotifier.start();
@@ -366,6 +368,19 @@ public class M3BottomAppBar extends Control {
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3BottomAppBarSkin(this);
+    }
+
+    /// Handles keyboard traversal between focusable regular and floating action items.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
+        M3FocusTraversal.handleHorizontalKeyFocus(
+                this,
+                event,
+                M3FocusTraversal.focusTargets(getActions(), getFloatingAction())
+        );
     }
 
     /// Validates a regular action array.

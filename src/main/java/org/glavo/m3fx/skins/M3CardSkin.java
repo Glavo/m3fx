@@ -15,6 +15,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3Card;
+import org.glavo.m3fx.internal.M3FocusGuards;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -146,7 +147,9 @@ public class M3CardSkin extends SkinBase<M3Card> {
     /// Plays card feedback for enter and space keyboard presses.
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
-        if ((code == KeyCode.ENTER || code == KeyCode.SPACE) && !getSkinnable().isDisabled()) {
+        if ((code == KeyCode.ENTER || code == KeyCode.SPACE)
+                && !getSkinnable().isDisabled()
+                && !M3FocusGuards.focusOwnerInsideTextInput(getSkinnable())) {
             stateLayer.playCenteredRipple();
             stateLayer.releaseRipple();
             getSkinnable().fire();

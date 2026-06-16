@@ -289,6 +289,255 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that validation summaries reveal invalid-input adornment rich tooltip actions.
+    @Test
+    void validationSummaryRevealsInvalidInputAdornmentRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TextField nameField = new M3TextField();
+            M3IconButton helpButton = new M3IconButton(new M3Icon("?"));
+            M3Button tooltipAction = new M3Button("Explain");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    helpButton,
+                    "Name help",
+                    "Explains why the field is invalid.",
+                    tooltipAction
+            );
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Name", "Required");
+            nameLayout.setTrailing(helpButton);
+            nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
+
+            M3TextField emailField = new M3TextField();
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Required");
+            emailLayout.setValidator(M3TextInputValidators.required("Email is required"));
+
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            Stage stage = new Stage();
+
+            try {
+                assertFalse(validator.validate());
+
+                Pane root = new Pane(nameLayout, emailLayout, summary);
+                Scene scene = new Scene(root, 620.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                nameLayout.resizeRelocate(32.0, 24.0, 360.0, 88.0);
+                emailLayout.resizeRelocate(32.0, 128.0, 360.0, 88.0);
+                summary.resizeRelocate(32.0, 236.0, 420.0, 120.0);
+                root.layout();
+
+                assertFalse(tooltip.isShowing());
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+                root.layout();
+
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipAction.isFocused());
+                assertSame(tooltipAction, nameLayout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(summary, tooltipAction);
+
+                tooltipAction.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(tooltip.isShowing());
+                assertTrue(helpButton.isFocused());
+                assertSame(helpButton, nameLayout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(helpButton, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that validation summaries reveal invalid-input adornment menu popup targets.
+    @Test
+    void validationSummaryRevealsInvalidInputAdornmentMenuPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TextField nameField = new M3TextField();
+            M3MenuItem saveItem = new M3MenuItem("Save");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Name", "Required");
+            nameLayout.setTrailing(menuButton);
+            nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
+
+            M3TextField emailField = new M3TextField();
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Required");
+            emailLayout.setValidator(M3TextInputValidators.required("Email is required"));
+
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            Stage stage = new Stage();
+
+            try {
+                assertFalse(validator.validate());
+
+                Pane root = new Pane(nameLayout, emailLayout, summary);
+                Scene scene = new Scene(root, 680.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                nameLayout.resizeRelocate(32.0, 24.0, 460.0, 88.0);
+                emailLayout.resizeRelocate(32.0, 128.0, 360.0, 88.0);
+                summary.resizeRelocate(32.0, 236.0, 460.0, 120.0);
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+                root.layout();
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(archiveItem, nameLayout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(summary, archiveItem);
+
+                archiveItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, nameLayout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(menuButton, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that validation summaries reveal invalid-input adornment picker value targets.
+    @Test
+    void validationSummaryRevealsInvalidInputAdornmentPickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TextField nameField = new M3TextField();
+            LocalDate targetDate = LocalDate.of(2026, 6, 23);
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 16));
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Name", "Required");
+            nameLayout.setTrailing(field);
+            nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
+
+            M3TextField emailField = new M3TextField();
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Required");
+            emailLayout.setValidator(M3TextInputValidators.required("Email is required"));
+
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            Stage stage = new Stage();
+
+            try {
+                assertFalse(validator.validate());
+
+                Pane root = new Pane(nameLayout, emailLayout, summary);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                nameLayout.resizeRelocate(32.0, 24.0, 580.0, 88.0);
+                emailLayout.resizeRelocate(32.0, 128.0, 360.0, 88.0);
+                summary.resizeRelocate(32.0, 236.0, 460.0, 120.0);
+                root.layout();
+
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                assertPickerValueTargetRoutedByContainer(summary, field, targetDate);
+
+                assertSame(field.getEditor(), nameLayout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that nested form containers reveal and route menu, tooltip, and picker popup targets.
+    @Test
+    void formContainersRevealNestedPopupTargetsAcrossRows() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem saveItem = new M3MenuItem("Save");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
+
+            M3Button helpButton = new M3Button("Help");
+            M3Button tooltipAction = new M3Button("Explain");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    helpButton,
+                    "Form help",
+                    "Explains how this form section is validated.",
+                    tooltipAction
+            );
+
+            LocalDate targetDate = LocalDate.of(2026, 7, 6);
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 7, 1));
+            M3FormRow actionRow = new M3FormRow("Actions", "Menu and help affordances", menuButton, helpButton);
+            M3FormRow dateRow = new M3FormRow("Due date", "Date picker target", dateField);
+            M3FormSection section = new M3FormSection("Project", actionRow, dateRow);
+            M3FormPane form = new M3FormPane(section);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(form);
+                Scene scene = new Scene(root, 760.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                form.resizeRelocate(32.0, 32.0, 620.0, 300.0);
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+                assertFalse(tooltip.isShowing());
+                assertFalse(dateField.isShowing());
+
+                form.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, actionRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(archiveItem, section.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(form, archiveItem);
+
+                archiveItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, actionRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(menuButton, form.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                form.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipAction.isFocused());
+                assertSame(tooltipAction, actionRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(tooltipAction, section.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(form, tooltipAction);
+
+                tooltipAction.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(tooltip.isShowing());
+                assertTrue(helpButton.isFocused());
+                assertSame(helpButton, actionRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(helpButton, form.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                assertPickerValueTargetRoutedByContainer(form, dateField, targetDate);
+
+                assertSame(dateField.getEditor(), dateRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(dateField.getEditor(), section.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                dateField.hidePicker();
+                tooltip.hide();
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that menu buttons reveal picker value targets inside nested submenu branches.
     @Test
     void menuButtonRevealsPickerValueTargetInsideNestedSubMenu() {
@@ -1245,6 +1494,86 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that surface content containers reveal menu popup targets owned by FAB-menu actions.
+    @Test
+    void surfaceRevealsNestedFabMenuMenuPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem saveItem = new M3MenuItem("Save");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
+            M3FabMenu fabMenu = new M3FabMenu();
+            fabMenu.addItem(menuButton);
+            Pane content = new Pane(fabMenu);
+            content.setPrefSize(360.0, 180.0);
+            M3Surface surface = new M3Surface(content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 440.0, 220.0);
+                fabMenu.resizeRelocate(0.0, 0.0, 180.0, 160.0);
+                root.layout();
+
+                assertFalse(fabMenu.isExpanded());
+                assertFalse(menuButton.isShowing());
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+
+                assertTrue(fabMenu.isExpanded());
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(archiveItem, fabMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(surface, archiveItem);
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that surface content containers reveal picker value targets owned by FAB-menu actions.
+    @Test
+    void surfaceRevealsNestedFabMenuDatePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 6, 16);
+            M3DatePickerField field = new M3DatePickerField();
+            M3FabMenu fabMenu = new M3FabMenu();
+            fabMenu.addItem(field);
+            Pane content = new Pane(fabMenu);
+            content.setPrefSize(360.0, 180.0);
+            M3Surface surface = new M3Surface(content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 440.0, 220.0);
+                fabMenu.resizeRelocate(0.0, 0.0, 220.0, 160.0);
+                root.layout();
+
+                assertFalse(fabMenu.isExpanded());
+
+                assertPickerValueTargetRoutedByContainer(surface, field, targetDate);
+
+                assertTrue(fabMenu.isExpanded());
+                assertSame(field.getEditor(), fabMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that FAB-menu rich tooltip reveal rejects unreachable action targets.
     @Test
     void surfaceRejectsUnreachableNestedFabMenuRichTooltipAction() {
@@ -1323,6 +1652,61 @@ final class M3MixedPopupFocusTest {
                 assertTrue(host.isShowing());
                 assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertPopupFocusRoutedByContainer(surface, actionButton);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that surface content subtrees can reveal queued snackbar actions through their host.
+    @Test
+    void surfaceRevealsQueuedSnackbarThroughNestedSnackbarHost() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            M3Surface surface = new M3Surface(host);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 520.0, 160.0);
+                host.resizeRelocate(0.0, 0.0, 480.0, 96.0);
+                root.layout();
+
+                host.show(currentSnackbar);
+                host.enqueue(queuedSnackbar);
+                root.applyCss();
+                root.layout();
+                Node currentActionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        currentSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertTrue(host.isShowing());
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertSame(currentActionButton, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
+                root.applyCss();
+                root.layout();
+                Node queuedActionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertTrue(host.isShowing());
+                assertSame(queuedSnackbar, host.getSnackbar());
+                assertTrue(host.getQueue().isEmpty());
+                assertTrue(queuedActionButton.isFocused());
+                assertSame(queuedActionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(surface, queuedActionButton);
             } finally {
                 stage.close();
             }
@@ -1998,6 +2382,53 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that shown side sheets expose active nested content menu popup focus.
+    @Test
+    void sideSheetRoutesFocusThroughNestedContentMenuPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
+            Pane content = new Pane(menuButton);
+            content.setPrefSize(260.0, 88.0);
+            M3SideSheet sheet = new M3SideSheet("Details", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 320.0, 260.0);
+                menuButton.resizeRelocate(0.0, 0.0, 180.0, 48.0);
+                root.layout();
+
+                menuButton.showMenu();
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+
+                assertTrue(sheet.isShown());
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(sheet, archiveItem);
+
+                archiveItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sheet.hide();
+
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that a hidden bottom sheet can reveal a rich tooltip action from its content subtree.
     @Test
     void hiddenBottomSheetRevealsNestedContentRichTooltipAction() {
@@ -2038,6 +2469,63 @@ final class M3MixedPopupFocusTest {
                 assertTrue(tooltip.isShowing());
                 assertTrue(tooltipAction.isFocused());
                 assertPopupFocusRoutedByContainer(sheet, tooltipAction);
+            } finally {
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shown bottom sheets expose active nested content rich tooltip focus.
+    @Test
+    void bottomSheetRoutesFocusThroughNestedContentRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("More");
+            M3Button tooltipAction = new M3Button("Details");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "More",
+                    "Shows additional sheet details.",
+                    tooltipAction
+            );
+            Pane content = new Pane(ownerAction);
+            content.setPrefSize(260.0, 88.0);
+            M3BottomSheet sheet = new M3BottomSheet("Queue", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                ownerAction.resizeRelocate(0.0, 0.0, 160.0, 48.0);
+                root.layout();
+
+                tooltip.show(ownerAction, stage.getX() + 180.0, stage.getY() + 180.0);
+                ownerAction.requestFocus();
+
+                assertTrue(sheet.isShown());
+                assertTrue(tooltip.isShowing());
+                assertTrue(ownerAction.isFocused());
+                assertSame(ownerAction, sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                ownerAction.fireEvent(keyPressed(KeyCode.F6));
+
+                assertTrue(tooltipAction.isFocused());
+                assertPopupFocusRoutedByContainer(sheet, tooltipAction);
+
+                tooltipAction.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(tooltip.isShowing());
+                assertTrue(ownerAction.isFocused());
+                assertSame(ownerAction, sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sheet.hide();
+
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 tooltip.hide();
                 stage.close();

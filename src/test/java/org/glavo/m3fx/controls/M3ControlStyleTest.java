@@ -32,10 +32,15 @@ import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Skin;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.control.TreeTableView;
+import javafx.scene.control.TreeView;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.WritableImage;
@@ -124,6 +129,7 @@ import org.glavo.m3fx.skins.M3TabBarSkin;
 import org.glavo.m3fx.skins.M3TabSkin;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.glavo.m3fx.skins.M3TextSkin;
+import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.skins.M3TopAppBarSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -1597,6 +1603,12 @@ final class M3ControlStyleTest {
                 assertTrue(first.isFocused());
                 first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
                 assertTrue(third.isFocused());
+
+                M3TextField editor = createTextField("Edit", M3TextInputVariant.OUTLINED);
+                M3Button afterEditor = new M3Button("After editor");
+                M3Toolbar editorToolbar = new M3Toolbar(editor, afterEditor);
+                root.getChildren().add(editorToolbar);
+                assertContainerNavigationDoesNotStealTextInputFocus(root, editorToolbar, editor, afterEditor, KeyCode.RIGHT);
             } finally {
                 stage.close();
             }
@@ -2220,10 +2232,13 @@ final class M3ControlStyleTest {
     void fabMenuRestoresToggleFocusWhenCollapsedFromFocusedAction() {
         runOnFxThread(() -> {
             M3FloatingActionButton firstAction = new M3FloatingActionButton("A");
+            M3FloatingActionButton disabledAction = new M3FloatingActionButton("D");
             M3FloatingActionButton secondAction = new M3FloatingActionButton("B");
+            M3Button outside = new M3Button("Outside");
             M3FabMenu menu = new M3FabMenu();
-            menu.addItems(firstAction, secondAction);
-            Pane root = new Pane(menu);
+            disabledAction.setDisable(true);
+            menu.addItems(firstAction, disabledAction, secondAction);
+            Pane root = new Pane(outside, menu);
             Stage stage = new Stage();
 
             try {
@@ -2237,12 +2252,20 @@ final class M3ControlStyleTest {
                 root.layout();
 
                 menu.show();
+                outside.requestFocus();
+                assertTrue(outside.isFocused());
+                menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(firstAction.isFocused());
+                outside.requestFocus();
+                menu.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(secondAction.isFocused());
                 firstAction.requestFocus();
                 assertTrue(firstAction.isFocused());
                 assertSame(firstAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 firstAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 assertTrue(secondAction.isFocused());
+                assertFalse(disabledAction.isFocused());
                 assertSame(secondAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 secondAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
                 assertTrue(menu.getToggleButton().isFocused());
@@ -2699,6 +2722,41 @@ final class M3ControlStyleTest {
         assertSame(first, carousel.getSelectedItem());
     }
 
+    /// Verifies that carousel navigation keys do not steal focus from embedded text inputs.
+    @Test
+    void carouselNavigationDoesNotStealEmbeddedTextInputFocus() {
+        runOnFxThread(() -> {
+            M3TextField editor = createTextField("Editable", M3TextInputVariant.OUTLINED);
+            editor.setPrefWidth(180.0);
+            M3Button next = new M3Button("Next");
+            M3Carousel carousel = new M3Carousel(editor, next);
+            M3TextField outsideEditor = createTextField("Outside", M3TextInputVariant.OUTLINED);
+            VBox root = new VBox(12.0, carousel, outsideEditor);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 380.0, 240.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                carousel.selectIndex(0);
+
+                assertContainerNavigationDoesNotStealTextInputFocus(root, carousel, editor, next, KeyCode.RIGHT);
+
+                assertSame(editor, carousel.getSelectedItem());
+
+                outsideEditor.requestFocus();
+                assertTrue(outsideEditor.isFocused());
+                carousel.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertSame(next, carousel.getSelectedItem());
+                assertTrue(next.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that carousel accessibility reveal requests can target focusable descendants inside items.
     @Test
     void carouselAccessibleShowItemFocusesRequestedDescendant() {
@@ -2869,6 +2927,7 @@ final class M3ControlStyleTest {
                         ScrollPane.class,
                         carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS)
                 );
+                assertTrue(viewport.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
                 assertTrue(viewport.getHvalue() > 0.5, () -> "hvalue=" + viewport.getHvalue());
                 assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
 
@@ -2889,6 +2948,74 @@ final class M3ControlStyleTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies that carousel viewports keep wheel ownership inside outer smooth scroll panes.
+    @Test
+    void carouselViewportKeepsWheelEventsInsideOuterSmoothScrollPane() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> runOnFxThread(() -> {
+            M3Carousel carousel = new M3Carousel(
+                    carouselTestItem("A"),
+                    carouselTestItem("B"),
+                    carouselTestItem("C"),
+                    carouselTestItem("D"),
+                    carouselTestItem("E")
+            );
+            carousel.setAnimatedScroll(false);
+            carousel.setPrefSize(260.0, 100.0);
+
+            Region filler = new Region();
+            filler.setPrefSize(260.0, 360.0);
+            VBox content = new VBox(carousel, filler);
+            ScrollPane outerScrollPane = new ScrollPane(content);
+            outerScrollPane.setPrefSize(300.0, 180.0);
+            M3ScrollPanes.style(outerScrollPane);
+            StackPane root = new StackPane(outerScrollPane);
+            Scene scene = new Scene(root, 340.0, 240.0);
+            Stage stage = new Stage();
+            @Nullable ScrollPane viewport = null;
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
+                viewport = assertInstanceOf(
+                        ScrollPane.class,
+                        carousel.lookup("." + M3Carousel.VIEWPORT_STYLE_CLASS)
+                );
+                assertTrue(viewport.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+                assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
+                assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, viewport));
+                assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, viewport.getContent()));
+                assertTrue(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, filler));
+
+                carousel.selectIndex(4);
+                root.layout();
+                ScrollPane currentViewport = viewport;
+                assertTrue(currentViewport.getHvalue() > 0.5, () -> "hvalue=" + currentViewport.getHvalue());
+                M3ScrollPanes.enableSmoothScrolling(outerScrollPane);
+                M3MotionSettings.setAnimationsEnabled(outerScrollPane, false);
+                M3MotionSettings.setAnimationsEnabled(viewport, false);
+                viewport.setHvalue(0.0);
+
+                ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
+                viewport.fireEvent(event);
+
+                assertTrue(currentViewport.getHvalue() > 0.0, () -> "hvalue=" + currentViewport.getHvalue());
+                assertEquals(0.0, outerScrollPane.getVvalue(), 0.0001);
+            } finally {
+                if (viewport != null) {
+                    M3MotionSettings.clearAnimationsEnabled(viewport);
+                }
+                M3ScrollPanes.disableSmoothScrolling(outerScrollPane);
+                M3MotionSettings.clearAnimationsEnabled(outerScrollPane);
+                stage.close();
+            }
+        }));
     }
 
     /// Verifies that running carousel scroll transitions settle when animations are disabled at runtime.
@@ -3054,6 +3181,74 @@ final class M3ControlStyleTest {
                 assertSame(action, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 banner.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
                 assertTrue(action.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that banner keyboard traversal follows direction and skips unreachable items.
+    @Test
+    void bannerKeyboardTraversalFollowsDirectionAndReachability() {
+        runOnFxThread(() -> {
+            M3Button icon = new M3Button("Icon");
+            M3Button hidden = new M3Button("Hidden");
+            M3Button disabled = new M3Button("Disabled");
+            M3Button retry = new M3Button("Retry");
+            M3Button dismiss = new M3Button("Dismiss");
+            M3Button outside = new M3Button("Outside");
+            M3Banner banner = createBanner("Offline", icon, hidden, disabled, retry, dismiss);
+            VBox root = new VBox(8.0, outside, banner);
+            Stage stage = new Stage();
+
+            hidden.setVisible(false);
+            disabled.setDisable(true);
+            try {
+                Scene scene = new Scene(root, 560.0, 220.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                outside.requestFocus();
+                banner.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(icon.isFocused());
+
+                icon.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(retry.isFocused());
+                retry.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(dismiss.isFocused());
+                dismiss.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(icon.isFocused());
+                retry.requestFocus();
+                retry.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(icon.isFocused());
+
+                banner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                icon.requestFocus();
+
+                icon.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(dismiss.isFocused());
+                dismiss.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(icon.isFocused());
+
+                outside.requestFocus();
+                banner.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+                assertTrue(dismiss.isFocused());
+                banner.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+                assertTrue(icon.isFocused());
+                assertSame(icon, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertFalse(hidden.isFocused());
+                assertFalse(disabled.isFocused());
+
+                M3TextField editor = createTextField("Edit", M3TextInputVariant.OUTLINED);
+                M3Button afterEditor = new M3Button("After editor");
+                M3Banner editorBanner = createBanner("Editable", new M3Icon("I"), editor, afterEditor);
+                root.getChildren().add(editorBanner);
+                assertContainerNavigationDoesNotStealTextInputFocus(root, editorBanner, editor, afterEditor, KeyCode.RIGHT);
             } finally {
                 stage.close();
             }
@@ -3576,9 +3771,24 @@ final class M3ControlStyleTest {
                 host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, actionButton);
                 assertTrue(actionButton.isFocused());
 
+                M3Snackbar indexedSnackbar = new M3Snackbar("Archived", "Recover");
+                host.enqueue(indexedSnackbar);
+                actionButton.getScene().getRoot().requestFocus();
+
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+
+                assertSame(indexedSnackbar, host.getSnackbar());
+                assertTrue(host.getQueue().isEmpty());
+                M3Button indexedActionButton = assertInstanceOf(
+                        M3Button.class,
+                        indexedSnackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                assertTrue(indexedActionButton.isFocused());
+                assertEquals(indexedActionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
                 host.enqueue(queuedSnackbar);
-                actionButton.getScene().getRoot().requestFocus();
+                indexedActionButton.getScene().getRoot().requestFocus();
 
                 host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
 
@@ -3600,6 +3810,151 @@ final class M3ControlStyleTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies that queued snackbar promotion preserves action focus when the dismissed action owned focus.
+    @Test
+    void snackbarHostTransfersFocusedActionWhenQueuedSnackbarIsPromoted() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> firstActionReference = new AtomicReference<>();
+
+        runOnFxThreadWhen(
+                () -> queuedSnackbarShown(hostReference, firstReference, secondReference)
+                        && snackbarFocusNodeFocused(secondReference.get()),
+                () -> describeSnackbarHostState(
+                        hostReference,
+                        firstReference,
+                        secondReference,
+                        "Queued snackbar action did not receive transferred focus"
+                ),
+                () -> {
+                    M3SnackbarHost host = new M3SnackbarHost();
+                    host.setDisplayDuration(Duration.INDEFINITE);
+                    M3Button outside = new M3Button("Outside");
+                    VBox root = new VBox(12.0, outside, host);
+                    Stage stage = new Stage();
+
+                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    Scene scene = new Scene(root, 420.0, 180.0);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+
+                    M3Snackbar first = new M3Snackbar("First", "Undo");
+                    M3Snackbar second = new M3Snackbar("Second", "Restore");
+                    host.enqueue(first);
+                    host.enqueue(second);
+                    root.applyCss();
+                    root.layout();
+
+                    M3Button firstAction = assertInstanceOf(
+                            M3Button.class,
+                            first.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                    );
+                    firstAction.requestFocus();
+                    assertTrue(firstAction.isFocused());
+
+                    stageReference.set(stage);
+                    rootReference.set(root);
+                    hostReference.set(host);
+                    firstReference.set(first);
+                    secondReference.set(second);
+                    firstActionReference.set(firstAction);
+                    host.dismiss();
+                },
+                () -> {
+                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
+                    M3Button firstAction = Objects.requireNonNull(firstActionReference.get(), "firstAction");
+                    M3Button secondAction = assertInstanceOf(
+                            M3Button.class,
+                            second.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                    );
+
+                    assertSame(second, host.getSnackbar());
+                    assertNull(first.getParent());
+                    assertFalse(firstAction.isFocused());
+                    assertTrue(secondAction.isFocused());
+
+                    M3MotionSettings.clearAnimationsEnabled(Objects.requireNonNull(rootReference.get(), "root"));
+                    Objects.requireNonNull(stageReference.get(), "stage").close();
+                }
+        );
+    }
+
+    /// Verifies that queued snackbar promotion does not steal focus from unrelated page content.
+    @Test
+    void snackbarHostKeepsExternalFocusWhenQueuedSnackbarPromotes() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> outsideReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
+
+        runOnFxThreadWhen(
+                () -> queuedSnackbarShown(hostReference, firstReference, secondReference)
+                        && outsideReference.get() != null
+                        && Objects.requireNonNull(outsideReference.get(), "outside").isFocused(),
+                () -> describeSnackbarHostState(
+                        hostReference,
+                        firstReference,
+                        secondReference,
+                        "Queued snackbar promotion stole external focus"
+                ),
+                () -> {
+                    M3SnackbarHost host = new M3SnackbarHost();
+                    host.setDisplayDuration(Duration.INDEFINITE);
+                    M3Button outside = new M3Button("Outside");
+                    VBox root = new VBox(12.0, outside, host);
+                    Stage stage = new Stage();
+
+                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    Scene scene = new Scene(root, 420.0, 180.0);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+
+                    M3Snackbar first = new M3Snackbar("First", "Undo");
+                    M3Snackbar second = new M3Snackbar("Second", "Restore");
+                    host.enqueue(first);
+                    host.enqueue(second);
+                    root.applyCss();
+                    root.layout();
+
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+
+                    stageReference.set(stage);
+                    rootReference.set(root);
+                    outsideReference.set(outside);
+                    hostReference.set(host);
+                    firstReference.set(first);
+                    secondReference.set(second);
+                    host.dismiss();
+                },
+                () -> {
+                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
+                    M3Button outside = Objects.requireNonNull(outsideReference.get(), "outside");
+
+                    assertSame(second, host.getSnackbar());
+                    assertTrue(outside.isFocused());
+                    assertFalse(snackbarFocusNodeFocused(second));
+
+                    M3MotionSettings.clearAnimationsEnabled(Objects.requireNonNull(rootReference.get(), "root"));
+                    Objects.requireNonNull(stageReference.get(), "stage").close();
+                }
+        );
     }
 
     /// Verifies that snackbar host default display duration resolves from motion behavior.
@@ -3951,6 +4306,78 @@ final class M3ControlStyleTest {
                 dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, contentAction);
                 assertTrue(contentAction.isFocused());
                 assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog action rows support directional focus without stealing content editing keys.
+    @Test
+    void dialogPaneActionKeyboardTraversalFollowsDirectionWithoutStealingContentKeys() {
+        runOnFxThread(() -> {
+            M3TextField content = new M3TextField("Editable content");
+            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType skip = new ButtonType("Skip", ButtonBar.ButtonData.OTHER);
+            ButtonType ok = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(cancel, skip, ok);
+            Pane root = new Pane(dialogPane);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 520.0, 260.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(24.0, 24.0, 460.0, 190.0);
+                root.layout();
+
+                Node cancelButton = dialogPane.lookupButton(cancel);
+                Node skipButton = dialogPane.lookupButton(skip);
+                Node okButton = dialogPane.lookupButton(ok);
+                skipButton.setDisable(true);
+
+                content.requestFocus();
+                content.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(content.isFocused());
+
+                cancelButton.requestFocus();
+                cancelButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(okButton.isFocused());
+
+                okButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(cancelButton.isFocused());
+
+                okButton.requestFocus();
+                dialogPane.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertTrue(cancelButton.isFocused());
+
+                cancelButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertTrue(okButton.isFocused());
+
+                okButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+
+                assertTrue(cancelButton.isFocused());
+
+                root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+
+                cancelButton.requestFocus();
+                cancelButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(okButton.isFocused());
+
+                okButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertTrue(cancelButton.isFocused());
+                assertFalse(skipButton.isFocused());
             } finally {
                 stage.close();
             }
@@ -4990,6 +5417,130 @@ final class M3ControlStyleTest {
                 layout.setLeading(null);
                 assertTrue(textField.isFocused());
                 assertSame(textField, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that text input layouts traverse slots without stealing editor navigation keys.
+    @Test
+    void textInputLayoutKeyboardTraversalFollowsDirectionWithoutStealingEditorKeys() {
+        runOnFxThread(() -> {
+            M3TextField textField = new M3TextField("abc");
+            M3Button leading = new M3Button("Lead");
+            M3IconButton trailing = createIconButton("T");
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            layout.setLeading(leading);
+            layout.setTrailing(trailing);
+
+            Pane root = new Pane(layout);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 520.0, 180.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                layout.resizeRelocate(24.0, 24.0, 440.0, 96.0);
+                root.layout();
+
+                leading.requestFocus();
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(textField.isFocused());
+
+                textField.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(textField.isFocused());
+
+                trailing.requestFocus();
+                trailing.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertTrue(textField.isFocused());
+
+                trailing.requestFocus();
+                trailing.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(leading.isFocused());
+
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertTrue(trailing.isFocused());
+
+                trailing.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+
+                assertTrue(leading.isFocused());
+
+                trailing.setDisable(true);
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertTrue(textField.isFocused());
+                assertFalse(trailing.isFocused());
+
+                trailing.setDisable(false);
+                root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+
+                leading.requestFocus();
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(trailing.isFocused());
+
+                trailing.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertTrue(leading.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that built-in clear buttons participate in text input layout slot traversal.
+    @Test
+    void textInputLayoutKeyboardTraversalIncludesClearButtonSlot() {
+        runOnFxThread(() -> {
+            M3TextField textField = new M3TextField("abc");
+            M3Button leading = new M3Button("Lead");
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
+            layout.setLeading(leading);
+            layout.setClearButtonEnabled(true);
+            M3IconButton clearButton = layout.getClearButton();
+
+            Pane root = new Pane(layout);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 520.0, 180.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                layout.resizeRelocate(24.0, 24.0, 440.0, 96.0);
+                root.layout();
+
+                leading.requestFocus();
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertTrue(clearButton.isFocused());
+                assertSame(clearButton, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                clearButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertTrue(textField.isFocused());
+
+                root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+
+                leading.requestFocus();
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(clearButton.isFocused());
+
+                clearButton.fire();
+
+                assertEquals("", textField.getText());
+                assertTrue(textField.isFocused());
+                assertEquals(2, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
             } finally {
                 stage.close();
             }
@@ -6112,7 +6663,11 @@ final class M3ControlStyleTest {
                 plainTooltip.setTheme(expressiveTheme);
                 plainTooltip.show(owner, stage.getX() + 24.0, stage.getY() + 48.0);
                 plainTooltip.getScene().getRoot().applyCss();
-                Region plainRoot = assertInstanceOf(Region.class, plainTooltip.getSkin().getNode());
+                Parent plainSkinRoot = assertInstanceOf(Parent.class, plainTooltip.getSkin().getNode());
+                Region plainRoot = assertInstanceOf(
+                        Region.class,
+                        plainSkinRoot.lookup("." + M3Tooltip.STYLE_CLASS)
+                );
                 assertEquals(8.0, plainRoot.getPadding().getTop(), 0.0001);
                 assertEquals(12.0, plainRoot.getPadding().getLeft(), 0.0001);
                 assertEquals(
@@ -8237,6 +8792,87 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that popup theme synchronizers observe local themes installed after the popup is already open.
+    @Test
+    void popupContextSynchronizerTracksRuntimeLocalThemeInstallation() {
+        runOnFxThread(() -> {
+            Label owner = new Label("Owner");
+            Pane ownerContainer = new Pane(owner);
+            Pane root = new Pane(ownerContainer);
+            Pane popupRoot = new Pane();
+            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popupRoot);
+            M3Theme localTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Scene scene = new Scene(root, 420.0, 220.0);
+
+            root.applyCss();
+            root.layout();
+
+            try {
+                synchronizer.start();
+
+                assertNull(M3ThemeManager.getTheme(popupRoot));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+
+                M3ThemeManager.install(ownerContainer, localTheme);
+
+                assertSame(localTheme, M3ThemeManager.getTheme(popupRoot));
+                assertTrue(popupRoot.getStyle().contains("-m3-color-primary"));
+                assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+
+                M3ThemeManager.uninstall(ownerContainer);
+
+                assertNull(M3ThemeManager.getTheme(popupRoot));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+                assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            } finally {
+                synchronizer.stop();
+            }
+        });
+    }
+
+    /// Verifies that stopped popup theme synchronizers no longer observe owner context changes.
+    @Test
+    void popupContextSynchronizerStopsRuntimeContextObservation() {
+        runOnFxThread(() -> {
+            Label owner = new Label("Owner");
+            Pane ownerContainer = new Pane(owner);
+            Pane root = new Pane(ownerContainer);
+            Pane popupRoot = new Pane();
+            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popupRoot);
+            M3Theme sceneTheme = M3Theme.defaultTheme();
+            M3Theme localTheme = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Scene scene = new Scene(root, 420.0, 220.0);
+
+            M3ThemeManager.install(scene, sceneTheme);
+            root.applyCss();
+            root.layout();
+
+            synchronizer.start();
+            assertSame(sceneTheme, M3ThemeManager.getTheme(popupRoot));
+
+            synchronizer.stop();
+            M3ThemeManager.install(ownerContainer, localTheme);
+            M3ThemeManager.install(scene, localTheme);
+
+            assertSame(sceneTheme, M3ThemeManager.getTheme(popupRoot));
+            assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+            assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+            assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+            assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+            assertFalse(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(localTheme)));
+        });
+    }
+
     /// Verifies that an already open submenu popup follows runtime parent menu theme changes.
     @Test
     void subMenuPopupReinheritsRuntimeParentMenuThemeChanges() {
@@ -8588,6 +9224,82 @@ final class M3ControlStyleTest {
                 assertFalse(export.isSubMenuShowing());
                 assertTrue(export.isFocused());
                 assertTrue(menuButton.isShowing());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(menuButton);
+                M3MotionSettings.clearAnimationsEnabled(export);
+                M3MotionSettings.clearAnimationsEnabled(recent);
+                recent.hideSubMenu();
+                export.hideSubMenu();
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that open menu popup branches mirror owner direction changes and keep routed focus.
+    @Test
+    void openNestedMenuPopupBranchesMirrorRuntimeInheritedOrientationChanges() {
+        runOnFxThread(() -> {
+            M3MenuItem pdf = new M3MenuItem("PDF");
+            M3MenuItem html = new M3MenuItem("HTML");
+            M3SubMenuItem recent = new M3SubMenuItem("Recent", pdf, html);
+            M3SubMenuItem export = new M3SubMenuItem("Export", recent);
+            M3MenuButton menuButton = new M3MenuButton("More", export);
+            Pane root = new Pane(menuButton);
+            Stage stage = new Stage();
+
+            try {
+                M3MotionSettings.setAnimationsEnabled(menuButton, false);
+                M3MotionSettings.setAnimationsEnabled(export, false);
+                M3MotionSettings.setAnimationsEnabled(recent, false);
+
+                stage.setScene(new Scene(root, 360.0, 220.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                menuButton.showMenu();
+                menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+                assertTrue(export.isFocused());
+
+                export.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(export.isSubMenuShowing());
+                assertTrue(recent.isFocused());
+
+                recent.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(recent.isSubMenuShowing());
+                assertTrue(pdf.isFocused());
+                assertSame(pdf, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                menuButton.getMenu().layout();
+                export.getSubMenu().layout();
+                recent.getSubMenu().layout();
+
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, menuButton.getEffectiveNodeOrientation());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, menuButton.getMenu().getNodeOrientation());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, export.getEffectiveNodeOrientation());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, export.getSubMenu().getNodeOrientation());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, recent.getEffectiveNodeOrientation());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, recent.getSubMenu().getNodeOrientation());
+                assertTrue(pdf.isFocused());
+                assertSame(pdf, recent.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdf, export.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdf, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                recent.getSubMenu().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertFalse(recent.isSubMenuShowing());
+                assertTrue(recent.isFocused());
+                assertTrue(export.isSubMenuShowing());
+                assertSame(recent, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                export.getSubMenu().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertFalse(export.isSubMenuShowing());
+                assertTrue(export.isFocused());
+                assertTrue(menuButton.isShowing());
+                assertSame(export, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 M3MotionSettings.clearAnimationsEnabled(menuButton);
                 M3MotionSettings.clearAnimationsEnabled(export);
@@ -9147,6 +9859,78 @@ final class M3ControlStyleTest {
                 assertEquals(3, listView.getFocusedIndex());
                 assertEquals(3, listView.getSelectedIndex());
                 assertEquals("Reports", listView.getSelectedItem());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that list navigation and type-ahead keys do not steal focus from embedded text inputs.
+    @Test
+    void listContainersDoNotStealEmbeddedTextInputKeys() {
+        runOnFxThread(() -> {
+            M3TextField paneEditor = createTextField("Pane", M3TextInputVariant.OUTLINED);
+            paneEditor.setPrefWidth(150.0);
+            M3ListItem paneEditable = new M3ListItem("Editable");
+            paneEditable.setTrailing(paneEditor);
+            M3ListItem paneSearch = new M3ListItem("Search");
+            M3ListPane listPane = new M3ListPane(paneEditable, paneSearch);
+            listPane.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listPane.select(paneEditable);
+            M3TextField outsideEditor = createTextField("Outside", M3TextInputVariant.OUTLINED);
+
+            M3ListView<String> listView = new M3ListView<>("Editable", "Search");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(72.0);
+            listView.setPrefSize(340.0, 150.0);
+            listView.setCellFactory(value -> {
+                M3ListItem item = new M3ListItem(value);
+                if ("Editable".equals(value)) {
+                    M3TextField viewEditor = createTextField("View", M3TextInputVariant.OUTLINED);
+                    viewEditor.setPrefWidth(150.0);
+                    item.setTrailing(viewEditor);
+                }
+                return item;
+            });
+            listView.selectIndex(0);
+
+            VBox root = new VBox(12.0, listPane, listView, outsideEditor);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 460.0, 390.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertContainerNavigationDoesNotStealTextInputFocus(root, listPane, paneEditor, paneSearch, KeyCode.DOWN);
+                listPane.fireEvent(keyTypedEvent("s"));
+                assertTrue(paneEditor.isFocused(), "static list type-ahead should not steal embedded text input focus");
+                assertSame(paneEditable, listPane.getSelectedItem());
+
+                M3ListViewSkin<?> skin = assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
+                M3ListItem visibleEditable = assertInstanceOf(M3ListItem.class, skin.getAttachedVisibleItem(0));
+                M3TextField viewEditor = assertInstanceOf(M3TextField.class, visibleEditable.getTrailing());
+                assertContainerNavigationDoesNotStealTextInputFocus(root, listView, viewEditor, listView, KeyCode.DOWN);
+                listView.fireEvent(keyTypedEvent("s"));
+                assertTrue(viewEditor.isFocused(), "virtualized list type-ahead should not steal embedded text input focus");
+                assertEquals(0, listView.getSelectedIndex());
+                assertEquals("Editable", listView.getSelectedItem());
+
+                listPane.select(paneEditable);
+                outsideEditor.requestFocus();
+                assertTrue(outsideEditor.isFocused());
+                listPane.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertSame(paneSearch, listPane.getSelectedItem());
+                assertTrue(paneSearch.isFocused());
+
+                listView.selectIndex(0);
+                outsideEditor.requestFocus();
+                assertTrue(outsideEditor.isFocused());
+                listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertEquals(1, listView.getSelectedIndex());
+                assertEquals("Search", listView.getSelectedItem());
             } finally {
                 stage.close();
             }
@@ -10471,6 +11255,129 @@ final class M3ControlStyleTest {
         assertTrue(results.isManaged());
     }
 
+    /// Verifies that search bars traverse focus between slots without stealing editor navigation keys.
+    @Test
+    void searchBarKeyboardTraversalFollowsDirectionWithoutStealingEditorKeys() {
+        runOnFxThread(() -> {
+            M3Button leading = new M3Button("Menu");
+            M3Button filter = new M3Button("Filter");
+            M3Button disabled = new M3Button("Disabled");
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setLeading(leading);
+            searchBar.setTrailingActions(filter, disabled);
+            disabled.setDisable(true);
+            StackPane root = new StackPane(searchBar);
+            Scene scene = new Scene(root, 420.0, 140.0);
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                searchBar.requestFocus();
+                searchBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(leading.isFocused());
+
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(searchBar.getEditor().isFocused());
+
+                searchBar.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(searchBar.getEditor().isFocused());
+
+                filter.requestFocus();
+                filter.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertTrue(searchBar.getEditor().isFocused());
+
+                filter.requestFocus();
+                filter.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(leading.isFocused());
+
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertTrue(filter.isFocused());
+
+                filter.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+
+                assertTrue(leading.isFocused());
+
+                root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+
+                leading.requestFocus();
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(filter.isFocused());
+
+                filter.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+
+                assertTrue(leading.isFocused());
+                assertFalse(disabled.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that embedded search bars keep slot traversal inside search views.
+    @Test
+    void searchViewSearchBarSlotKeyboardTraversalSurvivesViewEventFiltering() {
+        runOnFxThread(() -> {
+            M3Button leading = new M3Button("Menu");
+            M3Button filter = new M3Button("Filter");
+            M3ListItem result = new M3ListItem("Result");
+            M3SearchView searchView = new M3SearchView("Search", result);
+            searchView.setLeading(leading);
+            searchView.setTrailingActions(filter);
+            StackPane root = new StackPane(searchView);
+            Scene scene = new Scene(root, 460.0, 220.0);
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                leading.requestFocus();
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(searchView.getEditor().isFocused());
+                assertSame(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                filter.requestFocus();
+                filter.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+
+                assertTrue(leading.isFocused());
+                assertSame(leading, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchView.getEditor().requestFocus();
+                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+                assertTrue(result.isFocused());
+
+                root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+
+                leading.requestFocus();
+                leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+
+                assertTrue(filter.isFocused());
+                assertSame(filter, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search views move keyboard focus between the editor and results.
     @Test
     void searchViewKeyboardNavigatesResults() {
@@ -10812,6 +11719,137 @@ final class M3ControlStyleTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies that sheet action rows traverse horizontally without stealing content key events.
+    @Test
+    void sheetActionKeyboardTraversalFollowsDirectionWithoutStealingContentKeys() {
+        runOnFxThread(() -> {
+            M3Button outside = new M3Button("Outside");
+            TextArea sideContent = new TextArea("Side content");
+            M3Button sideHidden = new M3Button("Side hidden");
+            M3Button sideDisabled = new M3Button("Side disabled");
+            M3Button sideFirst = new M3Button("Side first");
+            M3Button sideSecond = new M3Button("Side second");
+            M3Button sideThird = new M3Button("Side third");
+            M3SideSheet sideSheet = new M3SideSheet(
+                    "Details",
+                    sideContent,
+                    sideHidden,
+                    sideDisabled,
+                    sideFirst,
+                    sideSecond,
+                    sideThird
+            );
+            TextArea bottomContent = new TextArea("Bottom content");
+            M3Button bottomHidden = new M3Button("Bottom hidden");
+            M3Button bottomDisabled = new M3Button("Bottom disabled");
+            M3Button bottomFirst = new M3Button("Bottom first");
+            M3Button bottomSecond = new M3Button("Bottom second");
+            M3Button bottomThird = new M3Button("Bottom third");
+            M3BottomSheet bottomSheet = new M3BottomSheet(
+                    "Queue",
+                    bottomContent,
+                    bottomHidden,
+                    bottomDisabled,
+                    bottomFirst,
+                    bottomSecond,
+                    bottomThird
+            );
+            VBox root = new VBox(8.0, outside, sideSheet, bottomSheet);
+            Stage stage = new Stage();
+
+            sideHidden.setVisible(false);
+            bottomHidden.setVisible(false);
+            sideDisabled.setDisable(true);
+            bottomDisabled.setDisable(true);
+            sideContent.setPrefRowCount(1);
+            bottomContent.setPrefRowCount(1);
+            sideSheet.setPrefSize(360.0, 160.0);
+            bottomSheet.setPrefSize(480.0, 180.0);
+            try {
+                stage.setScene(new Scene(root, 720.0, 420.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertSheetActionKeyboardTraversal(
+                        sideSheet,
+                        sideContent,
+                        outside,
+                        sideFirst,
+                        sideSecond,
+                        sideThird,
+                        sideHidden,
+                        sideDisabled
+                );
+                assertSheetActionKeyboardTraversal(
+                        bottomSheet,
+                        bottomContent,
+                        outside,
+                        bottomFirst,
+                        bottomSecond,
+                        bottomThird,
+                        bottomHidden,
+                        bottomDisabled
+                );
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Asserts horizontal keyboard traversal for one sheet action row.
+    private static void assertSheetActionKeyboardTraversal(
+            Control sheet,
+            Node content,
+            Node outside,
+            M3Button first,
+            M3Button second,
+            M3Button third,
+            M3Button hidden,
+            M3Button disabled
+    ) {
+        sheet.applyCss();
+        sheet.layout();
+        content.requestFocus();
+        assertTrue(content.isFocused());
+        content.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertTrue(content.isFocused());
+
+        outside.requestFocus();
+        sheet.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertTrue(first.isFocused());
+
+        first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertTrue(second.isFocused());
+        second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertTrue(third.isFocused());
+        third.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertTrue(first.isFocused());
+        second.requestFocus();
+        second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+        assertTrue(first.isFocused());
+
+        sheet.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        sheet.applyCss();
+        sheet.layout();
+        first.requestFocus();
+
+        first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertTrue(third.isFocused());
+        third.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+        assertTrue(first.isFocused());
+
+        outside.requestFocus();
+        sheet.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+        assertTrue(third.isFocused());
+        sheet.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+        assertTrue(first.isFocused());
+        assertSame(first, sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertFalse(hidden.isFocused());
+        assertFalse(disabled.isFocused());
     }
 
     /// Verifies that accessible modal sheet collapse restores focus and hides sheet focus targets.
@@ -16610,6 +17648,146 @@ final class M3ControlStyleTest {
         ).getSpacing(), 0.0001);
     }
 
+    /// Verifies that top app bar keyboard traversal follows direction and skips unreachable action slots.
+    @Test
+    void topAppBarKeyboardTraversalFollowsDirectionAndReachability() {
+        runOnFxThread(() -> {
+            M3Button navigation = new M3Button("Menu");
+            M3Button hidden = new M3Button("Hidden");
+            M3Button disabled = new M3Button("Disabled");
+            M3Button search = new M3Button("Search");
+            M3Button more = new M3Button("More");
+            M3Button outside = new M3Button("Outside");
+            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", navigation, hidden, disabled, search, more);
+            VBox root = new VBox(8.0, topAppBar, outside);
+            Stage stage = new Stage();
+
+            hidden.setVisible(false);
+            disabled.setDisable(true);
+            try {
+                stage.setScene(new Scene(root, 560.0, 180.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                outside.requestFocus();
+                topAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(navigation.isFocused());
+
+                topAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(search.isFocused());
+                topAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(more.isFocused());
+                topAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(navigation.isFocused());
+                topAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(more.isFocused());
+
+                topAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                navigation.requestFocus();
+
+                topAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(more.isFocused());
+                topAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(navigation.isFocused());
+
+                outside.requestFocus();
+                topAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+                assertTrue(more.isFocused());
+                topAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+                assertTrue(navigation.isFocused());
+                assertSame(navigation, topAppBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertFalse(hidden.isFocused());
+                assertFalse(disabled.isFocused());
+
+                M3TextField editor = createTextField("Search", M3TextInputVariant.OUTLINED);
+                M3Button afterEditor = new M3Button("After editor");
+                M3TopAppBar editorAppBar = new M3TopAppBar("Editable");
+                editorAppBar.addActions(editor, afterEditor);
+                root.getChildren().add(editorAppBar);
+                assertContainerNavigationDoesNotStealTextInputFocus(root, editorAppBar, editor, afterEditor, KeyCode.RIGHT);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that bottom app bar keyboard traversal includes floating actions and mirrors in RTL layouts.
+    @Test
+    void bottomAppBarKeyboardTraversalIncludesFloatingActionAndMirrorsDirection() {
+        runOnFxThread(() -> {
+            M3Button archive = new M3Button("Archive");
+            M3Button hidden = new M3Button("Hidden");
+            M3Button disabled = new M3Button("Disabled");
+            M3Button share = new M3Button("Share");
+            M3Button create = new M3Button("Create");
+            M3Button outside = new M3Button("Outside");
+            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                    M3BottomAppBarFloatingActionAlignment.END,
+                    create,
+                    archive,
+                    hidden,
+                    disabled,
+                    share
+            );
+            VBox root = new VBox(8.0, bottomAppBar, outside);
+            Stage stage = new Stage();
+
+            hidden.setVisible(false);
+            disabled.setDisable(true);
+            try {
+                stage.setScene(new Scene(root, 560.0, 200.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                outside.requestFocus();
+                bottomAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(archive.isFocused());
+
+                bottomAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(share.isFocused());
+                bottomAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(create.isFocused());
+                bottomAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(archive.isFocused());
+                bottomAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(create.isFocused());
+
+                bottomAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                archive.requestFocus();
+
+                bottomAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(create.isFocused());
+                bottomAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(archive.isFocused());
+
+                outside.requestFocus();
+                bottomAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+                assertTrue(create.isFocused());
+                bottomAppBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+                assertTrue(archive.isFocused());
+                assertSame(archive, bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertFalse(hidden.isFocused());
+                assertFalse(disabled.isFocused());
+
+                M3TextField editor = createTextField("Quick action", M3TextInputVariant.OUTLINED);
+                M3Button afterEditor = new M3Button("After editor");
+                M3BottomAppBar editorAppBar = new M3BottomAppBar(editor, afterEditor);
+                root.getChildren().add(editorAppBar);
+                assertContainerNavigationDoesNotStealTextInputFocus(root, editorAppBar, editor, afterEditor, KeyCode.RIGHT);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that top app bars expose the Material scroll-under visual state through a pseudo-class.
     @Test
     void topAppBarScrolledUnderStateUsesPseudoClassAndCss() {
@@ -17216,6 +18394,96 @@ final class M3ControlStyleTest {
                 root.layout();
                 bottomAppBar.layout();
                 assertBottomAppBarMaterialSlotGeometry(bottomAppBar, true);
+            }
+        });
+    }
+
+    /// Verifies that app bars reflow logical slots without losing current action focus after runtime orientation changes.
+    @Test
+    void appBarsReflowSlotsAndPreserveFocusedActionsAfterRuntimeOrientationChanges() {
+        runOnFxThread(() -> {
+            M3IconButton topNavigation = createGeometryTopAppBarIcon("menu");
+            M3IconButton topSearch = createGeometryTopAppBarIcon("search");
+            M3IconButton topMore = createGeometryTopAppBarIcon("more");
+            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topSearch, topMore);
+            topAppBar.setManaged(false);
+
+            M3IconButton bottomSearch = createGeometryTopAppBarIcon("search");
+            M3IconButton bottomMore = createGeometryTopAppBarIcon("more");
+            M3IconButton bottomCreate = createGeometryTopAppBarIcon("add");
+            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                    M3BottomAppBarFloatingActionAlignment.END,
+                    bottomCreate,
+                    bottomSearch,
+                    bottomMore
+            );
+            bottomAppBar.setManaged(false);
+
+            Pane root = new Pane(topAppBar, bottomAppBar);
+            root.setStyle("-fx-background-color: white; " + visualTestColors());
+            Scene scene = new Scene(root, 500.0, 220.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                topAppBar.resizeRelocate(20.0, 20.0, 420.0, 64.0);
+                bottomAppBar.resizeRelocate(20.0, 104.0, 420.0, 80.0);
+                root.layout();
+                topAppBar.layout();
+                bottomAppBar.layout();
+
+                assertTopAppBarMaterialSlotGeometry(topAppBar);
+                assertBottomAppBarMaterialSlotGeometry(bottomAppBar, false);
+
+                topMore.requestFocus();
+                assertTrue(topMore.isFocused());
+
+                topAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                bottomAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                topAppBar.layout();
+                bottomAppBar.layout();
+
+                assertTopAppBarMaterialSlotGeometry(topAppBar);
+                assertBottomAppBarMaterialSlotGeometry(bottomAppBar, true);
+                assertTrue(topMore.isFocused());
+                assertSame(topMore, topAppBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                bottomMore.requestFocus();
+                assertTrue(bottomMore.isFocused());
+
+                topAppBar.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                bottomAppBar.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                root.applyCss();
+                root.layout();
+                topAppBar.layout();
+                bottomAppBar.layout();
+
+                assertTopAppBarMaterialSlotGeometry(topAppBar);
+                assertBottomAppBarMaterialSlotGeometry(bottomAppBar, false);
+                assertTrue(bottomMore.isFocused());
+                assertSame(bottomMore, bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                bottomCreate.requestFocus();
+                assertTrue(bottomCreate.isFocused());
+
+                topAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                bottomAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                topAppBar.layout();
+                bottomAppBar.layout();
+
+                assertTopAppBarMaterialSlotGeometry(topAppBar);
+                assertBottomAppBarMaterialSlotGeometry(bottomAppBar, true);
+                assertTrue(bottomCreate.isFocused());
+                assertSame(bottomCreate, bottomAppBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
             }
         });
     }
@@ -19279,6 +20547,290 @@ final class M3ControlStyleTest {
                 () -> "contentBounds=" + contentBounds + ", trailingBounds=" + trailingBounds);
     }
 
+    /// Verifies that form containers support directional focus without stealing text editing keys.
+    @Test
+    void formContainersSupportDirectionalKeyboardTraversalWithoutStealingTextInputKeys() {
+        runOnFxThread(() -> {
+            M3Button paneFirst = new M3Button("Pane first");
+            M3Button rowContent = new M3Button("Row content");
+            M3Button rowTrailing = new M3Button("Row trailing");
+            M3FormRow row = new M3FormRow("Row", "Helper", rowContent, rowTrailing);
+
+            M3Button sectionFirst = new M3Button("Section first");
+            M3Button hidden = new M3Button("Hidden");
+            M3Button disabled = new M3Button("Disabled");
+            M3Button sectionSecond = new M3Button("Section second");
+            hidden.setVisible(false);
+            disabled.setDisable(true);
+            M3FormSection section = new M3FormSection("Section", sectionFirst, hidden, disabled, sectionSecond);
+
+            M3TextField editor = new M3TextField("M3FX");
+            M3Button inputTrailing = new M3Button("Input trailing");
+            M3FormRow inputRow = new M3FormRow("Input", "Editor row", editor, inputTrailing);
+
+            M3Button paneLast = new M3Button("Pane last");
+            M3Button outside = new M3Button("Outside");
+            M3FormPane formPane = new M3FormPane(paneFirst, row, section, inputRow, paneLast);
+            VBox root = new VBox(8.0, formPane, outside);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 680.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                rowContent.requestFocus();
+                assertTrue(rowContent.isFocused());
+                rowContent.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(rowTrailing.isFocused());
+                rowTrailing.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(rowTrailing.isFocused());
+
+                row.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                rowContent.requestFocus();
+                rowContent.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(rowTrailing.isFocused());
+                rowTrailing.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(rowContent.isFocused());
+
+                sectionFirst.requestFocus();
+                sectionFirst.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(sectionSecond.isFocused());
+                sectionSecond.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(editor.isFocused());
+
+                editor.positionCaret(1);
+                editor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(editor.isFocused());
+                assertFalse(inputTrailing.isFocused());
+                assertFalse(paneLast.isFocused());
+
+                inputTrailing.requestFocus();
+                inputTrailing.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(paneLast.isFocused());
+                paneLast.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(inputTrailing.isFocused());
+
+                outside.requestFocus();
+                formPane.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(paneFirst.isFocused());
+                paneFirst.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(paneFirst.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shared directional traversal preserves embedded text input editing focus.
+    @Test
+    void focusTraversalHelperDoesNotStealEmbeddedTextInputKeys() {
+        runOnFxThread(() -> {
+            M3TextField embeddedEditor = new M3TextField("Edit");
+            M3Button next = new M3Button("Next");
+            M3Surface owner = new M3Surface(embeddedEditor, next);
+            M3TextField outsideEditor = new M3TextField("Outside");
+            VBox root = new VBox(8.0, owner, outsideEditor);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 360.0, 180.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                embeddedEditor.requestFocus();
+                KeyEvent embeddedEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+                assertFalse(M3FocusTraversal.handleHorizontalKeyFocus(
+                        owner,
+                        embeddedEvent,
+                        M3FocusTraversal.focusTargets(owner.getContent())
+                ));
+
+                assertTrue(embeddedEditor.isFocused());
+                assertFalse(next.isFocused());
+                assertFalse(embeddedEvent.isConsumed());
+
+                outsideEditor.requestFocus();
+                KeyEvent outsideEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+                assertTrue(M3FocusTraversal.handleHorizontalKeyFocus(
+                        owner,
+                        outsideEvent,
+                        M3FocusTraversal.focusTargets(owner.getContent())
+                ));
+
+                assertTrue(embeddedEditor.isFocused());
+                assertTrue(outsideEvent.isConsumed());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that actionable containers ignore activation keys while a nested text input owns focus.
+    @Test
+    void actionableContainersIgnoreEmbeddedTextInputActivationKeys() {
+        runOnFxThread(() -> {
+            AtomicInteger cardActions = new AtomicInteger();
+            M3TextField cardEditor = new M3TextField("Card text");
+            M3Card card = new M3Card(cardEditor, M3CardVariant.FILLED, event -> cardActions.incrementAndGet());
+            AtomicInteger listActions = new AtomicInteger();
+            M3TextField listEditor = new M3TextField("List text");
+            M3ListItem listItem = new M3ListItem("Editable row");
+            listItem.setTrailingMedia(listEditor, M3ListItemSlotSize.WIDE_THUMBNAIL);
+            listItem.setOnAction(event -> listActions.incrementAndGet());
+
+            VBox root = new VBox(12.0, card, listItem);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 520.0, 220.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                cardEditor.requestFocus();
+                assertTrue(cardEditor.isFocused());
+                card.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                card.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+                card.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+                assertEquals(0, cardActions.get());
+
+                listEditor.requestFocus();
+                assertTrue(listEditor.isFocused());
+                listItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                listItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+                listItem.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+                assertEquals(0, listActions.get());
+
+                card.requestFocus();
+                assertTrue(card.isFocused());
+                card.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                assertEquals(1, cardActions.get());
+
+                listItem.requestFocus();
+                assertTrue(listItem.isFocused());
+                listItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                listItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+                listItem.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
+                assertEquals(2, listActions.get());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that structural containers support directional focus without stealing text input keys.
+    @Test
+    void structuralContainersSupportDirectionalKeyboardTraversalWithoutStealingTextInputKeys() {
+        runOnFxThread(() -> {
+            M3Button surfaceFirst = new M3Button("Surface first");
+            M3Button hiddenSurfaceTarget = new M3Button("Hidden");
+            M3Button disabledSurfaceTarget = new M3Button("Disabled");
+            M3Button surfaceSecond = new M3Button("Surface second");
+            M3TextField surfaceEditor = new M3TextField("M3FX");
+            M3Button surfaceLast = new M3Button("Surface last");
+            hiddenSurfaceTarget.setVisible(false);
+            disabledSurfaceTarget.setDisable(true);
+            M3Surface surface = new M3Surface(
+                    surfaceFirst,
+                    hiddenSurfaceTarget,
+                    disabledSurfaceTarget,
+                    surfaceSecond,
+                    surfaceEditor,
+                    surfaceLast
+            );
+
+            M3Button badgedContent = new M3Button("Inbox");
+            M3Badge focusableBadge = new M3Badge("7");
+            focusableBadge.setFocusTraversable(true);
+            M3BadgedBox badgedBox = new M3BadgedBox(badgedContent, focusableBadge);
+
+            M3Button cardContent = new M3Button("Card details");
+            M3Card actionCard = new M3Card(cardContent, M3CardVariant.FILLED, event -> {
+            });
+            M3TextField cardEditor = new M3TextField("Card text");
+            M3Card passiveInputCard = new M3Card(cardEditor);
+            M3Button outside = new M3Button("Outside");
+            VBox root = new VBox(8.0, surface, badgedBox, actionCard, passiveInputCard, outside);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 680.0, 520.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                outside.requestFocus();
+                surface.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(surfaceFirst.isFocused());
+                surfaceFirst.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                assertTrue(surfaceSecond.isFocused());
+                assertFalse(hiddenSurfaceTarget.isFocused());
+                assertFalse(disabledSurfaceTarget.isFocused());
+                surfaceSecond.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(surfaceEditor.isFocused());
+                surfaceEditor.positionCaret(1);
+                surfaceEditor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(surfaceEditor.isFocused());
+                assertFalse(surfaceLast.isFocused());
+
+                surface.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                surfaceFirst.requestFocus();
+                surfaceFirst.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(surfaceSecond.isFocused());
+                surfaceSecond.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(surfaceFirst.isFocused());
+
+                badgedContent.requestFocus();
+                badgedContent.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(focusableBadge.isFocused());
+                focusableBadge.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(focusableBadge.isFocused());
+                badgedBox.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                badgedContent.requestFocus();
+                badgedContent.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(focusableBadge.isFocused());
+                focusableBadge.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(badgedContent.isFocused());
+
+                actionCard.requestFocus();
+                assertTrue(actionCard.isFocused());
+                actionCard.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(cardContent.isFocused());
+                cardContent.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(actionCard.isFocused());
+                actionCard.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                actionCard.requestFocus();
+                actionCard.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+                assertTrue(cardContent.isFocused());
+                cardContent.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(actionCard.isFocused());
+
+                cardEditor.requestFocus();
+                cardEditor.positionCaret(1);
+                cardEditor.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                assertTrue(cardEditor.isFocused());
+                assertFalse(actionCard.isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that picker skins propagate right-to-left orientation into their rendered layout nodes.
     @Test
     void pickerSkinsPropagateRightToLeftOrientation() {
@@ -20848,6 +22400,36 @@ final class M3ControlStyleTest {
                         VBox.class,
                         summary.lookup("." + M3ValidationSummary.ITEMS_STYLE_CLASS)
                 );
+                Node nameSummaryItem = items.getChildren().get(0);
+                Node emailSummaryItem = items.getChildren().get(1);
+
+                nameSummaryItem.requestFocus();
+                assertTrue(nameSummaryItem.isFocused());
+
+                nameSummaryItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+                assertTrue(emailSummaryItem.isFocused());
+
+                emailSummaryItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+
+                assertTrue(emailSummaryItem.isFocused());
+
+                emailSummaryItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+
+                assertTrue(nameSummaryItem.isFocused());
+
+                nameSummaryItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
+
+                assertTrue(emailSummaryItem.isFocused());
+
+                emailSummaryItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+
+                assertTrue(nameSummaryItem.isFocused());
+
+                nameSummaryItem.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
+
+                assertTrue(nameField.isFocused());
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, emailLayout);
 
@@ -20859,7 +22441,6 @@ final class M3ControlStyleTest {
                 assertTrue(nameField.isFocused());
                 assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                Node emailSummaryItem = items.getChildren().get(1);
                 emailSummaryItem.requestFocus();
                 assertTrue(emailSummaryItem.isFocused());
 
@@ -21599,6 +23180,142 @@ final class M3ControlStyleTest {
                 if (field != null) {
                     field.hidePicker();
                     M3MotionSettings.clearAnimationsEnabled(field);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that open picker field preset popups reflow when inherited node orientation changes at runtime.
+    @Test
+    void pickerFieldPresetPopupsReflowAfterRuntimeInheritedOrientationChanges() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DatePickerField> dateFieldReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3TimePickerField> timeFieldReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DateRangePickerField> rangeFieldReference = new AtomicReference<>();
+
+        try {
+            runOnFxThread(() -> {
+                M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+                M3MotionSettings.setAnimationsEnabled(dateField, false);
+                dateField.setCommonPresets(LocalDate.of(2026, 5, 19));
+                dateField.setPrefWidth(420.0);
+
+                M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
+                M3MotionSettings.setAnimationsEnabled(timeField, false);
+                timeField.setUse24HourClock(true);
+                timeField.setMinuteStep(15);
+                timeField.setCommonPresets(LocalTime.of(10, 30));
+                timeField.setPrefWidth(420.0);
+
+                M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                        LocalDate.of(2026, 5, 19),
+                        LocalDate.of(2026, 5, 25)
+                );
+                M3MotionSettings.setAnimationsEnabled(rangeField, false);
+                rangeField.setCommonPresets(LocalDate.of(2026, 5, 19));
+                rangeField.setPrefWidth(680.0);
+
+                Pane root = new Pane(dateField, timeField, rangeField);
+                root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                Stage stage = new Stage();
+                Scene scene = new Scene(root, 780.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dateField.resizeRelocate(24.0, 24.0, 420.0, 96.0);
+                timeField.resizeRelocate(24.0, 132.0, 420.0, 96.0);
+                rangeField.resizeRelocate(24.0, 240.0, 680.0, 96.0);
+                root.layout();
+
+                stageReference.set(stage);
+                rootReference.set(root);
+                dateFieldReference.set(dateField);
+                timeFieldReference.set(timeField);
+                rangeFieldReference.set(rangeField);
+            });
+
+            runOnFxThreadWhen(
+                    () -> pickerFieldPresetPopupReady(
+                            dateFieldReference.get(),
+                            M3DatePickerField.PRESET_BUTTON_STYLE_CLASS,
+                            M3DatePickerField.PRESET_LIST_STYLE_CLASS
+                    ),
+                    () -> {
+                        Pane root = Objects.requireNonNull(rootReference.get());
+                        M3DatePickerField dateField = Objects.requireNonNull(dateFieldReference.get());
+                        root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                        dateField.getEditor().requestFocus();
+                        dateField.showPicker();
+                    },
+                    () -> assertPickerFieldPresetPopupReflowsAfterRuntimeOrientationChange(
+                            Objects.requireNonNull(rootReference.get()),
+                            Objects.requireNonNull(dateFieldReference.get()),
+                            M3DatePickerField.PRESET_CONTENT_STYLE_CLASS,
+                            M3DatePickerField.PRESET_LIST_STYLE_CLASS,
+                            M3DatePickerField.PRESET_BUTTON_STYLE_CLASS,
+                            Objects.requireNonNull(dateFieldReference.get()).getEditor()
+                    )
+            );
+
+            runOnFxThreadWhen(
+                    () -> pickerFieldPresetPopupReady(
+                            timeFieldReference.get(),
+                            M3TimePickerField.PRESET_BUTTON_STYLE_CLASS,
+                            M3TimePickerField.PRESET_LIST_STYLE_CLASS
+                    ),
+                    () -> {
+                        Pane root = Objects.requireNonNull(rootReference.get());
+                        M3TimePickerField timeField = Objects.requireNonNull(timeFieldReference.get());
+                        root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                        timeField.getEditor().requestFocus();
+                        timeField.showPicker();
+                    },
+                    () -> assertPickerFieldPresetPopupReflowsAfterRuntimeOrientationChange(
+                            Objects.requireNonNull(rootReference.get()),
+                            Objects.requireNonNull(timeFieldReference.get()),
+                            M3TimePickerField.PRESET_CONTENT_STYLE_CLASS,
+                            M3TimePickerField.PRESET_LIST_STYLE_CLASS,
+                            M3TimePickerField.PRESET_BUTTON_STYLE_CLASS,
+                            Objects.requireNonNull(timeFieldReference.get()).getEditor()
+                    )
+            );
+
+            runOnFxThreadWhen(
+                    () -> dateRangeFieldPresetPopupReady(rangeFieldReference),
+                    () -> {
+                        Pane root = Objects.requireNonNull(rootReference.get());
+                        M3DateRangePickerField rangeField = Objects.requireNonNull(rangeFieldReference.get());
+                        root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                        rangeField.getEndEditor().requestFocus();
+                        rangeField.showPicker();
+                    },
+                    () -> assertDateRangePickerFieldPresetPopupReflowsAfterRuntimeOrientationChange(
+                            Objects.requireNonNull(rootReference.get()),
+                            Objects.requireNonNull(rangeFieldReference.get())
+                    )
+            );
+        } finally {
+            runOnFxThread(() -> {
+                @Nullable M3DatePickerField dateField = dateFieldReference.get();
+                if (dateField != null) {
+                    dateField.hidePicker();
+                    M3MotionSettings.clearAnimationsEnabled(dateField);
+                }
+                @Nullable M3TimePickerField timeField = timeFieldReference.get();
+                if (timeField != null) {
+                    timeField.hidePicker();
+                    M3MotionSettings.clearAnimationsEnabled(timeField);
+                }
+                @Nullable M3DateRangePickerField rangeField = rangeFieldReference.get();
+                if (rangeField != null) {
+                    rangeField.hidePicker();
+                    M3MotionSettings.clearAnimationsEnabled(rangeField);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -23210,47 +24927,135 @@ final class M3ControlStyleTest {
     /// Verifies that M3FX controls avoid concrete JavaFX control inheritance.
     @Test
     void controlsDoNotExtendConcreteJavaFxControls() {
-        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3Button.class));
-        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3ButtonGroup.class));
-        assertFalse(HBox.class.isAssignableFrom(M3ButtonGroup.class));
-        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3SplitButton.class));
-        assertFalse(HBox.class.isAssignableFrom(M3SplitButton.class));
-        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3FabMenu.class));
-        assertFalse(VBox.class.isAssignableFrom(M3FabMenu.class));
-        assertFalse(javafx.scene.control.MenuButton.class.isAssignableFrom(M3SplitButton.class));
-        assertFalse(javafx.scene.control.Button.class.isAssignableFrom(M3FloatingActionButton.class));
-        assertFalse(javafx.scene.control.CheckBox.class.isAssignableFrom(M3CheckBox.class));
-        assertFalse(javafx.scene.control.RadioButton.class.isAssignableFrom(M3RadioButton.class));
-        assertFalse(javafx.scene.control.CheckBox.class.isAssignableFrom(M3Switch.class));
-        assertFalse(javafx.scene.control.Slider.class.isAssignableFrom(M3Slider.class));
-        assertFalse(javafx.scene.control.ProgressBar.class.isAssignableFrom(M3ProgressBar.class));
-        assertFalse(javafx.scene.control.ProgressIndicator.class.isAssignableFrom(M3ProgressIndicator.class));
-        assertFalse(javafx.scene.control.Tooltip.class.isAssignableFrom(M3Tooltip.class));
-        assertFalse(VBox.class.isAssignableFrom(M3Menu.class));
-        assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3DisclosureIcon.class));
-        assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Icon.class));
-        assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3Text.class));
-        assertFalse(javafx.scene.control.Label.class.isAssignableFrom(M3ListSectionHeader.class));
-        assertFalse(StackPane.class.isAssignableFrom(M3Avatar.class));
-        assertFalse(StackPane.class.isAssignableFrom(M3BadgedBox.class));
-        assertFalse(StackPane.class.isAssignableFrom(M3Surface.class));
-        assertFalse(StackPane.class.isAssignableFrom(M3SnackbarHost.class));
-        assertFalse(ScrollPane.class.isAssignableFrom(M3Carousel.class));
-        assertFalse(VBox.class.isAssignableFrom(M3ListPane.class));
-        assertFalse(javafx.scene.control.ListView.class.isAssignableFrom(M3ListView.class));
-        assertFalse(HBox.class.isAssignableFrom(M3NavigationBar.class));
-        assertFalse(VBox.class.isAssignableFrom(M3NavigationRail.class));
-        assertFalse(VBox.class.isAssignableFrom(M3NavigationDrawer.class));
-        assertFalse(VBox.class.isAssignableFrom(M3NavigationDrawerGroup.class));
-        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Chip.class));
-        assertFalse(FlowPane.class.isAssignableFrom(M3ChipGroup.class));
-        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3IconToggleButton.class));
-        assertFalse(HBox.class.isAssignableFrom(M3IconToggleButtonGroup.class));
-        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3SegmentedButton.class));
-        assertFalse(HBox.class.isAssignableFrom(M3SegmentedButtonGroup.class));
-        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3Tab.class));
-        assertFalse(HBox.class.isAssignableFrom(M3TabBar.class));
-        assertFalse(javafx.scene.control.ToggleButton.class.isAssignableFrom(M3NavigationItem.class));
+        List<Class<?>> actionControls = List.of(
+                M3Button.class,
+                M3FloatingActionButton.class,
+                M3IconButton.class,
+                M3IconToggleButton.class,
+                M3CheckBox.class,
+                M3RadioButton.class,
+                M3Switch.class,
+                M3Chip.class,
+                M3SegmentedButton.class,
+                M3Tab.class,
+                M3NavigationItem.class
+        );
+        for (Class<?> controlClass : actionControls) {
+            assertNotAssignable(javafx.scene.control.Button.class, controlClass);
+            assertNotAssignable(javafx.scene.control.ToggleButton.class, controlClass);
+            assertNotAssignable(javafx.scene.control.CheckBox.class, controlClass);
+            assertNotAssignable(javafx.scene.control.RadioButton.class, controlClass);
+        }
+
+        List<Class<?>> containerControls = List.of(
+                M3Avatar.class,
+                M3BadgedBox.class,
+                M3Banner.class,
+                M3BottomAppBar.class,
+                M3BottomSheet.class,
+                M3ButtonGroup.class,
+                M3Card.class,
+                M3Carousel.class,
+                M3ChipGroup.class,
+                M3FabMenu.class,
+                M3FormPane.class,
+                M3FormRow.class,
+                M3FormSection.class,
+                M3IconToggleButtonGroup.class,
+                M3ListPane.class,
+                M3NavigationBar.class,
+                M3NavigationDrawer.class,
+                M3NavigationDrawerGroup.class,
+                M3NavigationRail.class,
+                M3SearchBar.class,
+                M3SearchView.class,
+                M3SegmentedButtonGroup.class,
+                M3SideSheet.class,
+                M3SnackbarHost.class,
+                M3SplitButton.class,
+                M3Surface.class,
+                M3TabBar.class,
+                M3Toolbar.class,
+                M3TopAppBar.class
+        );
+        for (Class<?> controlClass : containerControls) {
+            assertNotAssignable(HBox.class, controlClass);
+            assertNotAssignable(VBox.class, controlClass);
+            assertNotAssignable(FlowPane.class, controlClass);
+            assertNotAssignable(StackPane.class, controlClass);
+            assertNotAssignable(ScrollPane.class, controlClass);
+        }
+
+        List<Class<?>> menuControls = List.of(
+                M3Menu.class,
+                M3MenuButton.class,
+                M3MenuItem.class,
+                M3MenuSectionHeader.class,
+                M3SubMenuItem.class
+        );
+        for (Class<?> controlClass : menuControls) {
+            assertNotAssignable(javafx.scene.control.MenuButton.class, controlClass);
+            assertNotAssignable(javafx.scene.control.SplitMenuButton.class, controlClass);
+            assertNotAssignable(VBox.class, controlClass);
+        }
+
+        assertNotAssignable(javafx.scene.control.Slider.class, M3Slider.class);
+        assertNotAssignable(javafx.scene.control.ProgressBar.class, M3ProgressBar.class);
+        assertNotAssignable(javafx.scene.control.ProgressIndicator.class, M3ProgressIndicator.class);
+        assertNotAssignable(javafx.scene.control.ProgressIndicator.class, M3LoadingIndicator.class);
+        assertNotAssignable(javafx.scene.control.Tooltip.class, M3Tooltip.class);
+        assertTrue(javafx.scene.control.PopupControl.class.isAssignableFrom(M3Tooltip.class));
+        assertNotAssignable(javafx.scene.control.Label.class, M3DisclosureIcon.class);
+        assertNotAssignable(javafx.scene.control.Label.class, M3Icon.class);
+        assertNotAssignable(javafx.scene.control.Label.class, M3Text.class);
+        assertNotAssignable(javafx.scene.control.Label.class, M3ListSectionHeader.class);
+        assertNotAssignable(javafx.scene.control.ListView.class, M3ListView.class);
+        assertNotAssignable(javafx.scene.control.ListCell.class, M3ListViewCell.class);
+        assertNotAssignable(javafx.scene.control.Tab.class, M3Tab.class);
+    }
+
+    /// Verifies that text input controls intentionally preserve JavaFX text editing base classes.
+    @Test
+    void textInputControlsPreserveJavaFxEditingBaseClasses() {
+        assertTrue(javafx.scene.control.TextField.class.isAssignableFrom(M3TextField.class));
+        assertTrue(javafx.scene.control.PasswordField.class.isAssignableFrom(M3PasswordField.class));
+        assertTrue(javafx.scene.control.TextArea.class.isAssignableFrom(M3TextArea.class));
+        assertTrue(TextInputControl.class.isAssignableFrom(M3TextField.class));
+        assertTrue(TextInputControl.class.isAssignableFrom(M3PasswordField.class));
+        assertTrue(TextInputControl.class.isAssignableFrom(M3TextArea.class));
+    }
+
+    /// Verifies that custom skins inherit JavaFX or project base skin classes instead of implementing [Skin] directly.
+    @Test
+    void customSkinsUseBaseSkinClasses() throws IOException {
+        assertTrue(Skin.class.isAssignableFrom(M3TooltipSkin.class));
+        assertEquals("org.glavo.m3fx.skins.M3PopupSkinBase", M3TooltipSkin.class.getSuperclass().getName());
+        assertFalse(List.of(M3TooltipSkin.class.getInterfaces()).contains(Skin.class));
+
+        Pattern directSkinImplementationPattern =
+                Pattern.compile("\\bimplements\\s+(?:[\\w.]+\\.)?Skin\\s*<");
+        try (var skinSources = Files.walk(java.nio.file.Path.of("src/main/java/org/glavo/m3fx/skins"))) {
+            List<String> directImplementations = skinSources
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".java"))
+                    .filter(path -> {
+                        try {
+                            return directSkinImplementationPattern.matcher(Files.readString(path)).find();
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    })
+                    .map(path -> path.getFileName().toString())
+                    .sorted()
+                    .toList();
+            assertEquals(List.of("M3PopupSkinBase.java"), directImplementations);
+        }
+    }
+
+    /// Verifies that one M3FX control class does not inherit from a forbidden concrete JavaFX class.
+    private static void assertNotAssignable(Class<?> forbiddenSuperClass, Class<?> controlClass) {
+        assertFalse(forbiddenSuperClass.isAssignableFrom(controlClass),
+                () -> controlClass.getName() + " must not inherit from " + forbiddenSuperClass.getName());
     }
 
     /// Verifies that custom selectable controls expose accessibility selection state.
@@ -24430,6 +26235,153 @@ final class M3ControlStyleTest {
         M3MotionSettings.clearAnimationsEnabled(scrollPane);
     }
 
+    /// Verifies that outer smooth scroll panes do not consume wheel events owned by nested virtualized lists.
+    @Test
+    void scrollPaneSmoothScrollingIgnoresNestedVirtualFlowScrollEvents() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int index = 0; index < 100; index++) {
+                listView.addItem(index);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+
+            Region filler = new Region();
+            filler.setPrefSize(260.0, 360.0);
+            VBox content = new VBox(listView, filler);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setPrefSize(300.0, 180.0);
+            M3ScrollPanes.style(scrollPane);
+            StackPane root = new StackPane(scrollPane);
+            Scene scene = new Scene(root, 340.0, 240.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                M3ScrollPanes.enableSmoothScrolling(scrollPane);
+                M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+                M3MotionSettings.setAnimationsEnabled(listView, false);
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+
+                Node cell = assertInstanceOf(
+                        Node.class,
+                        listView.lookup("." + M3ListViewCell.STYLE_CLASS)
+                );
+
+                assertFalse(M3ScrollPanes.isEventTargetForScrollPane(scrollPane, listView));
+                assertFalse(M3ScrollPanes.isEventTargetForScrollPane(scrollPane, flow));
+                assertFalse(M3ScrollPanes.isEventTargetForScrollPane(scrollPane, cell));
+                assertTrue(M3ScrollPanes.isEventTargetForScrollPane(scrollPane, filler));
+                assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
+            } finally {
+                M3ScrollPanes.disableSmoothScrolling(scrollPane);
+                M3MotionSettings.clearAnimationsEnabled(scrollPane);
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        }));
+    }
+
+    /// Verifies that common nested scroll controls keep wheel ownership when they are direct event targets.
+    @Test
+    void scrollPaneSmoothScrollingClassifiesCommonNestedScrollOwners() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> runOnFxThread(() -> {
+            TextArea textArea = new TextArea("Line 1\nLine 2\nLine 3");
+            M3TextArea materialTextArea = new M3TextArea("Line 1\nLine 2\nLine 3");
+            ListView<String> listView = new ListView<>();
+            listView.getItems().setAll("Alpha", "Beta", "Gamma");
+            TreeView<String> treeView = new TreeView<>();
+            TableView<String> tableView = new TableView<>();
+            TreeTableView<String> treeTableView = new TreeTableView<>();
+            Region filler = new Region();
+            filler.setPrefSize(240.0, 160.0);
+            VBox content = new VBox(
+                    textArea,
+                    materialTextArea,
+                    listView,
+                    treeView,
+                    tableView,
+                    treeTableView,
+                    filler
+            );
+            ScrollPane outerScrollPane = new ScrollPane(content);
+            outerScrollPane.setPrefSize(280.0, 180.0);
+            M3ScrollPanes.style(outerScrollPane);
+            StackPane root = new StackPane(outerScrollPane);
+            Scene scene = new Scene(root, 320.0, 220.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+
+            assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, textArea));
+            assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, materialTextArea));
+            assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, listView));
+            assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, treeView));
+            assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, tableView));
+            assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, treeTableView));
+            assertTrue(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, filler));
+        }));
+    }
+
+    /// Verifies that nested smooth scroll panes retain ownership of their own wheel events.
+    @Test
+    void scrollPaneSmoothScrollingIgnoresNestedScrollPaneTargets() {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> runOnFxThread(() -> {
+            Region innerContent = new Region();
+            innerContent.setPrefSize(180.0, 480.0);
+            ScrollPane innerScrollPane = new ScrollPane(innerContent);
+            innerScrollPane.setPrefSize(220.0, 140.0);
+            M3ScrollPanes.style(innerScrollPane);
+
+            Region filler = new Region();
+            filler.setPrefSize(220.0, 360.0);
+            VBox content = new VBox(innerScrollPane, filler);
+            ScrollPane outerScrollPane = new ScrollPane(content);
+            outerScrollPane.setPrefSize(260.0, 180.0);
+            M3ScrollPanes.style(outerScrollPane);
+            StackPane root = new StackPane(outerScrollPane);
+            Scene scene = new Scene(root, 320.0, 260.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                M3ScrollPanes.enableSmoothScrolling(outerScrollPane);
+                M3ScrollPanes.enableSmoothScrolling(innerScrollPane);
+                M3MotionSettings.setAnimationsEnabled(outerScrollPane, false);
+                M3MotionSettings.setAnimationsEnabled(innerScrollPane, false);
+
+                assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, innerScrollPane));
+                assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, innerContent));
+                assertTrue(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, filler));
+
+                ScrollEvent event = scrollEvent(innerScrollPane, 0.0, -80.0);
+                innerScrollPane.fireEvent(event);
+
+                assertTrue(innerScrollPane.getVvalue() > 0.0, () -> "inner.vvalue=" + innerScrollPane.getVvalue());
+                assertEquals(0.0, outerScrollPane.getVvalue(), 0.0001);
+            } finally {
+                M3ScrollPanes.disableSmoothScrolling(innerScrollPane);
+                M3ScrollPanes.disableSmoothScrolling(outerScrollPane);
+                M3MotionSettings.clearAnimationsEnabled(innerScrollPane);
+                M3MotionSettings.clearAnimationsEnabled(outerScrollPane);
+                stage.close();
+            }
+        }));
+    }
+
     /// Verifies that direct touch scroll events are left to JavaFX's native panning behavior.
     @Test
     void scrollPaneSmoothScrollingIgnoresDirectScrollEvents() {
@@ -24600,6 +26552,15 @@ final class M3ControlStyleTest {
     private static boolean snackbarDetached(AtomicReference<@Nullable M3Snackbar> snackbarReference) {
         @Nullable M3Snackbar snackbar = snackbarReference.get();
         return snackbar != null && snackbar.getParent() == null && !snackbar.isVisible();
+    }
+
+    /// Returns whether a snackbar's exposed focus node currently owns focus.
+    private static boolean snackbarFocusNodeFocused(@Nullable M3Snackbar snackbar) {
+        if (snackbar == null) {
+            return false;
+        }
+        @Nullable Object focusNode = snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        return focusNode instanceof Node node && node.isFocused();
     }
 
     /// Returns whether a snackbar host has advanced from its first queued snackbar to its second.
@@ -27832,20 +29793,195 @@ final class M3ControlStyleTest {
             String presetListStyleClass,
             Node picker
     ) {
+        assertPickerPresetUsesOrientation(root, presetContentStyleClass, presetListStyleClass, picker,
+                NodeOrientation.RIGHT_TO_LEFT);
+    }
+
+    /// Verifies that a picker preset column is on the current logical start side.
+    private static void assertPickerPresetUsesOrientation(
+            Node root,
+            String presetContentStyleClass,
+            String presetListStyleClass,
+            Node picker,
+            NodeOrientation orientation
+    ) {
         HBox presetContent = assertInstanceOf(HBox.class, root.lookup("." + presetContentStyleClass));
         VBox presetList = assertInstanceOf(VBox.class, root.lookup("." + presetListStyleClass));
 
-        assertEquals(NodeOrientation.RIGHT_TO_LEFT, root.getEffectiveNodeOrientation());
-        assertEquals(NodeOrientation.RIGHT_TO_LEFT, presetContent.getEffectiveNodeOrientation());
-        assertEquals(NodeOrientation.RIGHT_TO_LEFT, presetList.getEffectiveNodeOrientation());
-        assertEquals(NodeOrientation.RIGHT_TO_LEFT, picker.getEffectiveNodeOrientation());
+        assertEquals(orientation, root.getEffectiveNodeOrientation());
+        assertEquals(orientation, presetContent.getEffectiveNodeOrientation());
+        assertEquals(orientation, presetList.getEffectiveNodeOrientation());
+        assertEquals(orientation, picker.getEffectiveNodeOrientation());
         assertEquals(Pos.TOP_LEFT, presetContent.getAlignment());
         assertEquals(Pos.TOP_LEFT, presetList.getAlignment());
 
         Bounds pickerBounds = picker.localToScene(picker.getBoundsInLocal());
         Bounds presetListBounds = presetList.localToScene(presetList.getBoundsInLocal());
-        assertTrue(presetListBounds.getMinX() > pickerBounds.getMaxX(),
-                () -> "presetListBounds=" + presetListBounds + ", pickerBounds=" + pickerBounds);
+        if (orientation == NodeOrientation.RIGHT_TO_LEFT) {
+            assertTrue(presetListBounds.getMinX() > pickerBounds.getMaxX(),
+                    () -> "presetListBounds=" + presetListBounds + ", pickerBounds=" + pickerBounds);
+        } else {
+            assertTrue(presetListBounds.getMaxX() < pickerBounds.getMinX(),
+                    () -> "presetListBounds=" + presetListBounds + ", pickerBounds=" + pickerBounds);
+        }
+    }
+
+    /// Verifies that a single-value picker field popup follows inherited runtime orientation changes.
+    private static void assertPickerFieldPresetPopupReflowsAfterRuntimeOrientationChange(
+            Parent ownerRoot,
+            M3PickerField<?, ?> field,
+            String presetContentStyleClass,
+            String presetListStyleClass,
+            String presetButtonStyleClass,
+            Node expectedClosedFocusNode
+    ) {
+        Parent popupRoot = pickerFieldPresetPopupRoot(field);
+        Node presetButton = assertInstanceOf(Node.class, popupRoot.lookup("." + presetButtonStyleClass));
+
+        ownerRoot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        applyOwnerAndPopupLayout(ownerRoot, popupRoot);
+        assertPickerPresetUsesOrientation(
+                popupRoot,
+                presetContentStyleClass,
+                presetListStyleClass,
+                field.getPicker(),
+                NodeOrientation.LEFT_TO_RIGHT
+        );
+
+        presetButton.requestFocus();
+        assertTrue(presetButton.isFocused());
+        assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+        ownerRoot.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        applyOwnerAndPopupLayout(ownerRoot, popupRoot);
+        assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertPickerPresetUsesOrientation(
+                popupRoot,
+                presetContentStyleClass,
+                presetListStyleClass,
+                field.getPicker(),
+                NodeOrientation.RIGHT_TO_LEFT
+        );
+
+        ownerRoot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        applyOwnerAndPopupLayout(ownerRoot, popupRoot);
+        assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertPickerPresetUsesOrientation(
+                popupRoot,
+                presetContentStyleClass,
+                presetListStyleClass,
+                field.getPicker(),
+                NodeOrientation.LEFT_TO_RIGHT
+        );
+
+        presetButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+        assertFalse(field.isShowing());
+        assertTrue(expectedClosedFocusNode.isFocused());
+        assertSame(expectedClosedFocusNode, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+    }
+
+    /// Verifies that a date range picker field popup follows inherited runtime orientation changes.
+    private static void assertDateRangePickerFieldPresetPopupReflowsAfterRuntimeOrientationChange(
+            Parent ownerRoot,
+            M3DateRangePickerField field
+    ) {
+        Parent popupRoot = dateRangePickerFieldPresetPopupRoot(field);
+        Node presetButton = assertInstanceOf(
+                Node.class,
+                popupRoot.lookup("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS)
+        );
+
+        ownerRoot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        applyOwnerAndPopupLayout(ownerRoot, popupRoot);
+        assertPickerPresetUsesOrientation(
+                popupRoot,
+                M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
+                M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
+                field.getPicker(),
+                NodeOrientation.LEFT_TO_RIGHT
+        );
+
+        presetButton.requestFocus();
+        assertTrue(presetButton.isFocused());
+        assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+        ownerRoot.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        applyOwnerAndPopupLayout(ownerRoot, popupRoot);
+        assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertPickerPresetUsesOrientation(
+                popupRoot,
+                M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
+                M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
+                field.getPicker(),
+                NodeOrientation.RIGHT_TO_LEFT
+        );
+
+        ownerRoot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        applyOwnerAndPopupLayout(ownerRoot, popupRoot);
+        assertSame(presetButton, field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertPickerPresetUsesOrientation(
+                popupRoot,
+                M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS,
+                M3DateRangePickerField.PRESET_LIST_STYLE_CLASS,
+                field.getPicker(),
+                NodeOrientation.LEFT_TO_RIGHT
+        );
+
+        presetButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
+
+        assertFalse(field.isShowing());
+        assertTrue(field.getEndEditor().isFocused());
+        assertSame(field.getEndEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+    }
+
+    /// Applies CSS and layout to an owner scene root and one popup root.
+    private static void applyOwnerAndPopupLayout(Parent ownerRoot, Node popupRoot) {
+        ownerRoot.applyCss();
+        ownerRoot.layout();
+        popupRoot.applyCss();
+        if (popupRoot instanceof Parent popupParent) {
+            popupParent.layout();
+        }
+    }
+
+    /// Returns whether a single-value picker field popup has rendered its preset column.
+    private static boolean pickerFieldPresetPopupReady(
+            @Nullable M3PickerField<?, ?> field,
+            String presetButtonStyleClass,
+            String presetListStyleClass
+    ) {
+        if (field == null || !field.isShowing()) {
+            return false;
+        }
+
+        @Nullable Parent popupRoot = pickerFieldPresetPopupRootOrNull(field);
+        if (popupRoot == null || popupRoot.getScene() == null) {
+            return false;
+        }
+
+        popupRoot.applyCss();
+        popupRoot.layout();
+        return popupRoot.lookupAll("." + presetButtonStyleClass).size() > 0
+                && popupRoot.lookup("." + presetListStyleClass) != null
+                && hasRenderableBounds(field.getPicker());
+    }
+
+    /// Returns the popup root for a single-value picker field preset popup.
+    private static Parent pickerFieldPresetPopupRoot(M3PickerField<?, ?> field) {
+        return Objects.requireNonNull(pickerFieldPresetPopupRootOrNull(field), "picker field preset popup root");
+    }
+
+    /// Returns the popup root for a single-value picker field preset popup, or `null` before it is attached.
+    private static @Nullable Parent pickerFieldPresetPopupRootOrNull(M3PickerField<?, ?> field) {
+        @Nullable Parent presetContent = field.getPicker().getParent();
+        return presetContent == null ? null : presetContent.getParent();
+    }
+
+    /// Returns the popup root for a date range picker field preset popup.
+    private static Parent dateRangePickerFieldPresetPopupRoot(M3DateRangePickerField field) {
+        Parent presetContent = Objects.requireNonNull(field.getPicker().getParent(), "preset content");
+        return Objects.requireNonNull(presetContent.getParent(), "date range picker field preset popup root");
     }
 
     /// Returns whether a date range picker field popup has rendered its preset column.
@@ -29524,6 +31660,25 @@ final class M3ControlStyleTest {
                 + ", deltaY=" + event.getDeltaY()
                 + ", textDeltaY=" + event.getTextDeltaY()
                 + ", textDeltaYUnits=" + event.getTextDeltaYUnits();
+    }
+
+    /// Asserts that container-level navigation does not move focus out of an embedded text input.
+    private static void assertContainerNavigationDoesNotStealTextInputFocus(
+            Parent root,
+            Node navigationOwner,
+            TextInputControl editor,
+            Node adjacentTarget,
+            KeyCode keyCode
+    ) {
+        root.applyCss();
+        root.layout();
+        editor.requestFocus();
+        assertTrue(editor.isFocused(), "embedded text input should own focus before the navigation key");
+
+        navigationOwner.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, keyCode));
+
+        assertTrue(editor.isFocused(), "container navigation should not steal focus from embedded text input");
+        assertFalse(adjacentTarget.isFocused(), "adjacent action should not receive focus from text editing keys");
     }
 
     /// Creates a key event for control behavior tests.

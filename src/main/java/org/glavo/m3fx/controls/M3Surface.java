@@ -20,6 +20,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SurfaceSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -278,10 +279,28 @@ public class M3Surface extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         getContent().addListener((ListChangeListener<Node>) change -> handleContentChanged());
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
         updateVariantStyle();
         updateElevationStyle();
         updatePadding();
+    }
+
+    /// Handles linear keyboard traversal between surface content targets.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
+        M3FocusTraversal.handleDirectionalKeyFocus(
+                this,
+                event,
+                M3FocusTraversal.focusTargets(getContent()),
+                true,
+                true,
+                -1,
+                false
+        );
     }
 
     /// Returns the single content node when the surface has one logical child.

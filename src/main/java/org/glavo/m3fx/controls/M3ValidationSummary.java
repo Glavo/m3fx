@@ -230,16 +230,7 @@ public class M3ValidationSummary extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleNode();
-            case SHOW_ITEM -> {
-                if (parameters.length == 0) {
-                    focusAccessibleNode();
-                } else {
-                    @Nullable M3TextInputLayout input = accessibleActionInput(parameters);
-                    if (input != null) {
-                        focusInput(input);
-                    }
-                }
-            }
+            case SHOW_ITEM -> showAccessibleInput(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -292,6 +283,11 @@ public class M3ValidationSummary extends Control {
             return null;
         }
 
+        @Nullable Node externalFocusTarget = activeInvalidInputExternalFocusTarget(validator);
+        if (externalFocusTarget != null) {
+            return externalFocusTarget;
+        }
+
         @Nullable Node focusOwner = getScene().getFocusOwner();
         if (!M3Accessible.canReach(focusOwner)) {
             return null;
@@ -304,6 +300,20 @@ public class M3ValidationSummary extends Control {
             if (M3Accessible.containsNode(invalidInput, focusOwner)) {
                 @Nullable Node focusTarget = M3Accessible.accessibleFocusTarget(invalidInput);
                 return focusTarget == null ? invalidFocusNode(invalidInput) : focusTarget;
+            }
+        }
+        return null;
+    }
+
+    /// Returns an active popup or overlay focus target exposed by a reachable invalid input.
+    private @Nullable Node activeInvalidInputExternalFocusTarget(M3FormValidator validator) {
+        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+            if (!isAccessibleInvalidInput(invalidInput)) {
+                continue;
+            }
+            @Nullable Node focusTarget = M3Accessible.activeExternalFocusTarget(this, invalidInput);
+            if (focusTarget != null) {
+                return focusTarget;
             }
         }
         return null;
@@ -346,6 +356,29 @@ public class M3ValidationSummary extends Control {
         return true;
     }
 
+    /// Shows and focuses the requested invalid input or one of its descendant accessibility targets.
+    private void showAccessibleInput(Object... parameters) {
+        if (parameters.length == 0) {
+            focusAccessibleNode();
+            return;
+        }
+
+        @Nullable M3TextInputLayout input = accessibleActionInput(parameters);
+        if (input == null) {
+            return;
+        }
+
+        if (isSummaryIndexRequest(parameters) || isDirectInvalidInputRequest(input, parameters)) {
+            focusInput(input);
+            return;
+        }
+
+        if (!M3Accessible.showAccessibleActionTarget(input, parameters)) {
+            focusInput(input);
+        }
+        notifyFocusNodeChanged();
+    }
+
     /// Returns the invalid input referenced by accessibility action parameters.
     private @Nullable M3TextInputLayout accessibleActionInput(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
@@ -374,6 +407,10 @@ public class M3ValidationSummary extends Control {
         }
         if (parameter instanceof Node node) {
             return invalidInputContaining(node);
+        }
+        @Nullable M3TextInputLayout exposingInput = invalidInputExposing(parameter);
+        if (exposingInput != null) {
+            return exposingInput;
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
@@ -476,11 +513,68 @@ public class M3ValidationSummary extends Control {
             }
             if (node == invalidInput
                     || node == invalidInput.getInput()
-                    || M3Accessible.containsNode(invalidInput, node)) {
+                    || M3Accessible.containsNode(invalidInput, node)
+                    || M3Accessible.containsAccessibleActionTarget(invalidInput, node)) {
                 return invalidInput;
             }
         }
         return null;
+    }
+
+    /// Returns the invalid input whose accessibility tree exposes the supplied action parameter.
+    private @Nullable M3TextInputLayout invalidInputExposing(@Nullable Object parameter) {
+        @Nullable M3FormValidator validator = getValidator();
+        if (validator == null) {
+            return null;
+        }
+
+        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+            if (!isAccessibleInvalidInput(invalidInput)) {
+                continue;
+            }
+            if (M3Accessible.containsAccessibleActionTarget(invalidInput, parameter)) {
+                return invalidInput;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether the first action parameter is a summary invalid-input index.
+    private static boolean isSummaryIndexRequest(Object... parameters) {
+        return parameters.length > 0 && parameters[0] instanceof Number;
+    }
+
+    /// Returns whether action parameters directly reference the invalid input itself.
+    private static boolean isDirectInvalidInputRequest(M3TextInputLayout input, Object... parameters) {
+        for (Object parameter : parameters) {
+            if (isDirectInvalidInputRequest(input, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one action parameter directly references the invalid input itself.
+    private static boolean isDirectInvalidInputRequest(M3TextInputLayout input, @Nullable Object parameter) {
+        if (parameter == input) {
+            return true;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (isDirectInvalidInputRequest(input, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (isDirectInvalidInputRequest(input, value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /// Notifies and refreshes cached accessibility focus state.

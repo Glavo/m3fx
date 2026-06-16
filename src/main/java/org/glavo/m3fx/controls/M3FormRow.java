@@ -18,6 +18,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FormRowSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -425,7 +426,25 @@ public class M3FormRow extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
+    }
+
+    /// Handles horizontal keyboard traversal between content and trailing slots.
+    private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
+        M3FocusTraversal.handleDirectionalKeyFocus(
+                this,
+                event,
+                M3FocusTraversal.focusTargets(getContent(), getTrailing()),
+                true,
+                false,
+                -1,
+                false
+        );
     }
 
     /// Returns the number of content nodes exposed through indexed accessibility queries.

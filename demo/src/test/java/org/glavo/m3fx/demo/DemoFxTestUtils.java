@@ -35,6 +35,9 @@ final class DemoFxTestUtils {
     /// The maximum time a demo test waits for JavaFX toolkit work to complete.
     static final long FX_TIMEOUT_SECONDS = 10L;
 
+    /// The default timeout in nanoseconds for pulse-driven JavaFX condition waits.
+    private static final long FX_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(FX_TIMEOUT_SECONDS);
+
     /// The number of pulses kept under CSS warning capture after pulse-based tests close windows or popups.
     private static final int POST_PULSE_TEST_CSS_DRAIN_PULSES = 8;
 
@@ -158,12 +161,36 @@ final class DemoFxTestUtils {
             Runnable setup,
             Runnable verification
     ) throws InterruptedException {
-        assertNoCssWarnings(() -> runOnFxThreadWhenWithoutCssCapture(
+        runOnFxThreadWhenWithTimeout(condition, timeoutMessage, setup, verification, FX_TIMEOUT_NANOS);
+    }
+
+    /// Runs setup on the FX application thread with an explicit timeout for helper tests.
+    static void runOnFxThreadWhenWithTimeoutForTesting(
+            BooleanSupplier condition,
+            Supplier<String> timeoutMessage,
+            Runnable setup,
+            Runnable verification,
+            long timeoutNanos
+    ) throws InterruptedException {
+        runOnFxThreadWhenWithTimeout(condition, timeoutMessage, setup, verification, timeoutNanos);
+    }
+
+    /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
+    private static void runOnFxThreadWhenWithTimeout(
+            BooleanSupplier condition,
+            Supplier<String> timeoutMessage,
+            Runnable setup,
+            Runnable verification,
+            long timeoutNanos
+    ) throws InterruptedException {
+        requirePositiveTimeout(timeoutNanos);
+        assertNoCssWarnings(() -> runWithMotionSettingsPreserved(() -> runOnFxThreadWhenWithoutCssCapture(
                 condition,
                 timeoutMessage,
                 setup,
-                verification
-        ));
+                verification,
+                timeoutNanos
+        )));
     }
 
     /// Runs setup on the FX application thread and verifies the result after a condition stays true for pulses.
@@ -190,16 +217,43 @@ final class DemoFxTestUtils {
             Runnable setup,
             Runnable verification
     ) throws InterruptedException {
-        assertNoCssWarnings(() -> {
+        runOnFxThreadWhenStableWithTimeout(condition, stablePulseCount, timeoutMessage, setup, verification, FX_TIMEOUT_NANOS);
+    }
+
+    /// Runs setup and stable verification on the FX application thread with an explicit timeout for helper tests.
+    @SuppressWarnings("SameParameterValue")
+    static void runOnFxThreadWhenStableWithTimeoutForTesting(
+            BooleanSupplier condition,
+            int stablePulseCount,
+            Supplier<String> timeoutMessage,
+            Runnable setup,
+            Runnable verification,
+            long timeoutNanos
+    ) throws InterruptedException {
+        runOnFxThreadWhenStableWithTimeout(condition, stablePulseCount, timeoutMessage, setup, verification, timeoutNanos);
+    }
+
+    /// Runs setup on the FX application thread and verifies the result after a condition stays true for pulses.
+    private static void runOnFxThreadWhenStableWithTimeout(
+            BooleanSupplier condition,
+            int stablePulseCount,
+            Supplier<String> timeoutMessage,
+            Runnable setup,
+            Runnable verification,
+            long timeoutNanos
+    ) throws InterruptedException {
+        requirePositiveTimeout(timeoutNanos);
+        assertNoCssWarnings(() -> runWithMotionSettingsPreserved(() -> {
             runOnFxThreadWhenStableWithoutCssCapture(
                     condition,
                     stablePulseCount,
                     timeoutMessage,
                     setup,
-                    verification
+                    verification,
+                    timeoutNanos
             );
             waitForPulses(POST_PULSE_TEST_CSS_DRAIN_PULSES);
-        });
+        }));
     }
 
     /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
@@ -207,27 +261,32 @@ final class DemoFxTestUtils {
             BooleanSupplier condition,
             Supplier<String> timeoutMessage,
             Runnable setup,
-            Runnable verification
+            Runnable verification,
+            long timeoutNanos
     ) throws InterruptedException {
         AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
+        WaitDiagnostics diagnostics = WaitDiagnostics.oneShot(timeoutNanos);
 
         Platform.runLater(() -> {
             try {
                 setup.run();
-                long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(FX_TIMEOUT_SECONDS);
+                long startNanos = System.nanoTime();
+                long deadlineNanos = startNanos + timeoutNanos;
+                diagnostics.start(startNanos);
                 AnimationTimer timer = new AnimationTimer() {
                     /// Checks the readiness condition on each JavaFX pulse.
                     @Override
                     public void handle(long now) {
+                        diagnostics.recordPulse(now);
                         try {
-                            if (condition.getAsBoolean()) {
+                            if (diagnostics.evaluate(condition)) {
                                 stop();
                                 verification.run();
                                 latch.countDown();
-                            } else if (now >= deadlineNanos) {
+                            } else if (System.nanoTime() >= deadlineNanos) {
                                 stop();
-                                failure.set(timeoutAssertion(timeoutMessage));
+                                failure.set(timeoutAssertion(timeoutMessage, diagnostics));
                                 latch.countDown();
                             }
                         } catch (Throwable e) {
@@ -238,7 +297,7 @@ final class DemoFxTestUtils {
                     }
                 };
 
-                if (condition.getAsBoolean()) {
+                if (diagnostics.evaluate(condition)) {
                     verification.run();
                     latch.countDown();
                 } else {
@@ -250,7 +309,7 @@ final class DemoFxTestUtils {
             }
         });
 
-        await(latch);
+        awaitFxConditionLatch(latch, failure, timeoutMessage, diagnostics);
         throwIfFailed(failure.get());
     }
 
@@ -260,7 +319,8 @@ final class DemoFxTestUtils {
             int stablePulseCount,
             Supplier<String> timeoutMessage,
             Runnable setup,
-            Runnable verification
+            Runnable verification,
+            long timeoutNanos
     ) throws InterruptedException {
         if (stablePulseCount < 1) {
             throw new IllegalArgumentException("stablePulseCount must be positive");
@@ -268,11 +328,14 @@ final class DemoFxTestUtils {
 
         AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
+        WaitDiagnostics diagnostics = WaitDiagnostics.stable(stablePulseCount, timeoutNanos);
 
         Platform.runLater(() -> {
             try {
                 setup.run();
-                long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(FX_TIMEOUT_SECONDS);
+                long startNanos = System.nanoTime();
+                long deadlineNanos = startNanos + timeoutNanos;
+                diagnostics.start(startNanos);
                 AnimationTimer timer = new AnimationTimer() {
                     /// The number of consecutive pulses where the condition has been true.
                     private int stablePulses;
@@ -280,20 +343,25 @@ final class DemoFxTestUtils {
                     /// Checks the readiness condition and waits for the requested stable pulse count.
                     @Override
                     public void handle(long now) {
+                        diagnostics.recordPulse(now);
                         try {
-                            if (condition.getAsBoolean()) {
+                            if (diagnostics.evaluate(condition)) {
                                 stablePulses++;
+                                diagnostics.recordStablePulses(stablePulses);
                                 if (stablePulses >= stablePulseCount) {
                                     stop();
                                     verification.run();
                                     latch.countDown();
+                                    return;
                                 }
-                            } else if (now >= deadlineNanos) {
-                                stop();
-                                failure.set(timeoutAssertion(timeoutMessage));
-                                latch.countDown();
                             } else {
                                 stablePulses = 0;
+                                diagnostics.recordStablePulses(stablePulses);
+                            }
+                            if (System.nanoTime() >= deadlineNanos) {
+                                stop();
+                                failure.set(timeoutAssertion(timeoutMessage, diagnostics));
+                                latch.countDown();
                             }
                         } catch (Throwable e) {
                             stop();
@@ -309,24 +377,51 @@ final class DemoFxTestUtils {
             }
         });
 
-        await(latch);
+        awaitFxConditionLatch(latch, failure, timeoutMessage, diagnostics);
         throwIfFailed(failure.get());
     }
 
     /// Creates a timeout assertion from the most recent FX-thread diagnostic message.
-    private static AssertionError timeoutAssertion(Supplier<String> timeoutMessage) {
+    private static AssertionError timeoutAssertion(Supplier<String> timeoutMessage, WaitDiagnostics diagnostics) {
         String message;
         try {
             message = timeoutMessage.get();
         } catch (RuntimeException e) {
-            AssertionError failure = new AssertionError("Timed out waiting for JavaFX condition");
+            AssertionError failure = new AssertionError(withWaitDiagnostics(
+                    "Timed out waiting for JavaFX condition",
+                    diagnostics
+            ));
             failure.addSuppressed(e);
             return failure;
         }
-        if (message == null || message.isBlank()) {
-            return new AssertionError("Timed out waiting for JavaFX condition");
+        if (message.isBlank()) {
+            return new AssertionError(withWaitDiagnostics("Timed out waiting for JavaFX condition", diagnostics));
         }
-        return new AssertionError(message);
+        return new AssertionError(withWaitDiagnostics(message, diagnostics));
+    }
+
+    /// Appends pulse and condition diagnostics to a timeout message.
+    private static String withWaitDiagnostics(String message, WaitDiagnostics diagnostics) {
+        return message + "\n" + diagnostics.describe();
+    }
+
+    /// Waits for a condition latch and reports the condition-specific timeout message if pulse delivery stops.
+    private static void awaitFxConditionLatch(
+            CountDownLatch latch,
+            AtomicReference<@Nullable Throwable> failure,
+            Supplier<String> timeoutMessage,
+            WaitDiagnostics diagnostics
+    ) throws InterruptedException {
+        if (!latch.await(FX_TIMEOUT_SECONDS, TimeUnit.SECONDS) && failure.get() == null) {
+            failure.set(timeoutAssertion(timeoutMessage, diagnostics));
+        }
+    }
+
+    /// Verifies that a pulse-driven wait timeout is positive.
+    private static void requirePositiveTimeout(long timeoutNanos) {
+        if (timeoutNanos < 1L) {
+            throw new IllegalArgumentException("timeoutNanos must be positive");
+        }
     }
 
     /// Waits for deferred JavaFX pulse work before continuing on the test thread.
@@ -418,6 +513,128 @@ final class DemoFxTestUtils {
         }
         if (exception != null) {
             throw new AssertionError(exception);
+        }
+    }
+
+    /// Records pulse and condition progress for timeout diagnostics.
+    private static final class WaitDiagnostics {
+        /// The number of stable true pulses required before verification runs.
+        private final int requiredStablePulses;
+
+        /// The configured timeout for this wait.
+        private final long timeoutNanos;
+
+        /// Whether the wait has recorded its start time.
+        private boolean started;
+
+        /// The `System.nanoTime` value when the wait started.
+        private long startNanos;
+
+        /// The `System.nanoTime` value when the condition was last evaluated.
+        private long lastConditionCheckNanos;
+
+        /// The last JavaFX pulse timestamp reported by `AnimationTimer`.
+        private long lastPulseNanos;
+
+        /// The number of JavaFX pulses observed by the wait timer.
+        private int pulseCount;
+
+        /// The number of times the wait condition was evaluated.
+        private int conditionEvaluations;
+
+        /// The number of condition evaluations that returned true.
+        private int trueConditionEvaluations;
+
+        /// The current consecutive true-pulse count.
+        private int stablePulses;
+
+        /// The highest consecutive true-pulse count observed before timeout.
+        private int maxStablePulses;
+
+        /// Whether at least one condition result has been recorded.
+        private boolean hasLastCondition;
+
+        /// The most recent condition result.
+        private boolean lastCondition;
+
+        /// Creates wait diagnostics for the requested stable pulse count.
+        private WaitDiagnostics(int requiredStablePulses, long timeoutNanos) {
+            this.requiredStablePulses = requiredStablePulses;
+            this.timeoutNanos = timeoutNanos;
+        }
+
+        /// Creates diagnostics for a one-shot condition wait.
+        private static WaitDiagnostics oneShot(long timeoutNanos) {
+            return new WaitDiagnostics(1, timeoutNanos);
+        }
+
+        /// Creates diagnostics for a stable condition wait.
+        private static WaitDiagnostics stable(int requiredStablePulses, long timeoutNanos) {
+            return new WaitDiagnostics(requiredStablePulses, timeoutNanos);
+        }
+
+        /// Records the start time of the wait.
+        private void start(long startNanos) {
+            this.started = true;
+            this.startNanos = startNanos;
+            this.lastConditionCheckNanos = startNanos;
+        }
+
+        /// Records that an `AnimationTimer` pulse has reached the wait.
+        private void recordPulse(long pulseNanos) {
+            pulseCount++;
+            lastPulseNanos = pulseNanos;
+        }
+
+        /// Evaluates and records the wait condition.
+        private boolean evaluate(BooleanSupplier condition) {
+            boolean result = condition.getAsBoolean();
+            conditionEvaluations++;
+            if (result) {
+                trueConditionEvaluations++;
+            }
+            hasLastCondition = true;
+            lastCondition = result;
+            lastConditionCheckNanos = System.nanoTime();
+            return result;
+        }
+
+        /// Records the current stable true-pulse count.
+        private void recordStablePulses(int stablePulses) {
+            this.stablePulses = stablePulses;
+            maxStablePulses = Math.max(maxStablePulses, stablePulses);
+        }
+
+        /// Returns a compact diagnostic string for timeout failures.
+        private String describe() {
+            long now = System.nanoTime();
+            long elapsedMillis = started ? TimeUnit.NANOSECONDS.toMillis(now - startNanos) : -1L;
+            long lastConditionAgeMillis = started
+                    ? TimeUnit.NANOSECONDS.toMillis(now - lastConditionCheckNanos)
+                    : -1L;
+            int falseConditionEvaluations = conditionEvaluations - trueConditionEvaluations;
+            return "wait diagnostics: timeoutMillis=" + TimeUnit.NANOSECONDS.toMillis(timeoutNanos)
+                    + ", elapsedMillis=" + elapsedMillis
+                    + ", pulseCount=" + pulseCount
+                    + ", conditionEvaluations=" + conditionEvaluations
+                    + ", trueConditionEvaluations=" + trueConditionEvaluations
+                    + ", falseConditionEvaluations=" + falseConditionEvaluations
+                    + ", lastCondition=" + lastConditionText()
+                    + ", stablePulses=" + stablePulses
+                    + ", maxStablePulses=" + maxStablePulses
+                    + ", requiredStablePulses=" + requiredStablePulses
+                    + ", lastConditionAgeMillis=" + lastConditionAgeMillis
+                    + ", lastPulseNanos=" + lastPulseText();
+        }
+
+        /// Returns the last condition result or a placeholder when it was never evaluated.
+        private String lastConditionText() {
+            return hasLastCondition ? Boolean.toString(lastCondition) : "unavailable";
+        }
+
+        /// Returns the last pulse timestamp or a placeholder when no pulse was observed.
+        private String lastPulseText() {
+            return pulseCount == 0 ? "unavailable" : Long.toString(lastPulseNanos);
         }
     }
 
