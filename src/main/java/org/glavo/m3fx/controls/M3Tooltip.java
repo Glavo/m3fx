@@ -31,6 +31,7 @@ import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -408,6 +409,7 @@ public class M3Tooltip extends PopupControl {
         Objects.requireNonNull(ownerNode, "ownerNode");
         super.show(ownerNode, anchorX, anchorY);
         syncPopupNodeOrientation(ownerNode);
+        syncPopupRootThemeContext(ownerNode);
     }
 
     /// Adds base style classes and Material timing defaults.
@@ -517,6 +519,12 @@ public class M3Tooltip extends PopupControl {
                 setStyle(currentBaseStyle);
                 baseStyle = null;
             }
+            if (isShowing()) {
+                @Nullable Node ownerNode = getOwnerNode();
+                if (ownerNode != null) {
+                    syncPopupRootThemeContext(ownerNode);
+                }
+            }
             return;
         }
 
@@ -529,6 +537,12 @@ public class M3Tooltip extends PopupControl {
             themeStyle = mergeStyles(themeStyle, plainContainerStyle(theme.tokens().componentTokens().tooltip()));
         }
         setStyle(mergeStyles(baseStyle, themeStyle));
+        if (isShowing()) {
+            @Nullable Node ownerNode = getOwnerNode();
+            if (ownerNode != null) {
+                syncPopupRootThemeContext(ownerNode);
+            }
+        }
     }
 
     /// Merges existing tooltip style declarations with generated theme declarations.
@@ -571,6 +585,40 @@ public class M3Tooltip extends PopupControl {
             return;
         }
         scene.getRoot().setNodeOrientation(ownerNode.getEffectiveNodeOrientation());
+    }
+
+    /// Synchronizes the popup scene root style classes with the owner theme context.
+    private void syncPopupRootThemeContext(Node ownerNode) {
+        Objects.requireNonNull(ownerNode, "ownerNode");
+        @Nullable Scene popupScene = getScene();
+        if (popupScene == null) {
+            return;
+        }
+
+        Parent popupRoot = popupScene.getRoot();
+        M3PopupStyles.addFallbackRootStyleClass(popupRoot);
+        @Nullable M3Theme theme = getTheme();
+        if (theme != null) {
+            M3ThemeManager.applyThemeStyleClasses(popupRoot, theme);
+            return;
+        }
+
+        M3ThemeManager.clearThemeStyleClasses(popupRoot);
+        @Nullable Scene ownerScene = ownerNode.getScene();
+        if (ownerScene != null) {
+            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.ROOT_STYLE_CLASS);
+            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS);
+            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS);
+            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS);
+            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS);
+        }
+    }
+
+    /// Copies a theme style class between roots without replacing bound inline styles.
+    private static void copyThemeStyleClassIfPresent(Parent sourceRoot, Parent targetRoot, String styleClass) {
+        if (sourceRoot.getStyleClass().contains(styleClass) && !targetRoot.getStyleClass().contains(styleClass)) {
+            targetRoot.getStyleClass().add(styleClass);
+        }
     }
 
     /// Installs a listener that keeps inherited tooltip themes in sync with the target node scene.

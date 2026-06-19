@@ -96,7 +96,7 @@ public class M3ListItem extends Control {
     private final StringProperty trailingSupportingText =
             new SimpleStringProperty(this, "trailingSupportingText", "");
 
-    /// The leading content node property.
+    // The leading content node property.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
         /// Updates accessibility slots when leading content changes.
         @Override
@@ -105,7 +105,7 @@ public class M3ListItem extends Control {
         }
     };
 
-    /// The trailing content node property.
+    // The trailing content node property.
     private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
         /// Updates accessibility slots when trailing content changes.
         @Override
@@ -202,6 +202,7 @@ public class M3ListItem extends Control {
         M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         setFocusTraversable(true);
+        setPickOnBounds(true);
         focusNotifier.start();
         setHeadlineText(headlineText);
         updateLineCount();

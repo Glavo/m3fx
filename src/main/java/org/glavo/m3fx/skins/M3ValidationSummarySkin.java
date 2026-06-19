@@ -261,14 +261,12 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
                 event.consume();
             }
             case UP -> {
-                if (focusAdjacentItem(item, false)) {
-                    event.consume();
-                }
+                focusAdjacentItem(item, false);
+                event.consume();
             }
             case DOWN -> {
-                if (focusAdjacentItem(item, true)) {
-                    event.consume();
-                }
+                focusAdjacentItem(item, true);
+                event.consume();
             }
             case HOME -> {
                 if (focusIndexedItem(0)) {

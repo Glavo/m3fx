@@ -289,6 +289,7 @@ public class M3FloatingActionButton extends ButtonBase {
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);
         setMnemonicParsing(true);
+        setPickOnBounds(true);
         updateVariantStyle();
         updateSizeStyle();
         textProperty().addListener(observable -> updateMetrics());

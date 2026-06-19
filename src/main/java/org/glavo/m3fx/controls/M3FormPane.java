@@ -227,20 +227,23 @@ public class M3FormPane extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         getItems().addListener(itemsListener);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
     }
 
     /// Handles vertical keyboard traversal between top-level form items.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (event.getEventType() != KeyEvent.KEY_PRESSED) {
+            return;
+        }
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, false, true)) {
             return;
         }
 
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,
-                M3FocusTraversal.focusTargets(getItems()),
+                M3FocusTraversal.focusTargetsInReachableTrees(getItems()),
                 false,
                 true,
                 -1,

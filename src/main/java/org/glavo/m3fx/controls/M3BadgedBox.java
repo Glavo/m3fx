@@ -246,13 +246,13 @@ public class M3BadgedBox extends Control {
         setAccessibleRole(AccessibleRole.PARENT);
         content.addListener(observable -> handleContentChanged());
         badge.addListener(observable -> handleContentChanged());
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
     }
 
     /// Handles horizontal keyboard traversal between the content and badge targets.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
             return;
         }
 

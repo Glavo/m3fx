@@ -271,6 +271,7 @@ public class M3IconToggleButton extends ButtonBase {
         setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);
+        setPickOnBounds(true);
         updateVariantStyle();
         updateMetrics();
     }

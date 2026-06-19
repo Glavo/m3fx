@@ -73,7 +73,7 @@ public class M3Toolbar extends Control {
     /// The mutable toolbar item list.
     private final ObservableList<Node> items = new NonNullNodeList();
 
-    /// The toolbar visual variant backing property.
+    // The toolbar visual variant backing property.
     private final ObjectProperty<M3ToolbarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", DEFAULT_VARIANT) {
                 /// Updates variant style classes when the property changes.
@@ -87,7 +87,7 @@ public class M3Toolbar extends Control {
                 }
             };
 
-    /// The toolbar layout orientation backing property.
+    // The toolbar layout orientation backing property.
     private final ObjectProperty<Orientation> orientation =
             new SimpleObjectProperty<>(this, "orientation", DEFAULT_ORIENTATION) {
                 /// Updates orientation style classes and layout metrics when the property changes.
@@ -102,19 +102,19 @@ public class M3Toolbar extends Control {
                 }
             };
 
-    /// The styleable horizontal toolbar height backing property.
+    // The styleable horizontal toolbar height backing property.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The styleable vertical toolbar width backing property.
+    // The styleable vertical toolbar width backing property.
     private @Nullable StyleableDoubleProperty containerWidth;
 
-    /// The styleable item slot size backing property.
+    // The styleable item slot size backing property.
     private @Nullable StyleableDoubleProperty itemSlotSize;
 
-    /// The styleable content padding backing property.
+    // The styleable content padding backing property.
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// The styleable item spacing backing property.
+    // The styleable item spacing backing property.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
     /// Notifies accessibility clients when focus moves between toolbar actions.
@@ -410,7 +410,7 @@ public class M3Toolbar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(itemsListener);
         focusNotifier.start();
         updateVariantStyle();
@@ -421,11 +421,15 @@ public class M3Toolbar extends Control {
     /// Handles keyboard traversal between focusable toolbar items.
     private void handleNavigationKeyPressed(KeyEvent event) {
         Objects.requireNonNull(event, "event");
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        Orientation orientation = getOrientation();
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(
+                this,
+                event,
+                orientation == Orientation.HORIZONTAL,
+                orientation == Orientation.VERTICAL
+        )) {
             return;
         }
-
-        Orientation orientation = getOrientation();
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,
@@ -653,6 +657,7 @@ public class M3Toolbar extends Control {
         }
 
         /// Provides access to a styleable toolbar size token property.
+        @NotNullByDefault
         @FunctionalInterface
         private interface StyleablePropertyAccessor {
             /// Returns the property for the supplied toolbar.

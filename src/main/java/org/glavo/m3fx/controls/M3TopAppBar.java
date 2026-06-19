@@ -508,7 +508,7 @@ public class M3TopAppBar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         title.addListener(observable -> updateAccessibleText());
         navigation.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
@@ -549,7 +549,7 @@ public class M3TopAppBar extends Control {
 
     /// Handles keyboard traversal between focusable navigation and action items.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
             return;
         }
 
@@ -718,6 +718,7 @@ public class M3TopAppBar extends Control {
         }
 
         /// Provides access to a styleable top app bar size token property.
+        @NotNullByDefault
         @FunctionalInterface
         private interface StyleablePropertyAccessor {
             /// Returns the property for the supplied top app bar.

@@ -417,7 +417,7 @@ public class M3ListPane extends Control {
 
     /// Applies keyboard navigation across enabled list items.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, false, true)) {
             return;
         }
 

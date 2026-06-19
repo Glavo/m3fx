@@ -206,8 +206,12 @@ tasks.register("verifyShadowJar") {
                 throw GradleException("The demo shadow JAR manifest is missing '$expectedMainClass'")
             }
 
-            if (zip.getEntry(demoFontResourcePath) == null) {
+            val fontEntry = zip.getEntry(demoFontResourcePath)
+            if (fontEntry == null) {
                 throw GradleException("The demo shadow JAR is missing $demoFontResourcePath")
+            }
+            if (fontEntry.size <= 0L) {
+                throw GradleException("The demo shadow JAR bundles an empty $demoFontResourcePath")
             }
         }
     }
@@ -394,9 +398,23 @@ fun registerJlinkRuntime(
     val targetId = providers.provider {
         "${targetOs.get()}-${targetArch.get()}-${targetBitness.get()}-java${javaFeature.get()}"
     }
-    val libericaArchive = layout.buildDirectory.file(targetId.map { "liberica/$it/liberica-jdk.zip" })
+    val libericaArchive = layout.buildDirectory.file(providers.provider {
+        "liberica/${targetId.get()}/liberica-jdk.${libericaArchiveExtension(libericaPackageType(targetOs.get()))}"
+    })
     val libericaExtractDirectory = layout.buildDirectory.dir(targetId.map { "liberica/$it/extracted" })
     val jlinkImageDirectory = layout.buildDirectory.dir(targetId.map { "jlink/m3fx-demo-$it" })
+    val hostJlinkNeeded = providers.provider {
+        executable.orNull.isNullOrBlank()
+                && (targetOs.get() != detectLibericaOs() || targetArch.get() != detectLibericaArch())
+                && Runtime.version().feature().toString() != javaFeature.get()
+    }
+    val hostJlinkId = providers.provider {
+        "host-jlink-$taskName-${detectLibericaOs()}-${detectLibericaArch()}-${targetBitness.get()}-java${javaFeature.get()}"
+    }
+    val hostLibericaArchive = layout.buildDirectory.file(providers.provider {
+        "liberica/${hostJlinkId.get()}/liberica-jdk.${libericaArchiveExtension(libericaPackageType(detectLibericaOs()))}"
+    })
+    val hostLibericaExtractDirectory = layout.buildDirectory.dir(hostJlinkId.map { "liberica/$it/extracted" })
 
     val downloadTask = tasks.register(downloadTaskName) {
         group = "distribution"
@@ -408,16 +426,17 @@ fun registerJlinkRuntime(
         inputs.property("jlinkReleaseType", releaseType)
         inputs.property("jlinkVersionModifier", versionModifier)
         inputs.property("jlinkBundleType", bundleType)
+        inputs.property("jlinkPackageType", targetOs.map(::libericaPackageType))
         inputs.property("jlinkDownloadUrl", downloadUrl.orElse(""))
         outputs.file(libericaArchive)
         outputs.upToDateWhen {
             val archive = libericaArchive.get().asFile
-            archive.isFile && isReadableZip(archive)
+            archive.isFile && isReadableLibericaArchive(archive, libericaPackageType(targetOs.get()))
         }
 
         doLast {
             val archive = libericaArchive.get().asFile
-            if (archive.isFile && isReadableZip(archive)) {
+            if (archive.isFile && isReadableLibericaArchive(archive, libericaPackageType(targetOs.get()))) {
                 return@doLast
             }
 
@@ -456,12 +475,81 @@ fun registerJlinkRuntime(
         }
     }
 
+    val hostJlinkDownloadTask = tasks.register("${taskName}HostJlinkDownload") {
+        group = "distribution"
+        description = "Downloads a host BellSoft LibericaJDK Full archive for the jlink executable."
+        onlyIf { hostJlinkNeeded.get() }
+        inputs.property("jlinkHostOs", providers.provider { detectLibericaOs() })
+        inputs.property("jlinkHostArch", providers.provider { detectLibericaArch() })
+        inputs.property("jlinkTargetBitness", targetBitness)
+        inputs.property("jlinkJavaFeature", javaFeature)
+        inputs.property("jlinkReleaseType", releaseType)
+        inputs.property("jlinkVersionModifier", versionModifier)
+        inputs.property("jlinkBundleType", bundleType)
+        inputs.property("jlinkPackageType", providers.provider { libericaPackageType(detectLibericaOs()) })
+        outputs.file(hostLibericaArchive)
+        outputs.upToDateWhen {
+            val archive = hostLibericaArchive.get().asFile
+            archive.isFile && isReadableLibericaArchive(archive, libericaPackageType(detectLibericaOs()))
+        }
+
+        doLast {
+            val archive = hostLibericaArchive.get().asFile
+            if (archive.isFile && isReadableLibericaArchive(archive, libericaPackageType(detectLibericaOs()))) {
+                return@doLast
+            }
+
+            if (archive.isFile) {
+                archive.delete()
+            }
+
+            val partialArchive = archive.resolveSibling("${archive.name}.part")
+            if (partialArchive.isFile) {
+                partialArchive.delete()
+            }
+
+            val resolvedDownloadUrl = resolveLibericaDownloadUrl(
+                targetOs = detectLibericaOs(),
+                targetArch = detectLibericaArch(),
+                targetBitness = targetBitness.get(),
+                javaFeature = javaFeature.get(),
+                releaseType = releaseType.get(),
+                versionModifier = versionModifier.get(),
+                bundleType = bundleType.get()
+            )
+            archive.parentFile.mkdirs()
+            logger.lifecycle("Downloading host LibericaJDK Full for jlink from $resolvedDownloadUrl")
+            URI(resolvedDownloadUrl).toURL().openStream().use { input ->
+                partialArchive.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            Files.move(
+                partialArchive.toPath(),
+                archive.toPath(),
+                StandardCopyOption.ATOMIC_MOVE,
+                StandardCopyOption.REPLACE_EXISTING
+            )
+        }
+    }
+
     val extractTask = tasks.register(extractTaskName, Sync::class) {
         group = "distribution"
         description = "Extracts the downloaded $displayTarget BellSoft LibericaJDK archive for jlink."
         dependsOn(downloadTask)
-        from(libericaArchive.map { zipTree(it) })
+        from(libericaArchive.map { archive -> libericaArchiveTree(archive, libericaPackageType(targetOs.get())) })
         into(libericaExtractDirectory)
+    }
+
+    val hostJlinkExtractTask = tasks.register("${taskName}HostJlinkExtract", Sync::class) {
+        group = "distribution"
+        description = "Extracts the host BellSoft LibericaJDK archive used for the jlink executable."
+        onlyIf { hostJlinkNeeded.get() }
+        dependsOn(hostJlinkDownloadTask)
+        from(hostLibericaArchive.map { archive ->
+            libericaArchiveTree(archive, libericaPackageType(detectLibericaOs()))
+        })
+        into(hostLibericaExtractDirectory)
     }
 
     val demoJar = tasks.named<Jar>("jar").flatMap { it.archiveFile }
@@ -470,7 +558,7 @@ fun registerJlinkRuntime(
     return tasks.register(taskName) {
         group = "distribution"
         description = "Builds a $displayTarget runtime image for the M3FX demo with jlink."
-        dependsOn(tasks.named("jar"), project(":").tasks.named("jar"), extractTask)
+        dependsOn(tasks.named("jar"), project(":").tasks.named("jar"), extractTask, hostJlinkExtractTask)
 
         inputs.files(demoJar, libraryJar, configurations.runtimeClasspath)
         inputs.dir(libericaExtractDirectory)
@@ -493,7 +581,14 @@ fun registerJlinkRuntime(
             val imageDirectory = jlinkImageDirectory.get().asFile
             delete(imageDirectory)
             val command = listOf(
-                jlinkExecutable(jmodsDirectory, targetOs.get(), javaFeature.get(), executable),
+                jlinkExecutable(
+                    jmodsDirectory,
+                    targetOs.get(),
+                    targetArch.get(),
+                    javaFeature.get(),
+                    executable,
+                    hostLibericaExtractDirectory.get().asFile
+                ),
                 "--module-path", modulePathFiles.joinToString(File.pathSeparator) { it.absolutePath },
                 "--add-modules", "org.glavo.m3fx.demo",
                 "--launcher", "m3fx-demo=org.glavo.m3fx.demo/org.glavo.m3fx.demo.M3FXDemoLauncher",
@@ -514,6 +609,7 @@ fun registerJlinkRuntime(
             if (exitCode != 0) {
                 throw GradleException("jlink exited with code $exitCode")
             }
+            verifyJlinkRuntimeImage(imageDirectory, targetOs.get())
         }
     }
 }
@@ -549,8 +645,8 @@ fun resolveLibericaDownloadUrl(
         "bitness" to targetBitness,
         "release-type" to releaseType,
         "os" to targetOs,
-        "arch" to targetArch,
-        "package-type" to "zip",
+        "arch" to libericaApiArch(targetArch),
+        "package-type" to libericaPackageType(targetOs),
         "bundle-type" to bundleType,
         "fields" to "downloadUrl",
         "output" to "text"
@@ -590,23 +686,79 @@ fun findJmodsDirectory(root: File): File =
         .firstOrNull { it.isDirectory && it.name == "jmods" && it.resolve("java.base.jmod").isFile }
         ?: throw GradleException("No jmods directory was found under ${root.absolutePath}")
 
+fun verifyJlinkRuntimeImage(imageDirectory: File, targetOs: String) {
+    requireJlinkRuntimeDirectory(imageDirectory, "bin")
+    requireJlinkRuntimeDirectory(imageDirectory, "lib")
+    requireJlinkRuntimeFile(imageDirectory, "release")
+    requireJlinkRuntimeFile(imageDirectory, "lib/modules")
+    requireJlinkRuntimeFile(imageDirectory, "lib/javafx.properties")
+    requireJlinkRuntimeFile(imageDirectory, "legal/javafx.controls/LICENSE")
+
+    val releaseText = imageDirectory.resolve("release").readText()
+    listOf("javafx.controls", "org.glavo.m3fx", "org.glavo.m3fx.demo").forEach { moduleName ->
+        if (!releaseText.contains(moduleName)) {
+            throw GradleException("The jlink runtime image is missing module $moduleName in ${imageDirectory.absolutePath}/release")
+        }
+    }
+
+    if (targetOs == "windows") {
+        requireJlinkRuntimeFile(imageDirectory, "bin/m3fx-demo")
+        requireJlinkRuntimeFile(imageDirectory, "bin/m3fx-demo.bat")
+    } else {
+        requireJlinkRuntimeFile(imageDirectory, "bin/m3fx-demo")
+    }
+}
+
+fun requireJlinkRuntimeDirectory(imageDirectory: File, relativePath: String) {
+    val directory = imageDirectory.resolveRuntimePath(relativePath)
+    if (!directory.isDirectory) {
+        throw GradleException("The jlink runtime image is missing required directory ${directory.absolutePath}")
+    }
+}
+
+fun requireJlinkRuntimeFile(imageDirectory: File, relativePath: String) {
+    val file = imageDirectory.resolveRuntimePath(relativePath)
+    if (!file.isFile || file.length() <= 0L) {
+        throw GradleException("The jlink runtime image is missing required file ${file.absolutePath}")
+    }
+}
+
+fun File.resolveRuntimePath(relativePath: String): File =
+    resolve(relativePath.replace('/', File.separatorChar))
+
 fun isReadableZip(file: File): Boolean = try {
     ZipFile(file).use { true }
 } catch (_: Exception) {
     false
 }
 
+fun isReadableLibericaArchive(file: File, packageType: String): Boolean =
+    if (packageType == "zip") {
+        isReadableZip(file)
+    } else {
+        file.isFile && file.length() > 0L
+    }
+
+fun libericaArchiveTree(archive: Any, packageType: String): Any =
+    if (packageType == "zip") {
+        zipTree(archive)
+    } else {
+        tarTree(resources.gzip(archive))
+    }
+
 fun jlinkExecutable(
     jmodsDirectory: File,
     targetOs: String,
+    targetArch: String,
     javaFeature: String,
-    executable: Provider<String>
+    executable: Provider<String>,
+    hostJlinkDirectory: File
 ): String {
     executable.orNull?.takeIf(String::isNotBlank)?.let {
         return it
     }
 
-    if (targetOs == detectLibericaOs()) {
+    if (targetOs == detectLibericaOs() && targetArch == detectLibericaArch()) {
         val executableName = if (targetOs == "windows") "jlink.exe" else "jlink"
         val targetJlink = jmodsDirectory.parentFile.resolve("bin").resolve(executableName)
         if (targetJlink.isFile) {
@@ -616,10 +768,15 @@ fun jlinkExecutable(
 
     val hostFeature = Runtime.version().feature().toString()
     if (hostFeature != javaFeature) {
+        findJlinkExecutable(hostJlinkDirectory, detectLibericaOs())?.let {
+            return it.absolutePath
+        }
+
         throw GradleException(
-            "Cross-platform jlink requires a host jlink with feature version $javaFeature, "
-                    + "but the current Gradle JVM is Java $hostFeature. Run Gradle with a matching JDK "
-                    + "or set -Pm3fx.jlink.executable to a matching jlink executable."
+            "Cross-platform or cross-architecture jlink requires a host jlink with feature version $javaFeature. "
+                    + "The current Gradle JVM is Java $hostFeature, and no downloaded host jlink was found under "
+                    + "${hostJlinkDirectory.absolutePath}. Run Gradle with a matching JDK or set "
+                    + "-Pm3fx.jlink.executable to a matching jlink executable."
         )
     }
 
@@ -627,6 +784,12 @@ fun jlinkExecutable(
         File(System.getProperty("java.home"), "bin"),
         if (System.getProperty("os.name").lowercase().contains("win")) "jlink.exe" else "jlink"
     ).absolutePath
+}
+
+fun findJlinkExecutable(root: File, hostOs: String): File? {
+    val executableName = if (hostOs == "windows") "jlink.exe" else "jlink"
+    return root.walkTopDown()
+        .firstOrNull { it.isFile && it.name == executableName && it.parentFile.name == "bin" }
 }
 
 fun detectLibericaOs(): String = when {
@@ -646,3 +809,15 @@ fun normalizeLibericaArch(architecture: String): String = when (architecture.low
     "arm64" -> "aarch64"
     else -> architecture
 }
+
+fun libericaApiArch(architecture: String): String = when (architecture) {
+    "aarch64" -> "arm"
+    else -> architecture
+}
+
+fun libericaPackageType(targetOs: String): String = when (targetOs) {
+    "linux" -> "tar.gz"
+    else -> "zip"
+}
+
+fun libericaArchiveExtension(packageType: String): String = packageType

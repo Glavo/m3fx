@@ -3277,15 +3277,6 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double circularWavelength,
             double circularTrackGap
     ) {
-        /// Creates baseline progress tokens without wavy rendering.
-        ///
-        /// @param thickness the default track thickness
-        /// @param shape the progress indicator radius
-        /// @param indicatorSize the circular indicator size
-        public ProgressTokens(double thickness, double shape, double indicatorSize) {
-            this(thickness, shape, indicatorSize, 0.0, 40.0, 4.0, 4.0, 0.0, 15.0, 4.0);
-        }
-
         /// Creates progress tokens.
         public ProgressTokens {
             validateNonNegative(thickness, "thickness");

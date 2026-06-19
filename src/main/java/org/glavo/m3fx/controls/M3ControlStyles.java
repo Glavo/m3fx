@@ -62,6 +62,7 @@ final class M3ControlStyles {
     }
 
     /// Tracks the scene root that needs standalone fallback token declarations for one control.
+    @NotNullByDefault
     private static final class FallbackStylesheetInstallation {
         /// The control that requested standalone fallback token support.
         private final Node node;

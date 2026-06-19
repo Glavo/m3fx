@@ -297,6 +297,7 @@ public class M3CheckBox extends ButtonBase {
         setAlignment(Pos.CENTER_LEFT);
         setFocusTraversable(true);
         setMnemonicParsing(true);
+        setPickOnBounds(true);
         pseudoClassStateChanged(DETERMINATE_PSEUDO_CLASS, true);
         updateMetrics();
     }

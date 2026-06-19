@@ -392,6 +392,12 @@ final class M3Accessible {
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
+        if (delegateContainingItemReveal(item, items, parameters)) {
+            return;
+        }
+        if (delegateSelectedItemReveal(item, parameters)) {
+            return;
+        }
         if (!showItemIfPresent(item) && parameters.length > 0) {
             showAccessibleActionTarget(items, parameters);
         }
@@ -404,6 +410,13 @@ final class M3Accessible {
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
+        if (delegateContainingNodeReveal(item, leading, parameters)
+                || delegateContainingListReveal(item, items, parameters)) {
+            return;
+        }
+        if (delegateSelectedItemReveal(item, parameters)) {
+            return;
+        }
         if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(leading, parameters)) {
             showAccessibleActionTarget(items, parameters);
         }
@@ -416,6 +429,13 @@ final class M3Accessible {
             @Nullable Node trailing,
             Object... parameters
     ) {
+        if (delegateContainingListReveal(item, items, parameters)
+                || delegateContainingNodeReveal(item, trailing, parameters)) {
+            return;
+        }
+        if (delegateSelectedItemReveal(item, parameters)) {
+            return;
+        }
         if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(items, parameters)) {
             showAccessibleActionTarget(trailing, parameters);
         }
@@ -428,6 +448,13 @@ final class M3Accessible {
             @Nullable Node second,
             Object... parameters
     ) {
+        if (delegateContainingNodeReveal(item, first, parameters)
+                || delegateContainingNodeReveal(item, second, parameters)) {
+            return;
+        }
+        if (delegateSelectedItemReveal(item, parameters)) {
+            return;
+        }
         if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(first, parameters)) {
             showAccessibleActionTarget(second, parameters);
         }
@@ -441,6 +468,14 @@ final class M3Accessible {
             @Nullable Node third,
             Object... parameters
     ) {
+        if (delegateContainingNodeReveal(item, first, parameters)
+                || delegateContainingNodeReveal(item, second, parameters)
+                || delegateContainingNodeReveal(item, third, parameters)) {
+            return;
+        }
+        if (delegateSelectedItemReveal(item, parameters)) {
+            return;
+        }
         if (!showItemIfPresent(item)
                 && parameters.length > 0
                 && !showAccessibleActionTarget(first, parameters)
@@ -457,6 +492,14 @@ final class M3Accessible {
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
+        if (delegateContainingNodeReveal(item, first, parameters)
+                || delegateContainingNodeReveal(item, second, parameters)
+                || delegateContainingListReveal(item, items, parameters)) {
+            return;
+        }
+        if (delegateSelectedItemReveal(item, parameters)) {
+            return;
+        }
         if (!showItemIfPresent(item)
                 && parameters.length > 0
                 && !showAccessibleActionTarget(first, parameters)
@@ -465,14 +508,66 @@ final class M3Accessible {
         }
     }
 
+    /// Delegates reveal into a containing node slot before focusing a nested descendant directly.
+    private static boolean delegateContainingNodeReveal(
+            @Nullable Node selectedItem,
+            @Nullable Node containingItem,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(parameters, "parameters");
+        return indexParameter(parameters) < 0
+                && containingItem != null
+                && containingItem != selectedItem
+                && containsAccessibleActionTarget(containingItem, parameters)
+                && showAccessibleActionTarget(containingItem, parameters);
+    }
+
+    /// Delegates reveal into a containing list item for target-based parameters.
+    private static boolean delegateContainingListReveal(
+            @Nullable Node selectedItem,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        return indexParameter(parameters) < 0 && delegateContainingItemReveal(selectedItem, items, parameters);
+    }
+
+    /// Delegates reveal into a selected child before falling back to its current contained focus.
+    private static boolean delegateSelectedItemReveal(@Nullable Node item, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        return item != null
+                && parameters.length > 0
+                && containsOwnAccessibleActionTarget(item, parameters)
+                && showAccessibleActionTarget(item, parameters);
+    }
+
+    /// Delegates reveal into the list item that owns the requested target before focusing a nested descendant.
+    private static boolean delegateContainingItemReveal(
+            @Nullable Node selectedItem,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        @Nullable Node containingItem = containingItem(items, parameters);
+        return containingItem != null
+                && containingItem != selectedItem
+                && delegateSelectedItemReveal(containingItem, parameters);
+    }
+
     /// Delegates an explicit reveal request to the first child that exposes the requested accessibility target.
     static boolean showAccessibleActionTarget(@Nullable Node item, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        if (!canReach(item) || parameters.length == 0) {
+        if (!canReachOrReveal(item) || parameters.length == 0) {
             return false;
         }
 
         @Nullable Node directTarget = actionItem(item, parameters);
+        if (directTarget != null && parametersReferenceOwnerRevealTarget(item, directTarget, parameters)) {
+            item.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+            return showItemIfPresent(directTarget);
+        }
         if (showItemIfPresent(directTarget)) {
             return true;
         }
@@ -494,6 +589,14 @@ final class M3Accessible {
             return true;
         }
         return false;
+    }
+
+    /// Returns whether a node can either receive focus now or reveal itself from a collapsed self-hidden state.
+    private static boolean canReachOrReveal(@Nullable Node item) {
+        if (canReach(item)) {
+            return true;
+        }
+        return item != null && item.getScene() != null && canReveal(item);
     }
 
     /// Delegates an explicit reveal request to the first indexed child that exposes the requested target.
@@ -1738,7 +1841,8 @@ final class M3Accessible {
             return null;
         }
         if (parameter instanceof Number number) {
-            return number.intValue() == 0 ? item : null;
+            @Nullable Node indexedItem = indexedActionItem(item, number);
+            return indexedItem == null && number.intValue() == 0 ? item : indexedItem;
         }
         if (parameter instanceof Node node) {
             return containedActionTarget(item, node);
@@ -1761,6 +1865,39 @@ final class M3Accessible {
             }
         }
         return null;
+    }
+
+    /// Returns whether the parameters should be delegated to the item's own reveal action before direct focus.
+    private static boolean parametersReferenceOwnerRevealTarget(Node item, Node target, Object... parameters) {
+        Objects.requireNonNull(item, "item");
+        Objects.requireNonNull(target, "target");
+        if (parametersReferenceIndexedActionItem(item, target, parameters)) {
+            return true;
+        }
+        @Nullable Object expanded = item.queryAccessibleAttribute(AccessibleAttribute.EXPANDED);
+        return Boolean.FALSE.equals(expanded) && containsOwnAccessibleActionTarget(item, parameters);
+    }
+
+    /// Returns whether the parameters select the supplied target from the item's own indexed children.
+    private static boolean parametersReferenceIndexedActionItem(Node item, Node target, Object... parameters) {
+        int index = indexParameter(parameters);
+        return index >= 0 && indexedActionItem(item, index) == target;
+    }
+
+    /// Returns the child exposed by one item's accessibility index.
+    private static @Nullable Node indexedActionItem(Node item, Number number) {
+        Objects.requireNonNull(number, "number");
+        return indexedActionItem(item, number.intValue());
+    }
+
+    /// Returns the child exposed by one item's accessibility index.
+    private static @Nullable Node indexedActionItem(Node item, int index) {
+        Objects.requireNonNull(item, "item");
+        if (index < 0) {
+            return null;
+        }
+        @Nullable Object child = item.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, index);
+        return child instanceof Node node ? node : null;
     }
 
     /// Returns this node's index in its parent child list, or `-1` when it is detached.

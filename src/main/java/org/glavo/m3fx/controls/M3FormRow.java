@@ -426,13 +426,13 @@ public class M3FormRow extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
     }
 
     /// Handles horizontal keyboard traversal between content and trailing slots.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
             return;
         }
 

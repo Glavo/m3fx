@@ -202,14 +202,14 @@ public class M3Banner extends Control {
         text.addListener(observable -> updateAccessibleText());
         icon.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
         updateAccessibleText();
     }
 
     /// Handles keyboard traversal between focusable icon and action items.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
             return;
         }
 

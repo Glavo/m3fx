@@ -146,6 +146,7 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     }
 
     /// The rendered checkbox mark shape.
+    @NotNullByDefault
     private enum MarkKind {
         /// A check mark used by selected determinate checkboxes.
         CHECK,

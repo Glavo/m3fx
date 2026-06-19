@@ -12,6 +12,16 @@ import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.RecordComponent;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Stream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -218,6 +228,32 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-opacity: 0.15"));
     }
 
+    /// Verifies that every generated root component token value feeds at least one generated control rule.
+    @Test
+    void componentTokenValuesFeedGeneratedControlRules() {
+        M3ComponentTokens componentTokens = createComponentTokensWithUniqueValues();
+        List<String> missing = missingComponentTokenControlValues(componentTokens);
+
+        assertTrue(missing.isEmpty(), () -> "Missing component token values in generated control rules: " + missing);
+    }
+
+    /// Verifies that generated component custom properties are consumed by production controls or stylesheets.
+    @Test
+    void componentTokenControlRulesDeclareOnlyConsumedCustomProperties() throws IOException {
+        M3ComponentTokens componentTokens = createComponentTokensWithUniqueValues();
+        String consumerSources = readTokenConsumerSources();
+        List<String> unused = new ArrayList<>();
+
+        for (String declaration : cssDeclarationLines(componentTokens.toControlStyleRules())) {
+            String property = cssProperty(declaration);
+            if (property.startsWith("-m3-") && !consumerSources.contains(property)) {
+                unused.add(declaration);
+            }
+        }
+
+        assertTrue(unused.isEmpty(), () -> "Unused generated component custom properties: " + unused);
+    }
+
     /// Verifies that explicit motion tokens preserve a supplied semantic scheme.
     @Test
     void createsMotionTokensWithExplicitScheme() {
@@ -342,5 +378,168 @@ final class M3TokenFactoryTest {
                 ),
                 new M3ComponentTokens.ListItemTokens(58.0, 74.0, 90.0, 6.0, 18.0, 9.0, 15.0, 32.0, 19.0)
         );
+    }
+
+    /// Creates component tokens whose record components all have distinctive values.
+    private static M3ComponentTokens createComponentTokensWithUniqueValues() {
+        UniqueDoubleValues values = new UniqueDoubleValues();
+        return M3ComponentTokens.create(
+                createRecord(M3ComponentTokens.ButtonTokens.class, values),
+                createRecord(M3ComponentTokens.ButtonTokens.class, values),
+                createRecord(M3ComponentTokens.ButtonTokens.class, values),
+                createRecord(M3ComponentTokens.ButtonTokens.class, values),
+                createRecord(M3ComponentTokens.ButtonTokens.class, values),
+                createRecord(M3ComponentTokens.ButtonTokens.class, values),
+                createRecord(M3ComponentTokens.FabTokens.class, values),
+                createRecord(M3ComponentTokens.IconTokens.class, values),
+                createRecord(M3ComponentTokens.ButtonGroupTokens.class, values),
+                createRecord(M3ComponentTokens.ButtonTokens.class, values),
+                createRecord(M3ComponentTokens.TabTokens.class, values),
+                createRecord(M3ComponentTokens.FieldTokens.class, values),
+                createRecord(M3ComponentTokens.TextAreaTokens.class, values),
+                createRecord(M3ComponentTokens.FormTokens.class, values),
+                createRecord(M3ComponentTokens.ValidationSummaryTokens.class, values),
+                createRecord(M3ComponentTokens.MenuTokens.class, values),
+                createRecord(M3ComponentTokens.SearchTokens.class, values),
+                createRecord(M3ComponentTokens.PickerFieldTokens.class, values),
+                createRecord(M3ComponentTokens.DatePickerTokens.class, values),
+                createRecord(M3ComponentTokens.TimePickerTokens.class, values),
+                createRecord(M3ComponentTokens.SheetTokens.class, values),
+                createRecord(M3ComponentTokens.ScrimTokens.class, values),
+                createRecord(M3ComponentTokens.SelectionTokens.class, values),
+                createRecord(M3ComponentTokens.SliderTokens.class, values),
+                createRecord(M3ComponentTokens.ChipTokens.class, values),
+                createRecord(M3ComponentTokens.ProgressTokens.class, values),
+                createRecord(M3ComponentTokens.LoadingIndicatorTokens.class, values),
+                createRecord(M3ComponentTokens.SurfaceTokens.class, values),
+                createRecord(M3ComponentTokens.CarouselTokens.class, values),
+                createRecord(M3ComponentTokens.CardTokens.class, values),
+                createRecord(M3ComponentTokens.DialogTokens.class, values),
+                createRecord(M3ComponentTokens.SnackbarTokens.class, values),
+                createRecord(M3ComponentTokens.BannerTokens.class, values),
+                createRecord(M3ComponentTokens.TooltipTokens.class, values),
+                createRecord(M3ComponentTokens.DividerTokens.class, values),
+                createRecord(M3ComponentTokens.BadgeTokens.class, values),
+                createRecord(M3ComponentTokens.AvatarTokens.class, values),
+                createRecord(M3ComponentTokens.TopAppBarTokens.class, values),
+                createRecord(M3ComponentTokens.BottomAppBarTokens.class, values),
+                createRecord(M3ComponentTokens.ToolbarTokens.class, values),
+                createRecord(M3ComponentTokens.NavigationBarTokens.class, values),
+                createRecord(M3ComponentTokens.NavigationRailTokens.class, values),
+                createRecord(M3ComponentTokens.NavigationDrawerTokens.class, values),
+                createRecord(M3ComponentTokens.ListItemTokens.class, values)
+        );
+    }
+
+    /// Creates one component token record using unique double values for every record component.
+    private static <T extends Record> T createRecord(Class<T> type, UniqueDoubleValues values) {
+        RecordComponent[] components = type.getRecordComponents();
+        Class<?>[] parameterTypes = new Class<?>[components.length];
+        Object[] arguments = new Object[components.length];
+        for (int i = 0; i < components.length; i++) {
+            parameterTypes[i] = components[i].getType();
+            assertEquals(double.class, parameterTypes[i], () -> "Unexpected non-double component in " + type.getName());
+            arguments[i] = values.next(components[i].getName());
+        }
+
+        try {
+            Constructor<T> constructor = type.getDeclaredConstructor(parameterTypes);
+            return constructor.newInstance(arguments);
+        } catch (ReflectiveOperationException ex) {
+            throw new AssertionError("Failed to create token record " + type.getName(), ex);
+        }
+    }
+
+    /// Returns root component token declarations whose values are not present in generated control rules.
+    private static List<String> missingComponentTokenControlValues(M3ComponentTokens componentTokens) {
+        String controlStyleRules = componentTokens.toControlStyleRules();
+        List<String> missing = new ArrayList<>();
+        for (String declaration : cssDeclarationLines(componentTokens.toStyleDeclarations())) {
+            String property = cssProperty(declaration);
+            String value = cssValue(declaration);
+            if (!controlStyleRules.contains(value)) {
+                missing.add(property + ": " + value);
+            }
+        }
+        return missing;
+    }
+
+    /// Parses CSS declaration text from generated rule or inline declaration output.
+    private static List<String> cssDeclarationLines(String css) {
+        List<String> declarations = new ArrayList<>();
+        for (String declarationText : css.split(";")) {
+            String candidate = declarationText.trim();
+            if (candidate.isEmpty()) {
+                continue;
+            }
+
+            int lineStart = candidate.lastIndexOf('\n') + 1;
+            String declaration = candidate.substring(lineStart).trim();
+            if (!declaration.isEmpty() && !declaration.equals("}")) {
+                declarations.add(declaration);
+            }
+        }
+        return declarations;
+    }
+
+    /// Returns the property name from a CSS declaration.
+    private static String cssProperty(String declaration) {
+        int separatorIndex = declaration.indexOf(':');
+        assertTrue(separatorIndex > 0, () -> "Malformed declaration: " + declaration);
+        return declaration.substring(0, separatorIndex).trim();
+    }
+
+    /// Returns the property value from a CSS declaration.
+    private static String cssValue(String declaration) {
+        int separatorIndex = declaration.indexOf(':');
+        assertTrue(separatorIndex > 0, () -> "Malformed declaration: " + declaration);
+        return declaration.substring(separatorIndex + 1).trim();
+    }
+
+    /// Reads production Java and stylesheet sources that may consume generated component custom properties.
+    private static String readTokenConsumerSources() throws IOException {
+        StringBuilder builder = new StringBuilder();
+        appendSourceFiles(
+                builder,
+                Path.of("src", "main", "java", "org", "glavo", "m3fx"),
+                Path.of("src", "main", "java", "org", "glavo", "m3fx", "tokens", "M3ComponentTokens.java")
+        );
+        appendSourceFiles(
+                builder,
+                Path.of("src", "main", "resources", "org", "glavo", "m3fx", "styles"),
+                Path.of("__no_excluded_file__")
+        );
+        return builder.toString();
+    }
+
+    /// Appends regular source file contents under the root while skipping one file.
+    private static void appendSourceFiles(StringBuilder builder, Path root, Path excludedFile) throws IOException {
+        Path excludedAbsolute = excludedFile.toAbsolutePath().normalize();
+        List<Path> sourceFiles;
+        try (Stream<Path> files = Files.walk(root)) {
+            sourceFiles = files
+                    .filter(Files::isRegularFile)
+                    .filter(file -> !file.toAbsolutePath().normalize().equals(excludedAbsolute))
+                    .toList();
+        }
+
+        for (Path sourceFile : sourceFiles) {
+            builder.append(Files.readString(sourceFile)).append('\n');
+        }
+    }
+
+    /// Generates stable distinctive double values for component token coverage checks.
+    private static final class UniqueDoubleValues {
+        /// Number of values already produced.
+        private int count;
+
+        /// Returns the next distinctive value for the named component.
+        private double next(String componentName) {
+            count++;
+            if (componentName.toLowerCase(Locale.ROOT).contains("opacity")) {
+                return 0.001 * count;
+            }
+            return 1000.137 + count;
+        }
     }
 }

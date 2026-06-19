@@ -71,7 +71,9 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     @Override
     protected double computePrefHeight(double width) {
         double horizontalInsets = snappedLeftInset() + snappedRightInset();
-        double contentWidth = width == -1.0 ? -1.0 : Math.max(0.0, width - horizontalInsets);
+        double contentWidth = width == -1.0
+                ? preferredWrapWidth()
+                : Math.max(0.0, width - horizontalInsets);
         return snappedTopInset() + root.prefHeight(contentWidth) + snappedBottomInset();
     }
 
@@ -113,6 +115,22 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
         M3Tooltip tooltip = getSkinnable();
         root.getStyleClass().setAll(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS);
         root.getStyleClass().addAll(tooltip.getStyleClass());
+    }
+
+    /// Returns the explicit wrap width used when popup sizing asks for unconstrained height.
+    private double preferredWrapWidth() {
+        if (!root.isWrapText()) {
+            return -1.0;
+        }
+
+        double preferredWidth = root.getPrefWidth();
+        if (preferredWidth <= 0.0
+                || Double.isNaN(preferredWidth)
+                || Double.isInfinite(preferredWidth)
+                || preferredWidth == USE_COMPUTED_SIZE) {
+            return -1.0;
+        }
+        return preferredWidth;
     }
 
     /// Installs or removes the generated theme stylesheet used by popup content.

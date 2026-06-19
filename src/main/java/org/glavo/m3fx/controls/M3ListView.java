@@ -693,7 +693,7 @@ public class M3ListView<T> extends Control {
     /// Handles list keyboard navigation and focused-row activation.
     private void handleNavigationKeyPressed(KeyEvent event) {
         Objects.requireNonNull(event, "event");
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, false, true)) {
             return;
         }
 
@@ -872,8 +872,14 @@ public class M3ListView<T> extends Control {
         return this;
     }
 
-    /// Moves focus to the focused row, selected row, or first row for accessibility clients.
+    /// Moves focus to an active row-owned popup target, focused row, selected row, or first row for accessibility clients.
     private void focusAccessibleNode() {
+        @Nullable Node externalFocus = currentVisibleExternalFocusNode();
+        if (externalFocus != null) {
+            externalFocus.requestFocus();
+            return;
+        }
+
         @Nullable Node currentFocus = currentVisibleFocusNode();
         if (currentFocus != null) {
             currentFocus.requestFocus();

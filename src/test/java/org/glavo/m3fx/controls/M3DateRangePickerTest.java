@@ -5,6 +5,9 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -14,6 +17,7 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
@@ -47,6 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class M3DateRangePickerTest {
     /// The pseudo-class used to verify pressed-like day cell feedback in visual tests.
     private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
+
+    /// The tolerance used when comparing rendered cell text ink centers.
+    private static final double CELL_TEXT_INK_CENTER_TOLERANCE = 1.5;
 
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll
@@ -231,6 +238,11 @@ final class M3DateRangePickerTest {
                     Color.WHITE,
                     0.08
             );
+            assertCellTextInkCentered(image, dayCellForDate(selected, LocalDate.of(2026, 5, 18)));
+            assertCellTextInkCentered(image, dayCellForDate(selected, LocalDate.of(2026, 5, 20)));
+            assertCellTextInkCentered(image, dayCellForDate(selected, LocalDate.of(2026, 5, 22)));
+            assertCellTextInkCentered(image, dayCellForDate(bounded, LocalDate.of(2026, 5, 24)));
+            assertCellTextInkCentered(image, dayCellForDate(bounded, LocalDate.of(2026, 5, 28)));
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
                     "reports",
@@ -356,6 +368,46 @@ final class M3DateRangePickerTest {
         ), () -> "No contrasting pixels found for " + node);
     }
 
+    /// Verifies that a fixed day-cell text node is visually centered by rendered ink, not only by layout bounds.
+    private static void assertCellTextInkCentered(WritableImage image, ButtonBase cell) {
+        Text text = assertInstanceOf(Text.class, cell.lookup(".text"));
+        Bounds cellBounds = cell.localToScene(cell.getBoundsInLocal());
+        Rectangle2D textInkBounds = contrastingPixelBounds(image, text, sampledNodeBackgroundColor(image, cell), 0.04);
+        Point2D cellCenter = new Point2D(
+                (cellBounds.getMinX() + cellBounds.getMaxX()) / 2.0,
+                (cellBounds.getMinY() + cellBounds.getMaxY()) / 2.0
+        );
+        Point2D inkCenter = new Point2D(
+                textInkBounds.getMinX() + textInkBounds.getWidth() / 2.0,
+                textInkBounds.getMinY() + textInkBounds.getHeight() / 2.0
+        );
+
+        assertEquals(cellCenter.getX(), inkCenter.getX(), CELL_TEXT_INK_CENTER_TOLERANCE,
+                () -> "date range cell text ink is horizontally off-center: cell="
+                        + cell + ", cellBounds=" + cellBounds + ", inkBounds=" + textInkBounds);
+        assertEquals(cellCenter.getY(), inkCenter.getY(), CELL_TEXT_INK_CENTER_TOLERANCE,
+                () -> "date range cell text ink is vertically off-center: cell="
+                        + cell + ", cellBounds=" + cellBounds + ", inkBounds=" + textInkBounds);
+        assertRectangleInsideNodeBounds(cell, textInkBounds, 1.0, "date range cell text ink leaves cell bounds");
+    }
+
+    /// Verifies that a rendered pixel rectangle is contained by a node in scene coordinates.
+    private static void assertRectangleInsideNodeBounds(
+            Node node,
+            Rectangle2D rectangle,
+            double tolerance,
+            String description
+    ) {
+        Bounds nodeBounds = node.localToScene(node.getBoundsInLocal());
+        assertTrue(rectangle.getMinX() >= nodeBounds.getMinX() - tolerance
+                        && rectangle.getMaxX() <= nodeBounds.getMaxX() + tolerance
+                        && rectangle.getMinY() >= nodeBounds.getMinY() - tolerance
+                        && rectangle.getMaxY() <= nodeBounds.getMaxY() + tolerance,
+                () -> description + ": node=" + node
+                        + ", nodeBounds=" + nodeBounds
+                        + ", rectangle=" + rectangle);
+    }
+
     /// Verifies that a node's rendered bounds changed between two snapshots.
     private static void assertSnapshotAreaChanged(
             WritableImage before,
@@ -407,6 +459,47 @@ final class M3DateRangePickerTest {
             }
         }
         return false;
+    }
+
+    /// Returns the bounds of rendered pixels inside a node that contrast with the reference color.
+    private static Rectangle2D contrastingPixelBounds(
+            WritableImage image,
+            Node node,
+            Color reference,
+            double minimumDistance
+    ) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
+        int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
+        int endX = Math.min((int) image.getWidth(), (int) Math.ceil(bounds.getMaxX()));
+        int endY = Math.min((int) image.getHeight(), (int) Math.ceil(bounds.getMaxY()));
+        int minX = endX;
+        int minY = endY;
+        int maxX = startX - 1;
+        int maxY = startY - 1;
+
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                if (color.getOpacity() > 0.1 && colorDistance(color, reference) >= minimumDistance) {
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+        }
+
+        assertTrue(maxX >= minX && maxY >= minY, () -> "No contrasting pixels found for " + node);
+        return new Rectangle2D(minX, minY, maxX - minX + 1.0, maxY - minY + 1.0);
+    }
+
+    /// Samples a rendered background color near the local origin of a node.
+    private static Color sampledNodeBackgroundColor(WritableImage image, Node node) {
+        Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        int x = Math.max(0, Math.min((int) image.getWidth() - 1, (int) Math.floor(bounds.getMinX())));
+        int y = Math.max(0, Math.min((int) image.getHeight() - 1, (int) Math.floor(bounds.getMinY())));
+        return image.getPixelReader().getColor(x, y);
     }
 
     /// Writes a rendered snapshot to a build report path for manual visual inspection.

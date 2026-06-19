@@ -276,6 +276,7 @@ public class M3Tab extends ButtonBase {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TAB_ITEM);
         setFocusTraversable(true);
+        setPickOnBounds(true);
         updateMetrics();
     }
 

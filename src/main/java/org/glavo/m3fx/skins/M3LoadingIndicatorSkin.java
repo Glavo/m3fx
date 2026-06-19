@@ -44,6 +44,9 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The maximum active-shape scale added while an indeterminate morph segment is in flight.
     private static final double MORPH_SCALE_AMPLITUDE = 0.12;
 
+    /// The part of each morph interval used by the shape interpolation before the target shape settles.
+    private static final double MORPH_ACTIVE_FRACTION = 0.72;
+
     /// The single active loading shape.
     private final Path indicator = new Path();
 
@@ -172,7 +175,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                 indeterminateAnimation.stop();
                 resetIndeterminateAnimationState();
                 startBasicIndeterminateAnimation();
-            } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING
+            } else if (!animateDeterminateProgress
+                    || indeterminateAnimation.getStatus() != Animation.Status.RUNNING
                     || globalRotationAnimation.getStatus() != Animation.Status.RUNNING) {
                 startIndeterminateAnimation();
             }
@@ -215,20 +219,42 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         M3MotionBehavior behavior = M3Animation.motionBehavior(getSkinnable());
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
         Duration morphInterval = behavior.loadingIndicatorMorphInterval();
-        indeterminateAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        Duration.ZERO,
-                        new KeyValue(indeterminatePhase, currentMorphIndex, M3Motion.LINEAR)
-                ),
-                new KeyFrame(
-                        morphInterval,
-                        new KeyValue(
-                                indeterminatePhase,
-                                currentMorphIndex + 1.0,
-                                spec.interpolator()
-                        )
-                )
-        );
+        Duration activeDuration = activeMorphDuration(morphInterval, spec);
+        if (activeDuration.equals(morphInterval)) {
+            indeterminateAnimation.getKeyFrames().setAll(
+                    new KeyFrame(
+                            Duration.ZERO,
+                            new KeyValue(indeterminatePhase, currentMorphIndex, M3Motion.LINEAR)
+                    ),
+                    new KeyFrame(
+                            morphInterval,
+                            new KeyValue(
+                                    indeterminatePhase,
+                                    currentMorphIndex + 1.0,
+                                    spec.interpolator()
+                            )
+                    )
+            );
+        } else {
+            indeterminateAnimation.getKeyFrames().setAll(
+                    new KeyFrame(
+                            Duration.ZERO,
+                            new KeyValue(indeterminatePhase, currentMorphIndex, M3Motion.LINEAR)
+                    ),
+                    new KeyFrame(
+                            activeDuration,
+                            new KeyValue(
+                                    indeterminatePhase,
+                                    currentMorphIndex + 1.0,
+                                    spec.interpolator()
+                            )
+                    ),
+                    new KeyFrame(
+                            morphInterval,
+                            new KeyValue(indeterminatePhase, currentMorphIndex + 1.0, M3Motion.LINEAR)
+                    )
+            );
+        }
     }
 
     /// Configures the independent global rotation loop.
@@ -251,7 +277,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         }
 
         currentMorphIndex = (currentMorphIndex + 1) % INDETERMINATE_SHAPE_COUNT;
-        morphRotationTarget = positiveModulo(morphRotationTarget + QUARTER_ROTATION, 1.0);
+        morphRotationTarget = positiveUnitModulo(morphRotationTarget + QUARTER_ROTATION);
         indeterminatePhase.set(currentMorphIndex);
         configureIndeterminateMorphSegment();
         indeterminateAnimation.playFromStart();
@@ -313,7 +339,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                     centerY,
                     indicatorSize,
                     INDETERMINATE_SEQUENCE.scaleFactor(),
-                    shapeScaleFor(segmentProgress, true),
+                    shapeScaleFor(segmentProgress),
                     indeterminateRotationFor(segmentProgress),
                     shapeScratch
             );
@@ -334,11 +360,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     }
 
     /// Returns the active shape scale for the current animation state.
-    private static double shapeScaleFor(double phase, boolean indeterminate) {
-        if (!indeterminate) {
-            return 1.0;
-        }
-
+    private static double shapeScaleFor(double phase) {
         double fraction = clamp(phase);
         double envelope = Math.sin(Math.PI * fraction);
         return 1.0 + MORPH_SCALE_AMPLITUDE * envelope * envelope;
@@ -346,7 +368,18 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// Returns the official-style indeterminate rotation phase for a morph segment.
     private double indeterminateRotationFor(double segmentProgress) {
-        return segmentProgress * QUARTER_ROTATION + morphRotationTarget + globalRotation.get();
+        return clamp(segmentProgress) * QUARTER_ROTATION + morphRotationTarget + globalRotation.get();
+    }
+
+    /// Returns the active morph duration used before the shape settles for the rest of the interval.
+    private static Duration activeMorphDuration(Duration morphInterval, M3MotionSpec spec) {
+        double intervalMillis = morphInterval.toMillis();
+        if (intervalMillis <= 0.0) {
+            return morphInterval;
+        }
+
+        double activeMillis = Math.min(spec.duration().toMillis(), intervalMillis * MORPH_ACTIVE_FRACTION);
+        return Duration.millis(Math.max(1.0, Math.min(intervalMillis, activeMillis)));
     }
 
     /// Returns a smooth interpolation fraction with zero velocity at both ends.
@@ -360,10 +393,10 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         return progress == M3LoadingIndicator.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
     }
 
-    /// Returns a positive modulo result.
-    private static double positiveModulo(double value, double modulus) {
-        double result = value % modulus;
-        return result < 0.0 ? result + modulus : result;
+    /// Returns a positive modulo result in the unit interval.
+    private static double positiveUnitModulo(double value) {
+        double result = value % 1.0;
+        return result < 0.0 ? result + 1.0 : result;
     }
 
     /// Clamps a progress value to the visible range.

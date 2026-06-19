@@ -49,7 +49,7 @@ import java.util.Objects;
 /// manages expanded state, keyboard dismissal, accessible child traversal, and Material expand and collapse
 /// motion for the action items.
 ///
-/// See [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
+/// See [Material Design FAB menus](https://m3.material.io/components/fab-menu/overview).
 @NotNullByDefault
 public class M3FabMenu extends Control {
     /// The base style class for M3FX floating action button menus.
@@ -412,7 +412,7 @@ public class M3FabMenu extends Control {
             return;
         }
         @Nullable Node target = parameters.length == 0
-                ? currentActionFocusNode()
+                ? currentAccessibleActionFocusNode()
                 : M3Accessible.actionItem(getItems(), parameters);
         boolean hasNestedTarget = parameters.length > 0
                 && target == null
@@ -430,6 +430,12 @@ public class M3FabMenu extends Control {
             M3Accessible.showAccessibleActionTarget(getItems(), parameters);
         }
         notifyFocusNodeChanged();
+    }
+
+    /// Returns the focused action-owned external popup target or the focused action item itself.
+    private @Nullable Node currentAccessibleActionFocusNode() {
+        @Nullable Node externalTarget = activeExternalActionFocusNode();
+        return externalTarget == null ? currentActionFocusNode() : externalTarget;
     }
 
     /// Returns whether an action item exposes the requested nested accessibility target.

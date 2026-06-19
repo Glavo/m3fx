@@ -6,6 +6,8 @@ M3FX is a JavaFX library. Applications own the JavaFX runtime and should provide
 
 The library publishes JavaFX as a compile-only dependency so downstream applications can choose their own JavaFX version, platform classifier, module path, and runtime-image strategy.
 
+The JPMS module descriptor declares `requires transitive javafx.controls` and `requires transitive javafx.graphics` because the public M3FX API exposes JavaFX control and graphics types. This module readability declaration does not publish OpenJFX artifacts as Maven dependencies; applications still own the OpenJFX artifact coordinates and native platform classifiers.
+
 Typical application dependencies:
 
 ```kotlin
@@ -21,7 +23,9 @@ Use the platform classifier that matches the target runtime: `win`, `linux`, or 
 
 ## Demo Shadow Jar
 
-The demo shadow jar is intended for quick inspection of the demo application. It packages the demo classes, M3FX, and non-JavaFX runtime dependencies. It intentionally excludes JavaFX artifacts.
+The demo shadow jar is intended for quick inspection of the demo application. It packages the demo classes, M3FX, non-JavaFX runtime dependencies, and the demo default font. It intentionally excludes JavaFX artifacts.
+
+During resource processing, the demo downloads `https://registry.npmmirror.com/@fontpkg/alibaba-puhuiti-3-0/-/alibaba-puhuiti-3-0-0.0.0.tgz`, extracts `AlibabaPuHuiTi-3-65-Medium.ttf`, and packages it under the demo resources so the application can use it as its default font. The download URL can be overridden with `-Pm3fx.demo.fontPackageUrl=...` when building from a different mirror.
 
 Build it with:
 
@@ -39,7 +43,7 @@ Run it with a JavaFX runtime on the module path or class path according to the l
 
 ## Demo Jlink Runtime
 
-The jlink tasks create runtime images for the demo application. They download a BellSoft LibericaJDK Full archive, extract its `jmods`, and build a runtime image containing JavaFX and the demo modules.
+The jlink tasks create runtime images for the demo application. They download a target BellSoft LibericaJDK Full archive, extract its `jmods`, and build a runtime image containing JavaFX and the demo modules. Windows and macOS targets use BellSoft zip archives; Linux targets use BellSoft `tar.gz` archives.
 
 Build the host-platform runtime image:
 
@@ -71,6 +75,8 @@ Runtime images are written under:
 ```text
 demo/build/jlink/
 ```
+
+Each jlink task verifies the generated runtime image before it succeeds. The verification requires the `release` metadata file, `lib/modules`, JavaFX runtime metadata, JavaFX legal metadata, the M3FX demo module entry in `release`, and the expected platform launcher. Windows images must contain both `bin/m3fx-demo` and `bin/m3fx-demo.bat`; Linux and macOS images must contain `bin/m3fx-demo`.
 
 ## Jlink Configuration
 
@@ -113,25 +119,42 @@ m3fx.jlink.macosX64.downloadUrl
 
 ## Cross-Platform Notes
 
-Cross-platform jlink requires a host `jlink` executable with the same Java feature version as the target runtime. If the current Gradle JVM does not match the target Java feature version, pass a matching executable:
+Cross-platform and cross-architecture jlink use target-platform `jmods` from the downloaded target LibericaJDK. The `jlink` executable must run on the host and match the target Java feature version.
+
+When the current Gradle JVM already matches the target Java feature version, the task uses the Gradle JVM's `jlink`. If it does not match, the task automatically downloads a host-platform BellSoft LibericaJDK Full archive and uses its `jlink` executable. You can still pass an explicit executable to override this behavior:
 
 ```shell
 ./gradlew -g .gradle-user-home jlinkDemoLinuxX64Runtime -Pm3fx.jlink.executable=/path/to/jdk-21/bin/jlink
 ```
 
-The downloaded LibericaJDK archive provides target-platform `jmods`; the host `jlink` executable performs the image build.
+For same-platform and same-architecture builds, the task uses the downloaded target JDK's `jlink` executable directly.
 
 ## Validation
 
 Use these tasks before distributing artifacts:
 
 ```shell
+./gradlew -g .gradle-user-home releaseCheck
+./gradlew -g .gradle-user-home check
 ./gradlew -g .gradle-user-home compileJava
 ./gradlew -g .gradle-user-home test
 ./gradlew -g .gradle-user-home shadowDemoJar
 ./gradlew -g .gradle-user-home jlinkDemoRuntime
+./gradlew -g .gradle-user-home jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX classes or JavaFX jar files are bundled into the shadow jar, or if the executable manifest is missing.
+`releaseCheck` runs `check`, `shadowDemoJar`, and `jlinkDemoRuntime`. It is the local release gate for the library publication plus the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
 
-For cross-platform release checks, run the fixed platform and architecture jlink tasks needed by the release.
+The GitHub Actions release workflow runs the same `releaseCheck` entry point under Xvfb on Linux and then uploads the generated demo shadow jar with `archive: false`. It also uploads visual snapshot PNGs plus Gradle HTML and XML test reports with `if: always()` so failed or suspicious visual runs keep reviewable evidence.
+
+`check` runs publication metadata verification. The verification generates the Maven POM and fails if copied project metadata remains or if JavaFX appears in the published dependency metadata.
+
+`check` also verifies the generated main jar, sources jar, and javadoc jar. The artifact verification fails if required module or API entries are missing, if any bundled M3FX stylesheet resource is absent from the main jar, if any main Java source is absent from the sources jar, if exported package documentation is absent from the javadoc jar, or if the main jar bundles JavaFX implementation classes.
+
+`check` cleans and then publishes the Maven publication to `build/verification-maven-repository` and verifies that the Maven repository layout contains exactly one main jar, sources jar, javadoc jar, and POM, including timestamped SNAPSHOT artifacts when applicable, without Gradle module metadata or JavaFX artifacts. This verifies the real `maven-publish` wiring without writing to the user's local Maven cache.
+
+`check` also resolves that build-local Maven publication through a Gradle consumer runtime configuration. The consumer verification requires the runtime dependency to resolve M3FX and MonetFX while rejecting transitive OpenJFX artifacts. Sources and javadoc classifier availability is covered by the publication layout verification above.
+
+`shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX classes or JavaFX jar files are bundled into the shadow jar, if the executable manifest is missing, or if the packaged `AlibabaPuHuiTi-3-65-Medium.ttf` demo font is absent or empty.
+
+For smaller cross-platform release checks, run the fixed platform and architecture jlink tasks needed by the release instead of the aggregate task.

@@ -1,4 +1,4 @@
-name: Build Demo Shadow Jar
+name: Release Check
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    name: Build demo shadow jar
+    name: Verify release artifacts
     runs-on: ubuntu-latest
 
     steps:
@@ -23,8 +23,32 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Build shadow jar
-        run: ./gradlew shadowDemoJar --no-daemon
+      - name: Run release check
+        run: xvfb-run -a ./gradlew -g .gradle-user-home releaseCheck --no-daemon
+
+      - name: Upload visual snapshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: m3fx-visual-snapshots
+          path: |
+            build/reports/**/*.png
+            demo/build/reports/**/*.png
+          if-no-files-found: ignore
+          archive: false
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: m3fx-test-reports
+          path: |
+            build/reports/tests/
+            demo/build/reports/tests/
+            build/test-results/test/
+            demo/build/test-results/test/
+          if-no-files-found: ignore
+          archive: false
 
       - name: Upload shadow jar
         uses: actions/upload-artifact@v7

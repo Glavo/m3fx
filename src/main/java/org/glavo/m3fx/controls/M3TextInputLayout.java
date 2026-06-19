@@ -382,7 +382,8 @@ public class M3TextInputLayout extends Control {
     /// The listener used to mirror logical leading and trailing geometry when layout direction changes.
     private final InvalidationListener nodeOrientationListener = observable -> updateNodeOrientationLayout();
 
-    /// Observes runtime motion settings while this layout is attached to a scene.
+    /// Observes runtime motion settings while this layout is attached to a scene and is retained for this control lifetime.
+    @SuppressWarnings("unused")
     private final M3MotionSettingsObserver motionSettingsObserver =
             new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
@@ -835,9 +836,7 @@ public class M3TextInputLayout extends Control {
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleItem(accessibleFocusNode());
             case SHOW_ITEM -> showAccessibleItem(parameters);
-            default -> {
-                super.executeAccessibleAction(action, parameters);
-            }
+            default -> super.executeAccessibleAction(action, parameters);
         }
     }
 

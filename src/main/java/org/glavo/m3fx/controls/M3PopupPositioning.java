@@ -173,6 +173,7 @@ final class M3PopupPositioning {
     }
 
     /// Describes a computed popup placement.
+    @NotNullByDefault
     static final class Placement {
         /// The popup anchor position.
         private final Point2D point;

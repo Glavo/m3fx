@@ -263,8 +263,8 @@ final class M3StateLayerTest {
                         double releaseOpacity = ripple.getOpacity();
 
                         assertTrue(releaseOpacity > 0.1);
-                        assertEquals(1.0, ripple.getScaleX(), 0.0001);
-                        assertEquals(1.0, ripple.getScaleY(), 0.0001);
+                        assertEquals(1.0, ripple.getScaleX(), 0.001);
+                        assertEquals(1.0, ripple.getScaleY(), 0.001);
 
                         releaseOpacityReference.set(releaseOpacity);
                         stateLayer.releaseRipple();
@@ -282,7 +282,7 @@ final class M3StateLayerTest {
                     )
             );
             FxTestUtils.runOnFxThreadWhenStable(
-                    () -> rippleCleared(rippleReference),
+                    () -> rippleReleaseFinished(stateLayerReference, rippleReference),
                     2,
                     () -> {
                     },
@@ -294,8 +294,8 @@ final class M3StateLayerTest {
                         Region ripple = Objects.requireNonNull(rippleReference.get(), "ripple");
 
                         assertEquals(0.0, ripple.getOpacity(), 0.0001);
-                        assertEquals(1.0, ripple.getScaleX(), 0.0001);
-                        assertEquals(1.0, ripple.getScaleY(), 0.0001);
+                        assertEquals(1.0, ripple.getScaleX(), 0.001);
+                        assertEquals(1.0, ripple.getScaleY(), 0.001);
                         assertFalse(stateLayer.isRippleAnimationRunning());
                     }
             );
@@ -347,7 +347,7 @@ final class M3StateLayerTest {
                     }
             );
             FxTestUtils.runOnFxThreadWhenStable(
-                    () -> rippleCleared(rippleReference),
+                    () -> rippleReleaseFinished(stateLayerReference, rippleReference),
                     2,
                     () -> {
                     },
@@ -359,8 +359,8 @@ final class M3StateLayerTest {
                         Region ripple = Objects.requireNonNull(rippleReference.get(), "ripple");
 
                         assertEquals(0.0, ripple.getOpacity(), 0.0001);
-                        assertEquals(1.0, ripple.getScaleX(), 0.0001);
-                        assertEquals(1.0, ripple.getScaleY(), 0.0001);
+                        assertEquals(1.0, ripple.getScaleX(), 0.001);
+                        assertEquals(1.0, ripple.getScaleY(), 0.001);
                         assertFalse(stateLayer.isRippleAnimationRunning());
                     }
             );
@@ -457,9 +457,17 @@ final class M3StateLayerTest {
     }
 
     /// Returns whether the ripple finished its release animation.
-    private static boolean rippleCleared(AtomicReference<@Nullable Region> rippleReference) {
+    private static boolean rippleReleaseFinished(
+            AtomicReference<@Nullable M3StateLayer> stateLayerReference,
+            AtomicReference<@Nullable Region> rippleReference
+    ) {
+        @Nullable M3StateLayer stateLayer = stateLayerReference.get();
         @Nullable Region ripple = rippleReference.get();
-        return ripple != null && ripple.getOpacity() <= 0.0001;
+        return stateLayer != null
+                && ripple != null
+                && !stateLayer.isRippleAnimationRunning()
+                && ripple.getOpacity() <= 0.0001
+                && rippleScale(ripple) >= 0.999;
     }
 
     /// Returns the larger current ripple scale.

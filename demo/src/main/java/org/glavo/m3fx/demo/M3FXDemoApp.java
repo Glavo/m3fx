@@ -414,6 +414,7 @@ public final class M3FXDemoApp extends Application {
         return List.of(
                 new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse the implemented Material Design 3 component demos", DemoMaterialDocs.COMPONENTS, this::createComponentsOverviewPage),
                 new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", DemoMaterialDocs.APP_BARS, this::createAppBarsPage),
+                new DemoPage("Bottom App Bars", "Bottom app bars", APP_BARS_GROUP, "Bottom app bars with floating action alignment", DemoMaterialDocs.BOTTOM_APP_BARS, this::createBottomAppBarsPage),
                 new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", DemoMaterialDocs.BADGES, this::createBadgesPage),
                 new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", DemoMaterialDocs.BUTTON_GROUPS, this::createButtonGroupsPage),
                 new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", DemoMaterialDocs.BUTTONS, this::createButtonsPage),
@@ -1034,6 +1035,14 @@ public final class M3FXDemoApp extends Application {
                 M3TextInputVariant.FILLED
         );
         areaError.setError(true);
+        M3TextField rtlFilled = createTextField("RTL filled", "rtl@example.com", M3TextInputVariant.FILLED, false);
+        rtlFilled.setPrefWidth(320.0);
+        M3TextField rtlOutlined = createTextField("RTL outlined", "M3FX RTL", M3TextInputVariant.OUTLINED, false);
+        rtlOutlined.setPrefWidth(320.0);
+        M3PasswordField rtlPassword = new M3PasswordField("");
+        rtlPassword.setVariant(M3TextInputVariant.OUTLINED);
+        rtlPassword.setPromptText("RTL password");
+        rtlPassword.setPrefWidth(320.0);
 
         M3TextInputLayout filledLayout = createTextInputLayout(filled, "Supporting text");
         M3TextInputLayout filledTextLayout = createTextInputLayout(filledText, "Email address");
@@ -1077,13 +1086,28 @@ public final class M3FXDemoApp extends Application {
         outlinedAreaLayout.setCharacterLimit(96);
         M3TextInputLayout areaErrorLayout = createTextInputLayout(areaError, "Supporting text");
         areaErrorLayout.setErrorText("Review this text before continuing");
+        M3TextInputLayout rtlFilledLayout = createTextInputLayout(rtlFilled, "RTL email address");
+        rtlFilledLayout.setLeading(createSurfaceVariantIcon("email"));
+        rtlFilledLayout.setClearButtonEnabled(true);
+        rtlFilledLayout.setCharacterCounterVisible(true);
+        rtlFilledLayout.setCharacterLimit(32);
+        rtlFilledLayout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        M3TextInputLayout rtlOutlinedLayout = createTextInputLayout(rtlOutlined, "RTL project name");
+        rtlOutlinedLayout.setLeading(createSurfaceVariantIcon("text"));
+        rtlOutlinedLayout.setCharacterCounterVisible(true);
+        rtlOutlinedLayout.setCharacterLimit(24);
+        rtlOutlinedLayout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        M3TextInputLayout rtlPasswordLayout = createTextInputLayout(rtlPassword, "RTL at least 8 characters");
+        rtlPasswordLayout.setTrailing(createIconButton("visibility"));
+        rtlPasswordLayout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
         return createGallery(
                 createShowcaseGroup("Filled", filledLayout, filledTextLayout, filledDisabledLayout),
                 createShowcaseGroup("Outlined", outlinedLayout, outlinedTextLayout, passwordLayout),
                 createShowcaseGroup("Validation", validatedEmailLayout, requiredProjectLayout),
                 createShowcaseGroup("Error", filledErrorLayout, outlinedErrorLayout, passwordErrorLayout, areaErrorLayout),
-                createShowcaseGroup("Text Areas", filledAreaLayout, outlinedAreaLayout)
+                createShowcaseGroup("Text Areas", filledAreaLayout, outlinedAreaLayout),
+                createShowcaseGroup("Right-to-left", rtlFilledLayout, rtlOutlinedLayout, rtlPasswordLayout)
         );
     }
 
@@ -3028,7 +3052,8 @@ public final class M3FXDemoApp extends Application {
         create.setOnAction(event -> showSnackbar());
         edit.setOnAction(event -> showSnackbar());
         share.setOnAction(event -> showSnackbar());
-        M3FabMenu menu = new M3FabMenu();
+        M3FloatingActionButton toggle = createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR);
+        M3FabMenu menu = new M3FabMenu(toggle);
         menu.addItems(create, edit, share);
         return menu;
     }

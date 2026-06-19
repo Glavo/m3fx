@@ -334,7 +334,7 @@ public class M3BottomAppBar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         floatingAction.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         focusNotifier.start();
@@ -372,7 +372,7 @@ public class M3BottomAppBar extends Control {
 
     /// Handles keyboard traversal between focusable regular and floating action items.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
             return;
         }
 
@@ -496,6 +496,7 @@ public class M3BottomAppBar extends Control {
         }
 
         /// Provides access to a styleable bottom app bar size token property.
+        @NotNullByDefault
         @FunctionalInterface
         private interface StyleablePropertyAccessor {
             /// Returns the property for the supplied bottom app bar.

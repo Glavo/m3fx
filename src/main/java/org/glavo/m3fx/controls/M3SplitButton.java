@@ -37,7 +37,7 @@ import java.util.Objects;
 /// secondary commands. The control keeps both parts visually joined, forwards the configured button variant, and
 /// exposes the menu items through the embedded menu button.
 ///
-/// See [Material Design buttons](https://m3.material.io/components/buttons/overview).
+/// See [Material Design split buttons](https://m3.material.io/components/split-button/overview).
 @NotNullByDefault
 public class M3SplitButton extends Control {
     /// The base style class for M3FX split buttons.

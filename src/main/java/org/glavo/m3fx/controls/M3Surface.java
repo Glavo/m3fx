@@ -279,7 +279,7 @@ public class M3Surface extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         getContent().addListener((ListChangeListener<Node>) change -> handleContentChanged());
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
         updateVariantStyle();
         updateElevationStyle();
@@ -288,14 +288,14 @@ public class M3Surface extends Control {
 
     /// Handles linear keyboard traversal between surface content targets.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, true)) {
             return;
         }
 
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,
-                M3FocusTraversal.focusTargets(getContent()),
+                M3FocusTraversal.focusTargetsInReachableTrees(getContent()),
                 true,
                 true,
                 -1,

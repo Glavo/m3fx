@@ -66,16 +66,16 @@ public class M3LoadingIndicator extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    /// The current progress value.
+    // The current progress value.
     private @Nullable DoubleProperty progress;
 
-    /// The styleable loading indicator container size token.
+    // The styleable loading indicator container size token.
     private @Nullable StyleableDoubleProperty containerSize;
 
-    /// The styleable active indicator size token.
+    // The styleable active indicator size token.
     private @Nullable StyleableDoubleProperty indicatorSize;
 
-    /// The visual variant used by this loading indicator.
+    // The visual variant used by this loading indicator.
     private @Nullable ObjectProperty<M3LoadingIndicatorVariant> variant;
 
     /// Creates an indeterminate loading indicator.

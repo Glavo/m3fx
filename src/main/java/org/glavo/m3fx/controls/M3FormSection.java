@@ -289,20 +289,20 @@ public class M3FormSection extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         getContent().addListener(contentListener);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
     }
 
     /// Handles vertical keyboard traversal between section content nodes.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, false, true)) {
             return;
         }
 
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,
-                M3FocusTraversal.focusTargets(getContent()),
+                M3FocusTraversal.focusTargetsInReachableTrees(getContent()),
                 false,
                 true,
                 -1,

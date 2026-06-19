@@ -115,7 +115,7 @@ public class M3Card extends Control {
     public M3Card(@Nullable Node content) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setFocusTraversable(false);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
         setContent(content);
         updateVariantStyle();
@@ -378,18 +378,28 @@ public class M3Card extends Control {
 
     /// Handles keyboard traversal between the actionable card surface and nested content.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        handleNavigationKeyPressed(event, event.getTarget() instanceof Node eventTarget ? eventTarget : null);
+    }
+
+    /// Handles keyboard traversal with an explicit event-target fallback.
+    private void handleNavigationKeyPressed(KeyEvent event, @Nullable Node eventTarget) {
+        if (event.getEventType() != KeyEvent.KEY_PRESSED) {
+            return;
+        }
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, true)) {
             return;
         }
 
+        List<Node> targets = navigationTargets();
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,
-                navigationTargets(),
+                targets,
                 true,
                 true,
                 -1,
-                false
+                false,
+                eventTarget
         );
     }
 
@@ -402,9 +412,10 @@ public class M3Card extends Control {
                 targets.add(cardTarget);
             }
         }
-        @Nullable Node contentTarget = M3Accessible.accessibleFocusTarget(getContent());
-        if (contentTarget != null && contentTarget != this) {
-            targets.add(contentTarget);
+        for (Node contentTarget : M3FocusTraversal.focusTargetsInReachableTree(getContent())) {
+            if (contentTarget != this) {
+                targets.add(contentTarget);
+            }
         }
         return List.copyOf(targets);
     }

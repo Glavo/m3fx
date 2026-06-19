@@ -36,7 +36,7 @@ import java.util.Objects;
 /// style classes so skins and CSS can render shared outlines and joined shapes. Use it when commands should be
 /// visually grouped but remain independent buttons.
 ///
-/// See [Material Design buttons](https://m3.material.io/components/buttons/overview).
+/// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
 @NotNullByDefault
 public class M3ButtonGroup extends Control {
     /// The base style class for M3FX button groups.

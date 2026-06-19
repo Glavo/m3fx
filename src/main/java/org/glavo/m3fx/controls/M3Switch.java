@@ -207,6 +207,7 @@ public class M3Switch extends ButtonBase {
         setAlignment(Pos.CENTER_LEFT);
         setFocusTraversable(true);
         setMnemonicParsing(true);
+        setPickOnBounds(true);
         updateMetrics();
     }
 

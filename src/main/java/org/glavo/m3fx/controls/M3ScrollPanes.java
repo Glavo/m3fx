@@ -138,6 +138,7 @@ public final class M3ScrollPanes {
     }
 
     /// Handles smooth wheel scrolling for one JavaFX scroll pane.
+    @NotNullByDefault
     private static final class SmoothScrollState {
         /// The scroll pane receiving smooth wheel behavior.
         private final ScrollPane scrollPane;

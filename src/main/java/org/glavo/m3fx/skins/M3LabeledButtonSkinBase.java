@@ -21,6 +21,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextBoundsType;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
@@ -299,11 +300,21 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
 
         if (graphic == null && button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)) {
-            @Nullable Node textNode = firstTextNode();
-            if (textNode != null) {
-                centerNodeInArea(textNode, x, y, width, height);
-            }
+            centerDateCellTextContent(x, y, width, height);
         }
+    }
+
+    /// Centers date-cell text by visual glyph bounds so rendered digits stay optically centered.
+    private void centerDateCellTextContent(double x, double y, double width, double height) {
+        @Nullable Node textNode = firstTextNode();
+        if (textNode == null) {
+            return;
+        }
+
+        if (textNode instanceof Text text) {
+            text.setBoundsType(TextBoundsType.VISUAL);
+        }
+        centerNodeInArea(textNode, x, y, width, height);
     }
 
     /// Centers graphic-only content in the correct Material visual container.

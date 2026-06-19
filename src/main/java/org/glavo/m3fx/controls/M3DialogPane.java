@@ -65,10 +65,10 @@ public class M3DialogPane extends DialogPane {
     /// Whether the managed container shape style must be synchronized before the next layout pass.
     private boolean containerShapeStyleDirty;
 
-    /// The styleable dialog container shape token.
+    // The styleable dialog container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable dialog content padding token.
+    // The styleable dialog content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Reports focused dialog content or action changes to accessibility clients.

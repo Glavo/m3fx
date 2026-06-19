@@ -393,6 +393,7 @@ public class M3Button extends ButtonBase {
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);
         setMnemonicParsing(true);
+        setPickOnBounds(true);
         updateVariantStyle();
         updateMetrics();
     }

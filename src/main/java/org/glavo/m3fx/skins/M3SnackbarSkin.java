@@ -18,6 +18,9 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3Snackbar].
 @NotNullByDefault
 public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
+    /// The Material minimum height for a single-line snackbar container.
+    private static final double MIN_CONTAINER_HEIGHT = 48.0;
+
     /// The snackbar layout container.
     private final HBox container = new HBox();
 
@@ -98,6 +101,7 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         double padding = snackbar.getContentPadding();
         double trailingPadding = actionButton.isManaged() ? padding / 2.0 : padding;
         container.setPadding(new Insets(padding / 2.0, trailingPadding, padding / 2.0, padding));
+        container.setMinHeight(MIN_CONTAINER_HEIGHT);
         String shape = formatPixels(snackbar.getContainerShape());
         container.setStyle("-fx-background-radius: " + shape + ";");
     }

@@ -75,25 +75,25 @@ public class M3ProgressBar extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    /// The current progress value.
+    // The current progress value.
     private @Nullable DoubleProperty progress;
 
-    /// The styleable track thickness token.
+    // The styleable track thickness token.
     private @Nullable StyleableDoubleProperty trackThickness;
 
-    /// The styleable track shape token.
+    // The styleable track shape token.
     private @Nullable StyleableDoubleProperty trackShape;
 
-    /// The styleable wave amplitude token.
+    // The styleable wave amplitude token.
     private @Nullable StyleableDoubleProperty waveAmplitude;
 
-    /// The styleable wavelength token.
+    // The styleable wavelength token.
     private @Nullable StyleableDoubleProperty wavelength;
 
-    /// The styleable track gap token.
+    // The styleable track gap token.
     private @Nullable StyleableDoubleProperty trackGap;
 
-    /// The styleable stop indicator size token.
+    // The styleable stop indicator size token.
     private @Nullable StyleableDoubleProperty stopSize;
 
     /// Creates an indeterminate progress bar.

@@ -364,12 +364,12 @@ public class M3Carousel extends Control {
         setFocusTraversable(true);
         focusNotifier.start();
         getItems().addListener(itemsListener);
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
     }
 
     /// Handles keyboard selection and scrolling.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
             return;
         }
 

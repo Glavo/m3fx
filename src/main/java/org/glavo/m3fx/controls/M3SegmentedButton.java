@@ -267,6 +267,7 @@ public class M3SegmentedButton extends ButtonBase {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
         setFocusTraversable(true);
+        setPickOnBounds(true);
         updateMetrics();
     }
 

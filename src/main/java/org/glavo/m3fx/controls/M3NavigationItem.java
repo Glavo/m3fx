@@ -401,6 +401,7 @@ public class M3NavigationItem extends ButtonBase {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         setFocusTraversable(true);
+        setPickOnBounds(true);
         updateMetrics();
     }
 

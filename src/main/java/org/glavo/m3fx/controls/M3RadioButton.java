@@ -293,6 +293,7 @@ public class M3RadioButton extends ButtonBase implements Toggle {
         setAlignment(Pos.CENTER_LEFT);
         setFocusTraversable(true);
         setMnemonicParsing(true);
+        setPickOnBounds(true);
         updateMetrics();
     }
 
