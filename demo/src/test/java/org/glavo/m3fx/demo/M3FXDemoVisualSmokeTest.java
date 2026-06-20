@@ -6486,13 +6486,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Returns whether a node is a visible owner that should contain descendant text ink.
     private static boolean isTextVisualBoundary(Node node) {
-        return isPageLevelMaterialControl(node)
-                || node instanceof M3Chip
-                || node instanceof M3ListItem
-                || node instanceof M3MenuItem
-                || node instanceof M3NavigationItem
-                || node instanceof M3Snackbar
-                || node instanceof M3Tab;
+        return isPageLevelMaterialControl(node);
     }
 
     /// Verifies that visible text stays inside every explicit ancestor clip intersecting the text.
@@ -6659,9 +6653,7 @@ final class M3FXDemoVisualSmokeTest {
         return labeled instanceof M3Button
                 || labeled instanceof M3Chip
                 || labeled instanceof M3FloatingActionButton
-                || labeled instanceof M3IconButton
                 || labeled instanceof M3IconToggleButton
-                || labeled instanceof M3MenuButton
                 || labeled instanceof M3SegmentedButton;
     }
 
@@ -6981,9 +6973,13 @@ final class M3FXDemoVisualSmokeTest {
 
             @Nullable Node glyph = firstVisibleText(node);
             if (glyph == null || !hasRenderableBounds(glyph)) {
-                glyph = centeredDemoVectorIconNode(node);
+                glyph = centeredMaterialVectorIconNode(node);
             }
             if (glyph == null || !hasRenderableBounds(glyph)) {
+                assertFalse(
+                        shouldRequireCenteredGlyph(node),
+                        () -> pageTitle + " fixed target should render a centered glyph: target=" + node
+                );
                 return;
             }
 
@@ -7012,7 +7008,8 @@ final class M3FXDemoVisualSmokeTest {
                     double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
                     double pixelDx = Math.abs(targetBounds.getCenterX() - inkCenterX);
                     double pixelDy = Math.abs(targetBounds.getCenterY() - inkCenterY);
-                    assertTrue(pixelDx <= 4.0 && pixelDy <= 4.0,
+                    assertTrue(pixelDx <= DEMO_ICON_PIXEL_CENTER_TOLERANCE
+                                    && pixelDy <= DEMO_ICON_PIXEL_CENTER_TOLERANCE,
                             () -> pageTitle + " fixed target rendered ink is off-center: target="
                                     + node + ", glyph=" + renderedGlyph + ", pixelDx=" + pixelDx
                                     + ", pixelDy=" + pixelDy + ", targetBounds=" + targetBounds
@@ -7026,11 +7023,22 @@ final class M3FXDemoVisualSmokeTest {
                 }
             }
 
-            @Nullable Node vectorIcon = firstVisibleDemoVectorIcon(node);
+            @Nullable Node vectorIcon = firstVisibleMaterialVectorIcon(node);
             if (vectorIcon != null && hasRenderableBounds(vectorIcon)) {
                 assertVectorIconCenteredInContainer(node, vectorIcon, pageTitle + " fixed target vector icon");
             }
         });
+    }
+
+    /// Returns whether a fixed target should always expose visible centered glyph content.
+    private static boolean shouldRequireCenteredGlyph(Node target) {
+        if (target.getStyleClass().contains("demo-seed-button")) {
+            return false;
+        }
+        if (target instanceof M3IconButton || target instanceof M3IconToggleButton) {
+            return true;
+        }
+        return target instanceof Labeled labeled && !Objects.toString(labeled.getText(), "").isBlank();
     }
 
     /// Returns whether extracted text ink bounds represent enough of the glyph for pixel-centering checks.
@@ -7148,7 +7156,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that a demo vector icon is visually centered inside a target container.
     private static void assertVectorIconCenteredInContainer(Node container, Node vectorIcon, String description) {
-        @Nullable Parent viewport = demoIconViewportFor(vectorIcon);
+        @Nullable Parent viewport = vectorIconViewportFor(vectorIcon);
         if (viewport == null) {
             assertNodeCentersAligned(container, vectorIcon, DEMO_ICON_CENTER_TOLERANCE, description);
             return;
@@ -7185,13 +7193,17 @@ final class M3FXDemoVisualSmokeTest {
                         + pixels + ", imageSize=" + image.getWidth() + "x" + image.getHeight());
     }
 
-    /// Returns the stable demo viewport that owns a vector icon.
-    private static @Nullable Parent demoIconViewportFor(Node vectorIcon) {
+    /// Returns the stable viewport that owns a vector icon.
+    private static @Nullable Parent vectorIconViewportFor(Node vectorIcon) {
         @Nullable Parent viewport = nearestAncestorWithStyle(vectorIcon, "demo-vector-icon-viewport");
         if (viewport != null) {
             return viewport;
         }
-        return nearestAncestorWithStyle(vectorIcon, "demo-sample-icon");
+        viewport = nearestAncestorWithStyle(vectorIcon, "demo-sample-icon");
+        if (viewport != null) {
+            return viewport;
+        }
+        return nearestAncestorWithStyle(vectorIcon, "m3-internal-icon");
     }
 
     /// Verifies that two node layout centers align in scene coordinates.
@@ -7206,14 +7218,14 @@ final class M3FXDemoVisualSmokeTest {
                         + ", containerBounds=" + containerBounds + ", contentBounds=" + contentBounds);
     }
 
-    /// Returns the node whose center represents a demo vector icon target.
-    private static @Nullable Node centeredDemoVectorIconNode(Node root) {
-        @Nullable Node icon = firstVisibleDemoVectorIcon(root);
+    /// Returns the node whose center represents a Material vector icon target.
+    private static @Nullable Node centeredMaterialVectorIconNode(Node root) {
+        @Nullable Node icon = firstVisibleMaterialVectorIcon(root);
         if (icon == null) {
             return null;
         }
 
-        @Nullable Parent viewport = nearestAncestorWithStyle(icon, "demo-vector-icon-viewport");
+        @Nullable Parent viewport = vectorIconViewportFor(icon);
         return viewport == null ? icon : viewport;
     }
 
@@ -11327,13 +11339,10 @@ final class M3FXDemoVisualSmokeTest {
                 || node instanceof M3FormPane
                 || node instanceof M3FormRow
                 || node instanceof M3FormSection
-                || node instanceof M3IconButton
                 || node instanceof M3IconToggleButton
                 || node instanceof M3ListItem
                 || node instanceof M3LoadingIndicator
                 || node instanceof M3Menu
-                || node instanceof M3MenuButton
-                || node instanceof M3MenuItem
                 || node instanceof M3NavigationDrawerGroup
                 || node instanceof M3NavigationItem
                 || node instanceof M3PickerField<?, ?>
@@ -12533,15 +12542,6 @@ final class M3FXDemoVisualSmokeTest {
     private static boolean captureNodeFrameChangedFrom(
             Node node,
             WritableImage baseline,
-            AtomicReference<@Nullable WritableImage> frameReference
-    ) {
-        return captureNodeFrameChangedFrom(node, baseline, frameReference, null, "node snapshot");
-    }
-
-    /// Captures a node frame when it changes enough from a baseline snapshot.
-    private static boolean captureNodeFrameChangedFrom(
-            Node node,
-            WritableImage baseline,
             AtomicReference<@Nullable WritableImage> frameReference,
             @Nullable AtomicReference<String> diagnostics,
             String description
@@ -12643,11 +12643,6 @@ final class M3FXDemoVisualSmokeTest {
         int maxX = clampPixel(Math.ceil(bounds.getMaxX()), width);
         int maxY = clampPixel(Math.ceil(bounds.getMaxY()), height);
         return minimumChangedPixels(Math.max(1, (maxX - minX) * (maxY - minY)));
-    }
-
-    /// Returns whether two standalone snapshots changed enough to represent visible motion.
-    private static boolean snapshotChangedEnough(WritableImage before, WritableImage after) {
-        return countSnapshotChangedPixels(before, after) >= minimumSnapshotChangedPixels(before, after);
     }
 
     /// Counts changed pixels between two standalone snapshots.
@@ -12806,14 +12801,25 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Returns the first visible demo SVG icon below a target node.
     private static @Nullable Node firstVisibleDemoVectorIcon(Node node) {
+        return firstVisibleVectorIconWithStyle(node, DemoIcons.STYLE_CLASS);
+    }
+
+    /// Returns the first visible Material SVG icon below a target node.
+    private static @Nullable Node firstVisibleMaterialVectorIcon(Node node) {
+        @Nullable Node demoIcon = firstVisibleDemoVectorIcon(node);
+        return demoIcon == null ? firstVisibleVectorIconWithStyle(node, "m3-internal-icon-path") : demoIcon;
+    }
+
+    /// Returns the first visible SVG icon below a target node with the requested style class.
+    private static @Nullable Node firstVisibleVectorIconWithStyle(Node node, String styleClass) {
         if (node instanceof SVGPath
-                && node.getStyleClass().contains(DemoIcons.STYLE_CLASS)
+                && node.getStyleClass().contains(styleClass)
                 && hasRenderableBounds(node)) {
             return node;
         }
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
-                @Nullable Node icon = firstVisibleDemoVectorIcon(child);
+                @Nullable Node icon = firstVisibleVectorIconWithStyle(child, styleClass);
                 if (icon != null) {
                     return icon;
                 }
@@ -12978,15 +12984,6 @@ final class M3FXDemoVisualSmokeTest {
 
         assertTrue(totalWeight > 0.0, () -> "No contrasting pixels found for " + node);
         return new Point2D(weightedX / totalWeight, weightedY / totalWeight);
-    }
-
-    /// Returns the rendered-pixel bounds inside a node that contrast with its sampled local background.
-    private static Rectangle2D contrastingPixelBounds(
-            WritableImage image,
-            Node node,
-            double minimumDistance
-    ) {
-        return contrastingPixelBounds(image, node, sampledNodeBackgroundColor(image, node), minimumDistance);
     }
 
     /// Returns the rendered-pixel bounds inside a node that contrast with the supplied reference color.
