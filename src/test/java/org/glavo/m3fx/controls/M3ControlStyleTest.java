@@ -3076,6 +3076,98 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that carousel reveal requests can open nested picker value targets inside item content wrappers.
+    @Test
+    void carouselAccessibleShowItemRevealsNestedPickerValueTargets() {
+        runOnFxThread(() -> {
+            M3Button firstAction = new M3Button("First action");
+            HBox firstItem = new HBox(firstAction);
+            LocalDate targetDate = LocalDate.of(2026, 10, 12);
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 10, 8));
+            HBox secondItem = new HBox(field);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Pane root = new Pane(carousel);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 560.0, 220.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                carousel.resizeRelocate(0.0, 0.0, 520.0, 140.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                carousel.select(firstItem);
+                root.applyCss();
+                root.layout();
+
+                assertSame(firstItem, carousel.getSelectedItem());
+                assertFalse(field.isShowing());
+
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetDate);
+                root.layout();
+
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertTrue(field.isShowing());
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+                assertSame(pickerFocusNode, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that carousel reveal requests can open nested time picker value targets inside item content wrappers.
+    @Test
+    void carouselAccessibleShowItemRevealsNestedTimePickerValueTargets() {
+        runOnFxThread(() -> {
+            M3Button firstAction = new M3Button("First action");
+            HBox firstItem = new HBox(firstAction);
+            LocalTime targetTime = LocalTime.of(14, 30);
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(13, 15));
+            HBox secondItem = new HBox(field);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Pane root = new Pane(carousel);
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 560.0, 220.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                carousel.resizeRelocate(0.0, 0.0, 520.0, 140.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                carousel.select(firstItem);
+                root.applyCss();
+                root.layout();
+
+                assertSame(firstItem, carousel.getSelectedItem());
+                assertFalse(field.isShowing());
+
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetTime);
+                root.layout();
+
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertTrue(field.isShowing());
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+                assertSame(pickerFocusNode, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that carousel skins create an internal viewport and reveal selected items.
     @Test
     void carouselCreatesMaterialSkinAndScrollsSelectedItemIntoView() {
@@ -16032,6 +16124,155 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that wheel events accumulate while virtualized list smooth scrolling is running.
+    @Test
+    void listViewSmoothScrollingAccumulatesWheelEventsWhileAnimationRuns() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                M3MotionSettings.setAnimationsEnabled(listView, true);
+                double expectedAccumulatedPosition = expectedListViewWheelTargetPosition(listView, flow, -224.0);
+
+                ScrollEvent firstEvent = scrollEvent(listView, 0.0, -112.0);
+                listView.fireEvent(firstEvent);
+                ScrollEvent secondEvent = scrollEvent(listView, 0.0, -112.0);
+                listView.fireEvent(secondEvent);
+
+                assertTrue(firstEvent.isConsumed());
+                assertTrue(secondEvent.isConsumed());
+                assertEquals(0.0, flow.getPosition(), 0.0001);
+
+                M3MotionSettings.setAnimationsEnabled(listView, false);
+
+                assertEquals(expectedAccumulatedPosition, flow.getPosition(), 0.0001);
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that platform text-line units scroll virtualized lists by Material line distances.
+    @Test
+    void listViewSmoothScrollingUsesTextLineScrollUnits() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                M3MotionSettings.setAnimationsEnabled(listView, false);
+                double expectedPosition = expectedListViewWheelTargetPosition(listView, flow, -120.0);
+
+                ScrollEvent event = scrollEvent(
+                        listView,
+                        0.0,
+                        0.0,
+                        false,
+                        false,
+                        ScrollEvent.HorizontalTextScrollUnits.NONE,
+                        0.0,
+                        ScrollEvent.VerticalTextScrollUnits.LINES,
+                        -3.0
+                );
+                listView.fireEvent(event);
+
+                assertTrue(event.isConsumed());
+                assertEquals(expectedPosition, flow.getPosition(), 0.0001);
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that platform page units scroll virtualized lists by the current viewport height.
+    @Test
+    void listViewSmoothScrollingUsesPageScrollUnits() {
+        runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int i = 0; i < 100; i++) {
+                listView.addItem(i);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(260.0, 168.0);
+            listView.setCellFactory(value -> new M3ListItem("Row " + value));
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                M3MotionSettings.setAnimationsEnabled(listView, false);
+                double expectedPosition = expectedListViewWheelTargetPosition(listView, flow, -flow.getHeight());
+
+                ScrollEvent event = scrollEvent(
+                        listView,
+                        0.0,
+                        0.0,
+                        false,
+                        false,
+                        ScrollEvent.HorizontalTextScrollUnits.NONE,
+                        0.0,
+                        ScrollEvent.VerticalTextScrollUnits.PAGES,
+                        -1.0
+                );
+                listView.fireEvent(event);
+
+                assertTrue(event.isConsumed());
+                assertEquals(expectedPosition, flow.getPosition(), 0.0001);
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
     /// Verifies that disabled animation settings make virtualized list wheel scrolling finish synchronously.
     @Test
     void listViewSmoothScrollingHonorsDisabledAnimations() {
@@ -20589,6 +20830,75 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that indexed show-item parameters can still reveal nested targets inside the indexed item.
+    @Test
+    void indexedContainersDelegateShowItemIntoNestedTargets() {
+        runOnFxThread(() -> {
+            M3Button firstTrailing = new M3Button("First trailing");
+            M3ListItem firstItem = new M3ListItem("First row");
+            firstItem.setTrailing(firstTrailing);
+            M3Button secondTrailing = new M3Button("Second trailing");
+            M3ListItem secondItem = new M3ListItem("Second row");
+            secondItem.setTrailing(secondTrailing);
+            M3ListPane list = new M3ListPane(firstItem, secondItem);
+
+            M3Button firstCarouselAction = new M3Button("First carousel action");
+            HBox firstCarouselItem = new HBox(firstCarouselAction);
+            M3Button secondCarouselAction = new M3Button("Second carousel action");
+            HBox secondCarouselItem = new HBox(secondCarouselAction);
+            M3Carousel carousel = new M3Carousel(firstCarouselItem, secondCarouselItem);
+            carousel.setAnimatedScroll(false);
+
+            M3Button firstDrawerTrailing = new M3Button("First drawer trailing");
+            M3ListItem firstDrawerItem = new M3ListItem("First drawer row");
+            firstDrawerItem.setTrailing(firstDrawerTrailing);
+            M3Button secondDrawerTrailing = new M3Button("Second drawer trailing");
+            M3ListItem secondDrawerItem = new M3ListItem("Second drawer row");
+            secondDrawerItem.setTrailing(secondDrawerTrailing);
+            M3NavigationDrawerGroup drawerGroup = new M3NavigationDrawerGroup("Drawer group");
+            drawerGroup.addItem(firstDrawerItem);
+            drawerGroup.addItem(secondDrawerItem);
+            drawerGroup.setExpanded(false);
+
+            Stage stage = new Stage();
+            try {
+                VBox root = new VBox(list, carousel, drawerGroup);
+                stage.setScene(new Scene(root, 520.0, 360.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                carousel.resizeRelocate(0.0, 0.0, 480.0, 120.0);
+                root.applyCss();
+                root.layout();
+
+                list.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1, secondTrailing);
+
+                assertTrue(secondTrailing.isFocused());
+                assertSame(secondTrailing, secondItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(secondTrailing, list.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                assertFalse(drawerGroup.isExpanded());
+                drawerGroup.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 2, secondDrawerTrailing);
+
+                assertTrue(drawerGroup.isExpanded());
+                assertTrue(secondDrawerTrailing.isFocused());
+                assertSame(secondDrawerTrailing,
+                        secondDrawerItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(secondDrawerTrailing, drawerGroup.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                carousel.select(firstCarouselItem);
+                assertSame(firstCarouselItem, carousel.getSelectedItem());
+
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1, secondCarouselAction);
+                root.layout();
+
+                assertSame(secondCarouselItem, carousel.getSelectedItem());
+                assertTrue(secondCarouselAction.isFocused());
+                assertSame(secondCarouselAction, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
     /// Verifies that structural indexed containers focus or reveal requested accessibility items.
     @Test
     void structuralIndexedContainersSupportAccessibleShowItemActions() {
@@ -27146,6 +27456,127 @@ final class M3ControlStyleTest {
         M3MotionSettings.clearAnimationsEnabled(scrollPane);
     }
 
+    /// Verifies that Shift+wheel keeps vertical scrolling when the horizontal axis cannot scroll.
+    @Test
+    void scrollPaneSmoothScrollingKeepsShiftWheelVerticalWhenHorizontalAxisCannotScroll() {
+        Region content = new Region();
+        content.setPrefSize(160.0, 480.0);
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
+        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+
+        double expectedVValue = expectedScrollPaneVerticalTargetValue(scrollPane, content, -80.0);
+        ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0, false, true);
+        scrollPane.fireEvent(event);
+
+        assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+        assertEquals(0.0, scrollPane.getHvalue(), 0.0001);
+        assertEquals(expectedVValue, scrollPane.getVvalue(), 0.0001, () -> scrollPaneDebug(
+                scrollPane,
+                content,
+                event
+        ));
+
+        M3ScrollPanes.disableSmoothScrolling(scrollPane);
+        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+    }
+
+    /// Verifies that horizontal character scroll units are converted to Material wheel distances.
+    @Test
+    void scrollPaneSmoothScrollingUsesHorizontalCharacterScrollUnits() {
+        Region content = new Region();
+        content.setPrefSize(480.0, 120.0);
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setPrefSize(160.0, 120.0);
+        StackPane root = new StackPane(scrollPane);
+        Scene scene = new Scene(root, 180.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.resize(180.0, 140.0);
+        root.layout();
+        M3ScrollPanes.enableSmoothScrolling(scrollPane);
+        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+
+        double expectedHValue = expectedScrollPaneHorizontalTargetValue(scrollPane, content, -80.0);
+        ScrollEvent event = scrollEvent(
+                scrollPane,
+                0.0,
+                0.0,
+                false,
+                false,
+                ScrollEvent.HorizontalTextScrollUnits.CHARACTERS,
+                -2.0,
+                ScrollEvent.VerticalTextScrollUnits.NONE,
+                0.0
+        );
+        scrollPane.fireEvent(event);
+
+        assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
+        assertEquals(expectedHValue, scrollPane.getHvalue(), 0.0001, () -> scrollPaneDebug(
+                scrollPane,
+                content,
+                event
+        ));
+        assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
+
+        M3ScrollPanes.disableSmoothScrolling(scrollPane);
+        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+    }
+
+    /// Verifies that wheel events accumulate while a smooth scroll animation is still running.
+    @Test
+    void scrollPaneSmoothScrollingAccumulatesWheelEventsWhileAnimationRuns() {
+        runOnFxThreadAndWait(() -> {
+            Region content = new Region();
+            content.setPrefSize(160.0, 480.0);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setPrefSize(160.0, 120.0);
+            StackPane root = new StackPane(scrollPane);
+            Scene scene = new Scene(root, 180.0, 140.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                M3ScrollPanes.enableSmoothScrolling(scrollPane);
+                M3MotionSettings.setAnimationsEnabled(scrollPane, true);
+
+                double expectedAccumulatedVValue = expectedScrollPaneVerticalTargetValue(scrollPane, content, -160.0);
+                ScrollEvent firstEvent = scrollEvent(scrollPane, 0.0, -80.0);
+                scrollPane.fireEvent(firstEvent);
+                ScrollEvent secondEvent = scrollEvent(scrollPane, 0.0, -80.0);
+                scrollPane.fireEvent(secondEvent);
+
+                assertTrue(firstEvent.isConsumed(), () -> scrollPaneDebug(scrollPane, content, firstEvent));
+                assertTrue(secondEvent.isConsumed(), () -> scrollPaneDebug(scrollPane, content, secondEvent));
+                assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
+
+                M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+
+                assertEquals(expectedAccumulatedVValue, scrollPane.getVvalue(), 0.0001, () -> scrollPaneDebug(
+                        scrollPane,
+                        content,
+                        secondEvent
+                ));
+            } finally {
+                M3ScrollPanes.disableSmoothScrolling(scrollPane);
+                M3MotionSettings.clearAnimationsEnabled(scrollPane);
+                stage.close();
+            }
+        });
+    }
     /// Verifies that platform text-line scroll units are converted to Material wheel distances.
     @Test
     void scrollPaneSmoothScrollingUsesTextLineScrollUnits() {

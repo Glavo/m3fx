@@ -54,13 +54,13 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The expressive wavy active indicator path.
     private final Path waveIndicator = new Path();
 
-    /// The progress value currently displayed by determinate progress.
+    // The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
     /// The determinate progress transition timeline.
     private final Timeline determinateAnimation = new Timeline();
 
-    /// The animated phase used by indeterminate progress.
+    // The animated phase used by indeterminate progress.
     private final DoubleProperty indeterminatePhase =
             new SimpleDoubleProperty(this, "indeterminatePhase", INDETERMINATE_START_PHASE);
 

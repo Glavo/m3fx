@@ -393,7 +393,7 @@ public class M3TextInputLayout extends Control {
     /// The animated outline path rendered by outlined input layouts.
     private final Path outlinePath = new Path();
 
-    /// The progress of the floating-label outline notch opening animation.
+    // The progress of the floating-label outline notch opening animation.
     private final DoubleProperty outlineNotchProgress =
             new SimpleDoubleProperty(this, "outlineNotchProgress") {
                 /// Rebuilds the outlined border when the animated notch progress changes.

@@ -50,7 +50,7 @@ final class M3FocusVisibleTracker {
     /// Handles native JavaFX focus-visible changes.
     private final ChangeListener<Boolean> nativeFocusVisibleListener;
 
-    /// The native JavaFX focus-visible property, or null when the runtime does not expose it.
+    // The native JavaFX focus-visible property, or null when the runtime does not expose it.
     private final @Nullable ReadOnlyBooleanProperty nativeFocusVisibleProperty;
 
     /// Whether the latest relevant interaction was keyboard-driven.

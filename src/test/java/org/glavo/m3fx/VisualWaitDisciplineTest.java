@@ -35,6 +35,28 @@ final class VisualWaitDisciplineTest {
             Path.of("demo", "src", "test", "java", "org", "glavo", "m3fx", "demo", "M3FXDemoVisualSmokeTest.java")
     );
 
+    /// Demo visual smoke test source that owns full-page rendered sweeps.
+    private static final Path DEMO_VISUAL_SMOKE_TEST_SOURCE =
+            Path.of("demo", "src", "test", "java", "org", "glavo", "m3fx", "demo", "M3FXDemoVisualSmokeTest.java");
+
+    /// Full-page demo visual sweep methods that must run page-specific rendered-state checks.
+    private static final @Unmodifiable List<String> DEMO_FULL_PAGE_VISUAL_SWEEP_METHODS = List.of(
+            "allDemoPagesRenderWithoutClippedTextOrOffCenterFixedTargets",
+            "darkExpressiveDemoPagesRenderWithoutClippedTextOrOffCenterFixedTargets",
+            "rightToLeftDemoPagesRenderWithoutClippedTextOrOffCenterFixedTargets"
+    );
+
+    /// Required source markers for every full-page demo visual sweep.
+    private static final @Unmodifiable List<String> DEMO_FULL_PAGE_VISUAL_SWEEP_MARKERS = List.of(
+            "showPageWhenSidebarSelectionSettled(",
+            "assertCurrentPageTitle(scene, pageTitle)",
+            "assertSidebarSelectionMatchesCurrentPage(app, pageTitle)",
+            "writeVisualSnapshot(image, Path.of(",
+            "assertSnapshotHasVisibleContent(image, pageTitle)",
+            "assertDemoPageVisualGeometry(scene, pageTitle)",
+            "assertDemoPageSpecificVisualState(scene, pageTitle)"
+    );
+
     /// Shared visual wait helpers that must not reintroduce fixed-time waiting behind visual tests.
     private static final @Unmodifiable List<Path> VISUAL_WAIT_HELPER_SOURCES = List.of(
             Path.of("src", "test", "java", "org", "glavo", "m3fx", "FxTestUtils.java"),
@@ -103,6 +125,15 @@ final class VisualWaitDisciplineTest {
     /// The maximum number of lines read to validate one visual snapshot report path.
     private static final int SNAPSHOT_WRITE_CALL_MAX_LINES = 12;
 
+    /// Source markers that keep demo visual snapshots easy to review after the test run.
+    private static final @Unmodifiable List<String> VISUAL_SNAPSHOT_INDEX_MARKERS = List.of(
+            "writeVisualSnapshotIndex(path)",
+            "Files.list(directory)",
+            "directory.resolve(\"index.html\")",
+            "M3FX Demo Visual Snapshots",
+            "escapeHtml(fileName)"
+    );
+
     /// Verifies that broad visual tests wait for semantic state or rendered pixels instead of elapsed time.
     @Test
     void visualTestsDoNotUseFixedTimeWaits() throws IOException {
@@ -147,6 +178,22 @@ final class VisualWaitDisciplineTest {
                         + missingSnapshotReports);
     }
 
+    /// Verifies that demo visual snapshots keep a reviewable HTML index.
+    @Test
+    void demoVisualSnapshotsMaintainReviewIndex() throws IOException {
+        Path root = workspaceRoot();
+        String source = Files.readString(root.resolve(DEMO_VISUAL_SMOKE_TEST_SOURCE));
+        List<String> missingMarkers = new ArrayList<>();
+        for (String marker : VISUAL_SNAPSHOT_INDEX_MARKERS) {
+            if (!source.contains(marker)) {
+                missingMarkers.add(marker);
+            }
+        }
+
+        assertTrue(missingMarkers.isEmpty(), () -> "Demo visual snapshots must keep a generated HTML index "
+                + "with PNG enumeration and escaped file names: " + missingMarkers);
+    }
+
     /// Verifies that visual snapshot report writes target the build report tree and PNG files.
     @Test
     void visualSnapshotReportsUseBuildReportsPngPaths() throws IOException {
@@ -157,6 +204,27 @@ final class VisualWaitDisciplineTest {
         }
 
         assertTrue(violations.isEmpty(), () -> "Visual snapshot reports must use build/reports PNG paths: "
+                + violations);
+    }
+
+    /// Verifies that full-page demo sweeps keep the page-specific rendered-state contract in every mode.
+    @Test
+    void fullPageDemoVisualSweepsKeepPageSpecificStateChecks() throws IOException {
+        Path root = workspaceRoot();
+        String source = Files.readString(root.resolve(DEMO_VISUAL_SMOKE_TEST_SOURCE));
+        List<String> violations = new ArrayList<>();
+
+        for (String methodName : DEMO_FULL_PAGE_VISUAL_SWEEP_METHODS) {
+            String methodBlock = methodBlock(source, methodName);
+            for (String marker : DEMO_FULL_PAGE_VISUAL_SWEEP_MARKERS) {
+                if (!methodBlock.contains(marker)) {
+                    violations.add(DEMO_VISUAL_SMOKE_TEST_SOURCE + "#" + methodName + " is missing " + marker);
+                }
+            }
+        }
+
+        assertTrue(violations.isEmpty(), () -> "Full-page demo visual sweeps must keep stable page switching, "
+                + "reviewable snapshots, shared geometry checks, and page-specific visual-state checks in every mode: "
                 + violations);
     }
 
@@ -416,6 +484,39 @@ final class VisualWaitDisciplineTest {
     /// Compacts a multi-line source block for assertion diagnostics.
     private static String compact(String sourceBlock) {
         return sourceBlock.replaceAll("\\s+", " ").trim();
+    }
+
+    /// Returns one method body block from Java source text.
+    private static String methodBlock(String source, String methodName) {
+        int methodIndex = source.indexOf("void " + methodName + "(");
+        if (methodIndex < 0) {
+            throw new AssertionError("Could not find method " + methodName);
+        }
+
+        int openingBraceIndex = source.indexOf('{', methodIndex);
+        if (openingBraceIndex < 0) {
+            throw new AssertionError("Could not find opening brace for method " + methodName);
+        }
+
+        int closingBraceIndex = closingBraceIndex(source, openingBraceIndex);
+        return source.substring(openingBraceIndex, closingBraceIndex + 1);
+    }
+
+    /// Returns the matching closing brace index for one source block.
+    private static int closingBraceIndex(String source, int openingBraceIndex) {
+        int depth = 0;
+        for (int index = openingBraceIndex; index < source.length(); index++) {
+            char character = source.charAt(index);
+            if (character == '{') {
+                depth++;
+            } else if (character == '}') {
+                depth--;
+                if (depth == 0) {
+                    return index;
+                }
+            }
+        }
+        throw new AssertionError("Could not find closing brace after index " + openingBraceIndex);
     }
 
     /// Returns the repository root for source-file checks.

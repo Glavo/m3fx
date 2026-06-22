@@ -1394,6 +1394,11 @@ final class M3Accessible {
                 }
             }
         }
+        for (Node item : items) {
+            if (containsAccessibleActionTarget(item, parameter)) {
+                return item;
+            }
+        }
         return null;
     }
 

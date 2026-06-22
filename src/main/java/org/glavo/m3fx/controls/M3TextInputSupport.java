@@ -68,22 +68,22 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     /// The CSS metadata for the optional vertical padding token.
     private final @Nullable CssMetaData<C, Number> verticalPaddingCssMetaData;
 
-    /// The visual variant property.
+    // The visual variant property.
     private final ObjectProperty<M3TextInputVariant> variant;
 
     /// Whether the owning input should render its error state.
     private final BooleanProperty error;
 
-    /// The styleable container height token.
+    // The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The styleable container shape token.
+    // The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable horizontal padding token.
+    // The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The styleable vertical padding token.
+    // The styleable vertical padding token.
     private @Nullable StyleableDoubleProperty verticalPadding;
 
     /// Creates shared text input state for a concrete JavaFX text input control.

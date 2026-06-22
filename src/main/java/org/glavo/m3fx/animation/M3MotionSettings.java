@@ -52,11 +52,11 @@ public final class M3MotionSettings {
     private static final ObjectProperty<M3MotionBehavior> motionBehavior =
             new SimpleObjectProperty<>(M3MotionSettings.class, "motionBehavior", M3MotionBehavior.standard());
 
-    /// The revision incremented whenever any global or node-local motion setting changes.
+    // The revision incremented whenever any global or node-local motion setting changes.
     private static final ReadOnlyLongWrapper settingsRevision =
             new ReadOnlyLongWrapper(M3MotionSettings.class, "settingsRevision");
 
-    /// The read-only view of [settingsRevision].
+    // The read-only view of [settingsRevision].
     private static final ReadOnlyLongProperty readOnlySettingsRevision = settingsRevision.getReadOnlyProperty();
 
     /// Listeners notified whenever global or node-local motion settings change.

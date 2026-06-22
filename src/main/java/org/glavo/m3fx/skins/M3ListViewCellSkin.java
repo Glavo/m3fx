@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 /// @param <T> the item type rendered by the skinned cell
 @NotNullByDefault
 public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
-    // The currently installed rendered row node.
+    /// The currently installed rendered row node.
     private @Nullable Node graphic;
 
     /// Updates the rendered row when the cell graphic changes.

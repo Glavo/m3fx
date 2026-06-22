@@ -56,13 +56,13 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The stop indicator rendered at the end of an expressive progress bar track.
     private final Circle stop = new Circle();
 
-    /// The progress value currently displayed by determinate progress.
+    // The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
     /// The determinate progress transition timeline.
     private final Timeline determinateAnimation = new Timeline();
 
-    /// The animated position of the indeterminate segment.
+    // The animated position of the indeterminate segment.
     private final DoubleProperty indeterminatePosition =
             new SimpleDoubleProperty(this, "indeterminatePosition", INDETERMINATE_START_POSITION);
 

@@ -201,7 +201,7 @@ public final class M3ScrollPanes {
                     scrollPane.getVmax(),
                     verticalScrollablePixels
             );
-            if (event.isShiftDown() && Math.abs(horizontalDelta) <= EPSILON) {
+            if (event.isShiftDown() && canScrollHorizontally && Math.abs(horizontalDelta) <= EPSILON) {
                 horizontalDelta = verticalDelta;
                 verticalDelta = 0.0;
             } else if (!canScrollVertically
@@ -246,7 +246,7 @@ public final class M3ScrollPanes {
         /// Applies changed animation settings to the current smooth scroll operation.
         private void refreshMotionSettings() {
             Timeline currentAnimation = animation;
-            if (currentAnimation == null || currentAnimation.getStatus() != Animation.Status.RUNNING) {
+            if (currentAnimation == null) {
                 return;
             }
 
@@ -254,7 +254,7 @@ public final class M3ScrollPanes {
                 scrollPane.setHvalue(targetHValue);
                 scrollPane.setVvalue(targetVValue);
                 stopAnimation();
-            } else {
+            } else if (currentAnimation.getStatus() == Animation.Status.RUNNING) {
                 animateToTarget();
             }
         }

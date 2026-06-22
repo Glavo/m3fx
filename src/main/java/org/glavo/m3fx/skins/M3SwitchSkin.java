@@ -47,7 +47,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// The visual switch thumb.
     private final StackPane thumb = new StackPane();
 
-    /// The animated thumb position from off to on.
+    // The animated thumb position from off to on.
     private final DoubleProperty thumbPosition = new SimpleDoubleProperty(this, "thumbPosition");
 
     /// The thumb position animation.

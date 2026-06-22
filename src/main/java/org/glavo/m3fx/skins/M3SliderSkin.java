@@ -46,7 +46,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// The thumb-bounded state layer used for hover, focus, pressed, and ripple feedback.
     private final M3StateLayer stateLayer = new M3StateLayer();
 
-    /// The animated normalized thumb position.
+    // The animated normalized thumb position.
     private final DoubleProperty displayedPosition = new SimpleDoubleProperty(this, "displayedPosition");
 
     /// The displayed value transition animation.

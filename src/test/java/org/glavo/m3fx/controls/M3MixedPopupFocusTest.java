@@ -561,6 +561,100 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+
+    /// Verifies that validation summaries reveal invalid-input adornment time picker value targets.
+    @Test
+    void validationSummaryRevealsInvalidInputAdornmentTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TextField nameField = new M3TextField();
+            LocalTime targetTime = LocalTime.of(10, 45);
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Name", "Required");
+            nameLayout.setTrailing(field);
+            nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
+
+            M3TextField emailField = new M3TextField();
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Required");
+            emailLayout.setValidator(M3TextInputValidators.required("Email is required"));
+
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            Stage stage = new Stage();
+
+            try {
+                assertFalse(validator.validate());
+
+                Pane root = new Pane(nameLayout, emailLayout, summary);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                nameLayout.resizeRelocate(32.0, 24.0, 580.0, 88.0);
+                emailLayout.resizeRelocate(32.0, 128.0, 360.0, 88.0);
+                summary.resizeRelocate(32.0, 236.0, 460.0, 120.0);
+                root.layout();
+
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                assertPickerValueTargetRoutedByContainer(summary, field, targetTime);
+
+                assertSame(field.getEditor(), nameLayout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that validation summaries reveal invalid-input adornment date range picker value targets.
+    @Test
+    void validationSummaryRevealsInvalidInputAdornmentDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TextField nameField = new M3TextField();
+            LocalDate targetDate = LocalDate.of(2026, 6, 27);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 6, 14),
+                    LocalDate.of(2026, 6, 18)
+            );
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Name", "Required");
+            nameLayout.setTrailing(field);
+            nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
+
+            M3TextField emailField = new M3TextField();
+            M3TextInputLayout emailLayout = new M3TextInputLayout(emailField, "Email", "Required");
+            emailLayout.setValidator(M3TextInputValidators.required("Email is required"));
+
+            M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            Stage stage = new Stage();
+
+            try {
+                assertFalse(validator.validate());
+
+                Pane root = new Pane(nameLayout, emailLayout, summary);
+                Scene scene = new Scene(root, 840.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                nameLayout.resizeRelocate(32.0, 24.0, 680.0, 88.0);
+                emailLayout.resizeRelocate(32.0, 128.0, 360.0, 88.0);
+                summary.resizeRelocate(32.0, 236.0, 500.0, 120.0);
+                root.layout();
+
+                assertSame(nameField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                assertDateRangePickerValueTargetRoutedByContainer(summary, field, targetDate);
+
+                assertSame(field.getEndEditor(), nameLayout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that nested form containers reveal and route menu, tooltip, and picker popup targets.
     @Test
     void formContainersRevealNestedPopupTargetsAcrossRows() {
@@ -638,6 +732,78 @@ final class M3MixedPopupFocusTest {
                 dateField.hidePicker();
                 tooltip.hide();
                 menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+
+    /// Verifies that nested form containers reveal time picker value targets across rows.
+    @Test
+    void formContainersRevealNestedTimePickerValueTargetAcrossRows() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalTime targetTime = LocalTime.of(11, 15);
+            M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(9, 30));
+            M3FormRow timeRow = new M3FormRow("Reminder", "Time picker target", timeField);
+            M3FormSection section = new M3FormSection("Project", timeRow);
+            M3FormPane form = new M3FormPane(section);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(form);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                form.resizeRelocate(32.0, 32.0, 620.0, 220.0);
+                root.layout();
+
+                assertFalse(timeField.isShowing());
+
+                assertPickerValueTargetRoutedByContainer(form, timeField, targetTime);
+
+                assertSame(timeField.getEditor(), timeRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(timeField.getEditor(), section.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                timeField.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that nested form containers reveal date range picker value targets across rows.
+    @Test
+    void formContainersRevealNestedDateRangePickerValueTargetAcrossRows() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 7, 8);
+            M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 7, 1),
+                    LocalDate.of(2026, 7, 5)
+            );
+            M3FormRow rangeRow = new M3FormRow("Window", "Date range picker target", rangeField);
+            M3FormSection section = new M3FormSection("Project", rangeRow);
+            M3FormPane form = new M3FormPane(section);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(form);
+                Scene scene = new Scene(root, 840.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                form.resizeRelocate(32.0, 32.0, 720.0, 240.0);
+                root.layout();
+
+                assertFalse(rangeField.isShowing());
+
+                assertDateRangePickerValueTargetRoutedByContainer(form, rangeField, targetDate);
+
+                assertSame(rangeField.getEndEditor(), rangeRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(rangeField.getEndEditor(), section.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                rangeField.hidePicker();
                 stage.close();
             }
         });
@@ -1370,6 +1536,279 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that carousel item content exposes active rich tooltip action focus.
+    @Test
+    void carouselRoutesFocusThroughNestedRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Pane firstItem = new Pane(new M3Text("First"));
+            firstItem.setPrefSize(180.0, 128.0);
+            M3Button ownerAction = new M3Button("More");
+            M3Button tooltipAction = new M3Button("Details");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Carousel item",
+                    "Shows details for the selected carousel item.",
+                    tooltipAction
+            );
+            Pane secondItem = new Pane(ownerAction);
+            secondItem.setPrefSize(240.0, 128.0);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(carousel);
+                Scene scene = new Scene(root, 680.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                carousel.resizeRelocate(32.0, 32.0, 560.0, 220.0);
+                ownerAction.resizeRelocate(24.0, 24.0, 160.0, 56.0);
+                carousel.select(secondItem);
+                root.layout();
+
+                ownerAction.requestFocus();
+                tooltip.show(ownerAction, stage.getX() + 360.0, stage.getY() + 156.0);
+
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertTrue(ownerAction.isFocused());
+                assertSame(ownerAction, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(tooltip.isShowing());
+
+                ownerAction.fireEvent(keyPressed(KeyCode.F6));
+
+                assertTrue(tooltipAction.isFocused());
+                assertPopupFocusRoutedByContainer(carousel, tooltipAction);
+
+                tooltipAction.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(tooltip.isShowing());
+                assertTrue(ownerAction.isFocused());
+                assertSame(ownerAction, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that carousel item content exposes active picker popup focus.
+    @Test
+    void carouselRoutesFocusThroughNestedDatePickerPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Pane firstItem = new Pane(new M3Text("First"));
+            firstItem.setPrefSize(180.0, 128.0);
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 9, 12));
+            Pane secondItem = new Pane(field);
+            secondItem.setPrefSize(300.0, 128.0);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(carousel);
+                Scene scene = new Scene(root, 720.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                carousel.resizeRelocate(32.0, 32.0, 600.0, 220.0);
+                field.resizeRelocate(24.0, 24.0, 260.0, 64.0);
+                carousel.select(secondItem);
+                root.layout();
+
+                field.showPicker();
+                field.getPicker().requestFocus();
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertTrue(field.isShowing());
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+                assertPopupFocusRoutedByContainer(carousel, pickerFocusNode);
+
+                field.getPicker().fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getEditor().isFocused());
+                assertSame(field.getEditor(), carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+
+    /// Verifies that carousel item content exposes active time picker popup focus.
+    @Test
+    void carouselRoutesFocusThroughNestedTimePickerPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Pane firstItem = new Pane(new M3Text("First"));
+            firstItem.setPrefSize(180.0, 128.0);
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(13, 15));
+            Pane secondItem = new Pane(field);
+            secondItem.setPrefSize(300.0, 128.0);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(carousel);
+                Scene scene = new Scene(root, 720.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                carousel.resizeRelocate(32.0, 32.0, 600.0, 220.0);
+                field.resizeRelocate(24.0, 24.0, 260.0, 64.0);
+                carousel.select(secondItem);
+                root.layout();
+
+                field.showPicker();
+                field.getPicker().requestFocus();
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertSame(secondItem, carousel.getSelectedItem());
+                assertTrue(field.isShowing());
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+                assertPopupFocusRoutedByContainer(carousel, pickerFocusNode);
+
+                field.getPicker().fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getEditor().isFocused());
+                assertSame(field.getEditor(), carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that carousel reveal requests open nested date picker value targets.
+    @Test
+    void carouselRevealsNestedDatePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 9, 18);
+            Pane firstItem = new Pane(new M3Text("First"));
+            firstItem.setPrefSize(180.0, 128.0);
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 9, 12));
+            Pane secondItem = new Pane(field);
+            secondItem.setPrefSize(300.0, 128.0);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(carousel);
+                Scene scene = new Scene(root, 720.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                carousel.resizeRelocate(32.0, 32.0, 600.0, 220.0);
+                field.resizeRelocate(24.0, 24.0, 260.0, 64.0);
+                carousel.select(firstItem);
+                root.layout();
+
+                assertSame(firstItem, carousel.getSelectedItem());
+
+                assertPickerValueTargetRoutedByContainer(carousel, field, targetDate);
+
+                assertSame(secondItem, carousel.getSelectedItem());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+
+    /// Verifies that carousel reveal requests open nested time picker value targets.
+    @Test
+    void carouselRevealsNestedTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalTime targetTime = LocalTime.of(14, 30);
+            Pane firstItem = new Pane(new M3Text("First"));
+            firstItem.setPrefSize(180.0, 128.0);
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(13, 15));
+            Pane secondItem = new Pane(field);
+            secondItem.setPrefSize(300.0, 128.0);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(carousel);
+                Scene scene = new Scene(root, 720.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                carousel.resizeRelocate(32.0, 32.0, 600.0, 220.0);
+                field.resizeRelocate(24.0, 24.0, 260.0, 64.0);
+                carousel.select(firstItem);
+                root.layout();
+
+                assertSame(firstItem, carousel.getSelectedItem());
+
+                assertPickerValueTargetRoutedByContainer(carousel, field, targetTime);
+
+                assertSame(secondItem, carousel.getSelectedItem());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that carousel reveal requests preserve date range endpoint focus after nested picker dismissal.
+    @Test
+    void carouselRevealsNestedDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 9, 19);
+            Pane firstItem = new Pane(new M3Text("First"));
+            firstItem.setPrefSize(180.0, 128.0);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 9, 10),
+                    LocalDate.of(2026, 9, 16)
+            );
+            Pane secondItem = new Pane(field);
+            secondItem.setPrefSize(360.0, 128.0);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            carousel.setAnimatedScroll(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(carousel);
+                Scene scene = new Scene(root, 780.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                carousel.resizeRelocate(32.0, 32.0, 660.0, 240.0);
+                field.resizeRelocate(24.0, 24.0, 320.0, 64.0);
+                carousel.select(secondItem);
+                root.layout();
+
+                assertDateRangePickerValueTargetRoutedByContainer(carousel, field, targetDate);
+
+                assertSame(secondItem, carousel.getSelectedItem());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
     /// Verifies that surface content subtrees expose active picker popup focus to the surface owner.
     @Test
     void surfaceRoutesFocusThroughNestedPickerPopupInContentContainer() {
@@ -2310,6 +2749,98 @@ final class M3MixedPopupFocusTest {
 
                 assertTrue(fabMenu.isExpanded());
                 assertSame(field.getEditor(), fabMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+
+    /// Verifies that surface content containers reveal time picker value targets owned by FAB-menu actions.
+    @Test
+    void surfaceRevealsNestedFabMenuTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalTime targetTime = LocalTime.of(14, 30);
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            M3FabMenu fabMenu = new M3FabMenu();
+            fabMenu.addItem(field);
+            Pane content = new Pane(fabMenu);
+            content.setPrefSize(360.0, 180.0);
+            M3Surface surface = new M3Surface(content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 440.0, 220.0);
+                fabMenu.resizeRelocate(0.0, 0.0, 220.0, 160.0);
+                root.layout();
+
+                assertFalse(fabMenu.isExpanded());
+
+                assertPickerValueTargetRoutedByContainer(surface, field, targetTime);
+
+                assertTrue(fabMenu.isExpanded());
+                assertSame(field.getEditor(), fabMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that surface content containers reveal date range picker value targets owned by FAB-menu actions.
+    @Test
+    void surfaceRevealsNestedFabMenuDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 6, 24);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 6, 14),
+                    LocalDate.of(2026, 6, 18)
+            );
+            M3FabMenu fabMenu = new M3FabMenu();
+            fabMenu.addItem(field);
+            Pane content = new Pane(fabMenu);
+            content.setPrefSize(420.0, 180.0);
+            M3Surface surface = new M3Surface(content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 780.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 500.0, 240.0);
+                fabMenu.resizeRelocate(0.0, 0.0, 320.0, 180.0);
+                root.layout();
+
+                assertFalse(fabMenu.isExpanded());
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetDate);
+
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertTrue(fabMenu.isExpanded());
+                assertTrue(field.isShowing());
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+                assertPopupFocusRoutedByContainer(surface, pickerFocusNode);
+
+                field.getPicker().fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getStartEditor().isFocused());
+                assertSame(field.getStartEditor(), fabMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(field.getStartEditor(), surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 field.hidePicker();
                 stage.close();
@@ -3334,6 +3865,652 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that a hidden bottom sheet can reveal a nested submenu target from its content subtree.
+    @Test
+    void hiddenBottomSheetRevealsNestedContentMenuPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3SubMenuItem moveItem = new M3SubMenuItem("Move to", archiveItem);
+            M3MenuButton menuButton = new M3MenuButton("Actions", moveItem);
+            Pane content = new Pane(menuButton);
+            content.setPrefSize(260.0, 88.0);
+            M3BottomSheet sheet = new M3BottomSheet("Queue", content);
+            sheet.setShown(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                menuButton.resizeRelocate(0.0, 0.0, 180.0, 48.0);
+                root.layout();
+
+                assertFalse(sheet.isShown());
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertFalse(menuButton.isShowing());
+                assertFalse(moveItem.isSubMenuShowing());
+
+                sheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+                root.layout();
+
+                assertTrue(sheet.isShown());
+                assertTrue(menuButton.isShowing());
+                assertTrue(moveItem.isSubMenuShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(archiveItem, moveItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(sheet, archiveItem);
+            } finally {
+                moveItem.hideSubMenu();
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shown bottom sheets expose active nested content menu popup focus.
+    @Test
+    void bottomSheetRoutesFocusThroughNestedContentMenuPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
+            Pane content = new Pane(menuButton);
+            content.setPrefSize(260.0, 88.0);
+            M3BottomSheet sheet = new M3BottomSheet("Queue", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                menuButton.resizeRelocate(0.0, 0.0, 180.0, 48.0);
+                root.layout();
+
+                menuButton.showMenu();
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+
+                assertTrue(sheet.isShown());
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(sheet, archiveItem);
+
+                archiveItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sheet.hide();
+
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that a hidden side sheet can reveal a rich tooltip action from its content subtree.
+    @Test
+    void hiddenSideSheetRevealsNestedContentRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("More");
+            M3Button tooltipAction = new M3Button("Details");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "More",
+                    "Shows additional sheet details.",
+                    tooltipAction
+            );
+            Pane content = new Pane(ownerAction);
+            content.setPrefSize(260.0, 88.0);
+            M3SideSheet sheet = new M3SideSheet("Details", content);
+            sheet.setShown(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 320.0, 260.0);
+                ownerAction.resizeRelocate(0.0, 0.0, 160.0, 48.0);
+                root.layout();
+
+                assertFalse(sheet.isShown());
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertFalse(tooltip.isShowing());
+
+                sheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+                root.layout();
+
+                assertTrue(sheet.isShown());
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipAction.isFocused());
+                assertPopupFocusRoutedByContainer(sheet, tooltipAction);
+            } finally {
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shown side sheets expose active nested content rich tooltip focus.
+    @Test
+    void sideSheetRoutesFocusThroughNestedContentRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("More");
+            M3Button tooltipAction = new M3Button("Details");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "More",
+                    "Shows additional sheet details.",
+                    tooltipAction
+            );
+            Pane content = new Pane(ownerAction);
+            content.setPrefSize(260.0, 88.0);
+            M3SideSheet sheet = new M3SideSheet("Details", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 320.0, 260.0);
+                ownerAction.resizeRelocate(0.0, 0.0, 160.0, 48.0);
+                root.layout();
+
+                tooltip.show(ownerAction, stage.getX() + 180.0, stage.getY() + 180.0);
+                ownerAction.requestFocus();
+
+                assertTrue(sheet.isShown());
+                assertTrue(tooltip.isShowing());
+                assertTrue(ownerAction.isFocused());
+                assertSame(ownerAction, sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                ownerAction.fireEvent(keyPressed(KeyCode.F6));
+
+                assertTrue(tooltipAction.isFocused());
+                assertPopupFocusRoutedByContainer(sheet, tooltipAction);
+
+                tooltipAction.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(tooltip.isShowing());
+                assertTrue(ownerAction.isFocused());
+                assertSame(ownerAction, sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sheet.hide();
+
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hidden bottom sheets reveal nested content picker value targets.
+    @Test
+    void hiddenBottomSheetRevealsNestedContentPickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 8, 18);
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
+            Pane content = new Pane(field);
+            content.setPrefSize(320.0, 96.0);
+            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            sheet.setShown(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 520.0, 300.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                root.layout();
+
+                assertFalse(sheet.isShown());
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                assertPickerValueTargetRoutedByContainer(sheet, field, targetDate);
+
+                assertTrue(sheet.isShown());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shown bottom sheets expose nested content picker popup focus.
+    @Test
+    void bottomSheetRoutesFocusThroughNestedContentPickerPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 8, 19);
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
+            Pane content = new Pane(field);
+            content.setPrefSize(320.0, 96.0);
+            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 520.0, 300.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                root.layout();
+
+                assertTrue(sheet.isShown());
+
+                assertPickerValueTargetRoutedByContainer(sheet, field, targetDate);
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hidden side sheets reveal nested content picker value targets.
+    @Test
+    void hiddenSideSheetRevealsNestedContentPickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 8, 20);
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
+            Pane content = new Pane(field);
+            content.setPrefSize(300.0, 96.0);
+            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            sheet.setShown(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 360.0, 300.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                root.layout();
+
+                assertFalse(sheet.isShown());
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                assertPickerValueTargetRoutedByContainer(sheet, field, targetDate);
+
+                assertTrue(sheet.isShown());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shown side sheets expose nested content picker popup focus.
+    @Test
+    void sideSheetRoutesFocusThroughNestedContentPickerPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 8, 21);
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
+            Pane content = new Pane(field);
+            content.setPrefSize(300.0, 96.0);
+            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 360.0, 300.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                root.layout();
+
+                assertTrue(sheet.isShown());
+
+                assertPickerValueTargetRoutedByContainer(sheet, field, targetDate);
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hidden bottom sheets reveal nested content time picker value targets.
+    @Test
+    void hiddenBottomSheetRevealsNestedContentTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalTime targetTime = LocalTime.of(10, 45);
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(8, 30));
+            Pane content = new Pane(field);
+            content.setPrefSize(320.0, 96.0);
+            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            sheet.setShown(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 520.0, 300.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                root.layout();
+
+                assertFalse(sheet.isShown());
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                assertPickerValueTargetRoutedByContainer(sheet, field, targetTime);
+
+                assertTrue(sheet.isShown());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shown bottom sheets expose nested content time picker popup focus.
+    @Test
+    void bottomSheetRoutesFocusThroughNestedContentTimePickerPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalTime targetTime = LocalTime.of(11, 15);
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(8, 30));
+            Pane content = new Pane(field);
+            content.setPrefSize(320.0, 96.0);
+            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 520.0, 300.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                root.layout();
+
+                assertTrue(sheet.isShown());
+
+                assertPickerValueTargetRoutedByContainer(sheet, field, targetTime);
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hidden side sheets reveal nested content time picker value targets.
+    @Test
+    void hiddenSideSheetRevealsNestedContentTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalTime targetTime = LocalTime.of(12, 30);
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 0));
+            Pane content = new Pane(field);
+            content.setPrefSize(300.0, 96.0);
+            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            sheet.setShown(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 360.0, 300.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                root.layout();
+
+                assertFalse(sheet.isShown());
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                assertPickerValueTargetRoutedByContainer(sheet, field, targetTime);
+
+                assertTrue(sheet.isShown());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shown side sheets expose nested content time picker popup focus.
+    @Test
+    void sideSheetRoutesFocusThroughNestedContentTimePickerPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalTime targetTime = LocalTime.of(13, 45);
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 0));
+            Pane content = new Pane(field);
+            content.setPrefSize(300.0, 96.0);
+            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 360.0, 300.0);
+                field.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                root.layout();
+
+                assertTrue(sheet.isShown());
+
+                assertPickerValueTargetRoutedByContainer(sheet, field, targetTime);
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hidden bottom sheets reveal nested content date range picker value targets.
+    @Test
+    void hiddenBottomSheetRevealsNestedContentDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 8, 22);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 10),
+                    LocalDate.of(2026, 8, 16)
+            );
+            Pane content = new Pane(field);
+            content.setPrefSize(380.0, 96.0);
+            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            sheet.setShown(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 820.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 580.0, 320.0);
+                field.resizeRelocate(0.0, 0.0, 340.0, 64.0);
+                root.layout();
+
+                assertFalse(sheet.isShown());
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetDate);
+
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertTrue(sheet.isShown());
+                assertTrue(field.isShowing());
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+                assertPopupFocusRoutedByContainer(sheet, pickerFocusNode);
+
+                field.getPicker().fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getStartEditor().isFocused());
+                assertSame(field.getStartEditor(), sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shown bottom sheets preserve date range endpoint focus around nested picker popups.
+    @Test
+    void bottomSheetRoutesFocusThroughNestedContentDateRangePickerPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 8, 23);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 10),
+                    LocalDate.of(2026, 8, 16)
+            );
+            Pane content = new Pane(field);
+            content.setPrefSize(380.0, 96.0);
+            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 820.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 580.0, 320.0);
+                field.resizeRelocate(0.0, 0.0, 340.0, 64.0);
+                root.layout();
+
+                assertTrue(sheet.isShown());
+
+                assertDateRangePickerValueTargetRoutedByContainer(sheet, field, targetDate);
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hidden side sheets reveal nested content date range picker value targets.
+    @Test
+    void hiddenSideSheetRevealsNestedContentDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 8, 24);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 10),
+                    LocalDate.of(2026, 8, 16)
+            );
+            Pane content = new Pane(field);
+            content.setPrefSize(380.0, 96.0);
+            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            sheet.setShown(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 820.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 460.0, 320.0);
+                field.resizeRelocate(0.0, 0.0, 340.0, 64.0);
+                root.layout();
+
+                assertFalse(sheet.isShown());
+                assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetDate);
+
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertTrue(sheet.isShown());
+                assertTrue(field.isShowing());
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+                assertPopupFocusRoutedByContainer(sheet, pickerFocusNode);
+
+                field.getPicker().fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(field.isShowing());
+                assertTrue(field.getStartEditor().isFocused());
+                assertSame(field.getStartEditor(), sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that shown side sheets preserve date range endpoint focus around nested picker popups.
+    @Test
+    void sideSheetRoutesFocusThroughNestedContentDateRangePickerPopup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 8, 25);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 10),
+                    LocalDate.of(2026, 8, 16)
+            );
+            Pane content = new Pane(field);
+            content.setPrefSize(380.0, 96.0);
+            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(sheet);
+                Scene scene = new Scene(root, 820.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                sheet.resizeRelocate(32.0, 32.0, 460.0, 320.0);
+                field.resizeRelocate(0.0, 0.0, 340.0, 64.0);
+                root.layout();
+
+                assertTrue(sheet.isShown());
+
+                assertDateRangePickerValueTargetRoutedByContainer(sheet, field, targetDate);
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search bars reveal trailing menu popup targets from explicit accessibility actions.
     @Test
     void searchBarRevealsNestedTrailingMenuPopupTarget() {
@@ -3573,6 +4750,65 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+
+    /// Verifies that search views reveal date picker targets owned by the embedded search bar.
+    @Test
+    void searchViewRevealsNestedSearchBarDatePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            LocalDate targetDate = LocalDate.of(2026, 6, 25);
+            M3SearchView searchView = new M3SearchView("Search schedule");
+            searchView.setTrailingActions(field);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(searchView);
+                Scene scene = new Scene(root, 760.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                searchView.resizeRelocate(32.0, 32.0, 640.0, 220.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(searchView, field, targetDate);
+                assertTrue(searchView.isActive());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that search views reveal time picker targets owned by the embedded search bar.
+    @Test
+    void searchViewRevealsNestedSearchBarTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            LocalTime targetTime = LocalTime.of(13, 45);
+            M3SearchView searchView = new M3SearchView("Search schedule");
+            searchView.setTrailingActions(field);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(searchView);
+                Scene scene = new Scene(root, 760.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                searchView.resizeRelocate(32.0, 32.0, 640.0, 220.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(searchView, field, targetTime);
+                assertTrue(searchView.isActive());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search views reveal date range picker targets owned by the embedded search bar.
     @Test
     void searchViewRevealsNestedSearchBarDateRangePickerValueTarget() {
@@ -3601,6 +4837,69 @@ final class M3MixedPopupFocusTest {
                         LocalDate.of(2026, 6, 23)
                 );
             } finally {
+                stage.close();
+            }
+        });
+    }
+
+
+    /// Verifies that search views reveal date picker targets from result content.
+    @Test
+    void searchViewRevealsNestedResultDatePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            LocalDate targetDate = LocalDate.of(2026, 6, 26);
+            Pane result = new Pane(field);
+            result.setPrefSize(640.0, 96.0);
+            M3SearchView searchView = new M3SearchView("Search schedule", result);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(searchView);
+                Scene scene = new Scene(root, 820.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                searchView.resizeRelocate(32.0, 32.0, 720.0, 260.0);
+                field.resizeRelocate(0.0, 0.0, 600.0, 72.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(searchView, field, targetDate);
+                assertTrue(searchView.isActive());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that search views reveal time picker targets from result content.
+    @Test
+    void searchViewRevealsNestedResultTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            LocalTime targetTime = LocalTime.of(14, 30);
+            Pane result = new Pane(field);
+            result.setPrefSize(640.0, 96.0);
+            M3SearchView searchView = new M3SearchView("Search schedule", result);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(searchView);
+                Scene scene = new Scene(root, 820.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                searchView.resizeRelocate(32.0, 32.0, 720.0, 260.0);
+                field.resizeRelocate(0.0, 0.0, 600.0, 72.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(searchView, field, targetTime);
+                assertTrue(searchView.isActive());
+            } finally {
+                field.hidePicker();
                 stage.close();
             }
         });
@@ -4286,6 +5585,61 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+
+    /// Verifies that top app bar action slots reveal time picker value targets and expose popup focus.
+    @Test
+    void topAppBarRevealsNestedTimePickerValueTargetFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            LocalTime targetTime = LocalTime.of(10, 45);
+            M3TopAppBar appBar = new M3TopAppBar("Schedule", (Node) null, field);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(appBar);
+                Scene scene = new Scene(root, 760.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                appBar.resizeRelocate(0.0, 0.0, 700.0, 88.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(appBar, field, targetTime);
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that bottom app bar action slots reveal time picker value targets and expose popup focus.
+    @Test
+    void bottomAppBarRevealsNestedTimePickerValueTargetFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            LocalTime targetTime = LocalTime.of(11, 15);
+            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), field);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(appBar);
+                Scene scene = new Scene(root, 760.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                appBar.resizeRelocate(0.0, 160.0, 700.0, 96.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(appBar, field, targetTime);
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that toolbar item slots reveal picker value targets and expose popup focus.
     @Test
     void toolbarRevealsNestedTimePickerValueTargetFromItemSlot() {
@@ -4334,6 +5688,35 @@ final class M3MixedPopupFocusTest {
 
                 assertPickerValueTargetRoutedByContainer(searchBar, field, targetDate);
             } finally {
+                stage.close();
+            }
+        });
+    }
+
+
+    /// Verifies that search bar trailing action slots reveal time picker value targets and expose popup focus.
+    @Test
+    void searchBarRevealsNestedTimePickerValueTargetFromTrailingAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            LocalTime targetTime = LocalTime.of(12, 30);
+            M3SearchBar searchBar = new M3SearchBar("Search schedule");
+            searchBar.setTrailingActions(field);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(searchBar);
+                Scene scene = new Scene(root, 760.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                searchBar.resizeRelocate(32.0, 32.0, 640.0, 72.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(searchBar, field, targetTime);
+            } finally {
+                field.hidePicker();
                 stage.close();
             }
         });

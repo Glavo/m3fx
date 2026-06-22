@@ -96,7 +96,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     private final M3MotionSettingsObserver motionSettingsObserver =
             new M3MotionSettingsObserver(getSkinnable(), this::refreshMotionSettings);
 
-    // The currently running virtual flow scroll animation.
+    /// The currently running virtual flow scroll animation.
     private @Nullable Timeline smoothScrollAnimation;
 
     /// The completion callback attached to the currently running smooth scroll animation.
@@ -533,7 +533,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Applies changed animation settings to the current smooth scroll operation.
     private void refreshMotionSettings() {
         Timeline animation = smoothScrollAnimation;
-        if (animation == null || animation.getStatus() != Animation.Status.RUNNING) {
+        if (animation == null) {
             return;
         }
 
@@ -547,7 +547,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             if (onFinished != null) {
                 onFinished.run();
             }
-        } else {
+        } else if (animation.getStatus() == Animation.Status.RUNNING) {
             animateSmoothScroll(smoothScrollOnFinished);
         }
     }

@@ -44,7 +44,7 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     /// The owning virtualized list view.
     private final M3ListView<T> listView;
 
-    // The rendered list item currently owned by this cell.
+    /// The rendered list item currently owned by this cell.
     private @Nullable M3ListItem listItem;
 
     /// Routes list item actions back into the list view selection policy.

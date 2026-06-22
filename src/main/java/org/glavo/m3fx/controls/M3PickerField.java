@@ -132,7 +132,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// The concrete popup picker control.
     private final P picker;
 
-    /// The picker value property used to synchronize popup selections.
+    // The picker value property used to synchronize popup selections.
     private final ObjectProperty<@Nullable T> pickerValue;
 
     /// The trailing button that opens the popup picker.

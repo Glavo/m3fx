@@ -45,7 +45,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     /// The clip that reveals child rows as the group expands.
     private final Rectangle childrenClip = new Rectangle();
 
-    /// The current child row reveal progress from collapsed `0` to expanded `1`.
+    // The current child row reveal progress from collapsed `0` to expanded `1`.
     private final DoubleProperty expansionProgress = new SimpleDoubleProperty(this, "expansionProgress") {
         /// Updates child row visibility and layout after reveal progress changes.
         @Override

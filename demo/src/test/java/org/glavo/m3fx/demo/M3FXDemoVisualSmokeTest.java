@@ -6,6 +6,7 @@ package org.glavo.m3fx.demo;
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
+import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Orientation;
@@ -2596,12 +2597,64 @@ final class M3FXDemoVisualSmokeTest {
         try {
             verifyButtonMouseFeedback(appReference, sceneReference);
             verifyButtonRippleReleaseAnimation(appReference, sceneReference);
+            verifyFloatingActionButtonMouseFeedback(appReference, sceneReference);
+            verifyFloatingActionButtonRippleReleaseAnimation(appReference, sceneReference);
+            verifyExtendedFabMouseFeedback(appReference, sceneReference);
+            verifyExtendedFabRippleReleaseAnimation(appReference, sceneReference);
+            verifySplitButtonActionMouseFeedback(appReference, sceneReference);
+            verifySplitButtonActionRippleReleaseAnimation(appReference, sceneReference);
+            verifySplitButtonMenuMouseFeedback(appReference, sceneReference);
+            verifySplitButtonMenuRippleReleaseAnimation(appReference, sceneReference);
+            verifyMenuButtonMouseFeedback(appReference, sceneReference);
+            verifyMenuButtonRippleReleaseAnimation(appReference, sceneReference);
+            verifyTopAppBarActionMouseFeedback(appReference, sceneReference);
+            verifyTopAppBarActionRippleReleaseAnimation(appReference, sceneReference);
+            verifyToolbarActionMouseFeedback(appReference, sceneReference);
+            verifyToolbarActionRippleReleaseAnimation(appReference, sceneReference);
+            verifyBannerActionMouseFeedback(appReference, sceneReference);
+            verifyBannerActionRippleReleaseAnimation(appReference, sceneReference);
+            verifyDialogActionMouseFeedback(appReference, sceneReference);
+            verifyDialogActionRippleReleaseAnimation(appReference, sceneReference);
+            verifyBottomSheetActionMouseFeedback(appReference, sceneReference);
+            verifyBottomSheetActionRippleReleaseAnimation(appReference, sceneReference);
+            verifySideSheetActionMouseFeedback(appReference, sceneReference);
+            verifySideSheetActionRippleReleaseAnimation(appReference, sceneReference);
+            verifyFabMenuActionMouseFeedback(appReference, sceneReference);
+            verifySnackbarActionMouseFeedback(appReference, sceneReference);
+            verifySnackbarActionRippleReleaseAnimation(appReference, sceneReference);
             verifyTextFieldFocusFeedback(appReference, sceneReference);
+            verifyTextInputClearButtonInteraction(appReference, sceneReference);
+            verifyTextInputTrailingActionMouseFeedback(appReference, sceneReference);
+            verifyTextInputTrailingActionRippleReleaseAnimation(appReference, sceneReference);
+            verifyPickerFieldOpenButtonMouseFeedback(appReference, sceneReference);
+            verifyPickerFieldOpenButtonRippleReleaseAnimation(appReference, sceneReference);
             verifySidebarMouseFeedback(appReference, sceneReference);
             verifySidebarRippleReleaseAnimation(appReference, sceneReference);
             verifyIconToggleButtonMouseFeedback(appReference, sceneReference);
             verifyIconToggleButtonRippleReleaseAnimation(appReference, sceneReference);
+            verifyChipMouseFeedback(appReference, sceneReference);
+            verifyChipRippleReleaseAnimation(appReference, sceneReference);
+            verifyChipSelectionAnimation(appReference, sceneReference);
+            verifySegmentedButtonMouseFeedback(appReference, sceneReference);
+            verifySegmentedButtonRippleReleaseAnimation(appReference, sceneReference);
+            verifySegmentedButtonSelectionAnimation(appReference, sceneReference);
+            verifyTabMouseFeedback(appReference, sceneReference);
+            verifyTabRippleReleaseAnimation(appReference, sceneReference);
+            verifyTabSelectionAnimation(appReference, sceneReference);
+            verifyNavigationItemMouseFeedback(appReference, sceneReference);
+            verifyNavigationItemRippleReleaseAnimation(appReference, sceneReference);
+            verifyNavigationItemSelectionFeedback(appReference, sceneReference);
+            verifyListItemMouseFeedback(appReference, sceneReference);
+            verifyListItemRippleReleaseAnimation(appReference, sceneReference);
+            verifyListItemSelectionAnimation(appReference, sceneReference);
+            verifyCheckboxMouseFeedback(appReference, sceneReference);
+            verifyCheckboxRippleReleaseAnimation(appReference, sceneReference);
+            verifyRadioButtonMouseFeedback(appReference, sceneReference);
+            verifyRadioButtonRippleReleaseAnimation(appReference, sceneReference);
+            verifySwitchMouseFeedback(appReference, sceneReference);
+            verifySwitchRippleReleaseAnimation(appReference, sceneReference);
             verifySwitchSelectionAnimation(appReference, sceneReference);
+            verifySliderDragInteraction(appReference, sceneReference);
             verifyDisabledAnimationInteractionFeedback(appReference, sceneReference);
         } finally {
             runOnFxThread(() -> {
@@ -2711,7 +2764,7 @@ final class M3FXDemoVisualSmokeTest {
                     "Navigation Rail",
                     "navigation-rail-selection"
             );
-            verifySidebarDrawerGroupExpansionAnimation(appReference, sceneReference);
+            verifySidebarDrawerGroupExpansionAnimation(sceneReference);
         } finally {
             runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -3147,6 +3200,401 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
+    /// Verifies hover and pressed feedback on a regular floating action button.
+    private static void verifyFloatingActionButtonMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Floating Action Buttons",
+                "floating-action-button",
+                "floating action button",
+                root -> firstVisibleFloatingActionButtonWithSize(root, M3FloatingActionButtonSize.REGULAR)
+        );
+    }
+
+    /// Verifies that floating action button ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyFloatingActionButtonRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Floating Action Buttons",
+                "floating-action-button-ripple",
+                "floating action button",
+                root -> firstVisibleFloatingActionButtonWithSize(root, M3FloatingActionButtonSize.REGULAR)
+        );
+    }
+
+    /// Verifies hover and pressed feedback on an extended floating action button.
+    private static void verifyExtendedFabMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Extended FABs",
+                "extended-fab",
+                "extended FAB",
+                root -> firstVisibleFloatingActionButtonWithText(root, "Create")
+        );
+    }
+
+    /// Verifies that extended floating action button ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyExtendedFabRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Extended FABs",
+                "extended-fab-ripple",
+                "extended FAB",
+                root -> firstVisibleFloatingActionButtonWithText(root, "Create")
+        );
+    }
+
+    /// Verifies hover and pressed feedback on the primary action side of a split button.
+    private static void verifySplitButtonActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Split Buttons",
+                "split-button-action",
+                "split button action",
+                root -> firstVisibleSplitButtonActionWithText(root, "Create")
+        );
+    }
+
+    /// Verifies that split button action-side ripple release remains visible for an intermediate fade-out frame.
+    private static void verifySplitButtonActionRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Split Buttons",
+                "split-button-action-ripple",
+                "split button action",
+                root -> firstVisibleSplitButtonActionWithText(root, "Create")
+        );
+    }
+
+    /// Verifies hover and pressed feedback on the menu side of a split button.
+    private static void verifySplitButtonMenuMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Split Buttons",
+                "split-button-menu",
+                "split button menu",
+                root -> firstVisibleSplitButtonMenuWithText(root, "Create")
+        );
+        runOnFxThread(() -> hideShowingMenuButtons(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
+    }
+
+    /// Verifies that split button menu-side ripple release remains visible for an intermediate fade-out frame.
+    private static void verifySplitButtonMenuRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Split Buttons",
+                "split-button-menu-ripple",
+                "split button menu",
+                root -> firstVisibleSplitButtonMenuWithText(root, "Create")
+        );
+        runOnFxThread(() -> hideShowingMenuButtons(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
+    }
+
+    /// Verifies hover and pressed feedback on a menu button.
+    private static void verifyMenuButtonMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Menus",
+                "menu-button",
+                "menu button",
+                root -> firstVisibleMenuButtonWithText(root, "Open menu")
+        );
+        runOnFxThread(() -> hideShowingMenuButtons(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
+    }
+
+    /// Verifies that menu button ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyMenuButtonRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Menus",
+                "menu-button-ripple",
+                "menu button",
+                root -> firstVisibleMenuButtonWithText(root, "Open menu")
+        );
+        runOnFxThread(() -> hideShowingMenuButtons(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
+    }
+
+
+    /// Verifies hover and pressed feedback on a top app bar action slot.
+    private static void verifyTopAppBarActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "App Bars",
+                "top-app-bar-action",
+                "top app bar action",
+                M3FXDemoVisualSmokeTest::firstVisibleTopAppBarAction
+        );
+    }
+
+    /// Verifies that top app bar action ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyTopAppBarActionRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "App Bars",
+                "top-app-bar-action-ripple",
+                "top app bar action",
+                M3FXDemoVisualSmokeTest::firstVisibleTopAppBarAction
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a toolbar action slot.
+    private static void verifyToolbarActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Toolbars",
+                "toolbar-action",
+                "toolbar action",
+                M3FXDemoVisualSmokeTest::firstVisibleToolbarAction
+        );
+    }
+
+    /// Verifies that toolbar action ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyToolbarActionRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Toolbars",
+                "toolbar-action-ripple",
+                "toolbar action",
+                M3FXDemoVisualSmokeTest::firstVisibleToolbarAction
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a banner action slot.
+    private static void verifyBannerActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Banners",
+                "banner-action",
+                "banner action",
+                root -> firstVisibleBannerActionWithText(root, "Dismiss")
+        );
+        runOnFxThread(() -> hideShowingSnackbarHosts(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
+    }
+
+    /// Verifies that banner action ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyBannerActionRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Banners",
+                "banner-action-ripple",
+                "banner action",
+                root -> firstVisibleBannerActionWithText(root, "Dismiss")
+        );
+        runOnFxThread(() -> hideShowingSnackbarHosts(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
+    }
+
+    /// Verifies hover and pressed feedback on an inline dialog pane action.
+    private static void verifyDialogActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Dialogs",
+                "dialog-action",
+                "dialog action",
+                root -> firstVisibleDialogActionWithText(root, "OK")
+        );
+    }
+
+    /// Verifies that dialog pane action ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyDialogActionRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Dialogs",
+                "dialog-action-ripple",
+                "dialog action",
+                root -> firstVisibleDialogActionWithText(root, "OK")
+        );
+    }
+
+
+    /// Verifies hover and pressed feedback on a bottom sheet action slot.
+    private static void verifyBottomSheetActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Bottom Sheets",
+                "bottom-sheet-action",
+                "bottom sheet action",
+                root -> firstVisibleBottomSheetActionWithHeadline(root, "Now playing")
+        );
+    }
+
+    /// Verifies that bottom sheet action ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyBottomSheetActionRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Bottom Sheets",
+                "bottom-sheet-action-ripple",
+                "bottom sheet action",
+                root -> firstVisibleBottomSheetActionWithHeadline(root, "Now playing")
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a side sheet action slot.
+    private static void verifySideSheetActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Side Sheets",
+                "side-sheet-action",
+                "side sheet action",
+                root -> firstVisibleSideSheetActionWithHeadline(root, "Details")
+        );
+    }
+
+    /// Verifies that side sheet action ripple release remains visible for an intermediate fade-out frame.
+    private static void verifySideSheetActionRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Side Sheets",
+                "side-sheet-action-ripple",
+                "side sheet action",
+                root -> firstVisibleSideSheetActionWithHeadline(root, "Details")
+        );
+    }
+
+    /// Verifies hover and pressed feedback on an expanded FAB menu action.
+    private static void verifyFabMenuActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "FAB Menu",
+                "fab-menu-action",
+                "FAB menu action",
+                M3FXDemoVisualSmokeTest::firstVisibleFabMenuAction
+        );
+        runOnFxThread(() -> hideShowingSnackbarHosts(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
+    }
+
+    /// Verifies hover and pressed feedback on a snackbar action.
+    private static void verifySnackbarActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        showActionSnackbarForInteraction(appReference, sceneReference, hostReference);
+        verifyPreparedTargetMouseFeedback(
+                sceneReference,
+                "snackbar-action",
+                "snackbar action",
+                M3FXDemoVisualSmokeTest::firstVisibleSnackbarAction
+        );
+        runOnFxThread(() -> {
+            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
+            host.dismissAll();
+            M3MotionSettings.clearMotionScheme(host);
+        });
+    }
+
+    /// Verifies that snackbar action ripple release remains visible for an intermediate fade-out frame.
+    private static void verifySnackbarActionRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        showActionSnackbarForInteraction(appReference, sceneReference, hostReference);
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                null,
+                "snackbar-action-ripple",
+                "snackbar action",
+                M3FXDemoVisualSmokeTest::firstVisibleSnackbarAction
+        );
+        runOnFxThread(() -> {
+            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
+            host.dismissAll();
+            M3MotionSettings.clearMotionScheme(host);
+        });
+    }
     /// Verifies that toggle icon button ripple release remains visible for an intermediate fade-out frame.
     private static void verifyIconToggleButtonRippleReleaseAnimation(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -3162,23 +3610,425 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
-    /// Verifies that sidebar navigation item ripple release remains visible for an intermediate fade-out frame.
-    private static void verifySidebarRippleReleaseAnimation(
+    /// Verifies hover and pressed feedback on a chip control.
+    private static void verifyChipMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Chips",
+                "chip",
+                "chip",
+                root -> firstVisibleChipWithText(root, "Filter")
+        );
+    }
+
+    /// Verifies that chip ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyChipRippleReleaseAnimation(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
         verifyRippleReleaseAnimation(
                 appReference,
                 sceneReference,
-                "Buttons",
-                "sidebar-ripple",
-                "sidebar item",
-                root -> firstVisibleNodeWithStyle(root, "demo-sidebar-child-item")
+                "Chips",
+                "chip-ripple",
+                "chip",
+                root -> firstVisibleChipWithText(root, "Filter")
         );
     }
 
-    /// Verifies that a target's ripple release includes a visible intermediate fade-out frame.
-    private static void verifyRippleReleaseAnimation(
+    /// Verifies that clicking a chip settles into a visibly selected state.
+    private static void verifyChipSelectionAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectableControlSelectionAnimation(
+                appReference,
+                sceneReference,
+                "Chips",
+                "chip-selection",
+                "chip",
+                root -> firstVisibleChipWithText(root, "Filter"),
+                M3Chip::isSelected
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a segmented button.
+    private static void verifySegmentedButtonMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Segmented Buttons",
+                "segmented-button",
+                "segmented button",
+                root -> firstVisibleSegmentedButtonWithText(root, "Day")
+        );
+    }
+
+    /// Verifies that segmented button ripple release remains visible for an intermediate fade-out frame.
+    private static void verifySegmentedButtonRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Segmented Buttons",
+                "segmented-button-ripple",
+                "segmented button",
+                root -> firstVisibleSegmentedButtonWithText(root, "Day")
+        );
+    }
+
+    /// Verifies that clicking a segmented button settles into a visibly selected state.
+    private static void verifySegmentedButtonSelectionAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectableControlSelectionAnimation(
+                appReference,
+                sceneReference,
+                "Segmented Buttons",
+                "segmented-button-selection",
+                "segmented button",
+                root -> firstVisibleSegmentedButtonWithText(root, "Day"),
+                M3SegmentedButton::isSelected
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a tab.
+    private static void verifyTabMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Tabs",
+                "tab",
+                "tab",
+                root -> firstVisibleTabWithText(root, "Activity")
+        );
+    }
+
+    /// Verifies that tab ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyTabRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Tabs",
+                "tab-ripple",
+                "tab",
+                root -> firstVisibleTabWithText(root, "Activity")
+        );
+    }
+
+    /// Verifies that clicking a tab settles into a visibly selected state.
+    private static void verifyTabSelectionAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectableControlSelectionAnimation(
+                appReference,
+                sceneReference,
+                "Tabs",
+                "tab-selection",
+                "tab",
+                root -> firstVisibleTabWithText(root, "Activity"),
+                M3Tab::isSelected
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a navigation item.
+    private static void verifyNavigationItemMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Navigation",
+                "navigation-item",
+                "navigation item",
+                root -> firstVisibleNavigationItemWithText(root, "Search")
+        );
+    }
+
+    /// Verifies that navigation item ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyNavigationItemRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Navigation",
+                "navigation-item-ripple",
+                "navigation item",
+                root -> firstVisibleNavigationItemWithText(root, "Search")
+        );
+    }
+
+    /// Verifies that clicking a navigation item settles into a visibly selected state.
+    private static void verifyNavigationItemSelectionFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectableControlSelectionAnimation(
+                appReference,
+                sceneReference,
+                "Navigation",
+                "navigation-item-selection",
+                "navigation item",
+                root -> firstVisibleNavigationItemWithText(root, "Search"),
+                M3NavigationItem::isSelected
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a list item.
+    private static void verifyListItemMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Lists",
+                "list-item",
+                "list item",
+                root -> firstVisibleListItemWithHeadline(root, "One-line item")
+        );
+    }
+
+    /// Verifies that list item ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyListItemRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Lists",
+                "list-item-ripple",
+                "list item",
+                root -> firstVisibleListItemWithHeadline(root, "One-line item")
+        );
+    }
+
+    /// Verifies that clicking a list item settles into a visibly selected state.
+    private static void verifyListItemSelectionAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectableControlSelectionAnimation(
+                appReference,
+                sceneReference,
+                "Lists",
+                "list-item-selection",
+                "list item",
+                root -> firstVisibleListItemWithHeadline(root, "One-line item"),
+                M3ListItem::isSelected
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a checkbox control.
+    private static void verifyCheckboxMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Checkboxes",
+                "checkbox",
+                "checkbox",
+                root -> firstVisibleCheckBoxWithText(root, "Unchecked")
+        );
+    }
+
+    /// Verifies that checkbox ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyCheckboxRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Checkboxes",
+                "checkbox-ripple",
+                "checkbox",
+                root -> firstVisibleCheckBoxWithText(root, "Unchecked")
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a radio button control.
+    private static void verifyRadioButtonMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Radio Buttons",
+                "radio-button",
+                "radio button",
+                root -> firstVisibleRadioButtonWithText(root, "Radio B")
+        );
+    }
+
+    /// Verifies that radio button ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyRadioButtonRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Radio Buttons",
+                "radio-button-ripple",
+                "radio button",
+                root -> firstVisibleRadioButtonWithText(root, "Radio B")
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a switch control.
+    private static void verifySwitchMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Switches",
+                "switch",
+                "switch",
+                root -> firstVisibleSwitchWithText(root, "Off")
+        );
+    }
+
+    /// Verifies that switch ripple release remains visible for an intermediate fade-out frame.
+    private static void verifySwitchRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Switches",
+                "switch-ripple",
+                "switch",
+                root -> firstVisibleSwitchWithText(root, "Off")
+        );
+    }
+
+    /// Shows an action snackbar and waits until its action button is stable enough for interaction snapshots.
+    private static void showActionSnackbarForInteraction(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference,
+            AtomicReference<@Nullable M3SnackbarHost> hostReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+        runOnFxThreadWhenNodeAreaStable(hostReference, sceneReference, settledReference, () -> {
+            @Nullable M3SnackbarHost host = hostReference.get();
+            return snackbarSettled(host)
+                    && firstVisibleSnackbarAction(Objects.requireNonNull(host, "snackbar host").getSnackbar()) != null;
+        }, () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Snackbars");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3SnackbarHost host = Objects.requireNonNull(firstVisibleSnackbarHost(scene.getRoot()), "snackbar host");
+            M3MotionSettings.setMotionScheme(host, visualOverlayMotionScheme());
+            host.setDisplayDuration(Duration.INDEFINITE);
+            host.show("Theme-aware snackbar", "Action", event -> {
+            });
+            hostReference.set(host);
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
+            M3Snackbar snackbar = Objects.requireNonNull(host.getSnackbar(), "interaction snackbar");
+            assertSnackbarStaysCompact(scene, snackbar);
+        });
+    }
+
+    /// Verifies hover and pressed feedback for a target in the already prepared current scene.
+    private static void verifyPreparedTargetMouseFeedback(
+            AtomicReference<@Nullable Scene> sceneReference,
+            String snapshotName,
+            String targetName,
+            Function<Node, @Nullable Node> targetLookup
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            Node target = Objects.requireNonNull(targetLookup.apply(scene.getRoot()), targetName);
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal " + targetName + " snapshot"),
+                    snapshotName,
+                    "normal"
+            );
+            applyHoverPseudoState(target);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(hoverReference.get(), "hover " + targetName + " snapshot"),
+                    snapshotName,
+                    "hover"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), targetName);
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        });
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, hoverReference, sceneReference, pressedReference, () -> {
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " snapshot"),
+                    snapshotName,
+                    "pressed"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), targetName);
+            assertNodeAreaChanged(
+                    target,
+                    Objects.requireNonNull(normalReference.get(), "normal " + targetName + " snapshot"),
+                    Objects.requireNonNull(hoverReference.get(), "hover " + targetName + " snapshot"),
+                    targetName + " hover"
+            );
+            assertNodeAreaChanged(
+                    target,
+                    Objects.requireNonNull(hoverReference.get(), "hover " + targetName + " snapshot"),
+                    Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " snapshot"),
+                    targetName + " pressed"
+            );
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+            clearHoverPseudoState(target);
+        });
+    }
+    /// Verifies hover and pressed feedback on one selectable control.
+    private static void verifySelectionControlMouseFeedback(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference,
             String pageTitle,
@@ -3187,7 +4037,463 @@ final class M3FXDemoVisualSmokeTest {
             Function<Node, @Nullable Node> targetLookup
     ) throws InterruptedException {
         AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting(pageTitle);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            Node target = Objects.requireNonNull(targetLookup.apply(scene.getRoot()), targetName);
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal " + targetName + " snapshot"),
+                    snapshotName,
+                    "normal"
+            );
+            applyHoverPseudoState(target);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(hoverReference.get(), "hover " + targetName + " snapshot"),
+                    snapshotName,
+                    "hover"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), targetName);
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        });
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, hoverReference, sceneReference, pressedReference, () -> {
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " snapshot"),
+                    snapshotName,
+                    "pressed"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), targetName);
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+            clearHoverPseudoState(target);
+        });
+
+        Node target = Objects.requireNonNull(targetReference.get(), targetName);
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal " + targetName + " snapshot"),
+                Objects.requireNonNull(hoverReference.get(), "hover " + targetName + " snapshot"),
+                targetName + " hover"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(hoverReference.get(), "hover " + targetName + " snapshot"),
+                Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " snapshot"),
+                targetName + " pressed"
+        );
+    }
+
+    /// Verifies that a selectable control changes from unselected to selected with visible pressed and settled frames.
+    private static <T extends Node> void verifySelectableControlSelectionAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference,
+            String pageTitle,
+            String snapshotName,
+            String targetName,
+            Function<Node, @Nullable T> targetLookup,
+            Function<T, Boolean> selectedLookup
+    ) throws InterruptedException {
+        AtomicReference<@Nullable T> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> selectedReference = new AtomicReference<>();
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, pressedReference, () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting(pageTitle);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            T target = Objects.requireNonNull(targetLookup.apply(scene.getRoot()), targetName);
+            assertFalse(selectedLookup.apply(target), targetName + " should start unselected in the demo");
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal " + targetName + " selection snapshot"),
+                    snapshotName,
+                    "normal"
+            );
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " selection snapshot"),
+                    snapshotName,
+                    "pressed"
+            );
+            T target = Objects.requireNonNull(targetReference.get(), targetName);
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+            clearHoverPseudoState(target);
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        });
+
+        runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, selectedReference, () -> {
+            @Nullable T target = targetReference.get();
+            return target != null && selectedLookup.apply(target);
+        }, () -> {
+        }, () -> {
+        });
+
+        T target = Objects.requireNonNull(targetReference.get(), targetName);
+        assertTrue(selectedLookup.apply(target), targetName + " should be selected after click release");
+        writeInteractionSnapshot(
+                Objects.requireNonNull(selectedReference.get(), "selected " + targetName + " snapshot"),
+                snapshotName,
+                "selected"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal " + targetName + " selection snapshot"),
+                Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " selection snapshot"),
+                targetName + " selection pressed"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal " + targetName + " selection snapshot"),
+                Objects.requireNonNull(selectedReference.get(), "selected " + targetName + " snapshot"),
+                targetName + " selected"
+        );
+    }
+
+    /// Verifies hover and pressed feedback on an embedded picker-field open button.
+    private static void verifyPickerFieldOpenButtonMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Date Pickers");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            Node target = Objects.requireNonNull(firstPickerFieldOpenButton(scene.getRoot()), "picker open button");
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal picker open button snapshot"),
+                    "picker-open-button",
+                    "normal"
+            );
+            applyHoverPseudoState(target);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(hoverReference.get(), "hover picker open button snapshot"),
+                    "picker-open-button",
+                    "hover"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), "picker open button");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        });
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, hoverReference, sceneReference, pressedReference, () -> {
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed picker open button snapshot"),
+                    "picker-open-button",
+                    "pressed"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), "picker open button");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+            clearHoverPseudoState(target);
+            hideShowingPickerFields(scene.getRoot());
+        });
+
+        Node target = Objects.requireNonNull(targetReference.get(), "picker open button");
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal picker open button snapshot"),
+                Objects.requireNonNull(hoverReference.get(), "hover picker open button snapshot"),
+                "picker open button hover"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(hoverReference.get(), "hover picker open button snapshot"),
+                Objects.requireNonNull(pressedReference.get(), "pressed picker open button snapshot"),
+                "picker open button pressed"
+        );
+    }
+
+    /// Verifies that picker-field open button ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyPickerFieldOpenButtonRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Date Pickers",
+                "picker-open-button-ripple",
+                "picker open button",
+                M3FXDemoVisualSmokeTest::firstPickerFieldOpenButton
+        );
+        runOnFxThread(() -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            hideShowingPickerFields(scene.getRoot());
+        });
+    }
+
+    /// Verifies hover, pressed, clear action, and removal feedback on a built-in text-input clear button.
+    private static void verifyTextInputClearButtonInteraction(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3TextInputLayout> layoutReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> clearedReference = new AtomicReference<>();
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Text Fields");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3TextInputLayout layout = Objects.requireNonNull(
+                    firstTextInputClearButtonLayout(scene.getRoot()),
+                    "text input layout with clear button"
+            );
+            Node target = requireVisibleStyledDescendant(
+                    layout,
+                    M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS,
+                    "text input clear button"
+            );
+            layoutReference.set(layout);
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal text input clear button snapshot"),
+                    "text-input-clear-button",
+                    "normal"
+            );
+            applyHoverPseudoState(target);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(hoverReference.get(), "hover text input clear button snapshot"),
+                    "text-input-clear-button",
+                    "hover"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), "text input clear button");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        });
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, hoverReference, sceneReference, pressedReference, () -> {
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed text input clear button snapshot"),
+                    "text-input-clear-button",
+                    "pressed"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), "text input clear button");
+            assertNodeAreaChanged(
+                    target,
+                    Objects.requireNonNull(normalReference.get(), "normal text input clear button snapshot"),
+                    Objects.requireNonNull(hoverReference.get(), "hover text input clear button snapshot"),
+                    "text input clear button hover"
+            );
+            assertNodeAreaChanged(
+                    target,
+                    Objects.requireNonNull(hoverReference.get(), "hover text input clear button snapshot"),
+                    Objects.requireNonNull(pressedReference.get(), "pressed text input clear button snapshot"),
+                    "text input clear button pressed"
+            );
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+            clearHoverPseudoState(target);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        });
+
+        runOnFxThreadWhenStable(() -> {
+            @Nullable M3TextInputLayout layout = layoutReference.get();
+            if (layout == null) {
+                return false;
+            }
+            @Nullable TextInputControl input = layout.getInput();
+            return input != null
+                    && input.getText().isEmpty()
+                    && firstVisibleStyledDescendant(layout, M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS) == null;
+        }, SETTLED_STATE_PULSES, () -> {
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            clearedReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(clearedReference.get(), "cleared text input clear button snapshot"),
+                    "text-input-clear-button",
+                    "cleared"
+            );
+        });
+
+        M3TextInputLayout layout = Objects.requireNonNull(layoutReference.get(), "text input clear button layout");
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), "text input clear button input");
+        assertTrue(input.getText().isEmpty(), "text input clear button should clear the input text");
+        assertNull(
+                firstVisibleStyledDescendant(layout, M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS),
+                "text input clear button should leave the trailing slot after clearing text"
+        );
+        assertNodeAreaChanged(
+                layout,
+                Objects.requireNonNull(pressedReference.get(), "pressed text input clear button snapshot"),
+                Objects.requireNonNull(clearedReference.get(), "cleared text input clear button snapshot"),
+                "text input clear button release"
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a text-input trailing action button.
+    private static void verifyTextInputTrailingActionMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Text Fields");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            Node target = Objects.requireNonNull(
+                    firstTextInputTrailingActionButton(scene.getRoot()),
+                    "text input trailing action"
+            );
+            targetReference.set(target);
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal text input trailing action snapshot"),
+                    "text-input-trailing-action",
+                    "normal"
+            );
+            applyHoverPseudoState(target);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(hoverReference.get(), "hover text input trailing action snapshot"),
+                    "text-input-trailing-action",
+                    "hover"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), "text input trailing action");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        });
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, hoverReference, sceneReference, pressedReference, () -> {
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed text input trailing action snapshot"),
+                    "text-input-trailing-action",
+                    "pressed"
+            );
+            Node target = Objects.requireNonNull(targetReference.get(), "text input trailing action");
+            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
+            clearHoverPseudoState(target);
+        });
+
+        Node target = Objects.requireNonNull(targetReference.get(), "text input trailing action");
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal text input trailing action snapshot"),
+                Objects.requireNonNull(hoverReference.get(), "hover text input trailing action snapshot"),
+                "text input trailing action hover"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(hoverReference.get(), "hover text input trailing action snapshot"),
+                Objects.requireNonNull(pressedReference.get(), "pressed text input trailing action snapshot"),
+                "text input trailing action pressed"
+        );
+    }
+
+    /// Verifies that text-input trailing action ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyTextInputTrailingActionRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Text Fields",
+                "text-input-trailing-action-ripple",
+                "text input trailing action",
+                M3FXDemoVisualSmokeTest::firstTextInputTrailingActionButton
+        );
+    }
+
+    /// Verifies that sidebar navigation item ripple release remains visible for an intermediate fade-out frame.
+    private static void verifySidebarRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Buttons", scene -> {
+        }, () -> {
+        });
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                null,
+                "sidebar-ripple",
+                "sidebar item",
+                root -> firstVisibleUnselectedSidebarChildItemInSceneViewport(root)
+        );
+    }
+
+    /// Verifies that a target's ripple release includes a visible intermediate fade-out frame.
+    private static void verifyRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference,
+            @Nullable String pageTitle,
+            String snapshotName,
+            String targetName,
+            Function<Node, @Nullable Node> targetLookup
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
         AtomicReference<@Nullable Node> rippleReference = new AtomicReference<>();
+        AtomicReference<@Nullable Bounds> targetBoundsReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> releaseStartOpacityReference = new AtomicReference<>();
@@ -3200,13 +4506,16 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, pressedReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting(pageTitle);
+            if (pageTitle != null) {
+                app.showPageForTesting(pageTitle);
+            }
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
             Node target = Objects.requireNonNull(targetLookup.apply(scene.getRoot()), targetName);
             M3MotionSettings.setMotionScheme(target, visualRippleMotionScheme());
             targetReference.set(target);
+            targetBoundsReference.set(nodeAreaBounds(target));
             normalReference.set(snapshot(scene));
             writeInteractionSnapshot(
                     Objects.requireNonNull(normalReference.get(), "normal ripple target snapshot"),
@@ -3280,14 +4589,15 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         Node target = Objects.requireNonNull(targetReference.get(), targetName);
+        Bounds targetBounds = Objects.requireNonNull(targetBoundsReference.get(), targetName + " bounds");
         assertNodeAreaChanged(
-                target,
+                targetBounds,
                 Objects.requireNonNull(normalReference.get(), "normal ripple target snapshot"),
                 Objects.requireNonNull(pressedReference.get(), "pressed ripple target snapshot"),
                 targetName + " ripple pressed frame"
         );
         assertNodeAreaChanged(
-                target,
+                targetBounds,
                 Objects.requireNonNull(releaseStartReference.get(), "release-start ripple target snapshot"),
                 Objects.requireNonNull(releaseReference.get(), "released ripple target snapshot"),
                 targetName + " ripple release intermediate frame"
@@ -3299,6 +4609,67 @@ final class M3FXDemoVisualSmokeTest {
         );
         M3MotionSettings.clearMotionScheme(target);
     }
+
+    /// Returns the first visible picker-field trailing open button.
+    private static @Nullable Node firstPickerFieldOpenButton(Node root) {
+        return firstVisibleNodeWithStyle(root, M3PickerField.OPEN_BUTTON_STYLE_CLASS);
+    }
+
+    /// Returns the first visible text-input layout whose built-in clear button is active.
+    private static @Nullable M3TextInputLayout firstTextInputClearButtonLayout(Node root) {
+        for (M3TextInputLayout layout : visibleNodesOfType(root, M3TextInputLayout.class)) {
+            @Nullable TextInputControl input = layout.getInput();
+            if (layout.isClearButtonEnabled()
+                    && input != null
+                    && !input.getText().isEmpty()
+                    && firstVisibleStyledDescendant(layout, M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS) != null) {
+                return layout;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible password-field trailing action button.
+    private static @Nullable Node firstTextInputTrailingActionButton(Node root) {
+        for (M3TextInputLayout layout : visibleNodesOfType(root, M3TextInputLayout.class)) {
+            if (layout.getInput() instanceof M3PasswordField
+                    && layout.getTrailing() instanceof M3IconButton button
+                    && button.isVisible()
+                    && hasRenderableBounds(button)) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+    /// Hides every showing picker field below a root.
+    private static void hideShowingPickerFields(Node root) {
+        visitVisibleNodes(root, node -> {
+            if (node instanceof M3PickerField<?, ?> field && field.isShowing()) {
+                field.hidePicker();
+            }
+        });
+    }
+
+    /// Hides every showing menu button below a root.
+    private static void hideShowingMenuButtons(Node root) {
+        visitVisibleNodes(root, node -> {
+            if (node instanceof M3MenuButton menuButton && menuButton.isShowing()) {
+                menuButton.hideMenu();
+            }
+        });
+    }
+
+
+    /// Hides every showing snackbar host below a root.
+    private static void hideShowingSnackbarHosts(Node root) {
+        visitVisibleNodes(root, node -> {
+            if (node instanceof M3SnackbarHost host && host.isShowing()) {
+                host.dismissAll();
+            }
+        });
+    }
+
 
     /// Returns a ripple-specific motion scheme that makes release fade frames observable in real snapshots.
     private static M3MotionScheme visualRippleMotionScheme() {
@@ -3380,6 +4751,108 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(intermediateReference.get(), "intermediate switch snapshot"),
                 Objects.requireNonNull(settledReference.get(), "settled switch snapshot"),
                 "switch selection settling frame"
+        );
+    }
+
+    /// Verifies that a horizontal slider responds to real pointer press, drag, release, and settling.
+    private static void verifySliderDragInteraction(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        AtomicReference<@Nullable M3Slider> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> draggedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> initialValueReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> draggedValueReference = new AtomicReference<>();
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, pressedReference, () -> {
+            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            app.showPageForTesting("Sliders");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
+            M3Slider target = Objects.requireNonNull(firstInteractiveHorizontalSlider(scene.getRoot()), "slider");
+            targetReference.set(target);
+            initialValueReference.set(target.getValue());
+            normalReference.set(snapshot(scene));
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(normalReference.get(), "normal slider snapshot"),
+                    "slider-drag",
+                    "normal"
+            );
+            fireSliderMouseEventAtPosition(target, MouseEvent.MOUSE_PRESSED, normalizedSliderPosition(target), true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            assertTrue(target.isValueChanging(), "slider should enter value-changing state after mouse press");
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(pressedReference.get(), "pressed slider snapshot"),
+                    "slider-drag",
+                    "pressed"
+            );
+            M3Slider target = Objects.requireNonNull(targetReference.get(), "slider");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            fireSliderMouseEventAtPosition(target, MouseEvent.MOUSE_DRAGGED, 0.82, true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            draggedValueReference.set(target.getValue());
+            assertTrue(target.isValueChanging(), "slider should remain value-changing while dragged");
+            assertTrue(target.getValue() > Objects.requireNonNull(initialValueReference.get(), "initial slider value"),
+                    "slider drag should increase the value");
+        });
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, pressedReference, sceneReference, draggedReference, () -> {
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(draggedReference.get(), "dragged slider snapshot"),
+                    "slider-drag",
+                    "dragged"
+            );
+            M3Slider target = Objects.requireNonNull(targetReference.get(), "slider");
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            fireSliderMouseEventAtPosition(target, MouseEvent.MOUSE_RELEASED, 0.82, false);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            assertFalse(target.isValueChanging(), "slider should leave value-changing state after mouse release");
+        });
+
+        runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, settledReference, () -> {
+            @Nullable M3Slider target = targetReference.get();
+            @Nullable Double draggedValue = draggedValueReference.get();
+            return target != null
+                    && draggedValue != null
+                    && !target.isValueChanging()
+                    && Math.abs(target.getValue() - draggedValue) <= 0.001;
+        }, () -> {
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(settledReference.get(), "settled slider snapshot"),
+                    "slider-drag",
+                    "settled"
+            );
+        });
+
+        M3Slider target = Objects.requireNonNull(targetReference.get(), "slider");
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal slider snapshot"),
+                Objects.requireNonNull(pressedReference.get(), "pressed slider snapshot"),
+                "slider press"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(pressedReference.get(), "pressed slider snapshot"),
+                Objects.requireNonNull(draggedReference.get(), "dragged slider snapshot"),
+                "slider drag"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(normalReference.get(), "normal slider snapshot"),
+                Objects.requireNonNull(settledReference.get(), "settled slider snapshot"),
+                "slider settled value"
         );
     }
 
@@ -3890,7 +5363,6 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies expand and collapse motion on the demo sidebar's visible drawer group.
     private static void verifySidebarDrawerGroupExpansionAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
         AtomicReference<@Nullable M3NavigationDrawerGroup> targetReference = new AtomicReference<>();
@@ -3901,9 +5373,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeAreaChanged(targetReference, collapsedReference, sceneReference, expandingReference, () -> {
-            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Buttons");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -4509,6 +5979,9 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3Button> actionReference = new AtomicReference<>();
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> popupReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> actionHoverReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> actionPressedReference = new AtomicReference<>();
+        AtomicReference<@Nullable Bounds> actionBoundsReference = new AtomicReference<>();
         AtomicInteger actionCount = new AtomicInteger();
 
         runOnFxThreadWhenNodeSnapshotStable(() -> {
@@ -4553,15 +6026,21 @@ final class M3FXDemoVisualSmokeTest {
             assertRichTooltipContentGeometry(popupRoot, "rich tooltip");
             M3Button action = assertRichTooltipActionInsidePopup(popupRoot);
             assertSame(actionReference.get(), action, "rich tooltip action should be the installed action node");
-            writeAnimationSnapshot(
-                    Objects.requireNonNull(popupReference.get(), "rich tooltip snapshot"),
-                    "rich-tooltip",
-                    "shown"
+            WritableImage normalActionFrame = Objects.requireNonNull(
+                    popupReference.get(),
+                    "rich tooltip snapshot"
             );
-            assertSnapshotHasVisibleContent(
-                    Objects.requireNonNull(popupReference.get(), "rich tooltip snapshot"),
-                    "rich tooltip"
-            );
+            writeAnimationSnapshot(normalActionFrame, "rich-tooltip", "shown");
+            writeInteractionSnapshot(normalActionFrame, "rich-tooltip-action", "normal");
+            assertSnapshotHasVisibleContent(normalActionFrame, "rich tooltip");
+            applyHoverPseudoState(action);
+            layoutPopupRoot(popupRoot);
+            WritableImage hoverActionFrame = snapshotNode(popupRoot);
+            Bounds actionBounds = nodeAreaBoundsInSnapshot(popupRoot, action);
+            actionHoverReference.set(hoverActionFrame);
+            actionBoundsReference.set(actionBounds);
+            writeInteractionSnapshot(hoverActionFrame, "rich-tooltip-action", "hover");
+            assertNodeAreaChanged(actionBounds, normalActionFrame, hoverActionFrame, "rich tooltip action hover");
             firePrimaryMouseEvent(owner, MouseEvent.MOUSE_EXITED, false);
             firePrimaryMouseEvent(popupRoot, MouseEvent.MOUSE_ENTERED, false);
         });
@@ -4577,7 +6056,61 @@ final class M3FXDemoVisualSmokeTest {
             firePrimaryMouseEventAtLayoutCenter(action, MouseEvent.MOUSE_ENTERED, false);
             firePrimaryMouseEventAtLayoutCenter(action, MouseEvent.MOUSE_PRESSED, true);
             assertTrue(action.isArmed(), "rich tooltip action should arm from a real pointer press");
+        });
+
+        AtomicReference<String> pressedDiagnostics = new AtomicReference<>("rich tooltip action pressed frame has not been captured");
+        runOnFxThreadWhen(() -> {
+            @Nullable M3RichTooltip tooltip = tooltipReference.get();
+            @Nullable WritableImage hoverActionFrame = actionHoverReference.get();
+            @Nullable Bounds actionBounds = actionBoundsReference.get();
+            if (tooltip == null || !tooltip.isShowing() || tooltip.getScene() == null) {
+                pressedDiagnostics.set("rich tooltip is not showing while waiting for pressed action feedback");
+                return false;
+            }
+            if (hoverActionFrame == null || actionBounds == null) {
+                pressedDiagnostics.set("rich tooltip action hover baseline or bounds are missing");
+                return false;
+            }
+
+            Node popupRoot = tooltip.getScene().getRoot();
+            layoutPopupRoot(popupRoot);
+            WritableImage frame = snapshotNode(popupRoot);
+            if (!nodeAreaChangedEnough(
+                    actionBounds,
+                    hoverActionFrame,
+                    frame,
+                    pressedDiagnostics,
+                    "rich tooltip action pressed"
+            )) {
+                return false;
+            }
+
+            actionPressedReference.set(frame);
+            return true;
+        }, () -> "Timed out waiting for rich tooltip action pressed feedback: " + pressedDiagnostics.get(), () -> {
+        }, () -> {
+            WritableImage pressedActionFrame = Objects.requireNonNull(
+                    actionPressedReference.get(),
+                    "rich tooltip action pressed snapshot"
+            );
+            writeInteractionSnapshot(pressedActionFrame, "rich-tooltip-action", "pressed");
+            assertNodeAreaChanged(
+                    Objects.requireNonNull(actionBoundsReference.get(), "rich tooltip action bounds"),
+                    Objects.requireNonNull(actionHoverReference.get(), "rich tooltip action hover snapshot"),
+                    pressedActionFrame,
+                    "rich tooltip action pressed"
+            );
+        });
+
+        runOnFxThreadWhenStable(() -> {
+            @Nullable M3RichTooltip tooltip = tooltipReference.get();
+            return tooltip != null && tooltip.isShowing() && tooltip.getScene() != null;
+        }, SETTLED_STATE_PULSES, () -> {
+        }, () -> {
+            M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "rich tooltip");
+            M3Button action = Objects.requireNonNull(actionReference.get(), "rich tooltip action");
             firePrimaryMouseEventAtLayoutCenter(action, MouseEvent.MOUSE_RELEASED, false);
+            clearHoverPseudoState(action);
             assertFalse(action.isArmed(), "rich tooltip action should disarm after pointer release");
             assertEquals(1, actionCount.get(),
                     "rich tooltip action should remain clickable after pointer transfers into the popup");
@@ -4684,8 +6217,15 @@ final class M3FXDemoVisualSmokeTest {
 
         runOnFxThreadWhenStable(() -> {
             @Nullable Node target = targetReference.get();
+            if (target != null && !target.isFocused()) {
+                target.requestFocus();
+            }
             return target != null && target.isFocused();
         }, SETTLED_STATE_PULSES, () -> {
+            @Nullable Scene scene = sceneReference.get();
+            return "text field focus owner=" + (scene == null ? null : scene.getFocusOwner())
+                    + ", target=" + targetReference.get();
+        }, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             app.showPageForTesting("Text Fields");
@@ -4697,6 +6237,10 @@ final class M3FXDemoVisualSmokeTest {
                     M3TextField.STYLE_CLASS
             ), "text field");
             targetReference.set(target);
+            if (scene.getWindow() instanceof Stage stage) {
+                stage.toFront();
+                stage.requestFocus();
+            }
             normalReference.set(snapshot(scene));
             writeInteractionSnapshot(
                     Objects.requireNonNull(normalReference.get(), "normal text field snapshot"),
@@ -4729,22 +6273,21 @@ final class M3FXDemoVisualSmokeTest {
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
+        showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Buttons", scene -> {
+        }, () -> {
+        });
+
         AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
-            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Buttons");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
-            Node target = Objects.requireNonNull(firstVisibleNodeWithStyle(
-                    scene.getRoot(),
-                    "demo-sidebar-child-item"
-            ), "sidebar item");
+            Node target = Objects.requireNonNull(firstVisibleUnselectedSidebarChildItemInSceneViewport(scene.getRoot()), "sidebar item");
             targetReference.set(target);
             normalReference.set(snapshot(scene));
             writeInteractionSnapshot(
@@ -6004,13 +7547,20 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals("Use an email address", layout.getValidationErrorText(),
                 "validated email should start with active validation feedback");
         assertTrue(textInput.isError(), "validated email should start in error state");
-        assertVisibleSupportingRowIsSettled(supportingRow, "validated email initial feedback");
+        Bounds initialBounds = assertVisibleSupportingRowIsSettled(
+                supportingRow,
+                "validated email initial feedback"
+        );
 
         input.replaceText(0, input.getLength(), "supportx");
         assertEquals("Use an email address", layout.getValidationErrorText(),
                 "validated email should keep error feedback for invalid edits");
         assertTrue(textInput.isError(), "validated email should remain in error state for invalid edits");
-        assertVisibleSupportingRowIsSettled(supportingRow, "validated email invalid edit feedback");
+        assertSupportingRowStillSettledAtBounds(
+                supportingRow,
+                initialBounds,
+                "validated email invalid edit feedback"
+        );
 
         input.replaceText(0, input.getLength(), "support@example.com");
         assertEquals("", layout.getValidationErrorText(),
@@ -6021,24 +7571,55 @@ final class M3FXDemoVisualSmokeTest {
                 M3TextInputLayout.SUPPORTING_TEXT_STYLE_CLASS,
                 "validated email helper text"
         )));
-        assertVisibleSupportingRowIsSettled(supportingRow, "validated email valid edit feedback");
+        assertSupportingRowStillSettledAtBounds(
+                supportingRow,
+                initialBounds,
+                "validated email valid edit feedback"
+        );
 
         input.replaceText(0, input.getLength(), "support");
         assertEquals("Use an email address", layout.getValidationErrorText(),
                 "validated email should restore error feedback for invalid edits");
         assertTrue(textInput.isError(), "validated email should restore input error state for invalid edits");
-        assertVisibleSupportingRowIsSettled(supportingRow, "validated email restored error feedback");
+        assertSupportingRowStillSettledAtBounds(
+                supportingRow,
+                initialBounds,
+                "validated email restored error feedback"
+        );
         assertTextInputLayoutContainerGeometry(layout, "Text Fields validation");
     }
 
     /// Verifies that an already visible supporting row is not replaying its entry transition.
-    private static void assertVisibleSupportingRowIsSettled(HBox supportingRow, String description) {
+    private static Bounds assertVisibleSupportingRowIsSettled(HBox supportingRow, String description) {
         assertTrue(supportingRow.isVisible(), () -> description + " supporting row should be visible");
         assertTrue(supportingRow.isManaged(), () -> description + " supporting row should be managed");
         assertEquals(1.0, supportingRow.getOpacity(), 0.0001,
                 () -> description + " supporting row opacity should be settled");
         assertEquals(0.0, supportingRow.getTranslateY(), 0.0001,
                 () -> description + " supporting row translateY should be settled");
+        assertNodeSnapshotHasOpaquePixels(supportingRow, description + " supporting row");
+        return supportingRow.localToScene(supportingRow.getBoundsInLocal());
+    }
+
+    /// Verifies that a supporting row remains settled and does not jump while its validation text changes.
+    private static void assertSupportingRowStillSettledAtBounds(
+            HBox supportingRow,
+            Bounds expectedBounds,
+            String description
+    ) {
+        Bounds actualBounds = assertVisibleSupportingRowIsSettled(supportingRow, description);
+        assertEquals(expectedBounds.getMinX(), actualBounds.getMinX(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " supporting row moved horizontally: expected="
+                        + expectedBounds + ", actual=" + actualBounds);
+        assertEquals(expectedBounds.getMinY(), actualBounds.getMinY(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " supporting row moved vertically: expected="
+                        + expectedBounds + ", actual=" + actualBounds);
+        assertEquals(expectedBounds.getWidth(), actualBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " supporting row width changed: expected="
+                        + expectedBounds + ", actual=" + actualBounds);
+        assertEquals(expectedBounds.getHeight(), actualBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " supporting row height changed: expected="
+                        + expectedBounds + ", actual=" + actualBounds);
     }
 
     /// Returns the first rendered text value below a node.
@@ -11382,6 +12963,27 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
+    /// Returns the first visible unselected sidebar child item inside the scene viewport.
+    private static @Nullable M3ListItem firstVisibleUnselectedSidebarChildItemInSceneViewport(Node root) {
+        @Nullable Scene scene = root.getScene();
+        if (scene == null) {
+            return null;
+        }
+        Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
+        for (M3ListItem item : visibleNodesOfType(root, M3ListItem.class)) {
+            if (item.getStyleClass().contains("demo-sidebar-child-item")
+                    && !item.isSelected()
+                    && item.isVisible()
+                    && hasRenderableBounds(item)) {
+                Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
+                if (!isOutsideSceneViewport(item, itemBounds, sceneBounds)) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
     /// Returns visible descendants assignable to the requested type.
     private static <T> List<T> visibleNodesOfType(Node root, Class<T> type) {
         List<T> result = new ArrayList<>();
@@ -11509,6 +13111,101 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
+    /// Returns the first visible enabled horizontal slider.
+    private static @Nullable M3Slider firstInteractiveHorizontalSlider(Node root) {
+        if (root instanceof M3Slider slider
+                && slider.isVisible()
+                && !slider.isDisabled()
+                && slider.getOrientation() == Orientation.HORIZONTAL
+                && hasRenderableBounds(slider)) {
+            return slider;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3Slider result = firstInteractiveHorizontalSlider(child);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible M3 chip with the requested text.
+    private static @Nullable M3Chip firstVisibleChipWithText(Node root, String text) {
+        if (root instanceof M3Chip chip
+                && chip.isVisible()
+                && text.equals(chip.getText())
+                && hasRenderableBounds(chip)) {
+            return chip;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3Chip result = firstVisibleChipWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible M3 segmented button with the requested text.
+    private static @Nullable M3SegmentedButton firstVisibleSegmentedButtonWithText(Node root, String text) {
+        if (root instanceof M3SegmentedButton button
+                && button.isVisible()
+                && text.equals(button.getText())
+                && hasRenderableBounds(button)) {
+            return button;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3SegmentedButton result = firstVisibleSegmentedButtonWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible M3 checkbox with the requested text.
+    private static @Nullable M3CheckBox firstVisibleCheckBoxWithText(Node root, String text) {
+        if (root instanceof M3CheckBox checkBox
+                && checkBox.isVisible()
+                && text.equals(checkBox.getText())
+                && hasRenderableBounds(checkBox)) {
+            return checkBox;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3CheckBox result = firstVisibleCheckBoxWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible M3 radio button with the requested text.
+    private static @Nullable M3RadioButton firstVisibleRadioButtonWithText(Node root, String text) {
+        if (root instanceof M3RadioButton radioButton
+                && radioButton.isVisible()
+                && text.equals(radioButton.getText())
+                && hasRenderableBounds(radioButton)) {
+            return radioButton;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3RadioButton result = firstVisibleRadioButtonWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
     /// Returns the first visible M3 switch with the requested text.
     private static @Nullable M3Switch firstVisibleSwitchWithText(Node root, String text) {
         if (root instanceof M3Switch switchControl
@@ -11527,6 +13224,71 @@ final class M3FXDemoVisualSmokeTest {
         }
         return null;
     }
+
+    /// Returns the first visible floating action button with the requested text.
+    private static @Nullable M3FloatingActionButton firstVisibleFloatingActionButtonWithText(
+            Node root,
+            String text
+    ) {
+        if (root instanceof M3FloatingActionButton button
+                && button.isVisible()
+                && text.equals(button.getText())
+                && hasRenderableBounds(button)) {
+            return button;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3FloatingActionButton result = firstVisibleFloatingActionButtonWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible floating action button with the requested size.
+    private static @Nullable M3FloatingActionButton firstVisibleFloatingActionButtonWithSize(
+            Node root,
+            M3FloatingActionButtonSize size
+    ) {
+        if (root instanceof M3FloatingActionButton button
+                && button.isVisible()
+                && button.getSize() == size
+                && hasRenderableBounds(button)) {
+            return button;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3FloatingActionButton result = firstVisibleFloatingActionButtonWithSize(child, size);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the visible primary action side of the first split button with the requested text.
+    private static @Nullable M3Button firstVisibleSplitButtonActionWithText(Node root, String text) {
+        @Nullable M3SplitButton splitButton = firstVisibleSplitButtonWithText(root, text);
+        if (splitButton == null) {
+            return null;
+        }
+        M3Button actionButton = splitButton.getActionButton();
+        return actionButton.isVisible() && hasRenderableBounds(actionButton) ? actionButton : null;
+    }
+
+    /// Returns the visible menu side of the first split button with the requested text.
+    private static @Nullable M3MenuButton firstVisibleSplitButtonMenuWithText(Node root, String text) {
+        @Nullable M3SplitButton splitButton = firstVisibleSplitButtonWithText(root, text);
+        if (splitButton == null) {
+            return null;
+        }
+        M3MenuButton menuButton = splitButton.getMenuButton();
+        return menuButton.isVisible() && hasRenderableBounds(menuButton) ? menuButton : null;
+    }
+
 
     /// Returns the first visible M3 split button with the requested text.
     private static @Nullable M3SplitButton firstVisibleSplitButtonWithText(Node root, String text) {
@@ -11547,6 +13309,155 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
+    /// Returns the first visible M3 tab with the requested text.
+    private static @Nullable M3Tab firstVisibleTabWithText(Node root, String text) {
+        if (root instanceof M3Tab tab
+                && tab.isVisible()
+                && text.equals(tab.getText())
+                && hasRenderableBounds(tab)) {
+            return tab;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3Tab result = firstVisibleTabWithText(child, text);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible M3 list item with the requested headline.
+    private static @Nullable M3ListItem firstVisibleListItemWithHeadline(Node root, String headline) {
+        if (root instanceof M3ListItem item
+                && item.isVisible()
+                && headline.equals(item.getHeadlineText())
+                && hasRenderableBounds(item)) {
+            return item;
+        }
+        if (root instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable M3ListItem result = firstVisibleListItemWithHeadline(child, headline);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+
+    /// Returns the first visible top app bar action button.
+    private static @Nullable M3IconButton firstVisibleTopAppBarAction(Node root) {
+        for (M3IconButton button : visibleNodesOfType(root, M3IconButton.class)) {
+            @Nullable M3TopAppBar appBar = nearestAncestorOfType(button, M3TopAppBar.class);
+            if (appBar != null
+                    && appBar.getActions().contains(button)
+                    && button.isVisible()
+                    && hasRenderableBounds(button)) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible toolbar action button.
+    private static @Nullable M3IconButton firstVisibleToolbarAction(Node root) {
+        for (M3IconButton button : visibleNodesOfType(root, M3IconButton.class)) {
+            @Nullable M3Toolbar toolbar = nearestAncestorOfType(button, M3Toolbar.class);
+            if (toolbar != null
+                    && toolbar.getItems().contains(button)
+                    && button.isVisible()
+                    && hasRenderableBounds(button)) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible banner action with the requested text.
+    private static @Nullable M3Button firstVisibleBannerActionWithText(Node root, String text) {
+        for (M3Button button : visibleNodesOfType(root, M3Button.class)) {
+            if (text.equals(button.getText())
+                    && nearestAncestorOfType(button, M3Banner.class) != null
+                    && button.isVisible()
+                    && hasRenderableBounds(button)) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible dialog pane action with the requested text.
+    private static @Nullable M3Button firstVisibleDialogActionWithText(Node root, String text) {
+        for (M3Button button : visibleNodesOfType(root, M3Button.class)) {
+            if (text.equals(button.getText())
+                    && button.getStyleClass().contains(M3DialogPane.BUTTON_STYLE_CLASS)
+                    && nearestAncestorOfType(button, M3DialogPane.class) != null
+                    && button.isVisible()
+                    && hasRenderableBounds(button)) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+
+    /// Returns the first visible bottom sheet action for the requested headline.
+    private static @Nullable Node firstVisibleBottomSheetActionWithHeadline(Node root, String headline) {
+        @Nullable M3BottomSheet sheet = firstVisibleBottomSheetWithHeadline(root, headline);
+        return sheet == null ? null : firstVisibleActionNode(sheet.getActions());
+    }
+
+    /// Returns the first visible side sheet action for the requested headline.
+    private static @Nullable Node firstVisibleSideSheetActionWithHeadline(Node root, String headline) {
+        @Nullable M3SideSheet sheet = firstVisibleSideSheetWithHeadline(root, headline);
+        return sheet == null ? null : firstVisibleActionNode(sheet.getActions());
+    }
+
+    /// Returns the first visible action item from an expanded FAB menu.
+    private static @Nullable Node firstVisibleFabMenuAction(Node root) {
+        for (M3FabMenu menu : visibleNodesOfType(root, M3FabMenu.class)) {
+            if (!menu.isExpanded()) {
+                continue;
+            }
+            @Nullable Node action = firstVisibleActionNode(menu.getItems());
+            if (action != null) {
+                return action;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible snackbar action button below a root.
+    private static @Nullable M3Button firstVisibleSnackbarAction(Node root) {
+        @Nullable M3SnackbarHost host = firstVisibleSnackbarHost(root);
+        return host == null ? null : firstVisibleSnackbarAction(host.getSnackbar());
+    }
+
+    /// Returns the first visible action button in a snackbar.
+    private static @Nullable M3Button firstVisibleSnackbarAction(@Nullable M3Snackbar snackbar) {
+        if (snackbar == null) {
+            return null;
+        }
+        for (M3Button button : visibleNodesOfType(snackbar, M3Button.class)) {
+            if ("Action".equals(button.getText()) && button.isVisible() && hasRenderableBounds(button)) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible action node from a logical action list.
+    private static @Nullable Node firstVisibleActionNode(List<Node> actions) {
+        for (Node action : actions) {
+            if (action.isVisible() && hasRenderableBounds(action)) {
+                return action;
+            }
+        }
+        return null;
+    }
     /// Returns the first visible M3 menu button with the requested text.
     private static @Nullable M3MenuButton firstVisibleMenuButtonWithText(Node root, String text) {
         if (root instanceof M3MenuButton menuButton
@@ -12148,7 +14059,11 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that an interaction visibly changes the snapshot region occupied by a node.
     private static void assertNodeAreaChanged(Node node, WritableImage before, WritableImage after, String description) {
-        Bounds bounds = nodeAreaBounds(node);
+        assertNodeAreaChanged(nodeAreaBounds(node), before, after, description);
+    }
+
+    /// Verifies that an interaction visibly changes one fixed scene-space snapshot region.
+    private static void assertNodeAreaChanged(Bounds bounds, WritableImage before, WritableImage after, String description) {
         int changedPixels = countNodeAreaChangedPixels(bounds, before, after);
         int minimumChangedPixels = minimumNodeAreaChangedPixels(bounds, before, after);
         int finalChangedPixels = changedPixels;
@@ -12615,6 +14530,35 @@ final class M3FXDemoVisualSmokeTest {
         return true;
     }
 
+    /// Returns whether one fixed snapshot area changed enough between two snapshots.
+    private static boolean nodeAreaChangedEnough(
+            Bounds bounds,
+            WritableImage before,
+            WritableImage after,
+            @Nullable AtomicReference<String> diagnostics,
+            String description
+    ) {
+        int changedPixels = countNodeAreaChangedPixels(bounds, before, after);
+        int minimumChangedPixels = minimumNodeAreaChangedPixels(bounds, before, after);
+        if (changedPixels < minimumChangedPixels) {
+            updateVisualWaitDiagnostics(
+                    diagnostics,
+                    description + " changed too little: changed=" + changedPixels
+                            + ", minimum=" + minimumChangedPixels
+                            + ", bounds=" + bounds
+            );
+            return false;
+        }
+
+        updateVisualWaitDiagnostics(
+                diagnostics,
+                description + " changed enough: changed=" + changedPixels
+                        + ", minimum=" + minimumChangedPixels
+                        + ", bounds=" + bounds
+        );
+        return true;
+    }
+
     /// Counts changed pixels within the snapshot area occupied by a node.
     private static int countNodeAreaChangedPixels(Bounds bounds, WritableImage before, WritableImage after) {
         int width = (int) Math.min(before.getWidth(), after.getWidth());
@@ -12738,6 +14682,30 @@ final class M3FXDemoVisualSmokeTest {
         node.fireEvent(primaryMouseEvent(node, eventType, x, y, primaryButtonDown));
     }
 
+    /// Fires a primary-button mouse event at a slider position.
+    private static void fireSliderMouseEventAtPosition(
+            M3Slider slider,
+            EventType<MouseEvent> eventType,
+            double position,
+            boolean primaryButtonDown
+    ) {
+        double thumbSize = slider.getThumbSize();
+        double trackLength = Math.max(0.0, slider.getWidth() - thumbSize);
+        double x = thumbSize / 2.0 + trackLength * Math.max(0.0, Math.min(1.0, position));
+        double y = slider.getHeight() / 2.0;
+        firePrimaryMouseEventAtLocalPoint(slider, eventType, x, y, primaryButtonDown);
+    }
+
+    /// Fires a primary-button mouse event at one local point of a node.
+    private static void firePrimaryMouseEventAtLocalPoint(
+            Node node,
+            EventType<MouseEvent> eventType,
+            double x,
+            double y,
+            boolean primaryButtonDown
+    ) {
+        node.fireEvent(primaryMouseEvent(node, eventType, x, y, primaryButtonDown));
+    }
     /// Creates a primary-button mouse event at one local point of a node.
     private static MouseEvent primaryMouseEvent(
             Node node,
@@ -12834,6 +14802,17 @@ final class M3FXDemoVisualSmokeTest {
         return bounds.getWidth() > 0.5 && bounds.getHeight() > 0.5;
     }
 
+    /// Returns a stable snapshot-local area for a child captured as part of a root node snapshot.
+    private static Bounds nodeAreaBoundsInSnapshot(Node snapshotRoot, Node node) {
+        Bounds sceneBounds = node.localToScene(node.getBoundsInLocal());
+        Point2D min = snapshotRoot.sceneToLocal(sceneBounds.getMinX(), sceneBounds.getMinY());
+        Point2D max = snapshotRoot.sceneToLocal(sceneBounds.getMaxX(), sceneBounds.getMaxY());
+        double minX = Math.min(min.getX(), max.getX());
+        double minY = Math.min(min.getY(), max.getY());
+        double width = Math.abs(max.getX() - min.getX());
+        double height = Math.abs(max.getY() - min.getY());
+        return new BoundingBox(minX, minY, width, height);
+    }
     /// Returns a stable scene-space area for visual change comparisons.
     private static Bounds nodeAreaBounds(Node node) {
         try {
@@ -12927,9 +14906,74 @@ final class M3FXDemoVisualSmokeTest {
                 Files.createDirectories(parent);
             }
             ImageIO.write(toBufferedImage(image), "png", path.toFile());
+            writeVisualSnapshotIndex(path);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /// Writes a lightweight HTML index for generated visual snapshots.
+    private static void writeVisualSnapshotIndex(Path snapshotPath) throws IOException {
+        Path directory = snapshotPath.getParent();
+        if (directory == null) {
+            return;
+        }
+
+        List<Path> snapshots;
+        try (var stream = Files.list(directory)) {
+            snapshots = stream
+                    .filter(path -> path.getFileName().toString().endsWith(".png"))
+                    .sorted()
+                    .toList();
+        }
+
+        StringBuilder html = new StringBuilder();
+        html.append("""
+                <!doctype html>
+                <html lang="en">
+                <head>
+                  <meta charset="utf-8">
+                  <title>M3FX Demo Visual Snapshots</title>
+                  <style>
+                    body { margin: 24px; font-family: system-ui, sans-serif; background: #fdf8ff; color: #1d1b20; }
+                    h1 { margin: 0 0 16px; font-size: 28px; }
+                    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+                    figure { margin: 0; border: 1px solid #cac4d0; border-radius: 8px; padding: 12px; background: #fff7ff; }
+                    img { display: block; width: 100%; height: auto; border-radius: 4px; background: #f7f2fa; }
+                    figcaption { margin-top: 8px; font-size: 13px; word-break: break-all; }
+                  </style>
+                </head>
+                <body>
+                  <h1>M3FX Demo Visual Snapshots</h1>
+                  <div class="grid">
+                """);
+        for (Path snapshot : snapshots) {
+            String fileName = snapshot.getFileName().toString();
+            html.append("    <figure><a href=\"")
+                    .append(escapeHtml(fileName))
+                    .append("\"><img src=\"")
+                    .append(escapeHtml(fileName))
+                    .append("\" alt=\"")
+                    .append(escapeHtml(fileName))
+                    .append("\"></a><figcaption>")
+                    .append(escapeHtml(fileName))
+                    .append("</figcaption></figure>\n");
+        }
+        html.append("""
+                  </div>
+                </body>
+                </html>
+                """);
+        Files.writeString(directory.resolve("index.html"), html.toString());
+    }
+
+    /// Escapes text for HTML content and attributes.
+    private static String escapeHtml(String text) {
+        return text
+                .replace("&", "&amp;")
+                .replace("\"", "&quot;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 
     /// Converts a JavaFX image into a desktop image.

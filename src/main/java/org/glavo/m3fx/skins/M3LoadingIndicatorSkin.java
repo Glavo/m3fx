@@ -56,19 +56,19 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The reusable shape morph scratch storage.
     private final M3ShapeMorph.Scratch shapeScratch = new M3ShapeMorph.Scratch();
 
-    /// The progress value currently displayed by determinate progress.
+    // The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
     /// The determinate progress transition timeline.
     private final Timeline determinateAnimation = new Timeline();
 
-    /// The animated phase used by indeterminate loading.
+    // The animated phase used by indeterminate loading.
     private final DoubleProperty indeterminatePhase = new SimpleDoubleProperty(this, "indeterminatePhase");
 
     /// The indeterminate animation timeline.
     private final Timeline indeterminateAnimation = new Timeline();
 
-    /// The independent global rotation animation value.
+    // The independent global rotation animation value.
     private final DoubleProperty globalRotation = new SimpleDoubleProperty(this, "globalRotation");
 
     /// The independent global rotation animation timeline.
