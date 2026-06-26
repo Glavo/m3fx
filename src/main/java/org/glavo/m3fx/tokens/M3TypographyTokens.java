@@ -128,42 +128,42 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     /// Returns the baseline Material Design 3 typography tokens.
     static M3TypographyTokens baseline() {
         return create(
-                M3TextStyle.create("System", 57.0, 64.0, 400),
-                M3TextStyle.create("System", 45.0, 52.0, 400),
-                M3TextStyle.create("System", 36.0, 44.0, 400),
-                M3TextStyle.create("System", 32.0, 40.0, 400),
-                M3TextStyle.create("System", 28.0, 36.0, 400),
-                M3TextStyle.create("System", 24.0, 32.0, 400),
-                M3TextStyle.create("System", 22.0, 28.0, 400),
-                M3TextStyle.create("System", 16.0, 24.0, 500),
-                M3TextStyle.create("System", 14.0, 20.0, 500),
-                M3TextStyle.create("System", 14.0, 20.0, 500),
-                M3TextStyle.create("System", 12.0, 16.0, 500),
-                M3TextStyle.create("System", 11.0, 16.0, 500),
-                M3TextStyle.create("System", 16.0, 24.0, 400),
-                M3TextStyle.create("System", 14.0, 20.0, 400),
-                M3TextStyle.create("System", 12.0, 16.0, 400)
+                M3TextStyle.create("System", 57.0, 64.0, 400, -0.25),
+                M3TextStyle.create("System", 45.0, 52.0, 400, 0.0),
+                M3TextStyle.create("System", 36.0, 44.0, 400, 0.0),
+                M3TextStyle.create("System", 32.0, 40.0, 400, 0.0),
+                M3TextStyle.create("System", 28.0, 36.0, 400, 0.0),
+                M3TextStyle.create("System", 24.0, 32.0, 400, 0.0),
+                M3TextStyle.create("System", 22.0, 28.0, 400, 0.0),
+                M3TextStyle.create("System", 16.0, 24.0, 500, 0.15),
+                M3TextStyle.create("System", 14.0, 20.0, 500, 0.10),
+                M3TextStyle.create("System", 14.0, 20.0, 500, 0.10),
+                M3TextStyle.create("System", 12.0, 16.0, 500, 0.50),
+                M3TextStyle.create("System", 11.0, 16.0, 500, 0.50),
+                M3TextStyle.create("System", 16.0, 24.0, 400, 0.50),
+                M3TextStyle.create("System", 14.0, 20.0, 400, 0.25),
+                M3TextStyle.create("System", 12.0, 16.0, 400, 0.40)
         );
     }
 
     /// Returns expressive Material Design 3 typography tokens.
     static M3TypographyTokens expressive() {
         return create(
-                M3TextStyle.create("System", 64.0, 72.0, 500),
-                M3TextStyle.create("System", 52.0, 60.0, 500),
-                M3TextStyle.create("System", 44.0, 52.0, 500),
-                M3TextStyle.create("System", 36.0, 44.0, 500),
-                M3TextStyle.create("System", 32.0, 40.0, 500),
-                M3TextStyle.create("System", 28.0, 36.0, 500),
-                M3TextStyle.create("System", 24.0, 32.0, 500),
-                M3TextStyle.create("System", 18.0, 26.0, 600),
-                M3TextStyle.create("System", 15.0, 22.0, 600),
-                M3TextStyle.create("System", 14.0, 20.0, 600),
-                M3TextStyle.create("System", 13.0, 18.0, 600),
-                M3TextStyle.create("System", 12.0, 16.0, 600),
-                M3TextStyle.create("System", 17.0, 26.0, 400),
-                M3TextStyle.create("System", 15.0, 22.0, 400),
-                M3TextStyle.create("System", 13.0, 18.0, 400)
+                M3TextStyle.create("System", 64.0, 72.0, 500, -0.25),
+                M3TextStyle.create("System", 52.0, 60.0, 500, 0.0),
+                M3TextStyle.create("System", 44.0, 52.0, 500, 0.0),
+                M3TextStyle.create("System", 36.0, 44.0, 500, 0.0),
+                M3TextStyle.create("System", 32.0, 40.0, 500, 0.0),
+                M3TextStyle.create("System", 28.0, 36.0, 500, 0.0),
+                M3TextStyle.create("System", 24.0, 32.0, 500, 0.0),
+                M3TextStyle.create("System", 18.0, 26.0, 600, 0.15),
+                M3TextStyle.create("System", 15.0, 22.0, 600, 0.10),
+                M3TextStyle.create("System", 14.0, 20.0, 600, 0.10),
+                M3TextStyle.create("System", 13.0, 18.0, 600, 0.50),
+                M3TextStyle.create("System", 12.0, 16.0, 600, 0.50),
+                M3TextStyle.create("System", 17.0, 26.0, 400, 0.50),
+                M3TextStyle.create("System", 15.0, 22.0, 400, 0.25),
+                M3TextStyle.create("System", 13.0, 18.0, 400, 0.40)
         );
     }
 
@@ -215,6 +215,7 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
         M3TokenCss.append(builder, "-m3-typescale-" + name + "-font-size", M3TokenCss.pixels(style.size()));
         M3TokenCss.append(builder, "-m3-typescale-" + name + "-line-height", M3TokenCss.pixels(style.lineHeight()));
         M3TokenCss.append(builder, "-m3-typescale-" + name + "-font-weight", Integer.toString(style.weight()));
+        M3TokenCss.append(builder, "-m3-typescale-" + name + "-tracking", M3TokenCss.pixels(style.tracking()));
     }
 
     /// Appends a control CSS rule for a typography token.
@@ -224,6 +225,7 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
         appendDeclaration(builder, "-m3-typography-font-size", M3TokenCss.pixels(style.size()));
         appendDeclaration(builder, "-m3-typography-line-height", M3TokenCss.pixels(style.lineHeight()));
         appendDeclaration(builder, "-m3-typography-font-weight", Integer.toString(style.weight()));
+        appendDeclaration(builder, "-m3-typography-tracking", M3TokenCss.pixels(style.tracking()));
         builder.append("}\n\n");
     }
 

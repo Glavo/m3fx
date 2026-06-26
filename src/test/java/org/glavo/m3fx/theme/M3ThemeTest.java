@@ -111,6 +111,9 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-label-large-font-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-display-medium-font-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-body-small-line-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-body-medium-tracking: 0.25px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-shape-corner-extra-extra-large: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-state-focus-indicator-thickness: 3px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-menu-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size"));

@@ -9,12 +9,17 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// Holds Material Design 3 shape system tokens.
 ///
 /// Shape tokens define the corner radius scale used by surfaces, cards, buttons, text fields, sheets, and other
-/// controls. Baseline and expressive profiles can supply different radii while component code consumes the same
-/// semantic shape roles.
+/// controls. The scale follows the Material 3 ten-step corner radius model so component tokens can choose the
+/// exact roundedness expected by Material specs.
 ///
 /// See [Material Design shape](https://m3.material.io/styles/shape/overview).
 @NotNullByDefault
 public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
+    /// Returns the no-corner radius.
+    ///
+    /// @return the no-corner radius in pixels
+    double none();
+
     /// Returns the extra-small corner radius.
     ///
     /// @return the extra-small corner radius in pixels
@@ -35,17 +40,32 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     /// @return the large corner radius in pixels
     double large();
 
+    /// Returns the large-increased corner radius.
+    ///
+    /// @return the large-increased corner radius in pixels
+    double largeIncreased();
+
     /// Returns the extra-large corner radius.
     ///
     /// @return the extra-large corner radius in pixels
     double extraLarge();
+
+    /// Returns the extra-large-increased corner radius.
+    ///
+    /// @return the extra-large-increased corner radius in pixels
+    double extraLargeIncreased();
+
+    /// Returns the extra-extra-large corner radius.
+    ///
+    /// @return the extra-extra-large corner radius in pixels
+    double extraExtraLarge();
 
     /// Returns the full corner radius used for pills.
     ///
     /// @return the full corner radius used for pills, in pixels
     double full();
 
-    /// Creates shape tokens.
+    /// Creates shape tokens from the original compact M3FX scale.
     ///
     /// @param extraSmall the extra-small corner radius in pixels
     /// @param small the small corner radius in pixels
@@ -62,21 +82,60 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
             double extraLarge,
             double full
     ) {
-        return new M3ShapeTokensImpl(extraSmall, small, medium, large, extraLarge, full);
+        return create(0.0, extraSmall, small, medium, large, large, extraLarge, extraLarge, extraLarge, full);
+    }
+
+    /// Creates shape tokens.
+    ///
+    /// @param none the no-corner radius in pixels
+    /// @param extraSmall the extra-small corner radius in pixels
+    /// @param small the small corner radius in pixels
+    /// @param medium the medium corner radius in pixels
+    /// @param large the large corner radius in pixels
+    /// @param largeIncreased the large-increased corner radius in pixels
+    /// @param extraLarge the extra-large corner radius in pixels
+    /// @param extraLargeIncreased the extra-large-increased corner radius in pixels
+    /// @param extraExtraLarge the extra-extra-large corner radius in pixels
+    /// @param full the full corner radius used for pills, in pixels
+    /// @return the created shape token set
+    static M3ShapeTokens create(
+            double none,
+            double extraSmall,
+            double small,
+            double medium,
+            double large,
+            double largeIncreased,
+            double extraLarge,
+            double extraLargeIncreased,
+            double extraExtraLarge,
+            double full
+    ) {
+        return new M3ShapeTokensImpl(
+                none,
+                extraSmall,
+                small,
+                medium,
+                large,
+                largeIncreased,
+                extraLarge,
+                extraLargeIncreased,
+                extraExtraLarge,
+                full
+        );
     }
 
     /// Returns baseline Material Design 3 shape tokens.
     ///
     /// @return baseline Material Design 3 shape tokens
     static M3ShapeTokens baseline() {
-        return create(4.0, 8.0, 12.0, 16.0, 28.0, 999.0);
+        return create(0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 28.0, 32.0, 48.0, 999.0);
     }
 
     /// Returns expressive Material Design 3 shape tokens.
     ///
     /// @return expressive Material Design 3 shape tokens
     static M3ShapeTokens expressive() {
-        return create(6.0, 10.0, 16.0, 24.0, 32.0, 999.0);
+        return create(0.0, 6.0, 10.0, 16.0, 24.0, 28.0, 32.0, 40.0, 48.0, 999.0);
     }
 
     /// Converts shape tokens into inline JavaFX CSS declarations.
@@ -84,11 +143,15 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     /// @return inline JavaFX CSS declarations for this shape token set
     default String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
+        M3TokenCss.append(builder, "-m3-shape-corner-none", M3TokenCss.pixels(none()));
         M3TokenCss.append(builder, "-m3-shape-corner-extra-small", M3TokenCss.pixels(extraSmall()));
         M3TokenCss.append(builder, "-m3-shape-corner-small", M3TokenCss.pixels(small()));
         M3TokenCss.append(builder, "-m3-shape-corner-medium", M3TokenCss.pixels(medium()));
         M3TokenCss.append(builder, "-m3-shape-corner-large", M3TokenCss.pixels(large()));
+        M3TokenCss.append(builder, "-m3-shape-corner-large-increased", M3TokenCss.pixels(largeIncreased()));
         M3TokenCss.append(builder, "-m3-shape-corner-extra-large", M3TokenCss.pixels(extraLarge()));
+        M3TokenCss.append(builder, "-m3-shape-corner-extra-large-increased", M3TokenCss.pixels(extraLargeIncreased()));
+        M3TokenCss.append(builder, "-m3-shape-corner-extra-extra-large", M3TokenCss.pixels(extraExtraLarge()));
         M3TokenCss.append(builder, "-m3-shape-corner-full", M3TokenCss.pixels(full()));
         return builder.toString().trim();
     }

@@ -14,12 +14,14 @@ import java.util.Objects;
 /// @param size the font size in pixels
 /// @param lineHeight the line height in pixels
 /// @param weight the font weight
+/// @param tracking the letter tracking in pixels
 @NotNullByDefault
 public record M3TextStyleImpl(
         String fontFamily,
         double size,
         double lineHeight,
-        int weight
+        int weight,
+        double tracking
 ) implements M3TextStyle {
     /// Creates a text style token.
     public M3TextStyleImpl {
@@ -29,12 +31,20 @@ public record M3TextStyleImpl(
         if (weight <= 0) {
             throw new IllegalArgumentException("weight must be positive");
         }
+        validateFinite(tracking, "tracking");
     }
 
     /// Validates a non-negative text metric.
     private static void validate(double value, String name) {
         if (value < 0.0) {
             throw new IllegalArgumentException(name + " must not be negative");
+        }
+    }
+
+    /// Validates a finite text metric.
+    private static void validateFinite(double value, String name) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException(name + " must be finite");
         }
     }
 }

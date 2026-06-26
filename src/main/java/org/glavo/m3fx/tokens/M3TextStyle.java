@@ -23,8 +23,19 @@ public sealed interface M3TextStyle permits M3TextStyleImpl {
     /// Returns the font weight.
     int weight();
 
+    /// Returns the letter tracking in pixels.
+    ///
+    /// Material Design defines tracking as an absolute design value. Platforms that render letter spacing as an
+    /// em value can divide this value by [size()].
+    double tracking();
+
     /// Creates a text style token.
     static M3TextStyle create(String fontFamily, double size, double lineHeight, int weight) {
-        return new M3TextStyleImpl(fontFamily, size, lineHeight, weight);
+        return create(fontFamily, size, lineHeight, weight, 0.0);
+    }
+
+    /// Creates a text style token.
+    static M3TextStyle create(String fontFamily, double size, double lineHeight, int weight, double tracking) {
+        return new M3TextStyleImpl(fontFamily, size, lineHeight, weight, tracking);
     }
 }

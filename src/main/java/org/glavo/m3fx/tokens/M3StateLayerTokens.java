@@ -6,11 +6,11 @@ package org.glavo.m3fx.tokens;
 import org.glavo.m3fx.internal.tokens.M3StateLayerTokensImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Holds Material Design 3 state layer opacity tokens.
+/// Holds Material Design 3 interaction state tokens.
 ///
-/// State layer tokens define the opacity used when controls render hover, focus, pressed, dragged, and disabled
-/// feedback. Skins combine these opacities with the active color roles so interaction feedback remains
-/// theme-aware.
+/// State tokens define the opacity used when controls render hover, focus, pressed, dragged, and disabled
+/// feedback. They also expose the keyboard focus indicator metrics referenced by component tokens. Skins combine
+/// these values with the active color roles so interaction feedback remains theme-aware.
 ///
 /// See [Material Design interaction states](https://m3.material.io/foundations/interaction/states/overview).
 @NotNullByDefault
@@ -45,6 +45,21 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// @return the disabled content opacity
     double disabledContentOpacity();
 
+    /// Returns the keyboard focus indicator thickness.
+    ///
+    /// @return the keyboard focus indicator thickness in pixels
+    double focusIndicatorThickness();
+
+    /// Returns the keyboard focus indicator outer offset.
+    ///
+    /// @return the keyboard focus indicator outer offset in pixels
+    double focusIndicatorOuterOffset();
+
+    /// Returns the keyboard focus indicator inner offset.
+    ///
+    /// @return the keyboard focus indicator inner offset in pixels
+    double focusIndicatorInnerOffset();
+
     /// Creates state layer opacity tokens.
     ///
     /// @param hoverOpacity the hover state layer opacity
@@ -62,13 +77,52 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
             double disabledContainerOpacity,
             double disabledContentOpacity
     ) {
+        return create(
+                hoverOpacity,
+                focusOpacity,
+                pressedOpacity,
+                draggedOpacity,
+                disabledContainerOpacity,
+                disabledContentOpacity,
+                3.0,
+                2.0,
+                -2.0
+        );
+    }
+
+    /// Creates state tokens.
+    ///
+    /// @param hoverOpacity the hover state layer opacity
+    /// @param focusOpacity the focus state layer opacity
+    /// @param pressedOpacity the pressed state layer opacity
+    /// @param draggedOpacity the dragged state layer opacity
+    /// @param disabledContainerOpacity the disabled container opacity
+    /// @param disabledContentOpacity the disabled content opacity
+    /// @param focusIndicatorThickness the keyboard focus indicator thickness in pixels
+    /// @param focusIndicatorOuterOffset the keyboard focus indicator outer offset in pixels
+    /// @param focusIndicatorInnerOffset the keyboard focus indicator inner offset in pixels
+    /// @return the created state token set
+    static M3StateLayerTokens create(
+            double hoverOpacity,
+            double focusOpacity,
+            double pressedOpacity,
+            double draggedOpacity,
+            double disabledContainerOpacity,
+            double disabledContentOpacity,
+            double focusIndicatorThickness,
+            double focusIndicatorOuterOffset,
+            double focusIndicatorInnerOffset
+    ) {
         return new M3StateLayerTokensImpl(
                 hoverOpacity,
                 focusOpacity,
                 pressedOpacity,
                 draggedOpacity,
                 disabledContainerOpacity,
-                disabledContentOpacity
+                disabledContentOpacity,
+                focusIndicatorThickness,
+                focusIndicatorOuterOffset,
+                focusIndicatorInnerOffset
         );
     }
 
@@ -88,7 +142,11 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + "-m3-state-pressed-opacity: " + M3TokenCss.format(pressedOpacity()) + "; "
                 + "-m3-state-dragged-opacity: " + M3TokenCss.format(draggedOpacity()) + "; "
                 + "-m3-state-disabled-container-opacity: " + M3TokenCss.format(disabledContainerOpacity()) + "; "
-                + "-m3-state-disabled-content-opacity: " + M3TokenCss.format(disabledContentOpacity()) + ";";
+                + "-m3-state-disabled-content-opacity: " + M3TokenCss.format(disabledContentOpacity()) + "; "
+                + "-m3-state-focus-indicator-color: -m3-color-secondary; "
+                + "-m3-state-focus-indicator-thickness: " + M3TokenCss.pixels(focusIndicatorThickness()) + "; "
+                + "-m3-state-focus-indicator-outer-offset: " + M3TokenCss.pixels(focusIndicatorOuterOffset()) + "; "
+                + "-m3-state-focus-indicator-inner-offset: " + M3TokenCss.pixels(focusIndicatorInnerOffset()) + ";";
     }
 
     /// Converts state layer tokens into JavaFX CSS rules for m3fx controls.

@@ -32,7 +32,7 @@ final class M3TokenFactoryTest {
     /// Verifies that system token groups can be created with explicit values.
     @Test
     void createsExplicitSystemTokens() {
-        M3TextStyle displayLarge = M3TextStyle.create("Demo", 60.0, 68.0, 600);
+        M3TextStyle displayLarge = M3TextStyle.create("Demo", 60.0, 68.0, 600, -0.2);
         M3TextStyle displayMedium = M3TextStyle.create("Demo", 48.0, 56.0, 600);
         M3TextStyle displaySmall = M3TextStyle.create("Demo", 38.0, 46.0, 600);
         M3TextStyle headlineLarge = M3TextStyle.create("Demo", 34.0, 42.0, 500);
@@ -65,14 +65,19 @@ final class M3TokenFactoryTest {
                 bodyMedium,
                 bodySmall
         );
-        M3ShapeTokens shape = M3ShapeTokens.create(2.0, 6.0, 10.0, 18.0, 30.0, 999.0);
+        M3ShapeTokens shape = M3ShapeTokens.create(1.0, 2.0, 6.0, 10.0, 18.0, 22.0, 30.0, 34.0, 48.0, 999.0);
         M3ElevationTokens elevation = M3ElevationTokens.create(0.0, 2.0, 4.0, 8.0, 12.0, 16.0);
         M3MotionTokens motion = M3MotionTokens.create(90, 210, 420);
-        M3StateLayerTokens stateLayer = M3StateLayerTokens.create(0.05, 0.11, 0.13, 0.17, 0.14, 0.42);
+        M3StateLayerTokens stateLayer = M3StateLayerTokens.create(0.05, 0.11, 0.13, 0.17, 0.14, 0.42, 4.0, 3.0, -3.0);
 
         assertSame(displayLarge, typography.displayLarge());
         assertSame(displayMedium, typography.displayMedium());
         assertSame(bodySmall, typography.bodySmall());
+        assertEquals(-0.2, displayLarge.tracking(), 0.0001);
+        assertEquals(1.0, shape.none(), 0.0001);
+        assertEquals(22.0, shape.largeIncreased(), 0.0001);
+        assertEquals(34.0, shape.extraLargeIncreased(), 0.0001);
+        assertEquals(48.0, shape.extraExtraLarge(), 0.0001);
         assertEquals(30.0, shape.extraLarge(), 0.0001);
         assertEquals(16.0, elevation.level5(), 0.0001);
         assertEquals(90, motion.short2());
@@ -83,11 +88,16 @@ final class M3TokenFactoryTest {
         assertEquals(0.42, stateLayer.disabledContentOpacity(), 0.0001);
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-font-family: \"Demo\""));
         assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-title-small-font-size: 16px"));
+        assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-tracking: -0.2px"));
         assertTrue(typography.toControlStyleRules().contains(".m3-display-large-text"));
         assertTrue(typography.toControlStyleRules().contains(".m3-label-small-text"));
         assertTrue(typography.toControlStyleRules().contains("-m3-typography-font-size: 60px"));
         assertTrue(typography.toControlStyleRules().contains("-m3-typography-line-height: 68px"));
+        assertTrue(typography.toControlStyleRules().contains("-m3-typography-tracking: -0.2px"));
         assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-disabled-content-opacity: 0.42"));
+        assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-focus-indicator-thickness: 4px"));
+        assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-focus-indicator-outer-offset: 3px"));
+        assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-focus-indicator-inner-offset: -3px"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:focus-visible .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-tab:focus-visible .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-icon-toggle-button:focus-visible .m3-state-layer"));

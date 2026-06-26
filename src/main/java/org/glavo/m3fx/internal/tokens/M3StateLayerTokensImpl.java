@@ -14,6 +14,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// @param draggedOpacity the dragged state layer opacity
 /// @param disabledContainerOpacity the disabled container opacity
 /// @param disabledContentOpacity the disabled content opacity
+/// @param focusIndicatorThickness the keyboard focus indicator thickness
+/// @param focusIndicatorOuterOffset the keyboard focus indicator outer offset
+/// @param focusIndicatorInnerOffset the keyboard focus indicator inner offset
 @NotNullByDefault
 public record M3StateLayerTokensImpl(
         double hoverOpacity,
@@ -21,22 +24,42 @@ public record M3StateLayerTokensImpl(
         double pressedOpacity,
         double draggedOpacity,
         double disabledContainerOpacity,
-        double disabledContentOpacity
+        double disabledContentOpacity,
+        double focusIndicatorThickness,
+        double focusIndicatorOuterOffset,
+        double focusIndicatorInnerOffset
 ) implements M3StateLayerTokens {
     /// Creates state layer tokens.
     public M3StateLayerTokensImpl {
-        validate(hoverOpacity, "hoverOpacity");
-        validate(focusOpacity, "focusOpacity");
-        validate(pressedOpacity, "pressedOpacity");
-        validate(draggedOpacity, "draggedOpacity");
-        validate(disabledContainerOpacity, "disabledContainerOpacity");
-        validate(disabledContentOpacity, "disabledContentOpacity");
+        validateOpacity(hoverOpacity, "hoverOpacity");
+        validateOpacity(focusOpacity, "focusOpacity");
+        validateOpacity(pressedOpacity, "pressedOpacity");
+        validateOpacity(draggedOpacity, "draggedOpacity");
+        validateOpacity(disabledContainerOpacity, "disabledContainerOpacity");
+        validateOpacity(disabledContentOpacity, "disabledContentOpacity");
+        validateNonNegative(focusIndicatorThickness, "focusIndicatorThickness");
+        validateFinite(focusIndicatorOuterOffset, "focusIndicatorOuterOffset");
+        validateFinite(focusIndicatorInnerOffset, "focusIndicatorInnerOffset");
     }
 
     /// Validates an opacity token.
-    private static void validate(double value, String name) {
+    private static void validateOpacity(double value, String name) {
         if (value < 0.0 || value > 1.0) {
             throw new IllegalArgumentException(name + " must be between 0.0 and 1.0");
+        }
+    }
+
+    /// Validates a non-negative length token.
+    private static void validateNonNegative(double value, String name) {
+        if (value < 0.0) {
+            throw new IllegalArgumentException(name + " must not be negative");
+        }
+    }
+
+    /// Validates a finite length token.
+    private static void validateFinite(double value, String name) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException(name + " must be finite");
         }
     }
 }
