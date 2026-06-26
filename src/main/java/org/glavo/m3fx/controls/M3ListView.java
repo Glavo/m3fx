@@ -727,12 +727,14 @@ public class M3ListView<T> extends Control {
             return;
         }
 
-        appendTypeAheadCharacter(character);
+        String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
+        typeAheadBuffer.append(normalizedCharacter);
         typeAheadResetDelay.setDuration(M3Animation.motionBehavior(this).typeAheadResetDelay());
         typeAheadResetDelay.playFromStart();
         int target = typeAheadTarget(typeAheadBuffer.toString());
         if (target < 0 && typeAheadBuffer.length() > 1) {
-            resetTypeAheadBuffer(character);
+            clearTypeAheadBuffer();
+            typeAheadBuffer.append(normalizedCharacter);
             target = typeAheadTarget(typeAheadBuffer.toString());
         }
         if (target < 0) {
@@ -744,17 +746,6 @@ public class M3ListView<T> extends Control {
             selectOnly(target);
         }
         event.consume();
-    }
-
-    /// Appends one printable typed character to the current type-ahead prefix.
-    private void appendTypeAheadCharacter(String character) {
-        typeAheadBuffer.append(M3SelectionNavigation.normalizeTypeAheadText(character));
-    }
-
-    /// Replaces the current type-ahead prefix with one printable typed character.
-    private void resetTypeAheadBuffer(String character) {
-        clearTypeAheadBuffer();
-        appendTypeAheadCharacter(character);
     }
 
     /// Clears buffered type-ahead text and stops the pending reset timer.

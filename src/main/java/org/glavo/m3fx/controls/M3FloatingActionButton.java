@@ -324,7 +324,8 @@ public class M3FloatingActionButton extends ButtonBase {
         double size = getContainerSize();
         setMinHeight(size);
         setPrefHeight(size);
-        if (hasText()) {
+        @Nullable String text = getText();
+        if (text != null && !text.isBlank()) {
             double padding = getHorizontalPadding();
             setMinWidth(Region.USE_COMPUTED_SIZE);
             setPrefWidth(Region.USE_COMPUTED_SIZE);
@@ -334,12 +335,6 @@ public class M3FloatingActionButton extends ButtonBase {
             setPrefWidth(size);
             setPadding(Insets.EMPTY);
         }
-    }
-
-    /// Returns whether the floating action button has visible text content.
-    private boolean hasText() {
-        @Nullable String text = getText();
-        return text != null && !text.isBlank();
     }
 
     /// CSS metadata for m3fx floating action button component tokens.

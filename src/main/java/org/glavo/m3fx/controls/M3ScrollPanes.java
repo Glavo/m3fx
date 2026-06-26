@@ -176,7 +176,7 @@ public final class M3ScrollPanes {
 
         /// Handles one wheel or trackpad scroll event.
         private void handleScroll(ScrollEvent event) {
-            if (event.isDirect() || !isEventForThisScrollPane(event)) {
+            if (event.isDirect() || !isEventTargetForScrollPane(scrollPane, event.getTarget())) {
                 return;
             }
 
@@ -257,11 +257,6 @@ public final class M3ScrollPanes {
             } else if (currentAnimation.getStatus() == Animation.Status.RUNNING) {
                 animateToTarget();
             }
-        }
-
-        /// Returns whether the event target belongs directly to this scroll pane rather than a nested scroll owner.
-        private boolean isEventForThisScrollPane(ScrollEvent event) {
-            return isEventTargetForScrollPane(scrollPane, event.getTarget());
         }
 
         /// Starts an animation toward the accumulated target values.

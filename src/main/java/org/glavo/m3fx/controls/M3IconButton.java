@@ -21,7 +21,7 @@ public class M3IconButton extends M3Button {
 
     /// Creates an icon button without a graphic.
     public M3IconButton() {
-        this(nullGraphic());
+        this(null);
     }
 
     /// Creates an icon button with a graphic.
@@ -32,11 +32,6 @@ public class M3IconButton extends M3Button {
         M3ControlStyles.add(this, STYLE_CLASS);
         setVariant(M3ButtonVariant.TEXT);
         initializeIconMetrics();
-    }
-
-    /// Returns the default graphic value.
-    private static @Nullable Node nullGraphic() {
-        return null;
     }
 
     /// Keeps icon buttons square when container size tokens change.

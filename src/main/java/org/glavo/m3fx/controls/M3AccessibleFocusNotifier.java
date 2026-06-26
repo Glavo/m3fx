@@ -121,7 +121,7 @@ final class M3AccessibleFocusNotifier {
 
     /// Refreshes cached focus state after child content changes already notified accessibility clients.
     void refresh() {
-        lastFocusNode = currentFocusNode();
+        lastFocusNode = focusNodeSupplier.get();
     }
 
     /// Reattaches the focus owner listener to a new scene.
@@ -142,16 +142,11 @@ final class M3AccessibleFocusNotifier {
 
     /// Notifies the owner when the focused accessibility child changes.
     private void notifyIfFocusNodeChanged() {
-        @Nullable Node focusNode = currentFocusNode();
+        @Nullable Node focusNode = focusNodeSupplier.get();
         if (focusNode == lastFocusNode) {
             return;
         }
         lastFocusNode = focusNode;
         focusNodeChangedNotifier.run();
-    }
-
-    /// Returns the current focus node supplied by the owner.
-    private @Nullable Node currentFocusNode() {
-        return focusNodeSupplier.get();
     }
 }

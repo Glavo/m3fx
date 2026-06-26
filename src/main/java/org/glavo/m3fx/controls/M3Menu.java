@@ -552,12 +552,14 @@ public class M3Menu extends Control {
             return;
         }
 
-        appendTypeAheadCharacter(character);
+        String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
+        typeAheadBuffer.append(normalizedCharacter);
         typeAheadResetDelay.setDuration(M3Animation.motionBehavior(this).typeAheadResetDelay());
         typeAheadResetDelay.playFromStart();
         @Nullable M3MenuItem target = typeAheadTarget(typeAheadBuffer.toString());
         if (target == null && typeAheadBuffer.length() > 1) {
-            resetTypeAheadBuffer(character);
+            clearTypeAheadBuffer();
+            typeAheadBuffer.append(normalizedCharacter);
             target = typeAheadTarget(typeAheadBuffer.toString());
         }
         if (target == null) {
@@ -567,17 +569,6 @@ public class M3Menu extends Control {
         focusMenuItem(target);
         applyKeyboardSelection(target);
         event.consume();
-    }
-
-    /// Appends one printable typed character to the current type-ahead prefix.
-    private void appendTypeAheadCharacter(String character) {
-        typeAheadBuffer.append(M3SelectionNavigation.normalizeTypeAheadText(character));
-    }
-
-    /// Replaces the current type-ahead prefix with one printable typed character.
-    private void resetTypeAheadBuffer(String character) {
-        clearTypeAheadBuffer();
-        appendTypeAheadCharacter(character);
     }
 
     /// Clears buffered type-ahead text and stops the pending reset timer.

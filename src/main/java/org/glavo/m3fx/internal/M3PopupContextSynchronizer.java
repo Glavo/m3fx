@@ -44,13 +44,16 @@ public final class M3PopupContextSynchronizer {
     private final String @Unmodifiable [] controlStylesheets;
 
     /// Handles owner scene changes.
-    private final ChangeListener<@Nullable Scene> ownerSceneListener = this::handleOwnerSceneChanged;
+    private final ChangeListener<@Nullable Scene> ownerSceneListener =
+            (observable, oldScene, newScene) -> sync();
 
     /// Handles owner parent-chain changes.
-    private final ChangeListener<@Nullable Parent> ownerParentListener = this::handleOwnerParentChanged;
+    private final ChangeListener<@Nullable Parent> ownerParentListener =
+            (observable, oldParent, newParent) -> sync();
 
     /// Handles root changes on the current owner scene.
-    private final ChangeListener<Parent> sceneRootListener = this::handleSceneRootChanged;
+    private final ChangeListener<Parent> sceneRootListener =
+            (observable, oldRoot, newRoot) -> sync();
 
     /// Handles stylesheet list mutations from the current stylesheet source.
     private final ListChangeListener<String> stylesheetSourceListener = change -> sync();
@@ -67,7 +70,8 @@ public final class M3PopupContextSynchronizer {
             this::handleThemeRootPropertiesChanged;
 
     /// Handles parent-chain changes on owner ancestors while a popup remains visible.
-    private final ChangeListener<@Nullable Parent> ancestorParentListener = this::handleOwnerParentChanged;
+    private final ChangeListener<@Nullable Parent> ancestorParentListener =
+            (observable, oldParent, newParent) -> sync();
 
     /// The stylesheet list currently observed for mutations.
     private @Nullable ObservableList<String> observedStylesheetSource;
@@ -176,33 +180,6 @@ public final class M3PopupContextSynchronizer {
         );
         popupRoot.applyCss();
         popupRoot.layout();
-    }
-
-    /// Handles owner scene changes by refreshing observed roots and copying the new context.
-    private void handleOwnerSceneChanged(
-            javafx.beans.value.ObservableValue<? extends @Nullable Scene> observable,
-            @Nullable Scene oldScene,
-            @Nullable Scene newScene
-    ) {
-        sync();
-    }
-
-    /// Handles owner parent-chain changes by refreshing observed theme roots.
-    private void handleOwnerParentChanged(
-            javafx.beans.value.ObservableValue<? extends @Nullable Parent> observable,
-            @Nullable Parent oldParent,
-            @Nullable Parent newParent
-    ) {
-        sync();
-    }
-
-    /// Handles scene root changes by copying context from the new root.
-    private void handleSceneRootChanged(
-            javafx.beans.value.ObservableValue<? extends Parent> observable,
-            Parent oldRoot,
-            Parent newRoot
-    ) {
-        sync();
     }
 
     /// Handles installed-theme metadata changes on observed roots.

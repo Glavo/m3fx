@@ -84,7 +84,7 @@ public class M3IconToggleButton extends ButtonBase {
 
     /// Creates an empty standard toggle icon button.
     public M3IconToggleButton() {
-        this(nullGraphic());
+        this((Node) null);
     }
 
     /// Creates a standard toggle icon button with graphic content.
@@ -258,11 +258,6 @@ public class M3IconToggleButton extends ButtonBase {
                     : AccessibleAttribute.ToggleState.UNCHECKED;
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
-    }
-
-    /// Returns the default graphic value.
-    private static @Nullable Node nullGraphic() {
-        return null;
     }
 
     /// Adds base style classes and applies the default variant.
