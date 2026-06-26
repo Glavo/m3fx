@@ -424,6 +424,9 @@ final class M3FXDemoVisualSmokeTest {
     /// The largest accepted ratio of sampled label-background pixels that may differ from nearby background.
     private static final double OUTLINED_FLOATING_LABEL_BACKGROUND_MISMATCH_RATIO = 0.08;
 
+    /// The tolerance used when comparing focused text area content and surrounding container backgrounds.
+    private static final double TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_TOLERANCE = 0.04;
+
     /// The lowest acceptable rendered ink center ratio for filled fields with a floating label.
     private static final double FILLED_FLOATING_INK_MINIMUM_CENTER_RATIO = 0.48;
 
@@ -2190,6 +2193,28 @@ final class M3FXDemoVisualSmokeTest {
                         image,
                         outlinedTextLayout,
                         "outlined populated field"
+                );
+
+                scrollDemoPageNodeIntoView(scene, outlinedAreaLayout);
+                TextInputControl outlinedAreaInput = Objects.requireNonNull(
+                        outlinedAreaLayout.getInput(),
+                        "outlined area input"
+                );
+                outlinedAreaInput.requestFocus();
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                WritableImage focusedAreaImage = snapshot(scene);
+                writeVisualSnapshot(focusedAreaImage, Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-demo-visual",
+                        "text-area-focused-background.png"
+                ));
+                assertSnapshotHasVisibleContent(focusedAreaImage, "Focused text area background");
+                assertFocusedTextAreaContentBackgroundMatchesContainer(
+                        focusedAreaImage,
+                        outlinedAreaLayout,
+                        "focused outlined text area"
                 );
 
                 WritableImage validationImage = snapshot(scene);
@@ -6884,6 +6909,38 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
+    /// Scrolls the main demo page scroll pane until the supplied node is inside the viewport.
+    private static void scrollDemoPageNodeIntoView(Scene scene, Node node) {
+        ScrollPane scrollPane = assertInstanceOf(
+                ScrollPane.class,
+                requireVisibleStyledDescendant(scene.getRoot(), "demo-scroll-pane", "demo page scroll pane")
+        );
+        @Nullable Node content = scrollPane.getContent();
+        if (content == null) {
+            return;
+        }
+
+        scrollPane.applyCss();
+        content.applyCss();
+        if (content instanceof Parent parent) {
+            parent.layout();
+        }
+
+        double viewportHeight = scrollPane.getViewportBounds().getHeight();
+        double contentHeight = content.getLayoutBounds().getHeight();
+        double scrollableHeight = contentHeight - viewportHeight;
+        if (viewportHeight <= 0.0 || scrollableHeight <= 0.0) {
+            return;
+        }
+
+        Bounds nodeBounds = content.sceneToLocal(node.localToScene(node.getBoundsInLocal()));
+        double targetTop = Math.max(0.0, nodeBounds.getMinY() - 32.0);
+        double clampedTop = Math.min(scrollableHeight, targetTop);
+        scrollPane.setVvalue(clampedTop / scrollableHeight);
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+    }
+
     /// Asserts that the sidebar selected indicator has no outgoing visual selection residue.
     private static void assertSidebarVisualSelectionSettled(M3FXDemoApp app, Scene scene, String pageTitle) {
         assertTrue(sidebarVisualSelectionSettled(app, scene),
@@ -7552,6 +7609,56 @@ final class M3FXDemoVisualSmokeTest {
                         + ", label=" + labelBounds
                         + ", ink=" + inkBounds
                         + ", input=" + inputBounds);
+    }
+
+    /// Verifies that a focused text area's internal content pane does not repaint JavaFX's default white background.
+    private static void assertFocusedTextAreaContentBackgroundMatchesContainer(
+            WritableImage image,
+            M3TextInputLayout layout,
+            String description
+    ) {
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
+        assertInstanceOf(M3TextArea.class, input, description + " input");
+        assertTrue(input.isFocused(), () -> description + " input should be focused");
+
+        Node content = requireVisibleStyledDescendant(input, "content", description + " content pane");
+        Bounds containerBounds = layout.getInputContainer().localToScene(layout.getInputContainer().getBoundsInLocal());
+        Bounds contentBounds = content.localToScene(content.getBoundsInLocal());
+        assertTrue(containsBoundsWithTolerance(containerBounds, contentBounds, CONTROL_EDGE_TOLERANCE),
+                () -> description + " content pane should stay inside the input container: content="
+                        + contentBounds + ", container=" + containerBounds);
+
+        int sampleStartX = (int) Math.floor(contentBounds.getMinX() + contentBounds.getWidth() * 0.30);
+        int sampleEndX = (int) Math.ceil(contentBounds.getMaxX() - contentBounds.getWidth() * 0.10);
+        int sampleStartY = (int) Math.floor(contentBounds.getMaxY() - 30.0);
+        int sampleEndY = (int) Math.ceil(contentBounds.getMaxY() - 10.0);
+        Color contentBackground = averageSnapshotColor(image, sampleStartX, sampleStartY, sampleEndX, sampleEndY);
+
+        int referenceStartX = (int) Math.floor(containerBounds.getMinX() + 4.0);
+        int referenceEndX = (int) Math.floor(contentBounds.getMinX() - 4.0);
+        int referenceStartY = sampleStartY;
+        int referenceEndY = sampleEndY;
+        if (referenceEndX <= referenceStartX + 2) {
+            referenceStartX = sampleStartX;
+            referenceEndX = sampleEndX;
+            referenceStartY = (int) Math.ceil(contentBounds.getMaxY() + 4.0);
+            referenceEndY = (int) Math.floor(containerBounds.getMaxY() - 4.0);
+        }
+
+        Color referenceBackground = averageSnapshotColor(
+                image,
+                referenceStartX,
+                referenceStartY,
+                referenceEndX,
+                referenceEndY
+        );
+        double distance = pixelDistance(contentBackground, referenceBackground);
+        assertTrue(distance <= TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_TOLERANCE,
+                () -> description + " content pane paints a mismatched focused background: content="
+                        + contentBackground + ", reference=" + referenceBackground
+                        + ", distance=" + distance
+                        + ", contentBounds=" + contentBounds
+                        + ", containerBounds=" + containerBounds);
     }
 
     /// Returns whether a point falls inside a rendered rectangle after applying an edge tolerance.
