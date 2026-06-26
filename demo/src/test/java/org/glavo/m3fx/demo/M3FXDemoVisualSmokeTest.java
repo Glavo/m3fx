@@ -406,6 +406,9 @@ final class M3FXDemoVisualSmokeTest {
     /// The tolerance used when checking text input adornment centering.
     private static final double TEXT_INPUT_SLOT_CENTER_TOLERANCE = 5.0;
 
+    /// The largest accepted overlap between rendered text input ink and an adornment slot.
+    private static final double TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE = 1.0;
+
     /// The tolerance used when checking rendered text input ink centering.
     private static final double TEXT_INPUT_INK_CENTER_TOLERANCE = 3.0;
 
@@ -2253,6 +2256,7 @@ final class M3FXDemoVisualSmokeTest {
                         rtlOutlinedLayout,
                         "RTL outlined field"
                 );
+                assertSingleLineTextInputsHaveVerticalRoom(scene, "Text Fields RTL");
             }));
         } finally {
             runOnFxThread(() -> {
@@ -9118,6 +9122,7 @@ final class M3FXDemoVisualSmokeTest {
                             + ", centerRatio=" + centerRatio + ", inputBounds=" + inputBounds
                             + ", textBounds=" + textBounds + ", inkBounds=" + inkBounds);
             if (isSingleLineM3TextInputWithVisibleText(input)) {
+                assertSingleLineTextInputInkAvoidsAdornments(layout, inkBounds, pageTitle);
                 assertSingleLineTextInputInkAligned(layout, input, inkBounds, inputBounds, pageTitle);
             }
         });
@@ -9130,6 +9135,53 @@ final class M3FXDemoVisualSmokeTest {
                         || textInput.getVariant() == M3TextInputVariant.OUTLINED)
                 && input.getText() != null
                 && !input.getText().isBlank();
+    }
+
+    /// Verifies that a single-line text input's rendered ink does not collide with active adornment slots.
+    private static void assertSingleLineTextInputInkAvoidsAdornments(
+            M3TextInputLayout layout,
+            Rectangle2D inkBounds,
+            String pageTitle
+    ) {
+        assertTextInputInkAvoidsAdornmentSlot(
+                layout,
+                M3TextInputLayout.LEADING_STYLE_CLASS,
+                inkBounds,
+                pageTitle + " leading adornment slot"
+        );
+        assertTextInputInkAvoidsAdornmentSlot(
+                layout,
+                M3TextInputLayout.TRAILING_STYLE_CLASS,
+                inkBounds,
+                pageTitle + " trailing adornment slot"
+        );
+    }
+
+    /// Verifies that a rendered text ink rectangle does not overlap a visible adornment slot.
+    private static void assertTextInputInkAvoidsAdornmentSlot(
+            M3TextInputLayout layout,
+            String slotStyleClass,
+            Rectangle2D inkBounds,
+            String description
+    ) {
+        @Nullable Node slot = firstVisibleStyledDescendant(layout, slotStyleClass);
+        if (slot == null) {
+            return;
+        }
+
+        Bounds slotBounds = slot.localToScene(slot.getBoundsInLocal());
+        double verticalOverlap = Math.min(inkBounds.getMaxY(), slotBounds.getMaxY())
+                - Math.max(inkBounds.getMinY(), slotBounds.getMinY());
+        if (verticalOverlap <= TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE) {
+            return;
+        }
+
+        double horizontalOverlap = Math.min(inkBounds.getMaxX(), slotBounds.getMaxX())
+                - Math.max(inkBounds.getMinX(), slotBounds.getMinX());
+        assertTrue(horizontalOverlap <= TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE,
+                () -> description + " overlaps rendered text ink: overlap=" + horizontalOverlap
+                        + ", inkBounds=" + inkBounds + ", slotBounds=" + slotBounds
+                        + ", layout=" + layout);
     }
 
     /// Verifies that a single-line text input's rendered ink center matches its active content slot.

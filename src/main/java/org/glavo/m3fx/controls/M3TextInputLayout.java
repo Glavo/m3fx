@@ -1124,20 +1124,20 @@ public class M3TextInputLayout extends Control {
         }
 
         double leading = getLeading() == null
-                ? leadingInset(basePadding)
-                : Math.max(leadingInset(basePadding), ADORNED_HORIZONTAL_PADDING);
+                ? inputLeadingInset(basePadding)
+                : Math.max(inputLeadingInset(basePadding), ADORNED_HORIZONTAL_PADDING);
         double trailing = effectiveTrailing() == null
-                ? trailingInset(basePadding)
-                : Math.max(trailingInset(basePadding), ADORNED_HORIZONTAL_PADDING);
-        double left = physicalLeftInset(leading, trailing);
-        double right = physicalRightInset(leading, trailing);
+                ? inputTrailingInset(basePadding)
+                : Math.max(inputTrailingInset(basePadding), ADORNED_HORIZONTAL_PADDING);
         // Outlined floating labels occupy the outline notch, not the input content area.
         double top = isLabelFloating() && !isOutlinedInput()
                 ? Math.max(basePadding.getTop(), labeledTopPadding(input))
                 : basePadding.getTop();
         applyingInputPadding = true;
         try {
-            input.setPadding(new Insets(top, right, basePadding.getBottom(), left));
+            // JavaFX text input skins mirror the text geometry for RTL, so the left/right padding
+            // values must be written as logical leading/trailing insets instead of physical edges.
+            input.setPadding(new Insets(top, trailing, basePadding.getBottom(), leading));
         } finally {
             applyingInputPadding = false;
         }
@@ -1184,14 +1184,14 @@ public class M3TextInputLayout extends Control {
         return floating ? Pos.TOP_LEFT : Pos.CENTER_LEFT;
     }
 
-    /// Returns the leading inset from physical input padding.
-    private double leadingInset(Insets padding) {
-        return isRightToLeft() ? padding.getRight() : padding.getLeft();
+    /// Returns the logical leading inset from JavaFX text input padding.
+    private static double inputLeadingInset(Insets padding) {
+        return padding.getLeft();
     }
 
-    /// Returns the trailing inset from physical input padding.
-    private double trailingInset(Insets padding) {
-        return isRightToLeft() ? padding.getLeft() : padding.getRight();
+    /// Returns the logical trailing inset from JavaFX text input padding.
+    private static double inputTrailingInset(Insets padding) {
+        return padding.getRight();
     }
 
     /// Converts a logical leading/trailing inset pair to a physical left inset.
