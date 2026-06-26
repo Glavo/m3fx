@@ -2349,6 +2349,91 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
+    /// Verifies expanded sidebar groups can still reveal the final destination in the hidden-scrollbar drawer.
+    @Test
+    void sidebarExpandedGroupsCanScrollToLastDestination() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(720.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            runOnFxThreadWhenStable(
+                    () -> {
+                        Scene scene = sceneReference.get();
+                        if (scene == null) {
+                            return false;
+                        }
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+                        @Nullable M3ListItem selected = demoSidebarItemWithText(scene.getRoot(), "Scrims");
+                        return selected != null && nodeInsideNearestScrollViewport(selected, CONTROL_EDGE_TOLERANCE);
+                    },
+                    SETTLED_STATE_PULSES,
+                    () -> "Timed out waiting for expanded demo sidebar to reveal Scrims: "
+                            + sidebarScrollDebug(sceneReference.get()),
+                    () -> {
+                        M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        app.showPageForTesting("Scrims");
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+                    },
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        ScrollPane sidebarScrollPane = assertInstanceOf(
+                                ScrollPane.class,
+                                requireVisibleStyledDescendant(
+                                        scene.getRoot(),
+                                        "demo-sidebar-scroll-pane",
+                                        "demo sidebar scroll pane"
+                                )
+                        );
+                        M3ListItem selected = Objects.requireNonNull(
+                                demoSidebarItemWithText(scene.getRoot(), "Scrims"),
+                                "Scrims sidebar item"
+                        );
+                        assertNodeInsideNearestScrollViewport(selected, "selected Scrims sidebar item");
+
+                        sidebarScrollPane.setVvalue(1.0);
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+
+                        M3ListItem lastItem = lastDemoSidebarItem(scene.getRoot());
+                        assertEquals("Scrims", lastItem.getHeadlineText(), "last expanded sidebar destination");
+                        assertNodeInsideNearestScrollViewport(lastItem, "last expanded sidebar destination");
+
+                        WritableImage image = snapshot(scene);
+                        writeVisualSnapshot(image, Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-demo-visual",
+                                "sidebar-expanded-bottom-scroll.png"
+                        ));
+                        assertSnapshotHasVisibleContent(image, "Sidebar expanded bottom scroll");
+                    }
+            );
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies that interactive demo icon slots use SVG graphics instead of text placeholder icons.
     @Test
     void interactiveDemoIconSlotsUseVectorGraphics() {
@@ -6873,6 +6958,68 @@ final class M3FXDemoVisualSmokeTest {
                 .stream()
                 .filter(M3FXDemoVisualSmokeTest::isDemoSidebarItem)
                 .toList();
+    }
+
+    /// Returns the first demo sidebar item with the supplied headline text.
+    private static @Nullable M3ListItem demoSidebarItemWithText(Node root, String text) {
+        for (M3ListItem item : demoSidebarItems(root)) {
+            if (text.equals(item.getHeadlineText())) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the last rendered demo sidebar item.
+    private static M3ListItem lastDemoSidebarItem(Node root) {
+        List<M3ListItem> items = demoSidebarItems(root);
+        assertFalse(items.isEmpty(), "demo sidebar items");
+        return items.get(items.size() - 1);
+    }
+
+    /// Asserts that a node is fully inside its nearest scroll viewport.
+    private static void assertNodeInsideNearestScrollViewport(Node node, String description) {
+        assertTrue(
+                nodeInsideNearestScrollViewport(node, CONTROL_EDGE_TOLERANCE),
+                () -> description + " should be visible inside its scroll viewport: node="
+                        + node.localToScene(node.getBoundsInLocal())
+                        + ", viewport=" + nearestScrollViewportBounds(node)
+        );
+    }
+
+    /// Returns whether a node is fully inside its nearest scroll viewport.
+    private static boolean nodeInsideNearestScrollViewport(Node node, double tolerance) {
+        @Nullable Bounds viewportBounds = nearestScrollViewportBounds(node);
+        if (viewportBounds == null) {
+            return false;
+        }
+        Bounds nodeBounds = node.localToScene(node.getBoundsInLocal());
+        return containsBoundsWithTolerance(viewportBounds, nodeBounds, tolerance);
+    }
+
+    /// Returns the nearest scroll viewport bounds for a node.
+    private static @Nullable Bounds nearestScrollViewportBounds(Node node) {
+        @Nullable Node viewport = nearestScrollViewport(node);
+        return viewport == null ? null : viewport.localToScene(viewport.getBoundsInLocal());
+    }
+
+    /// Returns compact scroll diagnostics for the demo sidebar.
+    private static String sidebarScrollDebug(@Nullable Scene scene) {
+        if (scene == null) {
+            return "scene=null";
+        }
+        @Nullable Node node = firstVisibleStyledDescendant(scene.getRoot(), "demo-sidebar-scroll-pane");
+        if (!(node instanceof ScrollPane scrollPane)) {
+            return "sidebar scroll pane missing";
+        }
+        @Nullable Node content = scrollPane.getContent();
+        Bounds viewportBounds = scrollPane.getViewportBounds();
+        Bounds contentBounds = content == null ? new BoundingBox(0.0, 0.0, 0.0, 0.0) : content.getLayoutBounds();
+        @Nullable M3ListItem scrims = demoSidebarItemWithText(scene.getRoot(), "Scrims");
+        return "vvalue=" + scrollPane.getVvalue()
+                + ", viewport=" + viewportBounds
+                + ", content=" + contentBounds
+                + ", scrims=" + (scrims == null ? "missing" : scrims.localToScene(scrims.getBoundsInLocal()));
     }
 
     /// Returns whether a list item is one of the demo sidebar destinations or group headers.

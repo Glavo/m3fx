@@ -13,16 +13,19 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
+import javafx.scene.Parent;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3NavigationDrawerGroup].
 @NotNullByDefault
@@ -319,6 +322,19 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         childrenContainer.setOpacity(progress);
         childrenContainer.setTranslateY((1.0 - progress) * CHILD_TRANSITION_OFFSET);
         getSkinnable().requestLayout();
+        requestAncestorDrawerLayout();
+    }
+
+    /// Requests layout on the ancestor navigation drawer while child rows change their revealed height.
+    private void requestAncestorDrawerLayout() {
+        @Nullable Parent parent = getSkinnable().getParent();
+        while (parent != null) {
+            parent.requestLayout();
+            if (parent instanceof M3NavigationDrawer) {
+                return;
+            }
+            parent = parent.getParent();
+        }
     }
 
     /// Keeps child list item containers inside the group content area.

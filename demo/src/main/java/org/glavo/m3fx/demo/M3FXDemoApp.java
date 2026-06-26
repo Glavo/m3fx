@@ -251,6 +251,9 @@ public final class M3FXDemoApp extends Application {
     /// The scroll pane that hosts the demo sidebar.
     private @Nullable ScrollPane sidebarScrollPane;
 
+    /// The pending retry that scrolls the active sidebar destination after drawer expansion settles.
+    private @Nullable Timeline sidebarScrollRetryAnimation;
+
     /// The currently shown demo page.
     private @Nullable DemoPage currentPage;
 
@@ -718,9 +721,41 @@ public final class M3FXDemoApp extends Application {
         }
     }
 
-    /// Schedules scrolling the active sidebar destination into view after the sidebar has laid out.
+    /// Schedules scrolling the active sidebar destination after initial layout and disclosure motion settle.
     private void scrollSidebarPageIntoViewLater(DemoPage page) {
-        Platform.runLater(() -> scrollSidebarPageIntoView(page));
+        cancelSidebarScrollRetry();
+        Platform.runLater(() -> {
+            scrollSidebarPageIntoViewIfCurrent(page);
+            Platform.runLater(() -> scrollSidebarPageIntoViewIfCurrent(page));
+        });
+
+        Timeline retryAnimation = new Timeline(new KeyFrame(
+                Duration.millis(500.0),
+                event -> scrollSidebarPageIntoViewIfCurrent(page)
+        ));
+        sidebarScrollRetryAnimation = retryAnimation;
+        retryAnimation.setOnFinished(event -> {
+            if (sidebarScrollRetryAnimation == retryAnimation) {
+                sidebarScrollRetryAnimation = null;
+            }
+        });
+        retryAnimation.play();
+    }
+
+    /// Cancels a pending sidebar scroll retry from a previously selected page.
+    private void cancelSidebarScrollRetry() {
+        Timeline retryAnimation = sidebarScrollRetryAnimation;
+        if (retryAnimation != null) {
+            retryAnimation.stop();
+            sidebarScrollRetryAnimation = null;
+        }
+    }
+
+    /// Scrolls the sidebar destination only when it still belongs to the active page.
+    private void scrollSidebarPageIntoViewIfCurrent(DemoPage page) {
+        if (currentPage == page) {
+            scrollSidebarPageIntoView(page);
+        }
     }
 
     /// Scrolls the active sidebar destination into view when it is outside the current viewport.
