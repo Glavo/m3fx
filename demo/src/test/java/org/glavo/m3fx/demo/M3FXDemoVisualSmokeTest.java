@@ -2100,9 +2100,9 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that the Text Fields page renders stable labels, notches, counters, and adornment geometry.
+    /// Verifies that text input demo states satisfy Material text input layout contracts.
     @Test
-    void textFieldsPageRendersStableLabelAdornmentAndCounterGeometry() throws InterruptedException {
+    void textInputLayoutContractsHoldAcrossDemoStates() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -2124,139 +2124,12 @@ final class M3FXDemoVisualSmokeTest {
                     appReference, sceneReference, "Text Fields", scene -> {
                     }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                Parent root = scene.getRoot();
-                assertCurrentPageTitle(scene, "Text Fields");
-                assertVisibleText(root, "Filled", "Text Fields");
-                assertVisibleText(root, "Outlined", "Text Fields");
-                assertVisibleText(root, "Validation", "Text Fields");
-                assertVisibleText(root, "Error", "Text Fields");
-                assertVisibleText(root, "Text Areas", "Text Fields");
-                assertVisibleText(root, "Right-to-left", "Text Fields");
-
-                List<M3TextInputLayout> layouts = visibleNodesOfType(root, M3TextInputLayout.class);
-                assertTrue(layouts.size() >= 15,
-                        () -> "Text Fields page should render many text input layouts, found " + layouts.size());
-                for (M3TextInputLayout layout : layouts) {
-                    assertTextInputLayoutContainerGeometry(layout, "Text Fields");
-                }
-
-                M3TextInputLayout filledTextLayout = requireTextInputLayout(
-                        layouts,
-                        "support@example.com",
-                        "Filled with text"
-                );
-                M3TextInputLayout outlinedTextLayout = requireTextInputLayout(layouts, "M3FX", "Outlined with text");
-                M3TextInputLayout passwordLayout = requireTextInputLayout(layouts, "", "Password");
-                M3TextInputLayout validatedEmailLayout =
-                        requireTextInputLayout(layouts, "support", "Validated email");
-                M3TextInputLayout filledErrorLayout = requireTextInputLayout(layouts, "Invalid value", "Filled error");
-                M3TextInputLayout outlinedErrorLayout = requireTextInputLayout(layouts, "", "Outlined error");
-                M3TextInputLayout outlinedAreaLayout = requireTextInputLayout(
-                        layouts,
-                        "Material text areas share field colors but keep multi-line height tokens.",
-                        "Outlined text area"
-                );
-                M3TextInputLayout rtlFilledLayout = requireTextInputLayout(layouts, "rtl@example.com", "RTL filled");
-                M3TextInputLayout rtlOutlinedLayout = requireTextInputLayout(layouts, "M3FX RTL", "RTL outlined");
-                M3TextInputLayout rtlPasswordLayout = requireTextInputLayout(layouts, "", "RTL password");
-
-                assertTextInputVariant(filledTextLayout, M3TextInputVariant.FILLED, "filled populated field");
-                assertTextInputVariant(outlinedTextLayout, M3TextInputVariant.OUTLINED, "outlined populated field");
-                assertTextInputVariant(passwordLayout, M3TextInputVariant.OUTLINED, "password field");
-                assertTextInputVariant(outlinedAreaLayout, M3TextInputVariant.OUTLINED, "outlined text area");
-                assertTextInputVariant(rtlFilledLayout, M3TextInputVariant.FILLED, "RTL filled field");
-                assertTextInputVariant(rtlOutlinedLayout, M3TextInputVariant.OUTLINED, "RTL outlined field");
-                assertTextInputVariant(rtlPasswordLayout, M3TextInputVariant.OUTLINED, "RTL password field");
-                assertOutlinedFloatingLabelGeometry(outlinedTextLayout, "outlined populated field");
-                assertTextInputCounterText(filledTextLayout, "19 / 32", "filled populated field");
-                assertTextInputCounterText(outlinedTextLayout, "4 / 24", "outlined populated field");
-                assertTextInputCounterText(rtlFilledLayout, "15 / 32", "RTL filled field");
-                assertTextInputCounterText(rtlOutlinedLayout, "8 / 24", "RTL outlined field");
-                assertTextInputTrailingActionGeometry(passwordLayout, "password field");
-                assertTextInputTrailingActionGeometry(rtlPasswordLayout, "RTL password field");
-                assertTextInputClearButtonGeometry(filledTextLayout, "filled populated field");
-                assertTextInputClearButtonGeometry(rtlFilledLayout, "RTL filled field");
-                assertRightToLeftTextInputLayoutGeometry(rtlFilledLayout, "RTL filled field");
-                assertRightToLeftTextInputLayoutGeometry(rtlOutlinedLayout, "RTL outlined field");
-                assertRightToLeftTextInputLayoutGeometry(rtlPasswordLayout, "RTL password field");
-                assertDemoValidationFeedbackRemainsStableOnEdits(validatedEmailLayout);
-                assertTextInputErrorState(filledErrorLayout, "filled error field");
-                assertTextInputErrorState(outlinedErrorLayout, "outlined error field");
-                assertSingleLineTextInputsHaveVerticalRoom(scene, "Text Fields");
-
-                WritableImage image = snapshot(scene);
-                writeVisualSnapshot(image, Path.of(
-                        "build",
-                        "reports",
-                        "m3fx-demo-visual",
-                        "text-fields-layout-geometry.png"
-                ));
-                assertSnapshotHasVisibleContent(image, "Text Fields layout geometry");
-                assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
-                        image,
-                        outlinedTextLayout,
-                        "outlined populated field"
-                );
-
-                scrollDemoPageNodeIntoView(scene, outlinedAreaLayout);
-                TextInputControl outlinedAreaInput = Objects.requireNonNull(
-                        outlinedAreaLayout.getInput(),
-                        "outlined area input"
-                );
-                outlinedAreaInput.requestFocus();
-                scene.getRoot().applyCss();
-                scene.getRoot().layout();
-                WritableImage focusedAreaImage = snapshot(scene);
-                writeVisualSnapshot(focusedAreaImage, Path.of(
-                        "build",
-                        "reports",
-                        "m3fx-demo-visual",
-                        "text-area-focused-background.png"
-                ));
-                assertSnapshotHasVisibleContent(focusedAreaImage, "Focused text area background");
-                assertFocusedTextAreaContentBackgroundMatchesContainer(
-                        focusedAreaImage,
-                        outlinedAreaLayout,
-                        "focused outlined text area"
-                );
-
-                WritableImage validationImage = snapshot(scene);
-                writeVisualSnapshot(validationImage, Path.of(
-                        "build",
-                        "reports",
-                        "m3fx-demo-visual",
-                        "text-fields-validation-stability.png"
-                ));
-                assertSnapshotHasVisibleContent(validationImage, "Text Fields validation stability");
-
-                ScrollPane pageScrollPane = assertInstanceOf(
-                        ScrollPane.class,
-                        requireVisibleStyledDescendant(root, "demo-scroll-pane", "demo page scroll pane")
-                );
-                pageScrollPane.setVvalue(1.0);
-                scene.getRoot().applyCss();
-                scene.getRoot().layout();
-                Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getLayoutBounds());
-                for (M3TextInputLayout rtlLayout : List.of(rtlFilledLayout, rtlOutlinedLayout, rtlPasswordLayout)) {
-                    Bounds rtlBounds = rtlLayout.localToScene(rtlLayout.getLayoutBounds());
-                    assertFalse(isOutsideSceneViewport(rtlLayout, rtlBounds, sceneBounds),
-                            () -> "Text Fields RTL layout should be visible in the scrolled capture: " + rtlBounds);
-                }
-
-                WritableImage rtlImage = snapshot(scene);
-                writeVisualSnapshot(rtlImage, Path.of(
-                        "build",
-                        "reports",
-                        "m3fx-demo-visual",
-                        "text-fields-rtl-geometry.png"
-                ));
-                assertSnapshotHasVisibleContent(rtlImage, "Text Fields RTL geometry");
-                assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
-                        rtlImage,
-                        rtlOutlinedLayout,
-                        "RTL outlined field"
-                );
-                assertSingleLineTextInputsHaveVerticalRoom(scene, "Text Fields RTL");
+                List<M3TextInputLayout> layouts = assertTextInputDemoPageStructure(scene);
+                assertTextInputDemoVariantAndStateContracts(layouts);
+                assertTextInputDemoGeometryContracts(scene, layouts);
+                assertTextInputDemoValidationContract(layouts);
+                assertFocusedMultilineTextInputSurfaceContract(scene, layouts);
+                assertMirroredTextInputLayoutContracts(scene, layouts);
             }));
         } finally {
             runOnFxThread(() -> {
@@ -2266,6 +2139,166 @@ final class M3FXDemoVisualSmokeTest {
                 }
             });
         }
+    }
+
+    /// Verifies the Text Fields page structure and returns its visible input layouts.
+    private static List<M3TextInputLayout> assertTextInputDemoPageStructure(Scene scene) {
+        Parent root = scene.getRoot();
+        assertCurrentPageTitle(scene, "Text Fields");
+        assertVisibleText(root, "Filled", "Text Fields");
+        assertVisibleText(root, "Outlined", "Text Fields");
+        assertVisibleText(root, "Validation", "Text Fields");
+        assertVisibleText(root, "Error", "Text Fields");
+        assertVisibleText(root, "Text Areas", "Text Fields");
+        assertVisibleText(root, "Right-to-left", "Text Fields");
+
+        List<M3TextInputLayout> layouts = visibleNodesOfType(
+                currentDemoPage(scene, "Text Fields"),
+                M3TextInputLayout.class
+        );
+        assertTrue(layouts.size() >= 15,
+                () -> "Text Fields page should render the full Material text input state matrix, found "
+                        + layouts.size());
+        return layouts;
+    }
+
+    /// Verifies the Text Fields page variant, counter, error, and action state contracts.
+    private static void assertTextInputDemoVariantAndStateContracts(List<M3TextInputLayout> layouts) {
+        M3TextInputLayout filledTextLayout = requireTextInputLayout(layouts, "support@example.com", "Filled with text");
+        M3TextInputLayout outlinedTextLayout = requireTextInputLayout(layouts, "M3FX", "Outlined with text");
+        M3TextInputLayout passwordLayout = requireTextInputLayout(layouts, "", "Password");
+        M3TextInputLayout filledErrorLayout = requireTextInputLayout(layouts, "Invalid value", "Filled error");
+        M3TextInputLayout outlinedErrorLayout = requireTextInputLayout(layouts, "", "Outlined error");
+        M3TextInputLayout outlinedAreaLayout = requireTextInputLayout(
+                layouts,
+                "Material text areas share field colors but keep multi-line height tokens.",
+                "Outlined text area"
+        );
+        M3TextInputLayout rtlFilledLayout = requireTextInputLayout(layouts, "rtl@example.com", "RTL filled");
+        M3TextInputLayout rtlOutlinedLayout = requireTextInputLayout(layouts, "M3FX RTL", "RTL outlined");
+        M3TextInputLayout rtlPasswordLayout = requireTextInputLayout(layouts, "", "RTL password");
+
+        assertTextInputVariant(filledTextLayout, M3TextInputVariant.FILLED, "filled populated text input");
+        assertTextInputVariant(outlinedTextLayout, M3TextInputVariant.OUTLINED, "outlined populated text input");
+        assertTextInputVariant(passwordLayout, M3TextInputVariant.OUTLINED, "password text input");
+        assertTextInputVariant(outlinedAreaLayout, M3TextInputVariant.OUTLINED, "outlined multiline text input");
+        assertTextInputVariant(rtlFilledLayout, M3TextInputVariant.FILLED, "mirrored filled text input");
+        assertTextInputVariant(rtlOutlinedLayout, M3TextInputVariant.OUTLINED, "mirrored outlined text input");
+        assertTextInputVariant(rtlPasswordLayout, M3TextInputVariant.OUTLINED, "mirrored password text input");
+        assertTextInputCounterText(filledTextLayout, "19 / 32", "filled populated text input");
+        assertTextInputCounterText(outlinedTextLayout, "4 / 24", "outlined populated text input");
+        assertTextInputCounterText(rtlFilledLayout, "15 / 32", "mirrored filled text input");
+        assertTextInputCounterText(rtlOutlinedLayout, "8 / 24", "mirrored outlined text input");
+        assertTextInputTrailingActionGeometry(passwordLayout, "password text input");
+        assertTextInputTrailingActionGeometry(rtlPasswordLayout, "mirrored password text input");
+        assertTextInputClearButtonGeometry(filledTextLayout, "filled populated text input");
+        assertTextInputClearButtonGeometry(rtlFilledLayout, "mirrored filled text input");
+        assertTextInputErrorState(filledErrorLayout, "filled error text input");
+        assertTextInputErrorState(outlinedErrorLayout, "outlined error text input");
+    }
+
+    /// Verifies the Text Fields page layout, label, and adornment geometry contracts.
+    private static void assertTextInputDemoGeometryContracts(Scene scene, List<M3TextInputLayout> layouts) {
+        for (M3TextInputLayout layout : layouts) {
+            assertTextInputLayoutContainerGeometry(layout, "Text Fields");
+        }
+
+        M3TextInputLayout outlinedTextLayout = requireTextInputLayout(layouts, "M3FX", "Outlined with text");
+        assertOutlinedFloatingLabelGeometry(outlinedTextLayout, "outlined populated text input");
+        assertSingleLineTextInputsHaveVerticalRoom(scene, "Text Fields");
+
+        WritableImage image = snapshot(scene);
+        writeVisualSnapshot(image, Path.of(
+                "build",
+                "reports",
+                "m3fx-demo-visual",
+                "text-input-layout-contracts.png"
+        ));
+        assertSnapshotHasVisibleContent(image, "Text input layout contracts");
+        assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
+                image,
+                outlinedTextLayout,
+                "outlined populated text input"
+        );
+    }
+
+    /// Verifies that validation feedback remains visually settled across text changes.
+    private static void assertTextInputDemoValidationContract(List<M3TextInputLayout> layouts) {
+        M3TextInputLayout validatedEmailLayout = requireTextInputLayout(layouts, "support", "Validated email");
+        assertDemoValidationFeedbackRemainsStableOnEdits(validatedEmailLayout);
+    }
+
+    /// Verifies that focused multiline text input content uses the Material container surface.
+    private static void assertFocusedMultilineTextInputSurfaceContract(
+            Scene scene,
+            List<M3TextInputLayout> layouts
+    ) {
+        M3TextInputLayout outlinedAreaLayout = requireTextInputLayout(
+                layouts,
+                "Material text areas share field colors but keep multi-line height tokens.",
+                "Outlined text area"
+        );
+        scrollDemoPageNodeIntoView(scene, outlinedAreaLayout);
+        TextInputControl outlinedAreaInput = Objects.requireNonNull(
+                outlinedAreaLayout.getInput(),
+                "outlined area input"
+        );
+        outlinedAreaInput.requestFocus();
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        WritableImage focusedAreaImage = snapshot(scene);
+        writeVisualSnapshot(focusedAreaImage, Path.of(
+                "build",
+                "reports",
+                "m3fx-demo-visual",
+                "text-input-focused-multiline-surface.png"
+        ));
+        assertSnapshotHasVisibleContent(focusedAreaImage, "Focused multiline text input surface");
+        assertFocusedTextAreaContentBackgroundMatchesContainer(
+                focusedAreaImage,
+                outlinedAreaLayout,
+                "focused outlined multiline text input"
+        );
+    }
+
+    /// Verifies that mirrored text inputs keep logical slots and text geometry separated.
+    private static void assertMirroredTextInputLayoutContracts(Scene scene, List<M3TextInputLayout> layouts) {
+        M3TextInputLayout rtlFilledLayout = requireTextInputLayout(layouts, "rtl@example.com", "RTL filled");
+        M3TextInputLayout rtlOutlinedLayout = requireTextInputLayout(layouts, "M3FX RTL", "RTL outlined");
+        M3TextInputLayout rtlPasswordLayout = requireTextInputLayout(layouts, "", "RTL password");
+
+        assertRightToLeftTextInputLayoutGeometry(rtlFilledLayout, "mirrored filled text input");
+        assertRightToLeftTextInputLayoutGeometry(rtlOutlinedLayout, "mirrored outlined text input");
+        assertRightToLeftTextInputLayoutGeometry(rtlPasswordLayout, "mirrored password text input");
+
+        ScrollPane pageScrollPane = assertInstanceOf(
+                ScrollPane.class,
+                requireVisibleStyledDescendant(scene.getRoot(), "demo-scroll-pane", "demo page scroll pane")
+        );
+        pageScrollPane.setVvalue(1.0);
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getLayoutBounds());
+        for (M3TextInputLayout rtlLayout : List.of(rtlFilledLayout, rtlOutlinedLayout, rtlPasswordLayout)) {
+            Bounds rtlBounds = rtlLayout.localToScene(rtlLayout.getLayoutBounds());
+            assertFalse(isOutsideSceneViewport(rtlLayout, rtlBounds, sceneBounds),
+                    () -> "Mirrored text input should be visible in the scrolled capture: " + rtlBounds);
+        }
+
+        WritableImage rtlImage = snapshot(scene);
+        writeVisualSnapshot(rtlImage, Path.of(
+                "build",
+                "reports",
+                "m3fx-demo-visual",
+                "text-input-mirrored-layout-contracts.png"
+        ));
+        assertSnapshotHasVisibleContent(rtlImage, "Mirrored text input layout contracts");
+        assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
+                rtlImage,
+                rtlOutlinedLayout,
+                "mirrored outlined text input"
+        );
+        assertSingleLineTextInputsHaveVerticalRoom(scene, "Mirrored Text Fields");
     }
 
     /// Verifies that selection control pages render all advertised states with stable indicator geometry.
@@ -10408,11 +10441,11 @@ final class M3FXDemoVisualSmokeTest {
         }
 
         M3TextInputLayout outlinedTextLayout = requireTextInputLayout(layouts, "M3FX", "Outlined with text");
-        assertOutlinedFloatingLabelGeometry(outlinedTextLayout, "Text Fields outlined populated field");
+        assertOutlinedFloatingLabelGeometry(outlinedTextLayout, "Text Fields outlined populated text input");
         assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
                 snapshot(scene),
                 outlinedTextLayout,
-                "Text Fields outlined populated field"
+                "Text Fields outlined populated text input"
         );
     }
 
