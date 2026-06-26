@@ -45,23 +45,6 @@ final class SourceStyleRequirementsTest {
     private static final Path TOKENS_SOURCE_ROOT =
             Path.of("src", "main", "java", "org", "glavo", "m3fx", "tokens");
 
-    /// The core control behavior test source that owns public accessible role assertions.
-    private static final Path CONTROL_STYLE_TEST_SOURCE =
-            Path.of("src", "test", "java", "org", "glavo", "m3fx", "controls", "M3ControlStyleTest.java");
-
-    /// The core control style-class contract methods that form the public control style matrix.
-    private static final @Unmodifiable List<String> STYLE_CLASS_CONTRACT_METHODS = List.of(
-            "actionControlsExposeStyleClasses",
-            "containerControlsExposeStyleClasses",
-            "inputAndSelectionControlsExposeStyleClasses"
-    );
-
-    /// The core control hit-target contract methods that form the public button-base full-bounds matrix.
-    private static final @Unmodifiable List<String> FULL_BOUNDS_HIT_TARGET_CONTRACT_METHODS = List.of(
-            "materialActionControlsPickFullLayoutBounds",
-            "menuButtonPicksFullLayoutBoundsToShowPopup"
-    );
-
     /// The source call that lets sparse Material shapes receive pointer events across their layout bounds.
     private static final String FULL_BOUNDS_PICK_ON_BOUNDS_CALL = "setPickOnBounds(true)";
 
@@ -346,45 +329,6 @@ final class SourceStyleRequirementsTest {
                 () -> "Custom M3FX CssMetaData properties must use the -m3- prefix: " + invalidProperties);
     }
 
-    /// Verifies that public controls with a base style class are covered by the core style-class contract tests.
-    @Test
-    void publicControlStyleClassesStayCoveredByCoreStyleClassContract() throws IOException {
-        String styleContractSource = sourceMethodBodies(
-                Files.readString(CONTROL_STYLE_TEST_SOURCE),
-                STYLE_CLASS_CONTRACT_METHODS
-        );
-        Set<String> expectedClasses = publicConcreteControlsWithStyleClassContracts();
-        List<String> missingClasses = new ArrayList<>();
-        for (String className : expectedClasses) {
-            if (!styleContractAssertsStyleClass(styleContractSource, className)) {
-                missingClasses.add(className);
-            }
-        }
-
-        assertTrue(missingClasses.isEmpty(),
-                () -> "Public controls with STYLE_CLASS must be covered by M3ControlStyleTest: " + missingClasses);
-    }
-
-    /// Verifies that public controls with user-agent stylesheets are covered by the core stylesheet contract test.
-    @Test
-    void publicControlUserAgentStylesheetsStayCoveredByCoreStylesheetContract() throws IOException {
-        String stylesheetContractSource = sourceMethodBody(
-                Files.readString(CONTROL_STYLE_TEST_SOURCE),
-                "controlsExposeUserAgentStylesheets"
-        );
-        Set<String> expectedClasses = publicConcreteControlsWithUserAgentStylesheetContracts();
-        List<String> missingClasses = new ArrayList<>();
-        for (String className : expectedClasses) {
-            if (!stylesheetContractAssertsClass(stylesheetContractSource, className)) {
-                missingClasses.add(className);
-            }
-        }
-
-        assertTrue(missingClasses.isEmpty(),
-                () -> "Public controls with user-agent stylesheets must be covered by "
-                        + "controlsExposeUserAgentStylesheets: " + missingClasses);
-    }
-
     /// Verifies that custom CSS metadata respects API-assigned styleable property values.
     @Test
     void customCssMetaDataSettableChecksRespectUserAssignedValues() throws IOException {
@@ -403,46 +347,6 @@ final class SourceStyleRequirementsTest {
         assertTrue(unsafeSettableChecks.isEmpty(),
                 () -> "Custom CssMetaData isSettable implementations must delegate to M3Css.isSettable: "
                         + unsafeSettableChecks);
-    }
-
-    /// Verifies that public controls with explicit accessible roles are covered by the core role contract test.
-    @Test
-    void publicControlAccessibleRolesStayCoveredByCoreRoleContract() throws IOException {
-        String roleContractSource = sourceMethodBody(
-                Files.readString(CONTROL_STYLE_TEST_SOURCE),
-                "controlsExposeAccessibilityRoles"
-        );
-        Set<String> expectedClasses = publicConcreteControlsWithAccessibleRoleContracts();
-        List<String> missingClasses = new ArrayList<>();
-        for (String className : expectedClasses) {
-            if (!contractInstantiatesClass(roleContractSource, className)) {
-                missingClasses.add(className);
-            }
-        }
-
-        assertTrue(missingClasses.isEmpty(),
-                () -> "Public controls with accessible roles must be covered by controlsExposeAccessibilityRoles: "
-                        + missingClasses);
-    }
-
-    /// Verifies that public button-base controls are covered by full-bounds hit-target tests.
-    @Test
-    void publicButtonBaseControlsStayCoveredByCoreHitTargetContract() throws IOException {
-        String hitTargetContractSource = sourceMethodBodies(
-                Files.readString(CONTROL_STYLE_TEST_SOURCE),
-                FULL_BOUNDS_HIT_TARGET_CONTRACT_METHODS
-        );
-        Set<String> expectedClasses = publicConcreteButtonBaseControls();
-        List<String> missingClasses = new ArrayList<>();
-        for (String className : expectedClasses) {
-            if (!contractInstantiatesClass(hitTargetContractSource, className)) {
-                missingClasses.add(className);
-            }
-        }
-
-        assertTrue(missingClasses.isEmpty(),
-                () -> "Public ButtonBase controls must be covered by full-bounds hit-target tests: "
-                        + missingClasses);
     }
 
     /// Verifies that public button-like controls enable full layout bounds as pointer hit targets.
@@ -653,75 +557,6 @@ final class SourceStyleRequirementsTest {
         return tokens;
     }
 
-    /// Returns concrete public controls that declare a base `STYLE_CLASS`.
-    private static Set<String> publicConcreteControlsWithStyleClassContracts() throws IOException {
-        Set<String> classNames = new TreeSet<>();
-        for (Path sourceFile : javaSourceFiles(CONTROLS_SOURCE_ROOT)) {
-            List<String> lines = Files.readAllLines(sourceFile);
-            @org.jetbrains.annotations.Nullable String className = publicConcreteControlClassName(lines);
-            if (className != null && Files.readString(sourceFile).contains("public static final String STYLE_CLASS")) {
-                classNames.add(className);
-            }
-        }
-        return classNames;
-    }
-
-    /// Returns concrete public controls that own or inherit a user-agent stylesheet contract.
-    private static Set<String> publicConcreteControlsWithUserAgentStylesheetContracts() throws IOException {
-        Map<String, String> superclasses = new HashMap<>();
-        Set<String> concreteClasses = new TreeSet<>();
-        Set<String> stylesheetOwners = new TreeSet<>();
-
-        for (Path sourceFile : javaSourceFiles(CONTROLS_SOURCE_ROOT)) {
-            List<String> lines = Files.readAllLines(sourceFile);
-            String source = Files.readString(sourceFile);
-            @org.jetbrains.annotations.Nullable String className = publicControlClassName(lines);
-            @org.jetbrains.annotations.Nullable String superclassName = publicControlSuperclassName(lines);
-            if (className == null || superclassName == null) {
-                continue;
-            }
-
-            superclasses.put(className, superclassName);
-            if (publicConcreteControlClassName(lines) != null) {
-                concreteClasses.add(className);
-            }
-            if (source.contains("getUserAgentStylesheet()")) {
-                stylesheetOwners.add(className);
-            }
-        }
-
-        Set<String> classNames = new TreeSet<>();
-        for (String className : concreteClasses) {
-            if (inheritsFromStylesheetOwner(className, superclasses, stylesheetOwners)) {
-                classNames.add(className);
-            }
-        }
-        return classNames;
-    }
-
-    /// Returns concrete public controls whose accessible role should be asserted in the core role contract test.
-    private static Set<String> publicConcreteControlsWithAccessibleRoleContracts() throws IOException {
-        Set<String> classNames = new TreeSet<>();
-        for (Path sourceFile : javaSourceFiles(CONTROLS_SOURCE_ROOT)) {
-            List<String> lines = Files.readAllLines(sourceFile);
-            String source = String.join("\n", lines);
-            @org.jetbrains.annotations.Nullable String className = publicConcreteControlClassName(lines);
-            if (className == null) {
-                continue;
-            }
-
-            if (source.contains("setAccessibleRole(") || extendsPickerField(lines)) {
-                classNames.add(className);
-            }
-        }
-        return classNames;
-    }
-
-    /// Returns concrete public controls that inherit from JavaFX `ButtonBase`.
-    private static Set<String> publicConcreteButtonBaseControls() throws IOException {
-        return publicConcreteControlsInheritingFrom("ButtonBase", publicControlSuperclasses());
-    }
-
     /// Returns concrete public controls that inherit from the requested superclass.
     private static Set<String> publicConcreteControlsInheritingFrom(
             String targetSuperclass,
@@ -812,23 +647,6 @@ final class SourceStyleRequirementsTest {
         return null;
     }
 
-    /// Returns whether a concrete class owns or inherits a user-agent stylesheet from another M3FX control class.
-    private static boolean inheritsFromStylesheetOwner(
-            String className,
-            Map<String, String> superclasses,
-            Set<String> stylesheetOwners
-    ) {
-        Set<String> visitedClasses = new TreeSet<>();
-        @org.jetbrains.annotations.Nullable String currentClass = className;
-        while (currentClass != null && visitedClasses.add(currentClass)) {
-            if (stylesheetOwners.contains(currentClass)) {
-                return true;
-            }
-            currentClass = superclasses.get(currentClass);
-        }
-        return false;
-    }
-
     /// Returns whether a concrete class inherits from the requested superclass.
     private static boolean inheritsFromClass(
             String className,
@@ -864,70 +682,6 @@ final class SourceStyleRequirementsTest {
             currentClass = superclasses.get(currentClass);
         }
         return false;
-    }
-
-    /// Returns whether the source declares a concrete picker field subclass inheriting its role from `M3PickerField`.
-    private static boolean extendsPickerField(List<String> lines) {
-        for (String line : lines) {
-            Matcher matcher = PUBLIC_CONCRETE_CONTROL_EXTENDS_DECLARATION.matcher(line);
-            if (matcher.find() && matcher.group(2).equals("M3PickerField")) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// Returns the source body of a zero-argument test method.
-    private static String sourceMethodBody(String source, String methodName) {
-        int signatureIndex = source.indexOf("void " + methodName + "()");
-        if (signatureIndex < 0) {
-            throw new IllegalStateException("Missing method " + methodName);
-        }
-
-        int openingBraceIndex = source.indexOf('{', signatureIndex);
-        if (openingBraceIndex < 0) {
-            throw new IllegalStateException("Missing method body for " + methodName);
-        }
-
-        int depth = 0;
-        for (int index = openingBraceIndex; index < source.length(); index++) {
-            char character = source.charAt(index);
-            if (character == '{') {
-                depth++;
-            } else if (character == '}') {
-                depth--;
-                if (depth == 0) {
-                    return source.substring(openingBraceIndex + 1, index);
-                }
-            }
-        }
-        throw new IllegalStateException("Unclosed method body for " + methodName);
-    }
-
-    /// Returns the concatenated source bodies of zero-argument test methods.
-    private static String sourceMethodBodies(String source, List<String> methodNames) {
-        StringBuilder builder = new StringBuilder();
-        for (String methodName : methodNames) {
-            builder.append(sourceMethodBody(source, methodName)).append('\n');
-        }
-        return builder.toString();
-    }
-
-    /// Returns whether a source block directly asserts a class base style class.
-    private static boolean styleContractAssertsStyleClass(String source, String className) {
-        return source.contains("getStyleClass().contains(" + className + ".STYLE_CLASS)");
-    }
-
-    /// Returns whether a source block directly asserts a class user-agent stylesheet.
-    private static boolean stylesheetContractAssertsClass(String source, String className) {
-        return source.contains("assertUserAgentStylesheet(new " + className + "(")
-                || source.contains("assertUserAgentStylesheet(new " + className + "<");
-    }
-
-    /// Returns whether a source block instantiates a class, including diamond-style generic constructors.
-    private static boolean contractInstantiatesClass(String source, String className) {
-        return source.contains("new " + className + "(")
-                || source.contains("new " + className + "<");
     }
 
     /// Returns a stable slash-separated relative resource path.

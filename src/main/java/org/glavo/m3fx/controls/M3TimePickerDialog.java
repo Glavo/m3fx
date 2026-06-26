@@ -222,7 +222,7 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
         M3PresetNavigation.install(presetList, pane, () ->
                 picker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS));
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
-        setResultConverter(this::convertResult);
+        setResultConverter(buttonType -> buttonType == ButtonType.OK ? getValue() : null);
         picker.valueProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minTimeProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         picker.maxTimeProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
@@ -257,11 +257,6 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
         button.setDisable(picker.isTimeDisabled(preset.time()));
         button.setOnAction(event -> applyPreset(preset));
         return button;
-    }
-
-    /// Converts a dialog button into the selected time result.
-    private @Nullable LocalTime convertResult(@Nullable ButtonType buttonType) {
-        return buttonType == ButtonType.OK ? getValue() : null;
     }
 
     /// Enables the OK button only when a selected time exists.

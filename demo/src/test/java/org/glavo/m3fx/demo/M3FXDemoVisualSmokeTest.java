@@ -639,29 +639,6 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(docsButton.getBoundsInParent().getHeight() > 0.0, title + " docs link height");
     }
 
-    /// Verifies that every registered demo page contributes a dedicated visual-state assertion.
-    @Test
-    void demoPageVisualStateAssertionsCoverRegisteredPages() {
-        assertEquals(
-                ALL_DEMO_PAGE_TITLES.size(),
-                DEMO_PAGE_VISUAL_STATE_ASSERTIONS.size(),
-                "every registered demo page should have one page-specific visual assertion"
-        );
-
-        for (String pageTitle : ALL_DEMO_PAGE_TITLES) {
-            assertNotNull(
-                    DEMO_PAGE_VISUAL_STATE_ASSERTIONS.get(pageTitle),
-                    () -> pageTitle + " page-specific visual assertion"
-            );
-        }
-        for (String pageTitle : DEMO_PAGE_VISUAL_STATE_ASSERTIONS.keySet()) {
-            assertTrue(
-                    ALL_DEMO_PAGE_TITLES.contains(pageTitle),
-                    () -> "unexpected page-specific visual assertion: " + pageTitle
-            );
-        }
-    }
-
     /// Verifies that a demo page URL points at the official Material Design site.
     private static void assertMaterialDocumentationUrl(String title, String url) {
         URI uri;

@@ -317,7 +317,7 @@ public class M3DatePickerDialog extends M3Dialog<LocalDate> {
         M3PresetNavigation.install(presetList, pane, () ->
                 picker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS));
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
-        setResultConverter(this::convertResult);
+        setResultConverter(buttonType -> buttonType == ButtonType.OK ? getValue() : null);
         picker.valueProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
         picker.maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
@@ -352,11 +352,6 @@ public class M3DatePickerDialog extends M3Dialog<LocalDate> {
         button.setDisable(picker.isDateDisabled(preset.date()));
         button.setOnAction(event -> applyPreset(preset));
         return button;
-    }
-
-    /// Converts a dialog button into the selected date result.
-    private @Nullable LocalDate convertResult(@Nullable ButtonType buttonType) {
-        return buttonType == ButtonType.OK ? getValue() : null;
     }
 
     /// Enables the OK button only when a selected date exists.

@@ -4,7 +4,6 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.css.Styleable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -68,10 +67,12 @@ final class M3ControlStyles {
         private final Node node;
 
         /// The listener that follows the control between scenes.
-        private final ChangeListener<@Nullable Scene> sceneListener = this::handleSceneChanged;
+        private final ChangeListener<@Nullable Scene> sceneListener =
+                (observable, oldScene, newScene) -> updateObservedScene(newScene);
 
         /// The listener that follows replacement roots inside the current scene.
-        private final ChangeListener<Parent> rootListener = this::handleRootChanged;
+        private final ChangeListener<Parent> rootListener =
+                (observable, oldRoot, newRoot) -> applyFallbackStylesheet();
 
         /// The scene whose root listener is currently installed.
         private @Nullable Scene observedScene;
@@ -85,24 +86,6 @@ final class M3ControlStyles {
         private void install() {
             node.sceneProperty().addListener(sceneListener);
             updateObservedScene(node.getScene());
-        }
-
-        /// Updates the observed scene when the node enters or leaves a scene.
-        private void handleSceneChanged(
-                ObservableValue<? extends @Nullable Scene> observable,
-                @Nullable Scene oldScene,
-                @Nullable Scene newScene
-        ) {
-            updateObservedScene(newScene);
-        }
-
-        /// Reapplies fallback root styling when the current scene root is replaced.
-        private void handleRootChanged(
-                ObservableValue<? extends Parent> observable,
-                Parent oldRoot,
-                Parent newRoot
-        ) {
-            applyFallbackStylesheet();
         }
 
         /// Moves the root listener from the previous scene to the new scene.

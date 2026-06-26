@@ -376,7 +376,7 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
         M3PresetNavigation.install(presetList, pane, () ->
                 picker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS));
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
-        setResultConverter(this::convertResult);
+        setResultConverter(buttonType -> buttonType == ButtonType.OK ? getRange() : null);
         picker.startDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.endDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         presets.addListener(presetsListener);
@@ -409,11 +409,6 @@ public class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
         button.setMaxWidth(Double.MAX_VALUE);
         button.setOnAction(event -> applyPreset(preset));
         return button;
-    }
-
-    /// Converts a dialog button into the selected date range result.
-    private @Nullable M3DateRange convertResult(@Nullable ButtonType buttonType) {
-        return buttonType == ButtonType.OK ? getRange() : null;
     }
 
     /// Enables the OK button only when both range endpoints are selected.
