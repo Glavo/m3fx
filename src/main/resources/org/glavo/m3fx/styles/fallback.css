@@ -74,6 +74,16 @@
     -m3-color-inverse-primary: rgb(207,189,254);
     -monet-surface-tint: rgb(101,85,143);
     -m3-color-surface-tint: rgb(101,85,143);
+    -m3-state-hover-opacity: 0.08;
+    -m3-state-focus-opacity: 0.10;
+    -m3-state-pressed-opacity: 0.10;
+    -m3-state-dragged-opacity: 0.16;
+    -m3-state-disabled-container-opacity: 0.12;
+    -m3-state-disabled-content-opacity: 0.38;
+    -m3-state-focus-indicator-color: -m3-color-secondary;
+    -m3-state-focus-indicator-thickness: 3px;
+    -m3-state-focus-indicator-outer-offset: 2px;
+    -m3-state-focus-indicator-inner-offset: -2px;
 }
 
 .m3-internal-icon-path {

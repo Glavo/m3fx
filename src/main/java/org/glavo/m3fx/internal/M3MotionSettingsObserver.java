@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.internal;
 
+import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.scene.Node;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -33,7 +34,10 @@ public final class M3MotionSettingsObserver {
     private boolean settingsListenerRegistered;
 
     /// Whether this observer has been disposed.
-    private boolean disposed;
+    private volatile boolean disposed;
+
+    /// Whether a JavaFX thread refresh has already been scheduled.
+    private volatile boolean refreshPending;
 
     /// Creates an observer for one owner node.
     ///
@@ -42,15 +46,33 @@ public final class M3MotionSettingsObserver {
     public M3MotionSettingsObserver(Node owner, Runnable refreshAction) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.refreshAction = Objects.requireNonNull(refreshAction, "refreshAction");
-        this.settingsListener = observable -> this.refreshAction.run();
+        this.settingsListener = observable -> refresh();
         this.sceneListener = observable -> updateRegistration();
         owner.sceneProperty().addListener(sceneListener);
         updateRegistration();
     }
 
-    /// Refreshes the owner immediately.
+    /// Refreshes the owner on the JavaFX application thread.
     private void refresh() {
-        refreshAction.run();
+        if (disposed) {
+            return;
+        }
+        if (Platform.isFxApplicationThread()) {
+            refreshPending = false;
+            refreshAction.run();
+            return;
+        }
+
+        if (refreshPending) {
+            return;
+        }
+        refreshPending = true;
+        Platform.runLater(() -> {
+            refreshPending = false;
+            if (!disposed && settingsListenerRegistered && owner.getScene() != null) {
+                refreshAction.run();
+            }
+        });
     }
 
     /// Stops observing scene and runtime motion setting changes.

@@ -58,6 +58,9 @@ final class M3StateLayer extends Pane {
     /// The class applied to animated ripple nodes.
     static final String RIPPLE_STYLE_CLASS = "m3-ripple";
 
+    /// The class applied to keyboard focus indicator rings.
+    static final String FOCUS_INDICATOR_STYLE_CLASS = "m3-focus-indicator";
+
     /// The opacity used by the animated ripple at the start of a press.
     private static final double RIPPLE_START_OPACITY = 0.18;
 
@@ -67,6 +70,9 @@ final class M3StateLayer extends Pane {
     /// The animated bounded ripple node.
     private final Region ripple = new Region();
 
+    /// The independent keyboard focus indicator ring.
+    private final Region focusIndicator = new Region();
+
     /// The clip that bounds overlay and ripple visuals to the component shape.
     private final Path clip = new Path();
 
@@ -75,6 +81,9 @@ final class M3StateLayer extends Pane {
 
     /// The overlay opacity animation timeline.
     private final Timeline overlayOpacityAnimation = new Timeline();
+
+    /// The keyboard focus indicator opacity animation timeline.
+    private final Timeline focusIndicatorOpacityAnimation = new Timeline();
 
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
@@ -119,16 +128,20 @@ final class M3StateLayer extends Pane {
         getStyleClass().add(STYLE_CLASS);
         overlay.getStyleClass().add(OVERLAY_STYLE_CLASS);
         ripple.getStyleClass().add(RIPPLE_STYLE_CLASS);
+        focusIndicator.getStyleClass().add(FOCUS_INDICATOR_STYLE_CLASS);
         setMouseTransparent(true);
         setManaged(false);
         overlay.setManaged(false);
         ripple.setManaged(false);
+        focusIndicator.setManaged(false);
         overlay.setMouseTransparent(true);
         ripple.setMouseTransparent(true);
+        focusIndicator.setMouseTransparent(true);
         overlay.setOpacity(0.0);
         ripple.setOpacity(0.0);
+        focusIndicator.setOpacity(0.0);
         clip.setFill(Color.BLACK);
-        getChildren().addAll(overlay, ripple);
+        getChildren().addAll(overlay, ripple, focusIndicator);
         setClip(clip);
     }
 
@@ -181,6 +194,7 @@ final class M3StateLayer extends Pane {
         }
         stateOwner = null;
         overlayOpacityAnimation.stop();
+        focusIndicatorOpacityAnimation.stop();
     }
 
     /// Lays out the state layer within the skinnable component.
@@ -206,6 +220,7 @@ final class M3StateLayer extends Pane {
         resizeRelocate(x, y, width, height);
         overlay.resizeRelocate(0.0, 0.0, width, height);
         updateOverlayShape(topLeft, topRight, bottomRight, bottomLeft);
+        updateFocusIndicatorShape(width, height, topLeft, topRight, bottomRight, bottomLeft);
         updateClip(width, height, topLeft, topRight, bottomRight, bottomLeft);
     }
 
@@ -324,6 +339,8 @@ final class M3StateLayer extends Pane {
     void reset() {
         overlayOpacityAnimation.stop();
         overlay.setOpacity(0.0);
+        focusIndicatorOpacityAnimation.stop();
+        focusIndicator.setOpacity(0.0);
         rippleAnimation.stop();
         clearRipple();
     }
@@ -345,6 +362,11 @@ final class M3StateLayer extends Pane {
         return rippleAnimation.getStatus() == Animation.Status.RUNNING;
     }
 
+    /// Returns whether the focus indicator is currently animating.
+    boolean isFocusIndicatorOpacityAnimationRunning() {
+        return focusIndicatorOpacityAnimation.getStatus() == Animation.Status.RUNNING;
+    }
+
     /// Applies changed animation settings to currently running state-layer animations.
     private void refreshMotionSettings() {
         Node owner = stateOwner;
@@ -357,6 +379,10 @@ final class M3StateLayer extends Pane {
                 overlayOpacityAnimation.stop();
                 overlay.setOpacity(resolvedOverlayOpacity(owner));
             }
+            if (focusIndicatorOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+                focusIndicatorOpacityAnimation.stop();
+                focusIndicator.setOpacity(resolvedFocusIndicatorOpacity(owner));
+            }
             if (rippleAnimation.getStatus() == Animation.Status.RUNNING) {
                 rippleAnimation.stop();
                 clearRipple();
@@ -367,6 +393,9 @@ final class M3StateLayer extends Pane {
         if (overlayOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
             animateOverlayOpacityFromOwnerState();
         }
+        if (focusIndicatorOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+            animateFocusIndicatorOpacityFromOwnerState(owner);
+        }
     }
 
     /// Animates from the current overlay opacity to the opacity resolved from the owner state.
@@ -376,33 +405,43 @@ final class M3StateLayer extends Pane {
             return;
         }
 
-        double startOpacity = overlay.getOpacity();
-        overlayOpacityAnimation.stop();
-        double targetOpacity = resolvedOverlayOpacity(owner);
-        overlay.setOpacity(startOpacity);
+        animateOpacity(owner, overlay, overlayOpacityAnimation, resolvedOverlayOpacity(owner));
+        animateFocusIndicatorOpacityFromOwnerState(owner);
+    }
+
+    /// Animates from the current focus indicator opacity to the owner keyboard focus state.
+    private void animateFocusIndicatorOpacityFromOwnerState(Node owner) {
+        animateOpacity(owner, focusIndicator, focusIndicatorOpacityAnimation, resolvedFocusIndicatorOpacity(owner));
+    }
+
+    /// Animates one opacity node to a resolved owner-state target.
+    private static void animateOpacity(Node owner, Region node, Timeline animation, double targetOpacity) {
+        double startOpacity = node.getOpacity();
+        animation.stop();
+        node.setOpacity(startOpacity);
 
         if (Double.compare(startOpacity, targetOpacity) == 0) {
-            overlay.setOpacity(targetOpacity);
+            node.setOpacity(targetOpacity);
             return;
         }
 
         if (!M3Animation.areAnimationsEnabled(owner)) {
-            overlay.setOpacity(targetOpacity);
+            node.setOpacity(targetOpacity);
             return;
         }
 
         M3MotionSpec opacitySpec = M3Animation.fastEffects(owner);
-        overlayOpacityAnimation.getKeyFrames().setAll(
+        animation.getKeyFrames().setAll(
                 new KeyFrame(
                         Duration.ZERO,
-                        new KeyValue(overlay.opacityProperty(), startOpacity, opacitySpec.interpolator())
+                        new KeyValue(node.opacityProperty(), startOpacity, opacitySpec.interpolator())
                 ),
                 new KeyFrame(
                         opacitySpec.duration(),
-                        new KeyValue(overlay.opacityProperty(), targetOpacity, opacitySpec.interpolator())
+                        new KeyValue(node.opacityProperty(), targetOpacity, opacitySpec.interpolator())
                 )
         );
-        M3Animation.playFromStart(owner, overlayOpacityAnimation);
+        M3Animation.playFromStart(owner, animation);
     }
 
     /// Returns the target overlay opacity for the owner interaction state.
@@ -421,6 +460,14 @@ final class M3StateLayer extends Pane {
             return tokens.hoverOpacity();
         }
         return 0.0;
+    }
+
+    /// Returns the target focus indicator opacity for the owner interaction state.
+    private double resolvedFocusIndicatorOpacity(Node owner) {
+        if (owner.isDisabled()) {
+            return 0.0;
+        }
+        return owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS) ? 1.0 : 0.0;
     }
 
     /// Returns the state layer tokens for the owner node.
@@ -489,6 +536,53 @@ final class M3StateLayer extends Pane {
                 + formatPixels(topRight) + " "
                 + formatPixels(bottomRight) + " "
                 + formatPixels(bottomLeft) + ";");
+    }
+
+    /// Updates the keyboard focus indicator ring to follow the component shape and focus offset token.
+    private void updateFocusIndicatorShape(
+            double width,
+            double height,
+            double topLeft,
+            double topRight,
+            double bottomRight,
+            double bottomLeft
+    ) {
+        Node owner = stateOwner;
+        M3StateLayerTokens tokens = owner == null ? FALLBACK_TOKENS : stateLayerTokens(owner);
+        double offset = owner != null && usesInnerFocusIndicatorOffset(owner)
+                ? tokens.focusIndicatorInnerOffset()
+                : tokens.focusIndicatorOuterOffset();
+        double inwardOffset = Math.max(0.0, -offset);
+        double adjustedTopLeft = adjustedIndicatorRadius(topLeft, -inwardOffset);
+        double adjustedTopRight = adjustedIndicatorRadius(topRight, -inwardOffset);
+        double adjustedBottomRight = adjustedIndicatorRadius(bottomRight, -inwardOffset);
+        double adjustedBottomLeft = adjustedIndicatorRadius(bottomLeft, -inwardOffset);
+        focusIndicator.resizeRelocate(0.0, 0.0, width, height);
+        focusIndicator.setStyle("-fx-background-radius: "
+                + formatPixels(adjustedTopLeft) + " "
+                + formatPixels(adjustedTopRight) + " "
+                + formatPixels(adjustedBottomRight) + " "
+                + formatPixels(adjustedBottomLeft) + "; "
+                + "-fx-border-insets: " + formatPixels(inwardOffset) + "; "
+                + "-fx-border-width: " + formatPixels(tokens.focusIndicatorThickness()) + "; "
+                + "-fx-border-radius: "
+                + formatPixels(adjustedTopLeft) + " "
+                + formatPixels(adjustedTopRight) + " "
+                + formatPixels(adjustedBottomRight) + " "
+                + formatPixels(adjustedBottomLeft) + ";");
+    }
+
+    /// Returns whether the owner uses an inner focus indicator offset in Material component tokens.
+    private static boolean usesInnerFocusIndicatorOffset(Node owner) {
+        return owner.getStyleClass().contains("m3-list-item")
+                || owner.getStyleClass().contains("m3-menu-item")
+                || owner.getStyleClass().contains("m3-navigation-item")
+                || owner.getStyleClass().contains("m3-tab");
+    }
+
+    /// Adjusts a rounded corner for an inner or outer focus indicator offset.
+    private static double adjustedIndicatorRadius(double radius, double offset) {
+        return Math.max(0.0, radius + offset);
     }
 
     /// Updates the clip path to match the resolved rounded rectangle shape.

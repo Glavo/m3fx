@@ -65,6 +65,7 @@ tasks.withType<JavaCompile> {
 
 tasks.test {
     useJUnitPlatform()
+    maxHeapSize = providers.gradleProperty("m3fx.test.maxHeapSize").orElse("1g").get()
 }
 
 java {

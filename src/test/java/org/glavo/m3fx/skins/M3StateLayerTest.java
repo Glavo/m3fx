@@ -241,6 +241,129 @@ final class M3StateLayerTest {
         });
     }
 
+    /// Verifies that keyboard-visible focus renders a bounded Material focus indicator for button-like controls.
+    @Test
+    void focusVisibleRendersBoundedFocusIndicatorForButtonLikeControls() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add("m3-button");
+            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+            M3Theme baseTheme = M3Theme.defaultTheme();
+            M3TokenSet baseTokens = baseTheme.tokens();
+            M3Theme tokenTheme = M3Theme.fromTokenSet(
+                    baseTheme.profile(),
+                    baseTheme.colorScheme(),
+                    M3Density.standard(),
+                    M3TokenSet.create(
+                            baseTokens.profile(),
+                            baseTokens.colorTokens(),
+                            baseTokens.typographyTokens(),
+                            baseTokens.shapeTokens(),
+                            baseTokens.elevationTokens(),
+                            baseTokens.motionTokens(),
+                            M3StateLayerTokens.create(0.08, 0.10, 0.10, 0.16, 0.12, 0.38, 4.0, 3.0, -5.0),
+                            baseTokens.componentTokens()
+                    )
+            );
+
+            M3ThemeManager.install(scene, tokenTheme);
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+
+            Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
+            assertEquals(0.0, focusIndicator.getOpacity(), 0.0001);
+
+            owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
+            stateLayer.animateOverlayOpacityFromOwnerState();
+
+            assertEquals(1.0, focusIndicator.getOpacity(), 0.0001);
+            assertEquals(0.0, focusIndicator.getLayoutX(), 0.0001);
+            assertEquals(0.0, focusIndicator.getLayoutY(), 0.0001);
+            assertEquals(100.0, focusIndicator.getWidth(), 0.0001);
+            assertEquals(40.0, focusIndicator.getHeight(), 0.0001);
+            assertTrue(focusIndicator.getStyle().contains("-fx-border-insets: 0.0px"));
+            assertTrue(focusIndicator.getStyle().contains("-fx-border-width: 4.0px"));
+            assertTrue(focusIndicator.getStyle().contains("20.0px"));
+            assertFalse(stateLayer.isFocusIndicatorOpacityAnimationRunning());
+        });
+    }
+
+    /// Verifies that item-style controls render keyboard focus indicators inside their container bounds.
+    @Test
+    void focusVisibleRendersInnerFocusIndicatorForItemControls() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add("m3-list-item");
+            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+            M3Theme baseTheme = M3Theme.defaultTheme();
+            M3TokenSet baseTokens = baseTheme.tokens();
+            M3Theme tokenTheme = M3Theme.fromTokenSet(
+                    baseTheme.profile(),
+                    baseTheme.colorScheme(),
+                    M3Density.standard(),
+                    M3TokenSet.create(
+                            baseTokens.profile(),
+                            baseTokens.colorTokens(),
+                            baseTokens.typographyTokens(),
+                            baseTokens.shapeTokens(),
+                            baseTokens.elevationTokens(),
+                            baseTokens.motionTokens(),
+                            M3StateLayerTokens.create(0.08, 0.10, 0.10, 0.16, 0.12, 0.38, 4.0, 3.0, -5.0),
+                            baseTokens.componentTokens()
+                    )
+            );
+
+            M3ThemeManager.install(scene, tokenTheme);
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+            owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
+            stateLayer.animateOverlayOpacityFromOwnerState();
+
+            Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
+            assertEquals(1.0, focusIndicator.getOpacity(), 0.0001);
+            assertEquals(0.0, focusIndicator.getLayoutX(), 0.0001);
+            assertEquals(0.0, focusIndicator.getLayoutY(), 0.0001);
+            assertEquals(100.0, focusIndicator.getWidth(), 0.0001);
+            assertEquals(40.0, focusIndicator.getHeight(), 0.0001);
+            assertTrue(focusIndicator.getStyle().contains("-fx-border-insets: 5.0px"));
+            assertTrue(focusIndicator.getStyle().contains("15.0px"));
+        });
+    }
+
+    /// Verifies that keyboard focus indicator opacity animates when motion is enabled.
+    @Test
+    void focusIndicatorOpacityAnimatesWithMotionEnabled() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            owner.getStyleClass().add("m3-button");
+            M3MotionSettings.setAnimationsEnabled(owner, true);
+            M3StateLayer stateLayer = new M3StateLayer();
+            owner.getChildren().add(stateLayer);
+            Scene scene = new Scene(owner, 100.0, 40.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            owner.applyCss();
+            stateLayer.installStateTransitions(owner);
+            stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
+
+            Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
+            owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
+            stateLayer.animateOverlayOpacityFromOwnerState();
+
+            assertEquals(0.0, focusIndicator.getOpacity(), 0.0001);
+            assertTrue(stateLayer.isFocusIndicatorOpacityAnimationRunning());
+            M3MotionSettings.clearAnimationsEnabled(owner);
+        });
+    }
+
     /// Verifies that ripples remain visible until explicitly released.
     @Test
     void rippleHoldsUntilReleaseThenFades() throws InterruptedException {
