@@ -90,18 +90,31 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
         appendShadowRule(builder, ".m3-elevated-button", level3(), level1());
         appendShadowRule(builder, ".m3-elevated-button:hover, .m3-elevated-button:focus-visible", level4(), level2());
         appendShadowRule(builder, ".m3-elevated-button:armed, .m3-elevated-button:pressed", level2(), level1());
+        appendShadowRule(builder, ".m3-elevated-chip", level2(), level1());
+        appendShadowRule(builder, ".m3-elevated-chip:hover, .m3-elevated-chip:focus-visible", level3(), level2());
+        appendShadowRule(builder, ".m3-elevated-chip:armed, .m3-elevated-chip:pressed", level2(), level1());
         appendShadowRule(builder, ".m3-fab", level4(), level2());
         appendShadowRule(builder, ".m3-fab:hover, .m3-fab:focus-visible", level5(), level3());
         appendShadowRule(builder, ".m3-fab:armed, .m3-fab:pressed", level4(), level2());
         appendShadowRule(builder, ".m3-elevated-card .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
         appendShadowRule(builder, ".m3-elevated-card:hover .m3-card-container, .m3-elevated-card:focus-visible .m3-card-container", level5(), level3());
         appendShadowRule(builder, ".m3-elevated-card:pressed .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
+        appendShadowRule(builder, ".m3-filled-card:hover .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
+        appendEffectResetRule(builder, ".m3-filled-card:focus-visible .m3-card-container, .m3-filled-card:pressed .m3-card-container");
+        appendShadowRule(builder, ".m3-outlined-card:hover .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
+        appendEffectResetRule(builder, ".m3-outlined-card:focus-visible .m3-card-container, .m3-outlined-card:pressed .m3-card-container");
         appendShadowRule(builder, ".m3-surface-elevation-level1", level1(), level1());
         appendShadowRule(builder, ".m3-surface-elevation-level2", level2(), Math.max(level1(), level2() - level1()));
         appendShadowRule(builder, ".m3-surface-elevation-level3", level3(), Math.max(level1(), level3() - level2()));
         appendShadowRule(builder, ".m3-surface-elevation-level4", level4(), Math.max(level1(), level4() - level3()));
         appendShadowRule(builder, ".m3-surface-elevation-level5", level5(), Math.max(level1(), level5() - level4()));
         return builder.toString().stripTrailing();
+    }
+
+    /// Appends an effect reset CSS rule.
+    private static void appendEffectResetRule(StringBuilder builder, String selector) {
+        builder.append(selector)
+                .append(" {\n    -fx-effect: null;\n}\n\n");
     }
 
     /// Appends a dropshadow CSS rule.

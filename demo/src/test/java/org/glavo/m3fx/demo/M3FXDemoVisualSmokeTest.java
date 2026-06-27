@@ -32,6 +32,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.LineTo;
@@ -54,6 +55,8 @@ import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
+import org.glavo.m3fx.controls.M3ButtonGroupSize;
+import org.glavo.m3fx.controls.M3ButtonGroupVariant;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
@@ -62,6 +65,7 @@ import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
 import org.glavo.m3fx.controls.M3ChipSelectionMode;
+import org.glavo.m3fx.controls.M3ChipStyle;
 import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerField;
@@ -79,6 +83,9 @@ import org.glavo.m3fx.controls.M3FormRow;
 import org.glavo.m3fx.controls.M3FormSection;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3IconButtonShape;
+import org.glavo.m3fx.controls.M3IconButtonSize;
+import org.glavo.m3fx.controls.M3IconButtonWidth;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
 import org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode;
@@ -92,6 +99,7 @@ import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
+import org.glavo.m3fx.controls.M3MenuColorStyle;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3MenuSectionHeader;
 import org.glavo.m3fx.controls.M3NavigationBar;
@@ -116,6 +124,7 @@ import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
+import org.glavo.m3fx.controls.M3SplitButtonSize;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
@@ -351,7 +360,7 @@ final class M3FXDemoVisualSmokeTest {
             Map.entry("Chips", 1),
             Map.entry("FAB Menu", 6),
             Map.entry("Floating Action Buttons", 3),
-            Map.entry("Icon Buttons", 12),
+            Map.entry("Icon Buttons", 30),
             Map.entry("Icons", 12),
             Map.entry("Lists", 8),
             Map.entry("Menus", 10),
@@ -430,6 +439,9 @@ final class M3FXDemoVisualSmokeTest {
 
     /// The tolerance used when comparing focused text area content and surrounding container backgrounds.
     private static final double TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_TOLERANCE = 0.04;
+
+    /// The maximum ratio of focused text area content pixels that may differ from the surrounding container.
+    private static final double TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_MISMATCH_RATIO = 0.02;
 
     /// The lowest acceptable rendered ink center ratio for filled fields with a floating label.
     private static final double FILLED_FLOATING_INK_MINIMUM_CENTER_RATIO = 0.48;
@@ -1937,7 +1949,7 @@ final class M3FXDemoVisualSmokeTest {
                     assertDemoVectorIcons(root, "Menus", 10);
 
                     List<M3Menu> inlineMenus = visibleNodesOfType(root, M3Menu.class);
-                    assertEquals(3, inlineMenus.size(), "Menus page should render three inline menu surfaces");
+                    assertEquals(4, inlineMenus.size(), "Menus page should render four inline menu surfaces");
 
                     M3Menu selectedMenu = requireMenuContainingText(inlineMenus, "Selected item");
                     assertEquals("Selected item",
@@ -1951,6 +1963,16 @@ final class M3FXDemoVisualSmokeTest {
                             "multi-select menu should select Icons");
                     assertTrue(menuHasSelectedItem(multiSelectMenu, "Badges"),
                             "multi-select menu should select Badges");
+
+                    M3Menu vibrantMenu = requireMenuContainingText(inlineMenus, "Pinned");
+                    assertEquals(M3MenuColorStyle.VIBRANT, vibrantMenu.getColorStyle(),
+                            "vibrant inline menu should expose the vibrant color style");
+                    assertTrue(vibrantMenu.getPseudoClassStates().contains(PseudoClass.getPseudoClass("vibrant")),
+                            "vibrant inline menu should expose the vibrant pseudo-class");
+                    assertTrue(menuHasSelectedItem(vibrantMenu, "Pinned"),
+                            "vibrant inline menu should render a selected pinned row");
+                    assertEquals(1, vibrantMenu.getSelectedItems().size(),
+                            "vibrant inline menu should stay single-selection");
 
                     WritableImage image = snapshot(scene);
                     for (M3Menu menu : inlineMenus) {
@@ -2277,6 +2299,28 @@ final class M3FXDemoVisualSmokeTest {
                 "mirrored outlined text input"
         );
         assertSingleLineTextInputsHaveVerticalRoom(scene, "Mirrored Text Fields");
+
+        TextInputControl rtlOutlinedInput = Objects.requireNonNull(
+                rtlOutlinedLayout.getInput(),
+                "mirrored outlined input"
+        );
+        rtlOutlinedInput.requestFocus();
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        WritableImage focusedRtlImage = snapshot(scene);
+        writeVisualSnapshot(focusedRtlImage, Path.of(
+                "build",
+                "reports",
+                "m3fx-demo-visual",
+                "text-input-focused-rtl-outlined-contracts.png"
+        ));
+        assertSnapshotHasVisibleContent(focusedRtlImage, "Focused mirrored outlined text input contracts");
+        assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
+                focusedRtlImage,
+                rtlOutlinedLayout,
+                "focused mirrored outlined text input"
+        );
+        assertSingleLineTextInputsHaveVerticalRoom(scene, "Focused Mirrored Text Fields");
     }
 
     /// Verifies that selection control pages render all advertised states with stable indicator geometry.
@@ -7683,6 +7727,118 @@ final class M3FXDemoVisualSmokeTest {
                         + ", distance=" + distance
                         + ", contentBounds=" + contentBounds
                         + ", containerBounds=" + containerBounds);
+
+        assertTextAreaContentBackgroundSamplesMatchContainer(
+                image,
+                content,
+                contentBounds,
+                referenceBackground,
+                description
+        );
+    }
+
+    /// Verifies that focused text area content does not paint a local default background behind text rows.
+    private static void assertTextAreaContentBackgroundSamplesMatchContainer(
+            WritableImage image,
+            Node content,
+            Bounds contentBounds,
+            Color referenceBackground,
+            String description
+    ) {
+        List<Rectangle2D> inkBounds = new ArrayList<>();
+        collectRenderedTextInkBounds(image, content, inkBounds);
+
+        int sampledPixels = 0;
+        int mismatchedPixels = 0;
+        double worstDistance = 0.0;
+        @Nullable Point2D worstPoint = null;
+        @Nullable Color worstColor = null;
+        int startX = Math.max(0, (int) Math.floor(contentBounds.getMinX() + 4.0));
+        int endX = Math.min((int) image.getWidth(), (int) Math.ceil(contentBounds.getMaxX() - 4.0));
+        int startY = Math.max(0, (int) Math.floor(contentBounds.getMinY() + 4.0));
+        int endY = Math.min((int) image.getHeight(), (int) Math.ceil(contentBounds.getMaxY() - 4.0));
+        for (int y = startY; y < endY; y += 4) {
+            for (int x = startX; x < endX; x += 4) {
+                double sampleX = x + 0.5;
+                double sampleY = y + 0.5;
+                if (isInsideAnyRectangleWithTolerance(inkBounds, sampleX, sampleY, 3.0)) {
+                    continue;
+                }
+
+                Color color = image.getPixelReader().getColor(x, y);
+                if (color.getOpacity() <= 0.1) {
+                    continue;
+                }
+
+                sampledPixels++;
+                double sampleDistance = pixelDistance(color, referenceBackground);
+                if (sampleDistance > worstDistance) {
+                    worstDistance = sampleDistance;
+                    worstPoint = new Point2D(sampleX, sampleY);
+                    worstColor = color;
+                }
+                if (sampleDistance > TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_TOLERANCE) {
+                    mismatchedPixels++;
+                }
+            }
+        }
+
+        int finalSampledPixels = sampledPixels;
+        assertTrue(finalSampledPixels >= 80,
+                () -> description + " focused content did not expose enough background samples: sampled="
+                        + finalSampledPixels + ", contentBounds=" + contentBounds + ", inkBounds=" + inkBounds);
+        int allowedMismatches = Math.max(2, (int) Math.ceil(
+                finalSampledPixels * TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_MISMATCH_RATIO
+        ));
+        int finalMismatchedPixels = mismatchedPixels;
+        double finalWorstDistance = worstDistance;
+        @Nullable Point2D finalWorstPoint = worstPoint;
+        @Nullable Color finalWorstColor = worstColor;
+        assertTrue(finalMismatchedPixels <= allowedMismatches,
+                () -> description + " content paints a local background behind text rows: mismatched="
+                        + finalMismatchedPixels + "/" + finalSampledPixels
+                        + ", allowed=" + allowedMismatches
+                        + ", worstDistance=" + finalWorstDistance
+                        + ", worstPoint=" + finalWorstPoint
+                        + ", worstColor=" + finalWorstColor
+                        + ", reference=" + referenceBackground
+                        + ", contentBounds=" + contentBounds
+                        + ", inkBounds=" + inkBounds);
+    }
+
+    /// Collects rendered text ink bounds for all visible text descendants of a node.
+    private static void collectRenderedTextInkBounds(
+            WritableImage image,
+            Node node,
+            List<Rectangle2D> inkBounds
+    ) {
+        if (node instanceof Text text && !text.getText().isBlank() && hasRenderableBounds(text)) {
+            @Nullable Rectangle2D bounds = renderedTextInkBounds(image, text);
+            if (bounds != null) {
+                inkBounds.add(bounds);
+            }
+        }
+
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                collectRenderedTextInkBounds(image, child, inkBounds);
+            }
+        }
+    }
+
+    /// Returns whether one point falls inside any rendered rectangle after applying edge tolerance.
+    private static boolean isInsideAnyRectangleWithTolerance(
+            List<Rectangle2D> rectangles,
+            double x,
+            double y,
+            double tolerance
+    ) {
+        for (Rectangle2D rectangle : rectangles) {
+            if (isInsideRectangleWithTolerance(rectangle, x, y, tolerance)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Returns whether a point falls inside a rendered rectangle after applying an edge tolerance.
@@ -7964,6 +8120,18 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(menuBounds.getHeight() > 0.0,
                 () -> description + " should have positive height: " + menuBounds);
         assertMenuContainerShape(menu, description);
+        assertMenuItemContainerSpacing(menu, description);
+
+        @Nullable M3MenuItem firstDirectItem = null;
+        @Nullable M3MenuItem lastDirectItem = null;
+        for (Node item : menu.getItems()) {
+            if (item instanceof M3MenuItem menuItem) {
+                if (firstDirectItem == null) {
+                    firstDirectItem = menuItem;
+                }
+                lastDirectItem = menuItem;
+            }
+        }
 
         int menuItemCount = 0;
         double previousMaxY = menuBounds.getMinY();
@@ -7984,7 +8152,14 @@ final class M3FXDemoVisualSmokeTest {
 
             if (item instanceof M3MenuItem menuItem) {
                 menuItemCount++;
-                assertMenuItemRowGeometry(menuItem, itemBounds, sceneImage, description);
+                assertMenuItemRowGeometry(
+                        menuItem,
+                        itemBounds,
+                        sceneImage,
+                        description,
+                        menuItem == firstDirectItem,
+                        menuItem == lastDirectItem
+                );
             } else if (item instanceof M3MenuSectionHeader header) {
                 assertMenuSectionHeaderGeometry(header, itemBounds, description);
             } else if (item instanceof M3Divider divider) {
@@ -7998,6 +8173,14 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(lastRowMaxY <= menuBounds.getMaxY() + CONTROL_EDGE_TOLERANCE,
                 () -> description + " rows extend below the surface: menu="
                         + menuBounds + ", lastRowMaxY=" + lastRowMaxY);
+    }
+
+    /// Verifies that the menu surface resolves the expected profile-specific item spacing.
+    private static void assertMenuItemContainerSpacing(M3Menu menu, String description) {
+        VBox container = assertInstanceOf(VBox.class, menu.lookup("." + M3Menu.CONTAINER_STYLE_CLASS));
+        double expectedSpacing = isExpressiveTheme(menu) ? 2.0 : 0.0;
+        assertEquals(expectedSpacing, container.getSpacing(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " menu item spacing should match the active profile token");
     }
 
     /// Verifies that the menu surface resolves the expected profile-specific container shape.
@@ -8033,7 +8216,9 @@ final class M3FXDemoVisualSmokeTest {
             M3MenuItem item,
             Bounds itemBounds,
             @Nullable WritableImage sceneImage,
-            String description
+            String description,
+            boolean firstDirectItem,
+            boolean lastDirectItem
     ) {
         double expectedHeight = switch (item.getLineCount()) {
             case ONE_LINE -> item.getOneLineHeight();
@@ -8047,7 +8232,12 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(expectedProfileHeight, expectedHeight, CONTROL_EDGE_TOLERANCE,
                 () -> description + " menu item resolved height should match the active profile token: item="
                         + item.getHeadlineText());
-        double expectedItemShape = item.isSelected() && isExpressiveTheme(item) ? 16.0 : isExpressiveTheme(item) ? 6.0 : 4.0;
+        boolean expressiveTheme = isExpressiveTheme(item);
+        double expectedItemShape = !expressiveTheme
+                ? 4.0
+                : item.isSelected() || firstDirectItem || lastDirectItem
+                ? 16.0
+                : 6.0;
         assertEquals(expectedItemShape, item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " menu item container shape should match the active profile and selection token: item="
                         + item.getHeadlineText());
@@ -9669,17 +9859,21 @@ final class M3FXDemoVisualSmokeTest {
         Node page = currentDemoPage(scene, "Chips");
         assertCurrentPageTitle(scene, "Chips");
         assertVisibleText(root, "Variants", "Chips");
+        assertVisibleText(root, "Elevated", "Chips");
+        assertVisibleText(root, "Icon Content", "Chips");
         assertVisibleText(root, "States", "Chips");
         assertVisibleText(root, "Multi Select", "Chips");
         assertVisibleText(root, "Single Select", "Chips");
 
         List<M3Chip> chips = visibleNodesOfType(page, M3Chip.class);
-        assertEquals(13, chips.size(), () -> "Chips page should render thirteen chips: " + chips);
-        assertChipVariantCount(chips, M3ChipVariant.ASSIST, 2, "Chips");
-        assertChipVariantCount(chips, M3ChipVariant.SUGGESTION, 1, "Chips");
-        assertChipVariantCount(chips, M3ChipVariant.INPUT, 1, "Chips");
+        assertEquals(17, chips.size(), () -> "Chips page should render seventeen chips: " + chips);
+        assertChipVariantCount(chips, M3ChipVariant.ASSIST, 3, "Chips");
+        assertChipVariantCount(chips, M3ChipVariant.SUGGESTION, 2, "Chips");
+        assertChipVariantCount(chips, M3ChipVariant.INPUT, 3, "Chips");
         assertChipVariantCount(chips, M3ChipVariant.FILTER, 9, "Chips");
-        assertEquals(4, chips.stream().filter(M3Chip::isSelected).count(), "Chips selected count");
+        assertEquals(2, chips.stream().filter(chip -> chip.getChipStyle() == M3ChipStyle.ELEVATED).count(),
+                "Chips elevated count");
+        assertEquals(5, chips.stream().filter(M3Chip::isSelected).count(), "Chips selected count");
         assertEquals(1, chips.stream().filter(Node::isDisabled).count(), "Chips disabled count");
 
         WritableImage image = snapshot(scene);
@@ -9696,7 +9890,7 @@ final class M3FXDemoVisualSmokeTest {
         for (M3ChipGroup group : groups) {
             assertChipGroupDemoGeometry(group);
         }
-        assertDemoVectorIcons(page, "Chips", 1);
+        assertDemoVectorIcons(page, "Chips", 3);
     }
 
     /// Verifies the real Dialogs demo page inline pane structure and embedded form controls.
@@ -9825,7 +10019,7 @@ final class M3FXDemoVisualSmokeTest {
         assertDemoVectorIcons(page, "Menus", 10);
 
         List<M3Menu> inlineMenus = visibleNodesOfType(page, M3Menu.class);
-        assertEquals(3, inlineMenus.size(), "Menus page should render three inline menu surfaces");
+        assertEquals(4, inlineMenus.size(), "Menus page should render four inline menu surfaces");
         M3Menu selectedMenu = requireMenuContainingText(inlineMenus, "Selected item");
         assertEquals(1, selectedMenu.getSelectedItems().size(), "single-selection inline menu selected count");
         assertEquals("Selected item",
@@ -9834,6 +10028,12 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(2, multiSelectMenu.getSelectedItems().size(), "multi-selection inline menu selected count");
         assertTrue(menuHasSelectedItem(multiSelectMenu, "Icons"), "Icons row should be selected");
         assertTrue(menuHasSelectedItem(multiSelectMenu, "Badges"), "Badges row should be selected");
+        M3Menu vibrantMenu = requireMenuContainingText(inlineMenus, "Pinned");
+        assertEquals(M3MenuColorStyle.VIBRANT, vibrantMenu.getColorStyle(), "vibrant menu color style");
+        assertTrue(vibrantMenu.getPseudoClassStates().contains(PseudoClass.getPseudoClass("vibrant")),
+                "vibrant menu should expose the vibrant pseudo-class");
+        assertEquals(1, vibrantMenu.getSelectedItems().size(), "vibrant inline menu selected count");
+        assertTrue(menuHasSelectedItem(vibrantMenu, "Pinned"), "Pinned row should be selected");
         WritableImage image = snapshot(scene);
         for (M3Menu menu : inlineMenus) {
             assertMenuSurfaceGeometry(menu, image, "Menus page inline menu");
@@ -10587,7 +10787,8 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that one demo chip resolves visible container, text, optional icon, and selected fill geometry.
     private static void assertChipDemoGeometry(WritableImage image, M3Chip chip) {
         String description = "chip `" + chip.getText() + "`";
-        Bounds chipBounds = chip.localToScene(chip.getBoundsInLocal());
+        Bounds chipBounds = chip.localToScene(chip.getLayoutBounds());
+        Bounds visualBounds = chip.localToScene(chip.getBoundsInLocal());
         assertNodeSnapshotHasOpaquePixels(chip, description);
         assertEquals(chip.getContainerHeight(), chipBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " height should match its resolved container token: bounds="
@@ -10596,19 +10797,21 @@ final class M3FXDemoVisualSmokeTest {
                 () -> description + " should be wider than tall: " + chipBounds);
 
         Color surroundingColor = sampleColorOutsideBounds(image, chipBounds);
-        Rectangle2D visualPixels = contrastingPixelBounds(
-                image,
-                chip,
-                surroundingColor,
-                chip.isDisabled() ? 0.012 : 0.02
-        );
-        double edgeTolerance = chip.isDisabled() ? 5.0 : 4.0;
-        assertTrue(visualPixels.getMinX() <= chipBounds.getMinX() + edgeTolerance
-                        && visualPixels.getMaxX() >= chipBounds.getMaxX() - edgeTolerance
-                        && visualPixels.getMinY() <= chipBounds.getMinY() + edgeTolerance
-                        && visualPixels.getMaxY() >= chipBounds.getMaxY() - edgeTolerance,
-                () -> description + " rendered outline or selected fill does not cover the chip container: pixels="
-                        + visualPixels + ", bounds=" + chipBounds);
+        if (!chip.isSelected() && chip.getChipStyle() == M3ChipStyle.FLAT) {
+            Rectangle2D visualPixels = contrastingPixelBounds(
+                    image,
+                    chip,
+                    surroundingColor,
+                    chip.isDisabled() ? 0.012 : 0.02
+            );
+            double edgeTolerance = chip.isDisabled() ? 5.0 : 4.0;
+            assertTrue(visualPixels.getMinX() <= chipBounds.getMinX() + edgeTolerance
+                            && visualPixels.getMaxX() >= chipBounds.getMaxX() - edgeTolerance
+                            && visualPixels.getMinY() <= chipBounds.getMinY() + edgeTolerance
+                            && visualPixels.getMaxY() >= chipBounds.getMaxY() - edgeTolerance,
+                    () -> description + " rendered outline does not cover the flat chip container: pixels="
+                            + visualPixels + ", bounds=" + chipBounds + ", visualBounds=" + visualBounds);
+        }
 
         assertChipInteriorFillState(image, chip, chipBounds, surroundingColor, description);
         assertChipTextInkGeometry(image, chip, chipBounds, description);
@@ -10633,7 +10836,7 @@ final class M3FXDemoVisualSmokeTest {
             assertTrue(distance >= 0.035,
                     () -> description + " selected chip interior is too close to its surrounding surface: interior="
                             + interiorColor + ", surrounding=" + surroundingColor + ", distance=" + distance);
-        } else if (!chip.isDisabled()) {
+        } else if (!chip.isDisabled() && chip.getChipStyle() == M3ChipStyle.FLAT) {
             assertTrue(distance <= 0.14,
                     () -> description + " unselected chip interior looks filled instead of transparent: interior="
                             + interiorColor + ", surrounding=" + surroundingColor + ", distance=" + distance);
@@ -10647,18 +10850,27 @@ final class M3FXDemoVisualSmokeTest {
             Bounds chipBounds,
             String description
     ) {
-        Text text = Objects.requireNonNull(firstVisibleText(chip), description + " text node");
+        Text text = Objects.requireNonNull(firstVisibleText(chip, chip.getText()), description + " label text node");
         Rectangle2D inkBounds = Objects.requireNonNull(
                 renderedTextInkBounds(image, text),
                 description + " rendered text ink"
         );
+        Bounds textBounds = text.localToScene(text.getLayoutBounds());
         assertRectangleInsideBounds(chipBounds, inkBounds, CONTROL_EDGE_TOLERANCE,
                 description + " rendered text ink");
-        double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
-        double deltaY = Math.abs(chipBounds.getCenterY() - inkCenterY);
+        assertTrue(containsBoundsWithTolerance(chipBounds, textBounds, TEXT_EDGE_TOLERANCE),
+                () -> description + " label text layout leaves the chip container: text="
+                        + textBounds + ", chip=" + chipBounds);
+        boolean inkClassificationComplete = inkBounds.getHeight() >= Math.min(4.0, textBounds.getHeight() * 0.25)
+                && inkBounds.getWidth() >= Math.min(8.0, textBounds.getWidth() * 0.4);
+        double textCenterY = inkClassificationComplete
+                ? inkBounds.getMinY() + inkBounds.getHeight() / 2.0
+                : textBounds.getCenterY();
+        double deltaY = Math.abs(chipBounds.getCenterY() - textCenterY);
         assertTrue(deltaY <= LABELED_TEXT_INK_VERTICAL_CENTER_TOLERANCE,
-                () -> description + " rendered text ink is vertically off-center: deltaY="
-                        + deltaY + ", chip=" + chipBounds + ", ink=" + inkBounds);
+                () -> description + " rendered text is vertically off-center: deltaY="
+                        + deltaY + ", chip=" + chipBounds + ", text=" + textBounds
+                        + ", ink=" + inkBounds + ", inkClassificationComplete=" + inkClassificationComplete);
     }
 
     /// Verifies that an optional chip graphic remains inside and vertically centered in the chip container.
@@ -10795,32 +11007,50 @@ final class M3FXDemoVisualSmokeTest {
                 "Buttons page should render one disabled button state");
     }
 
-    /// Verifies the real Button Groups demo page connected group structure and variants.
+    /// Verifies the real Button Groups demo page connected and standard group structure and variants.
     private static void assertButtonGroupsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         assertCurrentPageTitle(scene, "Button Groups");
-        assertVisibleText(root, "Tonal Group", "Button Groups");
-        assertVisibleText(root, "Outlined Group", "Button Groups");
-        assertVisibleText(root, "Filled Group", "Button Groups");
-        assertVisibleText(root, "Edit", "Button Groups");
+        assertVisibleText(root, "Standard Group", "Button Groups");
+        assertVisibleText(root, "Connected Tonal Group", "Button Groups");
+        assertVisibleText(root, "Connected Outlined Group", "Button Groups");
+        assertVisibleText(root, "Connected Filled Group", "Button Groups");
+        assertVisibleText(root, "Size Scale", "Button Groups");
+        assertVisibleText(root, "Archive", "Button Groups");
         assertVisibleText(root, "Day", "Button Groups");
         assertVisibleText(root, "Accept", "Button Groups");
+        assertVisibleText(root, "XL", "Button Groups");
 
         List<M3ButtonGroup> groups = visibleNodesOfType(root, M3ButtonGroup.class);
-        assertEquals(3, groups.size(), () -> "Button Groups page should render three groups: " + groups);
+        assertEquals(9, groups.size(), () -> "Button Groups page should render nine groups: " + groups);
+        assertEquals(6, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.STANDARD).count(),
+                "Button Groups page should include one primary standard group plus five size-scale standard groups");
+        assertEquals(3, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.CONNECTED).count(),
+                "Button Groups page should include three connected groups");
+        assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.EXTRA_SMALL).count(),
+                "Button Groups page should include an extra-small group");
+        assertEquals(4, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.SMALL).count(),
+                "Button Groups page should include the connected groups plus one small size-scale group");
+        assertEquals(2, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.MEDIUM).count(),
+                "Button Groups page should include the standard sample plus one medium size-scale group");
+        assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.LARGE).count(),
+                "Button Groups page should include a large group");
+        assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.EXTRA_LARGE).count(),
+                "Button Groups page should include an extra-large group");
+
         List<M3Button> groupButtons = new ArrayList<>();
         for (int index = 0; index < groups.size(); index++) {
             int groupIndex = index;
             M3ButtonGroup group = groups.get(index);
-            assertEquals(3, group.getItems().size(),
-                    () -> "Button group " + groupIndex + " should expose three action items");
+            assertTrue(group.getItems().size() >= 2,
+                    () -> "Button group " + groupIndex + " should expose at least two action items");
             for (Node item : group.getItems()) {
                 groupButtons.add(assertInstanceOf(M3Button.class, item, "button group item"));
             }
             assertButtonGroupItemsInsideGroup(group, "Button Groups group " + groupIndex);
         }
-        assertEquals(9, groupButtons.size(), "Button Groups page should expose nine grouped actions");
-        assertButtonVariantCount(groupButtons, M3ButtonVariant.TONAL, 3, "Button Groups");
+        assertEquals(22, groupButtons.size(), "Button Groups page should expose twenty-two grouped actions");
+        assertButtonVariantCount(groupButtons, M3ButtonVariant.TONAL, 16, "Button Groups");
         assertButtonVariantCount(groupButtons, M3ButtonVariant.OUTLINED, 3, "Button Groups");
         assertButtonVariantCount(groupButtons, M3ButtonVariant.FILLED, 3, "Button Groups");
         assertEquals(1, groupButtons.stream().filter(Node::isDisabled).count(),
@@ -10833,10 +11063,14 @@ final class M3FXDemoVisualSmokeTest {
         Node page = currentDemoPage(scene, "Icon Buttons");
         assertCurrentPageTitle(scene, "Icon Buttons");
         assertVisibleText(root, "Icon Buttons", "Icon Buttons");
+        assertVisibleText(root, "Icon Button Sizes", "Icon Buttons");
+        assertVisibleText(root, "Icon Button Widths", "Icon Buttons");
+        assertVisibleText(root, "Icon Button Shapes", "Icon Buttons");
         assertVisibleText(root, "Toggle Icon Buttons", "Icon Buttons");
+        assertVisibleText(root, "Toggle Size And Shape", "Icon Buttons");
 
         List<M3IconButton> iconButtons = visibleNodesOfType(page, M3IconButton.class);
-        assertEquals(3, iconButtons.size(), () -> "Icon Buttons page should render three icon buttons: "
+        assertEquals(14, iconButtons.size(), () -> "Icon Buttons page should render fourteen icon buttons: "
                 + iconButtons);
         assertEquals(1, iconButtons.stream().filter(Node::isDisabled).count(),
                 "Icon Buttons page should render one disabled icon button");
@@ -10845,6 +11079,14 @@ final class M3FXDemoVisualSmokeTest {
                     () -> "icon buttons should not expose placeholder text: " + button.getText());
             assertNotNull(firstVisibleDemoVectorIcon(button), "icon button should use an SVG demo icon");
         }
+        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.EXTRA_SMALL, 1, "Icon Buttons");
+        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.SMALL, 4, "Icon Buttons");
+        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.MEDIUM, 6, "Icon Buttons");
+        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.LARGE, 2, "Icon Buttons");
+        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.EXTRA_LARGE, 1, "Icon Buttons");
+        assertIconButtonWidthCount(iconButtons, M3IconButtonWidth.NARROW, 1, "Icon Buttons");
+        assertIconButtonWidthCount(iconButtons, M3IconButtonWidth.WIDE, 1, "Icon Buttons");
+        assertIconButtonShapeCount(iconButtons, M3IconButtonShape.SQUARE, 2, "Icon Buttons");
 
         List<M3IconToggleButtonGroup> groups = visibleNodesOfType(page, M3IconToggleButtonGroup.class);
         assertEquals(3, groups.size(), () -> "Icon Buttons page should render three toggle groups: " + groups);
@@ -10859,14 +11101,19 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(2, groups.get(2).getSelectedButtons().size(), "formatting toggle selected count");
 
         List<M3IconToggleButton> toggles = visibleNodesOfType(page, M3IconToggleButton.class);
-        assertEquals(11, toggles.size(), () -> "Icon Buttons page should render eleven toggle icon buttons: "
+        assertEquals(16, toggles.size(), () -> "Icon Buttons page should render sixteen toggle icon buttons: "
                 + toggles);
-        assertEquals(4, toggles.stream().filter(M3IconToggleButton::isSelected).count(),
-                "Icon Buttons page should render four selected toggle states");
+        assertEquals(9, toggles.stream().filter(M3IconToggleButton::isSelected).count(),
+                "Icon Buttons page should render nine selected toggle states");
         assertIconToggleVariantCount(toggles, M3IconToggleButtonVariant.STANDARD, 4, "Icon Buttons");
+        assertIconToggleVariantCount(toggles, M3IconToggleButtonVariant.FILLED, 5, "Icon Buttons");
         assertIconToggleVariantCount(toggles, M3IconToggleButtonVariant.TONAL, 4, "Icon Buttons");
         assertIconToggleVariantCount(toggles, M3IconToggleButtonVariant.OUTLINED, 3, "Icon Buttons");
-        assertDemoVectorIcons(page, "Icon Buttons", 14);
+        assertIconToggleButtonSizeCount(toggles, M3IconButtonSize.EXTRA_SMALL, 1, "Icon Buttons");
+        assertIconToggleButtonSizeCount(toggles, M3IconButtonSize.EXTRA_LARGE, 1, "Icon Buttons");
+        assertIconToggleButtonWidthCount(toggles, M3IconButtonWidth.WIDE, 2, "Icon Buttons");
+        assertIconToggleButtonShapeCount(toggles, M3IconButtonShape.SQUARE, 2, "Icon Buttons");
+        assertDemoVectorIcons(page, "Icon Buttons", 30);
     }
 
     /// Verifies the real Floating Action Buttons demo page size and color-role matrix.
@@ -10969,13 +11216,24 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Export", "Split Buttons");
         assertVisibleText(root, "Publish", "Split Buttons");
         assertVisibleText(root, "Disabled", "Split Buttons");
+        assertVisibleText(root, "Sizes", "Split Buttons");
+        assertVisibleText(root, "XS", "Split Buttons");
+        assertVisibleText(root, "Small", "Split Buttons");
+        assertVisibleText(root, "Medium", "Split Buttons");
+        assertVisibleText(root, "Large", "Split Buttons");
+        assertVisibleText(root, "XL", "Split Buttons");
 
         List<M3SplitButton> splitButtons = visibleNodesOfType(page, M3SplitButton.class);
-        assertEquals(4, splitButtons.size(),
-                () -> "Split Buttons page should render four split button variants: " + splitButtons);
-        assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.TONAL, 2, "Split Buttons");
+        assertEquals(9, splitButtons.size(),
+                () -> "Split Buttons page should render variants plus the five Material sizes: " + splitButtons);
+        assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.TONAL, 7, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.OUTLINED, 1, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.FILLED, 1, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.EXTRA_SMALL, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.SMALL, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.MEDIUM, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.LARGE, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.EXTRA_LARGE, "Split Buttons");
         assertEquals(1, splitButtons.stream().filter(Node::isDisabled).count(),
                 "Split Buttons page should render one disabled split button");
         for (M3SplitButton splitButton : splitButtons) {
@@ -11242,6 +11500,78 @@ final class M3FXDemoVisualSmokeTest {
                 + variant + " toggle icon buttons, found " + actual);
     }
 
+    /// Verifies the number of icon buttons with one Material Expressive size role.
+    private static void assertIconButtonSizeCount(
+            List<M3IconButton> buttons,
+            M3IconButtonSize size,
+            long expected,
+            String description
+    ) {
+        long actual = buttons.stream().filter(button -> button.getSize() == size).count();
+        assertEquals(expected, actual, () -> description + " should render " + expected + " "
+                + size + " icon buttons, found " + actual);
+    }
+
+    /// Verifies the number of icon buttons with one Material Expressive width role.
+    private static void assertIconButtonWidthCount(
+            List<M3IconButton> buttons,
+            M3IconButtonWidth widthRole,
+            long expected,
+            String description
+    ) {
+        long actual = buttons.stream().filter(button -> button.getWidthRole() == widthRole).count();
+        assertEquals(expected, actual, () -> description + " should render " + expected + " "
+                + widthRole + " icon buttons, found " + actual);
+    }
+
+    /// Verifies the number of icon buttons with one Material Expressive shape role.
+    private static void assertIconButtonShapeCount(
+            List<M3IconButton> buttons,
+            M3IconButtonShape shape,
+            long expected,
+            String description
+    ) {
+        long actual = buttons.stream().filter(button -> button.getIconButtonShape() == shape).count();
+        assertEquals(expected, actual, () -> description + " should render " + expected + " "
+                + shape + " icon buttons, found " + actual);
+    }
+
+    /// Verifies the number of toggle icon buttons with one Material Expressive size role.
+    private static void assertIconToggleButtonSizeCount(
+            List<M3IconToggleButton> buttons,
+            M3IconButtonSize size,
+            long expected,
+            String description
+    ) {
+        long actual = buttons.stream().filter(button -> button.getSize() == size).count();
+        assertEquals(expected, actual, () -> description + " should render " + expected + " "
+                + size + " toggle icon buttons, found " + actual);
+    }
+
+    /// Verifies the number of toggle icon buttons with one Material Expressive width role.
+    private static void assertIconToggleButtonWidthCount(
+            List<M3IconToggleButton> buttons,
+            M3IconButtonWidth widthRole,
+            long expected,
+            String description
+    ) {
+        long actual = buttons.stream().filter(button -> button.getWidthRole() == widthRole).count();
+        assertEquals(expected, actual, () -> description + " should render " + expected + " "
+                + widthRole + " toggle icon buttons, found " + actual);
+    }
+
+    /// Verifies the number of toggle icon buttons with one Material Expressive shape role.
+    private static void assertIconToggleButtonShapeCount(
+            List<M3IconToggleButton> buttons,
+            M3IconButtonShape shape,
+            long expected,
+            String description
+    ) {
+        long actual = buttons.stream().filter(button -> button.getIconButtonShape() == shape).count();
+        assertEquals(expected, actual, () -> description + " should render " + expected + " "
+                + shape + " toggle icon buttons, found " + actual);
+    }
+
     /// Verifies the number of floating action buttons with one size token.
     private static void assertFloatingActionButtonSizeCount(
             List<M3FloatingActionButton> buttons,
@@ -11276,6 +11606,18 @@ final class M3FXDemoVisualSmokeTest {
         long actual = buttons.stream().filter(button -> button.getVariant() == variant).count();
         assertEquals(expected, actual, () -> description + " should render " + expected + " "
                 + variant + " split buttons, found " + actual);
+    }
+
+    /// Verifies that at least one split button uses a requested size.
+    private static void assertSplitButtonSizePresent(
+            List<M3SplitButton> buttons,
+            M3SplitButtonSize size,
+            String description
+    ) {
+        assertTrue(
+                buttons.stream().anyMatch(button -> button.getSize() == size),
+                () -> description + " should render a " + size + " split button"
+        );
     }
 
     /// Verifies that a button group's public items render inside the group control bounds.
@@ -12751,10 +13093,18 @@ final class M3FXDemoVisualSmokeTest {
             return;
         }
 
-        assertEquals(18.0, boxBounds.getWidth(), 1.0,
+        assertEquals(checkBox.getContainerSize(), boxBounds.getWidth(), 1.0,
                 () -> pageTitle + " checkbox box has unexpected width: " + boxBounds);
-        assertEquals(18.0, boxBounds.getHeight(), 1.0,
+        assertEquals(checkBox.getContainerSize(), boxBounds.getHeight(), 1.0,
                 () -> pageTitle + " checkbox box has unexpected height: " + boxBounds);
+        assertSelectionTargetAndStateLayerGeometry(
+                checkBox,
+                boxBounds,
+                checkBox.getTouchTargetSize(),
+                checkBox.getStateLayerSize(),
+                pageTitle,
+                "checkbox"
+        );
 
         Bounds markBounds = mark.localToScene(mark.getBoundsInLocal());
         boolean markShouldBeVisible = checkBox.isSelected() || checkBox.isIndeterminate();
@@ -12772,10 +13122,22 @@ final class M3FXDemoVisualSmokeTest {
                         + ", dy=" + dy + ", opacity=" + mark.getOpacity()
                         + ", boxBounds=" + boxBounds + ", markBounds=" + markBounds);
         if (checkBox.isIndeterminate()) {
+            assertEquals(checkBox.getIndeterminateMarkWidth(), markBounds.getWidth(), 1.0,
+                    () -> pageTitle + " indeterminate checkbox mark width should match token: "
+                            + markBounds);
+            assertEquals(checkBox.getIndeterminateMarkHeight(), markBounds.getHeight(), 1.0,
+                    () -> pageTitle + " indeterminate checkbox mark height should match token: "
+                            + markBounds);
             assertTrue(markBounds.getWidth() >= 9.0 && markBounds.getHeight() <= 4.0,
                     () -> pageTitle + " indeterminate checkbox mark should be a centered dash: "
                             + markBounds);
         } else {
+            assertEquals(checkBox.getSelectedMarkWidth(), markBounds.getWidth(), 1.0,
+                    () -> pageTitle + " selected checkbox mark width should match token: "
+                            + markBounds);
+            assertEquals(checkBox.getSelectedMarkHeight(), markBounds.getHeight(), 1.0,
+                    () -> pageTitle + " selected checkbox mark height should match token: "
+                            + markBounds);
             assertTrue(markBounds.getWidth() >= 9.0 && markBounds.getHeight() >= 7.0,
                     () -> pageTitle + " selected checkbox mark should be a visible check: "
                             + markBounds);
@@ -12819,6 +13181,41 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
+    /// Verifies that a selection control target and state layer use tokenized geometry.
+    private static void assertSelectionTargetAndStateLayerGeometry(
+            Node root,
+            Bounds indicatorBounds,
+            double expectedTargetSize,
+            double expectedStateLayerSize,
+            String pageTitle,
+            String controlName
+    ) {
+        @Nullable Node target = root.lookup(".m3-selection-indicator");
+        @Nullable Node stateLayer = root.lookup(".m3-state-layer-container");
+        if (target == null || stateLayer == null || !hasRenderableBounds(target) || !hasRenderableBounds(stateLayer)) {
+            fail(pageTitle + " " + controlName + " is missing target or state layer geometry: " + root);
+        }
+
+        Bounds targetBounds = target.localToScene(target.getBoundsInLocal());
+        Bounds stateLayerBounds = stateLayer.localToScene(stateLayer.getBoundsInLocal());
+        assertEquals(expectedTargetSize, targetBounds.getWidth(), 1.0,
+                () -> pageTitle + " " + controlName + " target width should match token: " + targetBounds);
+        assertEquals(expectedTargetSize, targetBounds.getHeight(), 1.0,
+                () -> pageTitle + " " + controlName + " target height should match token: " + targetBounds);
+        assertEquals(expectedStateLayerSize, stateLayerBounds.getWidth(), 1.0,
+                () -> pageTitle + " " + controlName + " state layer width should match token: "
+                        + stateLayerBounds);
+        assertEquals(expectedStateLayerSize, stateLayerBounds.getHeight(), 1.0,
+                () -> pageTitle + " " + controlName + " state layer height should match token: "
+                        + stateLayerBounds);
+        assertEquals(indicatorBounds.getCenterX(), stateLayerBounds.getCenterX(), 1.0,
+                () -> pageTitle + " " + controlName + " state layer should stay centered on the indicator: "
+                        + "stateLayer=" + stateLayerBounds + ", indicator=" + indicatorBounds);
+        assertEquals(indicatorBounds.getCenterY(), stateLayerBounds.getCenterY(), 1.0,
+                () -> pageTitle + " " + controlName + " state layer should stay centered on the indicator: "
+                        + "stateLayer=" + stateLayerBounds + ", indicator=" + indicatorBounds);
+    }
+
     /// Verifies that a radio button dot shares the same rendered center as its ring.
     private static void assertRadioDotCentered(
             Node root,
@@ -12835,6 +13232,27 @@ final class M3FXDemoVisualSmokeTest {
         Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
         if (isOutsideSceneViewport(container, containerBounds, sceneBounds)) {
             return;
+        }
+
+        if (root instanceof M3RadioButton radioButton) {
+            assertEquals(radioButton.getContainerSize(), containerBounds.getWidth(), 1.0,
+                    () -> pageTitle + " radio container width should match token: " + containerBounds);
+            assertEquals(radioButton.getContainerSize(), containerBounds.getHeight(), 1.0,
+                    () -> pageTitle + " radio container height should match token: " + containerBounds);
+            assertSelectionTargetAndStateLayerGeometry(
+                    radioButton,
+                    containerBounds,
+                    radioButton.getTouchTargetSize(),
+                    radioButton.getStateLayerSize(),
+                    pageTitle,
+                    "radio button"
+            );
+            if (indicator.getOpacity() > 0.2) {
+                assertEquals(radioButton.getSelectedDotSize(), indicatorBounds.getWidth(), 1.0,
+                        () -> pageTitle + " radio dot width should match token: " + indicatorBounds);
+                assertEquals(radioButton.getSelectedDotSize(), indicatorBounds.getHeight(), 1.0,
+                        () -> pageTitle + " radio dot height should match token: " + indicatorBounds);
+            }
         }
 
         double dx = Math.abs(containerBounds.getCenterX() - indicatorBounds.getCenterX());
@@ -12897,12 +13315,33 @@ final class M3FXDemoVisualSmokeTest {
                         && thumbBounds.getMaxX() <= trackBounds.getMaxX() + 0.75,
                 () -> pageTitle + " switch thumb has unsafe geometry: dy=" + dy
                         + ", trackBounds=" + trackBounds + ", thumbBounds=" + thumbBounds);
+        if (root instanceof M3Switch switchControl) {
+            assertEquals(switchControl.getTrackWidth(), trackBounds.getWidth(), 0.75,
+                    () -> pageTitle + " switch track width should match token: " + trackBounds);
+            assertEquals(switchControl.getTrackHeight(), trackBounds.getHeight(), 0.75,
+                    () -> pageTitle + " switch track height should match token: " + trackBounds);
+            double expectedThumbSize = switchControl.isArmed()
+                    ? switchControl.getPressedHandleSize()
+                    : switchControl.isSelected()
+                    ? switchControl.getSelectedHandleSize()
+                    : switchControl.getUnselectedHandleSize();
+            assertEquals(expectedThumbSize, thumbBounds.getWidth(), 0.75,
+                    () -> pageTitle + " switch thumb width should match state token: " + thumbBounds);
+            assertEquals(expectedThumbSize, thumbBounds.getHeight(), 0.75,
+                    () -> pageTitle + " switch thumb height should match state token: " + thumbBounds);
+        }
 
         @Nullable Node stateLayer = root.lookup(".m3-state-layer-container");
         if (stateLayer != null && hasRenderableBounds(stateLayer)) {
             Bounds stateLayerBounds = stateLayer.localToScene(stateLayer.getBoundsInLocal());
             assertEquals(stateLayerBounds.getWidth(), stateLayerBounds.getHeight(), 0.75,
                     () -> pageTitle + " switch state layer should stay square: " + stateLayerBounds);
+            if (root instanceof M3Switch switchControl) {
+                assertEquals(switchControl.getStateLayerSize(), stateLayerBounds.getWidth(), 0.75,
+                        () -> pageTitle + " switch state layer width should match token: " + stateLayerBounds);
+                assertEquals(switchControl.getStateLayerSize(), stateLayerBounds.getHeight(), 0.75,
+                        () -> pageTitle + " switch state layer height should match token: " + stateLayerBounds);
+            }
             assertEquals(thumbBounds.getCenterX(), stateLayerBounds.getCenterX(), 1.0,
                     () -> pageTitle + " switch state layer should track thumb center horizontally: stateLayer="
                             + stateLayerBounds + ", thumb=" + thumbBounds);
@@ -15294,6 +15733,28 @@ final class M3FXDemoVisualSmokeTest {
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 @Nullable Text text = firstVisibleText(child);
+                if (text != null) {
+                    return text;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first visible text node with the requested content below a target node.
+    private static @Nullable Text firstVisibleText(Node node, String textContent) {
+        if (node instanceof Text text && textContent.equals(text.getText()) && hasRenderableBounds(text)) {
+            return text;
+        }
+        if (node instanceof M3Icon icon) {
+            @Nullable Node iconText = icon.lookup(".text");
+            if (iconText instanceof Text text && textContent.equals(text.getText()) && hasRenderableBounds(text)) {
+                return text;
+            }
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable Text text = firstVisibleText(child, textContent);
                 if (text != null) {
                     return text;
                 }

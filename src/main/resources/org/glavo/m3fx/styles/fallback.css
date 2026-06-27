@@ -84,6 +84,15 @@
     -m3-state-focus-indicator-thickness: 3px;
     -m3-state-focus-indicator-outer-offset: 2px;
     -m3-state-focus-indicator-inner-offset: -2px;
+    -m3-menu-container-color: -m3-color-surface-container;
+    -m3-menu-item-state-layer-color: -m3-color-on-surface;
+    -m3-menu-selected-item-container-color: -m3-color-secondary-container;
+    -m3-menu-selected-item-content-color: -m3-color-on-secondary-container;
+    -m3-menu-vibrant-container-color: -m3-color-tertiary-container;
+    -m3-menu-vibrant-item-content-color: -m3-color-on-tertiary-container;
+    -m3-menu-vibrant-item-state-layer-color: -m3-color-on-tertiary-container;
+    -m3-menu-vibrant-selected-item-container-color: -m3-color-tertiary;
+    -m3-menu-vibrant-selected-item-content-color: -m3-color-on-tertiary;
 }
 
 .m3-internal-icon-path {

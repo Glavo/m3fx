@@ -115,7 +115,26 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
                 + " "
                 + stateLayerTokens().toStyleDeclarations()
                 + " "
-                + componentTokens().toStyleDeclarations();
+                + componentTokens().toStyleDeclarations()
+                + " "
+                + menuColorStyleDeclarations(profile());
+    }
+
+    /// Converts menu color mappings into JavaFX inline CSS declarations.
+    private static String menuColorStyleDeclarations(M3Profile profile) {
+        boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
+        String standardContainer = expressive ? "-m3-color-surface-container-low" : "-m3-color-surface-container";
+        String standardSelectedContainer = expressive ? "-m3-color-tertiary-container" : "-m3-color-secondary-container";
+        String standardSelectedContent = expressive ? "-m3-color-on-tertiary-container" : "-m3-color-on-secondary-container";
+        return "-m3-menu-container-color: " + standardContainer + "; "
+                + "-m3-menu-item-state-layer-color: -m3-color-on-surface; "
+                + "-m3-menu-selected-item-container-color: " + standardSelectedContainer + "; "
+                + "-m3-menu-selected-item-content-color: " + standardSelectedContent + "; "
+                + "-m3-menu-vibrant-container-color: -m3-color-tertiary-container; "
+                + "-m3-menu-vibrant-item-content-color: -m3-color-on-tertiary-container; "
+                + "-m3-menu-vibrant-item-state-layer-color: -m3-color-on-tertiary-container; "
+                + "-m3-menu-vibrant-selected-item-container-color: -m3-color-tertiary; "
+                + "-m3-menu-vibrant-selected-item-content-color: -m3-color-on-tertiary;";
     }
 
     /// Converts component tokens into JavaFX CSS rules for m3fx controls.

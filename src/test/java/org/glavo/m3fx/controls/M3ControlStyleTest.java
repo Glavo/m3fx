@@ -135,6 +135,7 @@ import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.skins.M3TopAppBarSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -1479,6 +1480,36 @@ final class M3ControlStyleTest {
         textField.setContainerShape(12.0);
         textField.setHorizontalPadding(22.0);
 
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        checkBox.setStyle("""
+                -m3-touch-target-size: 48px;
+                -m3-state-layer-size: 40px;
+                -m3-container-size: 18px;
+                -m3-selected-mark-width: 12px;
+                -m3-selected-mark-height: 10px;
+                -m3-indeterminate-mark-width: 12px;
+                -m3-indeterminate-mark-height: 2px;
+                """);
+        checkBox.setTouchTargetSize(54.0);
+        checkBox.setStateLayerSize(42.0);
+        checkBox.setContainerSize(20.0);
+        checkBox.setSelectedMarkWidth(14.0);
+        checkBox.setSelectedMarkHeight(11.0);
+        checkBox.setIndeterminateMarkWidth(15.0);
+        checkBox.setIndeterminateMarkHeight(3.0);
+
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        radioButton.setStyle("""
+                -m3-touch-target-size: 48px;
+                -m3-state-layer-size: 40px;
+                -m3-container-size: 20px;
+                -m3-selected-dot-size: 10px;
+                """);
+        radioButton.setTouchTargetSize(52.0);
+        radioButton.setStateLayerSize(38.0);
+        radioButton.setContainerSize(22.0);
+        radioButton.setSelectedDotSize(12.0);
+
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
         slider.setStyle(
                 "-m3-track-thickness: 4px; "
@@ -1496,9 +1527,24 @@ final class M3ControlStyleTest {
         slider.setTouchTargetSize(56.0);
 
         M3Switch switchControl = new M3Switch("Switch");
-        switchControl.setStyle("-m3-touch-target-size: 48px; -m3-track-shape: 18px;");
+        switchControl.setStyle("""
+                -m3-touch-target-size: 50px;
+                -m3-track-shape: 18px;
+                -m3-track-width: 60px;
+                -m3-track-height: 36px;
+                -m3-state-layer-size: 44px;
+                -m3-unselected-handle-size: 18px;
+                -m3-selected-handle-size: 26px;
+                -m3-pressed-handle-size: 30px;
+                """);
         switchControl.setTouchTargetSize(60.0);
         switchControl.setTrackShape(10.0);
+        switchControl.setTrackWidth(66.0);
+        switchControl.setTrackHeight(38.0);
+        switchControl.setStateLayerSize(46.0);
+        switchControl.setUnselectedHandleSize(20.0);
+        switchControl.setSelectedHandleSize(28.0);
+        switchControl.setPressedHandleSize(32.0);
 
         M3ProgressBar progressBar = new M3ProgressBar(0.5);
         progressBar.setStyle(
@@ -1516,7 +1562,7 @@ final class M3ControlStyleTest {
         progressBar.setTrackGap(8.0);
         progressBar.setStopSize(7.0);
 
-        Pane root = new Pane(button, textField, slider, switchControl, progressBar);
+        Pane root = new Pane(button, textField, checkBox, radioButton, slider, switchControl, progressBar);
         Scene scene = new Scene(root, 520.0, 320.0);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
@@ -1532,6 +1578,21 @@ final class M3ControlStyleTest {
         assertEquals(22.0, textField.getHorizontalPadding(), 0.0001);
         assertEquals(64.0, textField.getPrefHeight(), 0.0001);
 
+        assertEquals(54.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(42.0, checkBox.getStateLayerSize(), 0.0001);
+        assertEquals(20.0, checkBox.getContainerSize(), 0.0001);
+        assertEquals(14.0, checkBox.getSelectedMarkWidth(), 0.0001);
+        assertEquals(11.0, checkBox.getSelectedMarkHeight(), 0.0001);
+        assertEquals(15.0, checkBox.getIndeterminateMarkWidth(), 0.0001);
+        assertEquals(3.0, checkBox.getIndeterminateMarkHeight(), 0.0001);
+        assertEquals(54.0, checkBox.getPrefHeight(), 0.0001);
+
+        assertEquals(52.0, radioButton.getTouchTargetSize(), 0.0001);
+        assertEquals(38.0, radioButton.getStateLayerSize(), 0.0001);
+        assertEquals(22.0, radioButton.getContainerSize(), 0.0001);
+        assertEquals(12.0, radioButton.getSelectedDotSize(), 0.0001);
+        assertEquals(52.0, radioButton.getPrefHeight(), 0.0001);
+
         assertEquals(8.0, slider.getTrackThickness(), 0.0001);
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
         assertEquals(52.0, slider.getThumbSize(), 0.0001);
@@ -1542,6 +1603,12 @@ final class M3ControlStyleTest {
 
         assertEquals(60.0, switchControl.getTouchTargetSize(), 0.0001);
         assertEquals(10.0, switchControl.getTrackShape(), 0.0001);
+        assertEquals(66.0, switchControl.getTrackWidth(), 0.0001);
+        assertEquals(38.0, switchControl.getTrackHeight(), 0.0001);
+        assertEquals(46.0, switchControl.getStateLayerSize(), 0.0001);
+        assertEquals(20.0, switchControl.getUnselectedHandleSize(), 0.0001);
+        assertEquals(28.0, switchControl.getSelectedHandleSize(), 0.0001);
+        assertEquals(32.0, switchControl.getPressedHandleSize(), 0.0001);
         assertEquals(60.0, switchControl.getPrefHeight(), 0.0001);
 
         assertEquals(10.0, progressBar.getTrackThickness(), 0.0001);
@@ -1568,13 +1635,28 @@ final class M3ControlStyleTest {
 
         M3CheckBox checkBox = new M3CheckBox("Check");
         checkBox.setTouchTargetSize(52.0);
+        checkBox.setStateLayerSize(42.0);
+        checkBox.setContainerSize(20.0);
+        checkBox.setSelectedMarkWidth(14.0);
+        checkBox.setSelectedMarkHeight(11.0);
+        checkBox.setIndeterminateMarkWidth(15.0);
+        checkBox.setIndeterminateMarkHeight(3.0);
 
         M3RadioButton radioButton = new M3RadioButton("Radio");
         radioButton.setTouchTargetSize(50.0);
+        radioButton.setStateLayerSize(40.0);
+        radioButton.setContainerSize(22.0);
+        radioButton.setSelectedDotSize(12.0);
 
         M3Switch switchControl = new M3Switch("Switch");
         switchControl.setTouchTargetSize(58.0);
         switchControl.setTrackShape(9.0);
+        switchControl.setTrackWidth(64.0);
+        switchControl.setTrackHeight(34.0);
+        switchControl.setStateLayerSize(42.0);
+        switchControl.setUnselectedHandleSize(18.0);
+        switchControl.setSelectedHandleSize(26.0);
+        switchControl.setPressedHandleSize(30.0);
 
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
         slider.setTrackThickness(7.0);
@@ -1673,9 +1755,24 @@ final class M3ControlStyleTest {
         assertEquals(9.0, textField.getVerticalPadding(), 0.0001);
 
         assertEquals(52.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(42.0, checkBox.getStateLayerSize(), 0.0001);
+        assertEquals(20.0, checkBox.getContainerSize(), 0.0001);
+        assertEquals(14.0, checkBox.getSelectedMarkWidth(), 0.0001);
+        assertEquals(11.0, checkBox.getSelectedMarkHeight(), 0.0001);
+        assertEquals(15.0, checkBox.getIndeterminateMarkWidth(), 0.0001);
+        assertEquals(3.0, checkBox.getIndeterminateMarkHeight(), 0.0001);
         assertEquals(50.0, radioButton.getTouchTargetSize(), 0.0001);
+        assertEquals(40.0, radioButton.getStateLayerSize(), 0.0001);
+        assertEquals(22.0, radioButton.getContainerSize(), 0.0001);
+        assertEquals(12.0, radioButton.getSelectedDotSize(), 0.0001);
         assertEquals(58.0, switchControl.getTouchTargetSize(), 0.0001);
         assertEquals(9.0, switchControl.getTrackShape(), 0.0001);
+        assertEquals(64.0, switchControl.getTrackWidth(), 0.0001);
+        assertEquals(34.0, switchControl.getTrackHeight(), 0.0001);
+        assertEquals(42.0, switchControl.getStateLayerSize(), 0.0001);
+        assertEquals(18.0, switchControl.getUnselectedHandleSize(), 0.0001);
+        assertEquals(26.0, switchControl.getSelectedHandleSize(), 0.0001);
+        assertEquals(30.0, switchControl.getPressedHandleSize(), 0.0001);
 
         assertEquals(7.0, slider.getTrackThickness(), 0.0001);
         assertEquals(11.0, slider.getTrackShape(), 0.0001);
@@ -1894,21 +1991,84 @@ final class M3ControlStyleTest {
         assertEquals(20.0, divider.getInsetEnd(), 0.0001);
     }
 
-    /// Verifies that icon buttons stay square when size tokens change.
+    /// Verifies that icon button component token properties are styleable from CSS.
     @Test
-    void iconButtonSizeTracksContainerHeightToken() {
-        M3IconButton button = new M3IconButton();
-        button.setStyle("-m3-container-height: 48px;");
+    void iconButtonTokensAreStyleable() {
+        M3Icon icon = new M3Icon("A");
+        M3IconButton button = new M3IconButton(icon);
+        button.setStyle("-m3-container-height: 48px; -m3-container-width: 64px; "
+                + "-m3-container-shape: 16px; -m3-icon-button-icon-size: 32px;");
 
         applyCss(button);
 
         assertEquals(48.0, button.getContainerHeight(), 0.0001);
-        assertEquals(48.0, button.getPrefWidth(), 0.0001);
+        assertEquals(64.0, button.getContainerWidth(), 0.0001);
+        assertEquals(16.0, button.getContainerShape(), 0.0001);
+        assertEquals(32.0, button.getIconSize(), 0.0001);
+        assertEquals(32.0, icon.getIconSize(), 0.0001);
+        assertEquals(64.0, button.getPrefWidth(), 0.0001);
         assertEquals(48.0, button.getPrefHeight(), 0.0001);
-        assertEquals(48.0, button.getMaxWidth(), 0.0001);
+        assertEquals(64.0, button.getMaxWidth(), 0.0001);
         assertEquals(48.0, button.getMaxHeight(), 0.0001);
     }
 
+    /// Verifies that icon button size, width, and shape roles resolve to Material metrics.
+    @Test
+    void iconButtonRolesResolveMaterialMetrics() {
+        M3Icon extraSmallIcon = new M3Icon("XS");
+        M3Icon smallIcon = new M3Icon("S");
+        M3Icon mediumIcon = new M3Icon("M");
+        M3Icon largeIcon = new M3Icon("L");
+        M3Icon extraLargeIcon = new M3Icon("XL");
+        M3IconButton extraSmall = createIconButton(extraSmallIcon, M3IconButtonSize.EXTRA_SMALL,
+                M3IconButtonWidth.NARROW, M3IconButtonShape.ROUND);
+        M3IconButton small = createIconButton(smallIcon, M3IconButtonSize.SMALL,
+                M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND);
+        M3IconButton medium = createIconButton(mediumIcon, M3IconButtonSize.MEDIUM,
+                M3IconButtonWidth.WIDE, M3IconButtonShape.SQUARE);
+        M3IconButton large = createIconButton(largeIcon, M3IconButtonSize.LARGE,
+                M3IconButtonWidth.WIDE, M3IconButtonShape.SQUARE);
+        M3IconButton extraLarge = createIconButton(extraLargeIcon, M3IconButtonSize.EXTRA_LARGE,
+                M3IconButtonWidth.NARROW, M3IconButtonShape.ROUND);
+        HBox root = new HBox(extraSmall, small, medium, large, extraLarge);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertIconButtonMetrics(extraSmall, extraSmallIcon, 28.0, 32.0, 20.0, 999.0);
+        assertIconButtonMetrics(small, smallIcon, 40.0, 40.0, 24.0, 999.0);
+        assertIconButtonMetrics(medium, mediumIcon, 72.0, 56.0, 24.0, 16.0);
+        assertIconButtonMetrics(large, largeIcon, 128.0, 96.0, 32.0, 28.0);
+        assertIconButtonMetrics(extraLarge, extraLargeIcon, 104.0, 136.0, 40.0, 999.0);
+    }
+
+    /// Verifies that toggle icon button selected and pressed shapes resolve from Material metrics.
+    @Test
+    void iconToggleButtonRolesResolveMaterialMetrics() {
+        M3Icon extraSmallIcon = new M3Icon("XS");
+        M3Icon mediumIcon = new M3Icon("M");
+        M3Icon largeIcon = new M3Icon("L");
+        M3IconToggleButton extraSmall = createIconToggleButton(extraSmallIcon, M3IconButtonSize.EXTRA_SMALL,
+                M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND, true);
+        M3IconToggleButton medium = createIconToggleButton(mediumIcon, M3IconButtonSize.MEDIUM,
+                M3IconButtonWidth.WIDE, M3IconButtonShape.ROUND, true);
+        M3IconToggleButton largeSquare = createIconToggleButton(largeIcon, M3IconButtonSize.LARGE,
+                M3IconButtonWidth.WIDE, M3IconButtonShape.SQUARE, true);
+        M3IconToggleButton pressedSmall = createIconToggleButton(new M3Icon("P"), M3IconButtonSize.SMALL,
+                M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND, false);
+        pressedSmall.arm();
+        HBox root = new HBox(extraSmall, medium, largeSquare, pressedSmall);
+        Scene scene = new Scene(root);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertIconToggleButtonMetrics(extraSmall, extraSmallIcon, 32.0, 32.0, 20.0, 12.0);
+        assertIconToggleButtonMetrics(medium, mediumIcon, 72.0, 56.0, 24.0, 16.0);
+        assertIconToggleButtonMetrics(largeSquare, largeIcon, 128.0, 96.0, 32.0, 999.0);
+        assertEquals(8.0, pressedSmall.getContainerShape(), 0.0001);
+    }
     /// Verifies that button groups assign connected position style classes.
     @Test
     void buttonGroupAssignsPositionStyleClasses() {
@@ -1967,6 +2127,67 @@ final class M3ControlStyleTest {
         applyCss(group);
 
         assertEquals(-2.0, group.getSpacing(), 0.0001);
+    }
+    /// Verifies that button group variant and size properties maintain matching style classes.
+    @Test
+    void buttonGroupVariantAndSizePropertiesMaintainStyleClasses() {
+        M3ButtonGroup group = new M3ButtonGroup(new M3Button("A"), new M3Button("B"));
+
+        assertEquals(M3ButtonGroupVariant.CONNECTED, group.getVariant());
+        assertEquals(M3ButtonGroupSize.SMALL, group.getSize());
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupVariant.CONNECTED.getStyleClass()));
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupSize.SMALL.getStyleClass()));
+
+        group.setVariant(M3ButtonGroupVariant.STANDARD);
+        group.setSize(M3ButtonGroupSize.MEDIUM);
+
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupVariant.STANDARD.getStyleClass()));
+        assertFalse(group.getStyleClass().contains(M3ButtonGroupVariant.CONNECTED.getStyleClass()));
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupSize.MEDIUM.getStyleClass()));
+        assertFalse(group.getStyleClass().contains(M3ButtonGroupSize.SMALL.getStyleClass()));
+
+        group.variantProperty().set(null);
+        group.sizeProperty().set(null);
+
+        assertEquals(M3ButtonGroupVariant.CONNECTED, group.getVariant());
+        assertEquals(M3ButtonGroupSize.SMALL, group.getSize());
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupVariant.CONNECTED.getStyleClass()));
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupSize.SMALL.getStyleClass()));
+    }
+
+    /// Verifies that button group variant and size CSS tokens resolve without overriding each other.
+    @Test
+    void buttonGroupVariantAndSizeTokensResolveTogether() {
+        M3Button first = new M3Button("Archive");
+        M3Button second = new M3Button("Share");
+        M3ButtonGroup group = new M3ButtonGroup(first, second);
+        group.setVariant(M3ButtonGroupVariant.STANDARD);
+        group.setSize(M3ButtonGroupSize.EXTRA_SMALL);
+
+        applyCss(group);
+
+        assertEquals(18.0, group.getSpacing(), 0.0001);
+        assertEquals(32.0, first.getContainerHeight(), 0.0001);
+        assertEquals(20.0, first.getHorizontalPadding(), 0.0001);
+        assertRegionRoundedCorners(first, true, true, true, true);
+        assertRegionRoundedCorners(second, true, true, true, true);
+
+        group.setSize(M3ButtonGroupSize.MEDIUM);
+        applyCss(group);
+
+        assertEquals(8.0, group.getSpacing(), 0.0001);
+        assertEquals(56.0, first.getContainerHeight(), 0.0001);
+        assertEquals(20.0, first.getHorizontalPadding(), 0.0001);
+
+        group.setVariant(M3ButtonGroupVariant.CONNECTED);
+        group.setSize(M3ButtonGroupSize.LARGE);
+        applyCss(group);
+
+        assertEquals(-1.0, group.getSpacing(), 0.0001);
+        assertEquals(96.0, first.getContainerHeight(), 0.0001);
+        assertEquals(20.0, first.getHorizontalPadding(), 0.0001);
+        assertRegionRadii(first, 999.0, 16.0, 16.0, 999.0);
+        assertRegionRadii(second, 16.0, 999.0, 999.0, 16.0);
     }
 
     /// Verifies that toolbar component token properties are styleable from CSS.
@@ -2494,8 +2715,37 @@ final class M3ControlStyleTest {
         applyCss(splitButton);
 
         assertInstanceOf(M3SplitButtonSkin.class, splitButton.getSkin());
+        assertInstanceOf(M3DisclosureIcon.class, splitButton.getMenuButton().getGraphic());
         assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
         assertEquals(0.0, splitButton.getMenuButton().getHorizontalPadding(), 0.0001);
+    }
+
+    /// Verifies that split button sizes resolve Material Expressive metrics from CSS.
+    @Test
+    void splitButtonSizesResolveMaterialExpressiveMetrics() {
+        runOnFxThread(() -> {
+            M3SplitButton extraSmall = createSizedSplitButton(M3SplitButtonSize.EXTRA_SMALL);
+            M3SplitButton small = createSizedSplitButton(M3SplitButtonSize.SMALL);
+            M3SplitButton medium = createSizedSplitButton(M3SplitButtonSize.MEDIUM);
+            M3SplitButton large = createSizedSplitButton(M3SplitButtonSize.LARGE);
+            M3SplitButton extraLarge = createSizedSplitButton(M3SplitButtonSize.EXTRA_LARGE);
+            VBox root = new VBox(8.0, extraSmall, small, medium, large, extraLarge);
+            Scene scene = new Scene(root, 520.0, 520.0);
+
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT,
+                    M3Density.standard()
+            ));
+            root.applyCss();
+
+            assertSplitButtonMetrics(extraSmall, M3SplitButtonSize.EXTRA_SMALL, 32.0, 12.0, 48.0, 2.0);
+            assertSplitButtonMetrics(small, M3SplitButtonSize.SMALL, 40.0, 16.0, 48.0, 2.0);
+            assertSplitButtonMetrics(medium, M3SplitButtonSize.MEDIUM, 56.0, 24.0, 56.0, 2.0);
+            assertSplitButtonMetrics(large, M3SplitButtonSize.LARGE, 96.0, 48.0, 96.0, 2.0);
+            assertSplitButtonMetrics(extraLarge, M3SplitButtonSize.EXTRA_LARGE, 136.0, 64.0, 136.0, 2.0);
+        });
     }
 
     /// Verifies that split button part shapes mirror under right-to-left layout.
@@ -3125,6 +3375,79 @@ final class M3ControlStyleTest {
         card.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
 
         assertEquals(2, actionCount.get());
+    }
+
+    /// Verifies that card variants apply Material state elevation and outline treatments.
+    @Test
+    void cardVariantsApplyMaterialStateElevationAndOutlineTreatments() {
+        runOnFxThread(() -> {
+            M3Card filled = new M3Card(new Label("Filled"), M3CardVariant.FILLED);
+            M3Card elevated = new M3Card(new Label("Elevated"), M3CardVariant.ELEVATED);
+            M3Card outlined = new M3Card(new Label("Outlined"), M3CardVariant.OUTLINED);
+            Pane root = new Pane(filled, elevated, outlined);
+            Scene scene = new Scene(root, 640.0, 180.0);
+            PseudoClass hover = PseudoClass.getPseudoClass("hover");
+            PseudoClass focusVisible = PseudoClass.getPseudoClass("focus-visible");
+            PseudoClass pressed = PseudoClass.getPseudoClass("pressed");
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            filled.resizeRelocate(16.0, 16.0, 180.0, 96.0);
+            elevated.resizeRelocate(220.0, 16.0, 180.0, 96.0);
+            outlined.resizeRelocate(424.0, 16.0, 180.0, 96.0);
+            root.applyCss();
+            root.layout();
+
+            Region filledContainer = lookupRegion(filled, ".m3-card-container");
+            Region elevatedContainer = lookupRegion(elevated, ".m3-card-container");
+            Region outlinedContainer = lookupRegion(outlined, ".m3-card-container");
+            DropShadow elevatedDefault = assertDropShadow(elevatedContainer);
+            Paint outlinedDefaultBorder = firstBorderTopPaint(outlinedContainer);
+
+            assertNull(filledContainer.getEffect(), "filled cards should start at level0");
+            assertNull(outlinedContainer.getEffect(), "outlined cards should start at level0");
+
+            filled.pseudoClassStateChanged(hover, true);
+            outlined.pseudoClassStateChanged(hover, true);
+            root.applyCss();
+            assertDropShadow(filledContainer);
+            assertDropShadow(outlinedContainer);
+            assertEquals(outlinedDefaultBorder, firstBorderTopPaint(outlinedContainer));
+
+            filled.pseudoClassStateChanged(pressed, true);
+            outlined.pseudoClassStateChanged(pressed, true);
+            root.applyCss();
+            assertNull(filledContainer.getEffect(), "pressed filled cards should return to level0");
+            assertNull(outlinedContainer.getEffect(), "pressed outlined cards should return to level0");
+            assertEquals(outlinedDefaultBorder, firstBorderTopPaint(outlinedContainer));
+
+            filled.pseudoClassStateChanged(hover, false);
+            filled.pseudoClassStateChanged(pressed, false);
+            outlined.pseudoClassStateChanged(hover, false);
+            outlined.pseudoClassStateChanged(pressed, false);
+            filled.pseudoClassStateChanged(focusVisible, true);
+            outlined.pseudoClassStateChanged(focusVisible, true);
+            root.applyCss();
+            assertNull(filledContainer.getEffect(), "focused filled cards should stay at level0");
+            assertNull(outlinedContainer.getEffect(), "focused outlined cards should stay at level0");
+            assertFalse(outlinedDefaultBorder.equals(firstBorderTopPaint(outlinedContainer)),
+                    "focused outlined cards should use a distinct focus outline color");
+
+            elevated.pseudoClassStateChanged(hover, true);
+            root.applyCss();
+            DropShadow elevatedHover = assertDropShadow(elevatedContainer);
+            assertTrue(elevatedHover.getRadius() > elevatedDefault.getRadius(),
+                    "hovered elevated cards should increase elevation");
+            assertTrue(elevatedHover.getOffsetY() > elevatedDefault.getOffsetY(),
+                    "hovered elevated cards should increase shadow offset");
+
+            elevated.pseudoClassStateChanged(pressed, true);
+            root.applyCss();
+            DropShadow elevatedPressed = assertDropShadow(elevatedContainer);
+            assertEquals(elevatedDefault.getRadius(), elevatedPressed.getRadius(), 0.0001,
+                    "pressed elevated cards should return to the enabled elevation");
+            assertEquals(elevatedDefault.getOffsetY(), elevatedPressed.getOffsetY(), 0.0001,
+                    "pressed elevated cards should return to the enabled shadow offset");
+        });
     }
 
     /// Verifies that carousels manage items, selected state, and item click selection.
@@ -8455,14 +8778,19 @@ final class M3ControlStyleTest {
     /// Verifies that toggle icon button component token properties are styleable from CSS.
     @Test
     void iconToggleButtonTokensAreStyleable() {
-        M3IconToggleButton button = new M3IconToggleButton("A");
-        button.setStyle("-m3-container-height: 48px; -m3-container-shape: 12px;");
+        M3Icon icon = new M3Icon("A");
+        M3IconToggleButton button = new M3IconToggleButton(icon);
+        button.setStyle("-m3-container-height: 48px; -m3-container-width: 64px; "
+                + "-m3-container-shape: 12px; -m3-icon-button-icon-size: 32px;");
 
         applyCss(button);
 
         assertEquals(48.0, button.getContainerHeight(), 0.0001);
+        assertEquals(64.0, button.getContainerWidth(), 0.0001);
         assertEquals(12.0, button.getContainerShape(), 0.0001);
-        assertEquals(48.0, button.getPrefWidth(), 0.0001);
+        assertEquals(32.0, button.getIconSize(), 0.0001);
+        assertEquals(32.0, icon.getIconSize(), 0.0001);
+        assertEquals(64.0, button.getPrefWidth(), 0.0001);
         assertEquals(48.0, button.getPrefHeight(), 0.0001);
     }
 
@@ -8745,24 +9073,39 @@ final class M3ControlStyleTest {
     @Test
     void menuAppliesItemMetrics() {
         M3MenuItem open = new M3MenuItem("Open");
-        M3Menu menu = new M3Menu(open);
+        M3MenuItem save = new M3MenuItem("Save");
+        M3MenuItem close = new M3MenuItem("Close");
+        M3Menu menu = new M3Menu(open, save, close);
         Pane root = new Pane(menu);
         Scene scene = new Scene(root);
+        PseudoClass firstItem = PseudoClass.getPseudoClass("first-menu-item");
+        PseudoClass lastItem = PseudoClass.getPseudoClass("last-menu-item");
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
         assertInstanceOf(M3MenuSkin.class, menu.getSkin());
+        VBox container = assertInstanceOf(VBox.class, menu.lookup("." + M3Menu.CONTAINER_STYLE_CLASS));
+        assertTrue(container.getStyleClass().contains(M3Menu.CONTAINER_STYLE_CLASS));
+        assertTrue(open.getPseudoClassStates().contains(firstItem));
+        assertFalse(open.getPseudoClassStates().contains(lastItem));
+        assertFalse(save.getPseudoClassStates().contains(firstItem));
+        assertFalse(save.getPseudoClassStates().contains(lastItem));
+        assertFalse(close.getPseudoClassStates().contains(firstItem));
+        assertTrue(close.getPseudoClassStates().contains(lastItem));
+        assertEquals(0.0, container.getSpacing(), 0.0001);
         assertEquals(8.0, menu.getPadding().getTop(), 0.0001);
         assertEquals(48.0, open.getOneLineHeight(), 0.0001);
         assertEquals(4.0, open.getContainerShape(), 0.0001);
+        assertEquals(4.0, save.getContainerShape(), 0.0001);
+        assertEquals(4.0, close.getContainerShape(), 0.0001);
         assertEquals(12.0, open.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, open.getContentSpacing(), 0.0001);
 
         menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
-        menu.select(open);
+        menu.select(save);
         root.applyCss();
-        assertEquals(4.0, open.getContainerShape(), 0.0001);
+        assertEquals(4.0, save.getContainerShape(), 0.0001);
 
         M3ThemeManager.install(scene, M3Theme.fromSeed(
                 Color.web("#006a6a"),
@@ -8773,16 +9116,114 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
+        assertEquals(2.0, container.getSpacing(), 0.0001);
         assertEquals(44.0, open.getOneLineHeight(), 0.0001);
-        assertEquals(6.0, open.getContainerShape(), 0.0001);
+        assertEquals(16.0, open.getContainerShape(), 0.0001);
+        assertEquals(6.0, save.getContainerShape(), 0.0001);
+        assertEquals(16.0, close.getContainerShape(), 0.0001);
         assertEquals(16.0, open.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, open.getContentSpacing(), 0.0001);
 
-        menu.select(open);
+        menu.select(save);
         root.applyCss();
-        assertEquals(16.0, open.getContainerShape(), 0.0001);
+        assertEquals(16.0, save.getContainerShape(), 0.0001);
+
+        menu.getItems().remove(open);
+        root.applyCss();
+        assertFalse(open.getPseudoClassStates().contains(firstItem));
+        assertFalse(open.getPseudoClassStates().contains(lastItem));
+        assertTrue(save.getPseudoClassStates().contains(firstItem));
+        assertFalse(save.getPseudoClassStates().contains(lastItem));
+        assertFalse(close.getPseudoClassStates().contains(firstItem));
+        assertTrue(close.getPseudoClassStates().contains(lastItem));
     }
 
+    /// Verifies that menu color styles follow baseline and Expressive color mappings.
+    @Test
+    void menuColorStylesResolveMaterialColorMappings() {
+        assertMenuColorMapping(
+                M3Theme.defaultTheme(),
+                M3MenuColorStyle.STANDARD,
+                Color.rgb(1, 2, 3),
+                Color.rgb(7, 8, 9),
+                Color.rgb(10, 11, 12),
+                Color.rgb(25, 26, 27)
+        );
+        assertMenuColorMapping(
+                M3Theme.fromSeed(Color.web("#006a6a"), M3Profile.EXPRESSIVE_2025, Brightness.LIGHT),
+                M3MenuColorStyle.STANDARD,
+                Color.rgb(4, 5, 6),
+                Color.rgb(13, 14, 15),
+                Color.rgb(16, 17, 18),
+                Color.rgb(25, 26, 27)
+        );
+        assertMenuColorMapping(
+                M3Theme.fromSeed(Color.web("#006a6a"), M3Profile.EXPRESSIVE_2025, Brightness.LIGHT),
+                M3MenuColorStyle.VIBRANT,
+                Color.rgb(13, 14, 15),
+                Color.rgb(19, 20, 21),
+                Color.rgb(22, 23, 24),
+                Color.rgb(16, 17, 18)
+        );
+    }
+
+    /// Verifies one menu color mapping against resolved JavaFX paints.
+    private static void assertMenuColorMapping(
+            M3Theme theme,
+            M3MenuColorStyle colorStyle,
+            Color expectedMenuFill,
+            Color expectedSelectedFill,
+            Color expectedSelectedTextFill,
+            Color expectedStateLayerFill
+    ) {
+        M3MenuItem open = new M3MenuItem("Open");
+        M3MenuItem save = new M3MenuItem("Save");
+        M3Menu menu = new M3Menu(open, save);
+        menu.setColorStyle(colorStyle);
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.select(save);
+
+        VBox root = new VBox(menu);
+        Scene scene = new Scene(root);
+        M3ThemeManager.install(scene, theme);
+        String colorTokens = menuColorStyleTestColors();
+        root.setStyle(root.getStyle() + " " + colorTokens);
+        menu.setStyle(colorTokens);
+        open.setStyle(colorTokens);
+        save.setStyle(colorTokens);
+        root.applyCss();
+
+        PseudoClass vibrantPseudoClass = PseudoClass.getPseudoClass("vibrant");
+        boolean vibrant = colorStyle == M3MenuColorStyle.VIBRANT;
+        Region selectedContainer = lookupRegion(save, ".m3-menu-item-selection-container");
+        assertEquals(colorStyle, menu.getColorStyle());
+        assertEquals(vibrant, menu.getPseudoClassStates().contains(vibrantPseudoClass));
+        assertEquals(vibrant, save.getPseudoClassStates().contains(vibrantPseudoClass));
+        assertEquals(vibrant, selectedContainer.getPseudoClassStates().contains(vibrantPseudoClass));
+        assertRegionFill(menu, expectedMenuFill);
+        assertRegionFill(selectedContainer, expectedSelectedFill);
+        assertEquals(expectedSelectedTextFill, listItemHeadline(save).getTextFill());
+        assertRegionFill(lookupRegion(open, ".m3-state-layer"), expectedStateLayerFill);
+    }
+
+    /// Returns deterministic color tokens used by menu color style tests.
+    private static String menuColorStyleTestColors() {
+        return "-m3-color-surface-container: rgb(1,2,3); "
+                + "-m3-color-surface-container-low: rgb(4,5,6); "
+                + "-m3-color-secondary-container: rgb(7,8,9); "
+                + "-m3-color-on-secondary-container: rgb(10,11,12); "
+                + "-m3-color-tertiary-container: rgb(13,14,15); "
+                + "-m3-color-on-tertiary-container: rgb(16,17,18); "
+                + "-m3-color-tertiary: rgb(19,20,21); "
+                + "-m3-color-on-tertiary: rgb(22,23,24); "
+                + "-m3-color-on-surface: rgb(25,26,27); "
+                + "-m3-color-on-surface-variant: rgb(28,29,30);";
+    }
+
+    /// Returns the rendered headline label for a list item.
+    private static Label listItemHeadline(M3ListItem item) {
+        return assertInstanceOf(Label.class, item.lookup(".m3-list-item-headline"));
+    }
     /// Verifies that menu item action events bubble through the menu.
     @Test
     void menuItemActionsBubbleThroughMenu() {
@@ -13240,15 +13681,26 @@ final class M3ControlStyleTest {
     /// Verifies that chip component token properties are styleable from CSS.
     @Test
     void chipTokensAreStyleable() {
-        M3Chip chip = new M3Chip("Chip");
-        chip.setStyle("-m3-container-height: 36px; -m3-container-shape: 16px; -m3-horizontal-padding: 14px;");
+        M3Icon icon = new M3Icon("A");
+        M3Chip chip = new M3Chip("Chip", icon);
+        chip.setStyle("-m3-container-height: 36px; -m3-container-shape: 16px; "
+                + "-m3-horizontal-padding: 14px; -m3-icon-horizontal-padding: 6px; "
+                + "-m3-chip-icon-size: 22px;");
 
         applyCss(chip);
 
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
         assertEquals(16.0, chip.getContainerShape(), 0.0001);
         assertEquals(14.0, chip.getHorizontalPadding(), 0.0001);
+        assertEquals(6.0, chip.getIconHorizontalPadding(), 0.0001);
         assertEquals(36.0, chip.getPrefHeight(), 0.0001);
+        assertEquals(6.0, chip.getPadding().getLeft(), 0.0001);
+        assertEquals(6.0, chip.getPadding().getRight(), 0.0001);
+        assertEquals(22.0, icon.getIconSize(), 0.0001);
+
+        chip.setGraphic(null);
+        applyCss(chip);
+
         assertEquals(14.0, chip.getPadding().getLeft(), 0.0001);
         assertEquals(14.0, chip.getPadding().getRight(), 0.0001);
     }
@@ -13275,6 +13727,22 @@ final class M3ControlStyleTest {
         assertTrue(chip.isSelected());
     }
 
+    /// Verifies that chips expose flat and elevated container style classes.
+    @Test
+    void chipSupportsContainerStyles() {
+        M3Chip chip = new M3Chip("Assist");
+
+        assertEquals(M3ChipStyle.FLAT, chip.getChipStyle());
+        assertTrue(chip.getStyleClass().contains(M3ChipStyle.FLAT.getStyleClass()));
+        assertFalse(chip.getStyleClass().contains(M3ChipStyle.ELEVATED.getStyleClass()));
+
+        chip.setChipStyle(M3ChipStyle.ELEVATED);
+
+        assertEquals(M3ChipStyle.ELEVATED, chip.getChipStyle());
+        assertTrue(chip.getStyleClass().contains(M3ChipStyle.ELEVATED.getStyleClass()));
+        assertFalse(chip.getStyleClass().contains(M3ChipStyle.FLAT.getStyleClass()));
+    }
+
     /// Verifies that chip interaction states keep Material colors.
     @Test
     void chipStateStylesPreserveVariantColors() {
@@ -13292,9 +13760,9 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertLabeledColors(assistChip, Color.TRANSPARENT, Color.rgb(34, 35, 36));
-        assertBorderColor(assistChip, Color.rgb(13, 14, 15));
+        assertBorderColor(assistChip, Color.rgb(43, 44, 45));
         assertLabeledColors(filterChip, Color.rgb(7, 8, 9), Color.rgb(10, 11, 12));
-        assertBorderColor(filterChip, Color.rgb(7, 8, 9));
+        assertBorderColor(filterChip, Color.TRANSPARENT);
     }
 
     /// Verifies that chip groups track multiple selected chips in child order.
@@ -13950,25 +14418,67 @@ final class M3ControlStyleTest {
     @Test
     void selectionTokensAreStyleable() {
         M3CheckBox checkBox = new M3CheckBox("Check");
-        checkBox.setStyle("-m3-touch-target-size: 44px;");
+        checkBox.setStyle("""
+                -m3-touch-target-size: 44px;
+                -m3-state-layer-size: 38px;
+                -m3-container-size: 20px;
+                -m3-selected-mark-width: 13px;
+                -m3-selected-mark-height: 11px;
+                -m3-indeterminate-mark-width: 14px;
+                -m3-indeterminate-mark-height: 3px;
+                """);
 
         M3RadioButton radioButton = new M3RadioButton("Radio");
-        radioButton.setStyle("-m3-touch-target-size: 46px;");
+        radioButton.setStyle("""
+                -m3-touch-target-size: 46px;
+                -m3-state-layer-size: 36px;
+                -m3-container-size: 22px;
+                -m3-selected-dot-size: 12px;
+                """);
 
         M3Switch switchControl = new M3Switch("Switch");
-        switchControl.setStyle("-m3-touch-target-size: 48px; -m3-track-shape: 18px;");
+        switchControl.setStyle("""
+                -m3-touch-target-size: 50px;
+                -m3-track-shape: 18px;
+                -m3-track-width: 60px;
+                -m3-track-height: 36px;
+                -m3-state-layer-size: 44px;
+                -m3-unselected-handle-size: 18px;
+                -m3-selected-handle-size: 26px;
+                -m3-pressed-handle-size: 30px;
+                """);
 
         applyCss(checkBox);
         applyCss(radioButton);
         applyCss(switchControl);
 
         assertEquals(44.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(38.0, checkBox.getStateLayerSize(), 0.0001);
+        assertEquals(20.0, checkBox.getContainerSize(), 0.0001);
+        assertEquals(13.0, checkBox.getSelectedMarkWidth(), 0.0001);
+        assertEquals(11.0, checkBox.getSelectedMarkHeight(), 0.0001);
+        assertEquals(14.0, checkBox.getIndeterminateMarkWidth(), 0.0001);
+        assertEquals(3.0, checkBox.getIndeterminateMarkHeight(), 0.0001);
         assertEquals(44.0, checkBox.getPrefHeight(), 0.0001);
         assertEquals(46.0, radioButton.getTouchTargetSize(), 0.0001);
+        assertEquals(36.0, radioButton.getStateLayerSize(), 0.0001);
+        assertEquals(22.0, radioButton.getContainerSize(), 0.0001);
+        assertEquals(12.0, radioButton.getSelectedDotSize(), 0.0001);
         assertEquals(46.0, radioButton.getPrefHeight(), 0.0001);
-        assertEquals(48.0, switchControl.getTouchTargetSize(), 0.0001);
+        assertEquals(50.0, switchControl.getTouchTargetSize(), 0.0001);
         assertEquals(18.0, switchControl.getTrackShape(), 0.0001);
-        assertEquals(48.0, switchControl.getPrefHeight(), 0.0001);
+        assertEquals(60.0, switchControl.getTrackWidth(), 0.0001);
+        assertEquals(36.0, switchControl.getTrackHeight(), 0.0001);
+        assertEquals(44.0, switchControl.getStateLayerSize(), 0.0001);
+        assertEquals(18.0, switchControl.getUnselectedHandleSize(), 0.0001);
+        assertEquals(26.0, switchControl.getSelectedHandleSize(), 0.0001);
+        assertEquals(30.0, switchControl.getPressedHandleSize(), 0.0001);
+        assertEquals(50.0, switchControl.getPrefHeight(), 0.0001);
+
+        switchControl.setStyle(switchControl.getStyle() + " -m3-state-layer-size: 54px;");
+        applyCss(switchControl);
+        assertEquals(54.0, switchControl.getStateLayerSize(), 0.0001);
+        assertEquals(54.0, switchControl.getPrefHeight(), 0.0001);
     }
 
     /// Verifies that selection controls create Material Design 3 skins.
@@ -14015,6 +14525,79 @@ final class M3ControlStyleTest {
         assertEquals(1.0, checkedDot.getScaleX(), 0.0001);
     }
 
+    /// Verifies that checkbox and radio skins consume component geometry tokens.
+    @Test
+    void selectionIndicatorGeometryUsesComponentTokens() {
+        M3CheckBox selectedCheckBox = createCheckBox("Checked", true);
+        selectedCheckBox.setStyle("""
+                -m3-touch-target-size: 52px;
+                -m3-state-layer-size: 40px;
+                -m3-container-size: 20px;
+                -m3-selected-mark-width: 14px;
+                -m3-selected-mark-height: 11px;
+                -m3-indeterminate-mark-width: 16px;
+                -m3-indeterminate-mark-height: 3px;
+                """);
+
+        M3CheckBox indeterminateCheckBox = new M3CheckBox("Mixed");
+        indeterminateCheckBox.setIndeterminate(true);
+        indeterminateCheckBox.setStyle(selectedCheckBox.getStyle());
+
+        M3RadioButton selectedRadioButton = createRadioButton("Radio", true);
+        selectedRadioButton.setStyle("""
+                -m3-touch-target-size: 50px;
+                -m3-state-layer-size: 36px;
+                -m3-container-size: 22px;
+                -m3-selected-dot-size: 12px;
+                """);
+
+        Pane root = new Pane(selectedCheckBox, indeterminateCheckBox, selectedRadioButton);
+        Scene scene = new Scene(root, 560.0, 180.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        selectedCheckBox.resizeRelocate(0.0, 0.0, 180.0, 52.0);
+        indeterminateCheckBox.resizeRelocate(0.0, 56.0, 180.0, 52.0);
+        selectedRadioButton.resizeRelocate(0.0, 112.0, 180.0, 50.0);
+        root.layout();
+
+        Region selectedSlot = lookupRegion(selectedCheckBox, ".m3-selection-indicator");
+        Region selectedLayer = lookupRegion(selectedCheckBox, ".m3-state-layer-container");
+        Region selectedBox = lookupRegion(selectedCheckBox, ".m3-checkbox-box");
+        Region selectedMark = lookupRegion(selectedCheckBox, ".m3-checkbox-mark");
+        assertEquals(52.0, selectedSlot.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(52.0, selectedSlot.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(40.0, selectedLayer.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(40.0, selectedLayer.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(6.0, selectedLayer.getLayoutX(), 0.0001);
+        assertEquals(6.0, selectedLayer.getLayoutY(), 0.0001);
+        assertEquals(20.0, selectedBox.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(20.0, selectedBox.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(14.0, selectedMark.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(11.0, selectedMark.getLayoutBounds().getHeight(), 0.0001);
+
+        Region indeterminateMark = lookupRegion(indeterminateCheckBox, ".m3-checkbox-mark");
+        assertEquals(16.0, indeterminateMark.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(3.0, indeterminateMark.getLayoutBounds().getHeight(), 0.0001);
+
+        Region radioSlot = lookupRegion(selectedRadioButton, ".m3-selection-indicator");
+        Region radioLayer = lookupRegion(selectedRadioButton, ".m3-state-layer-container");
+        Region radio = radioIndicator(selectedRadioButton);
+        Shape ring = radioRing(selectedRadioButton);
+        Shape dot = radioDot(selectedRadioButton);
+        assertEquals(50.0, radioSlot.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(50.0, radioSlot.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(36.0, radioLayer.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(36.0, radioLayer.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(7.0, radioLayer.getLayoutX(), 0.0001);
+        assertEquals(7.0, radioLayer.getLayoutY(), 0.0001);
+        assertEquals(22.0, radio.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(22.0, radio.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(22.0, ring.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(22.0, ring.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(12.0, dot.getLayoutBounds().getWidth(), 0.0001);
+        assertEquals(12.0, dot.getLayoutBounds().getHeight(), 0.0001);
+    }
+
     /// Verifies that selection control skins handle pointer and keyboard activation.
     @Test
     void selectionControlSkinsHandleActivationEvents() {
@@ -14026,9 +14609,9 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
-        checkBox.resize(120.0, 40.0);
-        radioButton.resize(120.0, 40.0);
-        switchControl.resize(120.0, 40.0);
+        checkBox.resize(120.0, 48.0);
+        radioButton.resize(120.0, 48.0);
+        switchControl.resize(120.0, 48.0);
 
         checkBox.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
         assertTrue(checkBox.isArmed());
@@ -14298,8 +14881,8 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
-        offSwitch.resize(120.0, 40.0);
-        onSwitch.resize(120.0, 40.0);
+        offSwitch.resize(120.0, 48.0);
+        onSwitch.resize(120.0, 48.0);
         offSwitch.layout();
         onSwitch.layout();
 
@@ -14310,7 +14893,13 @@ final class M3ControlStyleTest {
         assertTrue(onThumb.getLayoutX() > offThumb.getLayoutX());
         assertTrue(onThumb.getWidth() > offThumb.getWidth());
         assertEquals(8.0, offThumb.getLayoutX(), 0.0001);
+        assertEquals(16.0, offThumb.getLayoutY(), 0.0001);
+        assertEquals(16.0, offThumb.getWidth(), 0.0001);
+        assertEquals(16.0, offThumb.getHeight(), 0.0001);
         assertEquals(24.0, onThumb.getLayoutX(), 0.0001);
+        assertEquals(12.0, onThumb.getLayoutY(), 0.0001);
+        assertEquals(24.0, onThumb.getWidth(), 0.0001);
+        assertEquals(24.0, onThumb.getHeight(), 0.0001);
     }
 
     /// Verifies that switches mirror selected thumb geometry in right-to-left mode.
@@ -14323,7 +14912,7 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
-        switchControl.resize(120.0, 40.0);
+        switchControl.resize(120.0, 48.0);
         switchControl.layout();
 
         Region track = lookupRegion(switchControl, ".box");
@@ -14348,8 +14937,8 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
-        offSwitch.resizeRelocate(0.0, 0.0, 120.0, 40.0);
-        onSwitch.resizeRelocate(0.0, 48.0, 120.0, 40.0);
+        offSwitch.resizeRelocate(0.0, 0.0, 120.0, 48.0);
+        onSwitch.resizeRelocate(0.0, 56.0, 120.0, 48.0);
         offSwitch.layout();
         onSwitch.layout();
         root.applyCss();
@@ -14366,14 +14955,56 @@ final class M3ControlStyleTest {
         assertEquals(40.0, onStateLayer.getHeight(), 0.0001);
         assertEquals(-4.0, offStateLayer.getLayoutX(), 0.0001);
         assertEquals(16.0, onStateLayer.getLayoutX(), 0.0001);
-        assertEquals(0.0, offStateLayer.getLayoutY(), 0.0001);
-        assertEquals(0.0, onStateLayer.getLayoutY(), 0.0001);
+        assertEquals(4.0, offStateLayer.getLayoutY(), 0.0001);
+        assertEquals(4.0, onStateLayer.getLayoutY(), 0.0001);
         assertStateLayerRadii(offSwitch, 20.0, 20.0, 20.0, 20.0);
         assertStateLayerRadii(onSwitch, 20.0, 20.0, 20.0, 20.0);
         assertTrue(stateLayerParent.getChildren().indexOf(offTrack) < stateLayerParent.getChildren().indexOf(offStateLayer));
         assertTrue(stateLayerParent.getChildren().indexOf(offStateLayer) < stateLayerParent.getChildren().indexOf(offThumb));
     }
 
+    /// Verifies that switch skins use the pressed handle size token while armed.
+    @Test
+    void switchSkinUsesPressedHandleToken() {
+        M3Switch offSwitch = new M3Switch("Off");
+        M3Switch onSwitch = createSwitch("On", true);
+        Pane root = new Pane(offSwitch, onSwitch);
+        Scene scene = new Scene(root, 260.0, 120.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        offSwitch.resizeRelocate(0.0, 0.0, 120.0, 48.0);
+        onSwitch.resizeRelocate(0.0, 56.0, 120.0, 48.0);
+        offSwitch.layout();
+        onSwitch.layout();
+
+        Region offThumb = lookupRegion(offSwitch, ".thumb");
+        Region onThumb = lookupRegion(onSwitch, ".thumb");
+        assertEquals(16.0, offThumb.getWidth(), 0.0001);
+        assertEquals(24.0, onThumb.getWidth(), 0.0001);
+
+        offSwitch.arm();
+        onSwitch.arm();
+        offSwitch.layout();
+        onSwitch.layout();
+
+        assertEquals(28.0, offThumb.getWidth(), 0.0001);
+        assertEquals(28.0, offThumb.getHeight(), 0.0001);
+        assertEquals(2.0, offThumb.getLayoutX(), 0.0001);
+        assertEquals(10.0, offThumb.getLayoutY(), 0.0001);
+        assertEquals(28.0, onThumb.getWidth(), 0.0001);
+        assertEquals(28.0, onThumb.getHeight(), 0.0001);
+        assertEquals(22.0, onThumb.getLayoutX(), 0.0001);
+        assertEquals(10.0, onThumb.getLayoutY(), 0.0001);
+
+        offSwitch.disarm();
+        onSwitch.disarm();
+        offSwitch.layout();
+        onSwitch.layout();
+
+        assertEquals(16.0, offThumb.getWidth(), 0.0001);
+        assertEquals(24.0, onThumb.getWidth(), 0.0001);
+    }
     /// Verifies that the switch hover state renders circular thumb feedback in snapshots.
     @Test
     void switchHoverStateLayerRendersCircularThumbFeedback() {
@@ -14387,7 +15018,7 @@ final class M3ControlStyleTest {
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
             root.resize(220.0, 96.0);
-            switchControl.resizeRelocate(24.0, 24.0, 120.0, 40.0);
+            switchControl.resizeRelocate(24.0, 24.0, 120.0, 48.0);
             switchControl.layout();
             root.layout();
             root.applyCss();
@@ -14445,7 +15076,7 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
-        switchControl.resize(120.0, 40.0);
+        switchControl.resize(120.0, 48.0);
         switchControl.layout();
 
         Region track = lookupRegion(switchControl, ".box");
@@ -15689,6 +16320,142 @@ final class M3ControlStyleTest {
         }
     }
 
+    /// Verifies that expressive progress animations update sampled paths without rebuilding elements.
+    @Test
+    void expressiveProgressWavePathsReuseElementsDuringAnimation() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ProgressBar> progressBarReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
+        AtomicReference<@Nullable Path> barWaveReference = new AtomicReference<>();
+        AtomicReference<@Nullable Path> circularTrackReference = new AtomicReference<>();
+        AtomicReference<@Nullable Path> circularWaveReference = new AtomicReference<>();
+        AtomicReference<@Nullable List<PathElement>> barElementsReference = new AtomicReference<>();
+        AtomicReference<@Nullable List<PathElement>> circularTrackElementsReference = new AtomicReference<>();
+        AtomicReference<@Nullable List<PathElement>> circularElementsReference = new AtomicReference<>();
+        AtomicReference<@Nullable Point2D> initialBarPointReference = new AtomicReference<>();
+        AtomicReference<@Nullable Point2D> initialCircularPointReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhenStable(
+                    () -> expressiveProgressWavePathsMovedWithReusedElements(
+                            rootReference,
+                            progressBarReference,
+                            progressIndicatorReference,
+                            barWaveReference,
+                            circularTrackReference,
+                            circularWaveReference,
+                            barElementsReference,
+                            circularTrackElementsReference,
+                            circularElementsReference,
+                            initialBarPointReference,
+                            initialCircularPointReference
+                    ),
+                    2,
+                    () -> {
+                        M3ProgressBar progressBar = new M3ProgressBar();
+                        progressBar.setStyle("-m3-wave-amplitude: 3px; "
+                                + "-m3-wavelength: 40px; "
+                                + "-m3-track-gap: 4px; "
+                                + "-m3-stop-size: 4px;");
+                        progressBar.setManaged(false);
+
+                        M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
+                        progressIndicator.setStyle("-m3-track-thickness: 4px; "
+                                + "-m3-indicator-size: 48px; "
+                                + "-m3-wave-amplitude: 1.6px; "
+                                + "-m3-wavelength: 15px; "
+                                + "-m3-track-gap: 4px;");
+                        progressIndicator.setManaged(false);
+
+                        Pane root = new Pane(progressBar, progressIndicator);
+                        Scene scene = new Scene(root, 320.0, 120.0);
+                        Stage stage = new Stage();
+
+                        M3MotionSettings.setAnimationsEnabled(root, true);
+                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                        M3MotionSettings.setMotionBehavior(root, observableIndeterminateProgressBehavior());
+                        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                                Color.web("#006a6a"),
+                                M3Profile.EXPRESSIVE_2025,
+                                Brightness.LIGHT
+                        ));
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.resize(320.0, 120.0);
+                        progressBar.resizeRelocate(24.0, 28.0, 240.0, 16.0);
+                        progressIndicator.resizeRelocate(24.0, 56.0, 64.0, 64.0);
+                        root.layout();
+                        progressBar.layout();
+                        progressIndicator.layout();
+
+                        Path barWave = assertInstanceOf(
+                                Path.class,
+                                lookupShape(progressBar, ".m3-progress-bar-wave")
+                        );
+                        Path circularTrack = assertInstanceOf(
+                                Path.class,
+                                lookupShape(progressIndicator, ".m3-progress-indicator-track-wave")
+                        );
+                        Path circularWave = assertInstanceOf(
+                                Path.class,
+                                lookupShape(progressIndicator, ".m3-progress-indicator-wave")
+                        );
+
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        progressBarReference.set(progressBar);
+                        progressIndicatorReference.set(progressIndicator);
+                        barWaveReference.set(barWave);
+                        circularTrackReference.set(circularTrack);
+                        circularWaveReference.set(circularWave);
+                        barElementsReference.set(List.copyOf(barWave.getElements()));
+                        circularTrackElementsReference.set(List.copyOf(circularTrack.getElements()));
+                        circularElementsReference.set(List.copyOf(circularWave.getElements()));
+                        initialBarPointReference.set(firstPathPoint(barWave));
+                        initialCircularPointReference.set(firstPathPoint(circularWave));
+                    },
+                    () -> {
+                        Path barWave = Objects.requireNonNull(barWaveReference.get(), "barWave");
+                        Path circularTrack = Objects.requireNonNull(circularTrackReference.get(), "circularTrack");
+                        Path circularWave = Objects.requireNonNull(circularWaveReference.get(), "circularWave");
+                        List<PathElement> barElements = Objects.requireNonNull(
+                                barElementsReference.get(),
+                                "barElements"
+                        );
+                        List<PathElement> circularTrackElements = Objects.requireNonNull(
+                                circularTrackElementsReference.get(),
+                                "circularTrackElements"
+                        );
+                        List<PathElement> circularElements = Objects.requireNonNull(
+                                circularElementsReference.get(),
+                                "circularElements"
+                        );
+                        Point2D initialBarPoint = Objects.requireNonNull(
+                                initialBarPointReference.get(),
+                                "initialBarPoint"
+                        );
+                        Point2D initialCircularPoint = Objects.requireNonNull(
+                                initialCircularPointReference.get(),
+                                "initialCircularPoint"
+                        );
+
+                        assertSamePathElements(barWave, barElements, "linear expressive wave");
+                        assertSamePathElements(circularTrack, circularTrackElements, "circular expressive track");
+                        assertSamePathElements(circularWave, circularElements, "circular expressive wave");
+                        assertTrue(firstPathPoint(barWave).distance(initialBarPoint) > 0.1,
+                                () -> "linear wave did not advance: initial=" + initialBarPoint
+                                        + ", current=" + firstPathPoint(barWave));
+                        assertTrue(firstPathPoint(circularWave).distance(initialCircularPoint) > 0.1,
+                                () -> "circular wave did not advance: initial=" + initialCircularPoint
+                                        + ", current=" + firstPathPoint(circularWave));
+                    }
+            );
+        } finally {
+            closeExpressiveProgressBarIndeterminateWaveScene(stageReference, rootReference);
+        }
+    }
     /// Verifies that progress bar subnodes keep Material colors.
     @Test
     void progressBarStateStylesPreserveMaterialColors() {
@@ -24231,11 +24998,11 @@ final class M3ControlStyleTest {
             );
             row.setPrefWrapLength(720.0);
             row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-            Scene scene = new Scene(row, 760.0, 220.0);
+            Scene scene = new Scene(row, 760.0, 280.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             row.applyCss();
-            row.resize(760.0, 220.0);
+            row.resize(760.0, 280.0);
             row.layout();
 
             WritableImage image = snapshotImageOnFxThread(row);
@@ -25816,7 +26583,8 @@ final class M3ControlStyleTest {
             assertEquals(48.0, slider.getTouchTargetSize(), 0.0001);
             assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
             assertEquals(44.0, menuOpen.getOneLineHeight(), 0.0001);
-            assertEquals(6.0, menuOpen.getContainerShape(), 0.0001);
+            assertEquals(16.0, menuOpen.getContainerShape(), 0.0001);
+            assertEquals(16.0, menuSave.getContainerShape(), 0.0001);
             assertEquals(16.0, menuOpen.getHorizontalPadding(), 0.0001);
             assertEquals(12.0, menuOpen.getContentSpacing(), 0.0001);
             assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
@@ -28643,6 +29411,7 @@ final class M3ControlStyleTest {
                 + "-m3-color-secondary-container: rgb(7,8,9); "
                 + "-m3-color-on-secondary-container: rgb(10,11,12); "
                 + "-m3-color-outline: rgb(13,14,15); "
+                + "-m3-color-outline-variant: rgb(43,44,45); "
                 + "-m3-color-surface-container-low: rgb(16,17,18); "
                 + "-m3-color-surface-container-high: rgb(19,20,21); "
                 + "-m3-color-primary-container: rgb(22,23,24); "
@@ -29610,6 +30379,13 @@ final class M3ControlStyleTest {
     /// Verifies that a node currently has a drop shadow effect.
     private static DropShadow assertDropShadow(Node node) {
         return assertInstanceOf(DropShadow.class, node.getEffect());
+    }
+
+    /// Returns the first top border paint for a region.
+    private static Paint firstBorderTopPaint(Region region) {
+        assertTrue(region.getBorder() != null, "region should have a border");
+        assertFalse(region.getBorder().getStrokes().isEmpty(), "region should have at least one border stroke");
+        return region.getBorder().getStrokes().get(0).getTopStroke();
     }
 
     /// Returns a region looked up below a node.
@@ -31807,6 +32583,81 @@ final class M3ControlStyleTest {
         throw new AssertionError("Missing " + orientation + " scroll bar below " + parent);
     }
 
+
+    /// Returns whether the supplied path still uses the same sampled path elements.
+    private static boolean pathElementsAreSame(Path path, List<PathElement> elements) {
+        if (path.getElements().size() != elements.size()) {
+            return false;
+        }
+        for (int i = 0; i < elements.size(); i++) {
+            if (path.getElements().get(i) != elements.get(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// Verifies that the supplied path still uses the same sampled path elements.
+    private static void assertSamePathElements(Path path, List<PathElement> elements, String description) {
+        assertEquals(elements.size(), path.getElements().size(), description + " path element count");
+        for (int i = 0; i < elements.size(); i++) {
+            assertSame(elements.get(i), path.getElements().get(i), description + " path element " + i);
+        }
+    }
+
+    /// Returns whether animated expressive progress paths have advanced while keeping path elements stable.
+    private static boolean expressiveProgressWavePathsMovedWithReusedElements(
+            AtomicReference<@Nullable Pane> rootReference,
+            AtomicReference<@Nullable M3ProgressBar> progressBarReference,
+            AtomicReference<@Nullable M3ProgressIndicator> progressIndicatorReference,
+            AtomicReference<@Nullable Path> barWaveReference,
+            AtomicReference<@Nullable Path> circularTrackReference,
+            AtomicReference<@Nullable Path> circularWaveReference,
+            AtomicReference<@Nullable List<PathElement>> barElementsReference,
+            AtomicReference<@Nullable List<PathElement>> circularTrackElementsReference,
+            AtomicReference<@Nullable List<PathElement>> circularElementsReference,
+            AtomicReference<@Nullable Point2D> initialBarPointReference,
+            AtomicReference<@Nullable Point2D> initialCircularPointReference
+    ) {
+        @Nullable Pane root = rootReference.get();
+        @Nullable M3ProgressBar progressBar = progressBarReference.get();
+        @Nullable M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
+        @Nullable Path barWave = barWaveReference.get();
+        @Nullable Path circularTrack = circularTrackReference.get();
+        @Nullable Path circularWave = circularWaveReference.get();
+        @Nullable List<PathElement> barElements = barElementsReference.get();
+        @Nullable List<PathElement> circularTrackElements = circularTrackElementsReference.get();
+        @Nullable List<PathElement> circularElements = circularElementsReference.get();
+        @Nullable Point2D initialBarPoint = initialBarPointReference.get();
+        @Nullable Point2D initialCircularPoint = initialCircularPointReference.get();
+        if (root == null
+                || progressBar == null
+                || progressIndicator == null
+                || barWave == null
+                || circularTrack == null
+                || circularWave == null
+                || barElements == null
+                || circularTrackElements == null
+                || circularElements == null
+                || initialBarPoint == null
+                || initialCircularPoint == null) {
+            return false;
+        }
+
+        root.applyCss();
+        root.layout();
+        progressBar.layout();
+        progressIndicator.layout();
+        return barWave.isVisible()
+                && circularTrack.isVisible()
+                && circularWave.isVisible()
+                && pathElementsAreSame(barWave, barElements)
+                && pathElementsAreSame(circularTrack, circularTrackElements)
+                && pathElementsAreSame(circularWave, circularElements)
+                && firstPathPoint(barWave).distance(initialBarPoint) > 0.1
+                && firstPathPoint(circularWave).distance(initialCircularPoint) > 0.1;
+    }
+
     /// Returns the first point in a path made from move, line, and cubic elements.
     private static Point2D firstPathPoint(Path path) {
         assertFalse(path.getElements().isEmpty());
@@ -33928,6 +34779,31 @@ final class M3ControlStyleTest {
         return new M3Button(text, variant, onAction);
     }
 
+    /// Creates a split button with the requested size.
+    private static M3SplitButton createSizedSplitButton(M3SplitButtonSize size) {
+        M3SplitButton splitButton = createSplitButton("Create", M3ButtonVariant.TONAL, new M3MenuItem("Draft"));
+        splitButton.setSize(size);
+        return splitButton;
+    }
+
+    /// Asserts split button metrics resolved through CSS.
+    private static void assertSplitButtonMetrics(
+            M3SplitButton splitButton,
+            M3SplitButtonSize size,
+            double containerHeight,
+            double actionHorizontalPadding,
+            double menuButtonWidth,
+            double spacing
+    ) {
+        assertTrue(splitButton.getStyleClass().contains(size.getStyleClass()));
+        assertEquals(containerHeight, splitButton.getActionButton().getContainerHeight(), 0.0001);
+        assertEquals(containerHeight, splitButton.getMenuButton().getContainerHeight(), 0.0001);
+        assertEquals(actionHorizontalPadding, splitButton.getActionButton().getHorizontalPadding(), 0.0001);
+        assertEquals(menuButtonWidth, splitButton.getMenuButton().getPrefWidth(), 0.0001);
+        assertEquals(0.0, splitButton.getMenuButton().getHorizontalPadding(), 0.0001);
+        assertEquals(spacing, splitButton.getSpacing(), 0.0001);
+    }
+
     /// Creates a split button with the requested variant and menu items.
     private static M3SplitButton createSplitButton(String text, M3ButtonVariant variant, Node... items) {
         M3SplitButton button = new M3SplitButton(text, items);
@@ -34051,6 +34927,38 @@ final class M3ControlStyleTest {
         return new M3IconButton(new M3Icon(iconText, iconSize, iconVariant));
     }
 
+    /// Creates an icon button with Material Expressive sizing roles.
+    private static M3IconButton createIconButton(
+            M3Icon icon,
+            M3IconButtonSize size,
+            M3IconButtonWidth widthRole,
+            M3IconButtonShape shape
+    ) {
+        M3IconButton button = new M3IconButton(icon);
+        button.setSize(size);
+        button.setWidthRole(widthRole);
+        button.setIconButtonShape(shape);
+        return button;
+    }
+
+    /// Verifies resolved icon button geometry and icon metrics.
+    private static void assertIconButtonMetrics(
+            M3IconButton button,
+            M3Icon icon,
+            double expectedWidth,
+            double expectedHeight,
+            double expectedIconSize,
+            double expectedShape
+    ) {
+        assertEquals(expectedWidth, button.getContainerWidth(), 0.0001);
+        assertEquals(expectedHeight, button.getContainerHeight(), 0.0001);
+        assertEquals(expectedIconSize, button.getIconSize(), 0.0001);
+        assertEquals(expectedIconSize, icon.getIconSize(), 0.0001);
+        assertEquals(expectedShape, button.getContainerShape(), 0.0001);
+        assertEquals(expectedWidth, button.getPrefWidth(), 0.0001);
+        assertEquals(expectedHeight, button.getPrefHeight(), 0.0001);
+    }
+
     /// Creates a fixed-size SVG icon viewport for visual snapshot fixtures.
     private static StackPane visualIcon(String name) {
         return visualIcon(name, 24.0);
@@ -34134,6 +35042,39 @@ final class M3ControlStyleTest {
             boolean selected
     ) {
         return createIconToggleButton(new M3Icon(iconText, iconSize, iconVariant), variant, selected);
+    }
+
+    /// Creates a toggle icon button with Material Expressive sizing roles.
+    private static M3IconToggleButton createIconToggleButton(
+            M3Icon icon,
+            M3IconButtonSize size,
+            M3IconButtonWidth widthRole,
+            M3IconButtonShape shape,
+            boolean selected
+    ) {
+        M3IconToggleButton button = createIconToggleButton(icon, M3IconToggleButtonVariant.FILLED, selected);
+        button.setSize(size);
+        button.setWidthRole(widthRole);
+        button.setIconButtonShape(shape);
+        return button;
+    }
+
+    /// Verifies resolved toggle icon button geometry and icon metrics.
+    private static void assertIconToggleButtonMetrics(
+            M3IconToggleButton button,
+            M3Icon icon,
+            double expectedWidth,
+            double expectedHeight,
+            double expectedIconSize,
+            double expectedShape
+    ) {
+        assertEquals(expectedWidth, button.getContainerWidth(), 0.0001);
+        assertEquals(expectedHeight, button.getContainerHeight(), 0.0001);
+        assertEquals(expectedIconSize, button.getIconSize(), 0.0001);
+        assertEquals(expectedIconSize, icon.getIconSize(), 0.0001);
+        assertEquals(expectedShape, button.getContainerShape(), 0.0001);
+        assertEquals(expectedWidth, button.getPrefWidth(), 0.0001);
+        assertEquals(expectedHeight, button.getPrefHeight(), 0.0001);
     }
 
     /// Creates a chip with the requested variant and selected state.

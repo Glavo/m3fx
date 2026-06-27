@@ -335,6 +335,12 @@ final class M3StateLayer extends Pane {
         M3Animation.playFromStart(owner, rippleAnimation);
     }
 
+    /// Mirrors a pseudo-class to the overlay and ripple nodes.
+    void setContentPseudoClass(PseudoClass pseudoClass, boolean active) {
+        overlay.pseudoClassStateChanged(pseudoClass, active);
+        ripple.pseudoClassStateChanged(pseudoClass, active);
+    }
+
     /// Stops ripple animation and clears transient ripple state.
     void reset() {
         overlayOpacityAnimation.stop();

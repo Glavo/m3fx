@@ -20,27 +20,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3Switch].
 @NotNullByDefault
 public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
-    /// The switch track width.
-    private static final double TRACK_WIDTH = 52.0;
-
-    /// The switch track height.
-    private static final double TRACK_HEIGHT = 32.0;
-
-    /// The minimum circular state layer size around the thumb.
-    private static final double STATE_LAYER_SIZE = 40.0;
-
-    /// The off-state thumb center within the track.
-    private static final double OFF_THUMB_CENTER_X = 16.0;
-
-    /// The on-state thumb center within the track.
-    private static final double ON_THUMB_CENTER_X = 36.0;
-
-    /// The off-state thumb size.
-    private static final double OFF_THUMB_SIZE = 16.0;
-
-    /// The on-state thumb size.
-    private static final double ON_THUMB_SIZE = 24.0;
-
     /// The visual switch track.
     private final StackPane box = new StackPane();
 
@@ -61,6 +40,9 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
     /// Applies track shape token changes to the switch track.
     private final InvalidationListener trackShapeInvalidation = observable -> updateTrackStyle();
+
+    /// Relayouts the pressed handle size.
+    private final InvalidationListener armedInvalidation = observable -> getSkinnable().requestLayout();
 
     /// Settles running thumb transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -86,19 +68,34 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
         updateMetrics();
         control.touchTargetSizeProperty().addListener(metricsInvalidation);
+        control.trackWidthProperty().addListener(metricsInvalidation);
+        control.trackHeightProperty().addListener(metricsInvalidation);
+        control.stateLayerSizeProperty().addListener(metricsInvalidation);
+        control.unselectedHandleSizeProperty().addListener(metricsInvalidation);
+        control.selectedHandleSizeProperty().addListener(metricsInvalidation);
+        control.pressedHandleSizeProperty().addListener(metricsInvalidation);
         control.trackShapeProperty().addListener(trackShapeInvalidation);
+        control.armedProperty().addListener(armedInvalidation);
         control.selectedProperty().addListener(selectedListener);
     }
 
     /// Stops animations before the skin is disposed.
     @Override
     public void dispose() {
+        M3Switch control = getSkinnable();
         selectionAnimation.stop();
         thumbPosition.removeListener(thumbPositionListener);
-        getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
-        getSkinnable().trackShapeProperty().removeListener(trackShapeInvalidation);
+        control.touchTargetSizeProperty().removeListener(metricsInvalidation);
+        control.trackWidthProperty().removeListener(metricsInvalidation);
+        control.trackHeightProperty().removeListener(metricsInvalidation);
+        control.stateLayerSizeProperty().removeListener(metricsInvalidation);
+        control.unselectedHandleSizeProperty().removeListener(metricsInvalidation);
+        control.selectedHandleSizeProperty().removeListener(metricsInvalidation);
+        control.pressedHandleSizeProperty().removeListener(metricsInvalidation);
+        control.trackShapeProperty().removeListener(trackShapeInvalidation);
+        control.armedProperty().removeListener(armedInvalidation);
         motionSettingsObserver.dispose();
-        getSkinnable().selectedProperty().removeListener(selectedListener);
+        control.selectedProperty().removeListener(selectedListener);
         super.dispose();
     }
 
@@ -111,10 +108,14 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
     /// Applies size-related control tokens to the skin nodes.
     private void updateMetrics() {
-        double touchTargetHeight = Math.max(getSkinnable().getTouchTargetSize(), TRACK_HEIGHT);
-        setIndicatorSlotSize(TRACK_WIDTH, touchTargetHeight);
-        setFixedSize(box, TRACK_WIDTH, TRACK_HEIGHT);
+        M3Switch control = getSkinnable();
+        double trackWidth = control.getTrackWidth();
+        double trackHeight = control.getTrackHeight();
+        double touchTargetHeight = Math.max(Math.max(control.getTouchTargetSize(), trackHeight), control.getStateLayerSize());
+        setIndicatorSlotSize(trackWidth, touchTargetHeight);
+        setFixedSize(box, trackWidth, trackHeight);
         updateTrackStyle();
+        control.requestLayout();
     }
 
     /// Applies the switch track shape token to the visual track.
@@ -136,13 +137,22 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
 
     /// Lays out the thumb from the animated position value.
     private void layoutThumb() {
+        M3Switch control = getSkinnable();
         double position = thumbPosition.get();
-        double thumbSize = OFF_THUMB_SIZE + (ON_THUMB_SIZE - OFF_THUMB_SIZE) * position;
-        double thumbCenterX = OFF_THUMB_CENTER_X + (ON_THUMB_CENTER_X - OFF_THUMB_CENTER_X) * position;
+        double trackWidth = control.getTrackWidth();
+        double trackHeight = control.getTrackHeight();
+        double touchTargetHeight = Math.max(Math.max(control.getTouchTargetSize(), trackHeight), control.getStateLayerSize());
+        double unselectedThumbSize = control.getUnselectedHandleSize();
+        double selectedThumbSize = control.getSelectedHandleSize();
+        double thumbSize = control.isArmed()
+                ? control.getPressedHandleSize()
+                : unselectedThumbSize + (selectedThumbSize - unselectedThumbSize) * position;
+        double offThumbCenterX = trackHeight / 2.0;
+        double onThumbCenterX = trackWidth - trackHeight / 2.0;
+        double thumbCenterX = offThumbCenterX + (onThumbCenterX - offThumbCenterX) * position;
         double thumbX = thumbCenterX - thumbSize / 2.0;
-        double touchTargetHeight = Math.max(getSkinnable().getTouchTargetSize(), TRACK_HEIGHT);
         double thumbY = (touchTargetHeight - thumbSize) / 2.0;
-        double stateLayerSize = Math.max(STATE_LAYER_SIZE, getSkinnable().getTouchTargetSize());
+        double stateLayerSize = control.getStateLayerSize();
         double stateLayerX = thumbCenterX - stateLayerSize / 2.0;
         double stateLayerY = (touchTargetHeight - stateLayerSize) / 2.0;
         layoutIndicatorStateLayer(

@@ -33,8 +33,8 @@ import java.util.Objects;
 /// A Material Design 3 toggle icon button.
 ///
 /// `M3IconToggleButton` is a selectable [ButtonBase] for icon-only choices such as favorite, visibility, or
-/// formatting states. It supports standard, filled, tonal, and outlined variants, token-backed size and shape,
-/// JavaFX accessibility toggle attributes, and Material state-layer and ripple feedback.
+/// formatting states. It supports standard, filled, tonal, and outlined variants, token-backed size, width,
+/// shape, JavaFX accessibility toggle attributes, and Material state-layer and ripple feedback.
 ///
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
@@ -45,11 +45,26 @@ public class M3IconToggleButton extends ButtonBase {
     /// The selected pseudo-class used by toggle icon buttons.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
+    /// The default toggle icon button size.
+    private static final M3IconButtonSize DEFAULT_SIZE = M3IconButtonSize.SMALL;
+
+    /// The default toggle icon button width role.
+    private static final M3IconButtonWidth DEFAULT_WIDTH = M3IconButtonWidth.DEFAULT;
+
+    /// The default toggle icon button shape.
+    private static final M3IconButtonShape DEFAULT_SHAPE = M3IconButtonShape.ROUND;
+
     /// The default toggle icon button container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 40.0;
 
+    /// The default toggle icon button container width.
+    private static final double DEFAULT_CONTAINER_WIDTH = 40.0;
+
     /// The default toggle icon button container shape radius.
     private static final double DEFAULT_CONTAINER_SHAPE = 999.0;
+
+    /// The default toggle icon button glyph size.
+    private static final double DEFAULT_ICON_SIZE = 24.0;
 
     // The toggle icon button variant property.
     private final ObjectProperty<M3IconToggleButtonVariant> variant =
@@ -62,6 +77,48 @@ public class M3IconToggleButton extends ButtonBase {
                         return;
                     }
                     updateVariantStyle();
+                }
+            };
+
+    // The toggle icon button size property.
+    private final ObjectProperty<M3IconButtonSize> size =
+            new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
+                /// Updates size style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_SIZE);
+                        return;
+                    }
+                    updateSizeStyle();
+                }
+            };
+
+    // The toggle icon button width role property.
+    private final ObjectProperty<M3IconButtonWidth> widthRole =
+            new SimpleObjectProperty<>(this, "widthRole", DEFAULT_WIDTH) {
+                /// Updates width style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_WIDTH);
+                        return;
+                    }
+                    updateWidthStyle();
+                }
+            };
+
+    // The toggle icon button shape property.
+    private final ObjectProperty<M3IconButtonShape> iconButtonShape =
+            new SimpleObjectProperty<>(this, "iconButtonShape", DEFAULT_SHAPE) {
+                /// Updates shape style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_SHAPE);
+                        return;
+                    }
+                    updateShapeStyle();
                 }
             };
 
@@ -79,8 +136,14 @@ public class M3IconToggleButton extends ButtonBase {
     // The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
+    // The styleable container width token.
+    private @Nullable StyleableDoubleProperty containerWidth;
+
     // The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
+
+    // The styleable icon glyph size token.
+    private @Nullable StyleableDoubleProperty iconSize;
 
     /// Creates an empty standard toggle icon button.
     public M3IconToggleButton() {
@@ -130,6 +193,69 @@ public class M3IconToggleButton extends ButtonBase {
     /// @return the toggle icon button variant property
     public final ObjectProperty<M3IconToggleButtonVariant> variantProperty() {
         return variant;
+    }
+
+    /// Returns the toggle icon button size.
+    ///
+    /// @return the toggle icon button size
+    public final M3IconButtonSize getSize() {
+        return size.get();
+    }
+
+    /// Sets the toggle icon button size.
+    ///
+    /// @param size the toggle icon button size
+    public final void setSize(M3IconButtonSize size) {
+        this.size.set(Objects.requireNonNull(size, "size"));
+    }
+
+    /// Returns the toggle icon button size property.
+    ///
+    /// @return the toggle icon button size property
+    public final ObjectProperty<M3IconButtonSize> sizeProperty() {
+        return size;
+    }
+
+    /// Returns the toggle icon button width role.
+    ///
+    /// @return the toggle icon button width role
+    public final M3IconButtonWidth getWidthRole() {
+        return widthRole.get();
+    }
+
+    /// Sets the toggle icon button width role.
+    ///
+    /// @param widthRole the toggle icon button width role
+    public final void setWidthRole(M3IconButtonWidth widthRole) {
+        this.widthRole.set(Objects.requireNonNull(widthRole, "widthRole"));
+    }
+
+    /// Returns the toggle icon button width role property.
+    ///
+    /// @return the toggle icon button width role property
+    public final ObjectProperty<M3IconButtonWidth> widthRoleProperty() {
+        return widthRole;
+    }
+
+    /// Returns the toggle icon button shape.
+    ///
+    /// @return the toggle icon button shape
+    public final M3IconButtonShape getIconButtonShape() {
+        return iconButtonShape.get();
+    }
+
+    /// Sets the toggle icon button shape.
+    ///
+    /// @param shape the toggle icon button shape
+    public final void setIconButtonShape(M3IconButtonShape shape) {
+        this.iconButtonShape.set(Objects.requireNonNull(shape, "shape"));
+    }
+
+    /// Returns the toggle icon button shape property.
+    ///
+    /// @return the toggle icon button shape property
+    public final ObjectProperty<M3IconButtonShape> iconButtonShapeProperty() {
+        return iconButtonShape;
     }
 
     /// Returns whether this toggle icon button is selected.
@@ -183,6 +309,36 @@ public class M3IconToggleButton extends ButtonBase {
         return containerHeight;
     }
 
+    /// Returns the preferred container width token.
+    ///
+    /// @return the preferred container width token
+    public final double getContainerWidth() {
+        return containerWidth == null ? DEFAULT_CONTAINER_WIDTH : containerWidth.get();
+    }
+
+    /// Sets the preferred container width token.
+    ///
+    /// @param containerWidth the preferred container width token
+    public final void setContainerWidth(double containerWidth) {
+        containerWidthProperty().set(M3Css.nonNegative(containerWidth, "containerWidth"));
+    }
+
+    /// Returns the preferred container width token property.
+    ///
+    /// @return the preferred container width token property
+    public final StyleableDoubleProperty containerWidthProperty() {
+        if (containerWidth == null) {
+            containerWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_WIDTH,
+                    this,
+                    "containerWidth",
+                    StyleableProperties.CONTAINER_WIDTH,
+                    this::updateMetrics
+            );
+        }
+        return containerWidth;
+    }
+
     /// Returns the container shape radius token.
     ///
     /// @return the container shape radius token
@@ -211,6 +367,36 @@ public class M3IconToggleButton extends ButtonBase {
             );
         }
         return containerShape;
+    }
+
+    /// Returns the icon glyph size token.
+    ///
+    /// @return the icon glyph size in pixels
+    public final double getIconSize() {
+        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
+    }
+
+    /// Sets the icon glyph size token.
+    ///
+    /// @param iconSize the icon glyph size in pixels
+    public final void setIconSize(double iconSize) {
+        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
+    }
+
+    /// Returns the icon glyph size token property.
+    ///
+    /// @return the icon glyph size property
+    public final StyleableDoubleProperty iconSizeProperty() {
+        if (iconSize == null) {
+            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_SIZE,
+                    this,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    this::updateMetrics
+            );
+        }
+        return iconSize;
     }
 
     /// Toggles and fires this icon button.
@@ -267,7 +453,11 @@ public class M3IconToggleButton extends ButtonBase {
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);
         setPickOnBounds(true);
+        graphicProperty().addListener(observable -> updateM3IconGraphicSize());
         updateVariantStyle();
+        updateSizeStyle();
+        updateWidthStyle();
+        updateShapeStyle();
         updateMetrics();
     }
 
@@ -283,11 +473,55 @@ public class M3IconToggleButton extends ButtonBase {
         );
     }
 
+    /// Applies the current size style class.
+    private void updateSizeStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getSize().getStyleClass(),
+                M3IconButtonSize.EXTRA_SMALL.getStyleClass(),
+                M3IconButtonSize.SMALL.getStyleClass(),
+                M3IconButtonSize.MEDIUM.getStyleClass(),
+                M3IconButtonSize.LARGE.getStyleClass(),
+                M3IconButtonSize.EXTRA_LARGE.getStyleClass()
+        );
+    }
+
+    /// Applies the current width style class.
+    private void updateWidthStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getWidthRole().getStyleClass(),
+                M3IconButtonWidth.NARROW.getStyleClass(),
+                M3IconButtonWidth.DEFAULT.getStyleClass(),
+                M3IconButtonWidth.WIDE.getStyleClass()
+        );
+    }
+
+    /// Applies the current shape style class.
+    private void updateShapeStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getIconButtonShape().getStyleClass(),
+                M3IconButtonShape.ROUND.getStyleClass(),
+                M3IconButtonShape.SQUARE.getStyleClass()
+        );
+    }
+
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
-        double size = getContainerHeight();
-        setMinSize(size, size);
-        setPrefSize(size, size);
+        double width = getContainerWidth();
+        double height = getContainerHeight();
+        setMinSize(width, height);
+        setPrefSize(width, height);
+        setMaxSize(width, height);
+        updateM3IconGraphicSize();
+    }
+
+    /// Applies the resolved icon button size token to direct M3FX icon graphics.
+    private void updateM3IconGraphicSize() {
+        if (getGraphic() instanceof M3Icon icon) {
+            icon.setIconSize(getIconSize());
+        }
     }
 
     /// CSS metadata for M3FX toggle icon button component tokens.
@@ -309,6 +543,22 @@ public class M3IconToggleButton extends ButtonBase {
                     }
                 };
 
+        /// CSS metadata for the container width token.
+        private static final CssMetaData<M3IconToggleButton, Number> CONTAINER_WIDTH =
+                new CssMetaData<>("-m3-container-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_WIDTH) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3IconToggleButton control) {
+                        return M3Css.isSettable(control.containerWidthProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3IconToggleButton control) {
+                        return control.containerWidthProperty();
+                    }
+                };
+
         /// CSS metadata for the container shape token.
         private static final CssMetaData<M3IconToggleButton, Number> CONTAINER_SHAPE =
                 new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
@@ -325,13 +575,31 @@ public class M3IconToggleButton extends ButtonBase {
                     }
                 };
 
+        /// CSS metadata for the icon glyph size token.
+        private static final CssMetaData<M3IconToggleButton, Number> ICON_SIZE =
+                new CssMetaData<>("-m3-icon-button-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3IconToggleButton control) {
+                        return M3Css.isSettable(control.iconSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3IconToggleButton control) {
+                        return control.iconSizeProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
             styleables.add(CONTAINER_HEIGHT);
+            styleables.add(CONTAINER_WIDTH);
             styleables.add(CONTAINER_SHAPE);
+            styleables.add(ICON_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

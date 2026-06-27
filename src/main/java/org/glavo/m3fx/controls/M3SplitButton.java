@@ -12,7 +12,12 @@ import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.NodeOrientation;
@@ -29,6 +34,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 split button with a primary action and an attached menu action.
@@ -55,14 +63,20 @@ public class M3SplitButton extends Control {
     /// The pseudo-class applied to the child button rendered on the physical right edge.
     private static final PseudoClass RIGHT_EDGE_PSEUDO_CLASS = PseudoClass.getPseudoClass("right-edge");
 
-    /// The text used for the default menu indicator.
-    private static final String MENU_INDICATOR_TEXT = "v";
+    /// The default Material Expressive split button size.
+    private static final M3SplitButtonSize DEFAULT_SIZE = M3SplitButtonSize.SMALL;
+
+    /// The default spacing between the action and menu parts.
+    private static final double DEFAULT_SPACING = -1.0;
 
     /// The primary action button.
     private final M3Button actionButton = new M3Button();
 
     /// The attached menu button.
-    private final M3MenuButton menuButton = new M3MenuButton(MENU_INDICATOR_TEXT);
+    private final M3MenuButton menuButton = new M3MenuButton();
+
+    /// The disclosure icon displayed by the menu button side.
+    private final M3DisclosureIcon menuIndicator = new M3DisclosureIcon();
 
     /// The focusable button parts exposed to accessibility and keyboard navigation.
     private final ObservableList<Node> buttonParts = FXCollections.observableArrayList();
@@ -92,6 +106,24 @@ public class M3SplitButton extends Control {
                     updateVariant();
                 }
             };
+
+    /// The Material Expressive split button size property.
+    private final ObjectProperty<M3SplitButtonSize> size =
+            new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
+                /// Updates size style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_SIZE);
+                        return;
+                    }
+                    updateSizeStyle();
+                    requestLayout();
+                }
+            };
+
+    /// The styleable spacing between the action and menu parts.
+    private @Nullable StyleableDoubleProperty spacing;
 
     /// Creates an empty split button.
     public M3SplitButton() {
@@ -216,6 +248,57 @@ public class M3SplitButton extends Control {
     /// @return the shared button variant property
     public final ObjectProperty<M3ButtonVariant> variantProperty() {
         return variant;
+    }
+
+    /// Returns the Material Expressive split button size.
+    ///
+    /// @return the Material Expressive split button size
+    public final M3SplitButtonSize getSize() {
+        return size.get();
+    }
+
+    /// Sets the Material Expressive split button size.
+    ///
+    /// @param size the Material Expressive split button size
+    public final void setSize(M3SplitButtonSize size) {
+        this.size.set(Objects.requireNonNull(size, "size"));
+    }
+
+    /// Returns the Material Expressive split button size property.
+    ///
+    /// @return the Material Expressive split button size property
+    public final ObjectProperty<M3SplitButtonSize> sizeProperty() {
+        return size;
+    }
+
+    /// Returns the spacing between the primary action and menu button parts.
+    ///
+    /// @return the part spacing in pixels
+    public final double getSpacing() {
+        return spacing == null ? DEFAULT_SPACING : spacing.get();
+    }
+
+    /// Sets the spacing between the primary action and menu button parts.
+    ///
+    /// @param spacing the part spacing in pixels
+    public final void setSpacing(double spacing) {
+        spacingProperty().set(M3Css.finite(spacing, "spacing"));
+    }
+
+    /// Returns the styleable part spacing property.
+    ///
+    /// @return the styleable part spacing property
+    public final StyleableDoubleProperty spacingProperty() {
+        if (spacing == null) {
+            spacing = M3Css.finiteStyleableDoubleProperty(
+                    DEFAULT_SPACING,
+                    this,
+                    "spacing",
+                    StyleableProperties.SPACING,
+                    this::requestLayout
+            );
+        }
+        return spacing;
     }
 
     /// Returns the menu displayed by the menu side.
@@ -379,6 +462,21 @@ public class M3SplitButton extends Control {
         return M3Stylesheets.controlStylesheet("split-button.css");
     }
 
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for this control class
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    ///
+    /// @return the CSS metadata for this control
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
     /// Returns accessibility attributes for the split button and its attached menu.
     ///
     /// @param attribute the requested accessibility attribute
@@ -422,6 +520,9 @@ public class M3SplitButton extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         M3ControlStyles.add(actionButton, ACTION_BUTTON_STYLE_CLASS);
         M3ControlStyles.add(menuButton, MENU_BUTTON_STYLE_CLASS);
+        menuIndicator.setMouseTransparent(true);
+        menuIndicator.expandedProperty().bind(menuButton.showingProperty());
+        menuButton.setGraphic(menuIndicator);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         buttonParts.setAll(actionButton, menuButton);
         menuButton.setHorizontalPadding(0.0);
@@ -436,6 +537,7 @@ public class M3SplitButton extends Control {
         focusNotifier.start();
         popupFocusNotifier.start();
         updateVariant();
+        updateSizeStyle();
         updateNodeOrientationStyle();
     }
 
@@ -519,6 +621,19 @@ public class M3SplitButton extends Control {
         menuButton.setVariant(currentVariant);
     }
 
+    /// Applies the size style class to this split button.
+    private void updateSizeStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getSize().getStyleClass(),
+                M3SplitButtonSize.EXTRA_SMALL.getStyleClass(),
+                M3SplitButtonSize.SMALL.getStyleClass(),
+                M3SplitButtonSize.MEDIUM.getStyleClass(),
+                M3SplitButtonSize.LARGE.getStyleClass(),
+                M3SplitButtonSize.EXTRA_LARGE.getStyleClass()
+        );
+    }
+
     /// Updates layout-direction-dependent edge states and child feedback geometry.
     private void updateNodeOrientationStyle() {
         boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
@@ -541,5 +656,34 @@ public class M3SplitButton extends Control {
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3SplitButtonSkin(this);
+    }
+
+    /// CSS metadata for split button layout tokens.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for spacing between the action and menu parts.
+        private static final CssMetaData<M3SplitButton, Number> SPACING =
+                new CssMetaData<>("-m3-split-button-spacing", SizeConverter.getInstance(), DEFAULT_SPACING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3SplitButton control) {
+                        return M3Css.isSettable(control.spacingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3SplitButton control) {
+                        return control.spacingProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(SPACING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
+        }
     }
 }

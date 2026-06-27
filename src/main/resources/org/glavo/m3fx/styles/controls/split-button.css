@@ -1,16 +1,54 @@
+.m3-split-button {
+    -m3-split-button-container-height: 40px;
+    -m3-split-button-spacing: -1px;
+    -m3-split-button-action-horizontal-padding: 20px;
+    -m3-split-button-menu-width: 48px;
+}
+
+.m3-profile-expressive .m3-split-button {
+    -m3-split-button-spacing: 2px;
+    -m3-split-button-action-horizontal-padding: 16px;
+}
+
+.m3-split-button.m3-split-button-extra-small {
+    -m3-split-button-container-height: 32px;
+    -m3-split-button-action-horizontal-padding: 12px;
+    -m3-split-button-menu-width: 48px;
+}
+
+.m3-split-button.m3-split-button-small {
+    -m3-split-button-container-height: 40px;
+    -m3-split-button-menu-width: 48px;
+}
+
+.m3-split-button.m3-split-button-medium {
+    -m3-split-button-container-height: 56px;
+    -m3-split-button-action-horizontal-padding: 24px;
+    -m3-split-button-menu-width: 56px;
+}
+
+.m3-split-button.m3-split-button-large {
+    -m3-split-button-container-height: 96px;
+    -m3-split-button-action-horizontal-padding: 48px;
+    -m3-split-button-menu-width: 96px;
+}
+
+.m3-split-button.m3-split-button-extra-large {
+    -m3-split-button-container-height: 136px;
+    -m3-split-button-action-horizontal-padding: 64px;
+    -m3-split-button-menu-width: 136px;
+}
+
 .m3-split-button .m3-button.m3-split-button-action {
-    -m3-horizontal-padding: 20px;
+    -m3-container-height: -m3-split-button-container-height;
+    -m3-horizontal-padding: -m3-split-button-action-horizontal-padding;
 }
 
 .m3-split-button .m3-button.m3-split-button-menu {
+    -m3-container-height: -m3-split-button-container-height;
     -m3-horizontal-padding: 0px;
-    -fx-min-width: 48px;
-    -fx-pref-width: 48px;
-}
-
-.m3-split-button .m3-button:right-edge {
-    -fx-background-radius: 0 999px 999px 0;
-    -fx-border-radius: 0 999px 999px 0;
+    -fx-min-width: -m3-split-button-menu-width;
+    -fx-pref-width: -m3-split-button-menu-width;
 }
 
 .m3-split-button .m3-button:left-edge {
@@ -18,29 +56,42 @@
     -fx-border-radius: 999px 0 0 999px;
 }
 
-.m3-split-button .m3-button.m3-split-button-action:left-edge,
-.m3-split-button .m3-button.m3-split-button-menu:left-edge {
-    -fx-background-radius: 999px 0 0 999px;
-    -fx-border-radius: 999px 0 0 999px;
-}
-
-.m3-split-button .m3-button.m3-split-button-action:right-edge,
-.m3-split-button .m3-button.m3-split-button-menu:right-edge {
+.m3-split-button .m3-button:right-edge {
     -fx-background-radius: 0 999px 999px 0;
     -fx-border-radius: 0 999px 999px 0;
+}
+
+.m3-profile-expressive .m3-split-button .m3-button:left-edge {
+    -fx-background-radius: 999px 6px 6px 999px;
+    -fx-border-radius: 999px 6px 6px 999px;
+}
+
+.m3-profile-expressive .m3-split-button .m3-button:right-edge {
+    -fx-background-radius: 6px 999px 999px 6px;
+    -fx-border-radius: 6px 999px 999px 6px;
+}
+
+.m3-profile-expressive .m3-split-button.m3-split-button-large .m3-button:left-edge {
+    -fx-background-radius: 999px 10px 10px 999px;
+    -fx-border-radius: 999px 10px 10px 999px;
+}
+
+.m3-profile-expressive .m3-split-button.m3-split-button-large .m3-button:right-edge {
+    -fx-background-radius: 10px 999px 999px 10px;
+    -fx-border-radius: 10px 999px 999px 10px;
+}
+
+.m3-profile-expressive .m3-split-button.m3-split-button-extra-large .m3-button:left-edge {
+    -fx-background-radius: 999px 16px 16px 999px;
+    -fx-border-radius: 999px 16px 16px 999px;
+}
+
+.m3-profile-expressive .m3-split-button.m3-split-button-extra-large .m3-button:right-edge {
+    -fx-background-radius: 16px 999px 999px 16px;
+    -fx-border-radius: 16px 999px 999px 16px;
 }
 
 .m3-split-button .m3-button.m3-split-button-action:disabled,
 .m3-split-button .m3-button.m3-split-button-menu:disabled {
     -fx-opacity: 0.38;
-}
-
-.m3-split-button .m3-button.m3-button:left-edge:left-edge {
-    -fx-background-radius: 999px 0 0 999px;
-    -fx-border-radius: 999px 0 0 999px;
-}
-
-.m3-split-button .m3-button.m3-button:right-edge:right-edge {
-    -fx-background-radius: 0 999px 999px 0;
-    -fx-border-radius: 0 999px 999px 0;
 }

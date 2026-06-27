@@ -10,12 +10,14 @@ import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.ObservableList;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
+import javafx.scene.shape.PathElement;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.util.Duration;
@@ -34,6 +36,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// The first visible phase used when indeterminate progress starts.
     private static final double INDETERMINATE_START_POSITION = 0.18;
+
+    /// The preferred distance between sampled points in a linear expressive wave.
+    private static final double LINEAR_WAVE_SAMPLE_LENGTH = 4.0;
 
     /// The clipped visual container.
     private final Pane container = new Pane();
@@ -266,7 +271,6 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
             double wavelength,
             double phase
     ) {
-        path.getElements().clear();
         if (endX <= startX) {
             path.setVisible(false);
             return;
@@ -274,18 +278,57 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
         path.setVisible(true);
         double safeWavelength = Math.max(1.0, wavelength);
-        int steps = Math.max(2, (int) Math.ceil((endX - startX) / 4.0));
+        int steps = Math.max(2, (int) Math.ceil((endX - startX) / LINEAR_WAVE_SAMPLE_LENGTH));
+        ObservableList<PathElement> elements = path.getElements();
+        ensureSampledPathElements(elements, steps + 1);
         for (int i = 0; i <= steps; i++) {
             double fraction = (double) i / (double) steps;
             double x = startX + (endX - startX) * fraction;
             double angle = (x / safeWavelength + phase) * Math.PI * 2.0;
             double y = centerY + Math.sin(angle) * amplitude;
-            if (i == 0) {
-                path.getElements().add(new MoveTo(x, y));
-            } else {
-                path.getElements().add(new LineTo(x, y));
+            setSampledPathPoint(elements.get(i), x, y);
+        }
+    }
+
+    /// Ensures that a sampled path contains one `MoveTo` followed by reusable `LineTo` elements.
+    private static void ensureSampledPathElements(ObservableList<PathElement> elements, int count) {
+        if (count < 1) {
+            elements.clear();
+            return;
+        }
+
+        if (elements.isEmpty()) {
+            elements.add(new MoveTo());
+        } else if (!(elements.get(0) instanceof MoveTo)) {
+            elements.set(0, new MoveTo());
+        }
+
+        for (int i = 1; i < count; i++) {
+            if (i >= elements.size()) {
+                elements.add(new LineTo());
+            } else if (!(elements.get(i) instanceof LineTo)) {
+                elements.set(i, new LineTo());
             }
         }
+
+        if (elements.size() > count) {
+            elements.remove(count, elements.size());
+        }
+    }
+
+    /// Updates the coordinates of a reusable sampled path element.
+    private static void setSampledPathPoint(PathElement element, double x, double y) {
+        if (element instanceof MoveTo moveTo) {
+            moveTo.setX(x);
+            moveTo.setY(y);
+            return;
+        }
+        if (element instanceof LineTo lineTo) {
+            lineTo.setX(x);
+            lineTo.setY(y);
+            return;
+        }
+        throw new IllegalArgumentException("Unsupported sampled path element: " + element);
     }
 
     /// Returns the centerline gap that preserves the requested visible gap around round caps.

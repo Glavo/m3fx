@@ -54,6 +54,12 @@ public class M3Chip extends ButtonBase {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
+    /// The default horizontal content padding when a leading graphic is present.
+    private static final double DEFAULT_ICON_HORIZONTAL_PADDING = 8.0;
+
+    /// The default size for icon graphics.
+    private static final double DEFAULT_ICON_SIZE = 18.0;
+
     // The chip variant property.
     private final ObjectProperty<M3ChipVariant> variant = new SimpleObjectProperty<>(this, "variant", M3ChipVariant.ASSIST) {
         /// Updates variant style classes when the property changes.
@@ -67,6 +73,20 @@ public class M3Chip extends ButtonBase {
         }
     };
 
+    // The chip container style property.
+    private final ObjectProperty<M3ChipStyle> chipStyle =
+            new SimpleObjectProperty<>(this, "chipStyle", M3ChipStyle.FLAT) {
+                /// Updates chip style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3ChipStyle.FLAT);
+                        return;
+                    }
+                    updateChipStyle();
+                }
+            };
+
     // The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
@@ -75,6 +95,12 @@ public class M3Chip extends ButtonBase {
 
     // The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
+
+    // The styleable horizontal padding token used when a leading graphic is present.
+    private @Nullable StyleableDoubleProperty iconHorizontalPadding;
+
+    // The styleable icon size token.
+    private @Nullable StyleableDoubleProperty iconSize;
 
     // The selected state property.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
@@ -148,6 +174,27 @@ public class M3Chip extends ButtonBase {
     /// @return the chip variant property
     public final ObjectProperty<M3ChipVariant> variantProperty() {
         return variant;
+    }
+
+    /// Returns the chip container style.
+    ///
+    /// @return the Material chip container style
+    public final M3ChipStyle getChipStyle() {
+        return chipStyle.get();
+    }
+
+    /// Sets the chip container style.
+    ///
+    /// @param chipStyle the chip container style
+    public final void setChipStyle(M3ChipStyle chipStyle) {
+        this.chipStyle.set(Objects.requireNonNull(chipStyle, "chipStyle"));
+    }
+
+    /// Returns the chip container style property.
+    ///
+    /// @return the chip container style property
+    public final ObjectProperty<M3ChipStyle> chipStyleProperty() {
+        return chipStyle;
     }
 
     /// Returns the preferred container height token.
@@ -240,6 +287,66 @@ public class M3Chip extends ButtonBase {
         return horizontalPadding;
     }
 
+    /// Returns the horizontal content padding token used when a leading graphic is present.
+    ///
+    /// @return the horizontal content padding in pixels for chips with graphics
+    public final double getIconHorizontalPadding() {
+        return iconHorizontalPadding == null ? DEFAULT_ICON_HORIZONTAL_PADDING : iconHorizontalPadding.get();
+    }
+
+    /// Sets the horizontal content padding token used when a leading graphic is present.
+    ///
+    /// @param iconHorizontalPadding the horizontal content padding in pixels for chips with graphics
+    public final void setIconHorizontalPadding(double iconHorizontalPadding) {
+        iconHorizontalPaddingProperty().set(M3Css.nonNegative(iconHorizontalPadding, "iconHorizontalPadding"));
+    }
+
+    /// Returns the horizontal content padding token property used when a leading graphic is present.
+    ///
+    /// @return the horizontal content padding property for chips with graphics
+    public final StyleableDoubleProperty iconHorizontalPaddingProperty() {
+        if (iconHorizontalPadding == null) {
+            iconHorizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_HORIZONTAL_PADDING,
+                    this,
+                    "iconHorizontalPadding",
+                    StyleableProperties.ICON_HORIZONTAL_PADDING,
+                    this::updateMetrics
+            );
+        }
+        return iconHorizontalPadding;
+    }
+
+    /// Returns the icon size token applied to [M3Icon] graphics.
+    ///
+    /// @return the icon graphic size in pixels
+    public final double getIconSize() {
+        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
+    }
+
+    /// Sets the icon size token applied to [M3Icon] graphics.
+    ///
+    /// @param iconSize the icon graphic size in pixels
+    public final void setIconSize(double iconSize) {
+        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
+    }
+
+    /// Returns the icon size token property applied to [M3Icon] graphics.
+    ///
+    /// @return the icon size token property
+    public final StyleableDoubleProperty iconSizeProperty() {
+        if (iconSize == null) {
+            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_SIZE,
+                    this,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    this::updateGraphicMetrics
+            );
+        }
+        return iconSize;
+    }
+
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list for this class
@@ -293,7 +400,9 @@ public class M3Chip extends ButtonBase {
         setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
         setFocusTraversable(true);
         setPickOnBounds(true);
+        graphicProperty().addListener(observable -> updateMetrics());
         updateVariantStyle();
+        updateChipStyle();
         updateMetrics();
     }
 
@@ -309,13 +418,31 @@ public class M3Chip extends ButtonBase {
         );
     }
 
+    /// Applies the current chip style class.
+    private void updateChipStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getChipStyle().getStyleClass(),
+                M3ChipStyle.FLAT.getStyleClass(),
+                M3ChipStyle.ELEVATED.getStyleClass()
+        );
+    }
+
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double height = getContainerHeight();
-        double padding = getHorizontalPadding();
+        double padding = getGraphic() == null ? getHorizontalPadding() : getIconHorizontalPadding();
         setMinHeight(height);
         setPrefHeight(height);
         setPadding(new Insets(0.0, padding, 0.0, padding));
+        updateGraphicMetrics();
+    }
+
+    /// Applies graphic-specific component tokens to supported graphic nodes.
+    private void updateGraphicMetrics() {
+        if (getGraphic() instanceof M3Icon icon) {
+            icon.setIconSize(getIconSize());
+        }
     }
 
     /// CSS metadata for m3fx chip component tokens.
@@ -369,6 +496,42 @@ public class M3Chip extends ButtonBase {
                     }
                 };
 
+        /// CSS metadata for the horizontal padding token used when a leading graphic is present.
+        private static final CssMetaData<M3Chip, Number> ICON_HORIZONTAL_PADDING =
+                new CssMetaData<>(
+                        "-m3-icon-horizontal-padding",
+                        SizeConverter.getInstance(),
+                        DEFAULT_ICON_HORIZONTAL_PADDING
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Chip control) {
+                        return M3Css.isSettable(control.iconHorizontalPaddingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Chip control) {
+                        return control.iconHorizontalPaddingProperty();
+                    }
+                };
+
+        /// CSS metadata for the icon size token applied to [M3Icon] graphics.
+        private static final CssMetaData<M3Chip, Number> ICON_SIZE =
+                new CssMetaData<>("-m3-chip-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Chip control) {
+                        return M3Css.isSettable(control.iconSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Chip control) {
+                        return control.iconSizeProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -377,6 +540,8 @@ public class M3Chip extends ButtonBase {
             styleables.add(CONTAINER_HEIGHT);
             styleables.add(CONTAINER_SHAPE);
             styleables.add(HORIZONTAL_PADDING);
+            styleables.add(ICON_HORIZONTAL_PADDING);
+            styleables.add(ICON_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

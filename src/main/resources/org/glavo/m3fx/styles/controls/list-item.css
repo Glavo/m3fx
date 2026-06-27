@@ -26,6 +26,11 @@
     -m3-horizontal-padding: 16px;
     -m3-vertical-padding: 8px;
     -m3-content-spacing: 16px;
+    -m3-list-item-headline-color: -m3-color-on-surface;
+    -m3-list-item-supporting-color: -m3-color-on-surface-variant;
+    -m3-list-item-selected-container-color: -m3-color-secondary-container;
+    -m3-list-item-selected-content-color: -m3-color-on-secondary-container;
+    -m3-list-item-state-layer-color: -m3-color-on-surface;
     -fx-background-color: transparent;
     -fx-cursor: hand;
 }
@@ -51,12 +56,12 @@
 }
 
 .m3-list-item-selection-container {
-    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-color: -m3-list-item-selected-container-color;
 }
 
 .m3-list-item .m3-state-layer,
 .m3-list-item .m3-ripple {
-    -fx-background-color: -m3-color-on-surface;
+    -fx-background-color: -m3-list-item-state-layer-color;
 }
 
 .m3-list-item:one-line .m3-list-item-text {
@@ -76,17 +81,24 @@
 .m3-list-item-overline {
     -fx-font-size: 11px;
     -fx-font-weight: 500;
-    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-text-fill: -m3-list-item-supporting-color;
 }
 
 .m3-list-item-headline {
     -fx-font-size: 16px;
-    -fx-text-fill: -m3-color-on-surface;
+    -fx-text-fill: -m3-list-item-headline-color;
 }
 
 .m3-list-item-supporting {
     -fx-font-size: 14px;
-    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-text-fill: -m3-list-item-supporting-color;
+}
+
+.m3-list-item-overline:selected,
+.m3-list-item-headline:selected,
+.m3-list-item-supporting:selected,
+.m3-list-item-trailing-supporting:selected {
+    -fx-text-fill: -m3-list-item-selected-content-color;
 }
 
 .m3-list-item-trailing-box {
@@ -96,7 +108,67 @@
 
 .m3-list-item-trailing-supporting {
     -fx-font-size: 12px;
-    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-text-fill: -m3-list-item-supporting-color;
+}
+
+.m3-menu-item {
+    -m3-list-item-headline-color: -m3-color-on-surface;
+    -m3-list-item-supporting-color: -m3-color-on-surface;
+    -m3-list-item-selected-container-color: -m3-color-secondary-container;
+    -m3-list-item-selected-content-color: -m3-color-on-secondary-container;
+    -m3-list-item-state-layer-color: -m3-color-on-surface;
+}
+
+.m3-profile-expressive .m3-menu-item {
+    -m3-list-item-selected-container-color: -m3-color-tertiary-container;
+    -m3-list-item-selected-content-color: -m3-color-on-tertiary-container;
+}
+
+.m3-menu-item:vibrant {
+    -m3-list-item-headline-color: -m3-color-on-tertiary-container;
+    -m3-list-item-supporting-color: -m3-color-on-tertiary-container;
+    -m3-list-item-selected-container-color: -m3-color-tertiary;
+    -m3-list-item-selected-content-color: -m3-color-on-tertiary;
+    -m3-list-item-state-layer-color: -m3-color-on-tertiary-container;
+}
+
+.m3-menu-item-selection-container {
+    -fx-background-color: -m3-color-secondary-container;
+}
+
+.m3-profile-expressive .m3-menu-item-selection-container {
+    -fx-background-color: -m3-color-tertiary-container;
+}
+
+.m3-menu-item-selection-container.m3-menu-item-selection-container:vibrant,
+.m3-profile-expressive .m3-menu-item-selection-container.m3-menu-item-selection-container:vibrant {
+    -fx-background-color: -m3-color-tertiary;
+}
+
+.m3-menu-item-text {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-menu-item-text:selected {
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-profile-expressive .m3-menu-item-text:selected {
+    -fx-text-fill: -m3-color-on-tertiary-container;
+}
+
+.m3-menu-item-text.m3-menu-item-text:vibrant {
+    -fx-text-fill: -m3-color-on-tertiary-container;
+}
+
+.m3-menu-item-text.m3-menu-item-text:selected:vibrant,
+.m3-profile-expressive .m3-menu-item-text.m3-menu-item-text:selected:vibrant {
+    -fx-text-fill: -m3-color-on-tertiary;
+}
+
+.m3-state-layer.vibrant,
+.m3-ripple.vibrant {
+    -fx-background-color: -m3-color-on-tertiary-container;
 }
 
 .m3-list-item-leading,

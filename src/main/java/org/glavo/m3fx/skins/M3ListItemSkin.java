@@ -8,6 +8,8 @@ import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.SetChangeListener;
+import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
@@ -28,6 +30,7 @@ import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
+import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -37,6 +40,18 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3ListItem].
 @NotNullByDefault
 public class M3ListItemSkin extends SkinBase<M3ListItem> {
+    /// The pseudo-class mirrored to internal nodes when a menu item uses the vibrant color style.
+    private static final PseudoClass VIBRANT_PSEUDO_CLASS = PseudoClass.getPseudoClass("vibrant");
+
+    /// The pseudo-class mirrored to internal text nodes when the item is selected.
+    private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
+
+    /// The style class applied to menu item selected-container nodes.
+    private static final String MENU_ITEM_SELECTION_CONTAINER_STYLE_CLASS = "m3-menu-item-selection-container";
+
+    /// The style class applied to menu item text nodes.
+    private static final String MENU_ITEM_TEXT_STYLE_CLASS = "m3-menu-item-text";
+
     /// The hidden selected container scale.
     private static final double HIDDEN_SELECTION_SCALE = 0.96;
 
@@ -119,9 +134,15 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Applies logical leading and trailing alignment when node orientation changes.
     private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
 
-    /// Animates the selected container when selection changes.
-    private final ChangeListener<Boolean> selectedListener =
-            (observable, oldValue, newValue) -> animateSelectionContainer(newValue);
+    /// Mirrors menu-owned pseudo-classes to internal skin nodes.
+    private final SetChangeListener<PseudoClass> skinnablePseudoClassListener =
+            change -> updateMenuColorStylePseudoClasses();
+
+    /// Animates the selected container and mirrors selected state to internal text nodes.
+    private final ChangeListener<Boolean> selectedListener = (observable, oldValue, newValue) -> {
+        updateSelectedChildPseudoClasses(newValue);
+        animateSelectionContainer(newValue);
+    };
 
     /// Clears transient interaction feedback when the item becomes disabled.
     private final ChangeListener<Boolean> disabledListener = (observable, oldValue, newValue) -> {
@@ -151,6 +172,13 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         trailingSupportingLabel.getStyleClass().add("m3-list-item-trailing-supporting");
         leadingSlot.getStyleClass().add("m3-list-item-leading");
         trailingSlot.getStyleClass().add("m3-list-item-trailing");
+        if (control instanceof M3MenuItem) {
+            selectionContainer.getStyleClass().add(MENU_ITEM_SELECTION_CONTAINER_STYLE_CLASS);
+            overlineLabel.getStyleClass().add(MENU_ITEM_TEXT_STYLE_CLASS);
+            headlineLabel.getStyleClass().add(MENU_ITEM_TEXT_STYLE_CLASS);
+            supportingLabel.getStyleClass().add(MENU_ITEM_TEXT_STYLE_CLASS);
+            trailingSupportingLabel.getStyleClass().add(MENU_ITEM_TEXT_STYLE_CLASS);
+        }
 
         selectionContainer.setManaged(false);
         selectionContainer.setMouseTransparent(true);
@@ -166,6 +194,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
         stateLayer.installStateTransitions(control);
         updateSelectionContainerImmediate(control.isSelected());
+        updateSelectedChildPseudoClasses(control.isSelected());
+        updateMenuColorStylePseudoClasses();
         updateText();
         updateSlots();
         updateSlotMetrics();
@@ -188,6 +218,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         control.verticalPaddingProperty().addListener(metricsInvalidation);
         control.contentSpacingProperty().addListener(metricsInvalidation);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
+        control.getPseudoClassStates().addListener(skinnablePseudoClassListener);
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
     }
@@ -216,6 +247,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         item.verticalPaddingProperty().removeListener(metricsInvalidation);
         item.contentSpacingProperty().removeListener(metricsInvalidation);
         item.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        item.getPseudoClassStates().removeListener(skinnablePseudoClassListener);
         motionSettingsObserver.dispose();
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
@@ -370,6 +402,26 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         }
         selectionContainer.applyCss();
         container.applyCss();
+    }
+
+    /// Mirrors the selected pseudo-class to internal nodes that need direct CSS state selectors.
+    private void updateSelectedChildPseudoClasses(boolean selected) {
+        overlineLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
+        headlineLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
+        supportingLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
+        trailingSupportingLabel.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
+    }
+
+    /// Mirrors menu color style pseudo-classes to direct internal nodes.
+    private void updateMenuColorStylePseudoClasses() {
+        boolean vibrant = getSkinnable() instanceof M3MenuItem
+                && getSkinnable().getPseudoClassStates().contains(VIBRANT_PSEUDO_CLASS);
+        selectionContainer.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
+        overlineLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
+        headlineLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
+        supportingLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
+        trailingSupportingLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
+        stateLayer.setContentPseudoClass(VIBRANT_PSEUDO_CLASS, vibrant);
     }
 
     /// Animates the selected container to the requested state.

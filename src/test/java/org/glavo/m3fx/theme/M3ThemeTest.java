@@ -19,6 +19,8 @@ import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
+import org.glavo.m3fx.controls.M3ButtonGroupSize;
+import org.glavo.m3fx.controls.M3ButtonGroupVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CheckBox;
@@ -48,6 +50,7 @@ import org.glavo.m3fx.controls.M3MenuSelectionMode;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
+import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3Scrim;
@@ -58,6 +61,7 @@ import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3Surface;
+import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
@@ -123,6 +127,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-icon-size"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-outline-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-indicator-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-container-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-indicator-size"));
@@ -139,6 +145,9 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-validation-summary-container-shape"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-surface-content-padding"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-color: -m3-color-surface-container"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-color: -m3-color-secondary-container"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-content-color: -m3-color-on-secondary-container"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-button.m3-grouped-button"));
         assertTrue(theme.toControlStyleRules().contains(".m3-button.m3-split-button-menu"));
@@ -172,6 +181,9 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.38"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-filled-card:hover .m3-card-container"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-outlined-card:hover .m3-card-container"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-filled-card:focus-visible .m3-card-container"));
         assertTrue(theme.toControlStyleRules().contains(".m3-fab:hover"));
         assertTrue(theme.toControlStyleRules().contains(".m3-surface-elevation-level5"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
@@ -232,6 +244,21 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-field-horizontal-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-text-area-vertical-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-selection-touch-target-size: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-selection-state-layer-size: 40px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-container-size: 18px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-selected-mark-width: 12px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-selected-mark-height: 10px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-indeterminate-mark-width: 12px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-indeterminate-mark-height: 2px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-radio-container-size: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-radio-selected-dot-size: 10px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-touch-target-size: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-track-width: 52px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-track-height: 32px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-state-layer-size: 40px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-unselected-handle-size: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-selected-handle-size: 24px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-pressed-handle-size: 28px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-thumb-size: 44px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-thumb-width: 4px"));
@@ -239,13 +266,24 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 36px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-horizontal-padding: 18px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-icon-horizontal-padding: 10px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-icon-size: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-avatar-size: 28px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-group-horizontal-gap: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-shape: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-padding: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-height: 44px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-container-shape: 6px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-shape: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-first-item-container-shape: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-last-item-container-shape: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-content-spacing: 12px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-spacing: 2px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-color: -m3-color-surface-container-low"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-color: -m3-color-tertiary-container"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-content-color: -m3-color-on-tertiary-container"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-vibrant-container-color: -m3-color-tertiary-container"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-vibrant-selected-item-container-color: -m3-color-tertiary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 56px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-horizontal-padding: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-content-spacing: 4px"));
@@ -295,7 +333,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-form-row-min-height: 72px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-validation-summary-content-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-group-button-horizontal-padding: 22px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-menu-width: 52px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-spacing: 2px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-menu-width: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-toggle-button-group-spacing: 10px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-menu-action-spacing: 14px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-container-size: 48px"));
@@ -306,8 +345,12 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains("-m3-content-spacing: 6px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-horizontal-padding: 40px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-padding: 10px"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-menu .m3-menu-item.m3-menu-item:first-menu-item"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-menu .m3-menu-item.m3-menu-item:last-menu-item"));
         assertTrue(theme.toControlStyleRules().contains("-fx-padding: 0 24px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-padding: 28px"));
+        assertTrue(theme.toControlStyleRules().contains("-m3-selected-mark-width: 12px"));
+        assertTrue(theme.toControlStyleRules().contains("-m3-selected-dot-size: 10px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
@@ -335,8 +378,10 @@ final class M3ThemeTest {
         assertEquals(16.0, theme.tokens().componentTokens().textButton().horizontalPadding(), 0.0001);
         assertEquals(36.0, theme.tokens().componentTokens().icon().largeSize(), 0.0001);
         assertEquals(22.0, theme.tokens().componentTokens().buttonGroup().buttonHorizontalPadding(), 0.0001);
-        assertEquals(52.0, theme.tokens().componentTokens().buttonGroup().splitMenuButtonWidth(), 0.0001);
-        assertEquals(-1.0, theme.tokens().componentTokens().buttonGroup().buttonGroupSpacing(), 0.0001);
+        assertEquals(48.0, theme.tokens().componentTokens().splitButton().menuButtonWidth(), 0.0001);
+        assertEquals(2.0, theme.tokens().componentTokens().buttonGroup().buttonGroupSpacing(), 0.0001);
+        assertEquals(12.0, theme.tokens().componentTokens().buttonGroup().standardButtonGroupSpacing(), 0.0001);
+        assertEquals(10.0, theme.tokens().componentTokens().buttonGroup().buttonGroupConnectedInnerCorner(), 0.0001);
         assertEquals(-1.0, theme.tokens().componentTokens().buttonGroup().segmentedGroupSpacing(), 0.0001);
         assertEquals(10.0, theme.tokens().componentTokens().buttonGroup().iconToggleGroupSpacing(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().floatingActionButton().regularHorizontalPadding(), 0.0001);
@@ -345,12 +390,30 @@ final class M3ThemeTest {
         assertEquals(20.0, theme.tokens().componentTokens().tab().horizontalPadding(), 0.0001);
         assertEquals(4.0, theme.tokens().componentTokens().tab().activeIndicatorHeight(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().chip().horizontalPadding(), 0.0001);
+        assertEquals(10.0, theme.tokens().componentTokens().chip().iconHorizontalPadding(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().chip().iconSize(), 0.0001);
+        assertEquals(28.0, theme.tokens().componentTokens().chip().avatarSize(), 0.0001);
         assertEquals(10.0, theme.tokens().componentTokens().chip().groupHorizontalGap(), 0.0001);
         assertEquals(48.0, theme.tokens().componentTokens().loadingIndicator().containerSize(), 0.0001);
         assertEquals(38.0, theme.tokens().componentTokens().loadingIndicator().indicatorSize(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().field().horizontalPadding(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().textArea().verticalPadding(), 0.0001);
         assertEquals(48.0, theme.tokens().componentTokens().selection().touchTargetSize(), 0.0001);
+        assertEquals(40.0, theme.tokens().componentTokens().selection().stateLayerSize(), 0.0001);
+        assertEquals(18.0, theme.tokens().componentTokens().selection().checkboxContainerSize(), 0.0001);
+        assertEquals(12.0, theme.tokens().componentTokens().selection().checkboxSelectedMarkWidth(), 0.0001);
+        assertEquals(10.0, theme.tokens().componentTokens().selection().checkboxSelectedMarkHeight(), 0.0001);
+        assertEquals(12.0, theme.tokens().componentTokens().selection().checkboxIndeterminateMarkWidth(), 0.0001);
+        assertEquals(2.0, theme.tokens().componentTokens().selection().checkboxIndeterminateMarkHeight(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().selection().radioContainerSize(), 0.0001);
+        assertEquals(10.0, theme.tokens().componentTokens().selection().radioSelectedDotSize(), 0.0001);
+        assertEquals(48.0, theme.tokens().componentTokens().selection().switchTouchTargetSize(), 0.0001);
+        assertEquals(52.0, theme.tokens().componentTokens().selection().switchTrackWidth(), 0.0001);
+        assertEquals(32.0, theme.tokens().componentTokens().selection().switchTrackHeight(), 0.0001);
+        assertEquals(40.0, theme.tokens().componentTokens().selection().switchStateLayerSize(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().selection().switchUnselectedHandleSize(), 0.0001);
+        assertEquals(24.0, theme.tokens().componentTokens().selection().switchSelectedHandleSize(), 0.0001);
+        assertEquals(28.0, theme.tokens().componentTokens().selection().switchPressedHandleSize(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().slider().trackThickness(), 0.0001);
         assertEquals(44.0, theme.tokens().componentTokens().slider().thumbSize(), 0.0001);
         assertEquals(4.0, theme.tokens().componentTokens().slider().thumbWidth(), 0.0001);
@@ -365,6 +428,8 @@ final class M3ThemeTest {
         assertEquals(44.0, theme.tokens().componentTokens().menu().itemHeight(), 0.0001);
         assertEquals(6.0, theme.tokens().componentTokens().menu().itemContainerShape(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().menu().selectedItemContainerShape(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().menu().firstItemContainerShape(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().menu().lastItemContainerShape(), 0.0001);
         assertEquals(12.0, theme.tokens().componentTokens().menu().itemContentSpacing(), 0.0001);
         assertEquals(56.0, theme.tokens().componentTokens().search().barHeight(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().search().barHorizontalPadding(), 0.0001);
@@ -697,6 +762,7 @@ final class M3ThemeTest {
         String applicationStylesheet = temporaryStylesheet("""
                 .m3-icon-button.test-seed-button {
                     -m3-container-height: 32px;
+                    -m3-container-width: 32px;
                     -m3-container-shape: 999px;
                     -m3-horizontal-padding: 0px;
                     -fx-min-width: 32px;
@@ -757,6 +823,9 @@ final class M3ThemeTest {
         M3Button button = new M3Button("Button");
         M3Button groupedButton = new M3Button("Grouped");
         M3ButtonGroup buttonGroup = new M3ButtonGroup(groupedButton);
+        M3ButtonGroup standardButtonGroup = new M3ButtonGroup(new M3Button("Standard A"), new M3Button("Standard B"));
+        standardButtonGroup.setVariant(M3ButtonGroupVariant.STANDARD);
+        standardButtonGroup.setSize(M3ButtonGroupSize.MEDIUM);
         M3IconToggleButtonGroup iconToggleButtonGroup =
                 new M3IconToggleButtonGroup(new M3IconToggleButton("A"), new M3IconToggleButton("B"));
         M3SegmentedButtonGroup segmentedButtonGroup =
@@ -766,8 +835,14 @@ final class M3ThemeTest {
         M3TextField textField = new M3TextField();
         M3TextArea textArea = new M3TextArea();
         M3CheckBox checkBox = new M3CheckBox("Check");
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        M3Switch switchControl = new M3Switch("Switch");
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
-        M3Menu menu = new M3Menu(new M3MenuItem("Open"));
+        M3Menu menu = new M3Menu(
+                new M3MenuItem("Open"),
+                new M3MenuItem("Save"),
+                new M3MenuItem("Close")
+        );
         M3SearchBar searchBar = new M3SearchBar();
         M3SearchView searchView = new M3SearchView();
         searchView.getResults().add(new M3ListItem("Result"));
@@ -806,6 +881,7 @@ final class M3ThemeTest {
         Pane root = new Pane(
                 button,
                 buttonGroup,
+                standardButtonGroup,
                 iconToggleButtonGroup,
                 segmentedButtonGroup,
                 splitButton,
@@ -813,6 +889,8 @@ final class M3ThemeTest {
                 textField,
                 textArea,
                 checkBox,
+                radioButton,
+                switchControl,
                 slider,
                 menu,
                 searchBar,
@@ -858,33 +936,57 @@ final class M3ThemeTest {
 
         assertEquals(48.0, button.getContainerHeight(), 0.0001);
         assertEquals(28.0, button.getHorizontalPadding(), 0.0001);
-        assertEquals(-1.0, buttonGroup.getSpacing(), 0.0001);
+        assertEquals(M3ButtonGroupVariant.CONNECTED, buttonGroup.getVariant());
+        assertEquals(M3ButtonGroupSize.SMALL, buttonGroup.getSize());
+        assertEquals(2.0, buttonGroup.getSpacing(), 0.0001);
+        assertEquals(8.0, standardButtonGroup.getSpacing(), 0.0001);
         assertEquals(10.0, iconToggleButtonGroup.getSpacing(), 0.0001);
         assertEquals(-1.0, segmentedButtonGroup.getSpacing(), 0.0001);
         assertEquals(14.0, fabMenu.getActionSpacing(), 0.0001);
         assertEquals(22.0, groupedButton.getHorizontalPadding(), 0.0001);
-        assertEquals(22.0, splitButton.getActionButton().getHorizontalPadding(), 0.0001);
-        assertEquals(52.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
+        assertEquals(16.0, splitButton.getActionButton().getHorizontalPadding(), 0.0001);
+        assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(20.0, textField.getHorizontalPadding(), 0.0001);
         assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
         assertEquals(20.0, textArea.getHorizontalPadding(), 0.0001);
         assertEquals(20.0, textArea.getVerticalPadding(), 0.0001);
         assertEquals(48.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(40.0, checkBox.getStateLayerSize(), 0.0001);
+        assertEquals(18.0, checkBox.getContainerSize(), 0.0001);
+        assertEquals(12.0, checkBox.getSelectedMarkWidth(), 0.0001);
+        assertEquals(10.0, checkBox.getSelectedMarkHeight(), 0.0001);
+        assertEquals(12.0, checkBox.getIndeterminateMarkWidth(), 0.0001);
+        assertEquals(2.0, checkBox.getIndeterminateMarkHeight(), 0.0001);
+        assertEquals(48.0, radioButton.getTouchTargetSize(), 0.0001);
+        assertEquals(40.0, radioButton.getStateLayerSize(), 0.0001);
+        assertEquals(20.0, radioButton.getContainerSize(), 0.0001);
+        assertEquals(10.0, radioButton.getSelectedDotSize(), 0.0001);
+        assertEquals(48.0, switchControl.getTouchTargetSize(), 0.0001);
+        assertEquals(52.0, switchControl.getTrackWidth(), 0.0001);
+        assertEquals(32.0, switchControl.getTrackHeight(), 0.0001);
+        assertEquals(40.0, switchControl.getStateLayerSize(), 0.0001);
+        assertEquals(16.0, switchControl.getUnselectedHandleSize(), 0.0001);
+        assertEquals(24.0, switchControl.getSelectedHandleSize(), 0.0001);
+        assertEquals(28.0, switchControl.getPressedHandleSize(), 0.0001);
         assertEquals(16.0, slider.getTrackThickness(), 0.0001);
         assertEquals(44.0, slider.getThumbSize(), 0.0001);
         assertEquals(4.0, slider.getThumbWidth(), 0.0001);
         assertEquals(48.0, slider.getTouchTargetSize(), 0.0001);
         M3MenuItem firstMenuItem = (M3MenuItem) menu.getItems().get(0);
+        M3MenuItem middleMenuItem = (M3MenuItem) menu.getItems().get(1);
+        M3MenuItem lastMenuItem = (M3MenuItem) menu.getItems().get(2);
         assertEquals(44.0, firstMenuItem.getOneLineHeight(), 0.0001);
         assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
-        assertEquals(6.0, firstMenuItem.getContainerShape(), 0.0001);
+        assertEquals(16.0, firstMenuItem.getContainerShape(), 0.0001);
+        assertEquals(6.0, middleMenuItem.getContainerShape(), 0.0001);
+        assertEquals(16.0, lastMenuItem.getContainerShape(), 0.0001);
         assertEquals(16.0, firstMenuItem.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, firstMenuItem.getContentSpacing(), 0.0001);
         menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
-        menu.select(firstMenuItem);
+        menu.select(middleMenuItem);
         root.applyCss();
-        assertEquals(16.0, firstMenuItem.getContainerShape(), 0.0001);
+        assertEquals(16.0, middleMenuItem.getContainerShape(), 0.0001);
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(24.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(0.0, ((HBox) searchBar.lookup("." + M3SearchBar.TRAILING_STYLE_CLASS)).getSpacing(), 0.0001);
@@ -951,6 +1053,7 @@ final class M3ThemeTest {
         assertEquals(36.0, icon.getIconSize(), 0.0001);
         assertEquals(36.0, chip.getContainerHeight(), 0.0001);
         assertEquals(18.0, chip.getHorizontalPadding(), 0.0001);
+        assertEquals(10.0, chip.getIconHorizontalPadding(), 0.0001);
         assertEquals(10.0, chipGroup.getHorizontalGap(), 0.0001);
         assertEquals(10.0, chipGroup.getVerticalGap(), 0.0001);
         assertEquals(104.0, fab.getContainerSize(), 0.0001);
@@ -979,7 +1082,24 @@ final class M3ThemeTest {
         assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
         assertEquals(16.0, textArea.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, textArea.getVerticalPadding(), 0.0001);
-        assertEquals(40.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(48.0, checkBox.getTouchTargetSize(), 0.0001);
+        assertEquals(40.0, checkBox.getStateLayerSize(), 0.0001);
+        assertEquals(18.0, checkBox.getContainerSize(), 0.0001);
+        assertEquals(12.0, checkBox.getSelectedMarkWidth(), 0.0001);
+        assertEquals(10.0, checkBox.getSelectedMarkHeight(), 0.0001);
+        assertEquals(12.0, checkBox.getIndeterminateMarkWidth(), 0.0001);
+        assertEquals(2.0, checkBox.getIndeterminateMarkHeight(), 0.0001);
+        assertEquals(48.0, radioButton.getTouchTargetSize(), 0.0001);
+        assertEquals(40.0, radioButton.getStateLayerSize(), 0.0001);
+        assertEquals(20.0, radioButton.getContainerSize(), 0.0001);
+        assertEquals(10.0, radioButton.getSelectedDotSize(), 0.0001);
+        assertEquals(48.0, switchControl.getTouchTargetSize(), 0.0001);
+        assertEquals(52.0, switchControl.getTrackWidth(), 0.0001);
+        assertEquals(32.0, switchControl.getTrackHeight(), 0.0001);
+        assertEquals(40.0, switchControl.getStateLayerSize(), 0.0001);
+        assertEquals(16.0, switchControl.getUnselectedHandleSize(), 0.0001);
+        assertEquals(24.0, switchControl.getSelectedHandleSize(), 0.0001);
+        assertEquals(28.0, switchControl.getPressedHandleSize(), 0.0001);
         assertEquals(16.0, slider.getTrackThickness(), 0.0001);
         assertEquals(44.0, slider.getThumbSize(), 0.0001);
         assertEquals(4.0, slider.getThumbWidth(), 0.0001);
@@ -1037,6 +1157,7 @@ final class M3ThemeTest {
         assertEquals(32.0, icon.getIconSize(), 0.0001);
         assertEquals(32.0, chip.getContainerHeight(), 0.0001);
         assertEquals(16.0, chip.getHorizontalPadding(), 0.0001);
+        assertEquals(8.0, chip.getIconHorizontalPadding(), 0.0001);
         assertEquals(8.0, chipGroup.getHorizontalGap(), 0.0001);
         assertEquals(8.0, chipGroup.getVerticalGap(), 0.0001);
         assertEquals(96.0, fab.getContainerSize(), 0.0001);
@@ -1159,6 +1280,7 @@ final class M3ThemeTest {
     /// Verifies that an icon button keeps the fixed swatch metrics from application CSS.
     private static void assertSeedButtonMetrics(M3IconButton button) {
         assertEquals(32.0, button.getContainerHeight(), 0.0001);
+        assertEquals(32.0, button.getContainerWidth(), 0.0001);
         assertEquals(999.0, button.getContainerShape(), 0.0001);
         assertEquals(32.0, button.getMinWidth(), 0.0001);
         assertEquals(32.0, button.getMinHeight(), 0.0001);

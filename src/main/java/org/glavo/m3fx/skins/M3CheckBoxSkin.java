@@ -22,20 +22,6 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     /// The hidden selected mark scale.
     private static final double HIDDEN_MARK_SCALE = 0.72;
 
-    /// The visual checkbox container size.
-    private static final double BOX_SIZE = 18.0;
-
-    /// The visual check mark width.
-    private static final double CHECK_MARK_WIDTH = 12.0;
-
-    /// The visual check mark height.
-    private static final double CHECK_MARK_HEIGHT = 10.0;
-
-    /// The visual indeterminate dash width.
-    private static final double DASH_MARK_WIDTH = 12.0;
-
-    /// The visual indeterminate dash height.
-    private static final double DASH_MARK_HEIGHT = 2.0;
 
     /// The visual checkbox container.
     private final StackPane box = new StackPane();
@@ -49,7 +35,7 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     /// The currently displayed selected mark shape.
     private MarkKind displayedMarkKind = MarkKind.CHECK;
 
-    /// Applies touch target token changes to checkbox geometry.
+    /// Applies checkbox geometry token changes to skin nodes.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
     /// Settles running mark transitions when runtime motion settings change.
@@ -80,6 +66,12 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         applyMarkState(control.isSelected() || control.isIndeterminate());
         updateMetrics();
         control.touchTargetSizeProperty().addListener(metricsInvalidation);
+        control.stateLayerSizeProperty().addListener(metricsInvalidation);
+        control.containerSizeProperty().addListener(metricsInvalidation);
+        control.selectedMarkWidthProperty().addListener(metricsInvalidation);
+        control.selectedMarkHeightProperty().addListener(metricsInvalidation);
+        control.indeterminateMarkWidthProperty().addListener(metricsInvalidation);
+        control.indeterminateMarkHeightProperty().addListener(metricsInvalidation);
         control.selectedProperty().addListener(selectedListener);
         control.indeterminateProperty().addListener(indeterminateListener);
     }
@@ -89,6 +81,12 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     public void dispose() {
         selectionAnimation.stop();
         getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
+        getSkinnable().stateLayerSizeProperty().removeListener(metricsInvalidation);
+        getSkinnable().containerSizeProperty().removeListener(metricsInvalidation);
+        getSkinnable().selectedMarkWidthProperty().removeListener(metricsInvalidation);
+        getSkinnable().selectedMarkHeightProperty().removeListener(metricsInvalidation);
+        getSkinnable().indeterminateMarkWidthProperty().removeListener(metricsInvalidation);
+        getSkinnable().indeterminateMarkHeightProperty().removeListener(metricsInvalidation);
         motionSettingsObserver.dispose();
         getSkinnable().selectedProperty().removeListener(selectedListener);
         getSkinnable().indeterminateProperty().removeListener(indeterminateListener);
@@ -97,18 +95,25 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
 
     /// Applies size-related control tokens to the skin nodes.
     private void updateMetrics() {
-        double touchTargetSize = getSkinnable().getTouchTargetSize();
-        setIndicatorSlotSize(touchTargetSize, touchTargetSize);
-        setFixedSize(box, BOX_SIZE, BOX_SIZE);
+        M3CheckBox control = getSkinnable();
+        double touchTargetSize = control.getTouchTargetSize();
+        double stateLayerSize = control.getStateLayerSize();
+        double slotSize = Math.max(touchTargetSize, stateLayerSize);
+        double layerOffset = (slotSize - stateLayerSize) / 2.0;
+
+        setIndicatorSlotSize(slotSize, slotSize);
+        layoutIndicatorStateLayer(layerOffset, layerOffset, stateLayerSize, stateLayerSize, stateLayerSize / 2.0);
+        setFixedSize(box, control.getContainerSize(), control.getContainerSize());
         updateMarkMetrics(displayedMarkKind);
     }
 
     /// Applies the selected or indeterminate mark dimensions.
     private void updateMarkMetrics(MarkKind markKind) {
+        M3CheckBox control = getSkinnable();
         if (markKind == MarkKind.DASH) {
-            setFixedSize(mark, DASH_MARK_WIDTH, DASH_MARK_HEIGHT);
+            setFixedSize(mark, control.getIndeterminateMarkWidth(), control.getIndeterminateMarkHeight());
         } else {
-            setFixedSize(mark, CHECK_MARK_WIDTH, CHECK_MARK_HEIGHT);
+            setFixedSize(mark, control.getSelectedMarkWidth(), control.getSelectedMarkHeight());
         }
     }
 

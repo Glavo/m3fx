@@ -10,6 +10,7 @@ import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.ObservableList;
 import javafx.scene.control.SkinBase;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Arc;
@@ -18,6 +19,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
+import javafx.scene.shape.PathElement;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
@@ -41,6 +43,12 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
     /// The phase used at both ends of an indeterminate progress cycle.
     private static final double INDETERMINATE_START_PHASE = 0.0;
+
+    /// The fixed sample count for circular inactive track paths.
+    private static final int CIRCULAR_TRACK_SAMPLE_STEPS = 72;
+
+    /// The fixed sample count for circular active indicator paths.
+    private static final int CIRCULAR_INDICATOR_SAMPLE_STEPS = 32;
 
     /// The track circle.
     private final Circle track = new Circle();
@@ -321,14 +329,24 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double gapFraction = circularGapFraction(radius, getSkinnable().getTrackGap(), strokeWidth);
         double start = activeEnd + gapFraction;
         double end = activeStart + 1.0 - gapFraction;
-        path.getElements().clear();
         if (radius <= 0.0 || end <= start) {
             path.setVisible(false);
             return;
         }
 
         path.setVisible(true);
-        appendCircularSegment(path, centerX, centerY, radius, 0.0, 1.0, start, end, 0.0);
+        writeCircularSegment(
+                path,
+                CIRCULAR_TRACK_SAMPLE_STEPS,
+                centerX,
+                centerY,
+                radius,
+                0.0,
+                1.0,
+                start,
+                end,
+                0.0
+        );
     }
 
     /// Lays out a circular wavy active indicator path.
@@ -343,19 +361,30 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             double end,
             double phase
     ) {
-        path.getElements().clear();
         if (radius <= 0.0 || end <= start) {
             path.setVisible(false);
             return;
         }
 
         path.setVisible(true);
-        appendCircularSegment(path, centerX, centerY, radius, amplitude, wavelength, start, end, phase);
+        writeCircularSegment(
+                path,
+                CIRCULAR_INDICATOR_SAMPLE_STEPS,
+                centerX,
+                centerY,
+                radius,
+                amplitude,
+                wavelength,
+                start,
+                end,
+                phase
+        );
     }
 
-    /// Appends a sampled circular segment to a path.
-    private static void appendCircularSegment(
+    /// Writes a sampled circular segment to a reusable path.
+    private static void writeCircularSegment(
             Path path,
+            int steps,
             double centerX,
             double centerY,
             double radius,
@@ -367,20 +396,59 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     ) {
         double circumference = Math.max(1.0, Math.PI * 2.0 * radius);
         double waves = Math.max(1.0, circumference / Math.max(1.0, wavelength));
-        int steps = Math.max(4, (int) Math.ceil((end - start) * 72.0));
-        for (int i = 0; i <= steps; i++) {
-            double fraction = (double) i / (double) steps;
+        int resolvedSteps = Math.max(4, steps);
+        ObservableList<PathElement> elements = path.getElements();
+        ensureSampledPathElements(elements, resolvedSteps + 1);
+        for (int i = 0; i <= resolvedSteps; i++) {
+            double fraction = (double) i / (double) resolvedSteps;
             double progress = start + (end - start) * fraction;
             double angle = Math.toRadians(90.0 - 360.0 * progress);
             double waveRadius = radius + Math.sin((progress * waves + phase) * Math.PI * 2.0) * amplitude;
             double x = centerX + Math.cos(angle) * waveRadius;
             double y = centerY - Math.sin(angle) * waveRadius;
-            if (i == 0) {
-                path.getElements().add(new MoveTo(x, y));
-            } else {
-                path.getElements().add(new LineTo(x, y));
+            setSampledPathPoint(elements.get(i), x, y);
+        }
+    }
+
+    /// Ensures that a sampled path contains one `MoveTo` followed by reusable `LineTo` elements.
+    private static void ensureSampledPathElements(ObservableList<PathElement> elements, int count) {
+        if (count < 1) {
+            elements.clear();
+            return;
+        }
+
+        if (elements.isEmpty()) {
+            elements.add(new MoveTo());
+        } else if (!(elements.get(0) instanceof MoveTo)) {
+            elements.set(0, new MoveTo());
+        }
+
+        for (int i = 1; i < count; i++) {
+            if (i >= elements.size()) {
+                elements.add(new LineTo());
+            } else if (!(elements.get(i) instanceof LineTo)) {
+                elements.set(i, new LineTo());
             }
         }
+
+        if (elements.size() > count) {
+            elements.remove(count, elements.size());
+        }
+    }
+
+    /// Updates the coordinates of a reusable sampled path element.
+    private static void setSampledPathPoint(PathElement element, double x, double y) {
+        if (element instanceof MoveTo moveTo) {
+            moveTo.setX(x);
+            moveTo.setY(y);
+            return;
+        }
+        if (element instanceof LineTo lineTo) {
+            lineTo.setX(x);
+            lineTo.setY(y);
+            return;
+        }
+        throw new IllegalArgumentException("Unsupported sampled path element: " + element);
     }
 
     /// Converts a circular gap in pixels to a normalized circumference fraction.

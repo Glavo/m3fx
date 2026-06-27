@@ -47,6 +47,8 @@ import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
+import org.glavo.m3fx.controls.M3ButtonGroupSize;
+import org.glavo.m3fx.controls.M3ButtonGroupVariant;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
@@ -55,6 +57,7 @@ import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
 import org.glavo.m3fx.controls.M3ChipSelectionMode;
+import org.glavo.m3fx.controls.M3ChipStyle;
 import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DateRange;
 import org.glavo.m3fx.controls.M3DatePicker;
@@ -77,6 +80,9 @@ import org.glavo.m3fx.controls.M3FormRow;
 import org.glavo.m3fx.controls.M3FormSection;
 import org.glavo.m3fx.controls.M3FormValidator;
 import org.glavo.m3fx.controls.M3IconButton;
+import org.glavo.m3fx.controls.M3IconButtonShape;
+import org.glavo.m3fx.controls.M3IconButtonSize;
+import org.glavo.m3fx.controls.M3IconButtonWidth;
 import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
@@ -93,6 +99,7 @@ import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
+import org.glavo.m3fx.controls.M3MenuColorStyle;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3MenuSectionHeader;
 import org.glavo.m3fx.controls.M3MenuSelectionMode;
@@ -118,6 +125,7 @@ import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
+import org.glavo.m3fx.controls.M3SplitButtonSize;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
@@ -860,30 +868,75 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the button group component page.
     private Node createButtonGroupsPage() {
-        M3ButtonGroup tonalGroup = new M3ButtonGroup(
+        M3ButtonGroup standardGroup = new M3ButtonGroup(
+                createButton("Archive", M3ButtonVariant.TONAL),
+                createButton("Share", M3ButtonVariant.TONAL),
+                createButton("Edit", M3ButtonVariant.TONAL)
+        );
+        standardGroup.setVariant(M3ButtonGroupVariant.STANDARD);
+        standardGroup.setSize(M3ButtonGroupSize.MEDIUM);
+
+        M3ButtonGroup connectedTonalGroup = new M3ButtonGroup(
                 createButton("Edit", M3ButtonVariant.TONAL),
                 createButton("Share", M3ButtonVariant.TONAL),
                 createButton("Archive", M3ButtonVariant.TONAL)
         );
+        connectedTonalGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
+        connectedTonalGroup.setSize(M3ButtonGroupSize.SMALL);
 
-        M3ButtonGroup outlinedGroup = new M3ButtonGroup(
+        M3ButtonGroup connectedOutlinedGroup = new M3ButtonGroup(
                 createButton("Day", M3ButtonVariant.OUTLINED),
                 createButton("Week", M3ButtonVariant.OUTLINED),
                 createButton("Month", M3ButtonVariant.OUTLINED)
         );
+        connectedOutlinedGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
+        connectedOutlinedGroup.setSize(M3ButtonGroupSize.SMALL);
 
         M3Button disabled = createButton("Disabled", M3ButtonVariant.FILLED);
         disabled.setDisable(true);
-        M3ButtonGroup filledGroup = new M3ButtonGroup(
+        M3ButtonGroup connectedFilledGroup = new M3ButtonGroup(
                 createButton("Accept", M3ButtonVariant.FILLED),
                 createButton("Review", M3ButtonVariant.FILLED),
                 disabled
         );
+        connectedFilledGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
+        connectedFilledGroup.setSize(M3ButtonGroupSize.SMALL);
+
+        VBox sizeScale = new VBox(12.0);
+        sizeScale.getChildren().addAll(
+                new M3ButtonGroup(
+                        createButton("XS", M3ButtonVariant.TONAL),
+                        createButton("Group", M3ButtonVariant.TONAL)
+                ),
+                new M3ButtonGroup(
+                        createButton("Small", M3ButtonVariant.TONAL),
+                        createButton("Group", M3ButtonVariant.TONAL)
+                ),
+                new M3ButtonGroup(
+                        createButton("Medium", M3ButtonVariant.TONAL),
+                        createButton("Group", M3ButtonVariant.TONAL)
+                ),
+                new M3ButtonGroup(
+                        createButton("Large", M3ButtonVariant.TONAL),
+                        createButton("Group", M3ButtonVariant.TONAL)
+                ),
+                new M3ButtonGroup(
+                        createButton("XL", M3ButtonVariant.TONAL),
+                        createButton("Group", M3ButtonVariant.TONAL)
+                )
+        );
+        for (int index = 0; index < sizeScale.getChildren().size(); index++) {
+            M3ButtonGroup group = (M3ButtonGroup) sizeScale.getChildren().get(index);
+            group.setVariant(M3ButtonGroupVariant.STANDARD);
+            group.setSize(M3ButtonGroupSize.values()[index]);
+        }
 
         return createGallery(
-                createShowcaseGroup("Tonal Group", tonalGroup),
-                createShowcaseGroup("Outlined Group", outlinedGroup),
-                createShowcaseGroup("Filled Group", filledGroup)
+                createShowcaseGroup("Standard Group", standardGroup),
+                createShowcaseGroup("Connected Tonal Group", connectedTonalGroup),
+                createShowcaseGroup("Connected Outlined Group", connectedOutlinedGroup),
+                createShowcaseGroup("Connected Filled Group", connectedFilledGroup),
+                createFullWidthShowcaseGroup("Size Scale", sizeScale)
         );
     }
 
@@ -961,6 +1014,26 @@ public final class M3FXDemoApp extends Application {
                         disabledIcon
                 ),
                 createShowcaseGroup(
+                        "Icon Button Sizes",
+                        createIconButton("star", M3IconButtonSize.EXTRA_SMALL, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
+                        createIconButton("star", M3IconButtonSize.SMALL, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
+                        createIconButton("star", M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
+                        createIconButton("star", M3IconButtonSize.LARGE, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
+                        createIconButton("star", M3IconButtonSize.EXTRA_LARGE, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND)
+                ),
+                createShowcaseGroup(
+                        "Icon Button Widths",
+                        createIconButton("search", M3IconButtonSize.MEDIUM, M3IconButtonWidth.NARROW, M3IconButtonShape.ROUND),
+                        createIconButton("search", M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
+                        createIconButton("search", M3IconButtonSize.MEDIUM, M3IconButtonWidth.WIDE, M3IconButtonShape.ROUND)
+                ),
+                createShowcaseGroup(
+                        "Icon Button Shapes",
+                        createIconButton("favorite", M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
+                        createIconButton("favorite", M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.SQUARE),
+                        createIconButton("favorite", M3IconButtonSize.LARGE, M3IconButtonWidth.DEFAULT, M3IconButtonShape.SQUARE)
+                ),
+                createShowcaseGroup(
                         "Toggle Icon Buttons",
                         createIconToggleGroup(
                                 M3IconToggleButtonVariant.STANDARD,
@@ -977,6 +1050,19 @@ public final class M3FXDemoApp extends Application {
                         ),
                         createFormattingToggleGroup(),
                         createIconToggleButton("delete", M3IconToggleButtonVariant.TONAL, false)
+                ),
+                createShowcaseGroup(
+                        "Toggle Size And Shape",
+                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
+                                M3IconButtonSize.EXTRA_SMALL, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
+                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
+                                M3IconButtonSize.SMALL, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
+                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
+                                M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
+                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
+                                M3IconButtonSize.LARGE, M3IconButtonWidth.WIDE, M3IconButtonShape.SQUARE),
+                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
+                                M3IconButtonSize.EXTRA_LARGE, M3IconButtonWidth.WIDE, M3IconButtonShape.SQUARE)
                 )
         );
     }
@@ -1271,6 +1357,15 @@ public final class M3FXDemoApp extends Application {
         M3Chip selectedFilter = createChip("Selected", M3ChipVariant.FILTER, true, false);
         M3Chip disabled = createChip("Disabled", M3ChipVariant.ASSIST, false, true);
 
+        M3Chip elevatedAssist = createChip("Elevated assist", M3ChipVariant.ASSIST, false, false);
+        elevatedAssist.setChipStyle(M3ChipStyle.ELEVATED);
+        M3Chip elevatedSuggestion = createChip("Elevated suggestion", M3ChipVariant.SUGGESTION, false, false);
+        elevatedSuggestion.setChipStyle(M3ChipStyle.ELEVATED);
+        M3Chip inputWithIcon = createChip("Profile", M3ChipVariant.INPUT, false, false);
+        inputWithIcon.setGraphic(createNavigationIcon("person"));
+        M3Chip selectedInput = createChip("Assigned", M3ChipVariant.INPUT, true, false);
+        selectedInput.setGraphic(createNavigationIcon("check"));
+
         M3ChipGroup multiSelect = new M3ChipGroup(
                 createChip("Work", M3ChipVariant.FILTER, true, false),
                 createChip("Personal", M3ChipVariant.FILTER, false, false),
@@ -1290,6 +1385,8 @@ public final class M3FXDemoApp extends Application {
 
         return createGallery(
                 createShowcaseGroup("Variants", assist, suggestion, input, filter),
+                createShowcaseGroup("Elevated", elevatedAssist, elevatedSuggestion),
+                createShowcaseGroup("Icon Content", inputWithIcon, selectedInput),
                 createShowcaseGroup("States", selectedFilter, disabled),
                 createShowcaseGroup("Multi Select", multiSelect),
                 createShowcaseGroup("Single Select", singleSelect)
@@ -1461,9 +1558,21 @@ public final class M3FXDemoApp extends Application {
         multiSelectMenu.selectIndex(1);
         multiSelectMenu.selectIndex(3);
 
+        M3MenuItem vibrantSelected = createMenuItem("Pinned", "bookmark", "");
+        M3Menu vibrantMenu = new M3Menu(
+                new M3MenuSectionHeader("Vibrant"),
+                vibrantSelected,
+                createMenuItem("Shared", "share", ""),
+                createMenuItem("Archived", "archive", "")
+        );
+        vibrantMenu.setColorStyle(M3MenuColorStyle.VIBRANT);
+        vibrantMenu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        vibrantMenu.setAllowEmptySelection(false);
+        vibrantMenu.select(vibrantSelected);
+
         return createGallery(
                 createShowcaseGroup("Menu Button", menuButton),
-                createShowcaseGroup("Inline Menus", inlineMenu, selectedMenu, multiSelectMenu)
+                createShowcaseGroup("Inline Menus", inlineMenu, selectedMenu, multiSelectMenu, vibrantMenu)
         );
     }
 
@@ -1493,8 +1602,20 @@ public final class M3FXDemoApp extends Application {
         M3SplitButton disabled = createSplitButton("Disabled", M3ButtonVariant.TONAL);
         disabled.setDisable(true);
 
+        M3SplitButton extraSmall = createSplitButton("XS", M3ButtonVariant.TONAL);
+        M3SplitButton small = createSplitButton("Small", M3ButtonVariant.TONAL);
+        M3SplitButton medium = createSplitButton("Medium", M3ButtonVariant.TONAL);
+        M3SplitButton large = createSplitButton("Large", M3ButtonVariant.TONAL);
+        M3SplitButton extraLarge = createSplitButton("XL", M3ButtonVariant.TONAL);
+        extraSmall.setSize(M3SplitButtonSize.EXTRA_SMALL);
+        small.setSize(M3SplitButtonSize.SMALL);
+        medium.setSize(M3SplitButtonSize.MEDIUM);
+        large.setSize(M3SplitButtonSize.LARGE);
+        extraLarge.setSize(M3SplitButtonSize.EXTRA_LARGE);
+
         return createGallery(
-                createShowcaseGroup("Variants", tonal, outlined, filled, disabled)
+                createShowcaseGroup("Variants", tonal, outlined, filled, disabled),
+                createShowcaseGroup("Sizes", extraSmall, small, medium, large, extraLarge)
         );
     }
 
@@ -2918,6 +3039,21 @@ public final class M3FXDemoApp extends Application {
         return new M3IconButton(icon);
     }
 
+    /// Creates a sample icon button with Material Expressive sizing roles.
+    private static M3IconButton createIconButton(
+            String iconName,
+            M3IconButtonSize size,
+            M3IconButtonWidth widthRole,
+            M3IconButtonShape shape
+    ) {
+        Node icon = createIconViewport(DemoIcons.primary(iconName), size.getDefaultIconSize());
+        M3IconButton button = new M3IconButton(icon);
+        button.setSize(size);
+        button.setWidthRole(widthRole);
+        button.setIconButtonShape(shape);
+        return button;
+    }
+
     /// Creates a sample icon button for toolbar action slots.
     private static M3IconButton createToolbarIconButton(String iconName) {
         Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName));
@@ -2987,6 +3123,25 @@ public final class M3FXDemoApp extends Application {
         M3IconToggleButton button = new M3IconToggleButton(icon);
         button.setVariant(variant);
         button.setSelected(selected);
+        return button;
+    }
+
+    /// Creates a sample toggle icon button with Material Expressive sizing roles.
+    private static M3IconToggleButton createIconToggleButton(
+            String iconName,
+            M3IconToggleButtonVariant variant,
+            boolean selected,
+            M3IconButtonSize size,
+            M3IconButtonWidth widthRole,
+            M3IconButtonShape shape
+    ) {
+        Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName), size.getDefaultIconSize());
+        M3IconToggleButton button = new M3IconToggleButton(icon);
+        button.setVariant(variant);
+        button.setSelected(selected);
+        button.setSize(size);
+        button.setWidthRole(widthRole);
+        button.setIconButtonShape(shape);
         return button;
     }
 
@@ -3062,10 +3217,31 @@ public final class M3FXDemoApp extends Application {
 
     /// Wraps a demo SVG icon in a stable 24 dp viewport.
     private static StackPane createIconViewport(Node icon, String... styleClasses) {
+        return createIconViewport(icon, M3IconSize.MEDIUM.getDefaultSize(), styleClasses);
+    }
+
+    /// Wraps a demo SVG icon in a stable viewport with the requested icon size.
+    private static StackPane createIconViewport(Node icon, double iconSize, String... styleClasses) {
         StackPane viewport = new StackPane(icon);
         viewport.getStyleClass().add(DEMO_VECTOR_ICON_VIEWPORT_STYLE_CLASS);
         viewport.getStyleClass().addAll(styleClasses);
         viewport.setMouseTransparent(true);
+        viewport.setStyle(String.format(
+                Locale.ROOT,
+                "-fx-min-width: %.1fpx; -fx-min-height: %.1fpx; -fx-pref-width: %.1fpx; "
+                        + "-fx-pref-height: %.1fpx; -fx-max-width: %.1fpx; -fx-max-height: %.1fpx;",
+                iconSize,
+                iconSize,
+                iconSize,
+                iconSize,
+                iconSize,
+                iconSize
+        ));
+        if (icon instanceof SVGPath svgIcon) {
+            double scale = iconSize / M3IconSize.MEDIUM.getDefaultSize();
+            svgIcon.setScaleX(scale);
+            svgIcon.setScaleY(scale);
+        }
         return viewport;
     }
 

@@ -23,11 +23,6 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     /// The hidden selected dot scale.
     private static final double HIDDEN_DOT_SCALE = 0.64;
 
-    /// The visual radio indicator size.
-    private static final double RADIO_SIZE = 20.0;
-
-    /// The selected radio dot size.
-    private static final double DOT_SIZE = 10.0;
 
     /// The visual radio indicator container.
     private final Pane radio = new Pane();
@@ -41,7 +36,7 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     /// The selected dot appearance animation.
     private final Timeline selectionAnimation = new Timeline();
 
-    /// Applies touch target token changes to radio geometry.
+    /// Applies radio geometry token changes to skin nodes.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
     /// Settles running dot transitions when runtime motion settings change.
@@ -72,6 +67,9 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         applySelectedState(control.isSelected());
         updateMetrics();
         control.touchTargetSizeProperty().addListener(metricsInvalidation);
+        control.stateLayerSizeProperty().addListener(metricsInvalidation);
+        control.containerSizeProperty().addListener(metricsInvalidation);
+        control.selectedDotSizeProperty().addListener(metricsInvalidation);
         control.selectedProperty().addListener(selectedListener);
     }
 
@@ -80,6 +78,9 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     public void dispose() {
         selectionAnimation.stop();
         getSkinnable().touchTargetSizeProperty().removeListener(metricsInvalidation);
+        getSkinnable().stateLayerSizeProperty().removeListener(metricsInvalidation);
+        getSkinnable().containerSizeProperty().removeListener(metricsInvalidation);
+        getSkinnable().selectedDotSizeProperty().removeListener(metricsInvalidation);
         motionSettingsObserver.dispose();
         getSkinnable().selectedProperty().removeListener(selectedListener);
         super.dispose();
@@ -87,11 +88,19 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
 
     /// Applies size-related control tokens to the skin nodes.
     private void updateMetrics() {
-        double touchTargetSize = getSkinnable().getTouchTargetSize();
-        setIndicatorSlotSize(touchTargetSize, touchTargetSize);
-        setFixedSize(radio, RADIO_SIZE, RADIO_SIZE);
-        layoutCircle(ring, RADIO_SIZE / 2.0, RADIO_SIZE / 2.0, RADIO_SIZE / 2.0);
-        layoutCircle(dot, RADIO_SIZE / 2.0, RADIO_SIZE / 2.0, DOT_SIZE / 2.0);
+        M3RadioButton control = getSkinnable();
+        double touchTargetSize = control.getTouchTargetSize();
+        double stateLayerSize = control.getStateLayerSize();
+        double slotSize = Math.max(touchTargetSize, stateLayerSize);
+        double layerOffset = (slotSize - stateLayerSize) / 2.0;
+        double containerSize = control.getContainerSize();
+        double center = containerSize / 2.0;
+
+        setIndicatorSlotSize(slotSize, slotSize);
+        layoutIndicatorStateLayer(layerOffset, layerOffset, stateLayerSize, stateLayerSize, stateLayerSize / 2.0);
+        setFixedSize(radio, containerSize, containerSize);
+        layoutCircle(ring, center, center, containerSize / 2.0);
+        layoutCircle(dot, center, center, control.getSelectedDotSize() / 2.0);
     }
 
     /// Applies the selected dot state without animation.

@@ -1,17 +1,38 @@
 .m3-menu {
-    -fx-background-color: -m3-color-surface-container;
+    -m3-menu-container-color: -m3-color-surface-container;
+    -m3-menu-item-state-layer-color: -m3-color-on-surface;
+    -m3-menu-selected-item-container-color: -m3-color-secondary-container;
+    -m3-menu-selected-item-content-color: -m3-color-on-secondary-container;
+    -m3-menu-vibrant-container-color: -m3-color-tertiary-container;
+    -m3-menu-vibrant-item-content-color: -m3-color-on-tertiary-container;
+    -m3-menu-vibrant-item-state-layer-color: -m3-color-on-tertiary-container;
+    -m3-menu-vibrant-selected-item-container-color: -m3-color-tertiary;
+    -m3-menu-vibrant-selected-item-content-color: -m3-color-on-tertiary;
+    -fx-background-color: -m3-menu-container-color;
     -fx-background-insets: 0;
     -fx-min-width: 112px;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 12, 0.16, 0, 4);
 }
 
+.m3-profile-expressive .m3-menu {
+    -m3-menu-container-color: -m3-color-surface-container-low;
+    -m3-menu-selected-item-container-color: -m3-color-tertiary-container;
+    -m3-menu-selected-item-content-color: -m3-color-on-tertiary-container;
+}
+
+.m3-menu:vibrant {
+    -fx-background-color: -m3-menu-vibrant-container-color;
+}
+
+.m3-menu .m3-menu-container {
+    -fx-spacing: 0px;
+}
+
+
 .m3-menu .m3-menu-item:selected {
     -m3-container-shape: -m3-menu-selected-item-container-shape;
 }
 
-.m3-menu .m3-menu-item:selected .m3-list-item-selection-container {
-    -fx-background-color: -m3-color-secondary-container;
-}
 
 .m3-sub-menu-item .m3-list-item-container {
     -fx-cursor: hand;
@@ -20,6 +41,10 @@
 .m3-sub-menu-indicator {
     -m3-icon-font-weight: 700;
     -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-menu-section-header:vibrant {
+    -fx-text-fill: -m3-menu-vibrant-item-content-color;
 }
 
 .m3-menu-section-header {

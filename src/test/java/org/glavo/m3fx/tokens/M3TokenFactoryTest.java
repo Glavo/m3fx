@@ -138,7 +138,7 @@ final class M3TokenFactoryTest {
         assertEquals(51.0, tokenSet.componentTokens().filledButton().height(), 0.0001);
         assertEquals(70.0, tokenSet.componentTokens().floatingActionButton().regularSize(), 0.0001);
         assertEquals(33.0, tokenSet.componentTokens().icon().largeSize(), 0.0001);
-        assertEquals(49.0, tokenSet.componentTokens().buttonGroup().splitMenuButtonWidth(), 0.0001);
+        assertEquals(49.0, tokenSet.componentTokens().splitButton().menuButtonWidth(), 0.0001);
         assertEquals(15.0, tokenSet.componentTokens().floatingActionButton().menuActionSpacing(), 0.0001);
         assertEquals(10.0, tokenSet.componentTokens().buttonGroup().iconToggleGroupSpacing(), 0.0001);
         assertEquals(61.0, tokenSet.componentTokens().tab().containerHeight(), 0.0001);
@@ -157,6 +157,22 @@ final class M3TokenFactoryTest {
         assertEquals(14.0, tokenSet.componentTokens().validationSummary().contentPadding(), 0.0001);
         assertEquals(22.0, tokenSet.componentTokens().surface().containerShape(), 0.0001);
         assertEquals(0.91, tokenSet.componentTokens().carousel().itemOpacity(), 0.0001);
+        assertEquals(42.0, tokenSet.componentTokens().selection().touchTargetSize(), 0.0001);
+        assertEquals(41.0, tokenSet.componentTokens().selection().stateLayerSize(), 0.0001);
+        assertEquals(18.0, tokenSet.componentTokens().selection().checkboxContainerSize(), 0.0001);
+        assertEquals(12.0, tokenSet.componentTokens().selection().checkboxSelectedMarkWidth(), 0.0001);
+        assertEquals(10.0, tokenSet.componentTokens().selection().checkboxSelectedMarkHeight(), 0.0001);
+        assertEquals(13.0, tokenSet.componentTokens().selection().checkboxIndeterminateMarkWidth(), 0.0001);
+        assertEquals(3.0, tokenSet.componentTokens().selection().checkboxIndeterminateMarkHeight(), 0.0001);
+        assertEquals(20.0, tokenSet.componentTokens().selection().radioContainerSize(), 0.0001);
+        assertEquals(11.0, tokenSet.componentTokens().selection().radioSelectedDotSize(), 0.0001);
+        assertEquals(48.0, tokenSet.componentTokens().selection().switchTouchTargetSize(), 0.0001);
+        assertEquals(52.0, tokenSet.componentTokens().selection().switchTrackWidth(), 0.0001);
+        assertEquals(32.0, tokenSet.componentTokens().selection().switchTrackHeight(), 0.0001);
+        assertEquals(40.0, tokenSet.componentTokens().selection().switchStateLayerSize(), 0.0001);
+        assertEquals(16.0, tokenSet.componentTokens().selection().switchUnselectedHandleSize(), 0.0001);
+        assertEquals(24.0, tokenSet.componentTokens().selection().switchSelectedHandleSize(), 0.0001);
+        assertEquals(28.0, tokenSet.componentTokens().selection().switchPressedHandleSize(), 0.0001);
         assertEquals(62.0, tokenSet.componentTokens().bottomAppBar().containerHeight(), 0.0001);
         assertEquals(7.0, tokenSet.componentTokens().bottomAppBar().actionSpacing(), 0.0001);
         assertEquals(63.0, tokenSet.componentTokens().toolbar().containerHeight(), 0.0001);
@@ -186,6 +202,12 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-text-area-container-height: 67px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-item-height: 43px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-shape: 11px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-first-item-container-shape: 12px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-last-item-container-shape: 13px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-item-spacing: 16px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-container-color: -m3-color-surface-container"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-color: -m3-color-secondary-container"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-vibrant-container-color: -m3-color-tertiary-container"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 44px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-trailing-actions-gap: 5px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-horizontal-padding: 10px"));
@@ -193,8 +215,29 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-results-shape: 17px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-result-container-shape: 18px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-result-horizontal-padding: 13px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-selection-touch-target-size: 42px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-selection-state-layer-size: 41px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-checkbox-container-size: 18px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-checkbox-selected-mark-width: 12px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-checkbox-selected-mark-height: 10px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-checkbox-indeterminate-mark-width: 13px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-checkbox-indeterminate-mark-height: 3px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-radio-container-size: 20px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-radio-selected-dot-size: 11px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-touch-target-size: 48px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-track-width: 52px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-track-height: 32px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-state-layer-size: 40px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-unselected-handle-size: 16px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-selected-handle-size: 24px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-pressed-handle-size: 28px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-width: 7px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-track-gap: 8px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-icon-horizontal-padding: 8px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-element-spacing: 9px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-icon-size: 18px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-avatar-size: 24px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-outline-width: 1px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-linear-wave-amplitude: 3px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-circular-wavelength: 16px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-loading-indicator-container-size: 63px"));
@@ -214,7 +257,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-body-large-text"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-split-button-menu-width: 49px"));
-        assertTrue(tokenSet.toControlStyleRules().contains("-fx-pref-width: 49px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-split-button-spacing: -2px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-fx-pref-width: -m3-split-button-menu-width"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-tab-active-indicator"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-medium-container-height: 60px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-large-container-height: 61px"));
@@ -222,7 +266,13 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-large-bottom-padding: 13px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-action-spacing: 6px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-text-area"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-menu .m3-menu-container"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-fx-spacing: 16px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-menu .m3-menu-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(":first-menu-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(":last-menu-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-shape: 12px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-shape: 13px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-bar .m3-search-bar-trailing"));
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-spacing: 5px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view .m3-list-item"));
@@ -245,8 +295,20 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-rail .m3-navigation-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-navigation-drawer .m3-list-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-list-section-header"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-switch"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-chip-icon-size: 18px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-fx-graphic-text-gap: 9px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-fx-border-width: 1px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-state-layer-size: 41px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-size: 18px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-selected-dot-size: 11px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-track-width: 52px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-pressed-handle-size: 28px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-filled-card:hover .m3-card-container"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-outlined-card:hover .m3-card-container"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-outlined-card:focus-visible .m3-card-container"));
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-opacity: 0.15"));
     }
 
@@ -319,17 +381,18 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ButtonTokens(53.0, 23.0, 19.0),
                 new M3ComponentTokens.ButtonTokens(54.0, 24.0, 20.0),
                 new M3ComponentTokens.ButtonTokens(55.0, 25.0, 21.0),
-                new M3ComponentTokens.ButtonTokens(56.0, 28.0, 0.0),
+                createIconButtonTokens(),
                 new M3ComponentTokens.FabTokens(50.0, 70.0, 110.0, 14.0, 22.0, 30.0, 13.0, 17.0, 25.0, 15.0),
                 new M3ComponentTokens.IconTokens(19.0, 25.0, 33.0, 41.0),
-                new M3ComponentTokens.ButtonGroupTokens(23.0, 24.0, 49.0, -2.0, -3.0, 10.0),
+                new M3ComponentTokens.ButtonGroupTokens(23.0, -2.0, 11.0, 6.0, -3.0, 10.0),
+                new M3ComponentTokens.SplitButtonTokens(40.0, -2.0, 24.0, 49.0, 6.0, 8.0, 10.0),
                 new M3ComponentTokens.ButtonTokens(57.0, 26.0, 14.0),
                 new M3ComponentTokens.TabTokens(61.0, 91.0, 15.0, 4.0, 4.0),
                 new M3ComponentTokens.FieldTokens(66.0, 8.0, 18.0),
                 new M3ComponentTokens.TextAreaTokens(67.0, 9.0, 19.0, 20.0),
                 new M3ComponentTokens.FormTokens(1.0, 12.0, 11.0, 3.0, 4.0, 190.0, 25.0, 71.0, 5.0),
                 new M3ComponentTokens.ValidationSummaryTokens(10.0, 14.0, 4.0, 7.0, 9.0, 13.0),
-                new M3ComponentTokens.MenuTokens(7.0, 8.0, 43.0, 6.0, 11.0, 13.0, 14.0),
+                new M3ComponentTokens.MenuTokens(7.0, 8.0, 43.0, 6.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0),
                 new M3ComponentTokens.SearchTokens(44.0, 22.0, 15.0, 11.0, 5.0, 21.0, 10.0, 2.0, 17.0, 18.0, 9.0, 45.0, 13.0, 14.0),
                 new M3ComponentTokens.PickerFieldTokens(46.0, 28.0, 37.0, 18.0, 19.0, 140.0, 7.0, 16.0),
                 new M3ComponentTokens.DatePickerTokens(29.0, 17.0, 13.0, 5.0, 46.0, 23.0, 47.0, 24.0, 6.0),
@@ -350,9 +413,27 @@ final class M3TokenFactoryTest {
                 ),
                 new M3ComponentTokens.SheetTokens(46.0, 23.0, 47.0, 24.0, 25.0, 26.0, 27.0, 5.0),
                 new M3ComponentTokens.ScrimTokens(0.31),
-                new M3ComponentTokens.SelectionTokens(42.0, 20.0),
+                new M3ComponentTokens.SelectionTokens(
+                        42.0,
+                        41.0,
+                        18.0,
+                        12.0,
+                        10.0,
+                        13.0,
+                        3.0,
+                        20.0,
+                        11.0,
+                        20.0,
+                        48.0,
+                        52.0,
+                        32.0,
+                        40.0,
+                        16.0,
+                        24.0,
+                        28.0
+                ),
                 new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 7.0, 8.0, 50.0),
-                new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0, 9.0, 11.0),
+                new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0, 8.0, 9.0, 18.0, 24.0, 12.0, 1.0, 11.0, 13.0),
                 new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
                 new M3ComponentTokens.LoadingIndicatorTokens(63.0, 22.0),
                 new M3ComponentTokens.SurfaceTokens(22.0, 19.0),
@@ -402,6 +483,16 @@ final class M3TokenFactoryTest {
         );
     }
 
+    /// Creates icon button tokens for factory tests.
+    private static M3ComponentTokens.IconButtonTokens createIconButtonTokens() {
+        return new M3ComponentTokens.IconButtonTokens(
+                new M3ComponentTokens.IconButtonSizeTokens(32.0, 20.0, 28.0, 32.0, 40.0, 999.0, 12.0, 8.0, 12.0, 999.0, 1.0),
+                new M3ComponentTokens.IconButtonSizeTokens(40.0, 24.0, 32.0, 40.0, 52.0, 999.0, 12.0, 8.0, 12.0, 999.0, 1.0),
+                new M3ComponentTokens.IconButtonSizeTokens(56.0, 24.0, 48.0, 56.0, 72.0, 999.0, 16.0, 12.0, 16.0, 999.0, 1.0),
+                new M3ComponentTokens.IconButtonSizeTokens(96.0, 32.0, 64.0, 96.0, 128.0, 999.0, 28.0, 16.0, 28.0, 999.0, 2.0),
+                new M3ComponentTokens.IconButtonSizeTokens(136.0, 40.0, 104.0, 136.0, 184.0, 999.0, 28.0, 16.0, 28.0, 999.0, 3.0)
+        );
+    }
     /// Creates component tokens whose record components all have distinctive values.
     private static M3ComponentTokens createComponentTokensWithUniqueValues() {
         UniqueDoubleValues values = new UniqueDoubleValues();
@@ -411,10 +502,11 @@ final class M3TokenFactoryTest {
                 createRecord(M3ComponentTokens.ButtonTokens.class, values),
                 createRecord(M3ComponentTokens.ButtonTokens.class, values),
                 createRecord(M3ComponentTokens.ButtonTokens.class, values),
-                createRecord(M3ComponentTokens.ButtonTokens.class, values),
+                createRecord(M3ComponentTokens.IconButtonTokens.class, values),
                 createRecord(M3ComponentTokens.FabTokens.class, values),
                 createRecord(M3ComponentTokens.IconTokens.class, values),
                 createRecord(M3ComponentTokens.ButtonGroupTokens.class, values),
+                createRecord(M3ComponentTokens.SplitButtonTokens.class, values),
                 createRecord(M3ComponentTokens.ButtonTokens.class, values),
                 createRecord(M3ComponentTokens.TabTokens.class, values),
                 createRecord(M3ComponentTokens.FieldTokens.class, values),
@@ -453,15 +545,20 @@ final class M3TokenFactoryTest {
         );
     }
 
-    /// Creates one component token record using unique double values for every record component.
+    /// Creates one component token record using unique values for every record component.
     private static <T extends Record> T createRecord(Class<T> type, UniqueDoubleValues values) {
         RecordComponent[] components = type.getRecordComponents();
         Class<?>[] parameterTypes = new Class<?>[components.length];
         Object[] arguments = new Object[components.length];
         for (int i = 0; i < components.length; i++) {
             parameterTypes[i] = components[i].getType();
-            assertEquals(double.class, parameterTypes[i], () -> "Unexpected non-double component in " + type.getName());
-            arguments[i] = values.next(components[i].getName());
+            if (parameterTypes[i] == double.class) {
+                arguments[i] = values.next(components[i].getName());
+            } else if (Record.class.isAssignableFrom(parameterTypes[i])) {
+                arguments[i] = createRecord(parameterTypes[i].asSubclass(Record.class), values);
+            } else {
+                throw new AssertionError("Unexpected component in " + type.getName() + ": " + components[i]);
+            }
         }
 
         try {

@@ -16,6 +16,7 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.css.PseudoClass;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -27,7 +28,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3MenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -50,11 +50,31 @@ import java.util.Objects;
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public class M3Menu extends Control {
+    /// The pseudo-class applied when the menu uses the vibrant color style.
+    private static final PseudoClass VIBRANT_PSEUDO_CLASS = PseudoClass.getPseudoClass("vibrant");
+
     /// The base style class for M3FX menus.
     public static final String STYLE_CLASS = "m3-menu";
 
+    /// The style class for the internal item container used by menu skins.
+    public static final String CONTAINER_STYLE_CLASS = "m3-menu-container";
+
     /// The mutable menu content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
+
+    // The menu color style.
+    private final ObjectProperty<M3MenuColorStyle> colorStyle =
+            new SimpleObjectProperty<>(this, "colorStyle", M3MenuColorStyle.STANDARD) {
+                /// Updates the color style pseudo-class when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3MenuColorStyle.STANDARD);
+                        return;
+                    }
+                    updateColorStylePseudoClass();
+                }
+            };
 
     // The menu selection mode.
     private final ObjectProperty<M3MenuSelectionMode> selectionMode =
@@ -125,6 +145,7 @@ public class M3Menu extends Control {
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
             for (Node child : change.getRemoved()) {
+                clearChildColorStylePseudoClass(child);
                 if (child instanceof M3MenuItem item) {
                     if (item instanceof M3SubMenuItem subMenuItem) {
                         subMenuItem.hideSubMenu();
@@ -134,6 +155,7 @@ public class M3Menu extends Control {
                 }
             }
             for (Node child : change.getAddedSubList()) {
+                updateChildColorStylePseudoClass(child);
                 if (child instanceof M3MenuItem item) {
                     installItem(item);
                 }
@@ -195,6 +217,27 @@ public class M3Menu extends Control {
     /// Removes all menu content nodes.
     public final void clearItems() {
         getItems().clear();
+    }
+
+    /// Returns the menu color style.
+    ///
+    /// @return the current menu color style
+    public final M3MenuColorStyle getColorStyle() {
+        return colorStyle.get();
+    }
+
+    /// Sets the menu color style.
+    ///
+    /// @param colorStyle the menu color style
+    public final void setColorStyle(M3MenuColorStyle colorStyle) {
+        this.colorStyle.set(Objects.requireNonNull(colorStyle, "colorStyle"));
+    }
+
+    /// Returns the menu color style property.
+    ///
+    /// @return the writable menu color style property
+    public final ObjectProperty<M3MenuColorStyle> colorStyleProperty() {
+        return colorStyle;
     }
 
     /// Hides any open submenu popups owned by this menu.
@@ -444,18 +487,41 @@ public class M3Menu extends Control {
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
-        M3PopupStyles.addFallbackRootStyleClass(this);
         setAccessibleRole(AccessibleRole.MENU);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
         focusNotifier.start();
+        updateColorStylePseudoClass();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
                 clearTypeAheadBuffer();
             }
         });
         typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
+    }
+
+    /// Updates the pseudo-class that represents the current menu color mapping.
+    private void updateColorStylePseudoClass() {
+        pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, getColorStyle() == M3MenuColorStyle.VIBRANT);
+        updateChildColorStylePseudoClasses();
+    }
+
+    /// Updates direct child pseudo-classes that depend on the current menu color style.
+    private void updateChildColorStylePseudoClasses() {
+        for (Node child : getItems()) {
+            updateChildColorStylePseudoClass(child);
+        }
+    }
+
+    /// Updates one direct child pseudo-class that depends on the current menu color style.
+    private void updateChildColorStylePseudoClass(Node child) {
+        child.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, getColorStyle() == M3MenuColorStyle.VIBRANT);
+    }
+
+    /// Clears menu-owned color style pseudo-classes from a removed child.
+    private static void clearChildColorStylePseudoClass(Node child) {
+        child.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, false);
     }
 
     /// Applies changed runtime motion settings to the type-ahead reset delay.
@@ -707,6 +773,7 @@ public class M3Menu extends Control {
 
     /// Installs action and selected-state listeners on a menu item.
     private void installItem(M3MenuItem item) {
+        updateChildColorStylePseudoClass(item);
         M3Accessible.setIndexOwner(item, getItems());
         if (item instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.setOwnerMenu(this);
@@ -730,6 +797,7 @@ public class M3Menu extends Control {
 
     /// Removes action and selected-state listeners from a menu item.
     private void uninstallItem(M3MenuItem item) {
+        clearChildColorStylePseudoClass(item);
         M3Accessible.clearIndexOwner(item);
         if (item instanceof M3SubMenuItem subMenuItem) {
             Runnable focusListener = subMenuFocusListeners.remove(subMenuItem);

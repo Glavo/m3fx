@@ -12,11 +12,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default Material Design 3 skin for [M3SplitButton].
 @NotNullByDefault
 public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
-    /// The spacing that lets the split button borders overlap.
-    private static final double SPLIT_BUTTON_SPACING = -1.0;
-
     /// The internal horizontal button container.
-    private final HBox container = new HBox(SPLIT_BUTTON_SPACING);
+    private final HBox container = new HBox();
 
     /// Creates a split button skin.
     ///
@@ -25,6 +22,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         super(control);
         container.setManaged(false);
         container.setAlignment(Pos.CENTER_LEFT);
+        container.spacingProperty().bind(control.spacingProperty());
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().setAll(control.getActionButton(), control.getMenuButton());
         getChildren().add(container);
@@ -33,6 +31,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     /// Removes child references before disposal.
     @Override
     public void dispose() {
+        container.spacingProperty().unbind();
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         super.dispose();

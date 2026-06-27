@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 /// A Material Design 3 checkbox for selecting one or more independent options.
 ///
@@ -52,10 +53,46 @@ public class M3CheckBox extends ButtonBase {
     private static final PseudoClass INDETERMINATE_PSEUDO_CLASS = PseudoClass.getPseudoClass("indeterminate");
 
     /// The default checkbox touch target size.
-    private static final double DEFAULT_TOUCH_TARGET_SIZE = 40.0;
+    private static final double DEFAULT_TOUCH_TARGET_SIZE = 48.0;
+
+    /// The default checkbox state layer size.
+    private static final double DEFAULT_STATE_LAYER_SIZE = 40.0;
+
+    /// The default checkbox container size.
+    private static final double DEFAULT_CONTAINER_SIZE = 18.0;
+
+    /// The default selected mark width.
+    private static final double DEFAULT_SELECTED_MARK_WIDTH = 12.0;
+
+    /// The default selected mark height.
+    private static final double DEFAULT_SELECTED_MARK_HEIGHT = 10.0;
+
+    /// The default indeterminate mark width.
+    private static final double DEFAULT_INDETERMINATE_MARK_WIDTH = 12.0;
+
+    /// The default indeterminate mark height.
+    private static final double DEFAULT_INDETERMINATE_MARK_HEIGHT = 2.0;
 
     // The styleable touch target size token.
     private @Nullable StyleableDoubleProperty touchTargetSize;
+
+    // The styleable state layer size token.
+    private @Nullable StyleableDoubleProperty stateLayerSize;
+
+    // The styleable checkbox container size token.
+    private @Nullable StyleableDoubleProperty containerSize;
+
+    // The styleable selected mark width token.
+    private @Nullable StyleableDoubleProperty selectedMarkWidth;
+
+    // The styleable selected mark height token.
+    private @Nullable StyleableDoubleProperty selectedMarkHeight;
+
+    // The styleable indeterminate mark width token.
+    private @Nullable StyleableDoubleProperty indeterminateMarkWidth;
+
+    // The styleable indeterminate mark height token.
+    private @Nullable StyleableDoubleProperty indeterminateMarkHeight;
 
     // The selected state property.
     private @Nullable BooleanProperty selected;
@@ -223,6 +260,176 @@ public class M3CheckBox extends ButtonBase {
         return touchTargetSize;
     }
 
+    /// Returns the bounded indicator state layer size token.
+    ///
+    /// @return the state layer size in pixels
+    public final double getStateLayerSize() {
+        return stateLayerSize == null ? DEFAULT_STATE_LAYER_SIZE : stateLayerSize.get();
+    }
+
+    /// Sets the bounded indicator state layer size token.
+    ///
+    /// @param stateLayerSize the state layer size in pixels
+    public final void setStateLayerSize(double stateLayerSize) {
+        stateLayerSizeProperty().set(M3Css.nonNegative(stateLayerSize, "stateLayerSize"));
+    }
+
+    /// Returns the bounded indicator state layer size token property.
+    ///
+    /// @return the state layer size property
+    public final StyleableDoubleProperty stateLayerSizeProperty() {
+        if (stateLayerSize == null) {
+            stateLayerSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_STATE_LAYER_SIZE,
+                    this,
+                    "stateLayerSize",
+                    StyleableProperties.STATE_LAYER_SIZE,
+                    this::updateMetrics
+            );
+        }
+        return stateLayerSize;
+    }
+
+    /// Returns the checkbox container size token.
+    ///
+    /// @return the checkbox container size in pixels
+    public final double getContainerSize() {
+        return containerSize == null ? DEFAULT_CONTAINER_SIZE : containerSize.get();
+    }
+
+    /// Sets the checkbox container size token.
+    ///
+    /// @param containerSize the checkbox container size in pixels
+    public final void setContainerSize(double containerSize) {
+        containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
+    }
+
+    /// Returns the checkbox container size token property.
+    ///
+    /// @return the checkbox container size property
+    public final StyleableDoubleProperty containerSizeProperty() {
+        if (containerSize == null) {
+            containerSize = createSizeProperty(
+                    DEFAULT_CONTAINER_SIZE,
+                    "containerSize",
+                    StyleableProperties.CONTAINER_SIZE
+            );
+        }
+        return containerSize;
+    }
+
+    /// Returns the selected check mark width token.
+    ///
+    /// @return the selected check mark width in pixels
+    public final double getSelectedMarkWidth() {
+        return selectedMarkWidth == null ? DEFAULT_SELECTED_MARK_WIDTH : selectedMarkWidth.get();
+    }
+
+    /// Sets the selected check mark width token.
+    ///
+    /// @param selectedMarkWidth the selected check mark width in pixels
+    public final void setSelectedMarkWidth(double selectedMarkWidth) {
+        selectedMarkWidthProperty().set(M3Css.nonNegative(selectedMarkWidth, "selectedMarkWidth"));
+    }
+
+    /// Returns the selected check mark width token property.
+    ///
+    /// @return the selected check mark width property
+    public final StyleableDoubleProperty selectedMarkWidthProperty() {
+        if (selectedMarkWidth == null) {
+            selectedMarkWidth = createSizeProperty(
+                    DEFAULT_SELECTED_MARK_WIDTH,
+                    "selectedMarkWidth",
+                    StyleableProperties.SELECTED_MARK_WIDTH
+            );
+        }
+        return selectedMarkWidth;
+    }
+
+    /// Returns the selected check mark height token.
+    ///
+    /// @return the selected check mark height in pixels
+    public final double getSelectedMarkHeight() {
+        return selectedMarkHeight == null ? DEFAULT_SELECTED_MARK_HEIGHT : selectedMarkHeight.get();
+    }
+
+    /// Sets the selected check mark height token.
+    ///
+    /// @param selectedMarkHeight the selected check mark height in pixels
+    public final void setSelectedMarkHeight(double selectedMarkHeight) {
+        selectedMarkHeightProperty().set(M3Css.nonNegative(selectedMarkHeight, "selectedMarkHeight"));
+    }
+
+    /// Returns the selected check mark height token property.
+    ///
+    /// @return the selected check mark height property
+    public final StyleableDoubleProperty selectedMarkHeightProperty() {
+        if (selectedMarkHeight == null) {
+            selectedMarkHeight = createSizeProperty(
+                    DEFAULT_SELECTED_MARK_HEIGHT,
+                    "selectedMarkHeight",
+                    StyleableProperties.SELECTED_MARK_HEIGHT
+            );
+        }
+        return selectedMarkHeight;
+    }
+
+    /// Returns the indeterminate dash mark width token.
+    ///
+    /// @return the indeterminate dash mark width in pixels
+    public final double getIndeterminateMarkWidth() {
+        return indeterminateMarkWidth == null ? DEFAULT_INDETERMINATE_MARK_WIDTH : indeterminateMarkWidth.get();
+    }
+
+    /// Sets the indeterminate dash mark width token.
+    ///
+    /// @param indeterminateMarkWidth the indeterminate dash mark width in pixels
+    public final void setIndeterminateMarkWidth(double indeterminateMarkWidth) {
+        indeterminateMarkWidthProperty().set(M3Css.nonNegative(indeterminateMarkWidth, "indeterminateMarkWidth"));
+    }
+
+    /// Returns the indeterminate dash mark width token property.
+    ///
+    /// @return the indeterminate dash mark width property
+    public final StyleableDoubleProperty indeterminateMarkWidthProperty() {
+        if (indeterminateMarkWidth == null) {
+            indeterminateMarkWidth = createSizeProperty(
+                    DEFAULT_INDETERMINATE_MARK_WIDTH,
+                    "indeterminateMarkWidth",
+                    StyleableProperties.INDETERMINATE_MARK_WIDTH
+            );
+        }
+        return indeterminateMarkWidth;
+    }
+
+    /// Returns the indeterminate dash mark height token.
+    ///
+    /// @return the indeterminate dash mark height in pixels
+    public final double getIndeterminateMarkHeight() {
+        return indeterminateMarkHeight == null ? DEFAULT_INDETERMINATE_MARK_HEIGHT : indeterminateMarkHeight.get();
+    }
+
+    /// Sets the indeterminate dash mark height token.
+    ///
+    /// @param indeterminateMarkHeight the indeterminate dash mark height in pixels
+    public final void setIndeterminateMarkHeight(double indeterminateMarkHeight) {
+        indeterminateMarkHeightProperty().set(M3Css.nonNegative(indeterminateMarkHeight, "indeterminateMarkHeight"));
+    }
+
+    /// Returns the indeterminate dash mark height token property.
+    ///
+    /// @return the indeterminate dash mark height property
+    public final StyleableDoubleProperty indeterminateMarkHeightProperty() {
+        if (indeterminateMarkHeight == null) {
+            indeterminateMarkHeight = createSizeProperty(
+                    DEFAULT_INDETERMINATE_MARK_HEIGHT,
+                    "indeterminateMarkHeight",
+                    StyleableProperties.INDETERMINATE_MARK_HEIGHT
+            );
+        }
+        return indeterminateMarkHeight;
+    }
+
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the immutable CSS metadata list for this class
@@ -304,29 +511,71 @@ public class M3CheckBox extends ButtonBase {
 
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
-        double size = getTouchTargetSize();
+        double size = Math.max(getTouchTargetSize(), getStateLayerSize());
         setMinHeight(size);
         setPrefHeight(size);
+    }
+
+    /// Creates a non-negative styleable size token property.
+    private StyleableDoubleProperty createSizeProperty(
+            double initialValue,
+            String name,
+            CssMetaData<M3CheckBox, Number> cssMetaData
+    ) {
+        return M3Css.nonNegativeStyleableDoubleProperty(initialValue, this, name, cssMetaData, this::requestLayout);
     }
 
     /// CSS metadata for m3fx checkbox component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the touch target size token.
-        private static final CssMetaData<M3CheckBox, Number> TOUCH_TARGET_SIZE =
-                new CssMetaData<>("-m3-touch-target-size", SizeConverter.getInstance(), DEFAULT_TOUCH_TARGET_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3CheckBox control) {
-                        return M3Css.isSettable(control.touchTargetSizeProperty());
-                    }
+        private static final CssMetaData<M3CheckBox, Number> TOUCH_TARGET_SIZE = sizeCssMetaData(
+                "-m3-touch-target-size",
+                DEFAULT_TOUCH_TARGET_SIZE,
+                M3CheckBox::touchTargetSizeProperty
+        );
 
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3CheckBox control) {
-                        return control.touchTargetSizeProperty();
-                    }
-                };
+        /// CSS metadata for the state layer size token.
+        private static final CssMetaData<M3CheckBox, Number> STATE_LAYER_SIZE = sizeCssMetaData(
+                "-m3-state-layer-size",
+                DEFAULT_STATE_LAYER_SIZE,
+                M3CheckBox::stateLayerSizeProperty
+        );
+
+        /// CSS metadata for the checkbox container size token.
+        private static final CssMetaData<M3CheckBox, Number> CONTAINER_SIZE = sizeCssMetaData(
+                "-m3-container-size",
+                DEFAULT_CONTAINER_SIZE,
+                M3CheckBox::containerSizeProperty
+        );
+
+        /// CSS metadata for the selected mark width token.
+        private static final CssMetaData<M3CheckBox, Number> SELECTED_MARK_WIDTH = sizeCssMetaData(
+                "-m3-selected-mark-width",
+                DEFAULT_SELECTED_MARK_WIDTH,
+                M3CheckBox::selectedMarkWidthProperty
+        );
+
+        /// CSS metadata for the selected mark height token.
+        private static final CssMetaData<M3CheckBox, Number> SELECTED_MARK_HEIGHT = sizeCssMetaData(
+                "-m3-selected-mark-height",
+                DEFAULT_SELECTED_MARK_HEIGHT,
+                M3CheckBox::selectedMarkHeightProperty
+        );
+
+        /// CSS metadata for the indeterminate mark width token.
+        private static final CssMetaData<M3CheckBox, Number> INDETERMINATE_MARK_WIDTH = sizeCssMetaData(
+                "-m3-indeterminate-mark-width",
+                DEFAULT_INDETERMINATE_MARK_WIDTH,
+                M3CheckBox::indeterminateMarkWidthProperty
+        );
+
+        /// CSS metadata for the indeterminate mark height token.
+        private static final CssMetaData<M3CheckBox, Number> INDETERMINATE_MARK_HEIGHT = sizeCssMetaData(
+                "-m3-indeterminate-mark-height",
+                DEFAULT_INDETERMINATE_MARK_HEIGHT,
+                M3CheckBox::indeterminateMarkHeightProperty
+        );
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
@@ -334,7 +583,34 @@ public class M3CheckBox extends ButtonBase {
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
             styleables.add(TOUCH_TARGET_SIZE);
+            styleables.add(STATE_LAYER_SIZE);
+            styleables.add(CONTAINER_SIZE);
+            styleables.add(SELECTED_MARK_WIDTH);
+            styleables.add(SELECTED_MARK_HEIGHT);
+            styleables.add(INDETERMINATE_MARK_WIDTH);
+            styleables.add(INDETERMINATE_MARK_HEIGHT);
             STYLEABLES = Collections.unmodifiableList(styleables);
+        }
+
+        /// Creates CSS metadata for a non-negative size token.
+        private static CssMetaData<M3CheckBox, Number> sizeCssMetaData(
+                String property,
+                double initialValue,
+                Function<M3CheckBox, StyleableDoubleProperty> accessor
+        ) {
+            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue) {
+                /// Returns whether this property can be set by CSS.
+                @Override
+                public boolean isSettable(M3CheckBox control) {
+                    return M3Css.isSettable(accessor.apply(control));
+                }
+
+                /// Returns the styleable property for a control.
+                @Override
+                public StyleableProperty<Number> getStyleableProperty(M3CheckBox control) {
+                    return accessor.apply(control);
+                }
+            };
         }
     }
 }

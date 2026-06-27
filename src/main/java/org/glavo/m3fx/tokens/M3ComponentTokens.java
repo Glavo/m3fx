@@ -46,7 +46,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Returns tokens used by icon buttons.
     ///
     /// @return the icon button component tokens
-    ButtonTokens iconButton();
+    IconButtonTokens iconButton();
 
     /// Returns tokens used by floating action buttons.
     ///
@@ -58,10 +58,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the icon component tokens
     IconTokens icon();
 
-    /// Returns tokens used by connected button groups and split buttons.
+    /// Returns tokens used by button groups.
     ///
     /// @return the button group component tokens
     ButtonGroupTokens buttonGroup();
+
+    /// Returns tokens used by split buttons.
+    ///
+    /// @return the split button component tokens
+    SplitButtonTokens splitButton();
 
     /// Returns tokens used by segmented buttons.
     ///
@@ -249,6 +254,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param floatingActionButton the floating action button component tokens
     /// @param icon the icon component tokens
     /// @param buttonGroup the button group component tokens
+    /// @param splitButton the split button component tokens
     /// @param segmentedButton the segmented button component tokens
     /// @param tab the tab component tokens
     /// @param field the text input component tokens
@@ -291,10 +297,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             ButtonTokens outlinedButton,
             ButtonTokens textButton,
             ButtonTokens elevatedButton,
-            ButtonTokens iconButton,
+            IconButtonTokens iconButton,
             FabTokens floatingActionButton,
             IconTokens icon,
             ButtonGroupTokens buttonGroup,
+            SplitButtonTokens splitButton,
             ButtonTokens segmentedButton,
             TabTokens tab,
             FieldTokens field,
@@ -341,6 +348,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 floatingActionButton,
                 icon,
                 buttonGroup,
+                splitButton,
                 segmentedButton,
                 tab,
                 field,
@@ -391,7 +399,6 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         Objects.requireNonNull(density, "density");
 
         double buttonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
-        double iconButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double iconSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 20.0 : 18.0);
         double iconMediumSize = density.apply(24.0);
         double iconLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
@@ -461,8 +468,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double menuContainerPadding = density.apply(expressive ? 10.0 : 8.0);
         double menuItemContainerShape = shapeTokens.extraSmall();
         double menuSelectedItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
+        double menuFirstItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
+        double menuLastItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
         double menuItemHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
         double menuItemContentSpacing = density.apply(12.0);
+        double menuItemSpacing = density.apply(expressive ? 2.0 : 0.0);
         double searchBarHorizontalPadding = density.apply(expressive ? 24.0 : 16.0);
         double searchBarContentSpacing = density.apply(expressive ? 4.0 : 16.0);
         double searchBarTrailingActionsGap = density.apply(0.0);
@@ -537,7 +547,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double buttonHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
         double textButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
         double groupedButtonHorizontalPadding = density.apply(expressive ? 22.0 : 20.0);
-        double splitButtonMenuWidth = density.apply(expressive ? 52.0 : 48.0);
+        double buttonGroupConnectedSpacing = expressive ? density.apply(2.0) : -1.0;
+        double buttonGroupStandardSpacing = density.apply(expressive ? 12.0 : 12.0);
+        double buttonGroupConnectedInnerCorner = expressive ? shapeTokens.small() : 0.0;
+        double splitButtonContainerHeight = density.apply(40.0);
+        double splitButtonSpacing = expressive ? density.apply(2.0) : -1.0;
+        double splitButtonActionHorizontalPadding = density.apply(expressive ? 16.0 : 20.0);
+        double splitButtonMenuWidth = density.apply(48.0);
+        double splitButtonInnerCorner = expressive ? shapeTokens.extraSmall() : 0.0;
+        double splitButtonLargeInnerCorner = expressive ? shapeTokens.small() : 0.0;
+        double splitButtonExtraLargeInnerCorner = expressive ? shapeTokens.medium() : 0.0;
         double fabSmallHorizontalPadding = density.apply(expressive ? 14.0 : 12.0);
         double fabRegularHorizontalPadding = density.apply(expressive ? 18.0 : 16.0);
         double fabLargeHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
@@ -546,6 +565,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double tabActiveIndicatorHeight = density.apply(expressive ? 4.0 : 3.0);
         double tabActiveIndicatorShape = density.apply(expressive ? 4.0 : 3.0);
         double chipHorizontalPadding = density.apply(expressive ? 18.0 : 16.0);
+        double chipIconHorizontalPadding = density.apply(expressive ? 10.0 : 8.0);
+        double chipElementSpacing = density.apply(8.0);
+        double chipIconSize = density.apply(expressive ? 20.0 : 18.0);
+        double chipAvatarSize = density.apply(expressive ? 28.0 : 24.0);
+        double chipAvatarShape = chipAvatarSize / 2.0;
+        double chipOutlineWidth = density.apply(1.0);
         double chipGroupHorizontalGap = density.apply(expressive ? 10.0 : 8.0);
         double chipGroupVerticalGap = density.apply(expressive ? 10.0 : 8.0);
         double fieldHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
@@ -565,7 +590,22 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double validationSummaryItemShape = expressive ? shapeTokens.small() : shapeTokens.extraSmall();
         double validationSummaryItemVerticalPadding = density.apply(expressive ? 10.0 : 8.0);
         double validationSummaryItemHorizontalPadding = density.apply(expressive ? 12.0 : 10.0);
-        double selectionTouchTargetSize = density.apply(expressive ? 48.0 : 40.0);
+        double selectionTouchTargetSize = density.apply(48.0);
+        double selectionStateLayerSize = density.apply(40.0);
+        double checkboxContainerSize = density.apply(18.0);
+        double checkboxSelectedMarkWidth = density.apply(12.0);
+        double checkboxSelectedMarkHeight = density.apply(10.0);
+        double checkboxIndeterminateMarkWidth = density.apply(12.0);
+        double checkboxIndeterminateMarkHeight = density.apply(2.0);
+        double radioContainerSize = density.apply(20.0);
+        double radioSelectedDotSize = density.apply(10.0);
+        double switchTouchTargetSize = density.apply(48.0);
+        double switchTrackWidth = density.apply(52.0);
+        double switchTrackHeight = density.apply(32.0);
+        double switchStateLayerSize = density.apply(40.0);
+        double switchUnselectedHandleSize = density.apply(16.0);
+        double switchSelectedHandleSize = density.apply(24.0);
+        double switchPressedHandleSize = density.apply(28.0);
         double sliderTrackThickness = density.apply(16.0);
         double sliderThumbSize = density.apply(44.0);
         double sliderThumbWidth = density.apply(4.0);
@@ -586,7 +626,73 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), textButtonHorizontalPadding),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
-                new ButtonTokens(iconButtonSize, shapeTokens.full(), 0.0),
+                new IconButtonTokens(
+                        new IconButtonSizeTokens(
+                                density.apply(32.0),
+                                density.apply(20.0),
+                                density.apply(28.0),
+                                density.apply(32.0),
+                                density.apply(40.0),
+                                shapeTokens.full(),
+                                density.apply(12.0),
+                                density.apply(8.0),
+                                density.apply(12.0),
+                                shapeTokens.full(),
+                                density.apply(1.0)
+                        ),
+                        new IconButtonSizeTokens(
+                                density.apply(40.0),
+                                density.apply(24.0),
+                                density.apply(32.0),
+                                density.apply(40.0),
+                                density.apply(52.0),
+                                shapeTokens.full(),
+                                density.apply(12.0),
+                                density.apply(8.0),
+                                density.apply(12.0),
+                                shapeTokens.full(),
+                                density.apply(1.0)
+                        ),
+                        new IconButtonSizeTokens(
+                                density.apply(56.0),
+                                density.apply(24.0),
+                                density.apply(48.0),
+                                density.apply(56.0),
+                                density.apply(72.0),
+                                shapeTokens.full(),
+                                density.apply(16.0),
+                                density.apply(12.0),
+                                density.apply(16.0),
+                                shapeTokens.full(),
+                                density.apply(1.0)
+                        ),
+                        new IconButtonSizeTokens(
+                                density.apply(96.0),
+                                density.apply(32.0),
+                                density.apply(64.0),
+                                density.apply(96.0),
+                                density.apply(128.0),
+                                shapeTokens.full(),
+                                density.apply(28.0),
+                                density.apply(16.0),
+                                density.apply(28.0),
+                                shapeTokens.full(),
+                                density.apply(2.0)
+                        ),
+                        new IconButtonSizeTokens(
+                                density.apply(136.0),
+                                density.apply(40.0),
+                                density.apply(104.0),
+                                density.apply(136.0),
+                                density.apply(184.0),
+                                shapeTokens.full(),
+                                density.apply(28.0),
+                                density.apply(16.0),
+                                density.apply(28.0),
+                                shapeTokens.full(),
+                                density.apply(3.0)
+                        )
+                ),
                 new FabTokens(
                         fabSmallSize,
                         fabRegularSize,
@@ -602,11 +708,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new IconTokens(iconSmallSize, iconMediumSize, iconLargeSize, iconExtraLargeSize),
                 new ButtonGroupTokens(
                         groupedButtonHorizontalPadding,
-                        groupedButtonHorizontalPadding,
-                        splitButtonMenuWidth,
-                        -1.0,
+                        buttonGroupConnectedSpacing,
+                        buttonGroupStandardSpacing,
+                        buttonGroupConnectedInnerCorner,
                         -1.0,
                         density.apply(expressive ? 10.0 : 8.0)
+                ),
+                new SplitButtonTokens(
+                        splitButtonContainerHeight,
+                        splitButtonSpacing,
+                        splitButtonActionHorizontalPadding,
+                        splitButtonMenuWidth,
+                        splitButtonInnerCorner,
+                        splitButtonLargeInnerCorner,
+                        splitButtonExtraLargeInnerCorner
                 ),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
                 new TabTokens(
@@ -648,8 +763,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         menuItemHeight,
                         menuItemContainerShape,
                         menuSelectedItemContainerShape,
+                        menuFirstItemContainerShape,
+                        menuLastItemContainerShape,
                         menuItemHorizontalPadding,
-                        menuItemContentSpacing
+                        menuItemContentSpacing,
+                        menuItemSpacing
                 ),
                 new SearchTokens(
                         searchBarHeight,
@@ -714,7 +832,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         sheetDragHandleHeight
                 ),
                 new ScrimTokens(0.32),
-                new SelectionTokens(selectionTouchTargetSize, shapeTokens.full()),
+                new SelectionTokens(
+                        selectionTouchTargetSize,
+                        selectionStateLayerSize,
+                        checkboxContainerSize,
+                        checkboxSelectedMarkWidth,
+                        checkboxSelectedMarkHeight,
+                        checkboxIndeterminateMarkWidth,
+                        checkboxIndeterminateMarkHeight,
+                        radioContainerSize,
+                        radioSelectedDotSize,
+                        shapeTokens.full(),
+                        switchTouchTargetSize,
+                        switchTrackWidth,
+                        switchTrackHeight,
+                        switchStateLayerSize,
+                        switchUnselectedHandleSize,
+                        switchSelectedHandleSize,
+                        switchPressedHandleSize
+                ),
                 new SliderTokens(
                         sliderTrackThickness,
                         shapeTokens.full(),
@@ -723,7 +859,19 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         sliderThumbTrackGap,
                         sliderTouchTargetSize
                 ),
-                new ChipTokens(chipHeight, shapeTokens.small(), chipHorizontalPadding, chipGroupHorizontalGap, chipGroupVerticalGap),
+                new ChipTokens(
+                        chipHeight,
+                        shapeTokens.small(),
+                        chipHorizontalPadding,
+                        chipIconHorizontalPadding,
+                        chipElementSpacing,
+                        chipIconSize,
+                        chipAvatarSize,
+                        chipAvatarShape,
+                        chipOutlineWidth,
+                        chipGroupHorizontalGap,
+                        chipGroupVerticalGap
+                ),
                 new ProgressTokens(
                         density.apply(4.0),
                         shapeTokens.full(),
@@ -860,10 +1008,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, "button-outlined", outlinedButton());
         append(builder, "button-text", textButton());
         append(builder, "button-elevated", elevatedButton());
-        append(builder, "button-icon", iconButton());
+        append(builder, iconButton());
         append(builder, floatingActionButton());
         append(builder, icon());
         append(builder, buttonGroup());
+        append(builder, splitButton());
         append(builder, "segmented-button", segmentedButton());
         append(builder, tab());
         append(builder, field());
@@ -912,11 +1061,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendButtonRule(builder, ".m3-outlined-button", outlinedButton());
         appendButtonRule(builder, ".m3-text-button", textButton());
         appendButtonRule(builder, ".m3-elevated-button", elevatedButton());
-        appendButtonRule(builder, ".m3-icon-button", iconButton());
-        appendButtonRule(builder, ".m3-icon-toggle-button", iconButton());
+        appendIconButtonRules(builder, iconButton());
         appendIconRules(builder, icon());
         appendConnectedButtonRules(builder, filledButton(), buttonGroup());
-        appendGroupSpacingRule(builder, ".m3-button-group", "-m3-button-group-spacing", buttonGroup().buttonGroupSpacing());
+        appendSplitButtonRules(builder, filledButton(), splitButton());
         appendGroupSpacingRule(
                 builder,
                 ".m3-segmented-button-group",
@@ -975,7 +1123,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendValidationSummaryItemsRule(builder, validationSummary());
         appendValidationSummaryItemRule(builder, validationSummary());
         appendMenuRule(builder, menu());
+        appendMenuContainerRule(builder, menu());
         appendMenuItemRule(builder, menu());
+        appendMenuEdgeItemRules(builder, menu());
         appendSelectedMenuItemRule(builder, menu());
         appendSearchBarRule(builder, search());
         appendSearchBarContentRule(builder, search());
@@ -1109,6 +1259,37 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-icon-extra-large-size", M3TokenCss.pixels(tokens.extraLargeSize()));
     }
 
+    /// Appends icon button token declarations.
+    private static void append(StringBuilder builder, IconButtonTokens tokens) {
+        append(builder, "icon-button-extra-small", tokens.extraSmall());
+        append(builder, "icon-button-small", tokens.small());
+        append(builder, "icon-button-medium", tokens.medium());
+        append(builder, "icon-button-large", tokens.large());
+        append(builder, "icon-button-extra-large", tokens.extraLarge());
+    }
+
+    /// Appends icon button size token declarations.
+    private static void append(StringBuilder builder, String prefix, IconButtonSizeTokens tokens) {
+        M3TokenCss.append(builder, "-m3-" + prefix + "-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-icon-size", M3TokenCss.pixels(tokens.iconSize()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-narrow-width", M3TokenCss.pixels(tokens.narrowWidth()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-default-width", M3TokenCss.pixels(tokens.defaultWidth()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-wide-width", M3TokenCss.pixels(tokens.wideWidth()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-round-container-shape", M3TokenCss.pixels(tokens.roundContainerShape()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-square-container-shape", M3TokenCss.pixels(tokens.squareContainerShape()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-pressed-container-shape", M3TokenCss.pixels(tokens.pressedContainerShape()));
+        M3TokenCss.append(
+                builder,
+                "-m3-" + prefix + "-selected-round-container-shape",
+                M3TokenCss.pixels(tokens.selectedRoundContainerShape())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-" + prefix + "-selected-square-container-shape",
+                M3TokenCss.pixels(tokens.selectedSquareContainerShape())
+        );
+        M3TokenCss.append(builder, "-m3-" + prefix + "-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
+    }
     /// Appends button group token declarations.
     private static void append(StringBuilder builder, ButtonGroupTokens tokens) {
         M3TokenCss.append(
@@ -1116,19 +1297,31 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 "-m3-button-group-button-horizontal-padding",
                 M3TokenCss.pixels(tokens.buttonHorizontalPadding())
         );
+        M3TokenCss.append(builder, "-m3-button-group-spacing", M3TokenCss.pixels(tokens.buttonGroupSpacing()));
+        M3TokenCss.append(builder, "-m3-button-group-connected-spacing", M3TokenCss.pixels(tokens.buttonGroupSpacing()));
+        M3TokenCss.append(builder, "-m3-button-group-standard-spacing", M3TokenCss.pixels(tokens.standardButtonGroupSpacing()));
+        M3TokenCss.append(builder, "-m3-button-group-connected-inner-corner", M3TokenCss.pixels(tokens.buttonGroupConnectedInnerCorner()));
+        M3TokenCss.append(builder, "-m3-segmented-button-group-spacing", M3TokenCss.pixels(tokens.segmentedGroupSpacing()));
+        M3TokenCss.append(builder, "-m3-icon-toggle-button-group-spacing", M3TokenCss.pixels(tokens.iconToggleGroupSpacing()));
+    }
+
+    /// Appends split button token declarations.
+    private static void append(StringBuilder builder, SplitButtonTokens tokens) {
+        M3TokenCss.append(builder, "-m3-split-button-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, "-m3-split-button-spacing", M3TokenCss.pixels(tokens.spacing()));
         M3TokenCss.append(
                 builder,
                 "-m3-split-button-action-horizontal-padding",
-                M3TokenCss.pixels(tokens.splitActionHorizontalPadding())
+                M3TokenCss.pixels(tokens.actionHorizontalPadding())
         );
+        M3TokenCss.append(builder, "-m3-split-button-menu-width", M3TokenCss.pixels(tokens.menuButtonWidth()));
+        M3TokenCss.append(builder, "-m3-split-button-inner-corner", M3TokenCss.pixels(tokens.innerCorner()));
+        M3TokenCss.append(builder, "-m3-split-button-large-inner-corner", M3TokenCss.pixels(tokens.largeInnerCorner()));
         M3TokenCss.append(
                 builder,
-                "-m3-split-button-menu-width",
-                M3TokenCss.pixels(tokens.splitMenuButtonWidth())
+                "-m3-split-button-extra-large-inner-corner",
+                M3TokenCss.pixels(tokens.extraLargeInnerCorner())
         );
-        M3TokenCss.append(builder, "-m3-button-group-spacing", M3TokenCss.pixels(tokens.buttonGroupSpacing()));
-        M3TokenCss.append(builder, "-m3-segmented-button-group-spacing", M3TokenCss.pixels(tokens.segmentedGroupSpacing()));
-        M3TokenCss.append(builder, "-m3-icon-toggle-button-group-spacing", M3TokenCss.pixels(tokens.iconToggleGroupSpacing()));
     }
 
     /// Appends tab token declarations.
@@ -1213,8 +1406,19 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 "-m3-menu-selected-item-container-shape",
                 M3TokenCss.pixels(tokens.selectedItemContainerShape())
         );
+        M3TokenCss.append(
+                builder,
+                "-m3-menu-first-item-container-shape",
+                M3TokenCss.pixels(tokens.firstItemContainerShape())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-menu-last-item-container-shape",
+                M3TokenCss.pixels(tokens.lastItemContainerShape())
+        );
         M3TokenCss.append(builder, "-m3-menu-item-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-menu-item-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
+        M3TokenCss.append(builder, "-m3-menu-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
     }
 
     /// Appends search token declarations.
@@ -1301,7 +1505,22 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends selection token declarations.
     private static void append(StringBuilder builder, SelectionTokens tokens) {
         M3TokenCss.append(builder, "-m3-selection-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
+        M3TokenCss.append(builder, "-m3-selection-state-layer-size", M3TokenCss.pixels(tokens.stateLayerSize()));
+        M3TokenCss.append(builder, "-m3-checkbox-container-size", M3TokenCss.pixels(tokens.checkboxContainerSize()));
+        M3TokenCss.append(builder, "-m3-checkbox-selected-mark-width", M3TokenCss.pixels(tokens.checkboxSelectedMarkWidth()));
+        M3TokenCss.append(builder, "-m3-checkbox-selected-mark-height", M3TokenCss.pixels(tokens.checkboxSelectedMarkHeight()));
+        M3TokenCss.append(builder, "-m3-checkbox-indeterminate-mark-width", M3TokenCss.pixels(tokens.checkboxIndeterminateMarkWidth()));
+        M3TokenCss.append(builder, "-m3-checkbox-indeterminate-mark-height", M3TokenCss.pixels(tokens.checkboxIndeterminateMarkHeight()));
+        M3TokenCss.append(builder, "-m3-radio-container-size", M3TokenCss.pixels(tokens.radioContainerSize()));
+        M3TokenCss.append(builder, "-m3-radio-selected-dot-size", M3TokenCss.pixels(tokens.radioSelectedDotSize()));
         M3TokenCss.append(builder, "-m3-selection-track-shape", M3TokenCss.pixels(tokens.trackShape()));
+        M3TokenCss.append(builder, "-m3-switch-touch-target-size", M3TokenCss.pixels(tokens.switchTouchTargetSize()));
+        M3TokenCss.append(builder, "-m3-switch-track-width", M3TokenCss.pixels(tokens.switchTrackWidth()));
+        M3TokenCss.append(builder, "-m3-switch-track-height", M3TokenCss.pixels(tokens.switchTrackHeight()));
+        M3TokenCss.append(builder, "-m3-switch-state-layer-size", M3TokenCss.pixels(tokens.switchStateLayerSize()));
+        M3TokenCss.append(builder, "-m3-switch-unselected-handle-size", M3TokenCss.pixels(tokens.switchUnselectedHandleSize()));
+        M3TokenCss.append(builder, "-m3-switch-selected-handle-size", M3TokenCss.pixels(tokens.switchSelectedHandleSize()));
+        M3TokenCss.append(builder, "-m3-switch-pressed-handle-size", M3TokenCss.pixels(tokens.switchPressedHandleSize()));
     }
 
     /// Appends slider token declarations.
@@ -1319,6 +1538,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-chip-container-height", M3TokenCss.pixels(tokens.height()));
         M3TokenCss.append(builder, "-m3-chip-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-chip-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-chip-icon-horizontal-padding", M3TokenCss.pixels(tokens.iconHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-chip-element-spacing", M3TokenCss.pixels(tokens.elementSpacing()));
+        M3TokenCss.append(builder, "-m3-chip-icon-size", M3TokenCss.pixels(tokens.iconSize()));
+        M3TokenCss.append(builder, "-m3-chip-avatar-size", M3TokenCss.pixels(tokens.avatarSize()));
+        M3TokenCss.append(builder, "-m3-chip-avatar-shape", M3TokenCss.pixels(tokens.avatarShape()));
+        M3TokenCss.append(builder, "-m3-chip-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
         M3TokenCss.append(builder, "-m3-chip-group-horizontal-gap", M3TokenCss.pixels(tokens.groupHorizontalGap()));
         M3TokenCss.append(builder, "-m3-chip-group-vertical-gap", M3TokenCss.pixels(tokens.groupVerticalGap()));
     }
@@ -1572,6 +1797,84 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends generated icon button size, width, and shape rules.
+    private static void appendIconButtonRules(StringBuilder builder, IconButtonTokens tokens) {
+        appendIconButtonSizeRules(builder, ".m3-icon-button-extra-small", tokens.extraSmall());
+        appendIconButtonSizeRules(builder, ".m3-icon-button-small", tokens.small());
+        appendIconButtonSizeRules(builder, ".m3-icon-button-medium", tokens.medium());
+        appendIconButtonSizeRules(builder, ".m3-icon-button-large", tokens.large());
+        appendIconButtonSizeRules(builder, ".m3-icon-button-extra-large", tokens.extraLarge());
+
+        appendIconButtonShapeRules(builder, ".m3-icon-button-extra-small", tokens.extraSmall());
+        appendIconButtonShapeRules(builder, ".m3-icon-button-small", tokens.small());
+        appendIconButtonShapeRules(builder, ".m3-icon-button-medium", tokens.medium());
+        appendIconButtonShapeRules(builder, ".m3-icon-button-large", tokens.large());
+        appendIconButtonShapeRules(builder, ".m3-icon-button-extra-large", tokens.extraLarge());
+    }
+
+    /// Appends generated icon button metrics for one size class.
+    private static void appendIconButtonSizeRules(
+            StringBuilder builder,
+            String selector,
+            IconButtonSizeTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-container-width", M3TokenCss.pixels(tokens.defaultWidth()));
+        appendDeclaration(builder, "-m3-icon-button-icon-size", M3TokenCss.pixels(tokens.iconSize()));
+        appendDeclaration(builder, "-m3-icon-button-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
+        endRule(builder);
+
+        beginRule(builder, selector + ".m3-icon-button-narrow-width");
+        appendDeclaration(builder, "-m3-container-width", M3TokenCss.pixels(tokens.narrowWidth()));
+        endRule(builder);
+
+        beginRule(builder, selector + ".m3-icon-button-wide-width");
+        appendDeclaration(builder, "-m3-container-width", M3TokenCss.pixels(tokens.wideWidth()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-icon-button" + selector + ".m3-outlined-button, "
+                + ".m3-icon-toggle-button" + selector + ".m3-outlined-icon-toggle-button");
+        appendDeclaration(builder, "-fx-border-width", M3TokenCss.pixels(tokens.outlineWidth()));
+        endRule(builder);
+    }
+
+
+    /// Appends generated square, selected, and pressed shape rules for one icon button size.
+    private static void appendIconButtonShapeRules(
+            StringBuilder builder,
+            String selector,
+            IconButtonSizeTokens tokens
+    ) {
+        beginRule(builder, ".m3-icon-button-round" + selector);
+        appendShapeDeclarations(builder, tokens.roundContainerShape());
+        endRule(builder);
+
+        beginRule(builder, ".m3-icon-button-square" + selector);
+        appendShapeDeclarations(builder, tokens.squareContainerShape());
+        endRule(builder);
+
+        beginRule(builder, ".m3-icon-toggle-button.m3-icon-button-round" + selector + ":selected");
+        appendShapeDeclarations(builder, tokens.selectedRoundContainerShape());
+        endRule(builder);
+
+        beginRule(builder, ".m3-icon-toggle-button.m3-icon-button-square" + selector + ":selected");
+        appendShapeDeclarations(builder, tokens.selectedSquareContainerShape());
+        endRule(builder);
+
+        beginRule(builder, ".m3-icon-button" + selector + ":armed, .m3-icon-button" + selector + ":pressed, "
+                + ".m3-icon-toggle-button" + selector + ":armed, .m3-icon-toggle-button" + selector + ":pressed");
+        appendShapeDeclarations(builder, tokens.pressedContainerShape());
+        endRule(builder);
+    }
+
+    /// Appends generated shape declarations shared by icon button shape states.
+    private static void appendShapeDeclarations(StringBuilder builder, double shape) {
+        String radius = M3TokenCss.pixels(shape);
+        appendDeclaration(builder, "-m3-container-shape", radius);
+        appendDeclaration(builder, "-fx-background-radius", radius);
+        appendDeclaration(builder, "-fx-border-radius", radius);
+    }
     /// Appends a generated single spacing rule.
     private static void appendGroupSpacingRule(StringBuilder builder, String selector, String property, double spacing) {
         beginRule(builder, selector);
@@ -1654,80 +1957,237 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
     }
 
-    /// Appends connected button group and split button override rules.
+    /// Appends connected button group override rules.
     private static void appendConnectedButtonRules(
             StringBuilder builder,
             ButtonTokens tokens,
             ButtonGroupTokens groupTokens
     ) {
         String radius = M3TokenCss.pixels(tokens.containerShape());
-        beginRule(builder, ".m3-button.m3-grouped-button");
-        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(groupTokens.buttonHorizontalPadding()));
-        endRule(builder);
-
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button.m3-button-group-single",
-                radius,
-                radius,
-                radius,
-                radius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button.m3-button-group-first",
-                radius,
-                "0",
-                "0",
-                radius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button.m3-button-group-middle",
-                "0",
-                "0",
-                "0",
-                "0"
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button.m3-button-group-last",
-                "0",
-                radius,
-                radius,
-                "0"
-        );
-
-        beginRule(builder, ".m3-button.m3-split-button-action");
+        beginRule(builder, ".m3-button-group");
         appendDeclaration(
                 builder,
-                "-m3-horizontal-padding",
-                M3TokenCss.pixels(groupTokens.splitActionHorizontalPadding())
+                "-m3-button-group-button-horizontal-padding",
+                M3TokenCss.pixels(groupTokens.buttonHorizontalPadding())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-button-group-connected-spacing",
+                M3TokenCss.pixels(groupTokens.buttonGroupSpacing())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-button-group-standard-spacing",
+                M3TokenCss.pixels(groupTokens.standardButtonGroupSpacing())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-button-group-connected-inner-corner",
+                M3TokenCss.pixels(groupTokens.buttonGroupConnectedInnerCorner())
         );
         endRule(builder);
 
-        beginRule(builder, ".m3-button.m3-split-button-menu");
+        beginRule(builder, ".m3-button-group .m3-button.m3-grouped-button");
+        appendDeclaration(builder, "-m3-container-height", "-m3-button-group-container-height");
+        appendDeclaration(builder, "-m3-horizontal-padding", "-m3-button-group-button-horizontal-padding");
+        endRule(builder);
+
+        String innerRadius = M3TokenCss.pixels(groupTokens.buttonGroupConnectedInnerCorner());
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group .m3-button.m3-button-group-single",
+                radius,
+                radius,
+                radius,
+                radius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group .m3-button.m3-button-group-first",
+                radius,
+                innerRadius,
+                innerRadius,
+                radius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group .m3-button.m3-button-group-middle",
+                innerRadius,
+                innerRadius,
+                innerRadius,
+                innerRadius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group .m3-button.m3-button-group-last",
+                innerRadius,
+                radius,
+                radius,
+                innerRadius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group.m3-button-group-large .m3-button.m3-button-group-first",
+                radius,
+                "16px",
+                "16px",
+                radius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group.m3-button-group-large .m3-button.m3-button-group-middle",
+                "16px",
+                "16px",
+                "16px",
+                "16px"
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group.m3-button-group-large .m3-button.m3-button-group-last",
+                "16px",
+                radius,
+                radius,
+                "16px"
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group.m3-button-group-extra-large .m3-button.m3-button-group-first",
+                radius,
+                "28px",
+                "28px",
+                radius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group.m3-button-group-extra-large .m3-button.m3-button-group-middle",
+                "28px",
+                "28px",
+                "28px",
+                "28px"
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-button-group.m3-connected-button-group.m3-button-group-extra-large .m3-button.m3-button-group-last",
+                "28px",
+                radius,
+                radius,
+                "28px"
+        );
+
+    }
+
+    /// Appends split button override rules.
+    private static void appendSplitButtonRules(
+            StringBuilder builder,
+            ButtonTokens buttonTokens,
+            SplitButtonTokens splitButtonTokens
+    ) {
+        String radius = M3TokenCss.pixels(buttonTokens.containerShape());
+        String innerRadius = M3TokenCss.pixels(splitButtonTokens.innerCorner());
+        String largeInnerRadius = M3TokenCss.pixels(splitButtonTokens.largeInnerCorner());
+        String extraLargeInnerRadius = M3TokenCss.pixels(splitButtonTokens.extraLargeInnerCorner());
+
+        beginRule(builder, ".m3-split-button");
+        appendDeclaration(
+                builder,
+                "-m3-split-button-container-height",
+                M3TokenCss.pixels(splitButtonTokens.containerHeight())
+        );
+        appendDeclaration(builder, "-m3-split-button-spacing", M3TokenCss.pixels(splitButtonTokens.spacing()));
+        appendDeclaration(
+                builder,
+                "-m3-split-button-action-horizontal-padding",
+                M3TokenCss.pixels(splitButtonTokens.actionHorizontalPadding())
+        );
+        appendDeclaration(builder, "-m3-split-button-menu-width", M3TokenCss.pixels(splitButtonTokens.menuButtonWidth()));
+        endRule(builder);
+        appendSplitButtonSizeRule(builder, ".m3-split-button.m3-split-button-extra-small", 32.0, 12.0, 48.0);
+        appendSplitButtonSizeRule(
+                builder,
+                ".m3-split-button.m3-split-button-small",
+                splitButtonTokens.containerHeight(),
+                splitButtonTokens.actionHorizontalPadding(),
+                splitButtonTokens.menuButtonWidth()
+        );
+        appendSplitButtonSizeRule(builder, ".m3-split-button.m3-split-button-medium", 56.0, 24.0, 56.0);
+        appendSplitButtonSizeRule(builder, ".m3-split-button.m3-split-button-large", 96.0, 48.0, 96.0);
+        appendSplitButtonSizeRule(builder, ".m3-split-button.m3-split-button-extra-large", 136.0, 64.0, 136.0);
+
+        beginRule(builder, ".m3-split-button .m3-button.m3-split-button-action");
+        appendDeclaration(builder, "-m3-container-height", "-m3-split-button-container-height");
+        appendDeclaration(builder, "-m3-horizontal-padding", "-m3-split-button-action-horizontal-padding");
+        endRule(builder);
+
+        beginRule(builder, ".m3-split-button .m3-button.m3-split-button-menu");
+        appendDeclaration(builder, "-m3-container-height", "-m3-split-button-container-height");
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(0.0));
-        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(groupTokens.splitMenuButtonWidth()));
-        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(groupTokens.splitMenuButtonWidth()));
+        appendDeclaration(builder, "-fx-min-width", "-m3-split-button-menu-width");
+        appendDeclaration(builder, "-fx-pref-width", "-m3-split-button-menu-width");
         endRule(builder);
 
         appendConnectedButtonShapeRule(
                 builder,
                 ".m3-split-button .m3-button:left-edge",
                 radius,
-                "0",
-                "0",
+                innerRadius,
+                innerRadius,
                 radius
         );
         appendConnectedButtonShapeRule(
                 builder,
                 ".m3-split-button .m3-button:right-edge",
-                "0",
+                innerRadius,
                 radius,
                 radius,
-                "0"
+                innerRadius
         );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-split-button.m3-split-button-large .m3-button:left-edge",
+                radius,
+                largeInnerRadius,
+                largeInnerRadius,
+                radius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-split-button.m3-split-button-large .m3-button:right-edge",
+                largeInnerRadius,
+                radius,
+                radius,
+                largeInnerRadius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-split-button.m3-split-button-extra-large .m3-button:left-edge",
+                radius,
+                extraLargeInnerRadius,
+                extraLargeInnerRadius,
+                radius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ".m3-split-button.m3-split-button-extra-large .m3-button:right-edge",
+                extraLargeInnerRadius,
+                radius,
+                radius,
+                extraLargeInnerRadius
+        );
+    }
+
+    /// Appends a split button size token CSS rule.
+    private static void appendSplitButtonSizeRule(
+            StringBuilder builder,
+            String selector,
+            double containerHeight,
+            double actionHorizontalPadding,
+            double menuButtonWidth
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-split-button-container-height", M3TokenCss.pixels(containerHeight));
+        appendDeclaration(builder, "-m3-split-button-action-horizontal-padding", M3TokenCss.pixels(actionHorizontalPadding));
+        appendDeclaration(builder, "-m3-split-button-menu-width", M3TokenCss.pixels(menuButtonWidth));
+        endRule(builder);
     }
 
     /// Appends a connected button position shape CSS rule.
@@ -1902,6 +2362,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends a menu item container token CSS rule.
+    private static void appendMenuContainerRule(StringBuilder builder, MenuTokens tokens) {
+        beginRule(builder, ".m3-menu .m3-menu-container");
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        endRule(builder);
+    }
+
     /// Appends a menu item token CSS rule.
     private static void appendMenuItemRule(StringBuilder builder, MenuTokens tokens) {
         beginRule(builder, ".m3-menu .m3-menu-item.m3-menu-item");
@@ -1912,6 +2379,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
         appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(0.0));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
+        endRule(builder);
+    }
+
+    /// Appends structural menu item token CSS rules.
+    private static void appendMenuEdgeItemRules(StringBuilder builder, MenuTokens tokens) {
+        beginRule(builder, ".m3-menu .m3-menu-item.m3-menu-item:first-menu-item");
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.firstItemContainerShape()));
+        endRule(builder);
+        beginRule(builder, ".m3-menu .m3-menu-item.m3-menu-item:last-menu-item");
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.lastItemContainerShape()));
         endRule(builder);
     }
 
@@ -2278,15 +2755,36 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends a selection token CSS rule.
     private static void appendSelectionRule(StringBuilder builder, SelectionTokens tokens) {
-        beginRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch");
+        beginRule(builder, ".m3-checkbox, .m3-radio-button");
         appendDeclaration(builder, "-m3-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
+        appendDeclaration(builder, "-m3-state-layer-size", M3TokenCss.pixels(tokens.stateLayerSize()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-checkbox");
+        appendDeclaration(builder, "-m3-container-size", M3TokenCss.pixels(tokens.checkboxContainerSize()));
+        appendDeclaration(builder, "-m3-selected-mark-width", M3TokenCss.pixels(tokens.checkboxSelectedMarkWidth()));
+        appendDeclaration(builder, "-m3-selected-mark-height", M3TokenCss.pixels(tokens.checkboxSelectedMarkHeight()));
+        appendDeclaration(builder, "-m3-indeterminate-mark-width", M3TokenCss.pixels(tokens.checkboxIndeterminateMarkWidth()));
+        appendDeclaration(builder, "-m3-indeterminate-mark-height", M3TokenCss.pixels(tokens.checkboxIndeterminateMarkHeight()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-radio-button");
+        appendDeclaration(builder, "-m3-container-size", M3TokenCss.pixels(tokens.radioContainerSize()));
+        appendDeclaration(builder, "-m3-selected-dot-size", M3TokenCss.pixels(tokens.radioSelectedDotSize()));
         endRule(builder);
     }
 
     /// Appends a switch token CSS rule.
     private static void appendSwitchRule(StringBuilder builder, SelectionTokens tokens) {
         beginRule(builder, ".m3-switch");
+        appendDeclaration(builder, "-m3-touch-target-size", M3TokenCss.pixels(tokens.switchTouchTargetSize()));
         appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.trackShape()));
+        appendDeclaration(builder, "-m3-track-width", M3TokenCss.pixels(tokens.switchTrackWidth()));
+        appendDeclaration(builder, "-m3-track-height", M3TokenCss.pixels(tokens.switchTrackHeight()));
+        appendDeclaration(builder, "-m3-state-layer-size", M3TokenCss.pixels(tokens.switchStateLayerSize()));
+        appendDeclaration(builder, "-m3-unselected-handle-size", M3TokenCss.pixels(tokens.switchUnselectedHandleSize()));
+        appendDeclaration(builder, "-m3-selected-handle-size", M3TokenCss.pixels(tokens.switchSelectedHandleSize()));
+        appendDeclaration(builder, "-m3-pressed-handle-size", M3TokenCss.pixels(tokens.switchPressedHandleSize()));
         endRule(builder);
     }
 
@@ -2332,8 +2830,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.height()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-m3-icon-horizontal-padding", M3TokenCss.pixels(tokens.iconHorizontalPadding()));
+        appendDeclaration(builder, "-m3-chip-element-spacing", M3TokenCss.pixels(tokens.elementSpacing()));
+        appendDeclaration(builder, "-m3-chip-icon-size", M3TokenCss.pixels(tokens.iconSize()));
+        appendDeclaration(builder, "-m3-chip-avatar-size", M3TokenCss.pixels(tokens.avatarSize()));
+        appendDeclaration(builder, "-m3-chip-avatar-shape", M3TokenCss.pixels(tokens.avatarShape()));
+        appendDeclaration(builder, "-m3-chip-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-fx-border-width", M3TokenCss.pixels(tokens.outlineWidth()));
+        appendDeclaration(builder, "-fx-graphic-text-gap", M3TokenCss.pixels(tokens.elementSpacing()));
         endRule(builder);
     }
 
@@ -2788,6 +3294,73 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         }
     }
 
+    /// Tokens used by icon button size families.
+    ///
+    /// @param extraSmall the extra-small icon button size tokens
+    /// @param small the small icon button size tokens
+    /// @param medium the medium icon button size tokens
+    /// @param large the large icon button size tokens
+    /// @param extraLarge the extra-large icon button size tokens
+    @NotNullByDefault
+    record IconButtonTokens(
+            IconButtonSizeTokens extraSmall,
+            IconButtonSizeTokens small,
+            IconButtonSizeTokens medium,
+            IconButtonSizeTokens large,
+            IconButtonSizeTokens extraLarge
+    ) {
+        /// Creates icon button tokens.
+        public IconButtonTokens {
+            Objects.requireNonNull(extraSmall, "extraSmall");
+            Objects.requireNonNull(small, "small");
+            Objects.requireNonNull(medium, "medium");
+            Objects.requireNonNull(large, "large");
+            Objects.requireNonNull(extraLarge, "extraLarge");
+        }
+    }
+
+    /// Tokens used by one icon button size.
+    ///
+    /// @param containerHeight the visual container height
+    /// @param iconSize the icon glyph size
+    /// @param narrowWidth the narrow visual container width
+    /// @param defaultWidth the default visual container width
+    /// @param wideWidth the wide visual container width
+    /// @param roundContainerShape the round resting container shape
+    /// @param squareContainerShape the square resting container shape
+    /// @param pressedContainerShape the pressed container shape
+    /// @param selectedRoundContainerShape the selected shape for round toggle icon buttons
+    /// @param selectedSquareContainerShape the selected shape for square toggle icon buttons
+    /// @param outlineWidth the outlined variant stroke width
+    @NotNullByDefault
+    record IconButtonSizeTokens(
+            double containerHeight,
+            double iconSize,
+            double narrowWidth,
+            double defaultWidth,
+            double wideWidth,
+            double roundContainerShape,
+            double squareContainerShape,
+            double pressedContainerShape,
+            double selectedRoundContainerShape,
+            double selectedSquareContainerShape,
+            double outlineWidth
+    ) {
+        /// Creates icon button size tokens.
+        public IconButtonSizeTokens {
+            validateNonNegative(containerHeight, "containerHeight");
+            validateNonNegative(iconSize, "iconSize");
+            validateNonNegative(narrowWidth, "narrowWidth");
+            validateNonNegative(defaultWidth, "defaultWidth");
+            validateNonNegative(wideWidth, "wideWidth");
+            validateNonNegative(roundContainerShape, "roundContainerShape");
+            validateNonNegative(squareContainerShape, "squareContainerShape");
+            validateNonNegative(pressedContainerShape, "pressedContainerShape");
+            validateNonNegative(selectedRoundContainerShape, "selectedRoundContainerShape");
+            validateNonNegative(selectedSquareContainerShape, "selectedSquareContainerShape");
+            validateNonNegative(outlineWidth, "outlineWidth");
+        }
+    }
     /// Tokens shared by floating action button sizes.
     ///
     /// @param smallSize the small floating action button square size
@@ -2850,31 +3423,62 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         }
     }
 
-    /// Tokens used by connected button groups and split buttons.
+    /// Tokens used by button groups.
     ///
     /// @param buttonHorizontalPadding the horizontal padding applied to grouped buttons
-    /// @param splitActionHorizontalPadding the horizontal padding applied to split button action parts
-    /// @param splitMenuButtonWidth the preferred width of split button menu parts
     /// @param buttonGroupSpacing the spacing between connected button group children
+    /// @param standardButtonGroupSpacing the spacing between standard button group children
+    /// @param buttonGroupConnectedInnerCorner the inner corner radius for connected button group children
     /// @param segmentedGroupSpacing the spacing between segmented button group children
     /// @param iconToggleGroupSpacing the spacing between icon toggle button group children
     @NotNullByDefault
     record ButtonGroupTokens(
             double buttonHorizontalPadding,
-            double splitActionHorizontalPadding,
-            double splitMenuButtonWidth,
             double buttonGroupSpacing,
+            double standardButtonGroupSpacing,
+            double buttonGroupConnectedInnerCorner,
             double segmentedGroupSpacing,
             double iconToggleGroupSpacing
     ) {
         /// Creates button group tokens.
         public ButtonGroupTokens {
             validateNonNegative(buttonHorizontalPadding, "buttonHorizontalPadding");
-            validateNonNegative(splitActionHorizontalPadding, "splitActionHorizontalPadding");
-            validateNonNegative(splitMenuButtonWidth, "splitMenuButtonWidth");
             validateFinite(buttonGroupSpacing, "buttonGroupSpacing");
+            validateFinite(standardButtonGroupSpacing, "standardButtonGroupSpacing");
+            validateNonNegative(buttonGroupConnectedInnerCorner, "buttonGroupConnectedInnerCorner");
             validateFinite(segmentedGroupSpacing, "segmentedGroupSpacing");
             validateNonNegative(iconToggleGroupSpacing, "iconToggleGroupSpacing");
+        }
+    }
+
+    /// Tokens used by split buttons.
+    ///
+    /// @param containerHeight the default split button container height
+    /// @param spacing the spacing between the action and menu button parts
+    /// @param actionHorizontalPadding the horizontal padding applied to split button action parts
+    /// @param menuButtonWidth the preferred width of split button menu parts
+    /// @param innerCorner the inner corner radius for default split button parts
+    /// @param largeInnerCorner the inner corner radius for large split button parts
+    /// @param extraLargeInnerCorner the inner corner radius for extra-large split button parts
+    @NotNullByDefault
+    record SplitButtonTokens(
+            double containerHeight,
+            double spacing,
+            double actionHorizontalPadding,
+            double menuButtonWidth,
+            double innerCorner,
+            double largeInnerCorner,
+            double extraLargeInnerCorner
+    ) {
+        /// Creates split button tokens.
+        public SplitButtonTokens {
+            validateNonNegative(containerHeight, "containerHeight");
+            validateFinite(spacing, "spacing");
+            validateNonNegative(actionHorizontalPadding, "actionHorizontalPadding");
+            validateNonNegative(menuButtonWidth, "menuButtonWidth");
+            validateNonNegative(innerCorner, "innerCorner");
+            validateNonNegative(largeInnerCorner, "largeInnerCorner");
+            validateNonNegative(extraLargeInnerCorner, "extraLargeInnerCorner");
         }
     }
 
@@ -3016,8 +3620,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param itemHeight the one-line menu item height
     /// @param itemContainerShape the menu item state container corner radius
     /// @param selectedItemContainerShape the selected menu item state container corner radius
+    /// @param firstItemContainerShape the first direct menu item state container corner radius
+    /// @param lastItemContainerShape the last direct menu item state container corner radius
     /// @param itemHorizontalPadding the horizontal item content padding
     /// @param itemContentSpacing the spacing between item content regions
+    /// @param itemSpacing the vertical spacing between direct menu items
     @NotNullByDefault
     record MenuTokens(
             double containerShape,
@@ -3025,8 +3632,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double itemHeight,
             double itemContainerShape,
             double selectedItemContainerShape,
+            double firstItemContainerShape,
+            double lastItemContainerShape,
             double itemHorizontalPadding,
-            double itemContentSpacing
+            double itemContentSpacing,
+            double itemSpacing
     ) {
         /// Validates menu tokens.
         public MenuTokens {
@@ -3035,8 +3645,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(itemHeight, "itemHeight");
             validateNonNegative(itemContainerShape, "itemContainerShape");
             validateNonNegative(selectedItemContainerShape, "selectedItemContainerShape");
+            validateNonNegative(firstItemContainerShape, "firstItemContainerShape");
+            validateNonNegative(lastItemContainerShape, "lastItemContainerShape");
             validateNonNegative(itemHorizontalPadding, "itemHorizontalPadding");
             validateNonNegative(itemContentSpacing, "itemContentSpacing");
+            validateNonNegative(itemSpacing, "itemSpacing");
         }
     }
 
@@ -3259,17 +3872,62 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by selection controls.
     ///
-    /// @param touchTargetSize the preferred touch target size
+    /// @param touchTargetSize the preferred checkbox and radio touch target size
+    /// @param stateLayerSize the checkbox and radio indicator state layer size
+    /// @param checkboxContainerSize the checkbox container size
+    /// @param checkboxSelectedMarkWidth the selected checkbox mark width
+    /// @param checkboxSelectedMarkHeight the selected checkbox mark height
+    /// @param checkboxIndeterminateMarkWidth the indeterminate checkbox mark width
+    /// @param checkboxIndeterminateMarkHeight the indeterminate checkbox mark height
+    /// @param radioContainerSize the radio indicator container size
+    /// @param radioSelectedDotSize the selected radio dot size
     /// @param trackShape the switch track radius
+    /// @param switchTouchTargetSize the preferred switch touch target size
+    /// @param switchTrackWidth the switch track width
+    /// @param switchTrackHeight the switch track height
+    /// @param switchStateLayerSize the switch state layer size
+    /// @param switchUnselectedHandleSize the unselected switch handle size
+    /// @param switchSelectedHandleSize the selected switch handle size
+    /// @param switchPressedHandleSize the pressed switch handle size
     @NotNullByDefault
     record SelectionTokens(
             double touchTargetSize,
-            double trackShape
+            double stateLayerSize,
+            double checkboxContainerSize,
+            double checkboxSelectedMarkWidth,
+            double checkboxSelectedMarkHeight,
+            double checkboxIndeterminateMarkWidth,
+            double checkboxIndeterminateMarkHeight,
+            double radioContainerSize,
+            double radioSelectedDotSize,
+            double trackShape,
+            double switchTouchTargetSize,
+            double switchTrackWidth,
+            double switchTrackHeight,
+            double switchStateLayerSize,
+            double switchUnselectedHandleSize,
+            double switchSelectedHandleSize,
+            double switchPressedHandleSize
     ) {
         /// Creates selection tokens.
         public SelectionTokens {
             validateNonNegative(touchTargetSize, "touchTargetSize");
+            validateNonNegative(stateLayerSize, "stateLayerSize");
+            validateNonNegative(checkboxContainerSize, "checkboxContainerSize");
+            validateNonNegative(checkboxSelectedMarkWidth, "checkboxSelectedMarkWidth");
+            validateNonNegative(checkboxSelectedMarkHeight, "checkboxSelectedMarkHeight");
+            validateNonNegative(checkboxIndeterminateMarkWidth, "checkboxIndeterminateMarkWidth");
+            validateNonNegative(checkboxIndeterminateMarkHeight, "checkboxIndeterminateMarkHeight");
+            validateNonNegative(radioContainerSize, "radioContainerSize");
+            validateNonNegative(radioSelectedDotSize, "radioSelectedDotSize");
             validateNonNegative(trackShape, "trackShape");
+            validateNonNegative(switchTouchTargetSize, "switchTouchTargetSize");
+            validateNonNegative(switchTrackWidth, "switchTrackWidth");
+            validateNonNegative(switchTrackHeight, "switchTrackHeight");
+            validateNonNegative(switchStateLayerSize, "switchStateLayerSize");
+            validateNonNegative(switchUnselectedHandleSize, "switchUnselectedHandleSize");
+            validateNonNegative(switchSelectedHandleSize, "switchSelectedHandleSize");
+            validateNonNegative(switchPressedHandleSize, "switchPressedHandleSize");
         }
     }
 
@@ -3305,7 +3963,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param height the preferred chip height
     /// @param containerShape the chip container radius
-    /// @param horizontalPadding the horizontal content padding
+    /// @param horizontalPadding the horizontal content padding for chips without a leading graphic
+    /// @param iconHorizontalPadding the horizontal content padding for chips with a leading graphic
+    /// @param elementSpacing the spacing between chip content elements
+    /// @param iconSize the size of a leading or trailing icon
+    /// @param avatarSize the size of a leading avatar image
+    /// @param avatarShape the corner radius used for avatar images
+    /// @param outlineWidth the outline stroke width for flat unselected chips
     /// @param groupHorizontalGap the horizontal gap between chips in a chip group
     /// @param groupVerticalGap the vertical gap between wrapped rows in a chip group
     @NotNullByDefault
@@ -3313,6 +3977,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double height,
             double containerShape,
             double horizontalPadding,
+            double iconHorizontalPadding,
+            double elementSpacing,
+            double iconSize,
+            double avatarSize,
+            double avatarShape,
+            double outlineWidth,
             double groupHorizontalGap,
             double groupVerticalGap
     ) {
@@ -3321,6 +3991,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(height, "height");
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(iconHorizontalPadding, "iconHorizontalPadding");
+            validateNonNegative(elementSpacing, "elementSpacing");
+            validateNonNegative(iconSize, "iconSize");
+            validateNonNegative(avatarSize, "avatarSize");
+            validateNonNegative(avatarShape, "avatarShape");
+            validateNonNegative(outlineWidth, "outlineWidth");
             validateNonNegative(groupHorizontalGap, "groupHorizontalGap");
             validateNonNegative(groupVerticalGap, "groupVerticalGap");
         }

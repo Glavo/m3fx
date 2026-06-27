@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.FXCollections;
@@ -32,9 +34,10 @@ import java.util.Objects;
 
 /// A Material Design 3 button group for adjacent related action buttons.
 ///
-/// `M3ButtonGroup` lays out [M3Button] children as a connected row and applies first, middle, last, and single
-/// style classes so skins and CSS can render shared outlines and joined shapes. Use it when commands should be
-/// visually grouped but remain independent buttons.
+/// `M3ButtonGroup` lays out [M3Button] children as a standard separated group or as a connected group with
+/// coordinated outer and inner corners. The [variant][M3ButtonGroupVariant] controls whether grouped buttons keep
+/// their own rounded containers or join into a single visual set, and the [size][M3ButtonGroupSize] controls
+/// container height and group spacing through CSS tokens.
 ///
 /// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
 @NotNullByDefault
@@ -57,6 +60,12 @@ public class M3ButtonGroup extends Control {
     /// The style class applied to the last grouped button.
     public static final String LAST_BUTTON_STYLE_CLASS = "m3-button-group-last";
 
+    /// The default button group variant.
+    private static final M3ButtonGroupVariant DEFAULT_VARIANT = M3ButtonGroupVariant.CONNECTED;
+
+    /// The default button group size.
+    private static final M3ButtonGroupSize DEFAULT_SIZE = M3ButtonGroupSize.SMALL;
+
     /// The default spacing that lets adjacent grouped button borders overlap.
     private static final double DEFAULT_SPACING = -1.0;
 
@@ -67,7 +76,38 @@ public class M3ButtonGroup extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
-    // The styleable spacing between grouped buttons.
+    /// The button group visual variant property.
+    private final ObjectProperty<M3ButtonGroupVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", DEFAULT_VARIANT) {
+                /// Updates variant style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_VARIANT);
+                        return;
+                    }
+                    updateVariantStyle();
+                    updateButtonStyles();
+                    requestLayout();
+                }
+            };
+
+    /// The button group size property.
+    private final ObjectProperty<M3ButtonGroupSize> size =
+            new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
+                /// Updates size style classes when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_SIZE);
+                        return;
+                    }
+                    updateSizeStyle();
+                    requestLayout();
+                }
+            };
+
+    /// The styleable spacing between grouped buttons.
     private @Nullable StyleableDoubleProperty spacing;
 
     /// Updates grouped button position style classes when children change.
@@ -108,6 +148,48 @@ public class M3ButtonGroup extends Control {
     /// @return the mutable child list used as button group content
     public final ObservableList<Node> getItems() {
         return items;
+    }
+
+    /// Returns the visual button group variant.
+    ///
+    /// @return the visual button group variant
+    public final M3ButtonGroupVariant getVariant() {
+        return variant.get();
+    }
+
+    /// Sets the visual button group variant.
+    ///
+    /// @param variant the visual button group variant
+    public final void setVariant(M3ButtonGroupVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the visual button group variant property.
+    ///
+    /// @return the visual button group variant property
+    public final ObjectProperty<M3ButtonGroupVariant> variantProperty() {
+        return variant;
+    }
+
+    /// Returns the Material Expressive button group size.
+    ///
+    /// @return the Material Expressive button group size
+    public final M3ButtonGroupSize getSize() {
+        return size.get();
+    }
+
+    /// Sets the Material Expressive button group size.
+    ///
+    /// @param size the Material Expressive button group size
+    public final void setSize(M3ButtonGroupSize size) {
+        this.size.set(Objects.requireNonNull(size, "size"));
+    }
+
+    /// Returns the Material Expressive button group size property.
+    ///
+    /// @return the Material Expressive button group size property
+    public final ObjectProperty<M3ButtonGroupSize> sizeProperty() {
+        return size;
     }
 
     /// Returns the spacing between grouped buttons.
@@ -214,6 +296,8 @@ public class M3ButtonGroup extends Control {
     /// Adds base style classes and child list listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        updateVariantStyle();
+        updateSizeStyle();
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
@@ -276,6 +360,29 @@ public class M3ButtonGroup extends Control {
             return LAST_BUTTON_STYLE_CLASS;
         }
         return MIDDLE_BUTTON_STYLE_CLASS;
+    }
+
+    /// Applies the variant style class to this button group.
+    private void updateVariantStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getVariant().getStyleClass(),
+                M3ButtonGroupVariant.STANDARD.getStyleClass(),
+                M3ButtonGroupVariant.CONNECTED.getStyleClass()
+        );
+    }
+
+    /// Applies the size style class to this button group.
+    private void updateSizeStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getSize().getStyleClass(),
+                M3ButtonGroupSize.EXTRA_SMALL.getStyleClass(),
+                M3ButtonGroupSize.SMALL.getStyleClass(),
+                M3ButtonGroupSize.MEDIUM.getStyleClass(),
+                M3ButtonGroupSize.LARGE.getStyleClass(),
+                M3ButtonGroupSize.EXTRA_LARGE.getStyleClass()
+        );
     }
 
     /// Removes all button group style classes from a button.

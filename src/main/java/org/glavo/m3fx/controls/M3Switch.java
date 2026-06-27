@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 /// A Material Design 3 switch for turning a single setting on or off.
 ///
@@ -44,16 +45,52 @@ public class M3Switch extends ButtonBase {
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The default switch touch target size.
-    private static final double DEFAULT_TOUCH_TARGET_SIZE = 40.0;
+    private static final double DEFAULT_TOUCH_TARGET_SIZE = 48.0;
 
     /// The default switch track shape radius.
     private static final double DEFAULT_TRACK_SHAPE = 999.0;
+
+    /// The default switch track width.
+    private static final double DEFAULT_TRACK_WIDTH = 52.0;
+
+    /// The default switch track height.
+    private static final double DEFAULT_TRACK_HEIGHT = 32.0;
+
+    /// The default switch state layer size.
+    private static final double DEFAULT_STATE_LAYER_SIZE = 40.0;
+
+    /// The default unselected switch handle size.
+    private static final double DEFAULT_UNSELECTED_HANDLE_SIZE = 16.0;
+
+    /// The default selected switch handle size.
+    private static final double DEFAULT_SELECTED_HANDLE_SIZE = 24.0;
+
+    /// The default pressed switch handle size.
+    private static final double DEFAULT_PRESSED_HANDLE_SIZE = 28.0;
 
     // The styleable touch target size token.
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
     // The styleable switch track shape token.
     private @Nullable StyleableDoubleProperty trackShape;
+
+    // The styleable switch track width token.
+    private @Nullable StyleableDoubleProperty trackWidth;
+
+    // The styleable switch track height token.
+    private @Nullable StyleableDoubleProperty trackHeight;
+
+    // The styleable switch state layer size token.
+    private @Nullable StyleableDoubleProperty stateLayerSize;
+
+    // The styleable unselected switch handle size token.
+    private @Nullable StyleableDoubleProperty unselectedHandleSize;
+
+    // The styleable selected switch handle size token.
+    private @Nullable StyleableDoubleProperty selectedHandleSize;
+
+    // The styleable pressed switch handle size token.
+    private @Nullable StyleableDoubleProperty pressedHandleSize;
 
     // The selected state property.
     private @Nullable BooleanProperty selected;
@@ -120,9 +157,8 @@ public class M3Switch extends ButtonBase {
     /// Returns the preferred touch target size token property.
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
-            touchTargetSize = M3Css.nonNegativeStyleableDoubleProperty(
+            touchTargetSize = sizeProperty(
                     DEFAULT_TOUCH_TARGET_SIZE,
-                    this,
                     "touchTargetSize",
                     StyleableProperties.TOUCH_TARGET_SIZE,
                     this::updateMetrics
@@ -144,15 +180,142 @@ public class M3Switch extends ButtonBase {
     /// Returns the switch track shape radius token property.
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
-            trackShape = M3Css.nonNegativeStyleableDoubleProperty(
+            trackShape = sizeProperty(
                     DEFAULT_TRACK_SHAPE,
-                    this,
                     "trackShape",
                     StyleableProperties.TRACK_SHAPE,
                     this::requestLayout
             );
         }
         return trackShape;
+    }
+
+    /// Returns the switch track width token.
+    public final double getTrackWidth() {
+        return trackWidth == null ? DEFAULT_TRACK_WIDTH : trackWidth.get();
+    }
+
+    /// Sets the switch track width token.
+    public final void setTrackWidth(double trackWidth) {
+        trackWidthProperty().set(M3Css.nonNegative(trackWidth, "trackWidth"));
+    }
+
+    /// Returns the switch track width token property.
+    public final StyleableDoubleProperty trackWidthProperty() {
+        if (trackWidth == null) {
+            trackWidth = sizeProperty(DEFAULT_TRACK_WIDTH, "trackWidth", StyleableProperties.TRACK_WIDTH, this::requestLayout);
+        }
+        return trackWidth;
+    }
+
+    /// Returns the switch track height token.
+    public final double getTrackHeight() {
+        return trackHeight == null ? DEFAULT_TRACK_HEIGHT : trackHeight.get();
+    }
+
+    /// Sets the switch track height token.
+    public final void setTrackHeight(double trackHeight) {
+        trackHeightProperty().set(M3Css.nonNegative(trackHeight, "trackHeight"));
+    }
+
+    /// Returns the switch track height token property.
+    public final StyleableDoubleProperty trackHeightProperty() {
+        if (trackHeight == null) {
+            trackHeight = sizeProperty(DEFAULT_TRACK_HEIGHT, "trackHeight", StyleableProperties.TRACK_HEIGHT, this::updateMetrics);
+        }
+        return trackHeight;
+    }
+
+    /// Returns the switch state layer size token.
+    public final double getStateLayerSize() {
+        return stateLayerSize == null ? DEFAULT_STATE_LAYER_SIZE : stateLayerSize.get();
+    }
+
+    /// Sets the switch state layer size token.
+    public final void setStateLayerSize(double stateLayerSize) {
+        stateLayerSizeProperty().set(M3Css.nonNegative(stateLayerSize, "stateLayerSize"));
+    }
+
+    /// Returns the switch state layer size token property.
+    public final StyleableDoubleProperty stateLayerSizeProperty() {
+        if (stateLayerSize == null) {
+            stateLayerSize = sizeProperty(
+                    DEFAULT_STATE_LAYER_SIZE,
+                    "stateLayerSize",
+                    StyleableProperties.STATE_LAYER_SIZE,
+                    this::requestLayout
+            );
+        }
+        return stateLayerSize;
+    }
+
+    /// Returns the unselected switch handle size token.
+    public final double getUnselectedHandleSize() {
+        return unselectedHandleSize == null ? DEFAULT_UNSELECTED_HANDLE_SIZE : unselectedHandleSize.get();
+    }
+
+    /// Sets the unselected switch handle size token.
+    public final void setUnselectedHandleSize(double unselectedHandleSize) {
+        unselectedHandleSizeProperty().set(M3Css.nonNegative(unselectedHandleSize, "unselectedHandleSize"));
+    }
+
+    /// Returns the unselected switch handle size token property.
+    public final StyleableDoubleProperty unselectedHandleSizeProperty() {
+        if (unselectedHandleSize == null) {
+            unselectedHandleSize = sizeProperty(
+                    DEFAULT_UNSELECTED_HANDLE_SIZE,
+                    "unselectedHandleSize",
+                    StyleableProperties.UNSELECTED_HANDLE_SIZE,
+                    this::requestLayout
+            );
+        }
+        return unselectedHandleSize;
+    }
+
+    /// Returns the selected switch handle size token.
+    public final double getSelectedHandleSize() {
+        return selectedHandleSize == null ? DEFAULT_SELECTED_HANDLE_SIZE : selectedHandleSize.get();
+    }
+
+    /// Sets the selected switch handle size token.
+    public final void setSelectedHandleSize(double selectedHandleSize) {
+        selectedHandleSizeProperty().set(M3Css.nonNegative(selectedHandleSize, "selectedHandleSize"));
+    }
+
+    /// Returns the selected switch handle size token property.
+    public final StyleableDoubleProperty selectedHandleSizeProperty() {
+        if (selectedHandleSize == null) {
+            selectedHandleSize = sizeProperty(
+                    DEFAULT_SELECTED_HANDLE_SIZE,
+                    "selectedHandleSize",
+                    StyleableProperties.SELECTED_HANDLE_SIZE,
+                    this::requestLayout
+            );
+        }
+        return selectedHandleSize;
+    }
+
+    /// Returns the pressed switch handle size token.
+    public final double getPressedHandleSize() {
+        return pressedHandleSize == null ? DEFAULT_PRESSED_HANDLE_SIZE : pressedHandleSize.get();
+    }
+
+    /// Sets the pressed switch handle size token.
+    public final void setPressedHandleSize(double pressedHandleSize) {
+        pressedHandleSizeProperty().set(M3Css.nonNegative(pressedHandleSize, "pressedHandleSize"));
+    }
+
+    /// Returns the pressed switch handle size token property.
+    public final StyleableDoubleProperty pressedHandleSizeProperty() {
+        if (pressedHandleSize == null) {
+            pressedHandleSize = sizeProperty(
+                    DEFAULT_PRESSED_HANDLE_SIZE,
+                    "pressedHandleSize",
+                    StyleableProperties.PRESSED_HANDLE_SIZE,
+                    this::requestLayout
+            );
+        }
+        return pressedHandleSize;
     }
 
     /// Returns the CSS metadata for this control class.
@@ -213,9 +376,19 @@ public class M3Switch extends ButtonBase {
 
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
-        double size = getTouchTargetSize();
+        double size = Math.max(Math.max(getTouchTargetSize(), getTrackHeight()), getStateLayerSize());
         setMinHeight(size);
         setPrefHeight(size);
+    }
+
+    /// Creates a non-negative styleable size property for a switch token.
+    private StyleableDoubleProperty sizeProperty(
+            double initialValue,
+            String name,
+            CssMetaData<M3Switch, Number> cssMetaData,
+            Runnable invalidation
+    ) {
+        return M3Css.nonNegativeStyleableDoubleProperty(initialValue, this, name, cssMetaData, invalidation);
     }
 
     /// CSS metadata for m3fx switch component tokens.
@@ -223,35 +396,39 @@ public class M3Switch extends ButtonBase {
     private static final class StyleableProperties {
         /// CSS metadata for the touch target size token.
         private static final CssMetaData<M3Switch, Number> TOUCH_TARGET_SIZE =
-                new CssMetaData<>("-m3-touch-target-size", SizeConverter.getInstance(), DEFAULT_TOUCH_TARGET_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Switch control) {
-                        return M3Css.isSettable(control.touchTargetSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Switch control) {
-                        return control.touchTargetSizeProperty();
-                    }
-                };
+                sizeCssMetaData("-m3-touch-target-size", DEFAULT_TOUCH_TARGET_SIZE, M3Switch::touchTargetSizeProperty);
 
         /// CSS metadata for the switch track shape token.
         private static final CssMetaData<M3Switch, Number> TRACK_SHAPE =
-                new CssMetaData<>("-m3-track-shape", SizeConverter.getInstance(), DEFAULT_TRACK_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Switch control) {
-                        return M3Css.isSettable(control.trackShapeProperty());
-                    }
+                sizeCssMetaData("-m3-track-shape", DEFAULT_TRACK_SHAPE, M3Switch::trackShapeProperty);
 
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Switch control) {
-                        return control.trackShapeProperty();
-                    }
-                };
+        /// CSS metadata for the switch track width token.
+        private static final CssMetaData<M3Switch, Number> TRACK_WIDTH =
+                sizeCssMetaData("-m3-track-width", DEFAULT_TRACK_WIDTH, M3Switch::trackWidthProperty);
+
+        /// CSS metadata for the switch track height token.
+        private static final CssMetaData<M3Switch, Number> TRACK_HEIGHT =
+                sizeCssMetaData("-m3-track-height", DEFAULT_TRACK_HEIGHT, M3Switch::trackHeightProperty);
+
+        /// CSS metadata for the switch state layer size token.
+        private static final CssMetaData<M3Switch, Number> STATE_LAYER_SIZE =
+                sizeCssMetaData("-m3-state-layer-size", DEFAULT_STATE_LAYER_SIZE, M3Switch::stateLayerSizeProperty);
+
+        /// CSS metadata for the unselected switch handle size token.
+        private static final CssMetaData<M3Switch, Number> UNSELECTED_HANDLE_SIZE =
+                sizeCssMetaData(
+                        "-m3-unselected-handle-size",
+                        DEFAULT_UNSELECTED_HANDLE_SIZE,
+                        M3Switch::unselectedHandleSizeProperty
+                );
+
+        /// CSS metadata for the selected switch handle size token.
+        private static final CssMetaData<M3Switch, Number> SELECTED_HANDLE_SIZE =
+                sizeCssMetaData("-m3-selected-handle-size", DEFAULT_SELECTED_HANDLE_SIZE, M3Switch::selectedHandleSizeProperty);
+
+        /// CSS metadata for the pressed switch handle size token.
+        private static final CssMetaData<M3Switch, Number> PRESSED_HANDLE_SIZE =
+                sizeCssMetaData("-m3-pressed-handle-size", DEFAULT_PRESSED_HANDLE_SIZE, M3Switch::pressedHandleSizeProperty);
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
@@ -260,7 +437,34 @@ public class M3Switch extends ButtonBase {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(ButtonBase.getClassCssMetaData());
             styleables.add(TOUCH_TARGET_SIZE);
             styleables.add(TRACK_SHAPE);
+            styleables.add(TRACK_WIDTH);
+            styleables.add(TRACK_HEIGHT);
+            styleables.add(STATE_LAYER_SIZE);
+            styleables.add(UNSELECTED_HANDLE_SIZE);
+            styleables.add(SELECTED_HANDLE_SIZE);
+            styleables.add(PRESSED_HANDLE_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
+        }
+
+        /// Creates CSS metadata for a non-negative switch size token.
+        private static CssMetaData<M3Switch, Number> sizeCssMetaData(
+                String property,
+                double defaultValue,
+                Function<M3Switch, StyleableDoubleProperty> propertyAccessor
+        ) {
+            return new CssMetaData<>(property, SizeConverter.getInstance(), defaultValue) {
+                /// Returns whether this property can be set by CSS.
+                @Override
+                public boolean isSettable(M3Switch control) {
+                    return M3Css.isSettable(propertyAccessor.apply(control));
+                }
+
+                /// Returns the styleable property for a control.
+                @Override
+                public StyleableProperty<Number> getStyleableProperty(M3Switch control) {
+                    return propertyAccessor.apply(control);
+                }
+            };
         }
     }
 }
