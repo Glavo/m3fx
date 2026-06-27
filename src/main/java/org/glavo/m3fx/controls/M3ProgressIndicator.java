@@ -50,7 +50,7 @@ public class M3ProgressIndicator extends Control {
     private static final double DEFAULT_TRACK_THICKNESS = 4.0;
 
     /// The default circular indicator size.
-    private static final double DEFAULT_INDICATOR_SIZE = 48.0;
+    private static final double DEFAULT_INDICATOR_SIZE = 40.0;
 
     /// The default circular wave amplitude.
     private static final double DEFAULT_WAVE_AMPLITUDE = 0.0;

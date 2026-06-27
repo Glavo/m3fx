@@ -1,7 +1,9 @@
 .m3-slider {
-    -m3-track-thickness: 4px;
+    -m3-track-thickness: 16px;
     -m3-track-shape: 999px;
-    -m3-thumb-size: 20px;
+    -m3-thumb-size: 44px;
+    -m3-thumb-width: 4px;
+    -m3-thumb-track-gap: 6px;
     -m3-touch-target-size: 48px;
 }
 
@@ -9,13 +11,13 @@
 .m3-slider.m3-slider:hover .track,
 .m3-slider.m3-slider:focused .track,
 .m3-slider.m3-slider:pressed .track {
-    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-color: -m3-color-secondary-container;
     -fx-background-insets: 0;
     -fx-background-radius: 999px;
     -fx-border-color: transparent;
     -fx-border-insets: 0;
     -fx-border-width: 0px;
-    -fx-pref-height: 4px;
+    -fx-pref-height: 16px;
 }
 
 .m3-slider.m3-slider .active-track,
@@ -28,7 +30,7 @@
     -fx-border-color: transparent;
     -fx-border-insets: 0;
     -fx-border-width: 0px;
-    -fx-pref-height: 4px;
+    -fx-pref-height: 16px;
 }
 
 .m3-slider.m3-slider .thumb,
@@ -43,6 +45,11 @@
     -fx-border-width: 0px;
     -fx-effect: null;
     -fx-padding: 0px;
+}
+
+.m3-slider:focus-visible,
+.m3-slider:pressed {
+    -m3-thumb-width: 2px;
 }
 
 .m3-slider .m3-state-layer,

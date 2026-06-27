@@ -5,6 +5,10 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 12, 0.16, 0, 4);
 }
 
+.m3-menu .m3-menu-item:selected {
+    -m3-container-shape: -m3-menu-selected-item-container-shape;
+}
+
 .m3-menu .m3-menu-item:selected .m3-list-item-selection-container {
     -fx-background-color: -m3-color-secondary-container;
 }

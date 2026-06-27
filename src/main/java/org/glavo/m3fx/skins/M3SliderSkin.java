@@ -110,6 +110,8 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.trackShapeProperty().addListener(trackShapeInvalidation);
         control.thumbSizeProperty().addListener(layoutInvalidation);
+        control.thumbWidthProperty().addListener(layoutInvalidation);
+        control.thumbTrackGapProperty().addListener(layoutInvalidation);
         control.touchTargetSizeProperty().addListener(layoutInvalidation);
         control.disabledProperty().addListener(disabledInvalidation);
 
@@ -134,6 +136,8 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.trackThicknessProperty().removeListener(layoutInvalidation);
         control.trackShapeProperty().removeListener(trackShapeInvalidation);
         control.thumbSizeProperty().removeListener(layoutInvalidation);
+        control.thumbWidthProperty().removeListener(layoutInvalidation);
+        control.thumbTrackGapProperty().removeListener(layoutInvalidation);
         control.touchTargetSizeProperty().removeListener(layoutInvalidation);
         motionSettingsObserver.dispose();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
@@ -150,7 +154,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     private void updateTrackStyle() {
         String shape = formatPixels(getSkinnable().getTrackShape());
         track.setStyle(
-                "-fx-background-color: -m3-color-surface-container-highest;"
+                "-fx-background-color: -m3-color-secondary-container;"
                         + " -fx-background-insets: 0;"
                         + " -fx-background-radius: " + shape + ";"
                         + " -fx-border-color: transparent;"
@@ -182,7 +186,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         if (slider.getOrientation() == Orientation.VERTICAL) {
             return leftInset + slider.getTouchTargetSize() + rightInset;
         }
-        return leftInset + slider.getThumbSize() + rightInset;
+        return leftInset + slider.getThumbWidth() + rightInset;
     }
 
     /// Computes the minimum height needed to show the touch target.
@@ -196,7 +200,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     ) {
         M3Slider slider = getSkinnable();
         if (slider.getOrientation() == Orientation.VERTICAL) {
-            return topInset + slider.getThumbSize() + bottomInset;
+            return topInset + slider.getThumbWidth() + bottomInset;
         }
         return topInset + slider.getTouchTargetSize() + bottomInset;
     }
@@ -238,13 +242,15 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     protected void layoutChildren(double x, double y, double width, double height) {
         M3Slider slider = getSkinnable();
         double thumbSize = slider.getThumbSize();
+        double thumbWidth = slider.getThumbWidth();
+        double thumbTrackGap = slider.getThumbTrackGap();
         double trackThickness = slider.getTrackThickness();
         double position = displayedPosition.get();
 
         if (slider.getOrientation() == Orientation.VERTICAL) {
-            layoutVerticalSlider(x, y, width, height, thumbSize, trackThickness, position);
+            layoutVerticalSlider(x, y, width, height, thumbSize, thumbWidth, thumbTrackGap, trackThickness, position);
         } else {
-            layoutHorizontalSlider(x, y, width, height, thumbSize, trackThickness, position);
+            layoutHorizontalSlider(x, y, width, height, thumbSize, thumbWidth, thumbTrackGap, trackThickness, position);
         }
     }
 
@@ -255,79 +261,90 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             double width,
             double height,
             double thumbSize,
+            double thumbWidth,
+            double thumbTrackGap,
             double trackThickness,
             double position
     ) {
-        double trackLength = Math.max(0.0, width - thumbSize);
-        double trackX = x + thumbSize / 2.0;
+        double trackLength = Math.max(0.0, width - thumbWidth);
+        double trackStart = x + thumbWidth / 2.0;
+        double trackEnd = trackStart + trackLength;
         double trackY = y + (height - trackThickness) / 2.0;
-        double thumbX = trackX + trackLength * position - thumbSize / 2.0;
+        double thumbCenterX = trackStart + trackLength * position;
+        double thumbX = thumbCenterX - thumbWidth / 2.0;
         double thumbY = y + (height - thumbSize) / 2.0;
 
-        track.resizeRelocate(trackX, trackY, trackLength, trackThickness);
-        layoutHorizontalActiveTrack(trackX, trackY, trackLength, trackThickness, position);
+        layoutHorizontalTrackSegments(trackStart, trackEnd, trackY, trackThickness, thumbCenterX, thumbTrackGap);
         stateLayer.layoutLayer(
-                thumbX + thumbSize / 2.0 - getSkinnable().getTouchTargetSize() / 2.0,
+                thumbCenterX - getSkinnable().getTouchTargetSize() / 2.0,
                 y + (height - getSkinnable().getTouchTargetSize()) / 2.0,
                 getSkinnable().getTouchTargetSize(),
                 getSkinnable().getTouchTargetSize(),
                 getSkinnable().getTouchTargetSize() / 2.0
         );
-        thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbSize);
+        thumb.resizeRelocate(thumbX, thumbY, thumbWidth, thumbSize);
+    }
+
+    /// Positions horizontal active and inactive track segments around the handle gap.
+    private void layoutHorizontalTrackSegments(
+            double trackStart,
+            double trackEnd,
+            double trackY,
+            double trackThickness,
+            double thumbCenterX,
+            double thumbTrackGap
+    ) {
+        double leadingGapEdge = clampToRange(thumbCenterX - thumbTrackGap, trackStart, trackEnd);
+        double trailingGapEdge = clampToRange(thumbCenterX + thumbTrackGap, trackStart, trackEnd);
+        activeTrack.resizeRelocate(trackStart, trackY, leadingGapEdge - trackStart, trackThickness);
+        track.resizeRelocate(trailingGapEdge, trackY, trackEnd - trailingGapEdge, trackThickness);
     }
 
     /// Positions vertical slider nodes.
+    @SuppressWarnings("SuspiciousNameCombination")
     private void layoutVerticalSlider(
             double x,
             double y,
             double width,
             double height,
             double thumbSize,
+            double thumbWidth,
+            double thumbTrackGap,
             double trackThickness,
             double position
     ) {
-        double trackLength = Math.max(0.0, height - thumbSize);
+        double trackLength = Math.max(0.0, height - thumbWidth);
+        double trackStart = y + thumbWidth / 2.0;
+        double trackEnd = trackStart + trackLength;
         double trackX = x + (width - trackThickness) / 2.0;
-        double trackY = y + thumbSize / 2.0;
+        double thumbCenterY = trackEnd - trackLength * position;
         double thumbX = x + (width - thumbSize) / 2.0;
-        double thumbY = trackY + trackLength * (1.0 - position) - thumbSize / 2.0;
+        double thumbY = thumbCenterY - thumbWidth / 2.0;
 
-        track.resizeRelocate(trackX, trackY, trackThickness, trackLength);
-        layoutVerticalActiveTrack(trackX, trackY, trackThickness, trackLength, position);
+        layoutVerticalTrackSegments(trackX, trackStart, trackEnd, trackThickness, thumbCenterY, thumbTrackGap);
         stateLayer.layoutLayer(
                 x + (width - getSkinnable().getTouchTargetSize()) / 2.0,
-                thumbY + thumbSize / 2.0 - getSkinnable().getTouchTargetSize() / 2.0,
+                thumbCenterY - getSkinnable().getTouchTargetSize() / 2.0,
                 getSkinnable().getTouchTargetSize(),
                 getSkinnable().getTouchTargetSize(),
                 getSkinnable().getTouchTargetSize() / 2.0
         );
-        thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbSize);
+        thumb.resizeRelocate(thumbX, thumbY, thumbSize, thumbWidth);
     }
 
-    /// Positions the active horizontal track segment in logical local coordinates.
-    private void layoutHorizontalActiveTrack(
+    /// Positions vertical active and inactive track segments around the handle gap.
+    private void layoutVerticalTrackSegments(
             double trackX,
-            double trackY,
-            double trackLength,
+            double trackStart,
+            double trackEnd,
             double trackThickness,
-            double position
+            double thumbCenterY,
+            double thumbTrackGap
     ) {
-        double activeLength = trackLength * position;
-        double activeX = trackX;
-        activeTrack.resizeRelocate(activeX, trackY, Math.max(0.0, activeLength), trackThickness);
-    }
-
-    /// Positions the active vertical track segment from the current value toward the minimum edge.
-    private void layoutVerticalActiveTrack(
-            double trackX,
-            double trackY,
-            double trackThickness,
-            double trackLength,
-            double position
-    ) {
-        double activeLength = trackLength * position;
-        double activeY = trackY + trackLength - activeLength;
-        activeTrack.resizeRelocate(trackX, activeY, trackThickness, Math.max(0.0, activeLength));
+        double upperGapEdge = clampToRange(thumbCenterY - thumbTrackGap, trackStart, trackEnd);
+        double lowerGapEdge = clampToRange(thumbCenterY + thumbTrackGap, trackStart, trackEnd);
+        track.resizeRelocate(trackX, trackStart, trackThickness, upperGapEdge - trackStart);
+        activeTrack.resizeRelocate(trackX, lowerGapEdge, trackThickness, trackEnd - lowerGapEdge);
     }
 
     /// Starts value adjustment from a primary mouse press.
@@ -446,21 +463,21 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Converts a mouse coordinate to a normalized value position.
     private double mousePositionToValuePosition(Point2D point) {
         M3Slider slider = getSkinnable();
-        double thumbSize = slider.getThumbSize();
+        double thumbWidth = slider.getThumbWidth();
         if (slider.getOrientation() == Orientation.VERTICAL) {
-            double length = Math.max(0.0, slider.getHeight() - thumbSize);
+            double length = Math.max(0.0, slider.getHeight() - thumbWidth);
             if (length == 0.0) {
                 return 0.0;
             }
-            double start = thumbSize / 2.0;
+            double start = thumbWidth / 2.0;
             return clamp(1.0 - (point.getY() - start) / length);
         }
 
-        double length = Math.max(0.0, slider.getWidth() - thumbSize);
+        double length = Math.max(0.0, slider.getWidth() - thumbWidth);
         if (length == 0.0) {
             return 0.0;
         }
-        double start = thumbSize / 2.0;
+        double start = thumbWidth / 2.0;
         return clamp((point.getX() - start) / length);
     }
 
@@ -477,8 +494,13 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Returns whether this slider currently mirrors horizontal value geometry.
     private boolean isHorizontalRightToLeft() {
         M3Slider slider = getSkinnable();
-        return slider.getOrientation() == Orientation.HORIZONTAL
-                && slider.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        if (slider.getOrientation() != Orientation.HORIZONTAL) {
+            return false;
+        }
+        NodeOrientation nodeOrientation = slider.getNodeOrientation();
+        return nodeOrientation == NodeOrientation.RIGHT_TO_LEFT
+                || (nodeOrientation == NodeOrientation.INHERIT
+                && slider.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT);
     }
 
     /// Converts a normalized position to a slider value.
@@ -529,6 +551,11 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Clamps a normalized value position to the supported range.
     private static double clamp(double value) {
         return Math.max(0.0, Math.min(1.0, value));
+    }
+
+    /// Clamps a coordinate to a local range.
+    private static double clampToRange(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     /// Formats a CSS pixel value.

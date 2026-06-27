@@ -54,6 +54,9 @@ public class M3SearchBar extends Control {
     /// The style class applied to the search editor.
     public static final String INPUT_STYLE_CLASS = "m3-search-bar-input";
 
+    /// The style class applied to the internal content row.
+    public static final String CONTENT_STYLE_CLASS = "m3-search-bar-content";
+
     /// The style class applied to the leading slot.
     public static final String LEADING_STYLE_CLASS = "m3-search-bar-leading";
 
@@ -540,7 +543,7 @@ public class M3SearchBar extends Control {
     private static Node defaultLeadingNode() {
         M3InternalIcon icon = new M3InternalIcon(
                 M3InternalIcon.Glyph.SEARCH,
-                M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
+                M3InternalIcon.ColorRole.ON_SURFACE
         );
         icon.getStyleClass().add("m3-search-bar-default-leading");
         return icon;

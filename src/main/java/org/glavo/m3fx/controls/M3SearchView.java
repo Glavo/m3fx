@@ -47,6 +47,9 @@ public class M3SearchView extends Control {
     /// The base style class for M3FX search views.
     public static final String STYLE_CLASS = "m3-search-view";
 
+    /// The style class applied to the internal content column.
+    public static final String CONTENT_STYLE_CLASS = "m3-search-view-content";
+
     /// The style class applied to the result container.
     public static final String RESULTS_STYLE_CLASS = "m3-search-view-results";
 
@@ -356,9 +359,7 @@ public class M3SearchView extends Control {
                     setText(text);
                 }
             }
-            case REQUEST_FOCUS -> {
-                focusAccessibleNode();
-            }
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case FIRE -> fire();
             case EXPAND -> activate();
             case SHOW_ITEM -> showAccessibleResult(parameters);

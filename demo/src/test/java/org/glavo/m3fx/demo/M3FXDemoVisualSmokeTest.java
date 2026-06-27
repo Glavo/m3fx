@@ -21,6 +21,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.image.WritableImage;
@@ -7233,6 +7234,12 @@ final class M3FXDemoVisualSmokeTest {
                             + leadingBounds + ", editor=" + editorBounds + ", searchBar=" + searchBounds);
         }
 
+        @Nullable Node trailingNode = searchBar.lookup("." + M3SearchBar.TRAILING_STYLE_CLASS);
+        HBox trailingBox = assertInstanceOf(HBox.class, trailingNode,
+                "search bar should expose its trailing action box");
+        assertEquals(0.0, trailingBox.getSpacing(), CONTROL_EDGE_TOLERANCE,
+                "search trailing actions should use the Material contained 0dp gap token");
+
         for (Node action : searchBar.getTrailingActions()) {
             assertTrue(action.isVisible() && hasRenderableBounds(action),
                     () -> "search trailing action should be visible: " + action);
@@ -7255,13 +7262,8 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Returns the search bar height expected from the active demo profile.
+    /// Returns the search bar height expected from Material Design search bar tokens.
     private static double expectedSearchBarHeight(M3SearchBar searchBar) {
-        @Nullable Scene scene = searchBar.getScene();
-        if (scene != null
-                && scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS)) {
-            return 64.0;
-        }
         return 56.0;
     }
 
@@ -7315,6 +7317,9 @@ final class M3FXDemoVisualSmokeTest {
             M3ListItem item = (M3ListItem) result;
             Bounds resultBounds = item.localToScene(item.getBoundsInLocal());
             assertSearchResultRowGeometry(item, resultBounds, resultsBounds);
+            assertEquals(expectedSearchResultContainerShape(item), item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
+                    () -> "search result row should use the active profile result shape token: item="
+                            + item.getHeadlineText());
             double expectedMinY = previousMaxY;
             assertEquals(expectedMinY, resultBounds.getMinY(), CONTROL_EDGE_TOLERANCE,
                     () -> "active search view result rows should be contiguous: previousMaxY="
@@ -7367,6 +7372,11 @@ final class M3FXDemoVisualSmokeTest {
                 () -> "active search view results inset from the embedded bar is too large: leftInset="
                         + leftInset + ", rightInset=" + rightInset + ", results=" + resultsBounds
                         + ", bar=" + barBounds);
+    }
+
+    /// Returns the search result row shape expected from the active profile tokens.
+    private static double expectedSearchResultContainerShape(M3ListItem item) {
+        return isExpressiveTheme(item) ? 16.0 : 0.0;
     }
 
     /// Verifies one visible search result row inside an active search view.
@@ -7953,6 +7963,7 @@ final class M3FXDemoVisualSmokeTest {
                 () -> description + " should keep the Material minimum menu width: " + menuBounds);
         assertTrue(menuBounds.getHeight() > 0.0,
                 () -> description + " should have positive height: " + menuBounds);
+        assertMenuContainerShape(menu, description);
 
         int menuItemCount = 0;
         double previousMaxY = menuBounds.getMinY();
@@ -7989,6 +8000,34 @@ final class M3FXDemoVisualSmokeTest {
                         + menuBounds + ", lastRowMaxY=" + lastRowMaxY);
     }
 
+    /// Verifies that the menu surface resolves the expected profile-specific container shape.
+    private static void assertMenuContainerShape(M3Menu menu, String description) {
+        double expectedShape = isExpressiveTheme(menu) ? 24.0 : 4.0;
+        assertFalse(menu.getBackground().getFills().isEmpty(), () -> description + " should expose a background fill");
+        double actualShape = menu.getBackground()
+                .getFills()
+                .get(0)
+                .getRadii()
+                .getTopLeftHorizontalRadius();
+        assertEquals(expectedShape, actualShape, CONTROL_EDGE_TOLERANCE,
+                () -> description + " menu container shape should match the active profile token");
+    }
+
+    /// Returns whether the node is inside an expressive-themed subtree or popup root.
+    private static boolean isExpressiveTheme(Node node) {
+        @Nullable Node current = node;
+        while (current != null) {
+            if (current.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS)) {
+                return true;
+            }
+            current = current.getParent();
+        }
+
+        @Nullable Scene scene = node.getScene();
+        return scene != null
+                && scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS);
+    }
+
     /// Verifies one direct menu item row.
     private static void assertMenuItemRowGeometry(
             M3MenuItem item,
@@ -8004,6 +8043,18 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(expectedHeight, itemBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " menu item height should match its resolved line-count token: item="
                         + item.getHeadlineText() + ", bounds=" + itemBounds + ", expected=" + expectedHeight);
+        double expectedProfileHeight = isExpressiveTheme(item) ? 44.0 : 48.0;
+        assertEquals(expectedProfileHeight, expectedHeight, CONTROL_EDGE_TOLERANCE,
+                () -> description + " menu item resolved height should match the active profile token: item="
+                        + item.getHeadlineText());
+        double expectedItemShape = item.isSelected() && isExpressiveTheme(item) ? 16.0 : isExpressiveTheme(item) ? 6.0 : 4.0;
+        assertEquals(expectedItemShape, item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " menu item container shape should match the active profile and selection token: item="
+                        + item.getHeadlineText());
+        double expectedContentSpacing = 12.0;
+        assertEquals(expectedContentSpacing, item.getContentSpacing(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " menu item content spacing should match the active profile token: item="
+                        + item.getHeadlineText());
 
         assertListItemSlotGeometry(
                 item,
@@ -8028,6 +8079,17 @@ final class M3FXDemoVisualSmokeTest {
         if (item.isSelected()) {
             assertListItemSelectedContainerLayout(item, selectionContainer, description
                     + " selected menu item `" + item.getHeadlineText() + "`");
+            if (selectionContainer instanceof Region selectedRegion
+                    && !selectedRegion.getBackground().getFills().isEmpty()) {
+                double selectedShape = selectedRegion.getBackground()
+                        .getFills()
+                        .get(0)
+                        .getRadii()
+                        .getTopLeftHorizontalRadius();
+                assertEquals(item.getContainerShape(), selectedShape, CONTROL_EDGE_TOLERANCE,
+                        () -> description + " selected menu item background shape should follow the item token: item="
+                                + item.getHeadlineText());
+            }
             if (sceneImage != null) {
                 assertListItemSelectedContainerPixels(
                         sceneImage,
@@ -9167,7 +9229,7 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
-    /// Verifies that a rendered text ink rectangle does not overlap a visible adornment slot.
+    /// Verifies that a rendered text ink rectangle does not overlap a visible Material adornment slot.
     private static void assertTextInputInkAvoidsAdornmentSlot(
             M3TextInputLayout layout,
             String slotStyleClass,
@@ -9191,8 +9253,24 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(horizontalOverlap <= TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE,
                 () -> description + " overlaps rendered text ink: overlap=" + horizontalOverlap
                         + ", inkBounds=" + inkBounds + ", slotBounds=" + slotBounds
-                        + ", layout=" + layout);
+                        + ", layout=" + layout + ", input=" + textInputDebugState(layout.getInput()));
     }
+
+    /// Returns diagnostic state for a text input layout input.
+    private static String textInputDebugState(@Nullable TextInputControl input) {
+        if (input == null) {
+            return "null";
+        }
+
+        String alignment = input instanceof TextField textField ? String.valueOf(textField.getAlignment()) : "n/a";
+        return input.getClass().getSimpleName()
+                + "[text=" + input.getText()
+                + ", nodeOrientation=" + input.getNodeOrientation()
+                + ", effectiveNodeOrientation=" + input.getEffectiveNodeOrientation()
+                + ", alignment=" + alignment
+                + ", padding=" + input.getPadding() + "]";
+    }
+
 
     /// Verifies that a single-line text input's rendered ink center matches its active content slot.
     private static void assertSingleLineTextInputInkAligned(
@@ -12846,36 +12924,36 @@ final class M3FXDemoVisualSmokeTest {
                 () -> pageTitle + " rendered switch thumb pixels are not square: " + thumbPixels);
     }
 
-    /// Verifies that a slider track, active track, and thumb match the current value and orientation.
+    /// Verifies that slider track segments, handle gap, and thumb match the current value and orientation.
     private static void assertSliderTrackThumbGeometry(
             M3Slider slider,
             Bounds sceneBounds,
             WritableImage image,
             String pageTitle
     ) {
-        @Nullable Node track = slider.lookup(".track");
+        @Nullable Node inactiveTrack = slider.lookup(".track");
         @Nullable Node activeTrack = slider.lookup(".active-track");
         @Nullable Node thumb = slider.lookup(".thumb");
-        if (track == null
+        if (inactiveTrack == null
                 || activeTrack == null
                 || thumb == null
-                || !hasRenderableBounds(track)
+                || !hasRenderableBounds(inactiveTrack)
                 || !hasRenderableBounds(activeTrack)
                 || !hasRenderableBounds(thumb)) {
             fail(pageTitle + " slider is missing track, active track, or thumb geometry: " + slider);
         }
 
         Bounds sliderBounds = slider.localToScene(slider.getBoundsInLocal());
-        Bounds trackBounds = track.localToScene(track.getBoundsInLocal());
+        Bounds inactiveBounds = inactiveTrack.localToScene(inactiveTrack.getBoundsInLocal());
         Bounds activeBounds = activeTrack.localToScene(activeTrack.getBoundsInLocal());
         Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
-        if (isOutsideSceneViewport(track, trackBounds, sceneBounds)) {
+        if (isOutsideSceneViewport(thumb, thumbBounds, sceneBounds)) {
             return;
         }
 
-        assertTrue(containsBoundsWithTolerance(sliderBounds, trackBounds, CONTROL_EDGE_TOLERANCE),
-                () -> pageTitle + " slider track leaves the control bounds: slider="
-                        + sliderBounds + ", track=" + trackBounds);
+        assertTrue(containsBoundsWithTolerance(sliderBounds, inactiveBounds, CONTROL_EDGE_TOLERANCE),
+                () -> pageTitle + " slider inactive track leaves the control bounds: slider="
+                        + sliderBounds + ", inactiveTrack=" + inactiveBounds);
         assertTrue(containsBoundsWithTolerance(sliderBounds, activeBounds, CONTROL_EDGE_TOLERANCE),
                 () -> pageTitle + " slider active track leaves the control bounds: slider="
                         + sliderBounds + ", activeTrack=" + activeBounds);
@@ -12885,57 +12963,147 @@ final class M3FXDemoVisualSmokeTest {
 
         double logicalPosition = normalizedSliderPosition(slider);
         if (slider.getOrientation() == Orientation.VERTICAL) {
-            double expectedThumbCenterY = trackBounds.getMaxY() - trackBounds.getHeight() * logicalPosition;
-            assertTrue(trackBounds.getHeight() >= 120.0,
-                    () -> pageTitle + " vertical slider track is too short: " + trackBounds);
-            assertEquals(slider.getTrackThickness(), trackBounds.getWidth(), 1.0,
-                    () -> pageTitle + " vertical slider track width does not match token: " + trackBounds);
-            assertEquals(slider.getThumbSize(), thumbBounds.getWidth(), 1.0,
-                    () -> pageTitle + " vertical slider thumb width does not match token: " + thumbBounds);
-            assertEquals(trackBounds.getCenterX(), thumbBounds.getCenterX(), 1.0,
-                    () -> pageTitle + " vertical slider thumb is horizontally off track: track="
-                            + trackBounds + ", thumb=" + thumbBounds);
-            assertEquals(expectedThumbCenterY, thumbBounds.getCenterY(), 1.25,
-                    () -> pageTitle + " vertical slider thumb does not match value: value="
-                            + slider.getValue() + ", track=" + trackBounds + ", thumb=" + thumbBounds);
-            assertEquals(trackBounds.getHeight() * logicalPosition, activeBounds.getHeight(), 1.25,
-                    () -> pageTitle + " vertical slider active track does not match value: value="
-                            + slider.getValue() + ", activeTrack=" + activeBounds + ", track=" + trackBounds);
-            assertEquals(trackBounds.getMaxY(), activeBounds.getMaxY(), 1.25,
-                    () -> pageTitle + " vertical slider active track should end at the track bottom: activeTrack="
-                            + activeBounds + ", track=" + trackBounds);
-            assertSliderThumbPixelsCentered(image, thumb, thumbBounds, pageTitle);
-            return;
+            assertVerticalSliderTrackThumbGeometry(slider, sliderBounds, inactiveBounds, activeBounds, thumbBounds,
+                    logicalPosition, image, thumb, pageTitle);
+        } else {
+            assertHorizontalSliderTrackThumbGeometry(slider, sliderBounds, inactiveBounds, activeBounds, thumbBounds,
+                    logicalPosition, image, thumb, pageTitle);
         }
+    }
 
+    /// Verifies horizontal slider track segments, gap, and thumb geometry.
+    private static void assertHorizontalSliderTrackThumbGeometry(
+            M3Slider slider,
+            Bounds sliderBounds,
+            Bounds inactiveBounds,
+            Bounds activeBounds,
+            Bounds thumbBounds,
+            double logicalPosition,
+            WritableImage image,
+            Node thumb,
+            String pageTitle
+    ) {
+        double trackStart = sliderBounds.getMinX() + slider.getThumbWidth() / 2.0;
+        double trackEnd = sliderBounds.getMaxX() - slider.getThumbWidth() / 2.0;
+        double trackLength = trackEnd - trackStart;
         double visualPosition = slider.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
                 ? 1.0 - logicalPosition
                 : logicalPosition;
-        double expectedThumbCenterX = trackBounds.getMinX() + trackBounds.getWidth() * visualPosition;
-        assertTrue(trackBounds.getWidth() >= 160.0,
-                () -> pageTitle + " horizontal slider track is too short: " + trackBounds);
-        assertEquals(slider.getTrackThickness(), trackBounds.getHeight(), 1.0,
-                () -> pageTitle + " horizontal slider track height does not match token: " + trackBounds);
+        double thumbCenter = trackStart + trackLength * visualPosition;
+        double leadingGapEdge = Math.max(trackStart, thumbCenter - slider.getThumbTrackGap());
+        double trailingGapEdge = Math.min(trackEnd, thumbCenter + slider.getThumbTrackGap());
+
+        assertTrue(trackLength >= 160.0, () -> pageTitle + " horizontal slider track is too short: " + trackLength);
+        assertEquals(slider.getTrackThickness(), inactiveBounds.getHeight(), 1.0,
+                () -> pageTitle + " horizontal slider inactive track height does not match token: " + inactiveBounds);
+        assertEquals(slider.getTrackThickness(), activeBounds.getHeight(), 1.0,
+                () -> pageTitle + " horizontal slider active track height does not match token: " + activeBounds);
         assertEquals(slider.getThumbSize(), thumbBounds.getHeight(), 1.0,
-                () -> pageTitle + " horizontal slider thumb height does not match token: " + thumbBounds);
-        assertEquals(trackBounds.getCenterY(), thumbBounds.getCenterY(), 1.0,
-                () -> pageTitle + " horizontal slider thumb is vertically off track: track="
-                        + trackBounds + ", thumb=" + thumbBounds);
-        assertEquals(expectedThumbCenterX, thumbBounds.getCenterX(), 1.25,
+                () -> pageTitle + " horizontal slider thumb long side does not match token: " + thumbBounds);
+        assertEquals(slider.getThumbWidth(), thumbBounds.getWidth(), 1.0,
+                () -> pageTitle + " horizontal slider thumb short side does not match token: " + thumbBounds);
+        assertEquals(inactiveBounds.getCenterY(), activeBounds.getCenterY(), 1.0,
+                () -> pageTitle + " horizontal slider track segments are vertically misaligned: inactive="
+                        + inactiveBounds + ", active=" + activeBounds);
+        assertEquals(activeBounds.getCenterY(), thumbBounds.getCenterY(), 1.0,
+                () -> pageTitle + " horizontal slider thumb is vertically off track: active="
+                        + activeBounds + ", thumb=" + thumbBounds);
+        assertEquals(thumbCenter, thumbBounds.getCenterX(), 1.25,
                 () -> pageTitle + " horizontal slider thumb does not match value: value="
-                        + slider.getValue() + ", track=" + trackBounds + ", thumb=" + thumbBounds);
-        assertEquals(trackBounds.getWidth() * logicalPosition, activeBounds.getWidth(), 1.25,
-                () -> pageTitle + " horizontal slider active track does not match value: value="
-                        + slider.getValue() + ", activeTrack=" + activeBounds + ", track=" + trackBounds);
+                        + slider.getValue() + ", slider=" + sliderBounds + ", thumb=" + thumbBounds);
+
         if (slider.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
-            assertEquals(trackBounds.getMaxX(), activeBounds.getMaxX(), 1.25,
-                    () -> pageTitle + " RTL horizontal slider active track should end at the track trailing edge: "
+            assertEquals(trackStart, inactiveBounds.getMinX(), 1.25,
+                    () -> pageTitle + " RTL slider inactive track should start at the visual leading edge: "
+                            + inactiveBounds);
+            assertEquals(leadingGapEdge, inactiveBounds.getMaxX(), 1.25,
+                    () -> pageTitle + " RTL slider inactive track should stop before the handle gap: "
+                            + inactiveBounds);
+            assertEquals(trailingGapEdge, activeBounds.getMinX(), 1.25,
+                    () -> pageTitle + " RTL slider active track should start after the handle gap: "
                             + activeBounds);
+            assertEquals(trackEnd, activeBounds.getMaxX(), 1.25,
+                    () -> pageTitle + " RTL slider active track should end at the visual trailing edge: "
+                            + activeBounds);
+            assertEquals(slider.getThumbTrackGap() * 2.0,
+                    activeBounds.getMinX() - inactiveBounds.getMaxX(),
+                    1.5,
+                    () -> pageTitle + " RTL slider handle gap is wrong: inactive="
+                            + inactiveBounds + ", active=" + activeBounds);
         } else {
-            assertEquals(trackBounds.getMinX(), activeBounds.getMinX(), 1.25,
-                    () -> pageTitle + " horizontal slider active track should start at the track leading edge: "
+            assertEquals(trackStart, activeBounds.getMinX(), 1.25,
+                    () -> pageTitle + " slider active track should start at the visual leading edge: "
                             + activeBounds);
+            assertEquals(leadingGapEdge, activeBounds.getMaxX(), 1.25,
+                    () -> pageTitle + " slider active track should stop before the handle gap: "
+                            + activeBounds);
+            assertEquals(trailingGapEdge, inactiveBounds.getMinX(), 1.25,
+                    () -> pageTitle + " slider inactive track should start after the handle gap: "
+                            + inactiveBounds);
+            assertEquals(trackEnd, inactiveBounds.getMaxX(), 1.25,
+                    () -> pageTitle + " slider inactive track should end at the visual trailing edge: "
+                            + inactiveBounds);
+            assertEquals(slider.getThumbTrackGap() * 2.0,
+                    inactiveBounds.getMinX() - activeBounds.getMaxX(),
+                    1.5,
+                    () -> pageTitle + " slider handle gap is wrong: inactive="
+                            + inactiveBounds + ", active=" + activeBounds);
         }
+        assertSliderThumbPixelsCentered(image, thumb, thumbBounds, pageTitle);
+    }
+
+    /// Verifies vertical slider track segments, gap, and thumb geometry.
+    private static void assertVerticalSliderTrackThumbGeometry(
+            M3Slider slider,
+            Bounds sliderBounds,
+            Bounds inactiveBounds,
+            Bounds activeBounds,
+            Bounds thumbBounds,
+            double logicalPosition,
+            WritableImage image,
+            Node thumb,
+            String pageTitle
+    ) {
+        double trackStart = sliderBounds.getMinY() + slider.getThumbWidth() / 2.0;
+        double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
+        double trackLength = trackEnd - trackStart;
+        double thumbCenter = trackEnd - trackLength * logicalPosition;
+        double upperGapEdge = Math.max(trackStart, thumbCenter - slider.getThumbTrackGap());
+        double lowerGapEdge = Math.min(trackEnd, thumbCenter + slider.getThumbTrackGap());
+
+        assertTrue(trackLength >= 120.0, () -> pageTitle + " vertical slider track is too short: " + trackLength);
+        assertEquals(slider.getTrackThickness(), inactiveBounds.getWidth(), 1.0,
+                () -> pageTitle + " vertical slider inactive track width does not match token: " + inactiveBounds);
+        assertEquals(slider.getTrackThickness(), activeBounds.getWidth(), 1.0,
+                () -> pageTitle + " vertical slider active track width does not match token: " + activeBounds);
+        assertEquals(slider.getThumbSize(), thumbBounds.getWidth(), 1.0,
+                () -> pageTitle + " vertical slider thumb long side does not match token: " + thumbBounds);
+        assertEquals(slider.getThumbWidth(), thumbBounds.getHeight(), 1.0,
+                () -> pageTitle + " vertical slider thumb short side does not match token: " + thumbBounds);
+        assertEquals(inactiveBounds.getCenterX(), activeBounds.getCenterX(), 1.0,
+                () -> pageTitle + " vertical slider track segments are horizontally misaligned: inactive="
+                        + inactiveBounds + ", active=" + activeBounds);
+        assertEquals(activeBounds.getCenterX(), thumbBounds.getCenterX(), 1.0,
+                () -> pageTitle + " vertical slider thumb is horizontally off track: active="
+                        + activeBounds + ", thumb=" + thumbBounds);
+        assertEquals(thumbCenter, thumbBounds.getCenterY(), 1.25,
+                () -> pageTitle + " vertical slider thumb does not match value: value="
+                        + slider.getValue() + ", slider=" + sliderBounds + ", thumb=" + thumbBounds);
+        assertEquals(trackStart, inactiveBounds.getMinY(), 1.25,
+                () -> pageTitle + " vertical slider inactive track should start at the top: " + inactiveBounds);
+        assertEquals(upperGapEdge, inactiveBounds.getMaxY(), 1.25,
+                () -> pageTitle + " vertical slider inactive track should stop before the handle gap: "
+                        + inactiveBounds);
+        assertEquals(lowerGapEdge, activeBounds.getMinY(), 1.25,
+                () -> pageTitle + " vertical slider active track should start after the handle gap: "
+                        + activeBounds);
+        assertEquals(trackEnd, activeBounds.getMaxY(), 1.25,
+                () -> pageTitle + " vertical slider active track should end at the bottom: " + activeBounds);
+        assertEquals(slider.getThumbTrackGap() * 2.0,
+                activeBounds.getMinY() - inactiveBounds.getMaxY(),
+                1.5,
+                () -> pageTitle + " vertical slider handle gap is wrong: inactive="
+                        + inactiveBounds + ", active=" + activeBounds);
         assertSliderThumbPixelsCentered(image, thumb, thumbBounds, pageTitle);
     }
 
@@ -12957,8 +13125,8 @@ final class M3FXDemoVisualSmokeTest {
                         && Math.abs(thumbBounds.getCenterY() - renderedCenterY) <= SELECTION_PIXEL_CENTER_TOLERANCE,
                 () -> pageTitle + " rendered slider thumb pixels are off-center: thumb="
                         + thumbBounds + ", thumbPixels=" + thumbPixels);
-        assertTrue(Math.abs(thumbPixels.getWidth() - thumbPixels.getHeight()) <= SELECTION_PIXEL_SHAPE_TOLERANCE,
-                () -> pageTitle + " rendered slider thumb pixels are not square: " + thumbPixels);
+        assertTrue(thumbPixels.getWidth() > 0.0 && thumbPixels.getHeight() > 0.0,
+                () -> pageTitle + " rendered slider thumb has no visible pill pixels: " + thumbPixels);
     }
 
     /// Returns the current slider value normalized to the `[0, 1]` range.
@@ -14562,12 +14730,15 @@ final class M3FXDemoVisualSmokeTest {
             );
             assertProgressBarWaveGeometry(progressBar, controlBounds, wave, description + " expressive active wave");
             if (!progressBar.isIndeterminate()) {
+                assertProgressBarActiveDirection(progressBar, controlBounds, wave,
+                        description + " expressive active wave direction");
                 Node stop = requireVisibleStyledDescendant(
                         progressBar,
                         "m3-progress-stop",
                         description + " stop indicator"
                 );
                 assertProgressStopGeometry(progressBar, controlBounds, stop, description + " stop indicator");
+                assertProgressStopDirection(progressBar, controlBounds, stop, description + " stop indicator direction");
             }
         } else {
             Node activeBar = requireVisibleStyledDescendant(progressBar, "bar", description + " active bar");
@@ -14578,6 +14749,54 @@ final class M3FXDemoVisualSmokeTest {
                     progressBar.getTrackThickness(),
                     description + " active bar"
             );
+            if (!progressBar.isIndeterminate()) {
+                assertProgressBarActiveDirection(progressBar, controlBounds, activeBar,
+                        description + " active bar direction");
+            }
+        }
+    }
+
+    /// Verifies that a determinate linear active segment starts from the correct physical edge.
+    private static void assertProgressBarActiveDirection(
+            M3ProgressBar progressBar,
+            Bounds controlBounds,
+            Node active,
+            String description
+    ) {
+        if (progressBar.getProgress() <= 0.0) {
+            return;
+        }
+
+        Bounds activeBounds = active.localToScene(active.getBoundsInLocal());
+        double tolerance = CONTROL_EDGE_TOLERANCE + progressBar.getTrackThickness() / 2.0;
+        if (progressBar.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
+            assertTrue(activeBounds.getMaxX() >= controlBounds.getMaxX() - tolerance,
+                    () -> description + " should fill from the physical right edge in RTL: active="
+                            + activeBounds + ", control=" + controlBounds);
+        } else {
+            assertTrue(activeBounds.getMinX() <= controlBounds.getMinX() + tolerance,
+                    () -> description + " should fill from the physical left edge in LTR: active="
+                            + activeBounds + ", control=" + controlBounds);
+        }
+    }
+
+    /// Verifies that a determinate linear stop indicator follows the terminal physical edge.
+    private static void assertProgressStopDirection(
+            M3ProgressBar progressBar,
+            Bounds controlBounds,
+            Node stop,
+            String description
+    ) {
+        Bounds stopBounds = stop.localToScene(stop.getBoundsInLocal());
+        double tolerance = CONTROL_EDGE_TOLERANCE + Math.max(1.0, progressBar.getStopSize());
+        if (progressBar.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
+            assertTrue(stopBounds.getMinX() <= controlBounds.getMinX() + tolerance,
+                    () -> description + " should mark the physical left edge in RTL: stop="
+                            + stopBounds + ", control=" + controlBounds);
+        } else {
+            assertTrue(stopBounds.getMaxX() >= controlBounds.getMaxX() - tolerance,
+                    () -> description + " should mark the physical right edge in LTR: stop="
+                            + stopBounds + ", control=" + controlBounds);
         }
     }
 
@@ -15005,9 +15224,9 @@ final class M3FXDemoVisualSmokeTest {
             double position,
             boolean primaryButtonDown
     ) {
-        double thumbSize = slider.getThumbSize();
-        double trackLength = Math.max(0.0, slider.getWidth() - thumbSize);
-        double x = thumbSize / 2.0 + trackLength * Math.max(0.0, Math.min(1.0, position));
+        double thumbWidth = slider.getThumbWidth();
+        double trackLength = Math.max(0.0, slider.getWidth() - thumbWidth);
+        double x = thumbWidth / 2.0 + trackLength * Math.max(0.0, Math.min(1.0, position));
         double y = slider.getHeight() / 2.0;
         firePrimaryMouseEventAtLocalPoint(slider, eventType, x, y, primaryButtonDown);
     }

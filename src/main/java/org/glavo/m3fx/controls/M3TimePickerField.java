@@ -78,7 +78,10 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
                 DateTimeFormatter.ofPattern("HH:mm"),
                 STYLE_CLASS,
                 POPUP_STYLE_CLASS,
-                M3InternalIcon.Glyph.SCHEDULE,
+                new M3InternalIcon(
+                        M3InternalIcon.Glyph.SCHEDULE,
+                        M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
+                ),
                 "Open time picker",
                 "Enter a valid time",
                 "Time is outside the selectable range"

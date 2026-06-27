@@ -38,6 +38,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.TreeView;
@@ -208,6 +209,9 @@ final class M3ControlStyleTest {
 
     /// The edge tolerance used when comparing rendered text ink against visual owners.
     private static final double TEXT_INK_EDGE_TOLERANCE = 1.0;
+
+    /// The overlap tolerance used when comparing rendered text ink against text input adornment slots.
+    private static final double TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE = 1.0;
 
     /// The largest accepted vertical antialiasing overflow for rendered text ink.
     private static final double TEXT_INK_VERTICAL_OVERFLOW_TOLERANCE = 1.0;
@@ -405,34 +409,270 @@ final class M3ControlStyleTest {
                 menuButtonReference,
                 subMenuItemReference
         ), STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
-            M3Button button = new M3Button("Button");
+            M3Button filledButton = new M3Button("Filled");
+            M3Button tonalButton = new M3Button("Tonal", M3ButtonVariant.TONAL);
+            M3Button outlinedButton = new M3Button("Outlined", M3ButtonVariant.OUTLINED);
+            M3Button textButton = new M3Button("Text", M3ButtonVariant.TEXT);
+            M3Button elevatedButton = new M3Button("Elevated", M3ButtonVariant.ELEVATED);
+            M3IconButton iconButton = new M3IconButton(new M3Icon("I"));
+            M3IconToggleButton iconToggleButton = new M3IconToggleButton("T");
+            iconToggleButton.setSelected(true);
+            M3ButtonGroup buttonGroup = new M3ButtonGroup(
+                    new M3Button("One", M3ButtonVariant.TONAL),
+                    new M3Button("Two", M3ButtonVariant.TONAL)
+            );
+            M3SplitButton splitButton = new M3SplitButton("Split", new M3MenuItem("Split item"));
+            M3FloatingActionButton smallFab = new M3FloatingActionButton(new M3Icon("+"));
+            smallFab.setSize(M3FloatingActionButtonSize.SMALL);
+            M3FloatingActionButton largeFab = new M3FloatingActionButton(new M3Icon("*"));
+            largeFab.setSize(M3FloatingActionButtonSize.LARGE);
+            largeFab.setVariant(M3FloatingActionButtonVariant.PRIMARY);
+            M3FabMenu fabMenu = new M3FabMenu();
+            fabMenu.addItems(new M3FloatingActionButton("A"), new M3FloatingActionButton("B"));
+            fabMenu.show();
+
+            M3CheckBox checkBox = new M3CheckBox("Check");
+            checkBox.setSelected(true);
+            M3CheckBox indeterminateCheckBox = new M3CheckBox("Mixed");
+            indeterminateCheckBox.setIndeterminate(true);
+            M3RadioButton radioButton = new M3RadioButton("Radio");
+            radioButton.setSelected(true);
+            M3Switch switchControl = new M3Switch("Switch");
+            switchControl.setSelected(true);
+            M3Slider slider = new M3Slider(0.0, 100.0, 64.0);
+            slider.setPrefWidth(220.0);
+            M3SegmentedButton segmentedDay = new M3SegmentedButton("Day");
+            M3SegmentedButton segmentedWeek = new M3SegmentedButton("Week");
+            M3SegmentedButton segmentedMonth = new M3SegmentedButton("Month");
+            M3SegmentedButtonGroup segmentedButtonGroup = new M3SegmentedButtonGroup(
+                    segmentedDay,
+                    segmentedWeek,
+                    segmentedMonth
+            );
+            segmentedButtonGroup.selectIndex(1);
+            M3Chip filterChip = new M3Chip("Filter");
+            filterChip.setVariant(M3ChipVariant.FILTER);
+            filterChip.setSelected(true);
+            M3ChipGroup chipGroup = new M3ChipGroup(
+                    new M3Chip("Assist"),
+                    filterChip,
+                    new M3Chip("Input")
+            );
+            M3IconToggleButtonGroup iconToggleButtonGroup = new M3IconToggleButtonGroup(
+                    new M3IconToggleButton("A"),
+                    new M3IconToggleButton("B"),
+                    new M3IconToggleButton("C")
+            );
+            iconToggleButtonGroup.selectIndex(0);
+
             M3ListItem listItem = new M3ListItem("List item");
+            listItem.setOverlineText("Overline");
+            listItem.setSupportingText("Supporting");
+            listItem.setTrailingIcon("T");
+            listItem.setSelected(true);
+            M3ListPane listPane = new M3ListPane(new M3ListItem("Alpha"), new M3ListItem("Beta"));
+            listPane.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listPane.selectIndex(0);
+            M3ListView<String> listView = new M3ListView<>("Alpha", "Beta", "Gamma", "Delta");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.selectIndex(1);
+            listView.setPrefSize(240.0, 160.0);
             M3Menu menu = new M3Menu(new M3MenuItem("Menu item"));
             M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
             M3MenuButton menuButton = new M3MenuButton("Open menu", new M3MenuItem("Duplicate"), subMenuItem);
-            M3SnackbarHost snackbarHost = new M3SnackbarHost();
+
+            M3NavigationItem navigationHome = new M3NavigationItem("Home", new M3Icon("H"));
+            M3NavigationItem navigationSettings = new M3NavigationItem("Settings", new M3Icon("S"));
+            M3NavigationBar navigationBar = new M3NavigationBar(navigationHome, navigationSettings);
+            navigationBar.selectIndex(0);
+            M3NavigationRail navigationRail = new M3NavigationRail(
+                    new M3NavigationItem("Mail", new M3Icon("M")),
+                    new M3NavigationItem("Tasks", new M3Icon("T"))
+            );
+            navigationRail.selectIndex(1);
+            M3NavigationDrawerGroup navigationDrawerGroup = new M3NavigationDrawerGroup("Group");
+            navigationDrawerGroup.setItems(new M3ListItem("Child A"), new M3ListItem("Child B"));
+            navigationDrawerGroup.setExpanded(true);
+            M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
+                    new M3ListItem("Inbox"),
+                    navigationDrawerGroup,
+                    new M3ListItem("Archive")
+            );
+            navigationDrawer.selectIndex(0);
+            M3TabBar tabBar = new M3TabBar(new M3Tab("Tab A"), new M3Tab("Tab B"), new M3Tab("Tab C"));
+            tabBar.selectIndex(1);
+            M3ListSectionHeader listSectionHeader = new M3ListSectionHeader("List section");
+            M3MenuSectionHeader menuSectionHeader = new M3MenuSectionHeader("Menu section");
+
+            M3Text text = new M3Text("Text", M3TextRole.BODY_LARGE);
+            M3Avatar avatar = new M3Avatar("A");
+            M3Badge badge = new M3Badge("7");
+            M3BadgedBox badgedBox = new M3BadgedBox(new M3Icon("N"), new M3Badge("3"));
+            M3Divider horizontalDivider = new M3Divider();
+            horizontalDivider.setPrefWidth(180.0);
+            M3Divider verticalDivider = new M3Divider(Orientation.VERTICAL);
+            verticalDivider.setPrefHeight(80.0);
+            M3DisclosureIcon disclosureIcon = new M3DisclosureIcon(true);
+            M3Surface surface = new M3Surface(new Label("Surface"));
+            surface.setVariant(M3SurfaceVariant.CONTAINER);
+            M3Card card = new M3Card(new Label("Card"), M3CardVariant.FILLED);
+            M3Scrim scrim = new M3Scrim();
+            scrim.setPrefSize(120.0, 80.0);
+            M3BottomSheet bottomSheet = new M3BottomSheet("Bottom sheet", new Label("Sheet content"), new M3Button("Done"));
+            M3SideSheet sideSheet = new M3SideSheet("Side sheet", new Label("Sheet content"), new M3Button("Close"));
+            M3Carousel carousel = new M3Carousel(
+                    new M3Card(new Label("One")),
+                    new M3Card(new Label("Two")),
+                    new M3Card(new Label("Three"))
+            );
+            carousel.selectIndex(1);
+            carousel.setPrefSize(360.0, 150.0);
+
             M3TextField textField = new M3TextField("Text");
             M3PasswordField passwordField = new M3PasswordField("Secret");
             M3TextArea textArea = new M3TextArea("Multiline");
+            textArea.setPrefRowCount(3);
+            M3TextInputLayout textInputLayout = new M3TextInputLayout(
+                    new M3TextField("Wrapped"),
+                    "Label",
+                    "Supporting"
+            );
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setText("Query");
+            searchBar.setActive(true);
+            M3SearchView searchView = new M3SearchView(
+                    "Search view",
+                    new M3ListItem("Result A"),
+                    new M3ListItem("Result B")
+            );
+            searchView.setActive(true);
+            searchView.setPrefSize(320.0, 180.0);
+            M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 6, 27));
+            M3DateRangePicker dateRangePicker = new M3DateRangePicker(
+                    LocalDate.of(2026, 6, 27),
+                    LocalDate.of(2026, 6, 29)
+            );
+            M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
             M3DatePickerField datePickerField = new M3DatePickerField();
             M3TimePickerField timePickerField = new M3TimePickerField();
             M3DateRangePickerField dateRangePickerField = new M3DateRangePickerField();
+
+            M3ProgressBar determinateProgressBar = new M3ProgressBar(0.62);
+            determinateProgressBar.setPrefWidth(220.0);
+            M3ProgressBar indeterminateProgressBar = new M3ProgressBar();
+            indeterminateProgressBar.setPrefWidth(220.0);
+            M3ProgressIndicator determinateProgressIndicator = new M3ProgressIndicator(0.62);
+            M3ProgressIndicator indeterminateProgressIndicator = new M3ProgressIndicator();
+            M3LoadingIndicator defaultLoadingIndicator = new M3LoadingIndicator();
+            M3LoadingIndicator containedLoadingIndicator = new M3LoadingIndicator();
+            containedLoadingIndicator.setVariant(M3LoadingIndicatorVariant.CONTAINED);
+
+            M3Banner banner = new M3Banner("Banner", new M3Button("Action", M3ButtonVariant.TEXT));
+            M3SnackbarHost snackbarHost = new M3SnackbarHost();
+            snackbarHost.setDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar standaloneSnackbar = new M3Snackbar("Standalone snackbar", "Action");
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setHeaderText("Dialog");
+            dialogPane.setContentText("Dialog content");
+            dialogPane.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
+            M3TopAppBar topAppBar = new M3TopAppBar(
+                    "Top app bar",
+                    M3TopAppBarVariant.MEDIUM,
+                    new M3IconButton(new M3Icon("M")),
+                    new M3IconButton(new M3Icon("S"))
+            );
+            topAppBar.setScrolledUnder(true);
+            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+                    M3BottomAppBarFloatingActionAlignment.END,
+                    new M3FloatingActionButton(new M3Icon("+")),
+                    new M3IconButton(new M3Icon("A")),
+                    new M3IconButton(new M3Icon("B"))
+            );
+            M3Toolbar toolbar = new M3Toolbar(new M3IconButton(new M3Icon("B")), new M3IconButton(new M3Icon("I")));
+            toolbar.setVariant(M3ToolbarVariant.FLOATING);
+            M3FormRow formRow = new M3FormRow("Field", "Supporting", new M3TextField("Value"));
+            M3FormSection formSection = new M3FormSection("Section", "Supporting", formRow);
+            M3FormPane formPane = new M3FormPane(formSection);
+            M3ValidationSummary validationSummary = new M3ValidationSummary();
+            validationSummary.setShowWhenValid(true);
+
             FlowPane root = new FlowPane(
                     12.0,
                     12.0,
-                    button,
+                    filledButton,
+                    tonalButton,
+                    outlinedButton,
+                    textButton,
+                    elevatedButton,
+                    iconButton,
+                    iconToggleButton,
+                    buttonGroup,
+                    splitButton,
+                    smallFab,
+                    largeFab,
+                    fabMenu,
+                    checkBox,
+                    indeterminateCheckBox,
+                    radioButton,
+                    switchControl,
+                    slider,
+                    segmentedButtonGroup,
+                    chipGroup,
+                    iconToggleButtonGroup,
                     listItem,
+                    listPane,
+                    listView,
                     menu,
                     menuButton,
-                    snackbarHost,
+                    navigationBar,
+                    navigationRail,
+                    navigationDrawer,
+                    tabBar,
+                    listSectionHeader,
+                    menuSectionHeader,
+                    text,
+                    avatar,
+                    badge,
+                    badgedBox,
+                    horizontalDivider,
+                    verticalDivider,
+                    disclosureIcon,
+                    surface,
+                    card,
+                    scrim,
+                    bottomSheet,
+                    sideSheet,
+                    carousel,
                     textField,
                     passwordField,
                     textArea,
+                    textInputLayout,
+                    searchBar,
+                    searchView,
+                    datePicker,
+                    dateRangePicker,
+                    timePicker,
                     datePickerField,
                     timePickerField,
-                    dateRangePickerField
+                    dateRangePickerField,
+                    determinateProgressBar,
+                    indeterminateProgressBar,
+                    determinateProgressIndicator,
+                    indeterminateProgressIndicator,
+                    defaultLoadingIndicator,
+                    containedLoadingIndicator,
+                    banner,
+                    snackbarHost,
+                    standaloneSnackbar,
+                    dialogPane,
+                    topAppBar,
+                    bottomAppBar,
+                    toolbar,
+                    formPane,
+                    validationSummary
             );
-            Scene scene = new Scene(root, 720.0, 360.0);
+            root.setPrefWrapLength(1180.0);
+            Scene scene = new Scene(root, 1180.0, 900.0);
             Stage stage = new Stage();
 
             stageReference.set(stage);
@@ -440,6 +680,7 @@ final class M3ControlStyleTest {
             subMenuItemReference.set(subMenuItem);
             stage.setScene(scene);
             stage.show();
+            snackbarHost.show("Hosted snackbar", "Action", null);
             root.applyCss();
             root.layout();
             menuButton.showMenu();
@@ -490,6 +731,49 @@ final class M3ControlStyleTest {
             dateRangePickerFieldReference.get().hidePicker();
             stageReference.get().close();
         });
+    }
+
+    /// Verifies that standalone tooltip popups resolve fallback color tokens without requiring a theme.
+    @Test
+    void standaloneTooltipPopupsResolveFallbackColorTokens() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Tooltip> plainTooltipReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3RichTooltip> richTooltipReference = new AtomicReference<>();
+
+        try {
+            runOnFxThreadWhenStable(() -> standaloneTooltipPopupsReady(
+                    stageReference,
+                    plainTooltipReference,
+                    richTooltipReference
+            ), STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
+                M3Button plainOwner = new M3Button("Plain owner");
+                M3Button richOwner = new M3Button("Rich owner");
+                M3Tooltip plainTooltip = new M3Tooltip("Plain tooltip");
+                M3RichTooltip richTooltip = new M3RichTooltip(
+                        "Rich tooltip",
+                        "Standalone rich tooltip content",
+                        new M3Button("Action", M3ButtonVariant.TEXT)
+                );
+                VBox root = new VBox(16.0, plainOwner, richOwner);
+                Scene scene = new Scene(root, 360.0, 180.0);
+                Stage stage = new Stage();
+
+                stageReference.set(stage);
+                plainTooltipReference.set(plainTooltip);
+                richTooltipReference.set(richTooltip);
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                plainTooltip.show(plainOwner, stage.getX() + 40.0, stage.getY() + 72.0);
+                richTooltip.show(richOwner, stage.getX() + 40.0, stage.getY() + 124.0);
+            }, () -> {
+                assertStandaloneTooltipPopupReady(plainTooltipReference.get(), M3Tooltip.STYLE_CLASS);
+                assertStandaloneTooltipPopupReady(richTooltipReference.get(), M3RichTooltip.CONTAINER_STYLE_CLASS);
+            });
+        } finally {
+            closeStandaloneTooltipScene(stageReference, plainTooltipReference, richTooltipReference);
+        }
     }
 
     /// Verifies that built-in affordance icons use stable vector geometry instead of font fallback text.
@@ -543,6 +827,9 @@ final class M3ControlStyleTest {
         assertInternalIcon(icon, M3InternalIcon.Glyph.SEARCH, "primary internal icon");
         assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.PRIMARY);
 
+        icon.setColorRole(M3InternalIcon.ColorRole.ON_SURFACE);
+        assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.ON_SURFACE);
+
         icon.setColorRole(M3InternalIcon.ColorRole.ON_SURFACE_VARIANT);
         assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.ON_SURFACE_VARIANT);
 
@@ -572,7 +859,7 @@ final class M3ControlStyleTest {
         }, () -> {
             M3InternalIcon icon = Objects.requireNonNull(iconReference.get(), "icon");
             Paint fill = icon.getPath().getFill();
-            assertEquals(Color.rgb(73, 69, 78), fill, "standalone internal icon fallback fill");
+            assertEquals(Color.rgb(29, 27, 32), fill, "standalone internal icon fallback fill");
 
             Stage stage = stageReference.get();
             if (stage != null) {
@@ -1196,12 +1483,16 @@ final class M3ControlStyleTest {
         slider.setStyle(
                 "-m3-track-thickness: 4px; "
                         + "-m3-track-shape: 999px; "
-                        + "-m3-thumb-size: 20px; "
+                        + "-m3-thumb-size: 44px; "
+                        + "-m3-thumb-width: 4px; "
+                        + "-m3-thumb-track-gap: 6px; "
                         + "-m3-touch-target-size: 48px;"
         );
         slider.setTrackThickness(8.0);
         slider.setTrackShape(12.0);
-        slider.setThumbSize(28.0);
+        slider.setThumbSize(52.0);
+        slider.setThumbWidth(8.0);
+        slider.setThumbTrackGap(10.0);
         slider.setTouchTargetSize(56.0);
 
         M3Switch switchControl = new M3Switch("Switch");
@@ -1243,7 +1534,9 @@ final class M3ControlStyleTest {
 
         assertEquals(8.0, slider.getTrackThickness(), 0.0001);
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
-        assertEquals(28.0, slider.getThumbSize(), 0.0001);
+        assertEquals(52.0, slider.getThumbSize(), 0.0001);
+        assertEquals(8.0, slider.getThumbWidth(), 0.0001);
+        assertEquals(10.0, slider.getThumbTrackGap(), 0.0001);
         assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
         assertEquals(56.0, slider.prefHeight(-1.0), 0.0001);
 
@@ -1287,6 +1580,8 @@ final class M3ControlStyleTest {
         slider.setTrackThickness(7.0);
         slider.setTrackShape(11.0);
         slider.setThumbSize(27.0);
+        slider.setThumbWidth(5.0);
+        slider.setThumbTrackGap(9.0);
         slider.setTouchTargetSize(55.0);
 
         M3ProgressBar progressBar = new M3ProgressBar(0.5);
@@ -1385,6 +1680,8 @@ final class M3ControlStyleTest {
         assertEquals(7.0, slider.getTrackThickness(), 0.0001);
         assertEquals(11.0, slider.getTrackShape(), 0.0001);
         assertEquals(27.0, slider.getThumbSize(), 0.0001);
+        assertEquals(5.0, slider.getThumbWidth(), 0.0001);
+        assertEquals(9.0, slider.getThumbTrackGap(), 0.0001);
         assertEquals(55.0, slider.getTouchTargetSize(), 0.0001);
 
         assertEquals(9.0, progressBar.getTrackThickness(), 0.0001);
@@ -1497,7 +1794,7 @@ final class M3ControlStyleTest {
         progressIndicator.setTrackGap(7.0);
 
         M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
-        loadingIndicator.setStyle("-m3-container-size: 48px; -m3-indicator-size: 36px;");
+        loadingIndicator.setStyle("-m3-container-size: 48px; -m3-indicator-size: 38px;");
         loadingIndicator.setContainerSize(64.0);
         loadingIndicator.setIndicatorSize(44.0);
 
@@ -5489,6 +5786,231 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that focused outlined text areas do not expose the JavaFX inner content background.
+    @Test
+    void focusedOutlinedTextAreaKeepsTransparentContentBackgroundInWindow() {
+        runOnFxThread(() -> {
+            M3TextArea textArea = createTextArea(
+                    "Material text areas share field colors\nbut keep multi-line height tokens.",
+                    M3TextInputVariant.OUTLINED
+            );
+            textArea.setPrefSize(500.0, 112.0);
+
+            M3TextInputLayout layout = new M3TextInputLayout(textArea, "Outlined multi-line input");
+            layout.setLabelText("Outlined text area");
+            layout.setCharacterCounterVisible(true);
+            layout.setCharacterLimit(96);
+            layout.setPrefWidth(540.0);
+
+            Color surface = Color.rgb(248, 240, 249);
+            StackPane root = new StackPane(layout);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 610.0, 190.0);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(scene);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                M3MotionSettings.setAnimationsEnabled(root, false);
+                stage.show();
+                textArea.requestFocus();
+                root.applyCss();
+                root.resize(610.0, 190.0);
+                root.layout();
+                layout.layout();
+
+                assertTrue(textArea.isFocused());
+                WritableImage image = snapshotImageOnFxThread(root);
+                Region content = lookupRegion(textArea, ".content");
+                Bounds contentBounds = content.localToScene(content.getBoundsInLocal());
+                Color contentBackground = image.getPixelReader().getColor(
+                        (int) Math.round(contentBounds.getMaxX() - 8.0),
+                        (int) Math.round(contentBounds.getMaxY() - 8.0)
+                );
+
+                assertColorNear(contentBackground, surface, 0.035, "focused outlined text area content background");
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-text-area-focused-outlined-background.png"
+                ));
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that RTL outlined inputs keep floating labels, rendered text ink, and actions in separate slots.
+    @Test
+    void rightToLeftOutlinedTextInputSeparatesLabelTextAndTrailingActionInWindow() {
+        runOnFxThread(() -> {
+            M3TextField textField = createTextField("M3FX RTL", M3TextInputVariant.OUTLINED);
+            textField.setPrefWidth(360.0);
+
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "RTL project name");
+            layout.setLabelText("RTL outlined");
+            layout.setLeading(visualIcon("text"));
+            layout.setClearButtonEnabled(true);
+            layout.setCharacterCounterVisible(true);
+            layout.setCharacterLimit(24);
+            layout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            layout.setPrefWidth(360.0);
+
+            StackPane root = new StackPane(layout);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 430.0, 150.0);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(scene);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                M3MotionSettings.setAnimationsEnabled(root, false);
+                stage.show();
+                textField.requestFocus();
+                textField.positionCaret(textField.getText().length());
+                root.applyCss();
+                root.resize(430.0, 150.0);
+                root.layout();
+                layout.layout();
+
+                assertTrue(textField.isFocused());
+                assertTextInputLayoutUsesLogicalGeometry(layout, true);
+                assertEquals(48.0, textField.getPadding().getRight(), 0.0001);
+                assertEquals(48.0, textField.getPadding().getLeft(), 0.0001);
+
+                Label label = assertInstanceOf(
+                        Label.class,
+                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                );
+                Text inputText = renderedTextNode(textField, "M3FX RTL");
+                StackPane leadingSlot = assertInstanceOf(
+                        StackPane.class,
+                        layout.lookup("." + M3TextInputLayout.LEADING_STYLE_CLASS)
+                );
+                StackPane trailingSlot = assertInstanceOf(
+                        StackPane.class,
+                        layout.lookup("." + M3TextInputLayout.TRAILING_STYLE_CLASS)
+                );
+                Node leadingContent = leadingSlot.getChildren().get(0);
+                Node trailingContent = trailingSlot.getChildren().get(0);
+
+                Node leadingGraphic = assertInstanceOf(Parent.class, leadingContent).getChildrenUnmodifiable().get(0);
+                Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
+                Bounds textBounds = inputText.localToScene(inputText.getBoundsInLocal());
+                Bounds leadingBounds = leadingGraphic.localToScene(leadingGraphic.getBoundsInLocal());
+                Bounds trailingBounds = trailingContent.localToScene(trailingContent.getBoundsInLocal());
+                WritableImage image = snapshotImageOnFxThread(root);
+                Rectangle2D inkBounds = requiredRenderedTextInkBounds(image, inputText);
+
+                assertTrue(inkBounds.getMinX() >= trailingBounds.getMaxX() + 3.0,
+                        () -> "RTL input rendered ink overlaps trailing action: ink="
+                                + inkBounds + ", trailing=" + trailingBounds);
+                assertTrue(inkBounds.getMaxX() <= leadingBounds.getMinX() - 3.0,
+                        () -> "RTL input rendered ink overlaps leading adornment: ink="
+                                + inkBounds + ", leading=" + leadingBounds);
+                assertTrue(labelBounds.getMinX() >= trailingBounds.getMaxX() + 1.0,
+                        () -> "RTL floating label overlaps trailing action: label="
+                                + labelBounds + ", trailing=" + trailingBounds);
+                assertTrue(labelBounds.getMaxX() <= leadingBounds.getMinX() - 1.0,
+                        () -> "RTL floating label overlaps leading adornment: label="
+                                + labelBounds + ", leading=" + leadingBounds);
+                assertTrue(labelBounds.getMaxY() < textBounds.getMinY(),
+                        () -> "RTL floating label overlaps input text vertically: label="
+                                + labelBounds + ", text=" + textBounds);
+
+                assertSnapshotNodeContainsContrast(image, inputText, Color.WHITE, 0.04);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-text-field-rtl-outlined-action-separation.png"
+                ));
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that RTL picker fields keep editor ink away from the trailing open button in a shown window.
+    @Test
+    void rightToLeftPickerFieldSeparatesEditorInkAndOpenButtonInWindow() {
+        runOnFxThread(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 27));
+            field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
+            field.getInputLayout().setLabelText("RTL date");
+            field.getInputLayout().setSupportingText("RTL project date");
+            field.getInputLayout().setCharacterCounterVisible(true);
+            field.getInputLayout().setCharacterLimit(10);
+            field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            field.setPrefWidth(360.0);
+
+            StackPane root = new StackPane(field);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 430.0, 150.0);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(scene);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                M3MotionSettings.setAnimationsEnabled(root, false);
+                stage.show();
+                field.getEditor().requestFocus();
+                field.getEditor().positionCaret(field.getEditor().getText().length());
+                root.applyCss();
+                root.resize(430.0, 150.0);
+                root.layout();
+                field.getInputLayout().layout();
+
+                M3TextInputLayout layout = field.getInputLayout();
+                M3TextField editor = field.getEditor();
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, layout.getEffectiveNodeOrientation());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, editor.getEffectiveNodeOrientation());
+                assertTextInputLayoutUsesLogicalGeometry(layout, true);
+                assertEquals(48.0, editor.getPadding().getRight(), 0.0001);
+                assertEquals(16.0, editor.getPadding().getLeft(), 0.0001);
+
+                Label label = assertInstanceOf(
+                        Label.class,
+                        layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                );
+                Text inputText = renderedTextNode(editor, "2026-06-27");
+                Node openButton = assertInstanceOf(
+                        Node.class,
+                        layout.lookup("." + M3PickerField.OPEN_BUTTON_STYLE_CLASS)
+                );
+
+                Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
+                Bounds openButtonBounds = openButton.localToScene(openButton.getBoundsInLocal());
+                WritableImage image = snapshotImageOnFxThread(root);
+                Rectangle2D inkBounds = requiredRenderedTextInkBounds(image, inputText);
+
+                assertTrue(inkBounds.getMinX() >= openButtonBounds.getMaxX() + 3.0,
+                        () -> "RTL picker editor ink overlaps open button: ink="
+                                + inkBounds + ", openButton=" + openButtonBounds
+                                + ", editorPadding=" + editor.getPadding());
+                assertTrue(labelBounds.getMinX() >= openButtonBounds.getMaxX() + 1.0,
+                        () -> "RTL picker floating label overlaps open button: label="
+                                + labelBounds + ", openButton=" + openButtonBounds);
+                assertSnapshotNodeContainsContrast(image, inputText, Color.WHITE, 0.04);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-picker-field-rtl-open-button-separation.png"
+                ));
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(root);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that text input layout presentation changes are observable in real JavaFX pulses.
     @Test
     void textInputLayoutAnimatesLabelClearButtonAndSupportingRow() throws InterruptedException {
@@ -8237,18 +8759,28 @@ final class M3ControlStyleTest {
         assertEquals(12.0, open.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, open.getContentSpacing(), 0.0001);
 
+        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.select(open);
+        root.applyCss();
+        assertEquals(4.0, open.getContainerShape(), 0.0001);
+
         M3ThemeManager.install(scene, M3Theme.fromSeed(
                 Color.web("#006a6a"),
                 M3Profile.EXPRESSIVE_2025,
                 Brightness.LIGHT
         ));
+        menu.clearSelection();
         root.applyCss();
 
         assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
-        assertEquals(56.0, open.getOneLineHeight(), 0.0001);
-        assertEquals(10.0, open.getContainerShape(), 0.0001);
+        assertEquals(44.0, open.getOneLineHeight(), 0.0001);
+        assertEquals(6.0, open.getContainerShape(), 0.0001);
         assertEquals(16.0, open.getHorizontalPadding(), 0.0001);
-        assertEquals(16.0, open.getContentSpacing(), 0.0001);
+        assertEquals(12.0, open.getContentSpacing(), 0.0001);
+
+        menu.select(open);
+        root.applyCss();
+        assertEquals(16.0, open.getContainerShape(), 0.0001);
     }
 
     /// Verifies that menu item action events bubble through the menu.
@@ -11451,6 +11983,8 @@ final class M3ControlStyleTest {
         assertInstanceOf(M3SearchViewSkin.class, searchView.getSkin());
         assertFalse(HBox.class.isAssignableFrom(M3SearchBar.class));
         assertFalse(VBox.class.isAssignableFrom(M3SearchView.class));
+        assertEquals(16.0, ((HBox) lookupRegion(searchBar, "." + M3SearchBar.CONTENT_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(0.0, ((VBox) lookupRegion(searchView, "." + M3SearchView.CONTENT_STYLE_CLASS)).getSpacing(), 0.0001);
         assertEquals(56.0, result.getOneLineHeight(), 0.0001);
 
         M3ThemeManager.install(scene, M3Theme.fromSeed(
@@ -11460,9 +11994,15 @@ final class M3ControlStyleTest {
         ));
         root.applyCss();
 
-        assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
-        assertEquals(20.0, searchBar.getPadding().getLeft(), 0.0001);
-        assertEquals(20.0, searchBar.getPadding().getRight(), 0.0001);
+        assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+        assertEquals(24.0, searchBar.getPadding().getLeft(), 0.0001);
+        assertEquals(24.0, searchBar.getPadding().getRight(), 0.0001);
+        assertEquals(4.0, ((HBox) lookupRegion(searchBar, "." + M3SearchBar.CONTENT_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(12.0, searchView.getPadding().getLeft(), 0.0001);
+        assertEquals(12.0, searchView.getPadding().getRight(), 0.0001);
+        assertEquals(2.0, ((VBox) lookupRegion(searchView, "." + M3SearchView.CONTENT_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(16.0, searchView.getResultsContainer().getBackground()
+                .getFills().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
         assertEquals(64.0, result.getOneLineHeight(), 0.0001);
         assertEquals(20.0, result.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, result.getContentSpacing(), 0.0001);
@@ -11507,8 +12047,8 @@ final class M3ControlStyleTest {
             root.layout();
 
             assertTrue(datePicker.getHeight() > searchBar.getPrefHeight() * 2.0);
-            assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
-            assertEquals(64.0, searchBar.getHeight(), 0.0001);
+            assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+            assertEquals(56.0, searchBar.getHeight(), 0.0001);
         });
     }
 
@@ -12635,6 +13175,66 @@ final class M3ControlStyleTest {
         assertRegionFill(outlinedField, Color.TRANSPARENT);
         assertBorderColor(outlinedField, Color.rgb(1, 2, 3));
         assertEquals(2.0, outlinedField.getBorder().getStrokes().get(0).getWidths().getTop(), 0.0001);
+    }
+    /// Verifies that focused text input layout labels use Material focused and error colors.
+    @Test
+    void textInputLayoutLabelUsesFocusedAndErrorColors() {
+        runOnFxThread(() -> {
+            M3TextField focusedField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
+            focusedField.setPrefWidth(260.0);
+            M3TextInputLayout focusedLayout = new M3TextInputLayout(focusedField, "Project name");
+            focusedLayout.setLabelText("Focused label");
+            focusedLayout.setPrefWidth(260.0);
+
+            M3TextField errorField = createTextField("Invalid", M3TextInputVariant.OUTLINED);
+            errorField.setPrefWidth(260.0);
+            M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
+            errorLayout.setLabelText("Error label");
+            errorLayout.setErrorText("Use a valid value");
+            errorLayout.setPrefWidth(260.0);
+
+            VBox root = new VBox(16.0, focusedLayout, errorLayout);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px;");
+            Scene scene = new Scene(root, 360.0, 190.0);
+            Stage stage = new Stage();
+            M3Theme theme = M3Theme.defaultTheme();
+            Color focusedColor = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY);
+            Color errorColor = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ERROR);
+            try {
+                M3ThemeManager.install(scene, theme);
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                focusedField.requestFocus();
+                root.applyCss();
+                root.layout();
+
+                assertTrue(focusedField.isFocused(), "focused text field should own focus");
+                Label focusedLabel = assertInstanceOf(
+                        Label.class,
+                        focusedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                );
+                Label errorLabel = assertInstanceOf(
+                        Label.class,
+                        errorLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                );
+                assertTrue(focusedLabel.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")));
+                assertEquals(focusedColor, focusedLabel.getTextFill());
+                assertEquals(errorColor, errorLabel.getTextFill());
+
+                errorField.requestFocus();
+                root.applyCss();
+                root.layout();
+
+                assertTrue(errorField.isFocused(), "error text field should own focus");
+                assertTrue(errorLabel.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")));
+                assertEquals(errorColor, errorLabel.getTextFill());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that chip component token properties are styleable from CSS.
@@ -14020,7 +14620,9 @@ final class M3ControlStyleTest {
         slider.setStyle(
                 "-m3-track-thickness: 8px; "
                         + "-m3-track-shape: 12px; "
-                        + "-m3-thumb-size: 28px; "
+                        + "-m3-thumb-size: 52px; "
+                        + "-m3-thumb-width: 8px; "
+                        + "-m3-thumb-track-gap: 10px; "
                         + "-m3-touch-target-size: 56px;"
         );
 
@@ -14028,7 +14630,9 @@ final class M3ControlStyleTest {
 
         assertEquals(8.0, slider.getTrackThickness(), 0.0001);
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
-        assertEquals(28.0, slider.getThumbSize(), 0.0001);
+        assertEquals(52.0, slider.getThumbSize(), 0.0001);
+        assertEquals(8.0, slider.getThumbWidth(), 0.0001);
+        assertEquals(10.0, slider.getThumbTrackGap(), 0.0001);
         assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
         assertEquals(56.0, slider.prefHeight(-1.0), 0.0001);
     }
@@ -14041,7 +14645,9 @@ final class M3ControlStyleTest {
         slider.setPrefSize(56.0, 180.0);
         slider.setStyle(
                 "-m3-track-thickness: 6px; "
-                        + "-m3-thumb-size: 24px; "
+                        + "-m3-thumb-size: 44px; "
+                        + "-m3-thumb-width: 6px; "
+                        + "-m3-thumb-track-gap: 8px; "
                         + "-m3-touch-target-size: 60px;"
         );
         Pane root = new Pane(slider);
@@ -14058,7 +14664,9 @@ final class M3ControlStyleTest {
 
         slider.setStyle(
                 "-m3-track-thickness: 8px; "
-                        + "-m3-thumb-size: 28px; "
+                        + "-m3-thumb-size: 52px; "
+                        + "-m3-thumb-width: 8px; "
+                        + "-m3-thumb-track-gap: 10px; "
                         + "-m3-touch-target-size: 64px;"
         );
         root.applyCss();
@@ -14107,7 +14715,7 @@ final class M3ControlStyleTest {
         Region track = lookupRegion(slider, ".track");
         Region activeTrack = lookupRegion(slider, ".active-track");
         Region thumb = lookupRegion(slider, ".thumb");
-        assertRegionFill(track, Color.rgb(37, 38, 39));
+        assertRegionFill(track, Color.rgb(7, 8, 9));
         assertRegionFill(activeTrack, Color.rgb(1, 2, 3));
         assertNoBorder(track);
         assertRegionFill(thumb, Color.rgb(1, 2, 3));
@@ -14144,9 +14752,9 @@ final class M3ControlStyleTest {
         assertEquals(25.0, slider.getValue(), 0.0001);
     }
 
-    /// Verifies that slider active track layout follows value, orientation, and visual direction.
+    /// Verifies that slider active and inactive tracks leave Material handle gaps in every direction.
     @Test
-    void sliderActiveTrackFollowsValueDirectionAndOrientation() {
+    void sliderTrackSegmentsFollowValueDirectionOrientationAndHandleGap() {
         M3Slider leftToRight = new M3Slider(0.0, 100.0, 25.0);
         M3Slider rightToLeft = new M3Slider(0.0, 100.0, 25.0);
         M3Slider vertical = new M3Slider(0.0, 100.0, 25.0);
@@ -14164,30 +14772,9 @@ final class M3ControlStyleTest {
         rightToLeft.layout();
         vertical.layout();
 
-        Region leftToRightTrack = lookupRegion(leftToRight, ".track");
-        Region leftToRightActiveTrack = lookupRegion(leftToRight, ".active-track");
-        Bounds leftToRightTrackBounds = leftToRightTrack.localToScene(leftToRightTrack.getBoundsInLocal());
-        Bounds leftToRightActiveTrackBounds = leftToRightActiveTrack.localToScene(leftToRightActiveTrack.getBoundsInLocal());
-        assertEquals(leftToRightTrackBounds.getMinX(), leftToRightActiveTrackBounds.getMinX(), 0.0001);
-        assertEquals(leftToRightTrackBounds.getWidth() * 0.25, leftToRightActiveTrackBounds.getWidth(), 0.0001);
-
-        Region rightToLeftTrack = lookupRegion(rightToLeft, ".track");
-        Region rightToLeftActiveTrack = lookupRegion(rightToLeft, ".active-track");
-        Bounds rightToLeftTrackBounds = rightToLeftTrack.localToScene(rightToLeftTrack.getBoundsInLocal());
-        Bounds rightToLeftActiveTrackBounds = rightToLeftActiveTrack.localToScene(
-                rightToLeftActiveTrack.getBoundsInLocal()
-        );
-        assertEquals(rightToLeftTrackBounds.getMaxX(),
-                rightToLeftActiveTrackBounds.getMaxX(),
-                0.0001);
-        assertEquals(rightToLeftTrackBounds.getWidth() * 0.25, rightToLeftActiveTrackBounds.getWidth(), 0.0001);
-
-        Region verticalTrack = lookupRegion(vertical, ".track");
-        Region verticalActiveTrack = lookupRegion(vertical, ".active-track");
-        assertEquals(verticalTrack.getLayoutY() + verticalTrack.getHeight(),
-                verticalActiveTrack.getLayoutY() + verticalActiveTrack.getHeight(),
-                0.0001);
-        assertEquals(verticalTrack.getHeight() * 0.25, verticalActiveTrack.getHeight(), 0.0001);
+        assertHorizontalSliderSegments(leftToRight, false);
+        assertHorizontalSliderSegments(rightToLeft, true);
+        assertVerticalSliderSegments(vertical);
     }
 
     /// Verifies that progress component token properties are styleable from CSS.
@@ -14225,6 +14812,24 @@ final class M3ControlStyleTest {
         assertEquals(5.0, progressIndicator.getTrackGap(), 0.0001);
         assertEquals(72.0, progressIndicator.getPrefWidth(), 0.0001);
         assertEquals(72.0, progressIndicator.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that fallback progress and loading indicator tokens match Material Design defaults.
+    @Test
+    void progressAndLoadingFallbackTokensMatchMaterialDefaults() {
+        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+
+        applyCss(progressIndicator);
+        applyCss(loadingIndicator);
+
+        assertEquals(40.0, progressIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(40.0, progressIndicator.getPrefWidth(), 0.0001);
+        assertEquals(40.0, progressIndicator.getPrefHeight(), 0.0001);
+        assertEquals(48.0, loadingIndicator.getContainerSize(), 0.0001);
+        assertEquals(38.0, loadingIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(48.0, loadingIndicator.getPrefWidth(), 0.0001);
+        assertEquals(48.0, loadingIndicator.getPrefHeight(), 0.0001);
     }
 
     /// Verifies that loading indicator token properties are styleable from CSS.
@@ -14266,11 +14871,11 @@ final class M3ControlStyleTest {
         assertEquals(10.0, progressBar.getPrefHeight(), 0.0001);
         assertEquals(4.0, progressIndicator.getTrackThickness(), 0.0001);
         assertEquals(48.0, progressIndicator.getIndicatorSize(), 0.0001);
-        assertEquals(2.0, progressIndicator.getWaveAmplitude(), 0.0001);
+        assertEquals(1.6, progressIndicator.getWaveAmplitude(), 0.0001);
         assertEquals(15.0, progressIndicator.getWavelength(), 0.0001);
         assertEquals(4.0, progressIndicator.getTrackGap(), 0.0001);
-        assertEquals(64.0, loadingIndicator.getContainerSize(), 0.0001);
-        assertEquals(48.0, loadingIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(48.0, loadingIndicator.getContainerSize(), 0.0001);
+        assertEquals(38.0, loadingIndicator.getIndicatorSize(), 0.0001);
     }
 
     /// Verifies that m3fx progress controls create Material Design 3 skins.
@@ -14715,6 +15320,140 @@ final class M3ControlStyleTest {
         assertTrue(bar.getBoundsInParent().getMaxX() <= track.getBoundsInParent().getMaxX() + 0.0001);
     }
 
+    /// Verifies that linear progress bars mirror their physical fill direction in right-to-left layouts.
+    @Test
+    void progressBarSkinMirrorsLinearProgressForRightToLeft() {
+        runOnFxThreadAndWait(() -> {
+            M3ProgressBar determinateBar = new M3ProgressBar(0.25);
+            determinateBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            M3ProgressBar indeterminateBar = new M3ProgressBar();
+            indeterminateBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            M3ProgressBar wavyBar = new M3ProgressBar(0.5);
+            wavyBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            wavyBar.setStyle("-m3-wave-amplitude: 3px; "
+                    + "-m3-wavelength: 40px; "
+                    + "-m3-track-gap: 4px; "
+                    + "-m3-stop-size: 4px;");
+            Pane root = new Pane(determinateBar, indeterminateBar, wavyBar);
+            Scene scene = new Scene(root, 280.0, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            determinateBar.resize(200.0, 16.0);
+            indeterminateBar.resize(200.0, 16.0);
+            wavyBar.resize(240.0, 16.0);
+            determinateBar.layout();
+            indeterminateBar.layout();
+            wavyBar.layout();
+
+            Rectangle determinateIndicator = (Rectangle) lookupShape(determinateBar, ".bar");
+            assertEquals(50.0, determinateIndicator.getWidth(), 0.0001);
+            assertEquals(0.0, determinateIndicator.getX(), 0.0001);
+            Bounds determinateBounds = determinateBar.localToScene(determinateBar.getBoundsInLocal());
+            Bounds determinateIndicatorBounds = determinateIndicator.localToScene(determinateIndicator.getBoundsInLocal());
+            assertEquals(determinateBounds.getMaxX(), determinateIndicatorBounds.getMaxX(), 0.0001);
+
+            Rectangle indeterminateIndicator = (Rectangle) lookupShape(indeterminateBar, ".bar");
+            double indeterminateWidth = Math.max(24.0, 200.0 * 0.32);
+            double leftToRightX = -indeterminateWidth + (200.0 + indeterminateWidth) * 0.18;
+            assertEquals(indeterminateWidth, indeterminateIndicator.getWidth(), 0.0001);
+            assertEquals(leftToRightX, indeterminateIndicator.getX(), 0.0001);
+            Bounds indeterminateBounds = indeterminateBar.localToScene(indeterminateBar.getBoundsInLocal());
+            Bounds indeterminateIndicatorBounds = indeterminateIndicator.localToScene(indeterminateIndicator.getBoundsInLocal());
+            assertEquals(
+                    indeterminateBounds.getMinX() + 200.0 - (leftToRightX + indeterminateWidth),
+                    indeterminateIndicatorBounds.getMinX(),
+                    0.0001
+            );
+
+            Path wave = assertInstanceOf(Path.class, lookupShape(wavyBar, ".m3-progress-bar-wave"));
+            Point2D waveStart = firstPathPoint(wave);
+            Point2D waveEnd = lastPathPoint(wave);
+            assertEquals(0.0, waveStart.getX(), 0.0001);
+            assertEquals(120.0, waveEnd.getX(), 0.0001);
+            Bounds wavyBounds = wavyBar.localToScene(wavyBar.getBoundsInLocal());
+            Bounds waveBounds = wave.localToScene(wave.getBoundsInLocal());
+            assertEquals(wavyBounds.getMaxX(), waveBounds.getMaxX(), wavyBar.getTrackThickness());
+
+            Rectangle track = progressBarPrimaryTrack(wavyBar);
+            javafx.scene.shape.Circle stop = assertInstanceOf(
+                    javafx.scene.shape.Circle.class,
+                    lookupShape(wavyBar, ".m3-progress-stop")
+            );
+            assertEquals(126.0, track.getX(), 0.0001);
+            assertEquals(104.0, track.getWidth(), 0.0001);
+            assertEquals(238.0, stop.getCenterX(), 0.0001);
+            assertEquals(2.0, stop.getRadius(), 0.0001);
+            Bounds trackBounds = track.localToScene(track.getBoundsInLocal());
+            Bounds stopBounds = stop.localToScene(stop.getBoundsInLocal());
+            assertEquals(wavyBounds.getMinX() + 10.0, trackBounds.getMinX(), 0.0001);
+            assertEquals(wavyBounds.getMinX(), stopBounds.getMinX(), 0.0001);
+        });
+    }
+
+    /// Verifies that inherited runtime direction changes relayout a previously laid-out progress bar.
+    @Test
+    void progressBarSkinRelayoutsWhenInheritedDirectionChanges() {
+        runOnFxThreadAndWait(() -> {
+            M3ProgressBar progressBar = new M3ProgressBar(0.25);
+            Pane root = new Pane(progressBar);
+            Scene scene = new Scene(root, 240.0, 40.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            progressBar.resize(200.0, 16.0);
+            progressBar.layout();
+            Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, progressBar.getEffectiveNodeOrientation());
+            assertEquals(0.0, bar.getX(), 0.0001);
+            Bounds controlBounds = progressBar.localToScene(progressBar.getBoundsInLocal());
+            Bounds barBounds = bar.localToScene(bar.getBoundsInLocal());
+            assertEquals(controlBounds.getMinX(), barBounds.getMinX(), 0.0001);
+
+            root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, progressBar.getEffectiveNodeOrientation());
+            controlBounds = progressBar.localToScene(progressBar.getBoundsInLocal());
+            barBounds = bar.localToScene(bar.getBoundsInLocal());
+            assertEquals(0.0, bar.getX(), 0.0001);
+            assertEquals(controlBounds.getMaxX(), barBounds.getMaxX(), 0.0001);
+
+            root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, progressBar.getEffectiveNodeOrientation());
+            controlBounds = progressBar.localToScene(progressBar.getBoundsInLocal());
+            barBounds = bar.localToScene(bar.getBoundsInLocal());
+            assertEquals(0.0, bar.getX(), 0.0001);
+            assertEquals(controlBounds.getMinX(), barBounds.getMinX(), 0.0001);
+        });
+    }
+
+    /// Verifies that progress bars mirror when attached to an already mirrored parent after detached layout.
+    @Test
+    void progressBarSkinRelayoutsWhenAttachedToRightToLeftParent() {
+        runOnFxThreadAndWait(() -> {
+            M3ProgressBar progressBar = new M3ProgressBar(0.25);
+            Pane detachedRoot = new Pane(progressBar);
+            Scene detachedScene = new Scene(detachedRoot, 240.0, 40.0);
+            M3ThemeManager.install(detachedScene, M3Theme.defaultTheme());
+            detachedRoot.applyCss();
+            progressBar.resize(200.0, 16.0);
+            progressBar.layout();
+            Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, progressBar.getEffectiveNodeOrientation());
+            assertEquals(0.0, bar.getX(), 0.0001);
+
+            Pane rightToLeftRoot = new Pane();
+            rightToLeftRoot.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            Scene rightToLeftScene = new Scene(rightToLeftRoot, 240.0, 40.0);
+            M3ThemeManager.install(rightToLeftScene, M3Theme.defaultTheme());
+            detachedRoot.getChildren().clear();
+            rightToLeftRoot.getChildren().add(progressBar);
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, progressBar.getEffectiveNodeOrientation());
+            assertEquals(0.0, bar.getX(), 0.0001);
+            Bounds controlBounds = progressBar.localToScene(progressBar.getBoundsInLocal());
+            Bounds barBounds = bar.localToScene(bar.getBoundsInLocal());
+            assertEquals(controlBounds.getMaxX(), barBounds.getMaxX(), 0.0001);
+        });
+    }
     /// Verifies that the progress bar skin clips indeterminate progress inside the track.
     @Test
     void progressBarSkinClipsIndeterminateSegment() {
@@ -25071,18 +25810,21 @@ final class M3ControlStyleTest {
             assertEquals(36.0, filterChip.getContainerHeight(), 0.0001);
             assertEquals(18.0, filterChip.getHorizontalPadding(), 0.0001);
             assertEquals(48.0, checkBox.getTouchTargetSize(), 0.0001);
-            assertEquals(6.0, slider.getTrackThickness(), 0.0001);
-            assertEquals(24.0, slider.getThumbSize(), 0.0001);
-            assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
+            assertEquals(16.0, slider.getTrackThickness(), 0.0001);
+            assertEquals(44.0, slider.getThumbSize(), 0.0001);
+            assertEquals(4.0, slider.getThumbWidth(), 0.0001);
+            assertEquals(48.0, slider.getTouchTargetSize(), 0.0001);
             assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
-            assertEquals(56.0, menuOpen.getOneLineHeight(), 0.0001);
+            assertEquals(44.0, menuOpen.getOneLineHeight(), 0.0001);
+            assertEquals(6.0, menuOpen.getContainerShape(), 0.0001);
             assertEquals(16.0, menuOpen.getHorizontalPadding(), 0.0001);
-            assertEquals(16.0, menuOpen.getContentSpacing(), 0.0001);
-            assertEquals(64.0, searchBar.getPrefHeight(), 0.0001);
-            assertEquals(64.0, searchBar.getHeight(), 0.0001);
-            assertEquals(20.0, searchBar.getPadding().getLeft(), 0.0001);
+            assertEquals(12.0, menuOpen.getContentSpacing(), 0.0001);
+            assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
+            assertEquals(56.0, searchBar.getHeight(), 0.0001);
+            assertEquals(24.0, searchBar.getPadding().getLeft(), 0.0001);
             assertEquals(12.0, searchView.getPadding().getBottom(), 0.0001);
             assertEquals(64.0, searchResult.getOneLineHeight(), 0.0001);
+            assertEquals(16.0, searchResult.getContainerShape(), 0.0001);
             assertEquals(20.0, searchResult.getHorizontalPadding(), 0.0001);
             assertEquals(16.0, searchResult.getContentSpacing(), 0.0001);
             assertEquals(64.0, listItem.getOneLineHeight(), 0.0001);
@@ -25240,7 +25982,7 @@ final class M3ControlStyleTest {
             assertTrue(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
             assertEquals(48.0, filledButton.getContainerHeight(), 0.0001);
             assertEquals(64.0, textField.getContainerHeight(), 0.0001);
-            assertEquals(64.0, searchBar.getHeight(), 0.0001);
+            assertEquals(56.0, searchBar.getHeight(), 0.0001);
             assertEquals(48.0, selectedToggle.getContainerHeight(), 0.0001);
             assertEquals(64.0, fab.getContainerSize(), 0.0001);
 
@@ -25637,6 +26379,56 @@ final class M3ControlStyleTest {
         assertTrue(track.getBoundsInParent().getMaxX() <= slider.getWidth() + 0.0001);
     }
 
+    /// Verifies that the slider skin uses Material handle geometry and centers feedback on the handle.
+    @Test
+    void sliderSkinUsesMaterialHandleGeometry() {
+        runOnFxThreadAndWait(() -> {
+            M3Slider horizontal = new M3Slider(0.0, 100.0, 25.0);
+            M3Slider vertical = new M3Slider(0.0, 100.0, 75.0);
+            vertical.setOrientation(Orientation.VERTICAL);
+            Pane root = new Pane(horizontal, vertical);
+            Scene scene = new Scene(root, 320.0, 240.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            horizontal.resize(220.0, 48.0);
+            vertical.resize(48.0, 180.0);
+            horizontal.layout();
+            vertical.layout();
+
+            Region horizontalTrack = lookupRegion(horizontal, ".track");
+            Region horizontalThumb = lookupRegion(horizontal, ".thumb");
+            Region horizontalStateLayer = lookupRegion(horizontal, ".m3-state-layer-container");
+            assertEquals(16.0, horizontalTrack.getHeight(), 0.0001);
+            assertEquals(4.0, horizontalThumb.getWidth(), 0.0001);
+            assertEquals(44.0, horizontalThumb.getHeight(), 0.0001);
+            assertEquals(horizontalTrack.getLayoutY() + horizontalTrack.getHeight() / 2.0,
+                    horizontalThumb.getLayoutY() + horizontalThumb.getHeight() / 2.0,
+                    0.0001);
+            assertEquals(horizontalThumb.getLayoutX() + horizontalThumb.getWidth() / 2.0,
+                    horizontalStateLayer.getLayoutX() + horizontalStateLayer.getWidth() / 2.0,
+                    0.0001);
+            assertEquals(horizontalThumb.getLayoutY() + horizontalThumb.getHeight() / 2.0,
+                    horizontalStateLayer.getLayoutY() + horizontalStateLayer.getHeight() / 2.0,
+                    0.0001);
+
+            Region verticalTrack = lookupRegion(vertical, ".track");
+            Region verticalThumb = lookupRegion(vertical, ".thumb");
+            Region verticalStateLayer = lookupRegion(vertical, ".m3-state-layer-container");
+            assertEquals(16.0, verticalTrack.getWidth(), 0.0001);
+            assertEquals(44.0, verticalThumb.getWidth(), 0.0001);
+            assertEquals(4.0, verticalThumb.getHeight(), 0.0001);
+            assertEquals(verticalTrack.getLayoutX() + verticalTrack.getWidth() / 2.0,
+                    verticalThumb.getLayoutX() + verticalThumb.getWidth() / 2.0,
+                    0.0001);
+            assertEquals(verticalThumb.getLayoutX() + verticalThumb.getWidth() / 2.0,
+                    verticalStateLayer.getLayoutX() + verticalStateLayer.getWidth() / 2.0,
+                    0.0001);
+            assertEquals(verticalThumb.getLayoutY() + verticalThumb.getHeight() / 2.0,
+                    verticalStateLayer.getLayoutY() + verticalStateLayer.getHeight() / 2.0,
+                    0.0001);
+        });
+    }
     /// Verifies that the slider skin updates values from pointer and keyboard input.
     @Test
     void sliderSkinHandlesPointerAndKeyboardInput() {
@@ -25695,7 +26487,7 @@ final class M3ControlStyleTest {
 
         slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_DRAGGED, 10.0, 24.0, true));
         slider.layout();
-        assertTrue(thumb.getLayoutX() < 1.0);
+        assertTrue(thumb.getLayoutX() < 10.0);
     }
 
     /// Verifies that disabled slider skins ignore pointer and keyboard input.
@@ -31510,11 +32302,88 @@ final class M3ControlStyleTest {
         ), () -> "popup root is missing the expected brightness class: " + popupRoot.getStyleClass());
     }
 
-    /// Verifies that a vertical slider track uses the caller-provided preferred height.
+    /// Verifies a horizontal slider's rendered active and inactive segments around the handle gap.
+    private static void assertHorizontalSliderSegments(M3Slider slider, boolean rightToLeft) {
+        Region inactiveTrack = lookupRegion(slider, ".track");
+        Region activeTrack = lookupRegion(slider, ".active-track");
+        Region thumb = lookupRegion(slider, ".thumb");
+        Bounds sliderBounds = slider.localToScene(slider.getBoundsInLocal());
+        Bounds inactiveBounds = inactiveTrack.localToScene(inactiveTrack.getBoundsInLocal());
+        Bounds activeBounds = activeTrack.localToScene(activeTrack.getBoundsInLocal());
+        Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
+        double trackStart = sliderBounds.getMinX() + slider.getThumbWidth() / 2.0;
+        double trackEnd = sliderBounds.getMaxX() - slider.getThumbWidth() / 2.0;
+        double trackLength = trackEnd - trackStart;
+        double logicalPosition = normalizedSliderValue(slider);
+        double visualPosition = rightToLeft ? 1.0 - logicalPosition : logicalPosition;
+        double thumbCenter = trackStart + trackLength * visualPosition;
+        double leadingGapEdge = Math.max(trackStart, thumbCenter - slider.getThumbTrackGap());
+        double trailingGapEdge = Math.min(trackEnd, thumbCenter + slider.getThumbTrackGap());
+
+        assertEquals(thumbCenter, thumbBounds.getCenterX(), 0.0001);
+        assertEquals(slider.getThumbWidth(), thumbBounds.getWidth(), 0.0001);
+        if (rightToLeft) {
+            assertEquals(trackStart, inactiveBounds.getMinX(), 0.0001);
+            assertEquals(leadingGapEdge, inactiveBounds.getMaxX(), 0.0001);
+            assertEquals(trailingGapEdge, activeBounds.getMinX(), 0.0001);
+            assertEquals(trackEnd, activeBounds.getMaxX(), 0.0001);
+        } else {
+            assertEquals(trackStart, activeBounds.getMinX(), 0.0001);
+            assertEquals(leadingGapEdge, activeBounds.getMaxX(), 0.0001);
+            assertEquals(trailingGapEdge, inactiveBounds.getMinX(), 0.0001);
+            assertEquals(trackEnd, inactiveBounds.getMaxX(), 0.0001);
+        }
+        double segmentGap = rightToLeft
+                ? activeBounds.getMinX() - inactiveBounds.getMaxX()
+                : inactiveBounds.getMinX() - activeBounds.getMaxX();
+        assertEquals(slider.getThumbTrackGap() * 2.0, segmentGap, 0.0001);
+    }
+
+    /// Verifies a vertical slider's rendered active and inactive segments around the handle gap.
+    private static void assertVerticalSliderSegments(M3Slider slider) {
+        Region inactiveTrack = lookupRegion(slider, ".track");
+        Region activeTrack = lookupRegion(slider, ".active-track");
+        Region thumb = lookupRegion(slider, ".thumb");
+        Bounds sliderBounds = slider.localToScene(slider.getBoundsInLocal());
+        Bounds inactiveBounds = inactiveTrack.localToScene(inactiveTrack.getBoundsInLocal());
+        Bounds activeBounds = activeTrack.localToScene(activeTrack.getBoundsInLocal());
+        Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
+        double trackStart = sliderBounds.getMinY() + slider.getThumbWidth() / 2.0;
+        double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
+        double trackLength = trackEnd - trackStart;
+        double thumbCenter = trackEnd - trackLength * normalizedSliderValue(slider);
+        double upperGapEdge = Math.max(trackStart, thumbCenter - slider.getThumbTrackGap());
+        double lowerGapEdge = Math.min(trackEnd, thumbCenter + slider.getThumbTrackGap());
+
+        assertEquals(thumbCenter, thumbBounds.getCenterY(), 0.0001);
+        assertEquals(slider.getThumbWidth(), thumbBounds.getHeight(), 0.0001);
+        assertEquals(trackStart, inactiveBounds.getMinY(), 0.0001);
+        assertEquals(upperGapEdge, inactiveBounds.getMaxY(), 0.0001);
+        assertEquals(lowerGapEdge, activeBounds.getMinY(), 0.0001);
+        assertEquals(trackEnd, activeBounds.getMaxY(), 0.0001);
+        assertEquals(slider.getThumbTrackGap() * 2.0,
+                activeBounds.getMinY() - inactiveBounds.getMaxY(),
+                0.0001);
+    }
+
+    /// Returns the slider value normalized to the supported range.
+    private static double normalizedSliderValue(M3Slider slider) {
+        double min = slider.getMin();
+        double max = slider.getMax();
+        if (max <= min) {
+            return 0.0;
+        }
+        return Math.max(0.0, Math.min(1.0, (slider.getValue() - min) / (max - min)));
+    }
+
+    /// Verifies that vertical slider track segments use the caller-provided preferred height.
     private static void assertVerticalSliderTrackUsesExplicitHeight(M3Slider slider) {
-        Region track = lookupRegion(slider, ".track");
-        Bounds trackBounds = track.getBoundsInParent();
-        assertTrue(trackBounds.getHeight() >= 140.0, () -> "vertical slider track is too short: " + trackBounds);
+        Region inactiveTrack = lookupRegion(slider, ".track");
+        Region activeTrack = lookupRegion(slider, ".active-track");
+        double coveredHeight = inactiveTrack.getBoundsInParent().getHeight()
+                + activeTrack.getBoundsInParent().getHeight()
+                + slider.getThumbTrackGap() * 2.0;
+        assertTrue(coveredHeight >= 140.0, () -> "vertical slider track is too short: " + coveredHeight);
     }
 
     /// Verifies that rendered text nodes do not escape their nearest visual layout boundary.
@@ -31799,6 +32668,20 @@ final class M3ControlStyleTest {
                     "single-line text input rendered ink leaves the editable field");
             double textCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
             @Nullable M3TextInputLayout layout = nearestAncestorOfType(input, M3TextInputLayout.class);
+            if (layout != null) {
+                assertTextInputInkAvoidsAdornmentSlot(
+                        layout,
+                        M3TextInputLayout.LEADING_STYLE_CLASS,
+                        inkBounds,
+                        "single-line text input leading adornment slot"
+                );
+                assertTextInputInkAvoidsAdornmentSlot(
+                        layout,
+                        M3TextInputLayout.TRAILING_STYLE_CLASS,
+                        inkBounds,
+                        "single-line text input trailing adornment slot"
+                );
+            }
             if (layout != null && layout.isLabelFloating() && textInput.getVariant() == M3TextInputVariant.FILLED) {
                 double centerRatio = (textCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
                 assertTrue(centerRatio >= FILLED_FLOATING_INK_MINIMUM_CENTER_RATIO
@@ -31821,6 +32704,48 @@ final class M3ControlStyleTest {
                     () -> "single-line input rendered text ink is vertically misaligned: input="
                             + inputBounds + ", ink=" + inkBounds + ", textInput=" + input);
         });
+    }
+
+    /// Verifies that rendered text ink does not overlap a visible Material adornment slot.
+    private static void assertTextInputInkAvoidsAdornmentSlot(
+            M3TextInputLayout layout,
+            String slotStyleClass,
+            Rectangle2D inkBounds,
+            String description
+    ) {
+        @Nullable Node slot = layout.lookup("." + slotStyleClass);
+        if (slot == null || !slot.isVisible() || !hasRenderableBounds(slot)) {
+            return;
+        }
+
+        Bounds slotBounds = slot.localToScene(slot.getBoundsInLocal());
+        double verticalOverlap = Math.min(inkBounds.getMaxY(), slotBounds.getMaxY())
+                - Math.max(inkBounds.getMinY(), slotBounds.getMinY());
+        if (verticalOverlap <= TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE) {
+            return;
+        }
+
+        double horizontalOverlap = Math.min(inkBounds.getMaxX(), slotBounds.getMaxX())
+                - Math.max(inkBounds.getMinX(), slotBounds.getMinX());
+        assertTrue(horizontalOverlap <= TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE,
+                () -> description + " overlaps rendered text ink: overlap=" + horizontalOverlap
+                        + ", inkBounds=" + inkBounds + ", slotBounds=" + slotBounds
+                        + ", input=" + textInputDebugState(layout.getInput()));
+    }
+
+    /// Returns diagnostic state for a text input layout input.
+    private static String textInputDebugState(@Nullable TextInputControl input) {
+        if (input == null) {
+            return "null";
+        }
+
+        String alignment = input instanceof TextField textField ? String.valueOf(textField.getAlignment()) : "n/a";
+        return input.getClass().getSimpleName()
+                + "[text=" + input.getText()
+                + ", nodeOrientation=" + input.getNodeOrientation()
+                + ", effectiveNodeOrientation=" + input.getEffectiveNodeOrientation()
+                + ", alignment=" + alignment
+                + ", padding=" + input.getPadding() + "]";
     }
 
     /// Visits visible nodes in a rendered hierarchy.
@@ -32729,6 +33654,7 @@ final class M3ControlStyleTest {
     private static String internalIconColorRoleStyleClass(M3InternalIcon.ColorRole colorRole) {
         return switch (colorRole) {
             case PRIMARY -> M3InternalIcon.PRIMARY_STYLE_CLASS;
+            case ON_SURFACE -> M3InternalIcon.ON_SURFACE_STYLE_CLASS;
             case ON_SURFACE_VARIANT -> M3InternalIcon.ON_SURFACE_VARIANT_STYLE_CLASS;
             case ON_PRIMARY_CONTAINER -> M3InternalIcon.ON_PRIMARY_CONTAINER_STYLE_CLASS;
         };
@@ -32844,6 +33770,65 @@ final class M3ControlStyleTest {
         return hasRenderableBounds(menuButton)
                 && hasRenderableBounds(ownerMenu)
                 && hasRenderableBounds(subMenu);
+    }
+
+    /// Returns whether standalone tooltip popups have reached a renderable fallback-styled state.
+    private static boolean standaloneTooltipPopupsReady(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable M3Tooltip> plainTooltipReference,
+            AtomicReference<@Nullable M3RichTooltip> richTooltipReference
+    ) {
+        @Nullable Stage stage = stageReference.get();
+        @Nullable M3Tooltip plainTooltip = plainTooltipReference.get();
+        @Nullable M3RichTooltip richTooltip = richTooltipReference.get();
+        return stage != null
+                && stage.isShowing()
+                && stage.getScene() != null
+                && tooltipPopupReady(plainTooltip, M3Tooltip.STYLE_CLASS)
+                && tooltipPopupReady(richTooltip, M3RichTooltip.CONTAINER_STYLE_CLASS);
+    }
+
+    /// Returns whether a tooltip popup has visible styled content.
+    private static boolean tooltipPopupReady(@Nullable M3Tooltip tooltip, String contentStyleClass) {
+        if (tooltip == null || !tooltip.isShowing() || tooltip.getScene() == null || tooltip.getSkin() == null) {
+            return false;
+        }
+
+        Node skinNode = tooltip.getSkin().getNode();
+        skinNode.applyCss();
+        if (skinNode instanceof Parent parent) {
+            parent.layout();
+            Node content = parent.lookup("." + contentStyleClass);
+            return content != null && hasRenderableBounds(content);
+        }
+        return hasRenderableBounds(skinNode);
+    }
+
+    /// Asserts that a standalone tooltip popup has visible styled content.
+    private static void assertStandaloneTooltipPopupReady(@Nullable M3Tooltip tooltip, String contentStyleClass) {
+        assertTrue(tooltipPopupReady(tooltip, contentStyleClass), () -> "Tooltip popup did not render " + contentStyleClass);
+    }
+
+    /// Closes standalone tooltip popup test content.
+    private static void closeStandaloneTooltipScene(
+            AtomicReference<@Nullable Stage> stageReference,
+            AtomicReference<@Nullable M3Tooltip> plainTooltipReference,
+            AtomicReference<@Nullable M3RichTooltip> richTooltipReference
+    ) {
+        runOnFxThread(() -> {
+            @Nullable M3Tooltip plainTooltip = plainTooltipReference.get();
+            if (plainTooltip != null) {
+                plainTooltip.hide();
+            }
+            @Nullable M3RichTooltip richTooltip = richTooltipReference.get();
+            if (richTooltip != null) {
+                richTooltip.hide();
+            }
+            @Nullable Stage stage = stageReference.get();
+            if (stage != null) {
+                stage.close();
+            }
+        });
     }
 
     /// Returns whether standalone picker field popups have reached a renderable fallback-styled state.

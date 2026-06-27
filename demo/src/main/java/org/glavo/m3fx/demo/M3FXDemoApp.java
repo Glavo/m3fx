@@ -1160,9 +1160,10 @@ public final class M3FXDemoApp extends Application {
 
         M3SearchView searchView = new M3SearchView("Search components");
         searchView.setPrefWidth(520.0);
+        M3IconButton tuneSearchView = createIconButton("tune");
         M3IconButton clearSearchView = createIconButton("close");
         clearSearchView.setOnAction(event -> searchView.clear());
-        searchView.getTrailingActions().add(clearSearchView);
+        searchView.getTrailingActions().addAll(tuneSearchView, clearSearchView);
         searchView.getResults().addAll(
                 createSearchResult("Buttons", "Filled, tonal, outlined, text, and elevated variants"),
                 createSearchResult("Menus", "Menu surfaces, selected rows, and menu buttons"),

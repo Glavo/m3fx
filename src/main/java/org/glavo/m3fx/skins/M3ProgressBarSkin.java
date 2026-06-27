@@ -173,7 +173,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         layoutRectangle(track, 0.0, 0.0, width, thickness, radius);
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
-            double segmentX = -segmentWidth + (width + segmentWidth) * indeterminatePosition.get();
+            double segmentX = indeterminateSegmentX(width, segmentWidth);
             bar.setVisible(true);
             layoutRectangle(bar, segmentX, 0.0, segmentWidth, thickness, radius);
             return;
@@ -202,7 +202,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             stop.setVisible(false);
             double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
-            double segmentX = -segmentWidth + (width + segmentWidth) * indeterminatePosition.get();
+            double segmentX = indeterminateSegmentX(width, segmentWidth);
             double segmentEnd = segmentX + segmentWidth;
             layoutTrackSegment(track, 0.0, Math.min(width, segmentX - effectiveGap),
                     centerY, thickness, radius);
@@ -220,16 +220,34 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         layoutWavePath(waveBar, 0.0, progressWidth, centerY, activeAmplitude, getSkinnable().getWavelength(), 0.0);
 
         double stopDiameter = Math.min(thickness, getSkinnable().getStopSize());
-        double stopLeft = Math.max(0.0, width - stopDiameter);
+        double remaining = width - progressWidth;
+        double visibleStopDiameter = Math.max(0.0, Math.min(stopDiameter, remaining - effectiveGap));
+        layoutDeterminateTrackAndStop(width, centerY, thickness, radius, effectiveGap, progressWidth,
+                visibleStopDiameter);
+    }
+
+    /// Lays out the inactive determinate track and the optional stop indicator.
+    private void layoutDeterminateTrackAndStop(
+            double width,
+            double centerY,
+            double thickness,
+            double radius,
+            double effectiveGap,
+            double progressWidth,
+            double visibleStopDiameter
+    ) {
+        double stopLeft = Math.max(0.0, width - visibleStopDiameter);
         double trackStart = Math.min(stopLeft, progressWidth + effectiveGap);
         double trackWidth = Math.max(0.0, stopLeft - effectiveGap - trackStart);
         layoutTrackSegment(track, trackStart, trackWidth, centerY, thickness, radius);
+        layoutStopIndicator(visibleStopDiameter, width - visibleStopDiameter / 2.0, centerY);
+    }
 
-        double remaining = width - progressWidth;
-        double visibleStopDiameter = Math.max(0.0, Math.min(stopDiameter, remaining - effectiveGap));
-        stop.setVisible(visibleStopDiameter > 0.0);
-        stop.setRadius(visibleStopDiameter / 2.0);
-        stop.setCenterX(width - visibleStopDiameter / 2.0);
+    /// Lays out the linear stop indicator and hides it when the visible size is empty.
+    private void layoutStopIndicator(double visibleDiameter, double centerX, double centerY) {
+        stop.setVisible(visibleDiameter > 0.0);
+        stop.setRadius(visibleDiameter / 2.0);
+        stop.setCenterX(centerX);
         stop.setCenterY(centerY);
     }
 
@@ -288,6 +306,11 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         rectangle.setVisible(visibleWidth > 0.0);
         layoutRectangle(rectangle, x, centerY - thickness / 2.0, visibleWidth, thickness,
                 Math.min(radius, visibleWidth / 2.0));
+    }
+
+    /// Returns the logical x coordinate of the indeterminate segment.
+    private double indeterminateSegmentX(double width, double segmentWidth) {
+        return -segmentWidth + (width + segmentWidth) * indeterminatePosition.get();
     }
 
     /// Updates determinate or indeterminate animation state for the current progress value.

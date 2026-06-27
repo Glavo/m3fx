@@ -66,8 +66,14 @@ public class M3Slider extends Control {
     /// The default slider track shape radius.
     private static final double DEFAULT_TRACK_SHAPE = 999.0;
 
-    /// The default slider thumb size.
-    private static final double DEFAULT_THUMB_SIZE = 20.0;
+    /// The default slider handle long-side size.
+    private static final double DEFAULT_THUMB_SIZE = 44.0;
+
+    /// The default slider handle short-side width.
+    private static final double DEFAULT_THUMB_WIDTH = 4.0;
+
+    /// The default gap between the handle and each adjacent track segment.
+    private static final double DEFAULT_THUMB_TRACK_GAP = 6.0;
 
     /// The default slider touch target size.
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 48.0;
@@ -105,6 +111,12 @@ public class M3Slider extends Control {
 
     // Backing property for the public thumb size token API.
     private @Nullable StyleableDoubleProperty thumbSize;
+
+    // Backing property for the public thumb width token API.
+    private @Nullable StyleableDoubleProperty thumbWidth;
+
+    // Backing property for the public thumb track-gap token API.
+    private @Nullable StyleableDoubleProperty thumbTrackGap;
 
     // Backing property for the public touch target size token API.
     private @Nullable StyleableDoubleProperty touchTargetSize;
@@ -514,23 +526,23 @@ public class M3Slider extends Control {
         return trackShape;
     }
 
-    /// Returns the slider thumb size token.
+    /// Returns the slider handle long-side size token.
     ///
-    /// @return the slider thumb size token in pixels
+    /// @return the slider handle long-side size token in pixels
     public final double getThumbSize() {
         return thumbSize == null ? DEFAULT_THUMB_SIZE : thumbSize.get();
     }
 
-    /// Sets the slider thumb size token.
+    /// Sets the slider handle long-side size token.
     ///
-    /// @param thumbSize the slider thumb size token in pixels
+    /// @param thumbSize the slider handle long-side size token in pixels
     public final void setThumbSize(double thumbSize) {
         thumbSizeProperty().set(M3Css.nonNegative(thumbSize, "thumbSize"));
     }
 
-    /// Returns the slider thumb size token property.
+    /// Returns the slider handle long-side size token property.
     ///
-    /// @return the slider thumb size token property
+    /// @return the slider handle long-side size token property
     public final StyleableDoubleProperty thumbSizeProperty() {
         if (thumbSize == null) {
             thumbSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -542,6 +554,66 @@ public class M3Slider extends Control {
             );
         }
         return thumbSize;
+    }
+
+    /// Returns the slider handle short-side width token.
+    ///
+    /// @return the slider handle short-side width token in pixels
+    public final double getThumbWidth() {
+        return thumbWidth == null ? DEFAULT_THUMB_WIDTH : thumbWidth.get();
+    }
+
+    /// Sets the slider handle short-side width token.
+    ///
+    /// @param thumbWidth the slider handle short-side width token in pixels
+    public final void setThumbWidth(double thumbWidth) {
+        thumbWidthProperty().set(M3Css.nonNegative(thumbWidth, "thumbWidth"));
+    }
+
+    /// Returns the slider handle short-side width token property.
+    ///
+    /// @return the slider handle short-side width token property
+    public final StyleableDoubleProperty thumbWidthProperty() {
+        if (thumbWidth == null) {
+            thumbWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_THUMB_WIDTH,
+                    this,
+                    "thumbWidth",
+                    StyleableProperties.THUMB_WIDTH,
+                    this::updateMetrics
+            );
+        }
+        return thumbWidth;
+    }
+
+    /// Returns the gap between the handle and each adjacent track segment.
+    ///
+    /// @return the handle track-gap token in pixels
+    public final double getThumbTrackGap() {
+        return thumbTrackGap == null ? DEFAULT_THUMB_TRACK_GAP : thumbTrackGap.get();
+    }
+
+    /// Sets the gap between the handle and each adjacent track segment.
+    ///
+    /// @param thumbTrackGap the handle track-gap token in pixels
+    public final void setThumbTrackGap(double thumbTrackGap) {
+        thumbTrackGapProperty().set(M3Css.nonNegative(thumbTrackGap, "thumbTrackGap"));
+    }
+
+    /// Returns the handle track-gap token property.
+    ///
+    /// @return the handle track-gap token property
+    public final StyleableDoubleProperty thumbTrackGapProperty() {
+        if (thumbTrackGap == null) {
+            thumbTrackGap = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_THUMB_TRACK_GAP,
+                    this,
+                    "thumbTrackGap",
+                    StyleableProperties.THUMB_TRACK_GAP,
+                    this::updateMetrics
+            );
+        }
+        return thumbTrackGap;
     }
 
     /// Returns the preferred touch target size token.
@@ -744,7 +816,7 @@ public class M3Slider extends Control {
                     }
                 };
 
-        /// CSS metadata for the thumb size token.
+        /// CSS metadata for the thumb long-side size token.
         private static final CssMetaData<M3Slider, Number> THUMB_SIZE =
                 new CssMetaData<>("-m3-thumb-size", SizeConverter.getInstance(), DEFAULT_THUMB_SIZE) {
                     /// Returns whether this property can be set by CSS.
@@ -757,6 +829,38 @@ public class M3Slider extends Control {
                     @Override
                     public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
                         return control.thumbSizeProperty();
+                    }
+                };
+
+        /// CSS metadata for the thumb short-side width token.
+        private static final CssMetaData<M3Slider, Number> THUMB_WIDTH =
+                new CssMetaData<>("-m3-thumb-width", SizeConverter.getInstance(), DEFAULT_THUMB_WIDTH) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Slider control) {
+                        return M3Css.isSettable(control.thumbWidthProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
+                        return control.thumbWidthProperty();
+                    }
+                };
+
+        /// CSS metadata for the handle track-gap token.
+        private static final CssMetaData<M3Slider, Number> THUMB_TRACK_GAP =
+                new CssMetaData<>("-m3-thumb-track-gap", SizeConverter.getInstance(), DEFAULT_THUMB_TRACK_GAP) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Slider control) {
+                        return M3Css.isSettable(control.thumbTrackGapProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
+                        return control.thumbTrackGapProperty();
                     }
                 };
 
@@ -784,6 +888,8 @@ public class M3Slider extends Control {
             styleables.add(TRACK_THICKNESS);
             styleables.add(TRACK_SHAPE);
             styleables.add(THUMB_SIZE);
+            styleables.add(THUMB_WIDTH);
+            styleables.add(THUMB_TRACK_GAP);
             styleables.add(TOUCH_TARGET_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

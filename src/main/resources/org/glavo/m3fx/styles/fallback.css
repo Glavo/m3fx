@@ -94,6 +94,10 @@
     -fx-fill: -m3-color-primary;
 }
 
+.m3-internal-icon-on-surface .m3-internal-icon-path {
+    -fx-fill: -m3-color-on-surface;
+}
+
 .m3-internal-icon-on-surface-variant .m3-internal-icon-path {
     -fx-fill: -m3-color-on-surface-variant;
 }

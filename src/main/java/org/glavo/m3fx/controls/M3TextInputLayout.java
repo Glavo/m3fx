@@ -1019,6 +1019,7 @@ public class M3TextInputLayout extends Control {
         label.setManaged(visible);
         StackPane.setAlignment(label, labelAlignment(floating));
         label.pseudoClassStateChanged(FLOATING_PSEUDO_CLASS, floating);
+        label.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, isInputFocused());
         updateLabelErrorState();
         updateLabelMotion(visible, floating);
         labelFloating = floating;

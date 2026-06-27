@@ -246,6 +246,18 @@ val verifyPublicationMetadata = tasks.register("verifyPublicationMetadata") {
     }
 }
 
+fun exportedPackagePathsFromModuleInfo(moduleInfoFile: File): List<String> {
+    val exportPattern = Regex("^\\s*exports\\s+([\\w.]+)\\s*;")
+    val packagePaths = moduleInfoFile.readLines()
+        .mapNotNull { line -> exportPattern.find(line)?.groupValues?.get(1) }
+        .map { packageName -> packageName.replace('.', '/') }
+        .sorted()
+    if (packagePaths.isEmpty()) {
+        throw GradleException("Main module descriptor should export at least one API package.")
+    }
+    return packagePaths
+}
+
 val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
     group = "verification"
     description = "Verifies that Maven publication JAR artifacts contain the expected M3FX API and resources."
@@ -254,6 +266,7 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
     val sourcesJar = tasks.named<org.gradle.jvm.tasks.Jar>("sourcesJar").flatMap { it.archiveFile }
     val javadocJar = tasks.named<org.gradle.jvm.tasks.Jar>("javadocJar").flatMap { it.archiveFile }
     val mainSourceDirectory = layout.projectDirectory.dir("src/main/java").asFile
+    val mainModuleInfo = mainSourceDirectory.resolve("module-info.java")
     val mainResourceDirectory = layout.projectDirectory.dir("src/main/resources").asFile
     val mainJavaSources = fileTree(mainSourceDirectory) {
         include("**/*.java")
@@ -261,16 +274,9 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
     val mainStylesheetResources = fileTree(mainResourceDirectory) {
         include("org/glavo/m3fx/styles/**/*.css")
     }
-    val exportedPackagePaths = listOf(
-        "org/glavo/m3fx/animation",
-        "org/glavo/m3fx/controls",
-        "org/glavo/m3fx/skins",
-        "org/glavo/m3fx/theme",
-        "org/glavo/m3fx/tokens"
-    )
 
     dependsOn(tasks.named("jar"), tasks.named("sourcesJar"), tasks.named("javadocJar"))
-    inputs.files(mainJar, sourcesJar, javadocJar, mainJavaSources, mainStylesheetResources)
+    inputs.files(mainJar, sourcesJar, javadocJar, mainModuleInfo, mainJavaSources, mainStylesheetResources)
 
     doLast {
         fun jarEntries(file: File): Set<String> =
@@ -288,6 +294,8 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
 
         fun sourceEntry(root: File, file: File): String =
             root.toPath().relativize(file.toPath()).toString().replace(File.separatorChar, '/')
+
+        val exportedPackagePaths = exportedPackagePathsFromModuleInfo(mainModuleInfo)
 
         val mainEntries = jarEntries(mainJar.get().asFile)
         requireEntry(mainEntries, "module-info.class", "Main JAR")

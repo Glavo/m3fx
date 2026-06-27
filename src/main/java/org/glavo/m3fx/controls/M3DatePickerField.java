@@ -81,7 +81,10 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
                 DateTimeFormatter.ISO_LOCAL_DATE,
                 STYLE_CLASS,
                 POPUP_STYLE_CLASS,
-                M3InternalIcon.Glyph.CALENDAR,
+                new M3InternalIcon(
+                        M3InternalIcon.Glyph.CALENDAR,
+                        M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
+                ),
                 "Open date picker",
                 "Enter a valid date",
                 "Date is outside the selectable range"

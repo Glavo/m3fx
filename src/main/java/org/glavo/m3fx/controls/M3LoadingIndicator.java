@@ -54,7 +54,7 @@ public class M3LoadingIndicator extends Control {
     private static final double DEFAULT_CONTAINER_SIZE = 48.0;
 
     /// The default active indicator shape size.
-    private static final double DEFAULT_INDICATOR_SIZE = 36.0;
+    private static final double DEFAULT_INDICATOR_SIZE = 38.0;
 
     /// The minimum accessible progress value.
     private static final double ACCESSIBLE_MIN_VALUE = 0.0;

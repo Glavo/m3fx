@@ -9,6 +9,16 @@ import org.jetbrains.annotations.Unmodifiable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,6 +42,16 @@ final class SourceStyleRequirementsTest {
             Path.of("src", "main", "java"),
             Path.of("demo", "src", "main", "java")
     );
+
+    /// The main module descriptor used to discover exported API packages.
+    private static final Path MAIN_MODULE_INFO = Path.of("src", "main", "java", "module-info.java");
+
+    /// Matches exported package declarations in the main module descriptor.
+    private static final Pattern MODULE_EXPORT_DECLARATION = Pattern.compile("^\\s*exports\\s+([\\w.]+)\\s*;");
+
+    /// Matches implementation type references that exported APIs must not expose through members.
+    private static final Pattern EXPORTED_INTERNAL_API_REFERENCE =
+            Pattern.compile("\\borg\\.glavo\\.m3fx\\.internal\\b|\\bM3Internal\\w*\\b");
 
     /// The public control source root scanned for M3FX control API shape constraints.
     private static final Path CONTROLS_SOURCE_ROOT =
@@ -109,9 +129,18 @@ final class SourceStyleRequirementsTest {
                     + "(?:(?:extends\\s+[^{}]+?)\\s+)?implements\\s+(?:[\\w.]+\\.)?Skin\\b"
     );
 
+    /// The core control style test source used to enforce matrix coverage discipline.
+    private static final Path CONTROL_STYLE_TEST_SOURCE =
+            Path.of("src", "test", "java", "org", "glavo", "m3fx", "controls", "M3ControlStyleTest.java");
+
     /// Matches `M3Stylesheets.controlStylesheet` references in production sources.
     private static final Pattern CONTROL_STYLESHEET_REFERENCE = Pattern.compile(
             "controlStylesheet\\(\"([^\"]+\\.css)\"\\)"
+    );
+
+    /// Matches control instances asserted by the core user-agent stylesheet matrix.
+    private static final Pattern USER_AGENT_STYLESHEET_ASSERTION = Pattern.compile(
+            "assertUserAgentStylesheet\\(new\\s+(M3\\w+)(?:\\s*<[^>]*>)?\\s*\\("
     );
 
     /// Matches stylesheet imports in bundled CSS resources.
@@ -226,6 +255,41 @@ final class SourceStyleRequirementsTest {
 
         assertTrue(optionalUsages.isEmpty(),
                 () -> "Production sources must use @Nullable instead of Optional: " + optionalUsages);
+    }
+
+    /// Verifies that exported public and protected APIs do not expose internal implementation member types.
+    @Test
+    void exportedApisDoNotExposeInternalMemberTypes() throws IOException {
+        List<String> internalApiLeaks = new ArrayList<>();
+        for (Path sourceRoot : exportedPackageSourceRoots()) {
+            for (Path sourceFile : javaSourceFiles(sourceRoot)) {
+                collectInternalApiLeaks(sourceFile, internalApiLeaks);
+            }
+        }
+
+        assertTrue(internalApiLeaks.isEmpty(),
+                () -> "Exported public/protected member APIs must not expose internal implementation types: "
+                        + internalApiLeaks);
+    }
+
+    /// Verifies that compiled exported APIs do not expose unexported M3FX package types.
+    @Test
+    void exportedBytecodeApisDoNotExposeUnexportedM3fxTypes() throws Exception {
+        Set<String> exportedPackages = exportedPackageNames();
+        List<String> leakedTypes = new ArrayList<>();
+        for (String className : exportedTopLevelClassNames(exportedPackages)) {
+            Class<?> type = Class.forName(
+                    className,
+                    false,
+                    SourceStyleRequirementsTest.class.getClassLoader()
+            );
+            if (Modifier.isPublic(type.getModifiers())) {
+                collectUnexportedM3fxTypeLeaks(type, exportedPackages, leakedTypes);
+            }
+        }
+
+        assertTrue(leakedTypes.isEmpty(),
+                () -> "Exported APIs must not expose types from unexported M3FX packages: " + leakedTypes);
     }
 
     /// Verifies that public controls avoid inheriting from concrete JavaFX controls.
@@ -448,6 +512,49 @@ final class SourceStyleRequirementsTest {
                         + unreferencedResources);
     }
 
+    /// Verifies that user-agent-styled controls are covered by the standalone fallback CSS matrix.
+    @Test
+    void standaloneFallbackMatrixCoversUserAgentStylesheetControls() throws IOException {
+        String controlStyleTestSource = Files.readString(CONTROL_STYLE_TEST_SOURCE);
+        Set<String> userAgentControls = userAgentStylesheetMatrixControls(controlStyleTestSource);
+        String standaloneFallbackMethod = testMethodBody(
+                controlStyleTestSource,
+                "standaloneControlStylesheetsResolveFallbackColorTokens"
+        );
+
+        List<String> missingControls = new ArrayList<>();
+        for (String className : userAgentControls) {
+            if (!hasConstructorReference(standaloneFallbackMethod, className)) {
+                missingControls.add(className);
+            }
+        }
+
+        assertTrue(missingControls.isEmpty(),
+                () -> "Standalone fallback CSS coverage must instantiate every user-agent-styled public control: "
+                        + missingControls);
+    }
+
+    /// Verifies that popup-only tooltip controls are covered by standalone fallback CSS tests.
+    @Test
+    void popupOnlyTooltipControlsHaveStandaloneFallbackCoverage() throws IOException {
+        String controlStyleTestSource = Files.readString(CONTROL_STYLE_TEST_SOURCE);
+        String standaloneTooltipMethod = testMethodBody(
+                controlStyleTestSource,
+                "standaloneTooltipPopupsResolveFallbackColorTokens"
+        );
+
+        List<String> missingControls = new ArrayList<>();
+        for (String className : List.of("M3Tooltip", "M3RichTooltip")) {
+            if (!hasConstructorReference(standaloneTooltipMethod, className)) {
+                missingControls.add(className);
+            }
+        }
+
+        assertTrue(missingControls.isEmpty(),
+                () -> "Popup-only tooltip controls must stay in standalone fallback CSS coverage: "
+                        + missingControls);
+    }
+
     /// Verifies that bundled CSS only looks up generated or locally declared token properties.
     @Test
     void stylesheetTokenLookupsResolveToGeneratedOrLocalDeclarations() throws IOException {
@@ -494,6 +601,46 @@ final class SourceStyleRequirementsTest {
                 () -> "CSS token lookups must remain paint/size lookups, not quoted string values: " + quotedTokens);
     }
 
+    /// Returns every public control class covered by the user-agent stylesheet matrix.
+    private static @Unmodifiable Set<String> userAgentStylesheetMatrixControls(String controlStyleTestSource) {
+        Set<String> classNames = new TreeSet<>();
+        Matcher matcher = USER_AGENT_STYLESHEET_ASSERTION.matcher(controlStyleTestSource);
+        while (matcher.find()) {
+            classNames.add(matcher.group(1));
+        }
+        assertTrue(!classNames.isEmpty(), "The user-agent stylesheet matrix should cover public controls");
+        return Set.copyOf(classNames);
+    }
+
+    /// Returns the source body of a test method.
+    private static String testMethodBody(String source, String methodName) {
+        int methodIndex = source.indexOf("void " + methodName + "(");
+        assertTrue(methodIndex >= 0, () -> "Missing test method: " + methodName);
+        int bodyStart = source.indexOf('{', methodIndex);
+        assertTrue(bodyStart >= 0, () -> "Missing test method body: " + methodName);
+
+        int depth = 0;
+        for (int index = bodyStart; index < source.length(); index++) {
+            char ch = source.charAt(index);
+            if (ch == '{') {
+                depth++;
+            } else if (ch == '}') {
+                depth--;
+                if (depth == 0) {
+                    return source.substring(bodyStart + 1, index);
+                }
+            }
+        }
+        throw new AssertionError("Unclosed test method body: " + methodName);
+    }
+
+    /// Returns whether source text constructs the requested class.
+    private static boolean hasConstructorReference(String source, String className) {
+        return Pattern.compile(
+                "\\bnew\\s+" + Pattern.quote(className) + "(?:\\s*<[^>]*>)?\\s*\\("
+        ).matcher(source).find();
+    }
+
     /// Returns every production Java source file in a stable order.
     private static @Unmodifiable List<Path> productionJavaSourceFiles() throws IOException {
         List<Path> sourceFiles = new ArrayList<>();
@@ -504,6 +651,60 @@ final class SourceStyleRequirementsTest {
         return List.copyOf(sourceFiles);
     }
 
+    /// Returns every exported package name declared by the main module descriptor.
+    private static Set<String> exportedPackageNames() throws IOException {
+        Set<String> packages = new TreeSet<>();
+        for (String line : Files.readAllLines(MAIN_MODULE_INFO)) {
+            Matcher matcher = MODULE_EXPORT_DECLARATION.matcher(line);
+            if (matcher.find()) {
+                packages.add(matcher.group(1));
+            }
+        }
+        assertTrue(!packages.isEmpty(), "The main module descriptor should export API packages");
+        return packages;
+    }
+
+    /// Returns every exported source package root declared by the main module descriptor.
+    private static @Unmodifiable List<Path> exportedPackageSourceRoots() throws IOException {
+        List<Path> roots = new ArrayList<>();
+        for (String packageName : exportedPackageNames()) {
+            roots.add(Path.of("src", "main", "java").resolve(packageName.replace('.', '/')));
+        }
+        return List.copyOf(roots);
+    }
+
+    /// Returns every top-level class name declared in exported package source roots.
+    private static @Unmodifiable List<String> exportedTopLevelClassNames(Set<String> exportedPackages)
+            throws IOException {
+        List<String> classNames = new ArrayList<>();
+        for (Path sourceRoot : exportedPackageSourceRoots()) {
+            for (Path sourceFile : javaSourceFiles(sourceRoot)) {
+                if (sourceFile.getFileName().toString().equals("package-info.java")) {
+                    continue;
+                }
+
+                String packageName = packageName(sourceFile);
+                if (exportedPackages.contains(packageName)) {
+                    String fileName = sourceFile.getFileName().toString();
+                    classNames.add(packageName + '.' + fileName.substring(0, fileName.length() - ".java".length()));
+                }
+            }
+        }
+        classNames.sort(Comparator.naturalOrder());
+        return List.copyOf(classNames);
+    }
+
+    /// Returns the declared package name for a Java source file.
+    private static String packageName(Path sourceFile) throws IOException {
+        for (String line : Files.readAllLines(sourceFile)) {
+            String strippedLine = line.strip();
+            if (strippedLine.startsWith("package ") && strippedLine.endsWith(";")) {
+                return strippedLine.substring("package ".length(), strippedLine.length() - 1).strip();
+            }
+        }
+        throw new AssertionError("Missing package declaration in " + sourceFile);
+    }
+
     /// Returns every Java source file below a root.
     private static @Unmodifiable List<Path> javaSourceFiles(Path sourceRoot) throws IOException {
         try (Stream<Path> files = Files.walk(sourceRoot)) {
@@ -511,6 +712,189 @@ final class SourceStyleRequirementsTest {
                     .filter(path -> !path.getFileName().toString().equals("module-info.java"))
                     .sorted(Comparator.comparing(Path::toString))
                     .toList();
+        }
+    }
+
+    /// Collects exported member declarations that expose internal implementation types.
+    private static void collectInternalApiLeaks(Path sourceFile, List<String> leaks) throws IOException {
+        List<String> lines = Files.readAllLines(sourceFile);
+        StringBuilder declaration = new StringBuilder();
+        int declarationLine = -1;
+        for (int index = 0; index < lines.size(); index++) {
+            String line = lines.get(index).strip();
+            if (declarationLine < 0) {
+                if (!startsPublicOrProtectedApiDeclaration(line)) {
+                    continue;
+                }
+                declaration.setLength(0);
+                declarationLine = index + 1;
+            }
+
+            String code = stripTrailingLineComment(line);
+            if (!code.isEmpty() && !code.startsWith("///") && !code.startsWith("*")) {
+                if (!declaration.isEmpty()) {
+                    declaration.append(' ');
+                }
+                declaration.append(code);
+            }
+
+            if (apiDeclarationEnds(code)) {
+                String exportedDeclaration = stripSealedPermitsClause(declaration.toString());
+                if (EXPORTED_INTERNAL_API_REFERENCE.matcher(exportedDeclaration).find()) {
+                    leaks.add(sourceFile + ":" + declarationLine + ": " + exportedDeclaration);
+                }
+                declarationLine = -1;
+                declaration.setLength(0);
+            }
+        }
+    }
+
+    /// Returns whether a source line begins a public or protected API declaration.
+    private static boolean startsPublicOrProtectedApiDeclaration(String line) {
+        return line.startsWith("public ") || line.startsWith("protected ");
+    }
+
+    /// Returns the source line without a trailing line comment.
+    private static String stripTrailingLineComment(String line) {
+        int commentIndex = line.indexOf("//");
+        return commentIndex >= 0 ? line.substring(0, commentIndex).stripTrailing() : line;
+    }
+
+    /// Returns the declaration without a sealed `permits` clause.
+    private static String stripSealedPermitsClause(String declaration) {
+        int permitsIndex = declaration.indexOf(" permits ");
+        return permitsIndex >= 0 ? declaration.substring(0, permitsIndex) : declaration;
+    }
+
+    /// Returns whether the currently scanned API declaration has ended.
+    private static boolean apiDeclarationEnds(String line) {
+        return line.endsWith(";") || line.endsWith("{");
+    }
+
+    /// Collects unexported M3FX types exposed by one public exported class.
+    private static void collectUnexportedM3fxTypeLeaks(
+            Class<?> owner,
+            Set<String> exportedPackages,
+            List<String> leaks
+    ) {
+        collectTypeLeaks(owner.getGenericSuperclass(), owner.getName() + " superclass", exportedPackages, leaks);
+        for (Type type : owner.getGenericInterfaces()) {
+            collectTypeLeaks(type, owner.getName() + " interface", exportedPackages, leaks);
+        }
+        collectTypeParameterLeaks(owner.getTypeParameters(), owner.getName() + " type parameter", exportedPackages, leaks);
+
+        for (Constructor<?> constructor : owner.getDeclaredConstructors()) {
+            if (isPublicOrProtected(constructor) && !constructor.isSynthetic()) {
+                String description = owner.getName() + " constructor";
+                collectTypeParameterLeaks(constructor.getTypeParameters(), description, exportedPackages, leaks);
+                for (Type type : constructor.getGenericParameterTypes()) {
+                    collectTypeLeaks(type, description + " parameter", exportedPackages, leaks);
+                }
+                for (Type type : constructor.getGenericExceptionTypes()) {
+                    collectTypeLeaks(type, description + " throws", exportedPackages, leaks);
+                }
+            }
+        }
+
+        for (Method method : owner.getDeclaredMethods()) {
+            if (isPublicOrProtected(method) && !method.isSynthetic()) {
+                String description = owner.getName() + '#' + method.getName() + "()";
+                collectTypeParameterLeaks(method.getTypeParameters(), description, exportedPackages, leaks);
+                collectTypeLeaks(method.getGenericReturnType(), description + " return", exportedPackages, leaks);
+                for (Type type : method.getGenericParameterTypes()) {
+                    collectTypeLeaks(type, description + " parameter", exportedPackages, leaks);
+                }
+                for (Type type : method.getGenericExceptionTypes()) {
+                    collectTypeLeaks(type, description + " throws", exportedPackages, leaks);
+                }
+            }
+        }
+
+        for (Field field : owner.getDeclaredFields()) {
+            if (isPublicOrProtected(field) && !field.isSynthetic()) {
+                collectTypeLeaks(
+                        field.getGenericType(),
+                        owner.getName() + '#' + field.getName() + " field",
+                        exportedPackages,
+                        leaks
+                );
+            }
+        }
+
+        for (Class<?> nestedClass : owner.getDeclaredClasses()) {
+            if (Modifier.isPublic(nestedClass.getModifiers()) || Modifier.isProtected(nestedClass.getModifiers())) {
+                collectUnexportedM3fxTypeLeaks(nestedClass, exportedPackages, leaks);
+            }
+        }
+    }
+
+    /// Returns whether a reflected member is public or protected.
+    private static boolean isPublicOrProtected(Member member) {
+        int modifiers = member.getModifiers();
+        return Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers);
+    }
+
+    /// Collects unexported M3FX types referenced by type parameter bounds.
+    private static void collectTypeParameterLeaks(
+            TypeVariable<?>[] typeParameters,
+            String description,
+            Set<String> exportedPackages,
+            List<String> leaks
+    ) {
+        for (TypeVariable<?> typeParameter : typeParameters) {
+            for (Type bound : typeParameter.getBounds()) {
+                collectTypeLeaks(bound, description + ' ' + typeParameter.getName() + " bound", exportedPackages, leaks);
+            }
+        }
+    }
+
+    /// Collects unexported M3FX package references from a reflected type.
+    private static void collectTypeLeaks(
+            Type type,
+            String description,
+            Set<String> exportedPackages,
+            List<String> leaks
+    ) {
+        if (type instanceof Class<?> typeClass) {
+            collectClassTypeLeaks(typeClass, description, exportedPackages, leaks);
+        } else if (type instanceof ParameterizedType parameterizedType) {
+            collectTypeLeaks(parameterizedType.getRawType(), description + " raw", exportedPackages, leaks);
+            for (Type argument : parameterizedType.getActualTypeArguments()) {
+                collectTypeLeaks(argument, description + " argument", exportedPackages, leaks);
+            }
+            Type ownerType = parameterizedType.getOwnerType();
+            if (ownerType != null) {
+                collectTypeLeaks(ownerType, description + " owner", exportedPackages, leaks);
+            }
+        } else if (type instanceof GenericArrayType arrayType) {
+            collectTypeLeaks(arrayType.getGenericComponentType(), description + " component", exportedPackages, leaks);
+        } else if (type instanceof WildcardType wildcardType) {
+            for (Type upperBound : wildcardType.getUpperBounds()) {
+                collectTypeLeaks(upperBound, description + " upper bound", exportedPackages, leaks);
+            }
+            for (Type lowerBound : wildcardType.getLowerBounds()) {
+                collectTypeLeaks(lowerBound, description + " lower bound", exportedPackages, leaks);
+            }
+        } else if (type instanceof TypeVariable<?>) {
+            // Type variable bounds are checked at the class, constructor, or method declaration site.
+        }
+    }
+
+    /// Collects unexported M3FX package references from a reflected class type.
+    private static void collectClassTypeLeaks(
+            Class<?> typeClass,
+            String description,
+            Set<String> exportedPackages,
+            List<String> leaks
+    ) {
+        if (typeClass.isArray()) {
+            collectClassTypeLeaks(typeClass.getComponentType(), description + " component", exportedPackages, leaks);
+            return;
+        }
+
+        String packageName = typeClass.getPackageName();
+        if (packageName.startsWith("org.glavo.m3fx") && !exportedPackages.contains(packageName)) {
+            leaks.add(description + " exposes " + typeClass.getName());
         }
     }
 

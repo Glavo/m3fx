@@ -404,8 +404,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double tabMinWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 104.0 : 90.0);
         double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double textAreaHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 128.0 : 112.0);
-        double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
-        double searchBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
+        double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 48.0);
+        double searchBarHeight = density.apply(56.0);
         double searchViewResultHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double pickerNavigationButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double datePickerDayCellSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
@@ -438,9 +438,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
         double listSectionHeaderHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
         double progressLinearWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 3.0 : 0.0);
-        double progressCircularWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 2.0 : 0.0);
-        double loadingIndicatorContainerSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 48.0);
-        double loadingIndicatorIndicatorSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 36.0);
+        double progressCircularWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 1.6 : 0.0);
+        double loadingIndicatorContainerSize = density.apply(48.0);
+        double loadingIndicatorIndicatorSize = density.apply(38.0);
+        double progressCircularIndicatorSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
         double navigationContentSpacing = density.apply(expressive ? 6.0 : 4.0);
         double navigationHorizontalPadding = density.apply(expressive ? 12.0 : 8.0);
@@ -456,14 +457,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double listItemVerticalPadding = density.apply(expressive ? 10.0 : 8.0);
         double listItemContentSpacing = density.apply(expressive ? 20.0 : 16.0);
         double listSectionHeaderHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double menuContainerShape = expressive ? shapeTokens.large() : shapeTokens.extraSmall();
         double menuContainerPadding = density.apply(expressive ? 10.0 : 8.0);
-        double menuItemContainerShape = expressive ? shapeTokens.small() : shapeTokens.extraSmall();
+        double menuItemContainerShape = shapeTokens.extraSmall();
+        double menuSelectedItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
         double menuItemHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
-        double menuItemContentSpacing = density.apply(expressive ? 16.0 : 12.0);
-        double searchBarHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
-        double searchBarContentSpacing = density.apply(expressive ? 16.0 : 12.0);
+        double menuItemContentSpacing = density.apply(12.0);
+        double searchBarHorizontalPadding = density.apply(expressive ? 24.0 : 16.0);
+        double searchBarContentSpacing = density.apply(expressive ? 4.0 : 16.0);
+        double searchBarTrailingActionsGap = density.apply(0.0);
         double searchViewContainerShape = expressive ? shapeTokens.extraLarge() : 28.0;
+        double searchViewHorizontalPadding = density.apply(expressive ? 12.0 : 0.0);
+        double searchViewBarResultsGap = density.apply(expressive ? 2.0 : 0.0);
+        double searchViewResultsShape = expressive ? shapeTokens.medium() : 0.0;
+        double searchResultContainerShape = expressive ? shapeTokens.medium() : 0.0;
         double searchViewResultPadding = density.apply(expressive ? 12.0 : 8.0);
+        double searchResultHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double searchResultContentSpacing = density.apply(expressive ? 16.0 : 12.0);
         double pickerFieldPopupShape = expressive ? shapeTokens.extraLarge() : 28.0;
         double pickerFieldPopupPadding = density.apply(expressive ? 20.0 : 16.0);
         double pickerFieldPopupSpacing = density.apply(expressive ? 20.0 : 16.0);
@@ -556,9 +566,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double validationSummaryItemVerticalPadding = density.apply(expressive ? 10.0 : 8.0);
         double validationSummaryItemHorizontalPadding = density.apply(expressive ? 12.0 : 10.0);
         double selectionTouchTargetSize = density.apply(expressive ? 48.0 : 40.0);
-        double sliderTrackThickness = density.apply(expressive ? 6.0 : 4.0);
-        double sliderThumbSize = density.apply(expressive ? 24.0 : 20.0);
-        double sliderTouchTargetSize = density.apply(expressive ? 56.0 : 48.0);
+        double sliderTrackThickness = density.apply(16.0);
+        double sliderThumbSize = density.apply(44.0);
+        double sliderThumbWidth = density.apply(4.0);
+        double sliderThumbTrackGap = density.apply(6.0);
+        double sliderTouchTargetSize = density.apply(48.0);
         double surfaceContainerShape = expressive ? shapeTokens.large() : shapeTokens.medium();
         double surfaceContentPadding = density.apply(expressive ? 20.0 : 16.0);
         double carouselTrackPadding = density.apply(expressive ? 8.0 : 4.0);
@@ -631,10 +643,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         validationSummaryItemHorizontalPadding
                 ),
                 new MenuTokens(
-                        shapeTokens.extraSmall(),
+                        menuContainerShape,
                         menuContainerPadding,
                         menuItemHeight,
                         menuItemContainerShape,
+                        menuSelectedItemContainerShape,
                         menuItemHorizontalPadding,
                         menuItemContentSpacing
                 ),
@@ -643,9 +656,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         shapeTokens.full(),
                         searchBarHorizontalPadding,
                         searchBarContentSpacing,
+                        searchBarTrailingActionsGap,
                         searchViewContainerShape,
+                        searchViewHorizontalPadding,
+                        searchViewBarResultsGap,
+                        searchViewResultsShape,
+                        searchResultContainerShape,
                         searchViewResultPadding,
-                        searchViewResultHeight
+                        searchViewResultHeight,
+                        searchResultHorizontalPadding,
+                        searchResultContentSpacing
                 ),
                 new PickerFieldTokens(
                         pickerNavigationButtonSize,
@@ -695,12 +715,19 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 ),
                 new ScrimTokens(0.32),
                 new SelectionTokens(selectionTouchTargetSize, shapeTokens.full()),
-                new SliderTokens(sliderTrackThickness, shapeTokens.full(), sliderThumbSize, sliderTouchTargetSize),
+                new SliderTokens(
+                        sliderTrackThickness,
+                        shapeTokens.full(),
+                        sliderThumbSize,
+                        sliderThumbWidth,
+                        sliderThumbTrackGap,
+                        sliderTouchTargetSize
+                ),
                 new ChipTokens(chipHeight, shapeTokens.small(), chipHorizontalPadding, chipGroupHorizontalGap, chipGroupVerticalGap),
                 new ProgressTokens(
                         density.apply(4.0),
                         shapeTokens.full(),
-                        density.apply(48.0),
+                        progressCircularIndicatorSize,
                         progressLinearWaveAmplitude,
                         density.apply(40.0),
                         density.apply(4.0),
@@ -931,110 +958,89 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
         appendButtonRule(builder, ".m3-segmented-button", segmentedButton());
         appendSegmentedButtonPositionRules(builder, segmentedButton());
-        appendTabRule(builder, ".m3-tab", tab());
-        appendTabIndicatorRule(builder, ".m3-tab-active-indicator", tab());
-        appendFieldRule(builder, ".m3-text-field, .m3-password-field", field());
-        appendTextAreaRule(builder, ".m3-text-area", textArea());
-        appendFilledFieldRule(builder, ".m3-filled-field", field());
-        appendOutlinedFieldRule(builder, ".m3-outlined-field", field());
-        appendFilledTextAreaRule(builder, ".m3-text-area.m3-filled-field", textArea());
-        appendOutlinedTextAreaRule(builder, ".m3-text-area.m3-outlined-field", textArea());
-        appendFormPaneRule(builder, ".m3-form-pane", form());
-        appendFormSectionRule(builder, ".m3-form-section", form());
-        appendFormSectionHeaderRule(builder, ".m3-form-section-header", form());
-        appendFormRowRule(builder, ".m3-form-row", form());
-        appendFormRowTextColumnRule(builder, ".m3-form-row-text-column", form());
-        appendValidationSummaryRule(builder, ".m3-validation-summary", validationSummary());
-        appendValidationSummaryItemsRule(builder, ".m3-validation-summary-items", validationSummary());
-        appendValidationSummaryItemRule(builder, ".m3-validation-summary-item", validationSummary());
-        appendMenuRule(builder, ".m3-menu.m3-menu", menu());
-        appendMenuItemRule(builder, ".m3-menu .m3-menu-item.m3-menu-item", menu());
-        appendSearchBarRule(builder, ".m3-search-bar.m3-search-bar", search());
-        appendSearchViewRule(builder, ".m3-search-view.m3-search-view", search());
-        appendSearchViewResultRule(builder, ".m3-search-view .m3-list-item.m3-list-item", search());
-        appendPickerFieldRule(builder, ".m3-picker-field-popup", pickerField());
-        appendPickerFieldOpenButtonRule(builder, ".m3-picker-field-open-button", pickerField());
-        appendPickerFieldPresetContentRule(
-                builder,
-                ".m3-date-picker-field-preset-content, "
-                        + ".m3-date-range-picker-field-preset-content, "
-                        + ".m3-time-picker-field-preset-content",
-                pickerField()
-        );
-        appendPickerFieldPresetListRule(
-                builder,
-                ".m3-date-picker-field-preset-list, "
-                        + ".m3-date-range-picker-field-preset-list, "
-                        + ".m3-time-picker-field-preset-list",
-                pickerField()
-        );
-        appendPickerFieldPresetButtonRule(
-                builder,
-                ".m3-date-picker-field-preset-button, "
-                        + ".m3-date-range-picker-field-preset-button, "
-                        + ".m3-time-picker-field-preset-button",
-                pickerField()
-        );
-        appendDatePickerRule(builder, ".m3-date-picker-container", datePicker());
-        appendDatePickerHeaderRule(builder, ".m3-date-picker-header", datePicker());
-        appendDatePickerNavigationButtonRule(builder, ".m3-date-picker-navigation-button", datePicker());
-        appendDatePickerWeekdayRowRule(builder, ".m3-date-picker-weekday-row", datePicker());
-        appendDatePickerGridRule(builder, ".m3-date-picker-day-grid", datePicker());
-        appendDatePickerCellRule(builder, ".m3-date-picker-day-cell", datePicker());
+        appendTabRule(builder, tab());
+        appendTabIndicatorRule(builder, tab());
+        appendFieldRule(builder, field());
+        appendTextAreaRule(builder, textArea());
+        appendFilledFieldRule(builder, field());
+        appendOutlinedFieldRule(builder, field());
+        appendFilledTextAreaRule(builder, textArea());
+        appendOutlinedTextAreaRule(builder, textArea());
+        appendFormPaneRule(builder, form());
+        appendFormSectionRule(builder, form());
+        appendFormSectionHeaderRule(builder, form());
+        appendFormRowRule(builder, form());
+        appendFormRowTextColumnRule(builder, form());
+        appendValidationSummaryRule(builder, validationSummary());
+        appendValidationSummaryItemsRule(builder, validationSummary());
+        appendValidationSummaryItemRule(builder, validationSummary());
+        appendMenuRule(builder, menu());
+        appendMenuItemRule(builder, menu());
+        appendSelectedMenuItemRule(builder, menu());
+        appendSearchBarRule(builder, search());
+        appendSearchBarContentRule(builder, search());
+        appendSearchBarTrailingRule(builder, search());
+        appendSearchViewRule(builder, search());
+        appendSearchViewContentRule(builder, search());
+        appendSearchViewResultsRule(builder, search());
+        appendSearchViewResultRule(builder, search());
+        appendPickerFieldRule(builder, pickerField());
+        appendPickerFieldOpenButtonRule(builder, pickerField());
+        appendPickerFieldPresetContentRule(builder, pickerField());
+        appendPickerFieldPresetListRule(builder, pickerField());
+        appendPickerFieldPresetButtonRule(builder, pickerField());
+        appendDatePickerRule(builder, datePicker());
+        appendDatePickerHeaderRule(builder, datePicker());
+        appendDatePickerNavigationButtonRule(builder, datePicker());
+        appendDatePickerWeekdayRowRule(builder, datePicker());
+        appendDatePickerGridRule(builder, datePicker());
+        appendDatePickerCellRule(builder, datePicker());
         appendDatePickerCellShapeRules(builder, datePicker());
-        appendTimePickerRule(builder, ".m3-time-picker-container", timePicker());
-        appendTimePickerDisplayRule(builder, ".m3-time-picker-display", timePicker());
-        appendTimePickerDisplayCellRule(
-                builder,
-                ".m3-time-picker-hour-display, .m3-time-picker-minute-display",
-                timePicker()
-        );
-        appendTimePickerSectionRule(builder, ".m3-time-picker-section", timePicker());
-        appendTimePickerGridRule(builder, ".m3-time-picker-grid", timePicker());
-        appendTimePickerCellRule(builder, ".m3-time-picker-cell", timePicker());
-        appendTimePickerPeriodCellRule(builder, ".m3-time-picker-period-cell", timePicker());
+        appendTimePickerRule(builder, timePicker());
+        appendTimePickerDisplayRule(builder, timePicker());
+        appendTimePickerDisplayCellRule(builder, timePicker());
+        appendTimePickerSectionRule(builder, timePicker());
+        appendTimePickerGridRule(builder, timePicker());
+        appendTimePickerCellRule(builder, timePicker());
+        appendTimePickerPeriodCellRule(builder, timePicker());
         appendTimePickerPeriodCellShapeRules(builder, timePicker());
-        appendSideSheetRule(builder, ".m3-side-sheet.m3-side-sheet", sheet());
-        appendBottomSheetRule(builder, ".m3-bottom-sheet.m3-bottom-sheet", sheet());
-        appendSheetHeaderRule(builder, ".m3-side-sheet .m3-sheet-header, .m3-bottom-sheet .m3-sheet-header", sheet());
-        appendSheetContentRule(
-                builder,
-                ".m3-side-sheet .m3-sheet-content, .m3-bottom-sheet .m3-sheet-content",
-                sheet()
-        );
-        appendBottomSheetDragHandleRule(builder, ".m3-bottom-sheet .m3-bottom-sheet-drag-handle", sheet());
-        appendScrimRule(builder, ".m3-scrim.m3-scrim", scrim());
-        appendSelectionRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch", selection());
-        appendSwitchRule(builder, ".m3-switch", selection());
-        appendSwitchBoxRule(builder, ".m3-switch .box", selection());
-        appendSliderRule(builder, ".m3-slider", slider());
-        appendSliderTrackRule(builder, ".m3-slider .track", slider());
-        appendSliderThumbRule(builder, ".m3-slider .thumb", slider());
-        appendChipRule(builder, ".m3-chip", chip());
-        appendChipGroupRule(builder, ".m3-chip-group", chip());
-        appendProgressBarRule(builder, ".m3-progress-bar", progress());
+        appendSideSheetRule(builder, sheet());
+        appendBottomSheetRule(builder, sheet());
+        appendSheetHeaderRule(builder, sheet());
+        appendSheetContentRule(builder, sheet());
+        appendBottomSheetDragHandleRule(builder, sheet());
+        appendScrimRule(builder, scrim());
+        appendSelectionRule(builder, selection());
+        appendSwitchRule(builder, selection());
+        appendSwitchBoxRule(builder, selection());
+        appendSliderRule(builder, slider());
+        appendSliderTrackRule(builder, slider());
+        appendSliderThumbRule(builder, slider());
+        appendChipRule(builder, chip());
+        appendChipGroupRule(builder, chip());
+        appendProgressBarRule(builder, progress());
         appendProgressBarTrackRule(builder, ".m3-progress-bar .track", progress());
         appendProgressBarTrackRule(builder, ".m3-progress-bar .bar", progress());
-        appendProgressIndicatorRule(builder, ".m3-progress-indicator", progress());
-        appendLoadingIndicatorRule(builder, ".m3-loading-indicator", loadingIndicator());
-        appendSurfaceRule(builder, ".m3-surface", surface());
-        appendCarouselTrackRule(builder, ".m3-carousel-track", carousel());
-        appendCarouselItemRule(builder, ".m3-carousel-item", carousel());
-        appendCarouselSelectedItemRule(builder, ".m3-carousel-selected-item", carousel());
-        appendCardRule(builder, ".m3-card", card());
-        appendDialogRule(builder, ".m3-dialog-pane", dialog());
-        appendSnackbarRule(builder, ".m3-snackbar", snackbar());
-        appendBannerRule(builder, ".m3-banner", banner());
-        appendBannerContentRule(builder, ".m3-banner-container", banner());
-        appendBannerActionsRule(builder, ".m3-banner-actions", banner());
-        appendTooltipRule(builder, ".m3-tooltip", tooltip());
-        appendRichTooltipRule(builder, ".m3-rich-tooltip-container", tooltip());
-        appendRichTooltipActionsRule(builder, ".m3-rich-tooltip-actions", tooltip());
-        appendRichTooltipActionButtonRule(builder, ".m3-rich-tooltip-actions .m3-button", tooltip());
-        appendDividerRule(builder, ".m3-divider", divider());
-        appendBadgeRule(builder, ".m3-badge", badge());
-        appendAvatarRule(builder, ".m3-avatar.m3-avatar", avatar());
-        appendTopAppBarRule(builder, ".m3-top-app-bar", topAppBar());
+        appendProgressIndicatorRule(builder, progress());
+        appendLoadingIndicatorRule(builder, loadingIndicator());
+        appendSurfaceRule(builder, surface());
+        appendCarouselTrackRule(builder, carousel());
+        appendCarouselItemRule(builder, carousel());
+        appendCarouselSelectedItemRule(builder, carousel());
+        appendCardRule(builder, card());
+        appendDialogRule(builder, dialog());
+        appendSnackbarRule(builder, snackbar());
+        appendBannerRule(builder, banner());
+        appendBannerContentRule(builder, banner());
+        appendBannerActionsRule(builder, banner());
+        appendTooltipRule(builder, tooltip());
+        appendRichTooltipRule(builder, tooltip());
+        appendRichTooltipActionsRule(builder, tooltip());
+        appendRichTooltipActionButtonRule(builder, tooltip());
+        appendDividerRule(builder, divider());
+        appendBadgeRule(builder, badge());
+        appendAvatarRule(builder, avatar());
+        appendTopAppBarRule(builder, topAppBar());
         appendTopAppBarVariantRule(
                 builder,
                 ".m3-top-app-bar-medium",
@@ -1049,22 +1055,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 topAppBar().largeBottomPadding(),
                 topAppBar()
         );
-        appendBottomAppBarRule(builder, ".m3-bottom-app-bar", bottomAppBar());
-        appendToolbarRule(builder, ".m3-toolbar", toolbar());
-        appendNavigationBarRule(builder, ".m3-navigation-bar", navigationBar());
-        appendNavigationItemRule(builder, ".m3-navigation-item", navigationBar());
-        appendNavigationIndicatorRule(builder, ".m3-navigation-item-indicator", navigationBar());
-        appendNavigationRailRule(builder, ".m3-navigation-rail", navigationRail());
-        appendNavigationRailItemRule(builder, ".m3-navigation-rail .m3-navigation-item", navigationRail());
-        appendNavigationRailIndicatorRule(
-                builder,
-                ".m3-navigation-rail .m3-navigation-item-indicator",
-                navigationRail()
-        );
-        appendListItemRule(builder, ".m3-list-item", listItem());
-        appendListSectionHeaderRule(builder, ".m3-list-section-header", listItem());
-        appendNavigationDrawerRule(builder, ".m3-navigation-drawer", navigationDrawer());
-        appendNavigationDrawerItemRule(builder, ".m3-navigation-drawer .m3-list-item", navigationDrawer());
+        appendBottomAppBarRule(builder, bottomAppBar());
+        appendToolbarRule(builder, toolbar());
+        appendNavigationBarRule(builder, navigationBar());
+        appendNavigationItemRule(builder, navigationBar());
+        appendNavigationIndicatorRule(builder, navigationBar());
+        appendNavigationRailRule(builder, navigationRail());
+        appendNavigationRailItemRule(builder, navigationRail());
+        appendNavigationRailIndicatorRule(builder, navigationRail());
+        appendListItemRule(builder, listItem());
+        appendListSectionHeaderRule(builder, listItem());
+        appendNavigationDrawerRule(builder, navigationDrawer());
+        appendNavigationDrawerItemRule(builder, navigationDrawer());
         appendNavigationDrawerGroupChildItemRule(
                 builder,
                 ".m3-navigation-drawer-group .m3-list-item.m3-navigation-drawer-group-child",
@@ -1206,6 +1208,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-menu-container-padding", M3TokenCss.pixels(tokens.containerPadding()));
         M3TokenCss.append(builder, "-m3-menu-item-height", M3TokenCss.pixels(tokens.itemHeight()));
         M3TokenCss.append(builder, "-m3-menu-item-container-shape", M3TokenCss.pixels(tokens.itemContainerShape()));
+        M3TokenCss.append(
+                builder,
+                "-m3-menu-selected-item-container-shape",
+                M3TokenCss.pixels(tokens.selectedItemContainerShape())
+        );
         M3TokenCss.append(builder, "-m3-menu-item-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-menu-item-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
     }
@@ -1216,9 +1223,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-search-bar-container-shape", M3TokenCss.pixels(tokens.barContainerShape()));
         M3TokenCss.append(builder, "-m3-search-bar-horizontal-padding", M3TokenCss.pixels(tokens.barHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-search-bar-content-spacing", M3TokenCss.pixels(tokens.barContentSpacing()));
+        M3TokenCss.append(builder, "-m3-search-bar-trailing-actions-gap", M3TokenCss.pixels(tokens.barTrailingActionsGap()));
         M3TokenCss.append(builder, "-m3-search-view-container-shape", M3TokenCss.pixels(tokens.viewContainerShape()));
+        M3TokenCss.append(builder, "-m3-search-view-horizontal-padding", M3TokenCss.pixels(tokens.viewHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-search-view-bar-results-gap", M3TokenCss.pixels(tokens.viewBarResultsGap()));
+        M3TokenCss.append(builder, "-m3-search-view-results-shape", M3TokenCss.pixels(tokens.viewResultsShape()));
+        M3TokenCss.append(builder, "-m3-search-view-result-container-shape", M3TokenCss.pixels(tokens.resultContainerShape()));
         M3TokenCss.append(builder, "-m3-search-view-result-padding", M3TokenCss.pixels(tokens.viewResultPadding()));
         M3TokenCss.append(builder, "-m3-search-view-result-height", M3TokenCss.pixels(tokens.resultHeight()));
+        M3TokenCss.append(builder, "-m3-search-view-result-horizontal-padding", M3TokenCss.pixels(tokens.resultHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-search-view-result-content-spacing", M3TokenCss.pixels(tokens.resultContentSpacing()));
     }
 
     /// Appends picker field token declarations.
@@ -1295,6 +1309,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-slider-track-thickness", M3TokenCss.pixels(tokens.trackThickness()));
         M3TokenCss.append(builder, "-m3-slider-track-shape", M3TokenCss.pixels(tokens.trackShape()));
         M3TokenCss.append(builder, "-m3-slider-thumb-size", M3TokenCss.pixels(tokens.thumbSize()));
+        M3TokenCss.append(builder, "-m3-slider-thumb-width", M3TokenCss.pixels(tokens.thumbWidth()));
+        M3TokenCss.append(builder, "-m3-slider-thumb-track-gap", M3TokenCss.pixels(tokens.thumbTrackGap()));
         M3TokenCss.append(builder, "-m3-slider-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
     }
 
@@ -1581,8 +1597,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a tab token CSS rule.
-    private static void appendTabRule(StringBuilder builder, String selector, TabTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTabRule(StringBuilder builder, TabTokens tokens) {
+        beginRule(builder, ".m3-tab");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-tab-min-width", M3TokenCss.pixels(tokens.tabMinWidth()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
@@ -1592,8 +1608,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a tab active indicator token CSS rule.
-    private static void appendTabIndicatorRule(StringBuilder builder, String selector, TabTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTabIndicatorRule(StringBuilder builder, TabTokens tokens) {
+        beginRule(builder, ".m3-tab-active-indicator");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.activeIndicatorShape())
                 + " "
                 + M3TokenCss.pixels(tokens.activeIndicatorShape())
@@ -1747,8 +1763,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a field token CSS rule.
-    private static void appendFieldRule(StringBuilder builder, String selector, FieldTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendFieldRule(StringBuilder builder, FieldTokens tokens) {
+        beginRule(builder, ".m3-text-field, .m3-password-field");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.height()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
@@ -1756,8 +1772,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a text area token CSS rule.
-    private static void appendTextAreaRule(StringBuilder builder, String selector, TextAreaTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTextAreaRule(StringBuilder builder, TextAreaTokens tokens) {
+        beginRule(builder, ".m3-text-area");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.height()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
@@ -1766,57 +1782,57 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a filled field shape CSS rule.
-    private static void appendFilledFieldRule(StringBuilder builder, String selector, FieldTokens tokens) {
+    private static void appendFilledFieldRule(StringBuilder builder, FieldTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.containerShape());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-filled-field");
         appendDeclaration(builder, "-fx-background-radius", radius + " " + radius + " 0 0");
         endRule(builder);
     }
 
     /// Appends an outlined field shape CSS rule.
-    private static void appendOutlinedFieldRule(StringBuilder builder, String selector, FieldTokens tokens) {
+    private static void appendOutlinedFieldRule(StringBuilder builder, FieldTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.containerShape());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-outlined-field");
         appendDeclaration(builder, "-fx-background-radius", radius);
         appendDeclaration(builder, "-fx-border-radius", radius);
         endRule(builder);
     }
 
     /// Appends a filled text area shape CSS rule.
-    private static void appendFilledTextAreaRule(StringBuilder builder, String selector, TextAreaTokens tokens) {
+    private static void appendFilledTextAreaRule(StringBuilder builder, TextAreaTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.containerShape());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-text-area.m3-filled-field");
         appendDeclaration(builder, "-fx-background-radius", radius + " " + radius + " 0 0");
         endRule(builder);
     }
 
     /// Appends an outlined text area shape CSS rule.
-    private static void appendOutlinedTextAreaRule(StringBuilder builder, String selector, TextAreaTokens tokens) {
+    private static void appendOutlinedTextAreaRule(StringBuilder builder, TextAreaTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.containerShape());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-text-area.m3-outlined-field");
         appendDeclaration(builder, "-fx-background-radius", radius);
         appendDeclaration(builder, "-fx-border-radius", radius);
         endRule(builder);
     }
 
     /// Appends a form pane token CSS rule.
-    private static void appendFormPaneRule(StringBuilder builder, String selector, FormTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendFormPaneRule(StringBuilder builder, FormTokens tokens) {
+        beginRule(builder, ".m3-form-pane");
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         appendDeclaration(builder, "-m3-row-spacing", M3TokenCss.pixels(tokens.rowSpacing()));
         endRule(builder);
     }
 
     /// Appends a form section token CSS rule.
-    private static void appendFormSectionRule(StringBuilder builder, String selector, FormTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendFormSectionRule(StringBuilder builder, FormTokens tokens) {
+        beginRule(builder, ".m3-form-section");
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.sectionContentSpacing()));
         endRule(builder);
     }
 
     /// Appends a form section header token CSS rule.
-    private static void appendFormSectionHeaderRule(StringBuilder builder, String selector, FormTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendFormSectionHeaderRule(StringBuilder builder, FormTokens tokens) {
+        beginRule(builder, ".m3-form-section-header");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.sectionHeaderSpacing()));
         appendDeclaration(
                 builder,
@@ -1827,8 +1843,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a form row token CSS rule.
-    private static void appendFormRowRule(StringBuilder builder, String selector, FormTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendFormRowRule(StringBuilder builder, FormTokens tokens) {
+        beginRule(builder, ".m3-form-row");
         appendDeclaration(builder, "-m3-label-width", M3TokenCss.pixels(tokens.rowLabelWidth()));
         appendDeclaration(builder, "-m3-column-spacing", M3TokenCss.pixels(tokens.rowColumnSpacing()));
         appendDeclaration(builder, "-m3-row-min-height", M3TokenCss.pixels(tokens.rowMinHeight()));
@@ -1836,8 +1852,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a form row text column token CSS rule.
-    private static void appendFormRowTextColumnRule(StringBuilder builder, String selector, FormTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendFormRowTextColumnRule(StringBuilder builder, FormTokens tokens) {
+        beginRule(builder, ".m3-form-row-text-column");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.rowTextSpacing()));
         endRule(builder);
     }
@@ -1845,10 +1861,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a validation summary token CSS rule.
     private static void appendValidationSummaryRule(
             StringBuilder builder,
-            String selector,
             ValidationSummaryTokens tokens
     ) {
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-validation-summary");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.contentPadding()));
         endRule(builder);
@@ -1857,10 +1872,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a validation summary item container token CSS rule.
     private static void appendValidationSummaryItemsRule(
             StringBuilder builder,
-            String selector,
             ValidationSummaryTokens tokens
     ) {
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-validation-summary-items");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemsSpacing()));
         endRule(builder);
     }
@@ -1868,13 +1882,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a validation summary item token CSS rule.
     private static void appendValidationSummaryItemRule(
             StringBuilder builder,
-            String selector,
             ValidationSummaryTokens tokens
     ) {
         String shape = M3TokenCss.pixels(tokens.itemShape());
         String verticalPadding = M3TokenCss.pixels(tokens.itemVerticalPadding());
         String horizontalPadding = M3TokenCss.pixels(tokens.itemHorizontalPadding());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-validation-summary-item");
         appendDeclaration(builder, "-fx-background-radius", shape);
         appendDeclaration(builder, "-fx-border-radius", shape);
         appendDeclaration(builder, "-fx-padding", verticalPadding + " " + horizontalPadding);
@@ -1882,16 +1895,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a menu token CSS rule.
-    private static void appendMenuRule(StringBuilder builder, String selector, MenuTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendMenuRule(StringBuilder builder, MenuTokens tokens) {
+        beginRule(builder, ".m3-menu.m3-menu");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
         endRule(builder);
     }
 
     /// Appends a menu item token CSS rule.
-    private static void appendMenuItemRule(StringBuilder builder, String selector, MenuTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendMenuItemRule(StringBuilder builder, MenuTokens tokens) {
+        beginRule(builder, ".m3-menu .m3-menu-item.m3-menu-item");
         appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.itemHeight()));
         appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.itemHeight()));
         appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.itemHeight()));
@@ -1902,40 +1915,79 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends selected menu item token CSS rule.
+    private static void appendSelectedMenuItemRule(StringBuilder builder, MenuTokens tokens) {
+        beginRule(builder, ".m3-menu .m3-menu-item.m3-menu-item:selected");
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.selectedItemContainerShape()));
+        endRule(builder);
+    }
+
     /// Appends a search bar token CSS rule.
-    private static void appendSearchBarRule(StringBuilder builder, String selector, SearchTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSearchBarRule(StringBuilder builder, SearchTokens tokens) {
+        beginRule(builder, ".m3-search-bar.m3-search-bar");
         appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.barHeight()));
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.barHeight()));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.barContainerShape()));
         appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.barHorizontalPadding()));
+        endRule(builder);
+    }
+
+    /// Appends a search bar content token CSS rule.
+    private static void appendSearchBarContentRule(StringBuilder builder, SearchTokens tokens) {
+        beginRule(builder, ".m3-search-bar .m3-search-bar-content");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.barContentSpacing()));
         endRule(builder);
     }
 
+    /// Appends a search bar trailing-actions token CSS rule.
+    private static void appendSearchBarTrailingRule(StringBuilder builder, SearchTokens tokens) {
+        beginRule(builder, ".m3-search-bar .m3-search-bar-trailing");
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.barTrailingActionsGap()));
+        endRule(builder);
+    }
+
     /// Appends a search view token CSS rule.
-    private static void appendSearchViewRule(StringBuilder builder, String selector, SearchTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSearchViewRule(StringBuilder builder, SearchTokens tokens) {
+        beginRule(builder, ".m3-search-view.m3-search-view");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.viewContainerShape()));
-        appendDeclaration(builder, "-fx-padding", "0 0 " + M3TokenCss.pixels(tokens.viewResultPadding()) + " 0");
+        String horizontalPadding = M3TokenCss.pixels(tokens.viewHorizontalPadding());
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 " + horizontalPadding + " " + M3TokenCss.pixels(tokens.viewResultPadding()) + " " + horizontalPadding
+        );
+        endRule(builder);
+    }
+
+    /// Appends a search view content token CSS rule.
+    private static void appendSearchViewContentRule(StringBuilder builder, SearchTokens tokens) {
+        beginRule(builder, ".m3-search-view .m3-search-view-content");
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.viewBarResultsGap()));
+        endRule(builder);
+    }
+
+    /// Appends a search view results container token CSS rule.
+    private static void appendSearchViewResultsRule(StringBuilder builder, SearchTokens tokens) {
+        beginRule(builder, ".m3-search-view .m3-search-view-results");
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.viewResultsShape()));
         endRule(builder);
     }
 
     /// Appends search result item token CSS rules.
-    private static void appendSearchViewResultRule(StringBuilder builder, String selector, SearchTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSearchViewResultRule(StringBuilder builder, SearchTokens tokens) {
+        beginRule(builder, ".m3-search-view .m3-list-item.m3-list-item");
         appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.resultHeight()));
         appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.resultHeight() + 16.0));
         appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.resultHeight() + 32.0));
-        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.barContainerShape()));
-        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.barHorizontalPadding()));
-        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.barContentSpacing()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.resultContainerShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.resultHorizontalPadding()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.resultContentSpacing()));
         endRule(builder);
     }
 
     /// Appends a picker field popup token CSS rule.
-    private static void appendPickerFieldRule(StringBuilder builder, String selector, PickerFieldTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendPickerFieldRule(StringBuilder builder, PickerFieldTokens tokens) {
+        beginRule(builder, ".m3-picker-field-popup");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.popupShape()));
         endRule(builder);
     }
@@ -1943,10 +1995,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a picker field open button token CSS rule.
     private static void appendPickerFieldOpenButtonRule(
             StringBuilder builder,
-            String selector,
             PickerFieldTokens tokens
     ) {
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-picker-field-open-button");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.openButtonSize()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.openButtonShape()));
         appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.openButtonSize()));
@@ -1957,12 +2008,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a picker field preset content token CSS rule.
-    private static void appendPickerFieldPresetContentRule(
-            StringBuilder builder,
-            String selector,
-            PickerFieldTokens tokens
-    ) {
-        beginRule(builder, selector);
+    private static void appendPickerFieldPresetContentRule(StringBuilder builder, PickerFieldTokens tokens) {
+        beginRule(
+                builder,
+                ".m3-date-picker-field-preset-content, "
+                        + ".m3-date-range-picker-field-preset-content, "
+                        + ".m3-time-picker-field-preset-content"
+        );
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.popupShape()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.popupPadding()));
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.popupSpacing()));
@@ -1970,24 +2022,26 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a picker field preset list token CSS rule.
-    private static void appendPickerFieldPresetListRule(
-            StringBuilder builder,
-            String selector,
-            PickerFieldTokens tokens
-    ) {
-        beginRule(builder, selector);
+    private static void appendPickerFieldPresetListRule(StringBuilder builder, PickerFieldTokens tokens) {
+        beginRule(
+                builder,
+                ".m3-date-picker-field-preset-list, "
+                        + ".m3-date-range-picker-field-preset-list, "
+                        + ".m3-time-picker-field-preset-list"
+        );
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.presetListSpacing()));
         appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.presetListWidth()));
         endRule(builder);
     }
 
     /// Appends a picker field preset button token CSS rule.
-    private static void appendPickerFieldPresetButtonRule(
-            StringBuilder builder,
-            String selector,
-            PickerFieldTokens tokens
-    ) {
-        beginRule(builder, selector);
+    private static void appendPickerFieldPresetButtonRule(StringBuilder builder, PickerFieldTokens tokens) {
+        beginRule(
+                builder,
+                ".m3-date-picker-field-preset-button, "
+                        + ".m3-date-range-picker-field-preset-button, "
+                        + ".m3-time-picker-field-preset-button"
+        );
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.presetButtonHorizontalPadding()));
         appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.presetListWidth()));
         appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(tokens.presetListWidth()));
@@ -1995,8 +2049,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a date picker container token CSS rule.
-    private static void appendDatePickerRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendDatePickerRule(StringBuilder builder, DatePickerTokens tokens) {
+        beginRule(builder, ".m3-date-picker-container");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
@@ -2004,8 +2058,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a date picker header token CSS rule.
-    private static void appendDatePickerHeaderRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendDatePickerHeaderRule(StringBuilder builder, DatePickerTokens tokens) {
+        beginRule(builder, ".m3-date-picker-header");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.headerSpacing()));
         endRule(builder);
     }
@@ -2013,10 +2067,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a date picker navigation button token CSS rule.
     private static void appendDatePickerNavigationButtonRule(
             StringBuilder builder,
-            String selector,
             DatePickerTokens tokens
     ) {
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-date-picker-navigation-button");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.navigationButtonSize()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.navigationButtonShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(0.0));
@@ -2027,25 +2080,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a date picker weekday row token CSS rule.
-    private static void appendDatePickerWeekdayRowRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendDatePickerWeekdayRowRule(StringBuilder builder, DatePickerTokens tokens) {
+        beginRule(builder, ".m3-date-picker-weekday-row");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.gridGap()));
         endRule(builder);
     }
 
     /// Appends a date picker day grid token CSS rule.
-    private static void appendDatePickerGridRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendDatePickerGridRule(StringBuilder builder, DatePickerTokens tokens) {
+        beginRule(builder, ".m3-date-picker-day-grid");
         appendDeclaration(builder, "-fx-hgap", M3TokenCss.pixels(tokens.gridGap()));
         appendDeclaration(builder, "-fx-vgap", M3TokenCss.pixels(tokens.gridGap()));
         endRule(builder);
     }
 
     /// Appends date picker day and weekday cell token CSS rules.
-    private static void appendDatePickerCellRule(StringBuilder builder, String selector, DatePickerTokens tokens) {
+    private static void appendDatePickerCellRule(StringBuilder builder, DatePickerTokens tokens) {
         String size = M3TokenCss.pixels(tokens.dayCellSize());
         String shape = M3TokenCss.pixels(tokens.dayCellShape());
-        beginRule(builder, selector + ", .m3-date-picker-weekday-label");
+        beginRule(builder, ".m3-date-picker-day-cell, .m3-date-picker-weekday-label");
         appendDeclaration(builder, "-fx-min-width", size);
         appendDeclaration(builder, "-fx-pref-width", size);
         appendDeclaration(builder, "-fx-max-width", size);
@@ -2053,7 +2106,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-fx-pref-height", size);
         appendDeclaration(builder, "-fx-max-height", size);
         endRule(builder);
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-date-picker-day-cell");
         appendDeclaration(builder, "-fx-background-radius", shape);
         appendDeclaration(builder, "-fx-border-radius", shape);
         endRule(builder);
@@ -2087,8 +2140,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a time picker container token CSS rule.
-    private static void appendTimePickerRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTimePickerRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-container");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
@@ -2096,19 +2149,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a time picker display token CSS rule.
-    private static void appendTimePickerDisplayRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTimePickerDisplayRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-display");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.displaySpacing()));
         endRule(builder);
     }
 
     /// Appends a time picker selected display cell token CSS rule.
-    private static void appendTimePickerDisplayCellRule(
-            StringBuilder builder,
-            String selector,
-            TimePickerTokens tokens
-    ) {
-        beginRule(builder, selector);
+    private static void appendTimePickerDisplayCellRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-hour-display, .m3-time-picker-minute-display");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.displayCellShape()));
         appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.displayCellWidth()));
         appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.displayCellWidth()));
@@ -2118,23 +2167,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a time picker section token CSS rule.
-    private static void appendTimePickerSectionRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTimePickerSectionRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-section");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.sectionSpacing()));
         endRule(builder);
     }
 
     /// Appends a time picker grid token CSS rule.
-    private static void appendTimePickerGridRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTimePickerGridRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-grid");
         appendDeclaration(builder, "-fx-hgap", M3TokenCss.pixels(tokens.gridGap()));
         appendDeclaration(builder, "-fx-vgap", M3TokenCss.pixels(tokens.gridGap()));
         endRule(builder);
     }
 
     /// Appends a time picker selectable cell token CSS rule.
-    private static void appendTimePickerCellRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTimePickerCellRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-cell");
         appendTimePickerCellSize(builder, tokens.cellWidth(), tokens.cellHeight());
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.cellShape()));
         appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(tokens.cellShape()));
@@ -2142,8 +2191,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a time picker period cell token CSS rule.
-    private static void appendTimePickerPeriodCellRule(StringBuilder builder, String selector, TimePickerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTimePickerPeriodCellRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-period-cell");
         appendTimePickerCellSize(builder, tokens.periodCellWidth(), tokens.cellHeight());
         endRule(builder);
     }
@@ -2172,44 +2221,44 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a side sheet token CSS rule.
-    private static void appendSideSheetRule(StringBuilder builder, String selector, SheetTokens tokens) {
+    private static void appendSideSheetRule(StringBuilder builder, SheetTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.sideContainerShape());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-side-sheet.m3-side-sheet");
         appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.sideContainerWidth()));
         appendDeclaration(builder, "-fx-background-radius", radius + " 0 0 " + radius);
         endRule(builder);
     }
 
     /// Appends a bottom sheet token CSS rule.
-    private static void appendBottomSheetRule(StringBuilder builder, String selector, SheetTokens tokens) {
+    private static void appendBottomSheetRule(StringBuilder builder, SheetTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.bottomContainerShape());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-bottom-sheet.m3-bottom-sheet");
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.bottomContainerHeight()));
         appendDeclaration(builder, "-fx-background-radius", radius + " " + radius + " 0 0");
         endRule(builder);
     }
 
     /// Appends a sheet header token CSS rule.
-    private static void appendSheetHeaderRule(StringBuilder builder, String selector, SheetTokens tokens) {
+    private static void appendSheetHeaderRule(StringBuilder builder, SheetTokens tokens) {
         String padding = M3TokenCss.pixels(tokens.headerPadding());
         String bottomPadding = M3TokenCss.pixels(tokens.headerPadding() / 3.0);
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-side-sheet .m3-sheet-header, .m3-bottom-sheet .m3-sheet-header");
         appendDeclaration(builder, "-fx-padding", padding + " " + padding + " " + bottomPadding + " " + padding);
         endRule(builder);
     }
 
     /// Appends a sheet content token CSS rule.
-    private static void appendSheetContentRule(StringBuilder builder, String selector, SheetTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSheetContentRule(StringBuilder builder, SheetTokens tokens) {
+        beginRule(builder, ".m3-side-sheet .m3-sheet-content, .m3-bottom-sheet .m3-sheet-content");
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.contentPadding()));
         endRule(builder);
     }
 
     /// Appends a bottom sheet drag handle token CSS rule.
-    private static void appendBottomSheetDragHandleRule(StringBuilder builder, String selector, SheetTokens tokens) {
+    private static void appendBottomSheetDragHandleRule(StringBuilder builder, SheetTokens tokens) {
         String handleWidth = M3TokenCss.pixels(tokens.dragHandleWidth());
         String handleHeight = M3TokenCss.pixels(tokens.dragHandleHeight());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-bottom-sheet .m3-bottom-sheet-drag-handle");
         appendDeclaration(builder, "-fx-min-width", handleWidth);
         appendDeclaration(builder, "-fx-pref-width", handleWidth);
         appendDeclaration(builder, "-fx-max-width", handleWidth);
@@ -2221,63 +2270,65 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a scrim token CSS rule.
-    private static void appendScrimRule(StringBuilder builder, String selector, ScrimTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendScrimRule(StringBuilder builder, ScrimTokens tokens) {
+        beginRule(builder, ".m3-scrim.m3-scrim");
         appendDeclaration(builder, "-fx-opacity", Double.toString(tokens.containerOpacity()));
         endRule(builder);
     }
 
     /// Appends a selection token CSS rule.
-    private static void appendSelectionRule(StringBuilder builder, String selector, SelectionTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSelectionRule(StringBuilder builder, SelectionTokens tokens) {
+        beginRule(builder, ".m3-checkbox, .m3-radio-button, .m3-switch");
         appendDeclaration(builder, "-m3-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
         endRule(builder);
     }
 
     /// Appends a switch token CSS rule.
-    private static void appendSwitchRule(StringBuilder builder, String selector, SelectionTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSwitchRule(StringBuilder builder, SelectionTokens tokens) {
+        beginRule(builder, ".m3-switch");
         appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.trackShape()));
         endRule(builder);
     }
 
     /// Appends a switch box shape CSS rule.
-    private static void appendSwitchBoxRule(StringBuilder builder, String selector, SelectionTokens tokens) {
+    private static void appendSwitchBoxRule(StringBuilder builder, SelectionTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.trackShape());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-switch .box");
         appendDeclaration(builder, "-fx-background-radius", radius);
         appendDeclaration(builder, "-fx-border-radius", radius);
         endRule(builder);
     }
 
     /// Appends a slider token CSS rule.
-    private static void appendSliderRule(StringBuilder builder, String selector, SliderTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSliderRule(StringBuilder builder, SliderTokens tokens) {
+        beginRule(builder, ".m3-slider");
         appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.trackThickness()));
         appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.trackShape()));
         appendDeclaration(builder, "-m3-thumb-size", M3TokenCss.pixels(tokens.thumbSize()));
+        appendDeclaration(builder, "-m3-thumb-width", M3TokenCss.pixels(tokens.thumbWidth()));
+        appendDeclaration(builder, "-m3-thumb-track-gap", M3TokenCss.pixels(tokens.thumbTrackGap()));
         appendDeclaration(builder, "-m3-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
         endRule(builder);
     }
 
     /// Appends a slider track visual CSS rule.
-    private static void appendSliderTrackRule(StringBuilder builder, String selector, SliderTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSliderTrackRule(StringBuilder builder, SliderTokens tokens) {
+        beginRule(builder, ".m3-slider .track");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.trackShape()));
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.trackThickness()));
         endRule(builder);
     }
 
     /// Appends a slider thumb visual CSS rule.
-    private static void appendSliderThumbRule(StringBuilder builder, String selector, SliderTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSliderThumbRule(StringBuilder builder, SliderTokens tokens) {
+        beginRule(builder, ".m3-slider .thumb");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.trackShape()));
         endRule(builder);
     }
 
     /// Appends a chip token CSS rule.
-    private static void appendChipRule(StringBuilder builder, String selector, ChipTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendChipRule(StringBuilder builder, ChipTokens tokens) {
+        beginRule(builder, ".m3-chip");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.height()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
@@ -2287,16 +2338,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a generated chip group rule.
-    private static void appendChipGroupRule(StringBuilder builder, String selector, ChipTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendChipGroupRule(StringBuilder builder, ChipTokens tokens) {
+        beginRule(builder, ".m3-chip-group");
         appendDeclaration(builder, "-m3-chip-group-horizontal-gap", M3TokenCss.pixels(tokens.groupHorizontalGap()));
         appendDeclaration(builder, "-m3-chip-group-vertical-gap", M3TokenCss.pixels(tokens.groupVerticalGap()));
         endRule(builder);
     }
 
     /// Appends a progress bar token CSS rule.
-    private static void appendProgressBarRule(StringBuilder builder, String selector, ProgressTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendProgressBarRule(StringBuilder builder, ProgressTokens tokens) {
+        beginRule(builder, ".m3-progress-bar");
         appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.thickness()));
         appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.shape()));
         appendDeclaration(builder, "-m3-wave-amplitude", M3TokenCss.pixels(tokens.linearWaveAmplitude()));
@@ -2320,8 +2371,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a progress indicator token CSS rule.
-    private static void appendProgressIndicatorRule(StringBuilder builder, String selector, ProgressTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendProgressIndicatorRule(StringBuilder builder, ProgressTokens tokens) {
+        beginRule(builder, ".m3-progress-indicator");
         appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.thickness()));
         appendDeclaration(builder, "-m3-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
         appendDeclaration(builder, "-m3-wave-amplitude", M3TokenCss.pixels(tokens.circularWaveAmplitude()));
@@ -2333,18 +2384,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a loading indicator token CSS rule.
     private static void appendLoadingIndicatorRule(
             StringBuilder builder,
-            String selector,
             LoadingIndicatorTokens tokens
     ) {
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-loading-indicator");
         appendDeclaration(builder, "-m3-container-size", M3TokenCss.pixels(tokens.containerSize()));
         appendDeclaration(builder, "-m3-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
         endRule(builder);
     }
 
     /// Appends a surface token CSS rule.
-    private static void appendSurfaceRule(StringBuilder builder, String selector, SurfaceTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSurfaceRule(StringBuilder builder, SurfaceTokens tokens) {
+        beginRule(builder, ".m3-surface");
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
@@ -2352,23 +2402,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a carousel track token CSS rule.
-    private static void appendCarouselTrackRule(StringBuilder builder, String selector, CarouselTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendCarouselTrackRule(StringBuilder builder, CarouselTokens tokens) {
+        beginRule(builder, ".m3-carousel-track");
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.trackPadding()));
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
         endRule(builder);
     }
 
     /// Appends a carousel item token CSS rule.
-    private static void appendCarouselItemRule(StringBuilder builder, String selector, CarouselTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendCarouselItemRule(StringBuilder builder, CarouselTokens tokens) {
+        beginRule(builder, ".m3-carousel-item");
         appendDeclaration(builder, "-fx-opacity", Double.toString(tokens.itemOpacity()));
         endRule(builder);
     }
 
     /// Appends a selected carousel item token CSS rule.
-    private static void appendCarouselSelectedItemRule(StringBuilder builder, String selector, CarouselTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendCarouselSelectedItemRule(StringBuilder builder, CarouselTokens tokens) {
+        beginRule(builder, ".m3-carousel-selected-item");
         appendDeclaration(builder, "-fx-opacity", "1.0");
         appendDeclaration(
                 builder,
@@ -2385,8 +2435,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a dialog pane token CSS rule.
-    private static void appendDialogRule(StringBuilder builder, String selector, DialogTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendDialogRule(StringBuilder builder, DialogTokens tokens) {
+        beginRule(builder, ".m3-dialog-pane");
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
@@ -2395,8 +2445,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a card token CSS rule.
-    private static void appendCardRule(StringBuilder builder, String selector, CardTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendCardRule(StringBuilder builder, CardTokens tokens) {
+        beginRule(builder, ".m3-card");
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         appendDeclaration(builder, "-m3-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
@@ -2404,49 +2454,49 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a snackbar token CSS rule.
-    private static void appendSnackbarRule(StringBuilder builder, String selector, SnackbarTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendSnackbarRule(StringBuilder builder, SnackbarTokens tokens) {
+        beginRule(builder, ".m3-snackbar");
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         endRule(builder);
     }
 
     /// Appends a banner token CSS rule.
-    private static void appendBannerRule(StringBuilder builder, String selector, BannerTokens tokens) {
+    private static void appendBannerRule(StringBuilder builder, BannerTokens tokens) {
         String horizontalPadding = M3TokenCss.pixels(tokens.horizontalPadding());
         String verticalPadding = M3TokenCss.pixels(tokens.verticalPadding());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-banner");
         appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerMinHeight()));
         appendDeclaration(builder, "-fx-padding", verticalPadding + " " + horizontalPadding);
         endRule(builder);
     }
 
     /// Appends a banner content container token CSS rule.
-    private static void appendBannerContentRule(StringBuilder builder, String selector, BannerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendBannerContentRule(StringBuilder builder, BannerTokens tokens) {
+        beginRule(builder, ".m3-banner-container");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         endRule(builder);
     }
 
     /// Appends a banner action container token CSS rule.
-    private static void appendBannerActionsRule(StringBuilder builder, String selector, BannerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendBannerActionsRule(StringBuilder builder, BannerTokens tokens) {
+        beginRule(builder, ".m3-banner-actions");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
         endRule(builder);
     }
 
     /// Appends a plain tooltip token CSS rule.
-    private static void appendTooltipRule(StringBuilder builder, String selector, TooltipTokens tokens) {
+    private static void appendTooltipRule(StringBuilder builder, TooltipTokens tokens) {
         String verticalPadding = M3TokenCss.pixels(tokens.plainVerticalPadding());
         String horizontalPadding = M3TokenCss.pixels(tokens.plainHorizontalPadding());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-tooltip");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.plainContainerShape()));
         appendDeclaration(builder, "-fx-padding", verticalPadding + " " + horizontalPadding);
         endRule(builder);
     }
 
     /// Appends a rich tooltip container token CSS rule.
-    private static void appendRichTooltipRule(StringBuilder builder, String selector, TooltipTokens tokens) {
+    private static void appendRichTooltipRule(StringBuilder builder, TooltipTokens tokens) {
         String horizontalPadding = M3TokenCss.pixels(tokens.richHorizontalPadding());
         String padding = M3TokenCss.pixels(tokens.richTopPadding())
                 + " "
@@ -2455,7 +2505,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 + M3TokenCss.pixels(tokens.richBottomPadding())
                 + " "
                 + horizontalPadding;
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-rich-tooltip-container");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.richContainerShape()));
         appendDeclaration(builder, "-fx-padding", padding);
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.richContentSpacing()));
@@ -2464,15 +2514,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a rich tooltip actions token CSS rule.
-    private static void appendRichTooltipActionsRule(StringBuilder builder, String selector, TooltipTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendRichTooltipActionsRule(StringBuilder builder, TooltipTokens tokens) {
+        beginRule(builder, ".m3-rich-tooltip-actions");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.richActionSpacing()));
         endRule(builder);
     }
 
     /// Appends a rich tooltip action button token CSS rule.
-    private static void appendRichTooltipActionButtonRule(StringBuilder builder, String selector, TooltipTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendRichTooltipActionButtonRule(StringBuilder builder, TooltipTokens tokens) {
+        beginRule(builder, ".m3-rich-tooltip-actions .m3-button");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.richActionButtonHeight()));
         appendDeclaration(
                 builder,
@@ -2483,8 +2533,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a divider token CSS rule.
-    private static void appendDividerRule(StringBuilder builder, String selector, DividerTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendDividerRule(StringBuilder builder, DividerTokens tokens) {
+        beginRule(builder, ".m3-divider");
         appendDeclaration(builder, "-m3-thickness", M3TokenCss.pixels(tokens.thickness()));
         appendDeclaration(builder, "-m3-inset-start", M3TokenCss.pixels(tokens.insetStart()));
         appendDeclaration(builder, "-m3-inset-end", M3TokenCss.pixels(tokens.insetEnd()));
@@ -2492,8 +2542,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a badge token CSS rule.
-    private static void appendBadgeRule(StringBuilder builder, String selector, BadgeTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendBadgeRule(StringBuilder builder, BadgeTokens tokens) {
+        beginRule(builder, ".m3-badge");
         appendDeclaration(builder, "-m3-small-size", M3TokenCss.pixels(tokens.smallSize()));
         appendDeclaration(builder, "-m3-large-height", M3TokenCss.pixels(tokens.largeHeight()));
         appendDeclaration(builder, "-m3-large-min-width", M3TokenCss.pixels(tokens.largeMinWidth()));
@@ -2503,17 +2553,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends an avatar token CSS rule.
-    private static void appendAvatarRule(StringBuilder builder, String selector, AvatarTokens tokens) {
+    private static void appendAvatarRule(StringBuilder builder, AvatarTokens tokens) {
         String size = M3TokenCss.pixels(tokens.containerSize());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-avatar.m3-avatar");
         appendDeclaration(builder, "-m3-container-size", size);
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         endRule(builder);
     }
 
     /// Appends a top app bar token CSS rule.
-    private static void appendTopAppBarRule(StringBuilder builder, String selector, TopAppBarTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendTopAppBarRule(StringBuilder builder, TopAppBarTokens tokens) {
+        beginRule(builder, ".m3-top-app-bar");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-medium-container-height", M3TokenCss.pixels(tokens.mediumContainerHeight()));
         appendDeclaration(builder, "-m3-large-container-height", M3TokenCss.pixels(tokens.largeContainerHeight()));
@@ -2546,8 +2596,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a bottom app bar token CSS rule.
-    private static void appendBottomAppBarRule(StringBuilder builder, String selector, BottomAppBarTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendBottomAppBarRule(StringBuilder builder, BottomAppBarTokens tokens) {
+        beginRule(builder, ".m3-bottom-app-bar");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
@@ -2559,8 +2609,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a toolbar token CSS rule.
-    private static void appendToolbarRule(StringBuilder builder, String selector, ToolbarTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendToolbarRule(StringBuilder builder, ToolbarTokens tokens) {
+        beginRule(builder, ".m3-toolbar");
         appendDeclaration(builder, "-m3-toolbar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-toolbar-container-width", M3TokenCss.pixels(tokens.containerWidth()));
         appendDeclaration(builder, "-m3-toolbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
@@ -2578,8 +2628,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a navigation bar token CSS rule.
-    private static void appendNavigationBarRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendNavigationBarRule(StringBuilder builder, NavigationBarTokens tokens) {
+        beginRule(builder, ".m3-navigation-bar");
         appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
@@ -2587,8 +2637,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a navigation item token CSS rule.
-    private static void appendNavigationItemRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendNavigationItemRule(StringBuilder builder, NavigationBarTokens tokens) {
+        beginRule(builder, ".m3-navigation-item");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-item-width", M3TokenCss.pixels(tokens.itemWidth()));
         appendDeclaration(builder, "-m3-indicator-width", M3TokenCss.pixels(tokens.indicatorWidth()));
@@ -2599,15 +2649,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a navigation selected indicator token CSS rule.
-    private static void appendNavigationIndicatorRule(StringBuilder builder, String selector, NavigationBarTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendNavigationIndicatorRule(StringBuilder builder, NavigationBarTokens tokens) {
+        beginRule(builder, ".m3-navigation-item-indicator");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.indicatorShape()));
         endRule(builder);
     }
 
     /// Appends a navigation rail token CSS rule.
-    private static void appendNavigationRailRule(StringBuilder builder, String selector, NavigationRailTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendNavigationRailRule(StringBuilder builder, NavigationRailTokens tokens) {
+        beginRule(builder, ".m3-navigation-rail");
         appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.containerWidth()));
         appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.containerWidth()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.verticalPadding())
@@ -2618,8 +2668,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a navigation rail item token CSS rule.
-    private static void appendNavigationRailItemRule(StringBuilder builder, String selector, NavigationRailTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendNavigationRailItemRule(StringBuilder builder, NavigationRailTokens tokens) {
+        beginRule(builder, ".m3-navigation-rail .m3-navigation-item");
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.itemHeight()));
         appendDeclaration(builder, "-m3-item-width", M3TokenCss.pixels(tokens.itemWidth()));
         appendDeclaration(builder, "-m3-indicator-width", M3TokenCss.pixels(tokens.indicatorWidth()));
@@ -2630,12 +2680,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a navigation rail selected indicator token CSS rule.
-    private static void appendNavigationRailIndicatorRule(
-            StringBuilder builder,
-            String selector,
-            NavigationRailTokens tokens
-    ) {
-        beginRule(builder, selector);
+    private static void appendNavigationRailIndicatorRule(StringBuilder builder, NavigationRailTokens tokens) {
+        beginRule(builder, ".m3-navigation-rail .m3-navigation-item-indicator");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.indicatorShape()));
         endRule(builder);
     }
@@ -2643,10 +2689,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a navigation drawer token CSS rule.
     private static void appendNavigationDrawerRule(
             StringBuilder builder,
-            String selector,
             NavigationDrawerTokens tokens
     ) {
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-navigation-drawer");
         appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.containerWidth()));
         appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.containerWidth()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
@@ -2657,10 +2702,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a navigation drawer item token CSS rule.
     private static void appendNavigationDrawerItemRule(
             StringBuilder builder,
-            String selector,
             NavigationDrawerTokens tokens
     ) {
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-navigation-drawer .m3-list-item");
         appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.oneLineItemHeight()));
         appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.twoLineItemHeight()));
         appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.threeLineItemHeight()));
@@ -2687,8 +2731,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a list item token CSS rule.
-    private static void appendListItemRule(StringBuilder builder, String selector, ListItemTokens tokens) {
-        beginRule(builder, selector);
+    private static void appendListItemRule(StringBuilder builder, ListItemTokens tokens) {
+        beginRule(builder, ".m3-list-item");
         appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.oneLineHeight()));
         appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.twoLineHeight()));
         appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.threeLineHeight()));
@@ -2700,10 +2744,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     }
 
     /// Appends a list section header token CSS rule.
-    private static void appendListSectionHeaderRule(StringBuilder builder, String selector, ListItemTokens tokens) {
+    private static void appendListSectionHeaderRule(StringBuilder builder, ListItemTokens tokens) {
         String height = M3TokenCss.pixels(tokens.sectionHeaderHeight());
         String horizontalPadding = M3TokenCss.pixels(tokens.sectionHeaderHorizontalPadding());
-        beginRule(builder, selector);
+        beginRule(builder, ".m3-list-section-header");
         appendDeclaration(builder, "-fx-min-height", height);
         appendDeclaration(builder, "-fx-pref-height", height);
         appendDeclaration(builder, "-fx-padding", "0px " + horizontalPadding + " 0px " + horizontalPadding);
@@ -2971,6 +3015,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerPadding the padding around menu items
     /// @param itemHeight the one-line menu item height
     /// @param itemContainerShape the menu item state container corner radius
+    /// @param selectedItemContainerShape the selected menu item state container corner radius
     /// @param itemHorizontalPadding the horizontal item content padding
     /// @param itemContentSpacing the spacing between item content regions
     @NotNullByDefault
@@ -2979,6 +3024,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double containerPadding,
             double itemHeight,
             double itemContainerShape,
+            double selectedItemContainerShape,
             double itemHorizontalPadding,
             double itemContentSpacing
     ) {
@@ -2988,6 +3034,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(containerPadding, "containerPadding");
             validateNonNegative(itemHeight, "itemHeight");
             validateNonNegative(itemContainerShape, "itemContainerShape");
+            validateNonNegative(selectedItemContainerShape, "selectedItemContainerShape");
             validateNonNegative(itemHorizontalPadding, "itemHorizontalPadding");
             validateNonNegative(itemContentSpacing, "itemContentSpacing");
         }
@@ -2999,18 +3046,32 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param barContainerShape the search bar container corner radius
     /// @param barHorizontalPadding the search bar horizontal content padding
     /// @param barContentSpacing the spacing between search bar content regions
+    /// @param barTrailingActionsGap the spacing between trailing search bar actions
     /// @param viewContainerShape the expanded search view corner radius
+    /// @param viewHorizontalPadding the horizontal padding around contained search view content
+    /// @param viewBarResultsGap the gap between the embedded search bar and results container
+    /// @param viewResultsShape the search results container corner radius
+    /// @param resultContainerShape the search result row state container corner radius
     /// @param viewResultPadding the padding below search results
     /// @param resultHeight the one-line search result item height
+    /// @param resultHorizontalPadding the horizontal search result row padding
+    /// @param resultContentSpacing the spacing between search result content regions
     @NotNullByDefault
     record SearchTokens(
             double barHeight,
             double barContainerShape,
             double barHorizontalPadding,
             double barContentSpacing,
+            double barTrailingActionsGap,
             double viewContainerShape,
+            double viewHorizontalPadding,
+            double viewBarResultsGap,
+            double viewResultsShape,
+            double resultContainerShape,
             double viewResultPadding,
-            double resultHeight
+            double resultHeight,
+            double resultHorizontalPadding,
+            double resultContentSpacing
     ) {
         /// Validates search tokens.
         public SearchTokens {
@@ -3018,9 +3079,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(barContainerShape, "barContainerShape");
             validateNonNegative(barHorizontalPadding, "barHorizontalPadding");
             validateNonNegative(barContentSpacing, "barContentSpacing");
+            validateNonNegative(barTrailingActionsGap, "barTrailingActionsGap");
             validateNonNegative(viewContainerShape, "viewContainerShape");
+            validateNonNegative(viewHorizontalPadding, "viewHorizontalPadding");
+            validateNonNegative(viewBarResultsGap, "viewBarResultsGap");
+            validateNonNegative(viewResultsShape, "viewResultsShape");
+            validateNonNegative(resultContainerShape, "resultContainerShape");
             validateNonNegative(viewResultPadding, "viewResultPadding");
             validateNonNegative(resultHeight, "resultHeight");
+            validateNonNegative(resultHorizontalPadding, "resultHorizontalPadding");
+            validateNonNegative(resultContentSpacing, "resultContentSpacing");
         }
     }
 
@@ -3209,13 +3277,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param trackThickness the slider track thickness
     /// @param trackShape the slider track radius
-    /// @param thumbSize the slider thumb size
+    /// @param thumbSize the slider handle long-side size
+    /// @param thumbWidth the slider handle short-side width
+    /// @param thumbTrackGap the gap between the handle and each adjacent track segment
     /// @param touchTargetSize the preferred slider touch target size
     @NotNullByDefault
     record SliderTokens(
             double trackThickness,
             double trackShape,
             double thumbSize,
+            double thumbWidth,
+            double thumbTrackGap,
             double touchTargetSize
     ) {
         /// Creates slider tokens.
@@ -3223,6 +3295,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(trackThickness, "trackThickness");
             validateNonNegative(trackShape, "trackShape");
             validateNonNegative(thumbSize, "thumbSize");
+            validateNonNegative(thumbWidth, "thumbWidth");
+            validateNonNegative(thumbTrackGap, "thumbTrackGap");
             validateNonNegative(touchTargetSize, "touchTargetSize");
         }
     }

@@ -185,7 +185,16 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 78px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-text-area-container-height: 67px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-item-height: 43px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-shape: 11px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 44px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-trailing-actions-gap: 5px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-horizontal-padding: 10px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-bar-results-gap: 2px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-results-shape: 17px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-result-container-shape: 18px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-result-horizontal-padding: 13px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-width: 7px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-track-gap: 8px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-linear-wave-amplitude: 3px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-circular-wavelength: 16px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-loading-indicator-container-size: 63px"));
@@ -214,7 +223,10 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-action-spacing: 6px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-text-area"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-menu .m3-menu-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-bar .m3-search-bar-trailing"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-fx-spacing: 5px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view .m3-list-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-shape: 18px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-date-picker-container"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-time-picker-container"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-picker-field-popup"));
@@ -317,8 +329,8 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.TextAreaTokens(67.0, 9.0, 19.0, 20.0),
                 new M3ComponentTokens.FormTokens(1.0, 12.0, 11.0, 3.0, 4.0, 190.0, 25.0, 71.0, 5.0),
                 new M3ComponentTokens.ValidationSummaryTokens(10.0, 14.0, 4.0, 7.0, 9.0, 13.0),
-                new M3ComponentTokens.MenuTokens(7.0, 8.0, 43.0, 6.0, 13.0, 14.0),
-                new M3ComponentTokens.SearchTokens(44.0, 22.0, 15.0, 11.0, 21.0, 9.0, 45.0),
+                new M3ComponentTokens.MenuTokens(7.0, 8.0, 43.0, 6.0, 11.0, 13.0, 14.0),
+                new M3ComponentTokens.SearchTokens(44.0, 22.0, 15.0, 11.0, 5.0, 21.0, 10.0, 2.0, 17.0, 18.0, 9.0, 45.0, 13.0, 14.0),
                 new M3ComponentTokens.PickerFieldTokens(46.0, 28.0, 37.0, 18.0, 19.0, 140.0, 7.0, 16.0),
                 new M3ComponentTokens.DatePickerTokens(29.0, 17.0, 13.0, 5.0, 46.0, 23.0, 47.0, 24.0, 6.0),
                 new M3ComponentTokens.TimePickerTokens(
@@ -339,7 +351,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.SheetTokens(46.0, 23.0, 47.0, 24.0, 25.0, 26.0, 27.0, 5.0),
                 new M3ComponentTokens.ScrimTokens(0.31),
                 new M3ComponentTokens.SelectionTokens(42.0, 20.0),
-                new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 50.0),
+                new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 7.0, 8.0, 50.0),
                 new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0, 9.0, 11.0),
                 new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
                 new M3ComponentTokens.LoadingIndicatorTokens(63.0, 22.0),

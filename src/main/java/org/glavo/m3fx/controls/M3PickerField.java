@@ -26,7 +26,6 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Popup;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -184,7 +183,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// @param formatter the formatter used to convert between editor text and picker values
     /// @param styleClass the concrete picker field style class
     /// @param popupStyleClass the concrete picker popup style class
-    /// @param pickerIcon the icon displayed by the trailing open button
+    /// @param pickerIconGraphic the graphic displayed by the trailing open button
     /// @param openButtonAccessibleText the accessible text for the trailing open button
     /// @param invalidTextErrorText the error text shown when editor text cannot be parsed
     /// @param rangeErrorText the error text shown when editor text parses outside the selectable range
@@ -194,17 +193,14 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             DateTimeFormatter formatter,
             String styleClass,
             String popupStyleClass,
-            M3InternalIcon.Glyph pickerIcon,
+            Node pickerIconGraphic,
             String openButtonAccessibleText,
             String invalidTextErrorText,
             String rangeErrorText
     ) {
         this.picker = Objects.requireNonNull(picker, "picker");
         this.pickerValue = Objects.requireNonNull(pickerValue, "pickerValue");
-        this.openButton = new M3IconButton(new M3InternalIcon(
-                Objects.requireNonNull(pickerIcon, "pickerIcon"),
-                M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
-        ));
+        this.openButton = new M3IconButton(Objects.requireNonNull(pickerIconGraphic, "pickerIconGraphic"));
         this.formatter.set(Objects.requireNonNull(formatter, "formatter"));
         this.invalidTextErrorText.set(Objects.requireNonNull(invalidTextErrorText, "invalidTextErrorText"));
         this.rangeErrorText.set(Objects.requireNonNull(rangeErrorText, "rangeErrorText"));
@@ -551,6 +547,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
         inputLayout.setTrailing(openButton);
         inputLayout.disableProperty().bind(disabledProperty());
+        inputLayout.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         picker.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         popupContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         openButton.setAccessibleText(openButtonAccessibleText);

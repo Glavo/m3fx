@@ -46,6 +46,7 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
     public M3SearchBarSkin(M3SearchBar control) {
         super(control);
         container.setManaged(false);
+        container.getStyleClass().add(M3SearchBar.CONTENT_STYLE_CLASS);
         container.setAlignment(Pos.CENTER_LEFT);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         leadingSlot.getStyleClass().add(M3SearchBar.LEADING_STYLE_CLASS);

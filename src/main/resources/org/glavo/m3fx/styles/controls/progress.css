@@ -48,7 +48,7 @@
 .m3-progress-indicator.m3-progress-indicator:focused,
 .m3-progress-indicator.m3-progress-indicator:indeterminate {
     -m3-track-thickness: 4px;
-    -m3-indicator-size: 48px;
+    -m3-indicator-size: 40px;
     -m3-wave-amplitude: 0px;
     -m3-wavelength: 15px;
     -m3-track-gap: 4px;

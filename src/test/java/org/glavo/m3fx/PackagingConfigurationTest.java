@@ -170,8 +170,14 @@ final class PackagingConfigurationTest {
                 "publication artifact verification must derive stylesheet expectations from source resources");
         assertTrue(buildScript.contains("include(\"**/*.java\")"),
                 "publication artifact verification must derive source expectations from main Java sources");
-        assertTrue(buildScript.contains("\"org/glavo/m3fx/controls\""),
-                "publication artifact verification must check exported package documentation");
+        assertTrue(buildScript.contains("fun exportedPackagePathsFromModuleInfo(moduleInfoFile: File): List<String>"),
+                "publication artifact verification must derive exported package paths from module-info.java");
+        assertTrue(buildScript.contains("exportedPackagePathsFromModuleInfo(mainModuleInfo)"),
+                "publication artifact verification must use the module-derived exported package paths");
+        assertTrue(buildScript.contains("Main module descriptor should export at least one API package."),
+                "publication artifact verification must reject an empty exported package set");
+        assertFalse(buildScript.contains("val exportedPackagePaths = listOf("),
+                "publication artifact verification must not maintain a hard-coded exported package list");
         assertTrue(buildScript.contains("org/glavo/m3fx/styles/controls/button.css"),
                 "publication artifact verification must check bundled control stylesheets");
         assertTrue(buildScript.contains("Main JAR is missing stylesheet resources:"),
