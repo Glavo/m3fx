@@ -12,9 +12,13 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -25,13 +29,16 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +58,9 @@ public class M3NavigationDrawer extends Control {
     /// The base style class for M3FX navigation drawers.
     public static final String STYLE_CLASS = "m3-navigation-drawer";
 
+    /// The default spacing between top-level drawer items.
+    private static final double DEFAULT_ITEM_SPACING = 4.0;
+
     /// The mutable navigation drawer content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
 
@@ -68,6 +78,9 @@ public class M3NavigationDrawer extends Control {
     /// The read-only selected drawer list item view.
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
+
+    /// The styleable spacing between top-level drawer items.
+    private @Nullable StyleableDoubleProperty itemSpacing;
 
     // Whether the drawer allows all list items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
@@ -295,6 +308,36 @@ public class M3NavigationDrawer extends Control {
         }
     }
 
+    /// Returns the spacing between top-level drawer items.
+    ///
+    /// @return the spacing between top-level drawer items in pixels
+    public final double getItemSpacing() {
+        return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
+    }
+
+    /// Sets the spacing between top-level drawer items.
+    ///
+    /// @param itemSpacing the spacing between top-level drawer items in pixels
+    public final void setItemSpacing(double itemSpacing) {
+        itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
+    }
+
+    /// Returns the spacing between top-level drawer items property.
+    ///
+    /// @return the styleable item spacing property
+    public final StyleableDoubleProperty itemSpacingProperty() {
+        if (itemSpacing == null) {
+            itemSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ITEM_SPACING,
+                    this,
+                    "itemSpacing",
+                    StyleableProperties.ITEM_SPACING,
+                    this::requestLayout
+            );
+        }
+        return itemSpacing;
+    }
+
     /// Clears the current selection when empty selection is allowed.
     public final void clearSelection() {
         if (!isAllowEmptySelection()) {
@@ -308,6 +351,21 @@ public class M3NavigationDrawer extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("navigation-drawer.css");
+    }
+
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    ///
+    /// @return the CSS metadata for this control
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Returns accessibility attributes for navigation drawer content and selection state.
@@ -337,7 +395,7 @@ public class M3NavigationDrawer extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(accessibleFocusNode());
+            case REQUEST_FOCUS -> requestAccessibleFocus();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -371,6 +429,10 @@ public class M3NavigationDrawer extends Control {
 
     /// Applies keyboard navigation across enabled drawer items.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, true)) {
+            return;
+        }
+
         if (handleGroupDisclosureKey(event)) {
             return;
         }
@@ -379,6 +441,7 @@ public class M3NavigationDrawer extends Control {
         @Nullable M3ListItem anchor = M3SelectionNavigation.focusAnchor(content, getSelectedItem(), M3ListItem.class);
         if (M3SelectionNavigation.handleKeySelection(
                 event,
+                this,
                 content,
                 anchor,
                 M3ListItem.class,
@@ -401,6 +464,10 @@ public class M3NavigationDrawer extends Control {
     /// Moves focus to the next drawer item whose text matches the printable-key search prefix.
     private void handleTypeAheadKeyTyped(KeyEvent event) {
         Objects.requireNonNull(event, "event");
+        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+            return;
+        }
+
         if (event.isAltDown() || event.isControlDown() || event.isMetaDown() || event.isShortcutDown()) {
             return;
         }
@@ -424,12 +491,11 @@ public class M3NavigationDrawer extends Control {
             return;
         }
 
-        if (target.isFocusTraversable()) {
-            target.requestFocus();
+        if (!M3Accessible.showItem(this, target)) {
+            return;
         }
         select(target);
-        M3Accessible.notifyFocusNodeChanged(this);
-        focusNotifier.refresh();
+        notifyAccessibleFocusChanged();
         event.consume();
     }
 
@@ -465,7 +531,7 @@ public class M3NavigationDrawer extends Control {
             return false;
         }
 
-        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        boolean rightToLeft = M3NodeLayout.isRightToLeft(this);
         KeyCode expandKey = rightToLeft ? KeyCode.LEFT : KeyCode.RIGHT;
         KeyCode collapseKey = rightToLeft ? KeyCode.RIGHT : KeyCode.LEFT;
 
@@ -514,19 +580,51 @@ public class M3NavigationDrawer extends Control {
     }
 
     /// Focuses the drawer item supplied by an accessibility client, expanding a group when needed.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to a drawer item or nested target
+    final boolean showAccessibleItem(Object... parameters) {
         ObservableList<Node> content = flattenedContent();
         if (parameters.length == 0) {
-            M3Accessible.showItem(accessibleFocusNode(content));
-            return;
+            if (M3Accessible.showItem(this, accessibleFocusNode(content))) {
+                notifyAccessibleFocusChanged();
+                return true;
+            }
+            return false;
         }
 
         @Nullable Node item = accessibleActionItem(parameters);
         if (item == null) {
-            M3Accessible.showItem(content, parameters);
-        } else if (!M3Accessible.showAccessibleActionTarget(item, parameters)) {
-            M3Accessible.showItem(item);
+            if (M3Accessible.showIndexedItem(this, content, parameters)) {
+                notifyAccessibleFocusChanged();
+                return true;
+            }
+            return false;
         }
+
+        if (M3Accessible.showAccessibleActionTarget(this, item, parameters)
+                || M3Accessible.showItem(this, item)) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Moves focus to the current drawer accessibility focus target when it can be shown.
+    ///
+    /// @return `true` when the drawer focus target accepted focus
+    final boolean requestAccessibleFocus() {
+        if (M3Accessible.showItem(this, accessibleFocusNode())) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Notifies accessibility clients that the drawer focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Returns the active drawer focus target, or the selected visible item when focus is outside the drawer.
@@ -833,10 +931,13 @@ public class M3NavigationDrawer extends Control {
     /// Moves keyboard focus to one drawer item when it is reachable.
     ///
     /// @param item the drawer item to focus
-    private void focusItem(M3ListItem item) {
-        if (M3Accessible.canReach(item) && item.isFocusTraversable()) {
-            item.requestFocus();
+    /// @return `true` when the item became the keyboard focus target
+    private boolean focusItem(M3ListItem item) {
+        if (M3Accessible.showItem(this, item)) {
+            notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Returns whether keyboard focus is currently inside one expanded group child item.
@@ -989,6 +1090,38 @@ public class M3NavigationDrawer extends Control {
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3NavigationDrawerSkin(this);
+    }
+
+    /// CSS metadata for navigation drawer styleable properties.
+    private static final class StyleableProperties {
+        /// CSS metadata for the top-level item spacing token.
+        private static final CssMetaData<M3NavigationDrawer, Number> ITEM_SPACING =
+                new CssMetaData<>("-m3-item-spacing", SizeConverter.getInstance(), DEFAULT_ITEM_SPACING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3NavigationDrawer control) {
+                        return M3Css.isSettable(control.itemSpacingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3NavigationDrawer control) {
+                        return control.itemSpacingProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ITEM_SPACING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
+        }
+
+        /// Prevents instantiation.
+        private StyleableProperties() {
+        }
     }
 
     /// Validates a drawer item array.

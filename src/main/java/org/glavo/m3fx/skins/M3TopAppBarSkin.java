@@ -5,7 +5,6 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.collections.ListChangeListener;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -14,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -226,9 +226,8 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     private void updateVariantLayout() {
         M3TopAppBarVariant variant = getSkinnable().getVariant();
         boolean centerAligned = variant == M3TopAppBarVariant.CENTER_ALIGNED;
-        boolean rightToLeft = isRightToLeft();
 
-        actions.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
+        actions.setAlignment(M3NodeLayout.logicalEndCenterAlignment(getSkinnable()));
         titleLabel.setAlignment(centerAligned ? Pos.CENTER : leadingTextAlignment());
         getSkinnable().requestLayout();
     }
@@ -310,17 +309,9 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         return slotWidth > 0.0 ? getSkinnable().getContentSpacing() : 0.0;
     }
 
-    /// Returns whether the control should lay out logical leading slots on the physical right edge.
-    private boolean isRightToLeft() {
-        NodeOrientation orientation = getSkinnable().getNodeOrientation();
-        return orientation == NodeOrientation.RIGHT_TO_LEFT
-                || orientation == NodeOrientation.INHERIT
-                && getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-    }
-
     /// Returns the physical alignment used for logical leading text.
     private Pos leadingTextAlignment() {
-        return isRightToLeft() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT;
+        return M3NodeLayout.logicalStartCenterAlignment(getSkinnable());
     }
 
     /// Returns a child node's snapped preferred width.

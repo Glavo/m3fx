@@ -5,7 +5,6 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.event.ActionEvent;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -19,6 +18,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -74,9 +74,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     /// Refreshes visible text, style classes, and disabled states after control changes.
     private final InvalidationListener refreshListener = observable -> refresh();
 
-    /// Updates logical layout when the effective node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
-
     /// Creates a time picker skin.
     public M3TimePickerSkin(M3TimePicker control) {
         super(control);
@@ -95,9 +92,9 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         control.minuteStepProperty().removeListener(refreshListener);
         control.minTimeProperty().removeListener(refreshListener);
         control.maxTimeProperty().removeListener(refreshListener);
-        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
         display.nodeOrientationProperty().unbind();
+        display.alignmentProperty().unbind();
         sections.nodeOrientationProperty().unbind();
         hourSection.nodeOrientationProperty().unbind();
         minuteSection.nodeOrientationProperty().unbind();
@@ -234,14 +231,13 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         minuteGrid.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
         periodRow.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
 
-        display.setAlignment(Pos.CENTER_LEFT);
+        display.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(getSkinnable()));
         display.getChildren().addAll(hourDisplay, displaySeparator, minuteDisplay, periodDisplay);
 
         hourSection.getChildren().addAll(createSectionTitle("Hour"), hourGrid);
         minuteSection.getChildren().addAll(createSectionTitle("Minute"), minuteGrid);
         sections.getChildren().addAll(hourSection, minuteSection);
         container.getChildren().addAll(display, sections, periodRow);
-        updateNodeOrientationLayout();
     }
 
     /// Installs listeners that keep the skin synchronized with control state.
@@ -251,13 +247,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         control.minuteStepProperty().addListener(refreshListener);
         control.minTimeProperty().addListener(refreshListener);
         control.maxTimeProperty().addListener(refreshListener);
-        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
-    }
-
-    /// Updates orientation-dependent alignment.
-    private void updateNodeOrientationLayout() {
-        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-        display.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
     }
 
     /// Updates visible labels, selectable cells, and disabled states.

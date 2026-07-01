@@ -4,12 +4,12 @@
 package org.glavo.m3fx.controls;
 
 import javafx.geometry.Bounds;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.layout.Region;
 import javafx.stage.Screen;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,7 +58,7 @@ final class M3PopupPositioning {
                 contentWidth,
                 contentHeight,
                 offsetX,
-                owner.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
+                M3NodeLayout.isRightToLeft(owner)
         );
     }
 

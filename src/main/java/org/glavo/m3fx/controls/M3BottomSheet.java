@@ -349,8 +349,9 @@ public class M3BottomSheet extends Control {
                     return;
                 }
                 show();
-                M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters);
-                notifyFocusNodeChanged();
+                if (M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters)) {
+                    notifyFocusNodeChanged();
+                }
             }
             case COLLAPSE -> hide();
             default -> super.executeAccessibleAction(action, parameters);
@@ -437,8 +438,8 @@ public class M3BottomSheet extends Control {
 
     /// Requests focus for the current accessible focus target when this sheet is visible.
     private void focusAccessibleNode() {
-        if (isShown() && M3Accessible.canReach(this)) {
-            M3Accessible.showCurrentOrItem(this, getContent(), getActions());
+        if (isShown() && M3Accessible.canReach(this)
+                && M3Accessible.showCurrentOrItem(this, getContent(), getActions())) {
             notifyFocusNodeChanged();
         }
     }
@@ -467,7 +468,7 @@ public class M3BottomSheet extends Control {
         @Nullable Node focusOwner = focusOwnerBeforeShown;
         focusOwnerBeforeShown = null;
         if (getVariant() == M3SheetVariant.MODAL && isRestoreFocusOnHide() && M3Accessible.canReach(focusOwner)) {
-            focusOwner.requestFocus();
+            M3Accessible.showDirectItem(focusOwner, focusOwner);
         }
     }
 

@@ -7,12 +7,37 @@ import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableObjectProperty;
+import javafx.geometry.Insets;
+import javafx.scene.layout.Region;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /// Provides shared helpers for m3fx CSS-backed component tokens.
 @NotNullByDefault
 final class M3Css {
+    /// Tracks the last minimum width written by M3FX metric helpers.
+    private static final Object MIN_WIDTH_KEY = new Object();
+
+    /// Tracks the last preferred width written by M3FX metric helpers.
+    private static final Object PREF_WIDTH_KEY = new Object();
+
+    /// Tracks the last maximum width written by M3FX metric helpers.
+    private static final Object MAX_WIDTH_KEY = new Object();
+
+    /// Tracks the last minimum height written by M3FX metric helpers.
+    private static final Object MIN_HEIGHT_KEY = new Object();
+
+    /// Tracks the last preferred height written by M3FX metric helpers.
+    private static final Object PREF_HEIGHT_KEY = new Object();
+
+    /// Tracks the last maximum height written by M3FX metric helpers.
+    private static final Object MAX_HEIGHT_KEY = new Object();
+
+    /// Tracks the last padding written by M3FX metric helpers.
+    private static final Object PADDING_KEY = new Object();
+
     /// Prevents utility class instantiation.
     private M3Css() {
     }
@@ -27,6 +52,152 @@ final class M3Css {
     static boolean isSettable(StyleableObjectProperty<?> property) {
         return !property.isBound()
                 && (!(property instanceof M3StyleableObjectProperty<?> m3Property) || !m3Property.isUserSet());
+    }
+
+    /// Writes a region minimum width when application code has not taken ownership of it.
+    static void setMinWidthIfUnbound(Region region, double width) {
+        if (shouldWriteMetric(
+                region,
+                MIN_WIDTH_KEY,
+                region.minWidthProperty().isBound(),
+                region.getMinWidth(),
+                Region.USE_COMPUTED_SIZE
+        )) {
+            region.setMinWidth(width);
+            rememberMetric(region, MIN_WIDTH_KEY, width);
+        }
+    }
+
+    /// Writes a region preferred width when application code has not taken ownership of it.
+    static void setPrefWidthIfUnbound(Region region, double width) {
+        if (shouldWriteMetric(
+                region,
+                PREF_WIDTH_KEY,
+                region.prefWidthProperty().isBound(),
+                region.getPrefWidth(),
+                Region.USE_COMPUTED_SIZE
+        )) {
+            region.setPrefWidth(width);
+            rememberMetric(region, PREF_WIDTH_KEY, width);
+        }
+    }
+
+    /// Writes a region maximum width when application code has not taken ownership of it.
+    static void setMaxWidthIfUnbound(Region region, double width) {
+        if (shouldWriteMetric(
+                region,
+                MAX_WIDTH_KEY,
+                region.maxWidthProperty().isBound(),
+                region.getMaxWidth(),
+                Region.USE_COMPUTED_SIZE
+        )) {
+            region.setMaxWidth(width);
+            rememberMetric(region, MAX_WIDTH_KEY, width);
+        }
+    }
+
+    /// Writes a region minimum height when application code has not taken ownership of it.
+    static void setMinHeightIfUnbound(Region region, double height) {
+        if (shouldWriteMetric(
+                region,
+                MIN_HEIGHT_KEY,
+                region.minHeightProperty().isBound(),
+                region.getMinHeight(),
+                Region.USE_COMPUTED_SIZE
+        )) {
+            region.setMinHeight(height);
+            rememberMetric(region, MIN_HEIGHT_KEY, height);
+        }
+    }
+
+    /// Writes a region preferred height when application code has not taken ownership of it.
+    static void setPrefHeightIfUnbound(Region region, double height) {
+        if (shouldWriteMetric(
+                region,
+                PREF_HEIGHT_KEY,
+                region.prefHeightProperty().isBound(),
+                region.getPrefHeight(),
+                Region.USE_COMPUTED_SIZE
+        )) {
+            region.setPrefHeight(height);
+            rememberMetric(region, PREF_HEIGHT_KEY, height);
+        }
+    }
+
+    /// Writes a region maximum height when application code has not taken ownership of it.
+    static void setMaxHeightIfUnbound(Region region, double height) {
+        if (shouldWriteMetric(
+                region,
+                MAX_HEIGHT_KEY,
+                region.maxHeightProperty().isBound(),
+                region.getMaxHeight(),
+                Region.USE_COMPUTED_SIZE
+        )) {
+            region.setMaxHeight(height);
+            rememberMetric(region, MAX_HEIGHT_KEY, height);
+        }
+    }
+
+    /// Writes region padding when application code has not taken ownership of it.
+    static void setPaddingIfUnbound(Region region, Insets padding) {
+        if (shouldWriteMetric(
+                region,
+                PADDING_KEY,
+                region.paddingProperty().isBound(),
+                region.getPadding(),
+                Insets.EMPTY
+        )) {
+            region.setPadding(padding);
+            rememberMetric(region, PADDING_KEY, padding);
+        }
+    }
+
+    /// Returns whether an M3FX helper still owns one numeric Region metric.
+    private static boolean shouldWriteMetric(
+            Region region,
+            Object key,
+            boolean bound,
+            double currentValue,
+            double defaultValue
+    ) {
+        if (bound) {
+            return false;
+        }
+
+        Object previousValue = region.getProperties().get(key);
+        if (previousValue instanceof Number previousNumber) {
+            return Double.compare(previousNumber.doubleValue(), currentValue) == 0;
+        }
+
+        return previousValue == null && Double.compare(currentValue, defaultValue) == 0;
+    }
+
+    /// Returns whether an M3FX helper still owns one object-valued Region metric.
+    private static boolean shouldWriteMetric(
+            Region region,
+            Object key,
+            boolean bound,
+            Object currentValue,
+            Object defaultValue
+    ) {
+        if (bound) {
+            return false;
+        }
+
+        Object previousValue = region.getProperties().get(key);
+        return previousValue == null
+                ? Objects.equals(currentValue, defaultValue)
+                : Objects.equals(previousValue, currentValue);
+    }
+
+    /// Records one numeric Region metric written by an M3FX helper.
+    private static void rememberMetric(Region region, Object key, double value) {
+        region.getProperties().put(key, value);
+    }
+
+    /// Records one object-valued Region metric written by an M3FX helper.
+    private static void rememberMetric(Region region, Object key, Object value) {
+        region.getProperties().put(key, value);
     }
 
     /// Creates a styleable non-negative component token property.

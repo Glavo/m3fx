@@ -9,7 +9,9 @@ import javafx.scene.effect.Effect;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.controls.M3Avatar;
@@ -35,6 +37,7 @@ import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3FormPane;
 import org.glavo.m3fx.controls.M3FormRow;
 import org.glavo.m3fx.controls.M3FormSection;
+import org.glavo.m3fx.controls.M3FormValidator;
 import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
@@ -44,13 +47,19 @@ import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
+import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3MenuSelectionMode;
+import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
+import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
+import org.glavo.m3fx.controls.M3NavigationItem;
+import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3Scrim;
@@ -66,6 +75,9 @@ import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
+import org.glavo.m3fx.controls.M3TextInputLayout;
+import org.glavo.m3fx.controls.M3TextInputValidators;
+import org.glavo.m3fx.controls.M3Toolbar;
 import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
@@ -852,8 +864,12 @@ final class M3ThemeTest {
         M3FormPane formPane = new M3FormPane();
         M3FormSection formSection = new M3FormSection("Account", new M3TextField());
         M3FormRow formRow = new M3FormRow("Name", new M3TextField());
-        M3ValidationSummary validationSummary = new M3ValidationSummary();
+        M3TextInputLayout invalidInput = new M3TextInputLayout(new M3TextField(), "Project", "Required");
+        invalidInput.setValidator(M3TextInputValidators.required("Project is required"));
+        M3FormValidator validationValidator = new M3FormValidator(invalidInput);
+        M3ValidationSummary validationSummary = new M3ValidationSummary(validationValidator);
         validationSummary.setShowWhenValid(true);
+        validationValidator.validate();
         M3ListSectionHeader listSectionHeader = new M3ListSectionHeader("Results");
         M3SideSheet sideSheet = new M3SideSheet();
         M3BottomSheet bottomSheet = new M3BottomSheet();
@@ -945,6 +961,7 @@ final class M3ThemeTest {
         assertEquals(14.0, fabMenu.getActionSpacing(), 0.0001);
         assertEquals(22.0, groupedButton.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, splitButton.getActionButton().getHorizontalPadding(), 0.0001);
+        assertEquals(48.0, splitButton.getMenuButton().getMinWidth(), 0.0001);
         assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(20.0, textField.getHorizontalPadding(), 0.0001);
@@ -973,6 +990,7 @@ final class M3ThemeTest {
         assertEquals(44.0, slider.getThumbSize(), 0.0001);
         assertEquals(4.0, slider.getThumbWidth(), 0.0001);
         assertEquals(48.0, slider.getTouchTargetSize(), 0.0001);
+        assertEquals(16.0, ((Region) slider.lookup(".track")).prefHeight(-1.0), 0.0001);
         M3MenuItem firstMenuItem = (M3MenuItem) menu.getItems().get(0);
         M3MenuItem middleMenuItem = (M3MenuItem) menu.getItems().get(1);
         M3MenuItem lastMenuItem = (M3MenuItem) menu.getItems().get(2);
@@ -997,25 +1015,67 @@ final class M3ThemeTest {
         assertEquals(16.0, themedSearchResult.getContainerShape(), 0.0001);
         assertEquals(20.0, themedSearchResult.getHorizontalPadding(), 0.0001);
         assertEquals(20.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(44.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(44.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(22.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(72.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(48.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(44.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(100.0, timePicker.lookup("." + M3TimePicker.PERIOD_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(44.0, timePicker.lookup("." + M3TimePicker.PERIOD_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(48.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, datePickerField.lookup(".m3-picker-field-open-button").prefHeight(-1.0), 0.0001);
         assertEquals(20.0, formPane.getRowSpacing(), 0.0001);
         assertEquals(16.0, formSection.getContentSpacing(), 0.0001);
         assertEquals(200.0, formRow.getLabelWidth(), 0.0001);
         assertEquals(28.0, formRow.getColumnSpacing(), 0.0001);
         assertEquals(72.0, formRow.getRowMinHeight(), 0.0001);
         assertEquals(20.0, validationSummary.getPadding().getTop(), 0.0001);
+        assertEquals(
+                6.0,
+                ((javafx.scene.layout.VBox) validationSummary.lookup(
+                        "." + M3ValidationSummary.ITEMS_STYLE_CLASS
+                )).getSpacing(),
+                0.0001
+        );
+        assertEquals(
+                10.0,
+                ((Region) validationSummary.lookup("." + M3ValidationSummary.ITEM_STYLE_CLASS)).getPadding().getTop(),
+                0.0001
+        );
+        assertEquals(
+                12.0,
+                ((Region) validationSummary.lookup("." + M3ValidationSummary.ITEM_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
         assertEquals(56.0, listSectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(20.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
         assertEquals(
                 28.0,
+                ((Region) sideSheet.lookup("." + M3SideSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(
+                28.0,
                 ((Region) sideSheet.lookup("." + M3SideSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
                 0.0001
         );
+        assertEquals(
+                28.0,
+                ((Region) bottomSheet.lookup("." + M3BottomSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(
+                28.0,
+                ((Region) bottomSheet.lookup("." + M3BottomSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(36.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefWidth(-1.0), 0.0001);
+        assertEquals(5.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefHeight(-1.0), 0.0001);
         assertEquals(24.0, card.getContainerShape(), 0.0001);
         assertEquals(20.0, card.getContentPadding(), 0.0001);
         assertEquals(32.0, dialogPane.getContainerShape(), 0.0001);
@@ -1046,6 +1106,7 @@ final class M3ThemeTest {
         assertEquals(24.0, surface.getContainerShape(), 0.0001);
         assertEquals(20.0, surface.getContentPadding(), 0.0001);
         assertEquals(8.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(8.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getLeft(), 0.0001);
         assertEquals(16.0, ((javafx.scene.layout.HBox) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getSpacing(), 0.0001);
         assertEquals(0.94, carouselFirst.getOpacity(), 0.0001);
         assertEquals(1.0, carouselSecond.getOpacity(), 0.0001);
@@ -1076,6 +1137,7 @@ final class M3ThemeTest {
         assertEquals(12.0, fabMenu.getActionSpacing(), 0.0001);
         assertEquals(20.0, groupedButton.getHorizontalPadding(), 0.0001);
         assertEquals(20.0, splitButton.getActionButton().getHorizontalPadding(), 0.0001);
+        assertEquals(48.0, splitButton.getMenuButton().getMinWidth(), 0.0001);
         assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
         assertEquals(16.0, textField.getHorizontalPadding(), 0.0001);
@@ -1104,26 +1166,74 @@ final class M3ThemeTest {
         assertEquals(44.0, slider.getThumbSize(), 0.0001);
         assertEquals(4.0, slider.getThumbWidth(), 0.0001);
         assertEquals(48.0, slider.getTouchTargetSize(), 0.0001);
+        assertEquals(16.0, ((Region) slider.lookup(".track")).prefHeight(-1.0), 0.0001);
         assertEquals(48.0, ((M3MenuItem) menu.getItems().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
         assertEquals(0.0, ((HBox) searchBar.lookup("." + M3SearchBar.TRAILING_STYLE_CLASS)).getSpacing(), 0.0001);
         assertEquals(56.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(0.0, ((M3ListItem) searchView.getResults().get(0)).getContainerShape(), 0.0001);
         assertEquals(16.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(40.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(40.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(40.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(18.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(72.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(64.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(44.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(40.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(92.0, timePicker.lookup("." + M3TimePicker.PERIOD_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(40.0, timePicker.lookup("." + M3TimePicker.PERIOD_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
+        assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefHeight(-1.0), 0.0001);
         assertEquals(16.0, formPane.getRowSpacing(), 0.0001);
         assertEquals(12.0, formSection.getContentSpacing(), 0.0001);
         assertEquals(180.0, formRow.getLabelWidth(), 0.0001);
         assertEquals(24.0, formRow.getColumnSpacing(), 0.0001);
         assertEquals(64.0, formRow.getRowMinHeight(), 0.0001);
         assertEquals(16.0, validationSummary.getPadding().getTop(), 0.0001);
+        assertEquals(
+                4.0,
+                ((javafx.scene.layout.VBox) validationSummary.lookup(
+                        "." + M3ValidationSummary.ITEMS_STYLE_CLASS
+                )).getSpacing(),
+                0.0001
+        );
+        assertEquals(
+                8.0,
+                ((Region) validationSummary.lookup("." + M3ValidationSummary.ITEM_STYLE_CLASS)).getPadding().getTop(),
+                0.0001
+        );
+        assertEquals(
+                10.0,
+                ((Region) validationSummary.lookup("." + M3ValidationSummary.ITEM_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
         assertEquals(48.0, listSectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(16.0, listSectionHeader.getPadding().getLeft(), 0.0001);
         assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);
         assertEquals(320.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(
+                24.0,
+                ((Region) sideSheet.lookup("." + M3SideSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(
+                24.0,
+                ((Region) sideSheet.lookup("." + M3SideSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(
+                24.0,
+                ((Region) bottomSheet.lookup("." + M3BottomSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(
+                24.0,
+                ((Region) bottomSheet.lookup("." + M3BottomSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
+                0.0001
+        );
+        assertEquals(32.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefWidth(-1.0), 0.0001);
+        assertEquals(4.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefHeight(-1.0), 0.0001);
         assertEquals(12.0, card.getContainerShape(), 0.0001);
         assertEquals(16.0, card.getContentPadding(), 0.0001);
         assertEquals(28.0, dialogPane.getContainerShape(), 0.0001);
@@ -1151,6 +1261,7 @@ final class M3ThemeTest {
         assertEquals(12.0, surface.getContainerShape(), 0.0001);
         assertEquals(16.0, surface.getContentPadding(), 0.0001);
         assertEquals(4.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(4.0, ((Region) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getPadding().getLeft(), 0.0001);
         assertEquals(12.0, ((javafx.scene.layout.HBox) carousel.lookup("." + M3Carousel.TRACK_STYLE_CLASS)).getSpacing(), 0.0001);
         assertEquals(0.92, carouselFirst.getOpacity(), 0.0001);
         assertSelectedCarouselShadow(carouselSecond, 10.0, 0.12, 3.0);
@@ -1177,7 +1288,8 @@ final class M3ThemeTest {
         M3Badge badge = new M3Badge("12");
         M3ProgressBar progressBar = new M3ProgressBar(0.5);
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
-        Pane root = new Pane(divider, badge, progressBar, progressIndicator);
+        M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
+        Pane root = new Pane(divider, badge, progressBar, progressIndicator, loadingIndicator);
         Scene scene = new Scene(root);
 
         M3Theme expressiveTheme = M3Theme.fromSeed(
@@ -1196,10 +1308,146 @@ final class M3ThemeTest {
         assertEquals(18.0, badge.getLargeHeight(), 0.0001);
         assertEquals(18.0, badge.getLargeMinWidth(), 0.0001);
         assertEquals(9.0, badge.getContainerShape(), 0.0001);
+        assertEquals(4.0, progressBar.getTrackThickness(), 0.0001);
         assertEquals(3.0, progressBar.getWaveAmplitude(), 0.0001);
         assertEquals(40.0, progressBar.getWavelength(), 0.0001);
+        assertEquals(4.0, progressBar.getTrackGap(), 0.0001);
+        assertEquals(4.0, progressBar.getStopSize(), 0.0001);
+        assertEquals(4.0, ((Rectangle) progressBar.lookup(".track")).getArcWidth(), 0.0001);
+        assertEquals(4.0, ((Rectangle) progressBar.lookup(".bar")).getArcHeight(), 0.0001);
+        assertEquals(4.0, progressIndicator.getTrackThickness(), 0.0001);
+        assertEquals(48.0, progressIndicator.getIndicatorSize(), 0.0001);
         assertEquals(1.6, progressIndicator.getWaveAmplitude(), 0.0001);
         assertEquals(15.0, progressIndicator.getWavelength(), 0.0001);
+        assertEquals(4.0, progressIndicator.getTrackGap(), 0.0001);
+        assertEquals(48.0, loadingIndicator.getContainerSize(), 0.0001);
+        assertEquals(38.0, loadingIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(48.0, loadingIndicator.getPrefWidth(), 0.0001);
+    }
+
+    /// Verifies that generated component stylesheets apply internal layout tokens.
+    @Test
+    void generatedComponentStylesheetAppliesInternalLayoutTokens() {
+        M3Banner banner = new M3Banner("Message");
+        banner.getActions().add(new M3Button("Action"));
+        M3Button tooltipAction = new M3Button("Action");
+        M3RichTooltip richTooltip = new M3RichTooltip("Title", "Supporting", tooltipAction);
+        VBox richTooltipContainer = assertInstanceOf(VBox.class, richTooltip.getGraphic());
+        M3NavigationItem barHome = new M3NavigationItem("Home", new M3Icon("H"));
+        M3NavigationItem barSearch = new M3NavigationItem("Search", new M3Icon("S"));
+        M3NavigationBar navigationBar = new M3NavigationBar(barHome, barSearch);
+        M3NavigationItem railHome = new M3NavigationItem("Home", new M3Icon("H"));
+        M3NavigationItem railSearch = new M3NavigationItem("Search", new M3Icon("S"));
+        M3NavigationRail navigationRail = new M3NavigationRail(railHome, railSearch);
+        M3ListItem drawerHome = new M3ListItem("Home");
+        M3NavigationDrawerGroup drawerGroup = new M3NavigationDrawerGroup("Group");
+        M3ListItem drawerChild = new M3ListItem("Child");
+        drawerGroup.addItem(drawerChild);
+        drawerGroup.setExpanded(true);
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(drawerHome, drawerGroup);
+        M3Toolbar toolbar = new M3Toolbar(new M3IconButton(new M3Icon("B")), new M3IconButton(new M3Icon("I")));
+        Pane root = new Pane(banner, richTooltipContainer, navigationBar, navigationRail, navigationDrawer, toolbar);
+        Scene scene = new Scene(root);
+
+        M3Theme expressiveTheme = M3Theme.fromSeed(
+                Color.web("#006a6a"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT,
+                M3Density.standard()
+        );
+        M3ThemeManager.install(scene, expressiveTheme);
+        root.applyCss();
+
+        assertEquals(88.0, banner.getMinHeight(), 0.0001);
+        assertEquals(20.0, banner.getPadding().getTop(), 0.0001);
+        assertEquals(28.0, banner.getPadding().getLeft(), 0.0001);
+        assertEquals(20.0, ((HBox) banner.lookup("." + M3Banner.CONTAINER_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(12.0, ((HBox) banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(16.0, richTooltipContainer.getPadding().getTop(), 0.0001);
+        assertEquals(20.0, richTooltipContainer.getPadding().getLeft(), 0.0001);
+        assertEquals(12.0, richTooltipContainer.getPadding().getBottom(), 0.0001);
+        assertEquals(12.0, richTooltipContainer.getSpacing(), 0.0001);
+        assertEquals(360.0, richTooltipContainer.getPrefWidth(), 0.0001);
+        assertEquals(12.0, ((HBox) richTooltipContainer.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(36.0, tooltipAction.getContainerHeight(), 0.0001);
+        assertEquals(16.0, tooltipAction.getHorizontalPadding(), 0.0001);
+        assertEquals(88.0, navigationBar.getPrefHeight(), 0.0001);
+        assertEquals(12.0, navigationBar.getPadding().getLeft(), 0.0001);
+        assertEquals(88.0, barHome.getContainerHeight(), 0.0001);
+        assertEquals(96.0, barHome.getItemWidth(), 0.0001);
+        assertEquals(72.0, barHome.getIndicatorWidth(), 0.0001);
+        assertEquals(36.0, barHome.getIndicatorHeight(), 0.0001);
+        assertEquals(6.0, barHome.getContentSpacing(), 0.0001);
+        assertEquals(112.0, navigationRail.getPrefWidth(), 0.0001);
+        assertEquals(20.0, navigationRail.getPadding().getTop(), 0.0001);
+        assertEquals(12.0, navigationRail.getPadding().getLeft(), 0.0001);
+        assertEquals(12.0, navigationRail.getItemSpacing(), 0.0001);
+        assertEquals(88.0, railHome.getContainerHeight(), 0.0001);
+        assertEquals(96.0, railHome.getItemWidth(), 0.0001);
+        assertEquals(64.0, railHome.getIndicatorWidth(), 0.0001);
+        assertEquals(36.0, railHome.getIndicatorHeight(), 0.0001);
+        assertEquals(6.0, railHome.getContentSpacing(), 0.0001);
+        assertEquals(384.0, navigationDrawer.getPrefWidth(), 0.0001);
+        assertEquals(16.0, navigationDrawer.getPadding().getTop(), 0.0001);
+        assertEquals(6.0, navigationDrawer.getItemSpacing(), 0.0001);
+        assertEquals(64.0, drawerHome.getOneLineHeight(), 0.0001);
+        assertEquals(20.0, drawerHome.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, drawerHome.getContentSpacing(), 0.0001);
+        assertEquals(64.0, drawerChild.getOneLineHeight(), 0.0001);
+        assertEquals(40.0, drawerChild.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, drawerChild.getContentSpacing(), 0.0001);
+        assertEquals(72.0, toolbar.getContainerHeight(), 0.0001);
+        assertEquals(72.0, toolbar.getContainerWidth(), 0.0001);
+        assertEquals(56.0, toolbar.getItemSlotSize(), 0.0001);
+        assertEquals(10.0, toolbar.getContentPadding(), 0.0001);
+        assertEquals(4.0, toolbar.getItemSpacing(), 0.0001);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        assertEquals(80.0, banner.getMinHeight(), 0.0001);
+        assertEquals(16.0, banner.getPadding().getTop(), 0.0001);
+        assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, ((HBox) banner.lookup("." + M3Banner.CONTAINER_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(8.0, ((HBox) banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(12.0, richTooltipContainer.getPadding().getTop(), 0.0001);
+        assertEquals(16.0, richTooltipContainer.getPadding().getLeft(), 0.0001);
+        assertEquals(8.0, richTooltipContainer.getPadding().getBottom(), 0.0001);
+        assertEquals(8.0, richTooltipContainer.getSpacing(), 0.0001);
+        assertEquals(320.0, richTooltipContainer.getPrefWidth(), 0.0001);
+        assertEquals(8.0, ((HBox) richTooltipContainer.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(32.0, tooltipAction.getContainerHeight(), 0.0001);
+        assertEquals(12.0, tooltipAction.getHorizontalPadding(), 0.0001);
+        assertEquals(80.0, navigationBar.getPrefHeight(), 0.0001);
+        assertEquals(8.0, navigationBar.getPadding().getLeft(), 0.0001);
+        assertEquals(80.0, barHome.getContainerHeight(), 0.0001);
+        assertEquals(80.0, barHome.getItemWidth(), 0.0001);
+        assertEquals(64.0, barHome.getIndicatorWidth(), 0.0001);
+        assertEquals(32.0, barHome.getIndicatorHeight(), 0.0001);
+        assertEquals(4.0, barHome.getContentSpacing(), 0.0001);
+        assertEquals(96.0, navigationRail.getPrefWidth(), 0.0001);
+        assertEquals(16.0, navigationRail.getPadding().getTop(), 0.0001);
+        assertEquals(8.0, navigationRail.getPadding().getLeft(), 0.0001);
+        assertEquals(8.0, navigationRail.getItemSpacing(), 0.0001);
+        assertEquals(80.0, railHome.getContainerHeight(), 0.0001);
+        assertEquals(80.0, railHome.getItemWidth(), 0.0001);
+        assertEquals(56.0, railHome.getIndicatorWidth(), 0.0001);
+        assertEquals(32.0, railHome.getIndicatorHeight(), 0.0001);
+        assertEquals(4.0, railHome.getContentSpacing(), 0.0001);
+        assertEquals(360.0, navigationDrawer.getPrefWidth(), 0.0001);
+        assertEquals(12.0, navigationDrawer.getPadding().getTop(), 0.0001);
+        assertEquals(4.0, navigationDrawer.getItemSpacing(), 0.0001);
+        assertEquals(56.0, drawerHome.getOneLineHeight(), 0.0001);
+        assertEquals(16.0, drawerHome.getHorizontalPadding(), 0.0001);
+        assertEquals(12.0, drawerHome.getContentSpacing(), 0.0001);
+        assertEquals(56.0, drawerChild.getOneLineHeight(), 0.0001);
+        assertEquals(32.0, drawerChild.getHorizontalPadding(), 0.0001);
+        assertEquals(12.0, drawerChild.getContentSpacing(), 0.0001);
+        assertEquals(64.0, toolbar.getContainerHeight(), 0.0001);
+        assertEquals(64.0, toolbar.getContainerWidth(), 0.0001);
+        assertEquals(48.0, toolbar.getItemSlotSize(), 0.0001);
+        assertEquals(8.0, toolbar.getContentPadding(), 0.0001);
+        assertEquals(0.0, toolbar.getItemSpacing(), 0.0001);
     }
 
     /// Verifies that generated component stylesheets apply list item tokens.

@@ -799,21 +799,13 @@ public class M3Tooltip extends PopupControl {
         if (nextFocus != null) {
             return focusInteractiveTarget(nextFocus);
         }
-        if (M3Accessible.canReach(owner)) {
-            owner.requestFocus();
-            return true;
-        }
-        return false;
+        return M3Accessible.canReach(owner) && M3Accessible.showDirectItem(owner, owner);
     }
 
     /// Requests focus for one interactive popup target.
     private static boolean focusInteractiveTarget(@Nullable Node target) {
         @Nullable Node focusTarget = M3Accessible.focusTarget(target);
-        if (focusTarget == null) {
-            return false;
-        }
-        focusTarget.requestFocus();
-        return true;
+        return M3Accessible.showDirectItem(focusTarget, focusTarget);
     }
 
     /// Stores pointer handlers installed on a tooltip target node.
@@ -1013,7 +1005,7 @@ public class M3Tooltip extends PopupControl {
             if (event.getCode() == KeyCode.ESCAPE && tooltip.isShowing()) {
                 hideImmediately();
                 if (M3Accessible.canReach(node)) {
-                    node.requestFocus();
+                    M3Accessible.showDirectItem(node, node);
                 }
                 event.consume();
             } else if (event.getCode() == KeyCode.TAB && tooltip.isInteractive()) {

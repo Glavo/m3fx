@@ -9,7 +9,6 @@ import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -25,7 +24,9 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -232,9 +233,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         }
 
         mousePressed = true;
-        if (item.isFocusTraversable()) {
-            item.requestFocus();
-        }
+        M3FocusRequests.requestFocusIfTraversable(item);
         layoutStateLayer();
         stateLayer.playRipple(event.getX(), event.getY());
         item.arm();
@@ -359,9 +358,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
     /// Returns the badge alignment for the current logical end edge.
     private Pos badgeAlignment() {
-        return getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
-                ? Pos.TOP_LEFT
-                : Pos.TOP_RIGHT;
+        return M3NodeLayout.logicalEndTopAlignment(getSkinnable());
     }
 
     /// Animates the selected indicator to the requested state.

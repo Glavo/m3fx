@@ -191,8 +191,7 @@ public class M3ValidationSummary extends Control {
         }
 
         @Nullable Node focusTarget = invalidFocusNode(validatedInput);
-        if (focusTarget != null) {
-            M3Accessible.showItem(focusTarget);
+        if (focusTarget != null && M3Accessible.showItem(this, focusTarget)) {
             notifyFocusNodeChanged();
             return true;
         }
@@ -351,7 +350,9 @@ public class M3ValidationSummary extends Control {
         if (focusNode == null) {
             return false;
         }
-        M3Accessible.showItem(focusNode);
+        if (!M3Accessible.showItem(this, focusNode)) {
+            return false;
+        }
         notifyFocusNodeChanged();
         return true;
     }
@@ -373,7 +374,7 @@ public class M3ValidationSummary extends Control {
             return;
         }
 
-        if (!M3Accessible.showAccessibleActionTarget(input, parameters)) {
+        if (!M3Accessible.showAccessibleActionTarget(this, input, parameters)) {
             focusInput(input);
         }
         notifyFocusNodeChanged();

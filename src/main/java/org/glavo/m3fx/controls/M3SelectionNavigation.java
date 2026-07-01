@@ -4,11 +4,11 @@
 package org.glavo.m3fx.controls;
 
 import javafx.collections.ObservableList;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -137,7 +137,21 @@ final class M3SelectionNavigation {
             boolean vertical,
             Consumer<T> selector
     ) {
-        return handleKeySelection(event, children, current, type, horizontal, vertical, false, selector);
+        return handleKeySelectionWithRevealOwner(event, null, children, current, type, horizontal, vertical, false, selector);
+    }
+
+    /// Handles a navigation key event, selects the matching child, and reveals it when a scroll owner exists.
+    static <T extends Node> boolean handleKeySelection(
+            KeyEvent event,
+            Node owner,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean horizontal,
+            boolean vertical,
+            Consumer<T> selector
+    ) {
+        return handleKeySelectionWithRevealOwner(event, owner, children, current, type, horizontal, vertical, false, selector);
     }
 
     /// Handles a navigation key event and selects the matching child when a key applies.
@@ -146,6 +160,40 @@ final class M3SelectionNavigation {
     /// selection move in the same visual direction as the rendered row.
     static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean horizontal,
+            boolean vertical,
+            boolean rightToLeft,
+            Consumer<T> selector
+    ) {
+        return handleKeySelectionWithRevealOwner(event, null, children, current, type, horizontal, vertical, rightToLeft, selector);
+    }
+
+    /// Handles a navigation key event, selects the matching child, and reveals it when a scroll owner exists.
+    ///
+    /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus and
+    /// selection move in the same visual direction as the rendered row.
+    static <T extends Node> boolean handleKeySelection(
+            KeyEvent event,
+            Node owner,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean horizontal,
+            boolean vertical,
+            boolean rightToLeft,
+            Consumer<T> selector
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        return handleKeySelectionWithRevealOwner(event, owner, children, current, type, horizontal, vertical, rightToLeft, selector);
+    }
+
+    /// Handles a navigation key event and selects the matching child when a key applies.
+    private static <T extends Node> boolean handleKeySelectionWithRevealOwner(
+            KeyEvent event,
+            @Nullable Node revealOwner,
             ObservableList<Node> children,
             @Nullable T current,
             Class<T> type,
@@ -165,9 +213,7 @@ final class M3SelectionNavigation {
         }
 
         selector.accept(target);
-        if (target.isFocusTraversable()) {
-            target.requestFocus();
-        }
+        focusAndRevealTarget(revealOwner, target);
         event.consume();
         return true;
     }
@@ -189,9 +235,7 @@ final class M3SelectionNavigation {
         }
 
         selector.accept(target);
-        if (target.isFocusTraversable()) {
-            target.requestFocus();
-        }
+        focusAndRevealTarget(owner, target);
         event.consume();
         return true;
     }
@@ -205,7 +249,20 @@ final class M3SelectionNavigation {
             boolean horizontal,
             boolean vertical
     ) {
-        return handleKeyFocus(event, children, current, type, horizontal, vertical, false);
+        return handleKeyFocusWithRevealOwner(event, null, children, current, type, horizontal, vertical, false);
+    }
+
+    /// Handles a navigation key event, focuses the matching child, and reveals it when a scroll owner exists.
+    static <T extends Node> boolean handleKeyFocus(
+            KeyEvent event,
+            Node owner,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean horizontal,
+            boolean vertical
+    ) {
+        return handleKeyFocusWithRevealOwner(event, owner, children, current, type, horizontal, vertical, false);
     }
 
     /// Handles a navigation key event and focuses the matching child when a key applies.
@@ -214,6 +271,37 @@ final class M3SelectionNavigation {
     /// same visual direction as the rendered row.
     static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean horizontal,
+            boolean vertical,
+            boolean rightToLeft
+    ) {
+        return handleKeyFocusWithRevealOwner(event, null, children, current, type, horizontal, vertical, rightToLeft);
+    }
+
+    /// Handles a navigation key event, focuses the matching child, and reveals it when a scroll owner exists.
+    ///
+    /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus moves in the
+    /// same visual direction as the rendered row.
+    static <T extends Node> boolean handleKeyFocus(
+            KeyEvent event,
+            Node owner,
+            ObservableList<Node> children,
+            @Nullable T current,
+            Class<T> type,
+            boolean horizontal,
+            boolean vertical,
+            boolean rightToLeft
+    ) {
+        return handleKeyFocusWithRevealOwner(event, owner, children, current, type, horizontal, vertical, rightToLeft);
+    }
+
+    /// Handles a navigation key event and focuses the matching child when a key applies.
+    private static <T extends Node> boolean handleKeyFocusWithRevealOwner(
+            KeyEvent event,
+            @Nullable Node revealOwner,
             ObservableList<Node> children,
             @Nullable T current,
             Class<T> type,
@@ -230,7 +318,9 @@ final class M3SelectionNavigation {
             return false;
         }
 
-        target.requestFocus();
+        if (!focusAndRevealTarget(revealOwner, target)) {
+            return false;
+        }
         event.consume();
         return true;
     }
@@ -249,9 +339,20 @@ final class M3SelectionNavigation {
             return false;
         }
 
-        target.requestFocus();
+        if (!focusAndRevealTarget(owner, target)) {
+            return false;
+        }
         event.consume();
         return true;
+    }
+
+    /// Moves focus to the target and reveals it through the owner when available.
+    private static boolean focusAndRevealTarget(@Nullable Node revealOwner, Node target) {
+        Objects.requireNonNull(target, "target");
+        if (revealOwner == null) {
+            return M3Accessible.showItem(target);
+        }
+        return M3Accessible.showItem(revealOwner, target);
     }
 
     /// Returns the focused enabled visible child matching the requested type.
@@ -334,12 +435,6 @@ final class M3SelectionNavigation {
     static String normalizeTypeAheadText(String text) {
         Objects.requireNonNull(text, "text");
         return text.strip().toLowerCase(Locale.ROOT);
-    }
-
-    /// Returns whether a node currently resolves to right-to-left orientation.
-    static boolean isRightToLeft(Node owner) {
-        Objects.requireNonNull(owner, "owner");
-        return owner.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     }
 
     /// Returns the selection target implied by a navigation key.
@@ -428,7 +523,7 @@ final class M3SelectionNavigation {
 
     /// Returns the page navigation step for a list-like owner and its visible child rows.
     private static <T extends Node> int pageStep(Node owner, ObservableList<Node> children, Class<T> type) {
-        double viewportHeight = owner.getLayoutBounds().getHeight();
+        double viewportHeight = M3ScrollReveal.pageViewportHeight(owner);
         double rowHeight = estimatedRowHeight(children, type);
         if (viewportHeight <= 0.0 || rowHeight <= 0.0) {
             return DEFAULT_PAGE_STEP;

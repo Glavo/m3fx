@@ -29,6 +29,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ChipGroupSkin;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -476,21 +477,41 @@ public class M3ChipGroup extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedChip(),
-                    M3Chip.class
-            ));
+            case REQUEST_FOCUS -> focusAccessibleSelectionTarget();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedChip(),
-                    M3Chip.class
-            ), getItems(), parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current selected or focused accessibility target.
+    private void focusAccessibleSelectionTarget() {
+        if (M3Accessible.showItem(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedChip(),
+                M3Chip.class
+        ))) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showItemOrDefault(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedChip(),
+                M3Chip.class
+        ), getItems(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the group focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Adds base style classes and installs child listeners.
@@ -507,24 +528,26 @@ public class M3ChipGroup extends Control {
         if (getSelectionMode() == M3ChipSelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
+                    this,
                     getItems(),
                     M3SelectionNavigation.focusAnchor(getItems(), getSelectedChip(), M3Chip.class),
                     M3Chip.class,
                     true,
                     true,
-                    M3SelectionNavigation.isRightToLeft(this)
+                    M3NodeLayout.isRightToLeft(this)
             );
             return;
         }
 
         M3SelectionNavigation.handleKeySelection(
                 event,
+                this,
                 getItems(),
                 M3SelectionNavigation.focusAnchor(getItems(), getSelectedChip(), M3Chip.class),
                 M3Chip.class,
                 true,
                 true,
-                M3SelectionNavigation.isRightToLeft(this),
+                M3NodeLayout.isRightToLeft(this),
                 this::select
         );
     }

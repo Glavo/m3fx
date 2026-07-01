@@ -241,6 +241,26 @@ public class M3FormSection extends Control {
         return M3Stylesheets.controlStylesheet("form.css");
     }
 
+    /// Requests focus on the current or first accessibility item.
+    private void focusAccessibleItem() {
+        if (M3Accessible.showCurrentOrItem(this, getContent())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showCurrentOrItem(this, getContent(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the container focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
+    }
+
     /// Creates the default Material Design 3 form section skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -265,8 +285,8 @@ public class M3FormSection extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getContent());
-            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getContent(), parameters);
+            case REQUEST_FOCUS -> focusAccessibleItem();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -295,10 +315,6 @@ public class M3FormSection extends Control {
 
     /// Handles vertical keyboard traversal between section content nodes.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, false, true)) {
-            return;
-        }
-
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,

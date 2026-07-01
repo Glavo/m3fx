@@ -45,6 +45,7 @@
 .m3-text-area.m3-text-area:focused .scroll-pane,
 .m3-text-area.m3-text-area .content,
 .m3-text-area.m3-text-area:focused .content {
+    -fx-control-inner-background: transparent;
     -fx-background-color: transparent;
     -fx-background: transparent;
     -fx-background-insets: 0;

@@ -19,7 +19,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -39,6 +38,7 @@ import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -862,10 +862,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         popupContent.getChildren().setAll(picker);
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
         presetContent.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
-        presetContent.setAlignment(Pos.TOP_LEFT);
+        presetContent.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(this));
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
-        presetList.setAlignment(Pos.TOP_LEFT);
+        presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(this));
         M3PresetNavigation.install(presetList, this, this::focusPickerContent);
         popup.setAutoHide(true);
         popup.getContent().add(popupContent);
@@ -965,7 +965,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private M3Button createPresetButton(M3DateRangePreset preset) {
         M3Button button = new M3Button(preset.text(), M3ButtonVariant.TEXT);
         button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
-        button.setMaxWidth(Double.MAX_VALUE);
+        M3Css.setMaxWidthIfUnbound(button, Double.MAX_VALUE);
         button.setDisable(isPresetDisabled(preset));
         button.setOnAction(event -> {
             applyPreset(preset);
@@ -1238,25 +1238,31 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             return;
         }
 
-        M3Accessible.showItem(focusNode());
-        notifyFocusNodeChanged();
-        popupFocusNotifier.refresh();
+        if (M3Accessible.showItem(this, focusNode())) {
+            notifyFocusNodeChanged();
+            popupFocusNotifier.refresh();
+        }
     }
 
     /// Focuses the picker content directly instead of preserving an already focused preset action.
-    private void focusPickerContent() {
+    private boolean focusPickerContent() {
         if (!popup.isShowing()) {
-            return;
+            return false;
         }
 
         @Nullable Object focusNode = picker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        boolean focused;
         if (focusNode instanceof Node node && M3Accessible.canReach(node)) {
-            M3Accessible.showItem(node);
+            focused = M3Accessible.showItem(this, node);
         } else {
-            picker.requestFocus();
+            focused = M3Accessible.showItem(this, picker);
         }
-        notifyFocusNodeChanged();
-        popupFocusNotifier.refresh();
+        if (focused) {
+            notifyFocusNodeChanged();
+            popupFocusNotifier.refresh();
+            return true;
+        }
+        return false;
     }
 
     /// Requests focus for the field's current editor or popup focus target.
@@ -1264,9 +1270,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         if (!M3Accessible.canReach(this)) {
             return;
         }
-        M3Accessible.showItem(focusNode());
-        notifyFocusNodeChanged();
-        popupFocusNotifier.refresh();
+        if (M3Accessible.showItem(this, focusNode())) {
+            notifyFocusNodeChanged();
+            popupFocusNotifier.refresh();
+        }
     }
 
     /// Returns the editor currently focused by the user, or the start editor by default.
@@ -1296,7 +1303,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         popupContextSynchronizer.sync();
         M3Animation.copyResolvedMotionSettings(this, popupContent);
         double fieldWidth = Math.max(0.0, getWidth());
-        popupContent.setMinWidth(Math.max(fieldWidth, popupContent.minWidth(-1.0)));
+        M3Css.setMinWidthIfUnbound(popupContent, Math.max(fieldWidth, popupContent.minWidth(-1.0)));
         popupContent.applyCss();
     }
 
@@ -1356,7 +1363,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         focusEditorOnHidden = null;
         popupOwnerEditor = null;
         if (M3Accessible.canReach(editor)) {
-            editor.requestFocus();
+            M3Accessible.showItem(this, editor);
         }
         notifyFocusNodeChanged();
         popupFocusNotifier.refresh();

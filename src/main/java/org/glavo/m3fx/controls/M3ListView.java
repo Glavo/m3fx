@@ -866,14 +866,12 @@ public class M3ListView<T> extends Control {
     /// Moves focus to an active row-owned popup target, focused row, selected row, or first row for accessibility clients.
     private void focusAccessibleNode() {
         @Nullable Node externalFocus = currentVisibleExternalFocusNode();
-        if (externalFocus != null) {
-            externalFocus.requestFocus();
+        if (externalFocus != null && M3Accessible.showItem(this, externalFocus)) {
             return;
         }
 
         @Nullable Node currentFocus = currentVisibleFocusNode();
-        if (currentFocus != null) {
-            currentFocus.requestFocus();
+        if (currentFocus != null && M3Accessible.showItem(this, currentFocus)) {
             return;
         }
 
@@ -887,7 +885,7 @@ public class M3ListView<T> extends Control {
         if (index >= 0) {
             focusIndex(index);
         } else {
-            requestFocus();
+            M3Accessible.showDirectItem(this, this);
         }
     }
 
@@ -953,7 +951,7 @@ public class M3ListView<T> extends Control {
             if (requestedIndex >= 0) {
                 if (visibleNodeIndex(requestedNode) == requestedIndex) {
                     updateFocusedIndexForAttachedNode(requestedIndex);
-                    M3Accessible.showItem(requestedNode);
+                    M3Accessible.showItem(this, requestedNode);
                 } else {
                     focusAccessibleIndex(requestedIndex);
                     showMaterializedOrDeferAccessibleActionTarget(requestedIndex, parameters);
@@ -988,7 +986,7 @@ public class M3ListView<T> extends Control {
         @Nullable Node visibleItem = skin.findAttachedVisibleItem(
                 item -> M3Accessible.containsAccessibleActionTarget(item, parameters)
         );
-        if (visibleItem == null || !M3Accessible.showAccessibleActionTarget(visibleItem, parameters)) {
+        if (visibleItem == null || !M3Accessible.showAccessibleActionTarget(this, visibleItem, parameters)) {
             return false;
         }
 
@@ -1018,7 +1016,7 @@ public class M3ListView<T> extends Control {
         }
 
         @Nullable Node visibleItem = skin.getAttachedVisibleItem(index);
-        if (visibleItem == null || !M3Accessible.showAccessibleActionTarget(visibleItem, parameters)) {
+        if (visibleItem == null || !M3Accessible.showAccessibleActionTarget(this, visibleItem, parameters)) {
             return false;
         }
 
@@ -1358,7 +1356,7 @@ public class M3ListView<T> extends Control {
             M3Accessible.notifyFocusNodeChanged(this);
         }
         if (requestNodeFocus) {
-            requestFocus();
+            M3Accessible.showDirectItem(this, this);
         }
         if (getSkin() instanceof M3ListViewSkin<?> skin) {
             skin.refreshFocus(requestNodeFocus, animated);

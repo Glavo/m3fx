@@ -3,12 +3,14 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.controls.M3ListViewCell;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,19 +26,25 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     private final ChangeListener<@Nullable Node> graphicListener =
             (observable, oldValue, newValue) -> updateGraphic(newValue);
 
+    /// Requests row re-layout when the cell direction changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> getSkinnable().requestLayout();
+
     /// Creates a virtualized list view cell skin.
     ///
     /// @param control the skinned virtualized list cell
     public M3ListViewCellSkin(M3ListViewCell<T> control) {
         super(control);
         control.graphicProperty().addListener(graphicListener);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         updateGraphic(control.getGraphic());
     }
 
     /// Removes listeners and child references before disposal.
     @Override
     public void dispose() {
-        getSkinnable().graphicProperty().removeListener(graphicListener);
+        M3ListViewCell<T> cell = getSkinnable();
+        cell.graphicProperty().removeListener(graphicListener);
+        cell.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         getChildren().clear();
         graphic = null;
         super.dispose();
@@ -132,8 +140,13 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     protected void layoutChildren(double x, double y, double width, double height) {
         Node row = graphic;
         if (row != null) {
-            layoutInArea(row, x, y, width, height, 0.0, HPos.LEFT, VPos.CENTER);
+            layoutInArea(row, x, y, width, height, 0.0, horizontalAlignment(), VPos.CENTER);
         }
+    }
+
+    /// Returns the physical alignment for the current logical visual start edge.
+    private HPos horizontalAlignment() {
+        return M3NodeLayout.logicalStartHorizontalAlignment(getSkinnable());
     }
 
     /// Replaces the rendered row node owned by this skin.

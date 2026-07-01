@@ -14,7 +14,6 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -28,6 +27,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
@@ -233,7 +233,7 @@ public class M3SubMenuItem extends M3MenuItem {
         hideSiblingSubMenus();
         popupContextSynchronizer.start();
         prepareSubMenuForPopup();
-        subMenu.setMinWidth(Math.max(getWidth(), subMenu.minWidth(-1.0)));
+        M3Css.setMinWidthIfUnbound(subMenu, Math.max(getWidth(), subMenu.minWidth(-1.0)));
         @Nullable M3PopupPositioning.Placement placement =
                 M3PopupPositioning.subMenuBeside(this, subMenu, SUB_MENU_OFFSET_X);
         if (placement == null) {
@@ -281,7 +281,7 @@ public class M3SubMenuItem extends M3MenuItem {
         focusOwnerOnHidden = focusOwner;
         if (!popup.isShowing()) {
             if (focusOwner && M3Accessible.canReach(this)) {
-                requestFocus();
+                M3Accessible.showDirectItem(this, this);
             }
             focusOwnerOnHidden = false;
             return;
@@ -333,16 +333,9 @@ public class M3SubMenuItem extends M3MenuItem {
         switch (action) {
             case SHOW_MENU, EXPAND -> showSubMenu();
             case COLLAPSE -> hideSubMenu(true);
-            case REQUEST_FOCUS -> focusAccessibleNode();
+            case REQUEST_FOCUS -> requestAccessibleFocus();
             case SET_SELECTED_ITEMS -> subMenu.executeAccessibleAction(action, parameters);
-            case SHOW_ITEM -> {
-                showSubMenu();
-                if (!popup.isShowing()) {
-                    return;
-                }
-                subMenu.executeAccessibleAction(action, parameters);
-                notifyFocusNodeChanged();
-            }
+            case SHOW_ITEM -> showAccessibleSubMenuItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -393,7 +386,7 @@ public class M3SubMenuItem extends M3MenuItem {
             if (focusOwnerOnHidden) {
                 focusOwnerOnHidden = false;
                 if (M3Accessible.canReach(this)) {
-                    requestFocus();
+                    M3Accessible.showDirectItem(this, this);
                 }
             }
         });
@@ -419,29 +412,51 @@ public class M3SubMenuItem extends M3MenuItem {
     }
 
     /// Requests focus for this item or the currently reachable submenu focus node.
-    private void focusAccessibleNode() {
+    final boolean requestAccessibleFocus() {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         if (!isSubMenuShowing()) {
-            requestFocus();
-            notifyFocusNodeChanged();
-            return;
+            if (M3Accessible.showDirectItem(this, this)) {
+                notifyFocusNodeChanged();
+                return true;
+            }
+            return false;
         }
 
         @Nullable Object focusNode = subMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         if (focusNode instanceof Node node && node != this) {
-            M3Accessible.showItem(node);
-            notifyFocusNodeChanged();
-            return;
+            if (M3Accessible.showItem(this, node)) {
+                notifyFocusNodeChanged();
+                return true;
+            }
+            return false;
         }
 
-        subMenu.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
-        @Nullable Object nextFocusNode = subMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
-        if (!(nextFocusNode instanceof Node node) || node == this) {
-            requestFocus();
+        if (subMenu.requestAccessibleFocus()) {
+            notifyFocusNodeChanged();
+            return true;
         }
-        notifyFocusNodeChanged();
+
+        if (M3Accessible.showDirectItem(this, this)) {
+            notifyFocusNodeChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Opens the submenu and focuses a descendant supplied by accessibility parameters.
+    final boolean showAccessibleSubMenuItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        showSubMenu();
+        if (!popup.isShowing()) {
+            return false;
+        }
+        if (subMenu.showAccessibleItem(parameters)) {
+            notifyFocusNodeChanged();
+            return true;
+        }
+        return false;
     }
 
     /// Handles this item's own action event by opening the submenu.
@@ -617,7 +632,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Returns whether this item is rendered in right-to-left orientation.
     private boolean isRightToLeft() {
-        return getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        return M3NodeLayout.isRightToLeft(this);
     }
 
     /// Updates the default indicator to point toward the submenu opening side.

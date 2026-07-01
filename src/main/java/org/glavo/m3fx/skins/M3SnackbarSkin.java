@@ -12,6 +12,7 @@ import javafx.scene.layout.HBox;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Snackbar;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,6 +38,9 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     /// Applies token changes to snackbar geometry.
     private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
 
+    /// Recomputes logical padding when the snackbar direction changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateTokenStyles();
+
     /// Creates a snackbar skin.
     ///
     /// @param control the snackbar controlled by this skin
@@ -54,7 +58,9 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         control.actionTextProperty().addListener(actionTextInvalidation);
         control.containerShapeProperty().addListener(tokenInvalidation);
         control.contentPaddingProperty().addListener(tokenInvalidation);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
 
+        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().addAll(textLabel, actionButton);
         getChildren().add(container);
         updateActionVisibility(control.getActionText());
@@ -78,6 +84,8 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         snackbar.actionTextProperty().removeListener(actionTextInvalidation);
         snackbar.containerShapeProperty().removeListener(tokenInvalidation);
         snackbar.contentPaddingProperty().removeListener(tokenInvalidation);
+        snackbar.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        container.nodeOrientationProperty().unbind();
         super.dispose();
     }
 
@@ -99,11 +107,18 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     private void updateTokenStyles() {
         M3Snackbar snackbar = getSkinnable();
         double padding = snackbar.getContentPadding();
+        double verticalPadding = padding / 2.0;
+        double leadingPadding = padding;
         double trailingPadding = actionButton.isManaged() ? padding / 2.0 : padding;
-        container.setPadding(new Insets(padding / 2.0, trailingPadding, padding / 2.0, padding));
+        container.setPadding(snackbarPadding(verticalPadding, leadingPadding, trailingPadding));
         container.setMinHeight(MIN_CONTAINER_HEIGHT);
         String shape = formatPixels(snackbar.getContainerShape());
         container.setStyle("-fx-background-radius: " + shape + ";");
+    }
+
+    /// Returns physical container padding for logical snackbar content edges.
+    private Insets snackbarPadding(double verticalPadding, double leadingPadding, double trailingPadding) {
+        return M3NodeLayout.logicalInsets(getSkinnable(), verticalPadding, leadingPadding, verticalPadding, trailingPadding);
     }
 
     /// Formats a CSS pixel value.

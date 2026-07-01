@@ -758,9 +758,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             return;
         }
 
-        M3Accessible.showItem(focusNode());
-        notifyFocusNodeChanged();
-        popupFocusNotifier.refresh();
+        if (M3Accessible.showItem(this, focusNode())) {
+            notifyFocusNodeChanged();
+            popupFocusNotifier.refresh();
+        }
     }
 
     /// Requests focus for the current editor, open button, or popup focus target.
@@ -768,9 +769,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         if (!M3Accessible.canReach(this)) {
             return;
         }
-        M3Accessible.showItem(focusNode());
-        notifyFocusNodeChanged();
-        popupFocusNotifier.refresh();
+        if (M3Accessible.showItem(this, focusNode())) {
+            notifyFocusNodeChanged();
+            popupFocusNotifier.refresh();
+        }
     }
 
     /// Notifies accessibility clients and owner containers about the exposed focus target.
@@ -791,7 +793,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         popupContextSynchronizer.sync();
         M3Animation.copyResolvedMotionSettings(this, popupContent);
         double fieldWidth = Math.max(0.0, inputLayout.getWidth());
-        popupContent.setMinWidth(Math.max(fieldWidth, popupContent.minWidth(-1.0)));
+        M3Css.setMinWidthIfUnbound(popupContent, Math.max(fieldWidth, popupContent.minWidth(-1.0)));
         popupContent.applyCss();
     }
 
@@ -847,7 +849,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         if (focusEditorOnHidden) {
             focusEditorOnHidden = false;
             if (M3Accessible.canReach(editor)) {
-                editor.requestFocus();
+                M3Accessible.showItem(this, editor);
             }
         }
     }

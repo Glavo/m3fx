@@ -9,6 +9,8 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import org.glavo.m3fx.internal.M3FocusRequests;
+import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -220,50 +222,69 @@ final class M3Accessible {
     }
 
     /// Requests focus for the item referenced by accessibility action parameters.
-    static void showItem(ObservableList<? extends Node> items, Object... parameters) {
-        showItemOrAccessibleActionTarget(actionItem(items, parameters), items, parameters);
+    static boolean showItem(ObservableList<? extends Node> items, Object... parameters) {
+        return showItemOrAccessibleActionTarget(actionItem(items, parameters), items, parameters);
+    }
+
+    /// Requests focus for the item referenced by accessibility action parameters and reveals it through the owner.
+    static boolean showIndexedItem(Node owner, ObservableList<? extends Node> items, Object... parameters) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        return showIndexedItemOrAccessibleActionTarget(owner, actionItem(items, parameters), items, parameters);
     }
 
     /// Requests focus for the leading item or one of the indexed trailing items.
-    static void showItem(@Nullable Node leading, ObservableList<? extends Node> items, Object... parameters) {
+    static boolean showItem(@Nullable Node leading, ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(items, "items");
-        showItemOrAccessibleActionTarget(actionItem(leading, items, parameters), leading, items, parameters);
+        return showItemOrAccessibleActionTarget(actionItem(leading, items, parameters), leading, items, parameters);
     }
 
     /// Requests focus for one of the indexed items or the trailing item.
-    static void showItem(ObservableList<? extends Node> items, @Nullable Node trailing, Object... parameters) {
+    static boolean showItem(ObservableList<? extends Node> items, @Nullable Node trailing, Object... parameters) {
         Objects.requireNonNull(items, "items");
-        showItemOrAccessibleActionTarget(actionItem(items, trailing, parameters), items, trailing, parameters);
+        return showItemOrAccessibleActionTarget(actionItem(items, trailing, parameters), items, trailing, parameters);
     }
 
     /// Requests focus for one of two optional indexed items.
-    static void showItem(@Nullable Node first, @Nullable Node second, Object... parameters) {
-        showItemOrAccessibleActionTarget(actionItem(first, second, parameters), first, second, parameters);
+    static boolean showItem(@Nullable Node first, @Nullable Node second, Object... parameters) {
+        return showItemOrAccessibleActionTarget(actionItem(first, second, parameters), first, second, parameters);
     }
 
     /// Requests focus for one of three optional indexed items.
-    static void showItem(
+    static boolean showItem(
             @Nullable Node first,
             @Nullable Node second,
             @Nullable Node third,
             Object... parameters
     ) {
-        showItemOrAccessibleActionTarget(actionItem(first, second, third, parameters), first, second, third, parameters);
+        return showItemOrAccessibleActionTarget(
+                actionItem(first, second, third, parameters),
+                first,
+                second,
+                third,
+                parameters
+        );
     }
 
     /// Requests focus for one of two optional leading items or an indexed trailing item.
-    static void showItem(
+    static boolean showItem(
             @Nullable Node first,
             @Nullable Node second,
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
         Objects.requireNonNull(items, "items");
-        showItemOrAccessibleActionTarget(actionItem(first, second, items, parameters), first, second, items, parameters);
+        return showItemOrAccessibleActionTarget(
+                actionItem(first, second, items, parameters),
+                first,
+                second,
+                items,
+                parameters
+        );
     }
 
     /// Requests focus for the default item when no parameter is supplied, or for the requested indexed item.
-    static void showItemOrDefault(
+    static boolean showItemOrDefault(
             @Nullable Node defaultItem,
             ObservableList<? extends Node> items,
             Object... parameters
@@ -273,23 +294,38 @@ final class M3Accessible {
         @Nullable Node item = parameters.length == 0
                 ? (focusTarget(defaultItem) == null ? firstFocusableItem(items) : defaultItem)
                 : actionItem(items, parameters);
-        showItemOrAccessibleActionTarget(item, items, parameters);
+        return showItemOrAccessibleActionTarget(item, items, parameters);
+    }
+
+    /// Requests focus for the default item or indexed item and reveals it through the owner.
+    static boolean showItemOrDefault(
+            Node owner,
+            @Nullable Node defaultItem,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        @Nullable Node item = parameters.length == 0
+                ? (focusTarget(defaultItem) == null ? firstFocusableItem(items) : defaultItem)
+                : actionItem(items, parameters);
+        return showIndexedItemOrAccessibleActionTarget(owner, item, items, parameters);
     }
 
     /// Requests focus for the current focus target in an indexed container, or for the requested item.
-    static void showCurrentOrItem(Node owner, ObservableList<? extends Node> items, Object... parameters) {
+    static boolean showCurrentOrItem(Node owner, ObservableList<? extends Node> items, Object... parameters) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            showItem(currentOrFirstFocusTarget(owner, items));
-        } else {
-            showItem(items, parameters);
+            return showItem(owner, currentOrFirstFocusTarget(owner, items));
         }
+        return showIndexedItem(owner, items, parameters);
     }
 
     /// Requests focus for the current focus target in a leading/list container, or for the requested item.
-    static void showCurrentOrItem(
+    static boolean showCurrentOrItem(
             Node owner,
             @Nullable Node leading,
             ObservableList<? extends Node> items,
@@ -299,14 +335,17 @@ final class M3Accessible {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            showItem(currentOrFirstFocusTarget(owner, leading, items));
-        } else {
-            showItem(leading, items, parameters);
+            return showItem(owner, currentOrFirstFocusTarget(owner, leading, items));
         }
+        boolean shown = showItem(leading, items, parameters);
+        if (shown) {
+            revealCurrentFocusOwner(owner);
+        }
+        return shown;
     }
 
     /// Requests focus for the current focus target in a list/trailing container, or for the requested item.
-    static void showCurrentOrItem(
+    static boolean showCurrentOrItem(
             Node owner,
             ObservableList<? extends Node> items,
             @Nullable Node trailing,
@@ -316,25 +355,31 @@ final class M3Accessible {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            showItem(currentOrFirstFocusTarget(owner, items, trailing));
-        } else {
-            showItem(items, trailing, parameters);
+            return showItem(owner, currentOrFirstFocusTarget(owner, items, trailing));
         }
+        boolean shown = showItem(items, trailing, parameters);
+        if (shown) {
+            revealCurrentFocusOwner(owner);
+        }
+        return shown;
     }
 
     /// Requests focus for the current focus target among two optional children, or for the requested item.
-    static void showCurrentOrItem(Node owner, @Nullable Node first, @Nullable Node second, Object... parameters) {
+    static boolean showCurrentOrItem(Node owner, @Nullable Node first, @Nullable Node second, Object... parameters) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            showItem(currentOrFirstFocusTarget(owner, first, second));
-        } else {
-            showItem(first, second, parameters);
+            return showItem(owner, currentOrFirstFocusTarget(owner, first, second));
         }
+        boolean shown = showItem(first, second, parameters);
+        if (shown) {
+            revealCurrentFocusOwner(owner);
+        }
+        return shown;
     }
 
     /// Requests focus for the current focus target among three optional children, or for the requested item.
-    static void showCurrentOrItem(
+    static boolean showCurrentOrItem(
             Node owner,
             @Nullable Node first,
             @Nullable Node second,
@@ -344,14 +389,17 @@ final class M3Accessible {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            showItem(currentOrFirstFocusTarget(owner, first, second, third));
-        } else {
-            showItem(first, second, third, parameters);
+            return showItem(owner, currentOrFirstFocusTarget(owner, first, second, third));
         }
+        boolean shown = showItem(first, second, third, parameters);
+        if (shown) {
+            revealCurrentFocusOwner(owner);
+        }
+        return shown;
     }
 
     /// Requests focus for the current focus target in two leading slots or a trailing list.
-    static void showCurrentOrItem(
+    static boolean showCurrentOrItem(
             Node owner,
             @Nullable Node first,
             @Nullable Node second,
@@ -362,49 +410,176 @@ final class M3Accessible {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
-            showItem(currentOrFirstFocusTarget(owner, first, second, items));
-        } else {
-            showItem(first, second, items, parameters);
+            return showItem(owner, currentOrFirstFocusTarget(owner, first, second, items));
         }
+        boolean shown = showItem(first, second, items, parameters);
+        if (shown) {
+            revealCurrentFocusOwner(owner);
+        }
+        return shown;
     }
 
     /// Requests focus for an accessibility item when it can be reached.
-    static void showItem(@Nullable Node item) {
-        showItemIfPresent(item);
+    static boolean showItem(@Nullable Node item) {
+        return showItemIfPresent(item);
     }
 
-    /// Requests focus for an accessibility item when it can be reached.
-    private static boolean showItemIfPresent(@Nullable Node item) {
-        @Nullable Node focusTarget = currentContainedFocusTarget(item);
-        if (focusTarget == null) {
-            focusTarget = accessibleFocusTarget(item);
+    /// Requests focus for an accessibility item and reveals it through the owner when it can be reached.
+    static boolean showItem(Node owner, @Nullable Node item) {
+        Objects.requireNonNull(owner, "owner");
+        return showItemIfPresent(owner, item);
+    }
+
+    /// Requests focus for the exact item node and reveals it through the owner when the item can be reached.
+    static boolean showDirectItem(Node owner, @Nullable Node item) {
+        Objects.requireNonNull(owner, "owner");
+        if (item == null || !canReach(item) || !item.isFocusTraversable()) {
+            return false;
         }
-        if (focusTarget != null) {
-            focusTarget.requestFocus();
+
+        if (containsNode(owner, item)) {
+            return M3ScrollReveal.requestFocusAndReveal(owner, item);
+        }
+        return requestKeyboardFocus(item);
+    }
+
+    /// Requests focus through a node's accessibility focus action.
+    static boolean requestAccessibleFocus(@Nullable Node item) {
+        if (!canReach(item)) {
+            return false;
+        }
+        if (item instanceof M3MenuButton menuButton) {
+            return menuButton.requestAccessibleFocus();
+        }
+        if (item instanceof M3SubMenuItem subMenuItem) {
+            return subMenuItem.requestAccessibleFocus();
+        }
+        if (item instanceof M3Menu menu) {
+            return menu.requestAccessibleFocus();
+        }
+        if (item instanceof M3NavigationDrawer drawer) {
+            return drawer.requestAccessibleFocus();
+        }
+        if (item instanceof M3NavigationBar navigationBar) {
+            return navigationBar.focusAccessibleSelectionTarget();
+        }
+        if (item instanceof M3NavigationRail navigationRail) {
+            return navigationRail.focusAccessibleSelectionTarget();
+        }
+        if (item instanceof M3TabBar tabBar) {
+            return tabBar.focusAccessibleSelectionTarget();
+        }
+        if (item instanceof M3SegmentedButtonGroup segmentedButtonGroup) {
+            return segmentedButtonGroup.focusAccessibleSelectionTarget();
+        }
+        if (item instanceof M3IconToggleButtonGroup iconToggleButtonGroup) {
+            return iconToggleButtonGroup.focusAccessibleSelectionTarget();
+        }
+        item.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+        return currentContainedFocusTarget(item) != null || activeExternalFocusTarget(item, item) != null;
+    }
+
+    /// Requests focus through a node's accessibility focus action and reveals it through the owner.
+    static boolean requestAccessibleFocus(Node owner, @Nullable Node item) {
+        Objects.requireNonNull(owner, "owner");
+        if (requestAccessibleFocus(item)) {
+            revealCurrentFocusOwner(owner);
             return true;
         }
         return false;
     }
 
+    /// Requests focus for an accessibility item when it can be reached.
+    private static boolean showItemIfPresent(@Nullable Node item) {
+        return focusItemIfPresent(item) != null;
+    }
+
+    /// Requests focus for an accessibility item and reveals it through the owner when it can be reached.
+    private static boolean showItemIfPresent(Node owner, @Nullable Node item) {
+        Objects.requireNonNull(owner, "owner");
+        @Nullable Node focusTarget = focusItemIfPresent(item);
+        if (focusTarget == null) {
+            return false;
+        }
+        if (containsNode(owner, focusTarget)) {
+            M3ScrollReveal.revealTarget(owner, focusTarget, M3Accessible::containsNode);
+        }
+        return true;
+    }
+
+    /// Reveals the current focus owner when it belongs to the supplied owner subtree.
+    private static boolean revealCurrentFocusOwner(Node owner) {
+        Objects.requireNonNull(owner, "owner");
+        @Nullable Node focusTarget = focusOwner(owner);
+        if (focusTarget != null && containsNode(owner, focusTarget)) {
+            M3ScrollReveal.revealTarget(owner, focusTarget, M3Accessible::containsNode);
+            return true;
+        }
+        return false;
+    }
+
+    /// Requests focus for an accessibility item and returns the actual focus target when it can be reached.
+    private static @Nullable Node focusItemIfPresent(@Nullable Node item) {
+        @Nullable Node focusTarget = currentContainedFocusTarget(item);
+        if (focusTarget == null) {
+            focusTarget = accessibleFocusTarget(item);
+        }
+        if (focusTarget != null && requestKeyboardFocus(focusTarget)) {
+            return focusTarget;
+        }
+        return null;
+    }
+
+    /// Requests keyboard focus and returns whether the target became the scene focus owner.
+    private static boolean requestKeyboardFocus(Node target) {
+        Objects.requireNonNull(target, "target");
+        return M3FocusRequests.requestFocus(target);
+    }
+
     /// Focuses a direct action target or delegates explicit reveal to nested accessible popup owners.
-    private static void showItemOrAccessibleActionTarget(
+    private static boolean showItemOrAccessibleActionTarget(
             @Nullable Node item,
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
         if (delegateContainingItemReveal(item, items, parameters)) {
-            return;
+            return true;
         }
         if (delegateSelectedItemReveal(item, parameters)) {
-            return;
+            return true;
         }
-        if (!showItemIfPresent(item) && parameters.length > 0) {
-            showAccessibleActionTarget(items, parameters);
+        if (showItemIfPresent(item)) {
+            return true;
         }
+        return parameters.length > 0 && showAccessibleActionTarget(items, parameters);
+    }
+
+    /// Focuses a direct action target, reveals it through the owner, or delegates explicit reveal to children.
+    private static boolean showIndexedItemOrAccessibleActionTarget(
+            Node owner,
+            @Nullable Node item,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        if (delegateContainingItemReveal(item, items, parameters)) {
+            return revealCurrentFocusOwner(owner);
+        }
+        if (delegateSelectedItemReveal(item, parameters)) {
+            return revealCurrentFocusOwner(owner);
+        }
+        if (showItemIfPresent(owner, item)) {
+            return true;
+        }
+        if (parameters.length > 0 && showAccessibleActionTarget(items, parameters)) {
+            revealCurrentFocusOwner(owner);
+            return true;
+        }
+        return false;
     }
 
     /// Focuses a direct action target or delegates explicit reveal to a leading/list child.
-    private static void showItemOrAccessibleActionTarget(
+    private static boolean showItemOrAccessibleActionTarget(
             @Nullable Node item,
             @Nullable Node leading,
             ObservableList<? extends Node> items,
@@ -412,18 +587,20 @@ final class M3Accessible {
     ) {
         if (delegateContainingNodeReveal(item, leading, parameters)
                 || delegateContainingListReveal(item, items, parameters)) {
-            return;
+            return true;
         }
         if (delegateSelectedItemReveal(item, parameters)) {
-            return;
+            return true;
         }
-        if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(leading, parameters)) {
-            showAccessibleActionTarget(items, parameters);
+        if (showItemIfPresent(item)) {
+            return true;
         }
+        return parameters.length > 0
+                && (showAccessibleActionTarget(leading, parameters) || showAccessibleActionTarget(items, parameters));
     }
 
     /// Focuses a direct action target or delegates explicit reveal to a list/trailing child.
-    private static void showItemOrAccessibleActionTarget(
+    private static boolean showItemOrAccessibleActionTarget(
             @Nullable Node item,
             ObservableList<? extends Node> items,
             @Nullable Node trailing,
@@ -431,18 +608,20 @@ final class M3Accessible {
     ) {
         if (delegateContainingListReveal(item, items, parameters)
                 || delegateContainingNodeReveal(item, trailing, parameters)) {
-            return;
+            return true;
         }
         if (delegateSelectedItemReveal(item, parameters)) {
-            return;
+            return true;
         }
-        if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(items, parameters)) {
-            showAccessibleActionTarget(trailing, parameters);
+        if (showItemIfPresent(item)) {
+            return true;
         }
+        return parameters.length > 0
+                && (showAccessibleActionTarget(items, parameters) || showAccessibleActionTarget(trailing, parameters));
     }
 
     /// Focuses a direct action target or delegates explicit reveal to either optional child.
-    private static void showItemOrAccessibleActionTarget(
+    private static boolean showItemOrAccessibleActionTarget(
             @Nullable Node item,
             @Nullable Node first,
             @Nullable Node second,
@@ -450,18 +629,20 @@ final class M3Accessible {
     ) {
         if (delegateContainingNodeReveal(item, first, parameters)
                 || delegateContainingNodeReveal(item, second, parameters)) {
-            return;
+            return true;
         }
         if (delegateSelectedItemReveal(item, parameters)) {
-            return;
+            return true;
         }
-        if (!showItemIfPresent(item) && parameters.length > 0 && !showAccessibleActionTarget(first, parameters)) {
-            showAccessibleActionTarget(second, parameters);
+        if (showItemIfPresent(item)) {
+            return true;
         }
+        return parameters.length > 0
+                && (showAccessibleActionTarget(first, parameters) || showAccessibleActionTarget(second, parameters));
     }
 
     /// Focuses a direct action target or delegates explicit reveal to any of three optional children.
-    private static void showItemOrAccessibleActionTarget(
+    private static boolean showItemOrAccessibleActionTarget(
             @Nullable Node item,
             @Nullable Node first,
             @Nullable Node second,
@@ -471,21 +652,22 @@ final class M3Accessible {
         if (delegateContainingNodeReveal(item, first, parameters)
                 || delegateContainingNodeReveal(item, second, parameters)
                 || delegateContainingNodeReveal(item, third, parameters)) {
-            return;
+            return true;
         }
         if (delegateSelectedItemReveal(item, parameters)) {
-            return;
+            return true;
         }
-        if (!showItemIfPresent(item)
-                && parameters.length > 0
-                && !showAccessibleActionTarget(first, parameters)
-                && !showAccessibleActionTarget(second, parameters)) {
-            showAccessibleActionTarget(third, parameters);
+        if (showItemIfPresent(item)) {
+            return true;
         }
+        return parameters.length > 0
+                && (showAccessibleActionTarget(first, parameters)
+                || showAccessibleActionTarget(second, parameters)
+                || showAccessibleActionTarget(third, parameters));
     }
 
     /// Focuses a direct action target or delegates explicit reveal to two leading slots or a trailing list.
-    private static void showItemOrAccessibleActionTarget(
+    private static boolean showItemOrAccessibleActionTarget(
             @Nullable Node item,
             @Nullable Node first,
             @Nullable Node second,
@@ -495,17 +677,18 @@ final class M3Accessible {
         if (delegateContainingNodeReveal(item, first, parameters)
                 || delegateContainingNodeReveal(item, second, parameters)
                 || delegateContainingListReveal(item, items, parameters)) {
-            return;
+            return true;
         }
         if (delegateSelectedItemReveal(item, parameters)) {
-            return;
+            return true;
         }
-        if (!showItemIfPresent(item)
-                && parameters.length > 0
-                && !showAccessibleActionTarget(first, parameters)
-                && !showAccessibleActionTarget(second, parameters)) {
-            showAccessibleActionTarget(items, parameters);
+        if (showItemIfPresent(item)) {
+            return true;
         }
+        return parameters.length > 0
+                && (showAccessibleActionTarget(first, parameters)
+                || showAccessibleActionTarget(second, parameters)
+                || showAccessibleActionTarget(items, parameters));
     }
 
     /// Delegates reveal into a containing node slot before focusing a nested descendant directly.
@@ -556,6 +739,16 @@ final class M3Accessible {
                 && delegateSelectedItemReveal(containingItem, parameters);
     }
 
+    /// Delegates an explicit reveal request and reveals the focused target through the owner when one is reached.
+    static boolean showAccessibleActionTarget(Node owner, @Nullable Node item, Object... parameters) {
+        Objects.requireNonNull(owner, "owner");
+        if (showAccessibleActionTarget(item, parameters)) {
+            revealCurrentFocusOwner(owner);
+            return true;
+        }
+        return false;
+    }
+
     /// Delegates an explicit reveal request to the first child that exposes the requested accessibility target.
     static boolean showAccessibleActionTarget(@Nullable Node item, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
@@ -585,10 +778,46 @@ final class M3Accessible {
         }
 
         if (containsOwnAccessibleActionTarget(item, parameters)) {
-            item.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
-            return true;
+            return showOwnAccessibleActionTarget(item, parameters);
         }
         return false;
+    }
+
+    /// Delegates an explicit reveal request to a node that owns the requested accessibility target.
+    private static boolean showOwnAccessibleActionTarget(@Nullable Node item, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (item == null) {
+            return false;
+        }
+        if (item instanceof M3MenuButton menuButton) {
+            return menuButton.showAccessibleMenuItem(parameters);
+        }
+        if (item instanceof M3SubMenuItem subMenuItem) {
+            return subMenuItem.showAccessibleSubMenuItem(parameters);
+        }
+        if (item instanceof M3Menu menu) {
+            return menu.showAccessibleItem(parameters);
+        }
+        if (item instanceof M3NavigationDrawer drawer) {
+            return drawer.showAccessibleItem(parameters);
+        }
+        if (item instanceof M3NavigationBar navigationBar) {
+            return navigationBar.showAccessibleItem(parameters);
+        }
+        if (item instanceof M3NavigationRail navigationRail) {
+            return navigationRail.showAccessibleItem(parameters);
+        }
+        if (item instanceof M3TabBar tabBar) {
+            return tabBar.showAccessibleItem(parameters);
+        }
+        if (item instanceof M3SegmentedButtonGroup segmentedButtonGroup) {
+            return segmentedButtonGroup.showAccessibleItem(parameters);
+        }
+        if (item instanceof M3IconToggleButtonGroup iconToggleButtonGroup) {
+            return iconToggleButtonGroup.showAccessibleItem(parameters);
+        }
+        item.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+        return currentContainedFocusTarget(item) != null || activeExternalFocusTarget(item, item) != null;
     }
 
     /// Returns whether a node can either receive focus now or reveal itself from a collapsed self-hidden state.
@@ -597,6 +826,20 @@ final class M3Accessible {
             return true;
         }
         return item != null && item.getScene() != null && canReveal(item);
+    }
+
+    /// Delegates an explicit reveal request to an indexed child and reveals it through the owner when reached.
+    static boolean showAccessibleActionTarget(
+            Node owner,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(owner, "owner");
+        if (showAccessibleActionTarget(items, parameters)) {
+            revealCurrentFocusOwner(owner);
+            return true;
+        }
+        return false;
     }
 
     /// Delegates an explicit reveal request to the first indexed child that exposes the requested target.

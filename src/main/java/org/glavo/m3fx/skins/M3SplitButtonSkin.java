@@ -4,9 +4,9 @@
 package org.glavo.m3fx.skins;
 
 import javafx.scene.control.SkinBase;
-import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.controls.M3SplitButton;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3SplitButton].
@@ -21,7 +21,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     public M3SplitButtonSkin(M3SplitButton control) {
         super(control);
         container.setManaged(false);
-        container.setAlignment(Pos.CENTER_LEFT);
+        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
         container.spacingProperty().bind(control.spacingProperty());
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().setAll(control.getActionButton(), control.getMenuButton());
@@ -31,6 +31,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     /// Removes child references before disposal.
     @Override
     public void dispose() {
+        container.alignmentProperty().unbind();
         container.spacingProperty().unbind();
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();

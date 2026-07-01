@@ -512,8 +512,8 @@ public class M3CheckBox extends ButtonBase {
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double size = Math.max(getTouchTargetSize(), getStateLayerSize());
-        setMinHeight(size);
-        setPrefHeight(size);
+        M3Css.setMinHeightIfUnbound(this, size);
+        M3Css.setPrefHeightIfUnbound(this, size);
     }
 
     /// Creates a non-negative styleable size token property.

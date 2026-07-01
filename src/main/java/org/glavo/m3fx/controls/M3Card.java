@@ -343,7 +343,7 @@ public class M3Card extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fire();
-            case REQUEST_FOCUS -> M3Accessible.showItem(accessibleFocusNode());
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -386,10 +386,6 @@ public class M3Card extends Control {
         if (event.getEventType() != KeyEvent.KEY_PRESSED) {
             return;
         }
-        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, true)) {
-            return;
-        }
-
         List<Node> targets = navigationTargets();
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
@@ -422,11 +418,25 @@ public class M3Card extends Control {
 
     /// Focuses the current card/content target, or an explicitly requested content target.
     private void showAccessibleItem(Object... parameters) {
-        if (parameters.length == 0) {
-            M3Accessible.showItem(accessibleFocusNode());
-        } else {
-            M3Accessible.showCurrentOrItem(this, getContent(), (Node) null, parameters);
+        boolean shown = parameters.length == 0
+                ? M3Accessible.showItem(this, accessibleFocusNode())
+                : M3Accessible.showCurrentOrItem(this, getContent(), (Node) null, parameters);
+        if (shown) {
+            notifyAccessibleFocusChanged();
         }
+    }
+
+    /// Requests focus on the current card accessibility focus node.
+    private void focusAccessibleNode() {
+        if (M3Accessible.showItem(this, accessibleFocusNode())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the card focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Notifies accessibility clients that the card content item changed.
@@ -434,8 +444,7 @@ public class M3Card extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        M3Accessible.notifyFocusNodeChanged(this);
-        focusNotifier.refresh();
+        notifyAccessibleFocusChanged();
     }
 
     /// Applies the current variant style class.

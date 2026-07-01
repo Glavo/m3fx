@@ -3,10 +3,9 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.beans.InvalidationListener;
+
 import javafx.collections.ListChangeListener;
-import javafx.geometry.NodeOrientation;
-import javafx.geometry.Pos;
+
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -15,6 +14,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3Banner;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,8 +36,6 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
     /// Updates the visual action list when public actions change.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
-    /// Updates logical child alignment when node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
 
     /// Creates a banner skin.
     ///
@@ -57,14 +55,14 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         textLabel.textProperty().bind(control.textProperty());
         actions.setMinWidth(Region.USE_PREF_SIZE);
         actions.setMaxWidth(Region.USE_PREF_SIZE);
+        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        actions.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
 
         control.iconProperty().addListener((observable, oldValue, newValue) -> updateIcon(newValue));
-        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.getActions().addListener(actionsListener);
 
         updateIcon(control.getIcon());
         updateActions();
-        updateNodeOrientationLayout();
         container.getChildren().setAll(iconSlot, textLabel, actions);
         getChildren().add(container);
     }
@@ -74,9 +72,10 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
     public void dispose() {
         M3Banner control = getSkinnable();
         textLabel.textProperty().unbind();
-        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         control.getActions().removeListener(actionsListener);
         container.nodeOrientationProperty().unbind();
+        container.alignmentProperty().unbind();
+        actions.alignmentProperty().unbind();
         actions.getChildren().clear();
         iconSlot.getChildren().clear();
         container.getChildren().clear();
@@ -181,10 +180,4 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         getSkinnable().requestLayout();
     }
 
-    /// Updates alignment from logical start and end positions.
-    private void updateNodeOrientationLayout() {
-        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-        container.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-        actions.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
-    }
 }

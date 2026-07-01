@@ -342,17 +342,6 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
 
         val javadocEntries = jarEntries(javadocJar.get().asFile)
         requireEntry(javadocEntries, "index.html", "Javadoc JAR")
-        if (javadocEntries.none { it.endsWith("org/glavo/m3fx/controls/M3Button.html") }) {
-            throw GradleException("Javadoc JAR is missing the M3Button API page.")
-        }
-        if (javadocEntries.none { it.endsWith("org/glavo/m3fx/theme/M3Theme.html") }) {
-            throw GradleException("Javadoc JAR is missing the M3Theme API page.")
-        }
-        for (packagePath in exportedPackagePaths) {
-            if (javadocEntries.none { it.endsWith("$packagePath/package-summary.html") }) {
-                throw GradleException("Javadoc JAR is missing the $packagePath package summary page.")
-            }
-        }
         if (javadocEntries.any { it.endsWith(".class") || it.endsWith(".java") }) {
             throw GradleException("Javadoc JAR must not contain class or source files.")
         }

@@ -26,7 +26,7 @@ public final class M3NavigationDrawerSkin extends SkinBase<M3NavigationDrawer> {
     public M3NavigationDrawerSkin(M3NavigationDrawer control) {
         super(control);
         container.setManaged(false);
-        container.setSpacing(4.0);
+        container.spacingProperty().bind(control.itemSpacingProperty());
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         getChildren().add(container);
         control.getItems().addListener(itemsListener);
@@ -37,6 +37,7 @@ public final class M3NavigationDrawerSkin extends SkinBase<M3NavigationDrawer> {
     @Override
     public void dispose() {
         getSkinnable().getItems().removeListener(itemsListener);
+        container.spacingProperty().unbind();
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         super.dispose();
@@ -132,10 +133,10 @@ public final class M3NavigationDrawerSkin extends SkinBase<M3NavigationDrawer> {
         double itemWidth = Math.max(0.0, width);
         for (Node child : getSkinnable().getItems()) {
             if (child instanceof Region region) {
-                if (Double.compare(region.getMinWidth(), 0.0) != 0) {
+                if (!region.minWidthProperty().isBound() && Double.compare(region.getMinWidth(), 0.0) != 0) {
                     region.setMinWidth(0.0);
                 }
-                if (Double.compare(region.getMaxWidth(), itemWidth) != 0) {
+                if (!region.maxWidthProperty().isBound() && Double.compare(region.getMaxWidth(), itemWidth) != 0) {
                     region.setMaxWidth(itemWidth);
                 }
             }

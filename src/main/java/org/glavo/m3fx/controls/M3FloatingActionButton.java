@@ -322,18 +322,18 @@ public class M3FloatingActionButton extends ButtonBase {
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double size = getContainerSize();
-        setMinHeight(size);
-        setPrefHeight(size);
+        M3Css.setMinHeightIfUnbound(this, size);
+        M3Css.setPrefHeightIfUnbound(this, size);
         @Nullable String text = getText();
         if (text != null && !text.isBlank()) {
             double padding = getHorizontalPadding();
-            setMinWidth(Region.USE_COMPUTED_SIZE);
-            setPrefWidth(Region.USE_COMPUTED_SIZE);
-            setPadding(new Insets(0.0, padding, 0.0, padding));
+            M3Css.setMinWidthIfUnbound(this, Region.USE_COMPUTED_SIZE);
+            M3Css.setPrefWidthIfUnbound(this, Region.USE_COMPUTED_SIZE);
+            M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
         } else {
-            setMinWidth(size);
-            setPrefWidth(size);
-            setPadding(Insets.EMPTY);
+            M3Css.setMinWidthIfUnbound(this, size);
+            M3Css.setPrefWidthIfUnbound(this, size);
+            M3Css.setPaddingIfUnbound(this, Insets.EMPTY);
         }
     }
 

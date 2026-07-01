@@ -26,6 +26,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SegmentedButtonGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -446,21 +447,50 @@ public class M3SegmentedButtonGroup extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedButton(),
-                    M3SegmentedButton.class
-            ));
+            case REQUEST_FOCUS -> focusAccessibleSelectionTarget();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedButton(),
-                    M3SegmentedButton.class
-            ), getItems(), parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current selected or focused accessibility target.
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleSelectionTarget() {
+        if (M3Accessible.showItem(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedButton(),
+                M3SegmentedButton.class
+        ))) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Shows an item requested by an accessibility client.
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested item
+    final boolean showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showItemOrDefault(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedButton(),
+                M3SegmentedButton.class
+        ), getItems(), parameters)) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Notifies accessibility clients that the group focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Adds base style classes and child list listeners.
@@ -479,6 +509,7 @@ public class M3SegmentedButtonGroup extends Control {
         if (getSelectionMode() == M3SegmentedButtonSelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
+                    this,
                     getItems(),
                     M3SelectionNavigation.focusAnchor(
                             getItems(),
@@ -488,19 +519,20 @@ public class M3SegmentedButtonGroup extends Control {
                     M3SegmentedButton.class,
                     true,
                     false,
-                    M3SelectionNavigation.isRightToLeft(this)
+                    M3NodeLayout.isRightToLeft(this)
             );
             return;
         }
 
         M3SelectionNavigation.handleKeySelection(
                 event,
+                this,
                 getItems(),
                 M3SelectionNavigation.focusAnchor(getItems(), getSelectedButton(), M3SegmentedButton.class),
                 M3SegmentedButton.class,
                 true,
                 false,
-                M3SelectionNavigation.isRightToLeft(this),
+                M3NodeLayout.isRightToLeft(this),
                 this::select
         );
     }
@@ -709,7 +741,7 @@ public class M3SegmentedButtonGroup extends Control {
             }
         }
 
-        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        boolean rightToLeft = M3NodeLayout.isRightToLeft(this);
         int segmentIndex = 0;
         for (Node child : getItems()) {
             if (child instanceof M3SegmentedButton button) {

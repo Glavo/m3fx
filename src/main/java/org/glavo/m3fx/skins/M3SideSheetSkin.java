@@ -3,11 +3,8 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
-import javafx.geometry.NodeOrientation;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -17,6 +14,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3SideSheet;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,9 +46,6 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
     /// Updates actions when the public action list changes.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
-    /// Updates logical layout when the effective node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
-
     /// Creates a side sheet skin.
     ///
     /// @param control the side sheet controlled by this skin
@@ -61,8 +56,9 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         headlineLabel.getStyleClass().add(M3SideSheet.TITLE_STYLE_CLASS);
         actions.getStyleClass().add(M3SideSheet.ACTIONS_STYLE_CLASS);
         contentSlot.getStyleClass().add(M3SideSheet.CONTENT_STYLE_CLASS);
-        contentSlot.setAlignment(Pos.TOP_LEFT);
-        header.setAlignment(Pos.CENTER_LEFT);
+        header.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        actions.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
+        contentSlot.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(control));
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         contentSlot.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
@@ -71,13 +67,11 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
 
         control.contentProperty().addListener(contentListener);
         control.getActions().addListener(actionsListener);
-        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         updateContent(control.getContent());
         updateActions();
         header.getChildren().setAll(headlineLabel, spacer, actions);
         container.setTop(header);
         container.setCenter(contentSlot);
-        updateNodeOrientationLayout();
         getChildren().add(container);
     }
 
@@ -88,10 +82,12 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         headlineLabel.textProperty().unbind();
         control.contentProperty().removeListener(contentListener);
         control.getActions().removeListener(actionsListener);
-        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
         header.nodeOrientationProperty().unbind();
+        header.alignmentProperty().unbind();
+        actions.alignmentProperty().unbind();
         contentSlot.nodeOrientationProperty().unbind();
+        contentSlot.alignmentProperty().unbind();
         actions.getChildren().clear();
         contentSlot.getChildren().clear();
         header.getChildren().clear();
@@ -190,15 +186,6 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
     /// Updates the action row.
     private void updateActions() {
         actions.getChildren().setAll(getSkinnable().getActions());
-        getSkinnable().requestLayout();
-    }
-
-    /// Updates orientation-dependent alignments for header and content slots.
-    private void updateNodeOrientationLayout() {
-        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-        header.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-        actions.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
-        contentSlot.setAlignment(Pos.TOP_LEFT);
         getSkinnable().requestLayout();
     }
 }

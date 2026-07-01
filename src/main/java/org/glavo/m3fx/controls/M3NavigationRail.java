@@ -11,6 +11,11 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -22,8 +27,11 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationRailSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +49,9 @@ import java.util.Objects;
 public class M3NavigationRail extends Control {
     /// The base style class for M3FX navigation rails.
     public static final String STYLE_CLASS = "m3-navigation-rail";
+
+    /// The default spacing between navigation rail items.
+    private static final double DEFAULT_ITEM_SPACING = 8.0;
 
     /// The mutable navigation rail content.
     private final ObservableList<Node> items = FXCollections.observableArrayList();
@@ -65,6 +76,9 @@ public class M3NavigationRail extends Control {
     /// The read-only selected navigation item view.
     private final @UnmodifiableView ObservableList<M3NavigationItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
+
+    /// The styleable spacing between navigation item rows.
+    private @Nullable StyleableDoubleProperty itemSpacing;
 
     // Whether the rail allows all navigation items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
@@ -279,6 +293,36 @@ public class M3NavigationRail extends Control {
         }
     }
 
+    /// Returns the spacing between navigation rail items.
+    ///
+    /// @return the spacing between navigation rail items in pixels
+    public final double getItemSpacing() {
+        return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
+    }
+
+    /// Sets the spacing between navigation rail items.
+    ///
+    /// @param itemSpacing the spacing between navigation rail items in pixels
+    public final void setItemSpacing(double itemSpacing) {
+        itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
+    }
+
+    /// Returns the spacing between navigation rail items property.
+    ///
+    /// @return the styleable item spacing property
+    public final StyleableDoubleProperty itemSpacingProperty() {
+        if (itemSpacing == null) {
+            itemSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ITEM_SPACING,
+                    this,
+                    "itemSpacing",
+                    StyleableProperties.ITEM_SPACING,
+                    this::requestLayout
+            );
+        }
+        return itemSpacing;
+    }
+
     /// Clears the current selection when empty selection is allowed.
     public final void clearSelection() {
         if (!isAllowEmptySelection()) {
@@ -292,6 +336,21 @@ public class M3NavigationRail extends Control {
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("navigation-rail.css");
+    }
+
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    ///
+    /// @return the CSS metadata for this control
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
     }
 
     /// Returns accessibility attributes for navigation rail content and selection state.
@@ -325,21 +384,50 @@ public class M3NavigationRail extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedItem(),
-                    M3NavigationItem.class
-            ));
+            case REQUEST_FOCUS -> focusAccessibleSelectionTarget();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedItem(),
-                    M3NavigationItem.class
-            ), getItems(), parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current selected or focused accessibility target.
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleSelectionTarget() {
+        if (M3Accessible.showItem(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedItem(),
+                M3NavigationItem.class
+        ))) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Shows an item requested by an accessibility client.
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested item
+    final boolean showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showItemOrDefault(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedItem(),
+                M3NavigationItem.class
+        ), getItems(), parameters)) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Notifies accessibility clients that the group focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Adds base style classes and installs selection listeners.
@@ -355,6 +443,7 @@ public class M3NavigationRail extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeySelection(
                 event,
+                this,
                 getItems(),
                 M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3NavigationItem.class),
                 M3NavigationItem.class,
@@ -540,6 +629,38 @@ public class M3NavigationRail extends Control {
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3NavigationRailSkin(this);
+    }
+
+    /// CSS metadata for navigation rail styleable properties.
+    private static final class StyleableProperties {
+        /// CSS metadata for the item spacing token.
+        private static final CssMetaData<M3NavigationRail, Number> ITEM_SPACING =
+                new CssMetaData<>("-m3-item-spacing", SizeConverter.getInstance(), DEFAULT_ITEM_SPACING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3NavigationRail control) {
+                        return M3Css.isSettable(control.itemSpacingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
+                        return control.itemSpacingProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ITEM_SPACING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
+        }
+
+        /// Prevents instantiation.
+        private StyleableProperties() {
+        }
     }
 
     /// Validates a navigation item array.

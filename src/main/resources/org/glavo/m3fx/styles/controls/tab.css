@@ -1,5 +1,8 @@
 .m3-tab-bar {
     -fx-background-color: -m3-color-surface;
+}
+
+.m3-tab-bar-container {
     -fx-alignment: center-left;
     -fx-spacing: 0px;
 }

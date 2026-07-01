@@ -180,6 +180,26 @@ public class M3FormPane extends Control {
         return M3Stylesheets.controlStylesheet("form.css");
     }
 
+    /// Requests focus on the current or first accessibility item.
+    private void focusAccessibleItem() {
+        if (M3Accessible.showCurrentOrItem(this, getItems())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showCurrentOrItem(this, getItems(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the container focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
+    }
+
     /// Creates the default Material Design 3 form pane skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -203,8 +223,8 @@ public class M3FormPane extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getItems());
-            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getItems(), parameters);
+            case REQUEST_FOCUS -> focusAccessibleItem();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -236,10 +256,6 @@ public class M3FormPane extends Control {
         if (event.getEventType() != KeyEvent.KEY_PRESSED) {
             return;
         }
-        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, false, true)) {
-            return;
-        }
-
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,

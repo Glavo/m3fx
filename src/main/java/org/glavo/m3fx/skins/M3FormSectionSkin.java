@@ -10,7 +10,9 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.TextAlignment;
 import org.glavo.m3fx.controls.M3FormSection;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3FormSection].
@@ -173,10 +175,27 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
 
     /// Updates orientation-dependent text and content alignment.
     private void updateNodeOrientationLayout() {
-        header.setAlignment(Pos.TOP_LEFT);
-        content.setAlignment(Pos.TOP_LEFT);
-        titleLabel.setAlignment(Pos.CENTER_LEFT);
-        supportingLabel.setAlignment(Pos.CENTER_LEFT);
+        header.setAlignment(topAlignment());
+        content.setAlignment(topAlignment());
+        titleLabel.setAlignment(centerAlignment());
+        titleLabel.setTextAlignment(textAlignment());
+        supportingLabel.setAlignment(centerAlignment());
+        supportingLabel.setTextAlignment(textAlignment());
         getSkinnable().requestLayout();
+    }
+
+    /// Returns the current logical top alignment for section containers.
+    private Pos topAlignment() {
+        return M3NodeLayout.logicalStartTopAlignment(getSkinnable());
+    }
+
+    /// Returns the current logical center alignment for section labels.
+    private Pos centerAlignment() {
+        return M3NodeLayout.logicalStartCenterAlignment(getSkinnable());
+    }
+
+    /// Returns the current logical multi-line text alignment.
+    private TextAlignment textAlignment() {
+        return M3NodeLayout.isRightToLeft(getSkinnable()) ? TextAlignment.RIGHT : TextAlignment.LEFT;
     }
 }

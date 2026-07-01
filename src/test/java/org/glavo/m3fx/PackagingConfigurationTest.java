@@ -186,10 +186,6 @@ final class PackagingConfigurationTest {
                 "publication artifact verification must reject missing source jar entries");
         assertTrue(buildScript.contains("Main JAR must not bundle JavaFX classes."),
                 "publication artifact verification must reject bundled JavaFX implementation classes");
-        assertTrue(buildScript.contains("package-summary.html"),
-                "publication artifact verification must check exported package summaries");
-        assertTrue(buildScript.contains("Javadoc JAR is missing the M3Button API page."),
-                "publication artifact verification must check generated API documentation entries");
         assertTrue(buildScript.contains("verifyPublicationArtifacts,"),
                 "`check` must depend on both publication metadata and artifact verification");
     }

@@ -12,6 +12,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3SearchBar;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,7 +48,7 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         super(control);
         container.setManaged(false);
         container.getStyleClass().add(M3SearchBar.CONTENT_STYLE_CLASS);
-        container.setAlignment(Pos.CENTER_LEFT);
+        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         leadingSlot.getStyleClass().add(M3SearchBar.LEADING_STYLE_CLASS);
         trailingBox.getStyleClass().add(M3SearchBar.TRAILING_STYLE_CLASS);
@@ -69,6 +70,7 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         M3SearchBar control = getSkinnable();
         control.leadingProperty().removeListener(leadingListener);
         control.getTrailingActions().removeListener(trailingActionsListener);
+        container.alignmentProperty().unbind();
         container.nodeOrientationProperty().unbind();
         trailingBox.getChildren().clear();
         leadingSlot.getChildren().clear();

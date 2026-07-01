@@ -4,13 +4,17 @@
 package org.glavo.m3fx.controls;
 
 import javafx.collections.ObservableList;
+import javafx.geometry.Bounds;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Region;
 import org.glavo.m3fx.internal.M3FocusGuards;
+import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -25,6 +29,12 @@ import java.util.Set;
 /// Shared keyboard focus traversal helpers for Material containers.
 @NotNullByDefault
 final class M3FocusTraversal {
+    /// The fallback row height used for page focus traversal before targets have been measured.
+    private static final double DEFAULT_PAGE_ROW_HEIGHT = 56.0;
+
+    /// The fallback page step used before the owner has a measured viewport height.
+    private static final int DEFAULT_PAGE_STEP = 5;
+
     /// Prevents instantiation.
     private M3FocusTraversal() {
     }
@@ -101,7 +111,7 @@ final class M3FocusTraversal {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(focusableItems, "focusableItems");
-        if (focusOwnerInsideTextInput(owner)) {
+        if (consumeNavigationKeyIfFocusOwnerInsideTextInput(owner, event, horizontalEnabled, verticalEnabled)) {
             return false;
         }
 
@@ -120,7 +130,9 @@ final class M3FocusTraversal {
             return false;
         }
 
-        target.requestFocus();
+        if (!M3Accessible.showItem(owner, target)) {
+            return false;
+        }
         event.consume();
         return true;
     }
@@ -352,6 +364,8 @@ final class M3FocusTraversal {
             case RIGHT -> horizontalEnabled ? horizontalArrowTarget(owner, focusableItems, focusedIndex, true, wrap) : null;
             case UP -> verticalEnabled ? verticalArrowTarget(focusableItems, focusedIndex, false, wrap) : null;
             case DOWN -> verticalEnabled ? verticalArrowTarget(focusableItems, focusedIndex, true, wrap) : null;
+            case PAGE_UP -> verticalEnabled ? pageTarget(owner, focusableItems, focusedIndex, false) : null;
+            case PAGE_DOWN -> verticalEnabled ? pageTarget(owner, focusableItems, focusedIndex, true) : null;
             default -> null;
         };
     }
@@ -364,10 +378,11 @@ final class M3FocusTraversal {
             boolean rightKey,
             boolean wrap
     ) {
-        boolean forward = M3SelectionNavigation.isRightToLeft(owner) != rightKey;
         if (focusedIndex < 0) {
-            return focusableItems.get(forward ? 0 : focusableItems.size() - 1);
+            return focusableItems.get(rightKey ? 0 : focusableItems.size() - 1);
         }
+
+        boolean forward = M3NodeLayout.isRightToLeft(owner) != rightKey;
         return adjacentTarget(focusableItems, focusedIndex, forward, wrap);
     }
 
@@ -382,6 +397,48 @@ final class M3FocusTraversal {
             return focusableItems.get(downKey ? 0 : focusableItems.size() - 1);
         }
         return adjacentTarget(focusableItems, focusedIndex, downKey, wrap);
+    }
+
+    /// Returns the target selected by a page-navigation key.
+    private static Node pageTarget(
+            Node owner,
+            List<Node> focusableItems,
+            int focusedIndex,
+            boolean forward
+    ) {
+        if (focusedIndex < 0) {
+            return focusableItems.get(forward ? 0 : focusableItems.size() - 1);
+        }
+
+        int step = pageStep(owner, focusableItems);
+        int targetIndex = focusedIndex + (forward ? step : -step);
+        targetIndex = Math.max(0, Math.min(focusableItems.size() - 1, targetIndex));
+        return focusableItems.get(targetIndex);
+    }
+
+    /// Returns the page-navigation step for an owner and its focus targets.
+    private static int pageStep(Node owner, List<Node> focusableItems) {
+        double viewportHeight = M3ScrollReveal.pageViewportHeight(owner);
+        double rowHeight = estimatedTargetHeight(focusableItems);
+        if (viewportHeight <= 0.0 || rowHeight <= 0.0) {
+            return DEFAULT_PAGE_STEP;
+        }
+        return Math.max(1, (int) Math.floor(viewportHeight / rowHeight));
+    }
+
+    /// Returns the best available height estimate for one focus target.
+    private static double estimatedTargetHeight(List<Node> focusableItems) {
+        for (Node item : focusableItems) {
+            Bounds bounds = item.getLayoutBounds();
+            double height = bounds.getHeight();
+            if (height <= 0.0 && item instanceof Region region) {
+                height = region.prefHeight(-1.0);
+            }
+            if (height > 0.0) {
+                return height;
+            }
+        }
+        return DEFAULT_PAGE_ROW_HEIGHT;
     }
 
     /// Returns the adjacent focusable item, optionally wrapping at container ends.

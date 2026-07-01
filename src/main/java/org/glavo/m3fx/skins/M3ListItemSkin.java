@@ -12,8 +12,7 @@ import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
-import javafx.geometry.NodeOrientation;
-import javafx.geometry.Pos;
+
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -33,7 +32,9 @@ import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusGuards;
+import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -131,8 +132,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Applies metric token changes to the list item layout.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
-    /// Applies logical leading and trailing alignment when node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
 
     /// Mirrors menu-owned pseudo-classes to internal skin nodes.
     private final SetChangeListener<PseudoClass> skinnablePseudoClassListener =
@@ -190,7 +189,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         textBox.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         trailingBox.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        updateNodeOrientationLayout();
+        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        textBox.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        trailingBox.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
 
         stateLayer.installStateTransitions(control);
         updateSelectionContainerImmediate(control.isSelected());
@@ -217,7 +218,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         control.horizontalPaddingProperty().addListener(metricsInvalidation);
         control.verticalPaddingProperty().addListener(metricsInvalidation);
         control.contentSpacingProperty().addListener(metricsInvalidation);
-        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.getPseudoClassStates().addListener(skinnablePseudoClassListener);
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
@@ -246,7 +246,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         item.horizontalPaddingProperty().removeListener(metricsInvalidation);
         item.verticalPaddingProperty().removeListener(metricsInvalidation);
         item.contentSpacingProperty().removeListener(metricsInvalidation);
-        item.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         item.getPseudoClassStates().removeListener(skinnablePseudoClassListener);
         motionSettingsObserver.dispose();
         item.selectedProperty().removeListener(selectedListener);
@@ -256,8 +255,11 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         item.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         item.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
         container.nodeOrientationProperty().unbind();
+        container.alignmentProperty().unbind();
         textBox.nodeOrientationProperty().unbind();
+        textBox.alignmentProperty().unbind();
         trailingBox.nodeOrientationProperty().unbind();
+        trailingBox.alignmentProperty().unbind();
         super.dispose();
     }
 
@@ -361,7 +363,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         double horizontalPadding = item.getHorizontalPadding();
         double verticalPadding = item.getVerticalPadding();
         double spacing = item.getContentSpacing();
-        updateNodeOrientationLayout();
         container.setSpacing(spacing);
         container.setMinHeight(height);
         container.setPrefHeight(height);
@@ -370,13 +371,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         getSkinnable().requestLayout();
     }
 
-    /// Updates child alignment from logical start and end positions.
-    private void updateNodeOrientationLayout() {
-        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-        container.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-        textBox.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-        trailingBox.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
-    }
 
     /// Returns the preferred height for the current text structure.
     private static double preferredHeight(M3ListItem item) {
@@ -479,9 +473,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         }
 
         mousePressed = true;
-        if (item.isFocusTraversable()) {
-            item.requestFocus();
-        }
+        M3FocusRequests.requestFocusIfTraversable(item);
         stateLayer.playRipple(event.getX(), event.getY());
         event.consume();
     }

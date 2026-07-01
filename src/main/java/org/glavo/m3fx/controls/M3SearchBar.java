@@ -97,7 +97,7 @@ public class M3SearchBar extends Control {
             pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, active);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             if (active && !suppressActiveEditorFocus && M3Accessible.canReach(editor)) {
-                editor.requestFocus();
+                M3Accessible.showItem(M3SearchBar.this, editor);
             }
             notifyFocusNodeChanged();
         }
@@ -372,10 +372,10 @@ public class M3SearchBar extends Control {
         editor.getStyleClass().add(INPUT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(true);
-        setMinHeight(DEFAULT_HEIGHT);
-        setPrefHeight(DEFAULT_HEIGHT);
-        setMaxHeight(USE_PREF_SIZE);
-        setPadding(new Insets(0.0, DEFAULT_HORIZONTAL_PADDING, 0.0, DEFAULT_HORIZONTAL_PADDING));
+        M3Css.setMinHeightIfUnbound(this, DEFAULT_HEIGHT);
+        M3Css.setPrefHeightIfUnbound(this, DEFAULT_HEIGHT);
+        M3Css.setMaxHeightIfUnbound(this, USE_PREF_SIZE);
+        M3Css.setPaddingIfUnbound(this, new Insets(0.0, DEFAULT_HORIZONTAL_PADDING, 0.0, DEFAULT_HORIZONTAL_PADDING));
 
         setLeading(defaultLeadingNode());
         trailingActions.addListener((ListChangeListener<Node>) change -> {
@@ -421,9 +421,6 @@ public class M3SearchBar extends Control {
 
     /// Handles keyboard focus traversal between the leading slot, editor, and trailing actions.
     private boolean handleSlotNavigationKey(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInside(this, editor)) {
-            return false;
-        }
         return M3FocusTraversal.handleHorizontalKeyFocus(this, event, slotFocusTargets());
     }
 
@@ -434,7 +431,7 @@ public class M3SearchBar extends Control {
         }
         activate();
         if (M3Accessible.canReach(editor)) {
-            editor.requestFocus();
+            M3Accessible.showItem(this, editor);
         }
         notifyFocusNodeChanged();
     }
@@ -456,14 +453,14 @@ public class M3SearchBar extends Control {
         }
         activate();
         if (M3Accessible.structuralFocusTarget(item) == null) {
-            if (M3Accessible.canReach(editor)) {
-                editor.requestFocus();
+            if (M3Accessible.canReach(editor) && M3Accessible.showItem(this, editor)) {
+                notifyFocusNodeChanged();
             }
-            notifyFocusNodeChanged();
             return;
         }
-        M3Accessible.showItem(item);
-        notifyFocusNodeChanged();
+        if (M3Accessible.showItem(this, item)) {
+            notifyFocusNodeChanged();
+        }
     }
 
     /// Shows and focuses the requested accessible child or a descendant popup target.
@@ -472,8 +469,9 @@ public class M3SearchBar extends Control {
             return;
         }
         activateWithoutEditorFocus();
-        M3Accessible.showCurrentOrItem(this, getLeading(), editor, getTrailingActions(), parameters);
-        notifyFocusNodeChanged();
+        if (M3Accessible.showCurrentOrItem(this, getLeading(), editor, getTrailingActions(), parameters)) {
+            notifyFocusNodeChanged();
+        }
     }
 
     /// Moves the search bar into its active state while preserving the current accessibility child focus.

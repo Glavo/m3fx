@@ -8,10 +8,12 @@ import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 
 /// Provides keyboard traversal for picker field preset action columns.
 @NotNullByDefault
@@ -25,7 +27,7 @@ final class M3PresetNavigation {
     /// @param presetList the vertical list that owns preset action buttons
     /// @param orientationOwner the control whose effective orientation defines logical-start handoff
     /// @param focusPicker the action that moves focus from the preset list into the adjacent picker
-    static void install(VBox presetList, Node orientationOwner, Runnable focusPicker) {
+    static void install(VBox presetList, Node orientationOwner, BooleanSupplier focusPicker) {
         Objects.requireNonNull(presetList, "presetList");
         Objects.requireNonNull(orientationOwner, "orientationOwner");
         Objects.requireNonNull(focusPicker, "focusPicker");
@@ -40,7 +42,7 @@ final class M3PresetNavigation {
             KeyEvent event,
             VBox presetList,
             Node orientationOwner,
-            Runnable focusPicker
+            BooleanSupplier focusPicker
     ) {
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(presetList, "presetList");
@@ -48,8 +50,9 @@ final class M3PresetNavigation {
         Objects.requireNonNull(focusPicker, "focusPicker");
 
         if (isPickerHandoffKey(event.getCode(), orientationOwner)) {
-            focusPicker.run();
-            event.consume();
+            if (focusPicker.getAsBoolean()) {
+                event.consume();
+            }
             return;
         }
 
@@ -57,6 +60,7 @@ final class M3PresetNavigation {
         @Nullable M3Button focusedButton = M3SelectionNavigation.focused(children, M3Button.class);
         if (M3SelectionNavigation.handleKeyFocus(
                 event,
+                presetList,
                 children,
                 focusedButton,
                 M3Button.class,
@@ -71,6 +75,6 @@ final class M3PresetNavigation {
 
     /// Returns whether the key moves focus from the logical-start preset column into the picker.
     private static boolean isPickerHandoffKey(KeyCode keyCode, Node owner) {
-        return keyCode == (M3SelectionNavigation.isRightToLeft(owner) ? KeyCode.LEFT : KeyCode.RIGHT);
+        return keyCode == (M3NodeLayout.isRightToLeft(owner) ? KeyCode.LEFT : KeyCode.RIGHT);
     }
 }

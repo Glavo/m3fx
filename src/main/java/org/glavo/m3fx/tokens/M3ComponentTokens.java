@@ -3169,7 +3169,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.verticalPadding())
                 + " "
                 + M3TokenCss.pixels(tokens.horizontalPadding()));
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
         endRule(builder);
     }
 
@@ -3201,7 +3201,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.containerWidth()));
         appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.containerWidth()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
         endRule(builder);
     }
 

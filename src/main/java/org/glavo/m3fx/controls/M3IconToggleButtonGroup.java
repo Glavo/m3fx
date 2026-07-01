@@ -27,6 +27,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3IconToggleButtonGroupSkin;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -415,21 +416,50 @@ public class M3IconToggleButtonGroup extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedButton(),
-                    M3IconToggleButton.class
-            ));
+            case REQUEST_FOCUS -> focusAccessibleSelectionTarget();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedButton(),
-                    M3IconToggleButton.class
-            ), getItems(), parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current selected or focused accessibility target.
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleSelectionTarget() {
+        if (M3Accessible.showItem(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedButton(),
+                M3IconToggleButton.class
+        ))) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Shows an item requested by an accessibility client.
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested item
+    final boolean showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showItemOrDefault(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedButton(),
+                M3IconToggleButton.class
+        ), getItems(), parameters)) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Notifies accessibility clients that the group focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Adds base style classes and installs child listeners.
@@ -446,6 +476,7 @@ public class M3IconToggleButtonGroup extends Control {
         if (getSelectionMode() == M3IconToggleButtonSelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
+                    this,
                     getItems(),
                     M3SelectionNavigation.focusAnchor(
                             getItems(),
@@ -455,19 +486,20 @@ public class M3IconToggleButtonGroup extends Control {
                     M3IconToggleButton.class,
                     true,
                     false,
-                    M3SelectionNavigation.isRightToLeft(this)
+                    M3NodeLayout.isRightToLeft(this)
             );
             return;
         }
 
         M3SelectionNavigation.handleKeySelection(
                 event,
+                this,
                 getItems(),
                 M3SelectionNavigation.focusAnchor(getItems(), getSelectedButton(), M3IconToggleButton.class),
                 M3IconToggleButton.class,
                 true,
                 false,
-                M3SelectionNavigation.isRightToLeft(this),
+                M3NodeLayout.isRightToLeft(this),
                 this::select
         );
     }

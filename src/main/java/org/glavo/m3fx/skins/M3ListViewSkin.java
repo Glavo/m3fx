@@ -30,6 +30,7 @@ import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3ListViewCell;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -69,6 +70,10 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Updates logical focused-row visuals when the list view focus owner state changes.
     private final InvalidationListener focusedInvalidation = observable -> refreshCells();
+
+    /// Tracks keyboard-visible focus for virtualized row focus indicators.
+    private final M3FocusVisibleTracker focusVisibleTracker =
+            new M3FocusVisibleTracker(getSkinnable(), this::refreshCells);
 
     /// Suspends virtualized cell refreshes while the list view is detached and refreshes after reattachment.
     private final ChangeListener<@Nullable Scene> sceneListener =
@@ -140,6 +145,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         control.cellFactoryProperty().addListener(cellFactoryInvalidation);
         control.getSelectedIndices().addListener(selectedIndicesListener);
         control.focusedProperty().addListener(focusedInvalidation);
+        focusVisibleTracker.install();
         control.sceneProperty().addListener(sceneListener);
         control.parentProperty().addListener(parentListener);
         refreshThemeObservers();
@@ -157,6 +163,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         listView.cellFactoryProperty().removeListener(cellFactoryInvalidation);
         listView.getSelectedIndices().removeListener(selectedIndicesListener);
         listView.focusedProperty().removeListener(focusedInvalidation);
+        focusVisibleTracker.uninstall();
         listView.sceneProperty().removeListener(sceneListener);
         listView.parentProperty().removeListener(parentListener);
         updateObservedThemeScene(null);
@@ -455,7 +462,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
         int index = getSkinnable().getFocusedIndex();
         if (index < 0) {
-            getSkinnable().requestFocus();
+            M3ScrollReveal.requestFocusAndReveal(getSkinnable(), getSkinnable());
             focusRequestPending = false;
             return;
         }

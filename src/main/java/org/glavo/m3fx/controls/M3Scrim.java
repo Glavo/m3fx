@@ -247,7 +247,7 @@ public class M3Scrim extends Region {
             case COLLAPSE -> hide();
             case REQUEST_FOCUS -> {
                 if (isShown() && M3Accessible.canReach(this)) {
-                    requestFocus();
+                    M3Accessible.showDirectItem(this, this);
                 }
             }
             default -> super.executeAccessibleAction(action, parameters);

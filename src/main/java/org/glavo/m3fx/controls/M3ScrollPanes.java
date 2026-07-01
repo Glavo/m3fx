@@ -288,10 +288,13 @@ public final class M3ScrollPanes {
             if (content == null) {
                 return 0.0;
             }
+
             Bounds bounds = content.getBoundsInLocal();
             double width = bounds.getWidth();
             if (content instanceof Region region) {
-                width = Math.max(width, region.prefWidth(-1.0));
+                double viewportHeight = scrollPane.getViewportBounds().getHeight();
+                double preferredWidth = region.prefWidth(viewportHeight > 0.0 ? viewportHeight : -1.0);
+                width = Math.max(width, preferredWidth);
             }
             return width;
         }
@@ -302,10 +305,13 @@ public final class M3ScrollPanes {
             if (content == null) {
                 return 0.0;
             }
+
             Bounds bounds = content.getBoundsInLocal();
             double height = bounds.getHeight();
             if (content instanceof Region region) {
-                height = Math.max(height, region.prefHeight(-1.0));
+                double viewportWidth = scrollPane.getViewportBounds().getWidth();
+                double preferredHeight = region.prefHeight(viewportWidth > 0.0 ? viewportWidth : -1.0);
+                height = Math.max(height, preferredHeight);
             }
             return height;
         }

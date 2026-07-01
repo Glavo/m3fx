@@ -20,6 +20,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TabBarSkin;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -40,6 +41,9 @@ import java.util.Objects;
 public class M3TabBar extends Control {
     /// The base style class for M3FX tab bars.
     public static final String STYLE_CLASS = "m3-tab-bar";
+
+    /// The style class applied to the internal tab row container.
+    public static final String CONTAINER_STYLE_CLASS = "m3-tab-bar-container";
 
     /// The mutable tab content.
     private final ObservableList<Node> tabs = FXCollections.observableArrayList();
@@ -282,21 +286,50 @@ public class M3TabBar extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getTabs(),
-                    getSelectedTab(),
-                    M3Tab.class
-            ));
+            case REQUEST_FOCUS -> focusAccessibleSelectionTarget();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getTabs(),
-                    getSelectedTab(),
-                    M3Tab.class
-            ), getTabs(), parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current selected or focused accessibility target.
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleSelectionTarget() {
+        if (M3Accessible.showItem(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getTabs(),
+                getSelectedTab(),
+                M3Tab.class
+        ))) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Shows an item requested by an accessibility client.
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested item
+    final boolean showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showItemOrDefault(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getTabs(),
+                getSelectedTab(),
+                M3Tab.class
+        ), getTabs(), parameters)) {
+            notifyAccessibleFocusChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Notifies accessibility clients that the group focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Adds base style classes and installs selection listeners.
@@ -312,12 +345,13 @@ public class M3TabBar extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeySelection(
                 event,
+                this,
                 getTabs(),
                 M3SelectionNavigation.focusAnchor(getTabs(), getSelectedTab(), M3Tab.class),
                 M3Tab.class,
                 true,
                 false,
-                M3SelectionNavigation.isRightToLeft(this),
+                M3NodeLayout.isRightToLeft(this),
                 this::select
         );
     }

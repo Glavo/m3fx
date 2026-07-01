@@ -16,6 +16,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -372,7 +373,7 @@ public class M3TimePicker extends Control {
 
     /// Moves the selected or implied time in the visual horizontal arrow direction.
     private void moveHorizontally(boolean rightKey) {
-        boolean forward = M3SelectionNavigation.isRightToLeft(this) != rightKey;
+        boolean forward = M3NodeLayout.isRightToLeft(this) != rightKey;
         moveByHours(forward ? 1 : -1);
     }
 
@@ -486,18 +487,15 @@ public class M3TimePicker extends Control {
 
     /// Focuses an accessibility target or the picker itself.
     private void focusAccessibleNode(@Nullable Node node) {
-        if (node == null) {
-            requestFocus();
-        } else {
-            M3Accessible.showItem(node);
+        if (node == null || node == this || !M3Accessible.showItem(this, node)) {
+            M3Accessible.showDirectItem(this, this);
         }
     }
 
     /// Shows and focuses the time item requested by accessibility parameters.
     private void showAccessibleTime(Object... parameters) {
         @Nullable Object item = accessibleTimeItem(parameters);
-        if (item instanceof Node node) {
-            M3Accessible.showItem(node);
+        if (item instanceof Node node && M3Accessible.showItem(this, node)) {
             return;
         }
         if (item instanceof LocalTime time) {

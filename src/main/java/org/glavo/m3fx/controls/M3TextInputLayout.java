@@ -27,7 +27,6 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.geometry.Insets;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -36,6 +35,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.Skin;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -50,6 +50,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -368,6 +369,10 @@ public class M3TextInputLayout extends Control {
                 }
             };
 
+    /// The listener used to track application-owned input translation changes.
+    private final ChangeListener<Number> translateXListener =
+            (observable, oldValue, newValue) -> handleInputTranslateXChanged(newValue.doubleValue());
+
     /// Refreshes validation when the additional validator list changes.
     private final ListChangeListener<M3TextInputValidator> validatorsListener = change -> {
         validateValidatorChanges(change);
@@ -448,6 +453,12 @@ public class M3TextInputLayout extends Control {
 
     /// The input padding captured before adornment padding is applied.
     private @Nullable Insets installedInputBasePadding = null;
+
+    /// The input translation captured before layout-owned edge correction is applied.
+    private double installedInputBaseTranslateX = 0.0;
+
+    /// Whether the layout is currently writing the wrapped input translation.
+    private boolean applyingInputTranslation = false;
 
     /// Whether this layout applied the current error state to the installed input.
     private boolean inputErrorWasApplied = false;
@@ -760,14 +771,14 @@ public class M3TextInputLayout extends Control {
         return clearButton;
     }
 
-    /// Clears the wrapped input text when one is installed.
+    /// Clears the wrapped input text when one is installed and writable.
     public final void clearText() {
         TextInputControl input = getInput();
-        if (input != null) {
+        if (input != null && canMutateInputText(input)) {
             boolean restoreInputFocus = isFocusInside(effectiveTrailing());
             input.clear();
             if (restoreInputFocus) {
-                input.requestFocus();
+                M3Accessible.showItem(this, input);
             }
             notifyFocusNodeChanged();
         }
@@ -911,6 +922,7 @@ public class M3TextInputLayout extends Control {
             oldInput.textProperty().removeListener(textListener);
             oldInput.focusedProperty().removeListener(focusListener);
             oldInput.paddingProperty().removeListener(paddingListener);
+            oldInput.translateXProperty().removeListener(translateXListener);
             oldInput.boundsInParentProperty().removeListener(outlineGeometryListener);
             if (oldInput instanceof M3TextInput textInput) {
                 textInput.variantProperty().removeListener(variantListener);
@@ -920,7 +932,7 @@ public class M3TextInputLayout extends Control {
             oldInput.getStyleClass().remove(INPUT_STYLE_CLASS);
             restoreInputPadding(oldInput);
             if (inputErrorWasApplied && oldInput instanceof M3TextInput textInput) {
-                textInput.setError(false);
+                setInputError(textInput, false);
             }
             inputContainer.getChildren().remove(oldInput);
         }
@@ -928,6 +940,7 @@ public class M3TextInputLayout extends Control {
         inputErrorWasApplied = false;
         installedInput = null;
         installedInputBasePadding = null;
+        installedInputBaseTranslateX = 0.0;
         validationActive.set(false);
         labelMotionInitialized = false;
         supportingRowMotionInitialized = false;
@@ -951,7 +964,9 @@ public class M3TextInputLayout extends Control {
             trailingSlot.disableProperty().bind(newInput.disabledProperty());
             installedInput = newInput;
             installedInputBasePadding = newInput.getPadding();
+            installedInputBaseTranslateX = newInput.getTranslateX();
             newInput.paddingProperty().addListener(paddingListener);
+            newInput.translateXProperty().addListener(translateXListener);
             inputContainer.getChildren().add(1, newInput);
         }
 
@@ -964,16 +979,13 @@ public class M3TextInputLayout extends Control {
         updateInputErrorState();
         updateSupportingRow();
         if (restoreInputFocus && newInput != null) {
-            newInput.requestFocus();
+            M3Accessible.showItem(this, newInput);
         }
         notifyAccessibleItemsChanged();
     }
 
     /// Handles keyboard focus traversal between input layout adornment slots.
     private void handleSlotNavigationKey(KeyEvent event) {
-        if (M3FocusTraversal.focusOwnerInside(this, getInput())) {
-            return;
-        }
         M3FocusTraversal.handleHorizontalKeyFocus(this, event, slotFocusTargets());
     }
 
@@ -1004,6 +1016,8 @@ public class M3TextInputLayout extends Control {
                 M3TextInputVariant.FILLED.getStyleClass(),
                 M3TextInputVariant.OUTLINED.getStyleClass()
         );
+        updateLabelPadding();
+        updateInputPadding();
         updateOutlineState();
     }
 
@@ -1103,17 +1117,26 @@ public class M3TextInputLayout extends Control {
         slot.setMouseTransparent(content == null);
     }
 
+    /// Tracks an application-owned input translation update and reapplies the layout correction.
+    private void handleInputTranslateXChanged(double translateX) {
+        if (applyingInputTranslation) {
+            return;
+        }
+
+        installedInputBaseTranslateX = translateX;
+        TextInputControl input = installedInput;
+        if (input != null) {
+            updateInputAreaOffset(input);
+        }
+    }
+
     /// Restores the input padding captured before adornments were installed.
     private void restoreInputPadding(TextInputControl input) {
         Insets basePadding = installedInputBasePadding;
         if (basePadding != null) {
-            applyingInputPadding = true;
-            try {
-                input.setPadding(basePadding);
-            } finally {
-                applyingInputPadding = false;
-            }
+            setInputPadding(input, basePadding);
         }
+        setInputTranslateX(input, installedInputBaseTranslateX);
     }
 
     /// Updates the wrapped input padding so text does not overlap adornments.
@@ -1124,32 +1147,102 @@ public class M3TextInputLayout extends Control {
             return;
         }
 
-        double leading = getLeading() == null
-                ? inputLeadingInset(basePadding)
-                : Math.max(inputLeadingInset(basePadding), ADORNED_HORIZONTAL_PADDING);
-        double trailing = effectiveTrailing() == null
-                ? inputTrailingInset(basePadding)
-                : Math.max(inputTrailingInset(basePadding), ADORNED_HORIZONTAL_PADDING);
+        double leading = resolvedInputLeadingInset(basePadding);
+        double trailing = resolvedInputTrailingInset(basePadding);
         // Outlined floating labels occupy the outline notch, not the input content area.
         double top = isLabelFloating() && !isOutlinedInput()
                 ? Math.max(basePadding.getTop(), labeledTopPadding(input))
                 : basePadding.getTop();
+        double left = physicalLeftInset(leading, trailing);
+        double right = physicalRightInset(leading, trailing);
+        setInputPadding(input, new Insets(top, right, basePadding.getBottom(), left));
+        updateInputAreaOffset(input);
+    }
+
+    /// Writes the wrapped input padding when the application has not bound it.
+    private void setInputPadding(TextInputControl input, Insets padding) {
+        if (input.paddingProperty().isBound()) {
+            return;
+        }
+
         applyingInputPadding = true;
         try {
-            // JavaFX text input skins mirror the text geometry for RTL, so the left/right padding
-            // values must be written as logical leading/trailing insets instead of physical edges.
-            input.setPadding(new Insets(top, trailing, basePadding.getBottom(), leading));
+            input.setPadding(padding);
         } finally {
             applyingInputPadding = false;
         }
     }
 
+    /// Updates the wrapped input translation when JavaFX text rendering needs a physical edge correction.
+    private void updateInputAreaOffset(TextInputControl input) {
+        Insets basePadding = installedInputBasePadding;
+        double correction = basePadding != null && needsRightToLeftLeadingOnlyOffset(input)
+                ? rightToLeftLeadingOnlyCorrection(
+                        resolvedInputLeadingInset(basePadding),
+                        resolvedInputTrailingInset(basePadding)
+                )
+                : 0.0;
+        double targetTranslateX = installedInputBaseTranslateX + correction;
+        setInputTranslateX(input, targetTranslateX);
+    }
+
+    /// Writes the wrapped input translation when the application has not bound it.
+    private void setInputTranslateX(TextInputControl input, double translateX) {
+        if (input.translateXProperty().isBound()) {
+            return;
+        }
+
+        applyingInputTranslation = true;
+        try {
+            input.setTranslateX(translateX);
+        } finally {
+            applyingInputTranslation = false;
+        }
+    }
+
+    /// Returns the leading inset used after base padding and adornment reservations are resolved.
+    private double resolvedInputLeadingInset(Insets basePadding) {
+        double baseLeading = inputLeadingInset(basePadding);
+        return getLeading() == null ? baseLeading : Math.max(baseLeading, ADORNED_HORIZONTAL_PADDING);
+    }
+
+    /// Returns the trailing inset used after base padding and adornment reservations are resolved.
+    private double resolvedInputTrailingInset(Insets basePadding) {
+        double baseTrailing = inputTrailingInset(basePadding);
+        return effectiveTrailing() == null ? baseTrailing : Math.max(baseTrailing, ADORNED_HORIZONTAL_PADDING);
+    }
+
+    /// Returns the translation needed to compensate JavaFX single-line RTL text geometry.
+    private static double rightToLeftLeadingOnlyCorrection(double leadingInset, double trailingInset) {
+        return Math.max(0.0, leadingInset - trailingInset);
+    }
+
+    /// Returns whether a right-to-left single-line outlined input needs extra leading-edge separation.
+    private boolean needsRightToLeftLeadingOnlyOffset(@Nullable TextInputControl input) {
+        return isOutlinedInput()
+                && isRightToLeft()
+                && getLeading() != null
+                && effectiveTrailing() == null
+                && input instanceof TextField;
+    }
+
     /// Updates label placement and floating-label notch padding.
     private void updateLabelPadding() {
-        double leadingInset = getLeading() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING;
-        double trailingInset = effectiveTrailing() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING;
+        Insets basePadding = installedInputBasePadding;
+        double leadingInset = basePadding == null
+                ? (getLeading() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING)
+                : resolvedInputLeadingInset(basePadding);
+        double trailingInset = basePadding == null
+                ? (effectiveTrailing() == null ? TEXT_HORIZONTAL_PADDING : ADORNED_HORIZONTAL_PADDING)
+                : resolvedInputTrailingInset(basePadding);
         double textLeft = physicalLeftInset(leadingInset, trailingInset);
         double textRight = physicalRightInset(leadingInset, trailingInset);
+        boolean applyRightToLeftLeadingOffset = basePadding != null && needsRightToLeftLeadingOnlyOffset(installedInput);
+        double rightToLeftLeadingOffset = applyRightToLeftLeadingOffset
+                ? rightToLeftLeadingOnlyCorrection(leadingInset, trailingInset)
+                : 0.0;
+        textRight += rightToLeftLeadingOffset;
+        label.setTranslateX(rightToLeftLeadingOffset);
         if (isLabelFloating()) {
             label.setPadding(new Insets(
                     0.0,
@@ -1185,14 +1278,14 @@ public class M3TextInputLayout extends Control {
         return floating ? Pos.TOP_LEFT : Pos.CENTER_LEFT;
     }
 
-    /// Returns the logical leading inset from JavaFX text input padding.
-    private static double inputLeadingInset(Insets padding) {
-        return padding.getLeft();
+    /// Returns the logical leading inset from physical JavaFX text input padding.
+    private double inputLeadingInset(Insets padding) {
+        return isRightToLeft() ? padding.getRight() : padding.getLeft();
     }
 
-    /// Returns the logical trailing inset from JavaFX text input padding.
-    private static double inputTrailingInset(Insets padding) {
-        return padding.getRight();
+    /// Returns the logical trailing inset from physical JavaFX text input padding.
+    private double inputTrailingInset(Insets padding) {
+        return isRightToLeft() ? padding.getLeft() : padding.getRight();
     }
 
     /// Converts a logical leading/trailing inset pair to a physical left inset.
@@ -1207,7 +1300,7 @@ public class M3TextInputLayout extends Control {
 
     /// Returns whether this layout is currently displayed right-to-left.
     private boolean isRightToLeft() {
-        return getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        return M3NodeLayout.isRightToLeft(this);
     }
 
     /// Returns the top padding required while a label is floating.
@@ -1225,12 +1318,21 @@ public class M3TextInputLayout extends Control {
 
         boolean error = hasErrorState();
         if (error) {
-            textInput.setError(true);
-            inputErrorWasApplied = true;
+            inputErrorWasApplied = setInputError(textInput, true);
         } else if (inputErrorWasApplied) {
-            textInput.setError(false);
+            setInputError(textInput, false);
             inputErrorWasApplied = false;
         }
+    }
+
+    /// Writes the wrapped input error state when application code has not bound it.
+    private static boolean setInputError(M3TextInput textInput, boolean error) {
+        if (textInput.errorProperty().isBound()) {
+            return false;
+        }
+
+        textInput.setError(error);
+        return true;
     }
 
     /// Updates supporting text, counter text, visibility, and error pseudo-classes.
@@ -1332,9 +1434,8 @@ public class M3TextInputLayout extends Control {
             return;
         }
 
-        var inputBounds = input.getBoundsInParent();
-        double width = inputBounds.getWidth();
-        double height = inputBounds.getHeight();
+        double width = inputContainer.getWidth();
+        double height = inputContainer.getHeight();
         if (width <= 0.0 || height <= 0.0) {
             outlinePath.getElements().clear();
             return;
@@ -1342,10 +1443,10 @@ public class M3TextInputLayout extends Control {
 
         double strokeWidth = Math.max(1.0, outlinePath.getStrokeWidth());
         double strokeInset = strokeWidth / 2.0;
-        double left = inputBounds.getMinX() + strokeInset;
-        double top = inputBounds.getMinY() + strokeInset;
-        double right = inputBounds.getMaxX() - strokeInset;
-        double bottom = inputBounds.getMaxY() - strokeInset;
+        double left = strokeInset;
+        double top = strokeInset;
+        double right = width - strokeInset;
+        double bottom = height - strokeInset;
         double radius = outlineRadius(right - left, bottom - top);
         double topStartX = left + radius;
         double topEndX = right - radius;
@@ -1538,6 +1639,11 @@ public class M3TextInputLayout extends Control {
         return M3TextInputValidators.firstError(input, text, validators);
     }
 
+    /// Returns whether this layout may write to the wrapped input text property.
+    private static boolean canMutateInputText(TextInputControl input) {
+        return !input.textProperty().isBound();
+    }
+
     /// Validates additional validator list changes.
     private static void validateValidatorChanges(ListChangeListener.Change<? extends M3TextInputValidator> change) {
         while (change.next()) {
@@ -1570,6 +1676,10 @@ public class M3TextInputLayout extends Control {
 
         @Nullable String text = input.getText();
         if (text == null || text.length() <= getCharacterLimit()) {
+            return;
+        }
+
+        if (!canMutateInputText(input)) {
             return;
         }
 
@@ -1701,8 +1811,9 @@ public class M3TextInputLayout extends Control {
         if (!M3Accessible.canReach(this)) {
             return;
         }
-        M3Accessible.showItem(item);
-        notifyFocusNodeChanged();
+        if (M3Accessible.showItem(this, item)) {
+            notifyFocusNodeChanged();
+        }
     }
 
     /// Shows and focuses the requested accessible child or a descendant popup target.
@@ -1710,8 +1821,9 @@ public class M3TextInputLayout extends Control {
         if (!M3Accessible.canReach(this)) {
             return;
         }
-        M3Accessible.showCurrentOrItem(this, getLeading(), getInput(), effectiveTrailing(), parameters);
-        notifyFocusNodeChanged();
+        if (M3Accessible.showCurrentOrItem(this, getLeading(), getInput(), effectiveTrailing(), parameters)) {
+            notifyFocusNodeChanged();
+        }
     }
 
     /// Returns whether keyboard focus belongs to the supplied node or one of its descendants.
@@ -1728,7 +1840,7 @@ public class M3TextInputLayout extends Control {
     private void restoreInputFocus() {
         TextInputControl input = getInput();
         if (M3Accessible.canReach(input)) {
-            input.requestFocus();
+            M3Accessible.showItem(this, input);
         }
     }
 

@@ -308,7 +308,7 @@ public class M3MenuButton extends M3Button {
 
         popupContextSynchronizer.start();
         prepareMenuForPopup();
-        menu.setMinWidth(Math.max(getWidth(), menu.minWidth(-1.0)));
+        M3Css.setMinWidthIfUnbound(menu, Math.max(getWidth(), menu.minWidth(-1.0)));
         @Nullable M3PopupPositioning.Placement placement =
                 M3PopupPositioning.menuBelowOrAbove(this, menu, MENU_OFFSET_Y);
         if (placement == null) {
@@ -397,16 +397,9 @@ public class M3MenuButton extends M3Button {
         switch (action) {
             case SHOW_MENU, EXPAND -> showMenu();
             case COLLAPSE -> hideMenu(true);
-            case REQUEST_FOCUS -> focusAccessibleNode();
+            case REQUEST_FOCUS -> requestAccessibleFocus();
             case SET_SELECTED_ITEMS -> menu.executeAccessibleAction(action, parameters);
-            case SHOW_ITEM -> {
-                showMenu();
-                if (!popup.isShowing()) {
-                    return;
-                }
-                menu.executeAccessibleAction(action, parameters);
-                notifyPopupFocusNodeChanged();
-            }
+            case SHOW_ITEM -> showAccessibleMenuItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -427,7 +420,7 @@ public class M3MenuButton extends M3Button {
             if (focusOwnerOnHidden) {
                 focusOwnerOnHidden = false;
                 if (M3Accessible.canReach(this)) {
-                    requestFocus();
+                    M3Accessible.showDirectItem(this, this);
                 }
             }
         });
@@ -449,29 +442,51 @@ public class M3MenuButton extends M3Button {
     }
 
     /// Requests focus for this button or the currently reachable popup menu focus node.
-    private void focusAccessibleNode() {
+    final boolean requestAccessibleFocus() {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         if (!isShowing()) {
-            requestFocus();
-            notifyPopupFocusNodeChanged();
-            return;
+            if (M3Accessible.showDirectItem(this, this)) {
+                notifyPopupFocusNodeChanged();
+                return true;
+            }
+            return false;
         }
 
         @Nullable Object focusNode = menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
         if (focusNode instanceof Node node && node != this) {
-            M3Accessible.showItem(node);
-            notifyPopupFocusNodeChanged();
-            return;
+            if (M3Accessible.showItem(this, node)) {
+                notifyPopupFocusNodeChanged();
+                return true;
+            }
+            return false;
         }
 
-        menu.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
-        @Nullable Object nextFocusNode = menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
-        if (!(nextFocusNode instanceof Node node) || node == this) {
-            requestFocus();
+        if (menu.requestAccessibleFocus()) {
+            notifyPopupFocusNodeChanged();
+            return true;
         }
-        notifyPopupFocusNodeChanged();
+
+        if (M3Accessible.showDirectItem(this, this)) {
+            notifyPopupFocusNodeChanged();
+            return true;
+        }
+        return false;
+    }
+
+    /// Opens the popup menu and focuses the descendant supplied by accessibility parameters.
+    final boolean showAccessibleMenuItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        showMenu();
+        if (!popup.isShowing()) {
+            return false;
+        }
+        if (menu.showAccessibleItem(parameters)) {
+            notifyPopupFocusNodeChanged();
+            return true;
+        }
+        return false;
     }
 
     /// Handles keyboard opening and dismissal for the popup menu.

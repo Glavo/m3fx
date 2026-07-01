@@ -538,8 +538,9 @@ public class M3SnackbarHost extends Control {
 
     /// Focuses the current snackbar action focus node when it is reachable.
     private void focusCurrentAccessibleNode() {
-        M3Accessible.showItem(currentFocusNode());
-        notifyFocusNodeChanged();
+        if (M3Accessible.showItem(this, currentFocusNode())) {
+            notifyFocusNodeChanged();
+        }
     }
 
     /// Notifies and refreshes cached accessibility focus state.
@@ -587,25 +588,26 @@ public class M3SnackbarHost extends Control {
 
         if (target == getSnackbar()) {
             refreshAccessibleFocusNode();
-            showAccessibleSnackbarTarget(target, parameters);
-            refreshAccessibleFocusNode();
+            if (showAccessibleSnackbarTarget(target, parameters)) {
+                refreshAccessibleFocusNode();
+            }
             return;
         }
         if (queue.remove(target)) {
             show(target);
-            showAccessibleSnackbarTarget(target, parameters);
-            refreshAccessibleFocusNode();
+            if (showAccessibleSnackbarTarget(target, parameters)) {
+                refreshAccessibleFocusNode();
+            }
         }
     }
 
     /// Focuses the hosted snackbar or delegates to one of its nested action-owned targets.
-    private void showAccessibleSnackbarTarget(M3Snackbar target, Object... parameters) {
+    private boolean showAccessibleSnackbarTarget(M3Snackbar target, Object... parameters) {
         Objects.requireNonNull(target, "target");
         if (parametersReferenceNestedSnackbarAction(target, parameters)) {
-            target.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
-            return;
+            return M3Accessible.showAccessibleActionTarget(this, target, parameters) && currentFocusNode() != null;
         }
-        M3Accessible.showItem(currentFocusNode());
+        return M3Accessible.showItem(this, currentFocusNode());
     }
 
     /// Returns whether the supplied parameters target snackbar action content instead of the snackbar item itself.

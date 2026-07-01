@@ -697,7 +697,7 @@ public class M3Slider extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> requestFocus();
+            case REQUEST_FOCUS -> M3Accessible.showDirectItem(this, this);
             case INCREMENT -> increment();
             case DECREMENT -> decrement();
             case BLOCK_INCREMENT -> adjustValue(getValue() + getBlockIncrement());

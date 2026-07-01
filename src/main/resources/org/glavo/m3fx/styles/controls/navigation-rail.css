@@ -3,6 +3,7 @@
     -fx-padding: 16px 8px 16px 8px;
     -fx-min-width: 96px;
     -fx-pref-width: 96px;
+    -m3-item-spacing: 8px;
     -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
     -fx-border-width: 0 1px 0 0;
 }

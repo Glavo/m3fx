@@ -15,7 +15,6 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -27,6 +26,7 @@ import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SideSheetSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -322,8 +322,9 @@ public class M3SideSheet extends Control {
                     return;
                 }
                 show();
-                M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters);
-                notifyFocusNodeChanged();
+                if (M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters)) {
+                    notifyFocusNodeChanged();
+                }
             }
             case COLLAPSE -> hide();
             default -> super.executeAccessibleAction(action, parameters);
@@ -412,8 +413,8 @@ public class M3SideSheet extends Control {
 
     /// Requests focus for the current accessible focus target when this sheet is visible.
     private void focusAccessibleNode() {
-        if (isShown() && M3Accessible.canReach(this)) {
-            M3Accessible.showCurrentOrItem(this, getContent(), getActions());
+        if (isShown() && M3Accessible.canReach(this)
+                && M3Accessible.showCurrentOrItem(this, getContent(), getActions())) {
             notifyFocusNodeChanged();
         }
     }
@@ -442,7 +443,7 @@ public class M3SideSheet extends Control {
         @Nullable Node focusOwner = focusOwnerBeforeShown;
         focusOwnerBeforeShown = null;
         if (getVariant() == M3SheetVariant.MODAL && isRestoreFocusOnHide() && M3Accessible.canReach(focusOwner)) {
-            focusOwner.requestFocus();
+            M3Accessible.showDirectItem(focusOwner, focusOwner);
         }
     }
 
@@ -506,7 +507,7 @@ public class M3SideSheet extends Control {
             width = prefWidth(-1.0);
         }
         double offset = Math.max(0.0, width);
-        return getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT ? -offset : offset;
+        return M3NodeLayout.isRightToLeft(this) ? -offset : offset;
     }
 
     /// Updates the active variant style class.

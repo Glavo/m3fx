@@ -10,6 +10,7 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3Divider;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Divider].
@@ -39,6 +40,7 @@ public class M3DividerSkin extends SkinBase<M3Divider> {
         control.thicknessProperty().addListener(metricsInvalidation);
         control.insetStartProperty().addListener(metricsInvalidation);
         control.insetEndProperty().addListener(metricsInvalidation);
+        control.effectiveNodeOrientationProperty().addListener(metricsInvalidation);
     }
 
     /// Removes listeners before the skin is disposed.
@@ -49,6 +51,7 @@ public class M3DividerSkin extends SkinBase<M3Divider> {
         divider.thicknessProperty().removeListener(metricsInvalidation);
         divider.insetStartProperty().removeListener(metricsInvalidation);
         divider.insetEndProperty().removeListener(metricsInvalidation);
+        divider.effectiveNodeOrientationProperty().removeListener(metricsInvalidation);
         super.dispose();
     }
 
@@ -73,7 +76,7 @@ public class M3DividerSkin extends SkinBase<M3Divider> {
             line.setPrefHeight(Region.USE_COMPUTED_SIZE);
             line.setMaxHeight(Double.MAX_VALUE);
         } else {
-            container.setPadding(new Insets(0.0, insetEnd, 0.0, insetStart));
+            container.setPadding(M3NodeLayout.logicalInsets(divider, 0.0, insetStart, 0.0, insetEnd));
             container.setMinHeight(thickness);
             container.setPrefHeight(thickness);
             container.setMaxHeight(thickness);

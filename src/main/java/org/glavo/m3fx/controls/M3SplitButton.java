@@ -28,6 +28,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SplitButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -558,12 +559,12 @@ public class M3SplitButton extends Control {
         if (!M3Accessible.canReach(this)) {
             return;
         }
-        if (isShowing()) {
-            menuButton.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
-        } else {
-            M3Accessible.showCurrentOrItem(this, buttonParts);
+        boolean focused = isShowing()
+                ? menuButton.requestAccessibleFocus()
+                : M3Accessible.showCurrentOrItem(this, buttonParts);
+        if (focused) {
+            notifyFocusNodeChanged();
         }
-        notifyFocusNodeChanged();
     }
 
     /// Focuses a requested split button part or delegates menu-item targets to the popup menu.
@@ -572,24 +573,24 @@ public class M3SplitButton extends Control {
             return;
         }
         if (parameters.length == 0) {
-            if (isShowing()) {
-                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
-            } else {
-                M3Accessible.showCurrentOrItem(this, buttonParts);
+            boolean focused = isShowing()
+                    ? menuButton.showAccessibleMenuItem()
+                    : M3Accessible.showCurrentOrItem(this, buttonParts);
+            if (focused) {
+                notifyFocusNodeChanged();
             }
-            notifyFocusNodeChanged();
             return;
         }
 
         @Nullable Node buttonPart = M3Accessible.actionItem(buttonParts, parameters);
         if (buttonPart != null) {
-            M3Accessible.showItem(buttonPart);
-            notifyFocusNodeChanged();
+            if (M3Accessible.showItem(this, buttonPart)) {
+                notifyFocusNodeChanged();
+            }
             return;
         }
 
-        if (parameters.length > 0) {
-            menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+        if (parameters.length > 0 && menuButton.showAccessibleMenuItem(parameters)) {
             notifyFocusNodeChanged();
         }
     }
@@ -605,12 +606,13 @@ public class M3SplitButton extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeyFocus(
                 event,
+                this,
                 buttonParts,
                 M3SelectionNavigation.focused(buttonParts, M3Button.class),
                 M3Button.class,
                 true,
                 false,
-                M3SelectionNavigation.isRightToLeft(this)
+                M3NodeLayout.isRightToLeft(this)
         );
     }
 
@@ -636,7 +638,7 @@ public class M3SplitButton extends Control {
 
     /// Updates layout-direction-dependent edge states and child feedback geometry.
     private void updateNodeOrientationStyle() {
-        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        boolean rightToLeft = M3NodeLayout.isRightToLeft(this);
         applyEdgeState(actionButton, !rightToLeft);
         applyEdgeState(menuButton, rightToLeft);
         actionButton.requestLayout();

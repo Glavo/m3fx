@@ -22,6 +22,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ButtonGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -287,10 +288,30 @@ public class M3ButtonGroup extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getItems());
-            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getItems(), parameters);
+            case REQUEST_FOCUS -> focusAccessibleItem();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current or first accessibility item.
+    private void focusAccessibleItem() {
+        if (M3Accessible.showCurrentOrItem(this, getItems())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showCurrentOrItem(this, getItems(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the container focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Adds base style classes and child list listeners.
@@ -310,12 +331,13 @@ public class M3ButtonGroup extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         M3SelectionNavigation.handleKeyFocus(
                 event,
+                this,
                 getItems(),
                 M3SelectionNavigation.focused(getItems(), M3Button.class),
                 M3Button.class,
                 true,
                 false,
-                M3SelectionNavigation.isRightToLeft(this)
+                M3NodeLayout.isRightToLeft(this)
         );
     }
 
@@ -328,7 +350,7 @@ public class M3ButtonGroup extends Control {
             }
         }
 
-        boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        boolean rightToLeft = M3NodeLayout.isRightToLeft(this);
         int buttonIndex = 0;
         for (Node child : getItems()) {
             if (child instanceof M3Button button) {

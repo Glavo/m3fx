@@ -17,9 +17,12 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.TextAlignment;
 import org.glavo.m3fx.controls.M3FormValidator;
 import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.glavo.m3fx.controls.M3ValidationSummary;
+import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,7 +74,10 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         super(control);
 
         container.setManaged(false);
-        container.setAlignment(Pos.CENTER_LEFT);
+        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        items.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        titleLabel.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
+        emptyLabel.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         items.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         titleLabel.getStyleClass().add(M3ValidationSummary.TITLE_STYLE_CLASS);
@@ -103,7 +109,11 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         control.validatorProperty().removeListener(validatorListener);
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
+        container.alignmentProperty().unbind();
         items.nodeOrientationProperty().unbind();
+        items.alignmentProperty().unbind();
+        titleLabel.alignmentProperty().unbind();
+        emptyLabel.alignmentProperty().unbind();
         updateValidator(null);
         items.getChildren().clear();
         container.getChildren().clear();
@@ -230,9 +240,13 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
         Label label = new Label(itemLabel(input));
         label.getStyleClass().add(M3ValidationSummary.ITEM_LABEL_STYLE_CLASS);
+        label.setAlignment(textAlignment());
+        label.setTextAlignment(textTextAlignment());
         label.setMaxWidth(Double.MAX_VALUE);
         Label error = new Label(itemError(input));
         error.getStyleClass().add(M3ValidationSummary.ITEM_ERROR_STYLE_CLASS);
+        error.setAlignment(textAlignment());
+        error.setTextAlignment(textTextAlignment());
         error.setWrapText(true);
         error.setMaxWidth(Double.MAX_VALUE);
 
@@ -300,23 +314,25 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
         Node item = items.getChildren().get(index);
         if (!item.isDisabled() && item.isVisible()) {
-            item.requestFocus();
-            return item.isFocused();
+            return M3ScrollReveal.requestFocusAndReveal(getSkinnable(), item);
         }
         return false;
     }
 
-    /// Updates orientation-dependent summary alignments.
+    /// Updates orientation-dependent summary text alignment.
     private void updateNodeOrientationLayout() {
-        container.setAlignment(textAlignment());
-        items.setAlignment(textAlignment());
-        titleLabel.setAlignment(textAlignment());
-        emptyLabel.setAlignment(textAlignment());
+        titleLabel.setTextAlignment(textTextAlignment());
+        emptyLabel.setTextAlignment(textTextAlignment());
     }
 
-    /// Returns the current logical text alignment.
+    /// Returns the current logical label-node alignment.
     private Pos textAlignment() {
-        return Pos.CENTER_LEFT;
+        return M3NodeLayout.logicalStartCenterAlignment(getSkinnable());
+    }
+
+    /// Returns the current logical multi-line text alignment.
+    private TextAlignment textTextAlignment() {
+        return M3NodeLayout.isRightToLeft(getSkinnable()) ? TextAlignment.RIGHT : TextAlignment.LEFT;
     }
 
     /// Returns the field label shown for one invalid input item.

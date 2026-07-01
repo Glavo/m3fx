@@ -221,6 +221,26 @@ public class M3Surface extends Control {
         return M3Stylesheets.controlStylesheet("surface.css");
     }
 
+    /// Requests focus on the current or first accessibility item.
+    private void focusAccessibleItem() {
+        if (M3Accessible.showCurrentOrItem(this, getContent())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showCurrentOrItem(this, getContent(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the container focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
+    }
+
     /// Creates the default Material Design 3 surface skin.
     ///
     /// @return the default Material Design 3 surface skin
@@ -253,8 +273,8 @@ public class M3Surface extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getContent());
-            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getContent(), parameters);
+            case REQUEST_FOCUS -> focusAccessibleItem();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -288,10 +308,6 @@ public class M3Surface extends Control {
 
     /// Handles linear keyboard traversal between surface content targets.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, true)) {
-            return;
-        }
-
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,
@@ -357,7 +373,7 @@ public class M3Surface extends Control {
     /// Applies content padding from tokens.
     private void updatePadding() {
         double padding = getContentPadding();
-        setPadding(new Insets(padding));
+        M3Css.setPaddingIfUnbound(this, new Insets(padding));
     }
 
     /// CSS metadata for M3FX surface tokens.

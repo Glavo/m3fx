@@ -373,21 +373,41 @@ public class M3ListPane extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showItem(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedItem(),
-                    M3ListItem.class
-            ));
+            case REQUEST_FOCUS -> focusAccessibleSelectionTarget();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> M3Accessible.showItemOrDefault(M3Accessible.currentOrSelectionFocusTarget(
-                    this,
-                    getItems(),
-                    getSelectedItem(),
-                    M3ListItem.class
-            ), getItems(), parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current selected or focused list accessibility target.
+    private void focusAccessibleSelectionTarget() {
+        if (M3Accessible.showItem(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedItem(),
+                M3ListItem.class
+        ))) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows a list item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showItemOrDefault(this, M3Accessible.currentOrSelectionFocusTarget(
+                this,
+                getItems(),
+                getSelectedItem(),
+                M3ListItem.class
+        ), getItems(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the list focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Adds base style classes and installs child listeners.
@@ -425,6 +445,7 @@ public class M3ListPane extends Control {
                 || getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
             if (M3SelectionNavigation.handleKeyFocus(
                     event,
+                    this,
                     getItems(),
                     M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
                     M3ListItem.class,
@@ -445,6 +466,7 @@ public class M3ListPane extends Control {
 
         if (M3SelectionNavigation.handleKeySelection(
                 event,
+                this,
                 getItems(),
                 M3SelectionNavigation.focusAnchor(getItems(), getSelectedItem(), M3ListItem.class),
                 M3ListItem.class,
@@ -522,11 +544,10 @@ public class M3ListPane extends Control {
 
     /// Focuses a type-ahead target and notifies accessibility clients.
     private void focusTypeAheadTarget(M3ListItem item) {
-        if (item.isFocusTraversable()) {
-            item.requestFocus();
+        if (M3Accessible.showItem(this, item)) {
+            M3Accessible.notifyFocusNodeChanged(this);
+            focusNotifier.refresh();
         }
-        M3Accessible.notifyFocusNodeChanged(this);
-        focusNotifier.refresh();
     }
 
     /// Applies selected list items supplied by an accessibility client.

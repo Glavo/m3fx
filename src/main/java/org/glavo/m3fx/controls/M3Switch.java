@@ -377,8 +377,8 @@ public class M3Switch extends ButtonBase {
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double size = Math.max(Math.max(getTouchTargetSize(), getTrackHeight()), getStateLayerSize());
-        setMinHeight(size);
-        setPrefHeight(size);
+        M3Css.setMinHeightIfUnbound(this, size);
+        M3Css.setPrefHeightIfUnbound(this, size);
     }
 
     /// Creates a non-negative styleable size property for a switch token.

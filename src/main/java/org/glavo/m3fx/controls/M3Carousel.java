@@ -22,6 +22,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3CarouselSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -409,7 +410,7 @@ public class M3Carousel extends Control {
             return;
         }
 
-        boolean forward = M3SelectionNavigation.isRightToLeft(this) != rightKey;
+        boolean forward = M3NodeLayout.isRightToLeft(this) != rightKey;
         if (forward) {
             selectNext();
         } else {
@@ -432,8 +433,9 @@ public class M3Carousel extends Control {
     /// Shows an item requested by an accessibility client.
     private void showAccessibleItem(Object... parameters) {
         if (parameters.length == 0) {
-            focusAccessibleNode();
-            scrollSelectedItemIntoView();
+            if (focusAccessibleNode()) {
+                scrollSelectedItemIntoView();
+            }
             return;
         }
 
@@ -441,9 +443,13 @@ public class M3Carousel extends Control {
         if (selectedTarget != null) {
             select(selectedTarget);
             scrollSelectedItemIntoView();
-            if (!M3Accessible.showAccessibleActionTarget(selectedTarget, parameters)) {
+            boolean shown = M3Accessible.showAccessibleActionTarget(this, selectedTarget, parameters);
+            if (!shown) {
                 @Nullable Node focusTarget = M3Accessible.actionItem(getItems(), parameters);
-                M3Accessible.showItem(focusTarget == null ? selectedTarget : focusTarget);
+                shown = M3Accessible.showItem(this, focusTarget == null ? selectedTarget : focusTarget);
+            }
+            if (shown) {
+                notifyAccessibleFocusChanged();
             }
             return;
         }
@@ -461,11 +467,12 @@ public class M3Carousel extends Control {
     }
 
     /// Requests focus on the accessible carousel focus target.
-    private void focusAccessibleNode() {
-        @Nullable Node focusTarget = accessibleFocusNode();
-        if (focusTarget != null) {
-            focusTarget.requestFocus();
+    private boolean focusAccessibleNode() {
+        if (M3Accessible.showItem(this, accessibleFocusNode())) {
+            notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Applies accessible single selection parameters.
@@ -517,12 +524,17 @@ public class M3Carousel extends Control {
         selectedItems.setAll(nextItem == null ? java.util.List.of() : java.util.List.of(nextItem));
         if (previousItem != nextItem) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
-            M3Accessible.notifyFocusNodeChanged(this);
-            focusNotifier.refresh();
+            notifyAccessibleFocusChanged();
         }
         if (scroll && nextItem != null) {
             scrollSelectedItemIntoView();
         }
+    }
+
+    /// Notifies accessibility clients that the carousel focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Applies selected item style classes and pseudo-classes.
@@ -549,9 +561,8 @@ public class M3Carousel extends Control {
 
     /// Requests focus on the selected item when it can accept focus.
     private void requestFocusOnSelectedItem() {
-        @Nullable Node item = getSelectedItem();
-        if (item != null && item.isFocusTraversable() && !item.isDisabled()) {
-            item.requestFocus();
+        if (M3Accessible.showItem(this, getSelectedItem())) {
+            notifyAccessibleFocusChanged();
         }
     }
 

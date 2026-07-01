@@ -2149,6 +2149,211 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that dialog content containers reveal picker value targets inside nested split-button submenu items.
+    @Test
+    void dialogPaneRevealsSplitButtonNestedSubMenuPickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            LocalDate targetDate = LocalDate.of(2026, 6, 21);
+            M3SubMenuItem scheduleItem = new M3SubMenuItem("Schedule", field);
+            M3SplitButton splitButton = new M3SplitButton("Create", scheduleItem);
+            Pane content = new Pane(splitButton);
+            content.setPrefSize(360.0, 96.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 480.0, 240.0);
+                splitButton.resizeRelocate(0.0, 0.0, 240.0, 48.0);
+                root.layout();
+
+                assertNestedSubMenuPickerValueTargetRoutedByContainer(
+                        dialogPane,
+                        splitButton.getMenuButton(),
+                        scheduleItem,
+                        field,
+                        targetDate
+                );
+            } finally {
+                field.hidePicker();
+                scheduleItem.hideSubMenu();
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content containers reveal date-range value targets inside nested split-button submenu items.
+    @Test
+    void dialogPaneRevealsSplitButtonNestedSubMenuDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate targetDate = LocalDate.of(2026, 6, 24);
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 6, 14),
+                    LocalDate.of(2026, 6, 18)
+            );
+            M3SubMenuItem scheduleItem = new M3SubMenuItem("Schedule", field);
+            M3SplitButton splitButton = new M3SplitButton("Create", scheduleItem);
+            Pane content = new Pane(splitButton);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 720.0, 400.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 560.0, 280.0);
+                splitButton.resizeRelocate(0.0, 0.0, 300.0, 48.0);
+                root.layout();
+
+                assertNestedSubMenuDateRangePickerValueTargetRoutedByContainer(
+                        dialogPane,
+                        splitButton.getMenuButton(),
+                        scheduleItem,
+                        field,
+                        targetDate
+                );
+            } finally {
+                field.hidePicker();
+                scheduleItem.hideSubMenu();
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content containers reveal time value targets inside nested split-button submenu items.
+    @Test
+    void dialogPaneRevealsSplitButtonNestedSubMenuTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(8, 30));
+            LocalTime targetTime = LocalTime.of(9, 45);
+            M3SubMenuItem scheduleItem = new M3SubMenuItem("Schedule", field);
+            M3SplitButton splitButton = new M3SplitButton("Create", scheduleItem);
+            Pane content = new Pane(splitButton);
+            content.setPrefSize(360.0, 96.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 480.0, 240.0);
+                splitButton.resizeRelocate(0.0, 0.0, 240.0, 48.0);
+                root.layout();
+
+                assertNestedSubMenuPickerValueTargetRoutedByContainer(
+                        dialogPane,
+                        splitButton.getMenuButton(),
+                        scheduleItem,
+                        field,
+                        targetTime
+                );
+            } finally {
+                field.hidePicker();
+                scheduleItem.hideSubMenu();
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content containers reveal rich tooltip actions inside nested split-button submenu items.
+    @Test
+    void dialogPaneRevealsSplitButtonNestedSubMenuRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem pdfItem = new M3MenuItem("PDF");
+            M3MenuItem htmlItem = new M3MenuItem("HTML");
+            M3Button tooltipAction = new M3Button("Describe");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    pdfItem,
+                    "PDF export",
+                    "Exports the current draft as a PDF.",
+                    tooltipAction
+            );
+            M3SubMenuItem recentItem = new M3SubMenuItem("Recent", pdfItem, htmlItem);
+            M3SubMenuItem exportItem = new M3SubMenuItem("Export", recentItem);
+            M3SplitButton splitButton = new M3SplitButton("Create", exportItem);
+            Pane content = new Pane(splitButton);
+            content.setPrefSize(360.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 720.0, 400.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 560.0, 280.0);
+                splitButton.resizeRelocate(0.0, 0.0, 240.0, 48.0);
+                root.layout();
+
+                assertFalse(splitButton.isShowing());
+                assertFalse(exportItem.isSubMenuShowing());
+                assertFalse(recentItem.isSubMenuShowing());
+                assertFalse(tooltip.isShowing());
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+
+                assertTrue(splitButton.isShowing());
+                assertTrue(exportItem.isSubMenuShowing());
+                assertTrue(recentItem.isSubMenuShowing());
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipAction.isFocused());
+                assertSame(tooltipAction, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(tooltipAction, splitButton.getMenuButton().queryAccessibleAttribute(
+                        AccessibleAttribute.FOCUS_NODE));
+                assertSame(tooltipAction, exportItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(tooltipAction, recentItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(dialogPane, tooltipAction);
+
+                tooltipAction.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(tooltip.isShowing());
+                assertTrue(pdfItem.isFocused());
+                assertTrue(splitButton.isShowing());
+                assertTrue(exportItem.isSubMenuShowing());
+                assertTrue(recentItem.isSubMenuShowing());
+                assertSame(pdfItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, splitButton.getMenuButton().queryAccessibleAttribute(
+                        AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, exportItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, recentItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltip.hide();
+                recentItem.hideSubMenu();
+                exportItem.hideSubMenu();
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that dialog content containers reveal rich tooltip actions inside nested split-button menu items.
     @Test
     void dialogPaneRevealsNestedSplitButtonMenuRichTooltipAction() {
@@ -2447,7 +2652,8 @@ final class M3MixedPopupFocusTest {
                 assertTrue(exportItem.isSubMenuShowing());
                 assertTrue(recentItem.isSubMenuShowing());
                 assertSame(pdfItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertSame(pdfItem, splitButton.getMenuButton().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(pdfItem, splitButton.getMenuButton().queryAccessibleAttribute(
+                        AccessibleAttribute.FOCUS_NODE));
                 assertSame(pdfItem, exportItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertSame(pdfItem, recentItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {

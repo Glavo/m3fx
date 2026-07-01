@@ -10,7 +10,6 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.event.EventHandler;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.scene.control.SkinBase;
@@ -21,7 +20,9 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Slider;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -354,7 +355,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             return;
         }
 
-        slider.requestFocus();
+        M3FocusRequests.requestFocusIfTraversable(slider);
         slider.setValueChanging(true);
         updateValueFromMouse(event);
         stateLayer.playCenteredRipple();
@@ -497,10 +498,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         if (slider.getOrientation() != Orientation.HORIZONTAL) {
             return false;
         }
-        NodeOrientation nodeOrientation = slider.getNodeOrientation();
-        return nodeOrientation == NodeOrientation.RIGHT_TO_LEFT
-                || (nodeOrientation == NodeOrientation.INHERIT
-                && slider.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT);
+        return M3NodeLayout.isRightToLeft(slider);
     }
 
     /// Converts a normalized position to a slider value.

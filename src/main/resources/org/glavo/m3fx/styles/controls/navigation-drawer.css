@@ -3,6 +3,7 @@
     -fx-padding: 12px;
     -fx-min-width: 360px;
     -fx-pref-width: 360px;
+    -m3-item-spacing: 4px;
 }
 
 .m3-navigation-drawer .m3-list-item {

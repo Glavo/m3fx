@@ -440,7 +440,7 @@ public class M3SearchView extends Control {
             case ESCAPE -> {
                 if (isActive()) {
                     deactivate();
-                    searchBar.requestFocus();
+                    focusSearchBar();
                     event.consume();
                 }
             }
@@ -457,34 +457,36 @@ public class M3SearchView extends Control {
         @Nullable Node currentFocusNode = currentDefaultShowItemFocusNode();
         activate();
         if (parameters.length == 0) {
-            if (currentFocusNode != null) {
-                M3Accessible.showItem(currentFocusNode);
+            if (currentFocusNode != null && M3Accessible.showItem(this, currentFocusNode)) {
                 notifyFocusNodeChanged();
                 return;
             }
             if (!focusFirstResult()) {
-                getEditor().requestFocus();
-                notifyFocusNodeChanged();
+                focusEditor();
             }
             return;
         }
 
         if (M3Accessible.containsAccessibleActionTarget(searchBar, parameters)) {
-            searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
-            notifyFocusNodeChanged();
+            if (M3Accessible.showAccessibleActionTarget(this, searchBar, parameters)) {
+                notifyFocusNodeChanged();
+            }
             return;
         }
 
         @Nullable Node focusOwnerBefore = getScene() == null ? null : getScene().getFocusOwner();
-        M3Accessible.showItem(getResults(), parameters);
+        boolean shown = M3Accessible.showIndexedItem(this, getResults(), parameters);
 
         if (getScene() != null
                 && getScene().getFocusOwner() == focusOwnerBefore
                 && currentFocusNode() == null
                 && M3Accessible.canReach(getEditor())) {
-            getEditor().requestFocus();
+            focusEditor();
+            return;
         }
-        notifyFocusNodeChanged();
+        if (shown) {
+            notifyFocusNodeChanged();
+        }
     }
 
     /// Focuses the next result relative to the current focus owner.
@@ -515,8 +517,7 @@ public class M3SearchView extends Control {
 
         int previousIndex = reachableResultIndexFrom(currentIndex - 1, -1);
         if (previousIndex < 0) {
-            getEditor().requestFocus();
-            notifyFocusNodeChanged();
+            focusEditor();
             return true;
         }
         return focusResultAt(previousIndex);
@@ -572,7 +573,9 @@ public class M3SearchView extends Control {
         if (focusTarget == null) {
             return false;
         }
-        focusTarget.requestFocus();
+        if (!M3Accessible.showItem(this, focusTarget)) {
+            return false;
+        }
         notifyFocusNodeChanged();
         return true;
     }
@@ -696,8 +699,9 @@ public class M3SearchView extends Control {
         }
         @Nullable Node focusNode = currentFocusNode();
         activate();
-        M3Accessible.showItem(focusNode == null ? getEditor() : focusNode);
-        notifyFocusNodeChanged();
+        if (M3Accessible.showItem(this, focusNode == null ? getEditor() : focusNode)) {
+            notifyFocusNodeChanged();
+        }
     }
 
     /// Returns the current focused child target, or `null` when focus is outside this search view.
@@ -778,8 +782,20 @@ public class M3SearchView extends Control {
 
     /// Moves focus back to the search bar when result content is being collapsed.
     private void restoreSearchBarFocus() {
-        if (M3Accessible.canReach(searchBar)) {
-            searchBar.requestFocus();
+        focusSearchBar();
+    }
+
+    /// Moves focus to the embedded search editor and reveals it through this search view.
+    private void focusEditor() {
+        if (M3Accessible.canReach(getEditor()) && M3Accessible.showItem(this, getEditor())) {
+            notifyFocusNodeChanged();
+        }
+    }
+
+    /// Moves focus to the search bar container and reveals it through this search view.
+    private void focusSearchBar() {
+        if (M3Accessible.showDirectItem(this, searchBar)) {
+            notifyFocusNodeChanged();
         }
     }
 

@@ -5,7 +5,6 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.collections.ListChangeListener;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
@@ -13,6 +12,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -226,22 +226,13 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
 
     /// Updates slot alignment from orientation and floating action placement.
     private void updateLayoutState() {
-        boolean rightToLeft = isRightToLeft();
-        actions.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        actions.setAlignment(M3NodeLayout.logicalStartCenterAlignment(getSkinnable()));
         switch (getSkinnable().getFloatingActionAlignment()) {
-            case START -> floatingActionSlot.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+            case START -> floatingActionSlot.setAlignment(M3NodeLayout.logicalStartCenterAlignment(getSkinnable()));
             case CENTER -> floatingActionSlot.setAlignment(Pos.CENTER);
-            case END -> floatingActionSlot.setAlignment(rightToLeft ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
+            case END -> floatingActionSlot.setAlignment(M3NodeLayout.logicalEndCenterAlignment(getSkinnable()));
         }
         getSkinnable().requestLayout();
-    }
-
-    /// Returns whether the skinnable lays out logical starts on the physical right.
-    private boolean isRightToLeft() {
-        NodeOrientation orientation = getSkinnable().getNodeOrientation();
-        return orientation == NodeOrientation.RIGHT_TO_LEFT
-                || orientation == NodeOrientation.INHERIT
-                && getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     }
 
     /// Computes the content width needed by visible slots.

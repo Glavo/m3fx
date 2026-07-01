@@ -351,7 +351,7 @@ public class M3Snackbar extends Control {
 
     /// Focuses the snackbar action button when it exists.
     private void focusAccessibleNode() {
-        M3Accessible.showItem(accessibleFocusNode());
+        M3Accessible.showItem(this, accessibleFocusNode());
     }
 
     /// Returns the action button for an accessibility item index.
@@ -380,14 +380,16 @@ public class M3Snackbar extends Control {
     /// Focuses the snackbar action or delegates to nested action-owned popup targets.
     private void showAccessibleItem(Object... parameters) {
         @Nullable Node actionButton = accessibleActionButton(parameters);
-        if (actionButton != null) {
-            M3Accessible.showItem(actionButton);
+        if (actionButton != null && M3Accessible.showItem(this, actionButton)) {
+            M3Accessible.notifyFocusNodeChanged(this);
             return;
         }
 
         @Nullable Node focusNode = accessibleFocusNode();
-        if (parameters.length > 0 && focusNode != null) {
-            M3Accessible.showAccessibleActionTarget(focusNode, parameters);
+        if (parameters.length > 0
+                && focusNode != null
+                && M3Accessible.showAccessibleActionTarget(this, focusNode, parameters)) {
+            M3Accessible.notifyFocusNodeChanged(this);
         }
     }
 

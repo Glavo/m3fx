@@ -8,12 +8,11 @@ import javafx.beans.property.ObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
-import javafx.scene.AccessibleAction;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -310,12 +309,11 @@ public class M3DatePickerDialog extends M3Dialog<LocalDate> {
         picker.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
         presetContent.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
-        presetContent.setAlignment(Pos.TOP_LEFT);
+        presetContent.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(pane));
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
-        presetList.setAlignment(Pos.TOP_LEFT);
-        M3PresetNavigation.install(presetList, pane, () ->
-                picker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS));
+        presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(pane));
+        M3PresetNavigation.install(presetList, pane, () -> M3Accessible.requestAccessibleFocus(pane, picker));
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
         setResultConverter(buttonType -> buttonType == ButtonType.OK ? getValue() : null);
         picker.valueProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
@@ -348,7 +346,7 @@ public class M3DatePickerDialog extends M3Dialog<LocalDate> {
     private M3Button createPresetButton(M3DatePreset preset) {
         M3Button button = new M3Button(preset.text(), M3ButtonVariant.TEXT);
         button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
-        button.setMaxWidth(Double.MAX_VALUE);
+        M3Css.setMaxWidthIfUnbound(button, Double.MAX_VALUE);
         button.setDisable(picker.isDateDisabled(preset.date()));
         button.setOnAction(event -> applyPreset(preset));
         return button;

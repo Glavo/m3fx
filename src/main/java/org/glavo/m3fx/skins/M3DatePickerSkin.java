@@ -5,7 +5,6 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.event.ActionEvent;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.AccessibleRole;
@@ -23,6 +22,7 @@ import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -104,7 +104,9 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
         header.nodeOrientationProperty().unbind();
+        header.alignmentProperty().unbind();
         weekdayRow.nodeOrientationProperty().unbind();
+        weekdayRow.alignmentProperty().unbind();
         dayGrid.nodeOrientationProperty().unbind();
         super.dispose();
     }
@@ -237,10 +239,10 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        header.setAlignment(Pos.CENTER_LEFT);
+        header.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(getSkinnable()));
         header.getChildren().addAll(monthLabel, spacer, previousButton, nextButton);
 
-        weekdayRow.setAlignment(Pos.CENTER_LEFT);
+        weekdayRow.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(getSkinnable()));
         for (int column = 0; column < COLUMN_COUNT; column++) {
             Label label = createWeekdayLabel();
             weekdayLabels.add(label);
@@ -332,11 +334,9 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         nextButton.setDisable(maxDate != null && nextMonthStart.isAfter(maxDate));
     }
 
-    /// Updates orientation-dependent alignment and navigation glyphs.
+    /// Updates orientation-dependent navigation glyphs.
     private void updateNodeOrientationLayout() {
-        boolean rightToLeft = getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-        header.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-        weekdayRow.setAlignment(rightToLeft ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        boolean rightToLeft = M3NodeLayout.isRightToLeft(getSkinnable());
         setNavigationIcon(previousButton, rightToLeft
                 ? M3InternalIcon.Glyph.CHEVRON_RIGHT
                 : M3InternalIcon.Glyph.CHEVRON_LEFT);

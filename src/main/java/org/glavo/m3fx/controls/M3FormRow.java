@@ -378,6 +378,26 @@ public class M3FormRow extends Control {
         return M3Stylesheets.controlStylesheet("form.css");
     }
 
+    /// Requests focus on the current or first accessibility item.
+    private void focusAccessibleItem() {
+        if (M3Accessible.showCurrentOrItem(this, getContent(), getTrailing())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showCurrentOrItem(this, getContent(), getTrailing(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the container focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
+    }
+
     /// Creates the default Material Design 3 form row skin.
     @Override
     protected Skin<?> createDefaultSkin() {
@@ -403,8 +423,8 @@ public class M3FormRow extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getContent(), getTrailing());
-            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getContent(), getTrailing(), parameters);
+            case REQUEST_FOCUS -> focusAccessibleItem();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -432,10 +452,6 @@ public class M3FormRow extends Control {
 
     /// Handles horizontal keyboard traversal between content and trailing slots.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
-            return;
-        }
-
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,

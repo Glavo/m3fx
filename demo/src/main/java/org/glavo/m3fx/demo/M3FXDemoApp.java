@@ -783,7 +783,7 @@ public final class M3FXDemoApp extends Application {
 
         Bounds viewportBounds = scrollPane.getViewportBounds();
         double viewportHeight = viewportBounds.getHeight();
-        double contentHeight = content.getLayoutBounds().getHeight();
+        double contentHeight = scrollContentHeight(content, viewportBounds.getWidth());
         double scrollableHeight = contentHeight - viewportHeight;
         if (viewportHeight <= 0.0 || scrollableHeight <= 0.0) {
             return;
@@ -807,6 +807,16 @@ public final class M3FXDemoApp extends Application {
 
         double clampedTop = Math.max(0.0, Math.min(scrollableHeight, targetTop));
         scrollPane.setVvalue(clampedTop / scrollableHeight);
+    }
+
+    /// Returns the current scroll content height, including width-dependent preferred height updates.
+    private static double scrollContentHeight(Node content, double viewportWidth) {
+        double height = content.getLayoutBounds().getHeight();
+        if (content instanceof Region region) {
+            double preferredHeight = region.prefHeight(viewportWidth > 0.0 ? viewportWidth : -1.0);
+            height = Math.max(height, preferredHeight);
+        }
+        return height;
     }
 
     /// Returns the rendered sidebar destination item for a page.

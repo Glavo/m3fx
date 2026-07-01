@@ -410,9 +410,9 @@ public class M3ProgressBar extends Control {
     private void updateMetrics() {
         double thickness = getTrackThickness();
         double height = thickness + getWaveAmplitude() * 2.0;
-        setMinHeight(height);
-        setPrefHeight(height);
-        setMaxHeight(height);
+        M3Css.setMinHeightIfUnbound(this, height);
+        M3Css.setPrefHeightIfUnbound(this, height);
+        M3Css.setMaxHeightIfUnbound(this, height);
     }
 
     /// Normalizes progress values to the supported range.

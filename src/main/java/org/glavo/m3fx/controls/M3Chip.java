@@ -432,9 +432,9 @@ public class M3Chip extends ButtonBase {
     private void updateMetrics() {
         double height = getContainerHeight();
         double padding = getGraphic() == null ? getHorizontalPadding() : getIconHorizontalPadding();
-        setMinHeight(height);
-        setPrefHeight(height);
-        setPadding(new Insets(0.0, padding, 0.0, padding));
+        M3Css.setMinHeightIfUnbound(this, height);
+        M3Css.setPrefHeightIfUnbound(this, height);
+        M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
         updateGraphicMetrics();
     }
 

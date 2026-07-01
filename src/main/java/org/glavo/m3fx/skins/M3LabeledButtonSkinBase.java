@@ -10,7 +10,6 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.ButtonBase;
@@ -33,7 +32,9 @@ import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -167,9 +168,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
 
         mousePressed = true;
-        if (button.isFocusTraversable()) {
-            button.requestFocus();
-        }
+        M3FocusRequests.requestFocusIfTraversable(button);
         layoutStateLayer();
         stateLayer.playRipple(event.getX(), event.getY());
         button.arm();
@@ -430,7 +429,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
             return true;
         }
-        boolean rightToLeft = button.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        boolean rightToLeft = M3NodeLayout.isRightToLeft(button);
         boolean roundedLeft = false;
         boolean roundedRight = false;
         if (button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)) {

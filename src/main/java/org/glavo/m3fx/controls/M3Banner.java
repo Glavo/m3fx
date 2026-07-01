@@ -183,10 +183,30 @@ public class M3Banner extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getIcon(), getActions());
-            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getIcon(), getActions(), parameters);
+            case REQUEST_FOCUS -> focusAccessibleItem();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current or first accessibility item.
+    private void focusAccessibleItem() {
+        if (M3Accessible.showCurrentOrItem(this, getIcon(), getActions())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showCurrentOrItem(this, getIcon(), getActions(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the container focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Creates the default Material Design 3 banner skin.
@@ -209,10 +229,6 @@ public class M3Banner extends Control {
 
     /// Handles keyboard traversal between focusable icon and action items.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
-            return;
-        }
-
         M3FocusTraversal.handleHorizontalKeyFocus(
                 this,
                 event,

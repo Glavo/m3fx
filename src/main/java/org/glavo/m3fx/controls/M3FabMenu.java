@@ -302,8 +302,9 @@ public class M3FabMenu extends Control {
                 if (!M3Accessible.canReach(this)) {
                     return;
                 }
-                M3Accessible.showItem(accessibleFocusNode());
-                notifyFocusNodeChanged();
+                if (M3Accessible.showItem(this, accessibleFocusNode())) {
+                    notifyFocusNodeChanged();
+                }
             }
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -424,12 +425,15 @@ public class M3FabMenu extends Control {
         if (parameters.length == 0 && target == null) {
             target = M3Accessible.actionItem(getItems());
         }
+        boolean shown = false;
         if (target != null) {
-            M3Accessible.showItem(target);
+            shown = M3Accessible.showItem(this, target);
         } else if (hasNestedTarget) {
-            M3Accessible.showAccessibleActionTarget(getItems(), parameters);
+            shown = M3Accessible.showAccessibleActionTarget(this, getItems(), parameters);
         }
-        notifyFocusNodeChanged();
+        if (shown) {
+            notifyFocusNodeChanged();
+        }
     }
 
     /// Returns the focused action-owned external popup target or the focused action item itself.
@@ -500,8 +504,8 @@ public class M3FabMenu extends Control {
 
     /// Moves focus back to the toggle button after collapsing hidden action items.
     private void restoreToggleFocusAfterCollapse(boolean restoreToggleFocus) {
-        if (restoreToggleFocus && M3Accessible.canReach(toggleButton)) {
-            toggleButton.requestFocus();
+        if (restoreToggleFocus) {
+            M3Accessible.showDirectItem(this, toggleButton);
         }
     }
 

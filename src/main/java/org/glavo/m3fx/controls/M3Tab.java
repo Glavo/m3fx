@@ -284,10 +284,10 @@ public class M3Tab extends ButtonBase {
     private void updateMetrics() {
         double height = getContainerHeight();
         double padding = getHorizontalPadding();
-        setMinWidth(getTabMinWidth());
-        setMinHeight(height);
-        setPrefHeight(height);
-        setPadding(new Insets(0.0, padding, 0.0, padding));
+        M3Css.setMinWidthIfUnbound(this, getTabMinWidth());
+        M3Css.setMinHeightIfUnbound(this, height);
+        M3Css.setPrefHeightIfUnbound(this, height);
+        M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
     }
 
     /// Creates a non-negative styleable double property.

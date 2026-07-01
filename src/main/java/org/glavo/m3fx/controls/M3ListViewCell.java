@@ -151,8 +151,13 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
                 ? new M3ListItem(String.valueOf(item))
                 : Objects.requireNonNull(factory.call(item), "cellFactory result");
         itemNode.setFocusTraversable(false);
-        itemNode.setMinWidth(0.0);
-        itemNode.setMaxWidth(Double.MAX_VALUE);
+        if (!itemNode.minWidthProperty().isBound() && Double.compare(itemNode.getMinWidth(), 0.0) != 0) {
+            itemNode.setMinWidth(0.0);
+        }
+        if (!itemNode.maxWidthProperty().isBound()
+                && Double.compare(itemNode.getMaxWidth(), Double.MAX_VALUE) != 0) {
+            itemNode.setMaxWidth(Double.MAX_VALUE);
+        }
         copyThemeContext(itemNode);
         return itemNode;
     }
@@ -238,17 +243,19 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
             return false;
         }
 
-        getListView().requestFocus();
+        M3Accessible.showDirectItem(getListView(), getListView());
         refreshFocus();
         return getListView().isFocused();
     }
 
     /// Updates logical focus pseudo-class state for this virtualized row.
     public final void refreshFocus() {
-        boolean focused = !isEmpty() && getListView().isIndexFocused(getIndex());
-        pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focused);
+        boolean focusVisible = !isEmpty()
+                && getListView().isIndexFocused(getIndex())
+                && getListView().getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS);
+        pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focusVisible);
         if (listItem != null) {
-            listItem.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focused && getListView().isFocused());
+            listItem.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focusVisible);
         }
     }
 
@@ -256,7 +263,9 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     private void refreshListItemWidth() {
         if (listItem != null) {
             double width = getWidth();
-            if (width > 0.0) {
+            if (width > 0.0
+                    && !listItem.prefWidthProperty().isBound()
+                    && Double.compare(listItem.getPrefWidth(), width) != 0) {
                 listItem.setPrefWidth(width);
             }
         }

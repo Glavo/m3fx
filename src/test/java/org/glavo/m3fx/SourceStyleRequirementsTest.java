@@ -76,6 +76,14 @@ final class SourceStyleRequirementsTest {
     private static final Path CONTROL_STYLESHEET_RESOURCE_ROOT =
             STYLESHEET_RESOURCE_ROOT.resolve("controls");
 
+    /// The demo stylesheet resource root.
+    private static final Path DEMO_STYLESHEET_RESOURCE_ROOT =
+            Path.of("demo", "src", "main", "resources", "org", "glavo", "m3fx", "demo");
+
+    /// The shared logical layout helper that owns physical orientation checks.
+    private static final Path LOGICAL_LAYOUT_HELPER_SOURCE =
+            Path.of("src", "main", "java", "org", "glavo", "m3fx", "internal", "M3NodeLayout.java");
+
     /// Matches Java type declarations that must declare their nullability default locally.
     private static final Pattern TYPE_DECLARATION = Pattern.compile(
             "^\\s*(?:(?:public|protected|private)\\s+)?"
@@ -91,7 +99,7 @@ final class SourceStyleRequirementsTest {
     /// Matches public control class declarations with one direct superclass.
     private static final Pattern PUBLIC_CONTROL_EXTENDS_DECLARATION = Pattern.compile(
             "^\\s*public\\s+(?:final\\s+|abstract\\s+|sealed\\s+|non-sealed\\s+)?"
-                    + "class\\s+(\\w+)\\s+extends\\s+(?:[\\w.]+\\.)?(\\w+)\\b"
+                    + "class\\s+(\\w+)\\s*(?:<[^>{}]+>\\s*)?extends\\s+(?:[\\w.]+\\.)?(\\w+)\\b"
     );
 
     /// Matches public control class declarations.
@@ -163,10 +171,78 @@ final class SourceStyleRequirementsTest {
             "^\\s*[\\w-]+\\s*:\\s*[\"']-(?:m3|monet)-[a-z0-9-]+[\"']"
     );
 
+    /// Matches direct physical right-to-left orientation checks outside the shared logical layout helper.
+    private static final Pattern DIRECT_RIGHT_TO_LEFT_ORIENTATION_CHECK = Pattern.compile(
+            "getEffectiveNodeOrientation\\(\\)\\s*==\\s*NodeOrientation\\.RIGHT_TO_LEFT"
+                    + "|NodeOrientation\\.RIGHT_TO_LEFT\\s*==\\s*getEffectiveNodeOrientation\\(\\)"
+    );
+
+    /// Matches public `STYLE_CLASS` string declarations.
+    private static final Pattern STYLE_CLASS_DECLARATION = Pattern.compile(
+            "\\bSTYLE_CLASS\\s*=\\s*\"([^\"]+)\""
+    );
+
+    /// Matches CSS rules in generated component stylesheets.
+    private static final Pattern CSS_RULE = Pattern.compile("(?s)([^{}]+)\\{([^{}]*)}");
+
+    /// Matches class selectors inside a single CSS selector.
+    private static final Pattern CSS_CLASS_SELECTOR = Pattern.compile("\\.([A-Za-z][A-Za-z0-9_-]*)");
+
+    /// Matches selector structure that targets descendants, siblings, or children rather than one root node.
+    private static final Pattern SELECTOR_HAS_DESCENDANT_OR_COMBINATOR = Pattern.compile("[\\s>+~]");
+
     /// Matches custom CSS metadata property declarations in public controls.
     private static final Pattern CUSTOM_CSS_METADATA_PROPERTY = Pattern.compile(
             "(?:new\\s+CssMetaData<>|createSizeCssMetaData)\\(\\s*\"([^\"]+)\""
     );
+
+    /// Matches direct Region layout-property writes that public control metric code must guard.
+    private static final Pattern DIRECT_REGION_LAYOUT_WRITE = Pattern.compile(
+            "\\bset(?:MinWidth|PrefWidth|MaxWidth|MinHeight|PrefHeight|MaxHeight|Padding)\\s*\\("
+    );
+
+    /// Exact direct Region layout-property writes allowed for shared helpers and private implementation nodes.
+    private static final @Unmodifiable Map<String, @Unmodifiable Set<String>> ALLOWED_DIRECT_REGION_LAYOUT_WRITES = Map.of(
+            "M3Css.java", Set.of(
+                    "region.setMinWidth(width);",
+                    "region.setPrefWidth(width);",
+                    "region.setMaxWidth(width);",
+                    "region.setMinHeight(height);",
+                    "region.setPrefHeight(height);",
+                    "region.setMaxHeight(height);",
+                    "region.setPadding(padding);"
+            ),
+            "M3TextInputLayout.java", Set.of(
+                    "label.setPadding(new Insets(",
+                    "label.setPadding(Insets.EMPTY);"
+            )
+    );
+
+    /// Direct control writes to public child layout properties that must check bound properties first.
+    private static final @Unmodifiable Map<String, @Unmodifiable Map<String, String>>
+            BOUND_GUARDED_CONTROL_LAYOUT_WRITES = Map.of(
+                    "M3ListViewCell.java", Map.of(
+                            "itemNode.setMinWidth(0.0);", "itemNode.minWidthProperty().isBound()",
+                            "itemNode.setMaxWidth(Double.MAX_VALUE);", "itemNode.maxWidthProperty().isBound()",
+                            "listItem.setPrefWidth(width);", "listItem.prefWidthProperty().isBound()"
+                    ),
+                    "M3TextInputLayout.java", Map.of(
+                            "input.setPadding(padding);", "input.paddingProperty().isBound()"
+                    )
+            );
+
+    /// Direct skin writes to public child layout properties that must check bound properties first.
+    private static final @Unmodifiable Map<String, @Unmodifiable Map<String, String>> BOUND_GUARDED_SKIN_LAYOUT_WRITES =
+            Map.of(
+                    "M3NavigationDrawerSkin.java", Map.of(
+                            "region.setMinWidth(0.0);", "region.minWidthProperty().isBound()",
+                            "region.setMaxWidth(itemWidth);", "region.maxWidthProperty().isBound()"
+                    ),
+                    "M3NavigationDrawerGroupSkin.java", Map.of(
+                            "item.setMinWidth(0.0);", "item.minWidthProperty().isBound()",
+                            "item.setMaxWidth(itemWidth);", "item.maxWidthProperty().isBound()"
+                    )
+            );
 
     /// Matches public static class CSS metadata entry points.
     private static final Pattern CLASS_CSS_METADATA_METHOD = Pattern.compile(
@@ -181,6 +257,27 @@ final class SourceStyleRequirementsTest {
                     + "(?:getControlCssMetaData|getCssMetaData)\\s*\\([^)]*\\)\\s*\\{\\s*"
                     + "return\\s+getClassCssMetaData\\s*\\(\\s*\\)\\s*;\\s*}"
             , Pattern.DOTALL
+    );
+
+    /// JavaFX base classes that are controls for source-level inheritance checks.
+    private static final @Unmodifiable Set<String> JAVA_FX_CONTROL_BASE_CLASSES = Set.of(
+            "Control",
+            "ButtonBase",
+            "Labeled",
+            "TextInputControl",
+            "TextField",
+            "PasswordField",
+            "TextArea",
+            "IndexedCell"
+    );
+
+    /// JavaFX control bases whose roots support `-fx-alignment` directly.
+    private static final @Unmodifiable Set<String> JAVA_FX_ALIGNED_CONTROL_BASE_CLASSES = Set.of(
+            "ButtonBase",
+            "Labeled",
+            "TextField",
+            "PasswordField",
+            "IndexedCell"
     );
 
     /// Concrete JavaFX controls that M3FX controls must not inherit from directly.
@@ -393,6 +490,43 @@ final class SourceStyleRequirementsTest {
                 () -> "Custom M3FX CssMetaData properties must use the -m3- prefix: " + invalidProperties);
     }
 
+    /// Verifies that generated control stylesheets do not assign unsupported layout properties to public roots.
+    @Test
+    void generatedControlStylesDoNotWriteUnsupportedLayoutPropertiesToControlRoots() throws IOException {
+        List<String> invalidRules = new ArrayList<>();
+        collectUnsupportedControlRootLayoutRules(
+                "generated",
+                M3Theme.defaultTheme().toControlStyleRules(),
+                publicControlRootAlignmentSupport(),
+                invalidRules
+        );
+
+        assertTrue(invalidRules.isEmpty(),
+                () -> "Generated component stylesheets must reserve layout-only CSS properties for internal "
+                        + "layout nodes and use styleable -m3-* properties on public Control roots: "
+                        + invalidRules);
+    }
+
+    /// Verifies that bundled control stylesheets do not assign unsupported layout properties to public roots.
+    @Test
+    void bundledControlStylesDoNotWriteUnsupportedLayoutPropertiesToControlRoots() throws IOException {
+        Map<String, Boolean> controlRootAlignmentSupport = publicControlRootAlignmentSupport();
+        List<String> invalidRules = new ArrayList<>();
+        for (Path stylesheet : stylesheetFiles(CONTROL_STYLESHEET_RESOURCE_ROOT)) {
+            collectUnsupportedControlRootLayoutRules(
+                    resourceRelativePath(CONTROL_STYLESHEET_RESOURCE_ROOT, stylesheet),
+                    Files.readString(stylesheet),
+                    controlRootAlignmentSupport,
+                    invalidRules
+            );
+        }
+
+        assertTrue(invalidRules.isEmpty(),
+                () -> "Bundled control stylesheets must reserve layout-only CSS properties for internal "
+                        + "layout nodes and use styleable -m3-* properties on public Control roots: "
+                        + invalidRules);
+    }
+
     /// Verifies that custom CSS metadata respects API-assigned styleable property values.
     @Test
     void customCssMetaDataSettableChecksRespectUserAssignedValues() throws IOException {
@@ -411,6 +545,62 @@ final class SourceStyleRequirementsTest {
         assertTrue(unsafeSettableChecks.isEmpty(),
                 () -> "Custom CssMetaData isSettable implementations must delegate to M3Css.isSettable: "
                         + unsafeSettableChecks);
+    }
+
+    /// Verifies that public control metric writes preserve application-bound layout properties.
+    @Test
+    void publicControlMetricWritesUseBoundSafeHelpers() throws IOException {
+        Map<String, Set<String>> unusedAllowedWrites = new HashMap<>();
+        for (Map.Entry<String, @Unmodifiable Set<String>> entry : ALLOWED_DIRECT_REGION_LAYOUT_WRITES.entrySet()) {
+            unusedAllowedWrites.put(entry.getKey(), new TreeSet<>(entry.getValue()));
+        }
+
+        List<String> directWrites = new ArrayList<>();
+        for (Path sourceFile : javaSourceFiles(CONTROLS_SOURCE_ROOT)) {
+            String sourceName = sourceFile.getFileName().toString();
+            List<String> lines = Files.readAllLines(sourceFile);
+            for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+                String line = lines.get(lineIndex).trim();
+                if (DIRECT_REGION_LAYOUT_WRITE.matcher(line).find()
+                        && !removeAllowedDirectRegionLayoutWrite(unusedAllowedWrites, sourceName, line)
+                        && !isBoundGuardedControlLayoutWrite(sourceName, line)) {
+                    directWrites.add(sourceFile + ":" + (lineIndex + 1) + ": " + line);
+                }
+            }
+        }
+
+        List<String> staleAllowedWrites = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> entry : unusedAllowedWrites.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                staleAllowedWrites.add(entry.getKey() + ": " + entry.getValue());
+            }
+        }
+
+        assertTrue(directWrites.isEmpty(),
+                () -> "Public controls must write Region layout metrics through M3Css bound-safe helpers: "
+                        + directWrites);
+        assertTrue(staleAllowedWrites.isEmpty(),
+                () -> "Allowed direct Region layout writes should stay exact and current: " + staleAllowedWrites);
+    }
+
+    /// Verifies that implementation code guards layout writes made to public child controls.
+    @Test
+    void publicChildLayoutWritesCheckBoundProperties() throws IOException {
+        List<String> unguardedWrites = new ArrayList<>();
+        collectUnguardedPublicChildLayoutWrites(
+                CONTROLS_SOURCE_ROOT,
+                BOUND_GUARDED_CONTROL_LAYOUT_WRITES,
+                unguardedWrites
+        );
+        collectUnguardedPublicChildLayoutWrites(
+                SKINS_SOURCE_ROOT,
+                BOUND_GUARDED_SKIN_LAYOUT_WRITES,
+                unguardedWrites
+        );
+
+        assertTrue(unguardedWrites.isEmpty(),
+                () -> "Layout writes to public child properties must check bound properties first: "
+                        + unguardedWrites);
     }
 
     /// Verifies that public button-like controls enable full layout bounds as pointer hit targets.
@@ -555,14 +745,14 @@ final class SourceStyleRequirementsTest {
                         + missingControls);
     }
 
-    /// Verifies that bundled CSS only looks up generated or locally declared token properties.
+    /// Verifies that project CSS only looks up generated or locally declared token properties.
     @Test
     void stylesheetTokenLookupsResolveToGeneratedOrLocalDeclarations() throws IOException {
         Set<String> generatedTokens = tokenDeclarations(M3Theme.defaultTheme().tokens().toRootStyleDeclarations());
         assertTrue(!generatedTokens.isEmpty(), "Generated root token declarations should not be empty");
 
         List<String> missingTokens = new ArrayList<>();
-        for (Path stylesheet : stylesheetFiles(STYLESHEET_RESOURCE_ROOT)) {
+        for (Path stylesheet : projectStylesheetFiles()) {
             Set<String> declaredTokens = new TreeSet<>(generatedTokens);
             declaredTokens.addAll(tokenDeclarations(Files.readString(stylesheet)));
 
@@ -579,7 +769,7 @@ final class SourceStyleRequirementsTest {
         }
 
         assertTrue(missingTokens.isEmpty(),
-                () -> "Bundled CSS must only reference generated or locally declared token properties: "
+                () -> "Project CSS must only reference generated or locally declared token properties: "
                         + missingTokens);
     }
 
@@ -587,7 +777,7 @@ final class SourceStyleRequirementsTest {
     @Test
     void stylesheetTokenLookupsAreNotQuotedStrings() throws IOException {
         List<String> quotedTokens = new ArrayList<>();
-        for (Path stylesheet : stylesheetFiles(STYLESHEET_RESOURCE_ROOT)) {
+        for (Path stylesheet : projectStylesheetFiles()) {
             List<String> lines = Files.readAllLines(stylesheet);
             for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
                 String line = lines.get(lineIndex);
@@ -599,6 +789,29 @@ final class SourceStyleRequirementsTest {
 
         assertTrue(quotedTokens.isEmpty(),
                 () -> "CSS token lookups must remain paint/size lookups, not quoted string values: " + quotedTokens);
+    }
+
+    /// Verifies that physical right-to-left checks stay centralized in the logical layout helper.
+    @Test
+    void rightToLeftOrientationChecksUseLogicalLayoutHelper() throws IOException {
+        List<String> directChecks = new ArrayList<>();
+        for (Path sourceFile : productionJavaSourceFiles()) {
+            if (sourceFile.equals(LOGICAL_LAYOUT_HELPER_SOURCE)) {
+                continue;
+            }
+
+            List<String> lines = Files.readAllLines(sourceFile);
+            for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+                String line = lines.get(lineIndex);
+                if (DIRECT_RIGHT_TO_LEFT_ORIENTATION_CHECK.matcher(line).find()) {
+                    directChecks.add(sourceFile + ":" + (lineIndex + 1) + ": " + line.trim());
+                }
+            }
+        }
+
+        assertTrue(directChecks.isEmpty(),
+                () -> "Production sources must use M3NodeLayout for right-to-left orientation checks: "
+                        + directChecks);
     }
 
     /// Returns every public control class covered by the user-agent stylesheet matrix.
@@ -639,6 +852,77 @@ final class SourceStyleRequirementsTest {
         return Pattern.compile(
                 "\\bnew\\s+" + Pattern.quote(className) + "(?:\\s*<[^>]*>)?\\s*\\("
         ).matcher(source).find();
+    }
+
+    /// Removes and accepts one exact allowed direct Region layout-property write.
+    private static boolean removeAllowedDirectRegionLayoutWrite(
+            Map<String, Set<String>> unusedAllowedWrites,
+            String sourceName,
+            String line
+    ) {
+        Set<String> allowedLines = unusedAllowedWrites.get(sourceName);
+        return allowedLines != null && allowedLines.remove(line);
+    }
+
+    /// Returns whether a direct layout write is a registered public-child write with a separate bound guard check.
+    private static boolean isBoundGuardedControlLayoutWrite(String sourceName, String line) {
+        Map<String, String> guardedWrites = BOUND_GUARDED_CONTROL_LAYOUT_WRITES.get(sourceName);
+        return guardedWrites != null && guardedWrites.containsKey(line);
+    }
+
+    /// Collects public-child layout writes that are missing their bound-property guards.
+    private static void collectUnguardedPublicChildLayoutWrites(
+            Path sourceRoot,
+            Map<String, @Unmodifiable Map<String, String>> guardedWrites,
+            List<String> unguardedWrites
+    ) throws IOException {
+        for (Map.Entry<String, @Unmodifiable Map<String, String>> sourceEntry : guardedWrites.entrySet()) {
+            Path sourceFile = sourceRoot.resolve(sourceEntry.getKey());
+            List<String> lines = Files.readAllLines(sourceFile);
+            for (Map.Entry<String, String> writeEntry : sourceEntry.getValue().entrySet()) {
+                collectUnguardedPublicChildLayoutWrite(
+                        sourceFile,
+                        lines,
+                        writeEntry.getKey(),
+                        writeEntry.getValue(),
+                        unguardedWrites
+                );
+            }
+        }
+    }
+
+    /// Adds a diagnostic when a public-child layout write is missing its bound-property guard.
+    private static void collectUnguardedPublicChildLayoutWrite(
+            Path sourceFile,
+            List<String> lines,
+            String writeLine,
+            String guardSnippet,
+            List<String> unguardedWrites
+    ) {
+        boolean found = false;
+        for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+            if (lines.get(lineIndex).trim().equals(writeLine)) {
+                found = true;
+                if (!nearbyLinesContain(lines, lineIndex, guardSnippet)) {
+                    unguardedWrites.add(sourceFile + ":" + (lineIndex + 1) + ": " + writeLine);
+                }
+            }
+        }
+
+        if (!found) {
+            unguardedWrites.add(sourceFile + ": missing write `" + writeLine + "`");
+        }
+    }
+
+    /// Returns whether a nearby line contains the requested source snippet.
+    private static boolean nearbyLinesContain(List<String> lines, int lineIndex, String snippet) {
+        int start = Math.max(0, lineIndex - 8);
+        for (int index = start; index <= lineIndex; index++) {
+            if (lines.get(index).contains(snippet)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Returns every production Java source file in a stable order.
@@ -896,6 +1180,134 @@ final class SourceStyleRequirementsTest {
         if (packageName.startsWith("org.glavo.m3fx") && !exportedPackages.contains(packageName)) {
             leaks.add(description + " exposes " + typeClass.getName());
         }
+    }
+
+    /// Returns public control root style classes and whether each root supports `-fx-alignment` directly.
+    private static Map<String, Boolean> publicControlRootAlignmentSupport() throws IOException {
+        Map<String, String> superclasses = publicControlSuperclasses();
+        Map<String, Boolean> styleClasses = new HashMap<>();
+        for (Path sourceFile : javaSourceFiles(CONTROLS_SOURCE_ROOT)) {
+            List<String> lines = Files.readAllLines(sourceFile);
+            @org.jetbrains.annotations.Nullable String className = publicControlClassName(lines);
+            if (className == null || !inheritsFromJavaFxControl(className, superclasses)) {
+                continue;
+            }
+
+            Matcher matcher = STYLE_CLASS_DECLARATION.matcher(Files.readString(sourceFile));
+            if (matcher.find()) {
+                styleClasses.put(matcher.group(1), inheritsFromJavaFxAlignedControl(className, superclasses));
+            }
+        }
+        return styleClasses;
+    }
+
+    /// Returns whether a source-declared control class inherits from a JavaFX control base class.
+    private static boolean inheritsFromJavaFxControl(String className, Map<String, String> superclasses) {
+        return inheritsFromAnyJavaFxBase(className, superclasses, JAVA_FX_CONTROL_BASE_CLASSES);
+    }
+
+    /// Returns whether a source-declared control class inherits a JavaFX alignment CSS property.
+    private static boolean inheritsFromJavaFxAlignedControl(String className, Map<String, String> superclasses) {
+        return inheritsFromAnyJavaFxBase(className, superclasses, JAVA_FX_ALIGNED_CONTROL_BASE_CLASSES);
+    }
+
+    /// Returns whether a source-declared class inherits from any requested JavaFX base name.
+    private static boolean inheritsFromAnyJavaFxBase(
+            String className,
+            Map<String, String> superclasses,
+            Set<String> baseClassNames
+    ) {
+        Set<String> visitedClasses = new TreeSet<>();
+        @org.jetbrains.annotations.Nullable String currentClass = className;
+        while (currentClass != null && visitedClasses.add(currentClass)) {
+            @org.jetbrains.annotations.Nullable String superclassName = superclasses.get(currentClass);
+            if (superclassName == null) {
+                return baseClassNames.contains(currentClass);
+            }
+            if (baseClassNames.contains(superclassName)) {
+                return true;
+            }
+            currentClass = superclassName;
+        }
+        return false;
+    }
+
+    /// Collects CSS rules that write unsupported layout properties to public control root selectors.
+    private static void collectUnsupportedControlRootLayoutRules(
+            String sourceName,
+            String stylesheet,
+            Map<String, Boolean> controlRootAlignmentSupport,
+            List<String> invalidRules
+    ) {
+        Matcher matcher = CSS_RULE.matcher(stylesheet);
+        while (matcher.find()) {
+            String declarations = matcher.group(2);
+            boolean hasSpacing = declarations.contains("-fx-spacing:");
+            boolean hasHorizontalGap = declarations.contains("-fx-hgap:");
+            boolean hasVerticalGap = declarations.contains("-fx-vgap:");
+            boolean hasAlignment = declarations.contains("-fx-alignment:");
+            if (!hasSpacing && !hasHorizontalGap && !hasVerticalGap && !hasAlignment) {
+                continue;
+            }
+
+            String[] selectors = matcher.group(1).split(",");
+            for (String selector : selectors) {
+                String trimmedSelector = selector.trim();
+                @org.jetbrains.annotations.Nullable String rootStyleClass = controlRootStyleClassInSelector(
+                        trimmedSelector,
+                        controlRootAlignmentSupport.keySet()
+                );
+                if (rootStyleClass == null) {
+                    continue;
+                }
+
+                List<String> invalidProperties = new ArrayList<>();
+                if (hasSpacing) {
+                    invalidProperties.add("-fx-spacing");
+                }
+                if (hasHorizontalGap) {
+                    invalidProperties.add("-fx-hgap");
+                }
+                if (hasVerticalGap) {
+                    invalidProperties.add("-fx-vgap");
+                }
+                if (hasAlignment && !controlRootAlignmentSupport.get(rootStyleClass)) {
+                    invalidProperties.add("-fx-alignment");
+                }
+                if (!invalidProperties.isEmpty()) {
+                    invalidRules.add(sourceName + ": " + trimmedSelector + " { "
+                            + String.join(", ", invalidProperties) + " }");
+                }
+            }
+        }
+    }
+
+    /// Returns the public control root style class directly targeted by a selector.
+    private static @org.jetbrains.annotations.Nullable String controlRootStyleClassInSelector(
+            String selector,
+            Set<String> controlRootStyleClasses
+    ) {
+        if (selector.isEmpty() || SELECTOR_HAS_DESCENDANT_OR_COMBINATOR.matcher(selector).find()) {
+            return null;
+        }
+
+        Matcher matcher = CSS_CLASS_SELECTOR.matcher(selector);
+        while (matcher.find()) {
+            String styleClass = matcher.group(1);
+            if (controlRootStyleClasses.contains(styleClass)) {
+                return styleClass;
+            }
+        }
+        return null;
+    }
+
+    /// Returns every project CSS stylesheet that can reference generated Material tokens.
+    private static @Unmodifiable List<Path> projectStylesheetFiles() throws IOException {
+        List<Path> stylesheets = new ArrayList<>();
+        stylesheets.addAll(stylesheetFiles(STYLESHEET_RESOURCE_ROOT));
+        stylesheets.addAll(stylesheetFiles(DEMO_STYLESHEET_RESOURCE_ROOT));
+        stylesheets.sort(Comparator.comparing(Path::toString));
+        return List.copyOf(stylesheets);
     }
 
     /// Returns every CSS stylesheet below a root.

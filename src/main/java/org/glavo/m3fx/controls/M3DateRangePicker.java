@@ -14,6 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -565,7 +566,7 @@ public class M3DateRangePicker extends Control {
 
     /// Moves keyboard selection horizontally in the visual direction of the pressed arrow key.
     private void moveSelectionHorizontally(boolean rightKey) {
-        boolean forward = M3SelectionNavigation.isRightToLeft(this) != rightKey;
+        boolean forward = M3NodeLayout.isRightToLeft(this) != rightKey;
         moveSelectionByDays(forward ? 1 : -1);
     }
 
@@ -716,18 +717,15 @@ public class M3DateRangePicker extends Control {
 
     /// Focuses an accessibility target or the picker itself.
     private void focusAccessibleNode(@Nullable Node node) {
-        if (node == null) {
-            requestFocus();
-        } else {
-            M3Accessible.showItem(node);
+        if (node == null || node == this || !M3Accessible.showItem(this, node)) {
+            M3Accessible.showDirectItem(this, this);
         }
     }
 
     /// Shows and focuses the day requested by accessibility parameters.
     private void showAccessibleDay(Object... parameters) {
         @Nullable Object item = accessibleDayItem(parameters);
-        if (item instanceof Node node) {
-            M3Accessible.showItem(node);
+        if (item instanceof Node node && M3Accessible.showItem(this, node)) {
             return;
         }
         if (item instanceof LocalDate date) {

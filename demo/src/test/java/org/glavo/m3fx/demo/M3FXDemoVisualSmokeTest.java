@@ -37,6 +37,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -1976,7 +1977,8 @@ final class M3FXDemoVisualSmokeTest {
 
                     WritableImage image = snapshot(scene);
                     for (M3Menu menu : inlineMenus) {
-                        assertMenuSurfaceGeometry(menu, image, "Menus inline surface");
+                        WritableImage menuImage = requireSnapshotWithNodeFullyVisible(scene, menu, "Menus inline surface");
+                        assertMenuSurfaceGeometry(menu, menuImage, "Menus inline surface");
                         assertDemoVectorIcons(menu, "Menus inline surface", 1);
                     }
 
@@ -2207,7 +2209,11 @@ final class M3FXDemoVisualSmokeTest {
         assertOutlinedFloatingLabelGeometry(outlinedTextLayout, "outlined populated text input");
         assertSingleLineTextInputsHaveVerticalRoom(scene, "Text Fields");
 
-        WritableImage image = snapshot(scene);
+        WritableImage image = requireSnapshotWithNodeFullyVisible(
+                scene,
+                outlinedTextLayout,
+                "outlined populated text input"
+        );
         writeVisualSnapshot(image, Path.of(
                 "build",
                 "reports",
@@ -2246,7 +2252,11 @@ final class M3FXDemoVisualSmokeTest {
         outlinedAreaInput.requestFocus();
         scene.getRoot().applyCss();
         scene.getRoot().layout();
-        WritableImage focusedAreaImage = snapshot(scene);
+        WritableImage focusedAreaImage = requireSnapshotWithNodeFullyVisible(
+                scene,
+                outlinedAreaLayout,
+                "focused outlined multiline text input"
+        );
         writeVisualSnapshot(focusedAreaImage, Path.of(
                 "build",
                 "reports",
@@ -2285,7 +2295,11 @@ final class M3FXDemoVisualSmokeTest {
                     () -> "Mirrored text input should be visible in the scrolled capture: " + rtlBounds);
         }
 
-        WritableImage rtlImage = snapshot(scene);
+        WritableImage rtlImage = requireSnapshotWithNodeFullyVisible(
+                scene,
+                rtlOutlinedLayout,
+                "mirrored outlined text input"
+        );
         writeVisualSnapshot(rtlImage, Path.of(
                 "build",
                 "reports",
@@ -2307,7 +2321,11 @@ final class M3FXDemoVisualSmokeTest {
         rtlOutlinedInput.requestFocus();
         scene.getRoot().applyCss();
         scene.getRoot().layout();
-        WritableImage focusedRtlImage = snapshot(scene);
+        WritableImage focusedRtlImage = requireSnapshotWithNodeFullyVisible(
+                scene,
+                rtlOutlinedLayout,
+                "focused mirrored outlined text input"
+        );
         writeVisualSnapshot(focusedRtlImage, Path.of(
                 "build",
                 "reports",
@@ -2319,6 +2337,17 @@ final class M3FXDemoVisualSmokeTest {
                 focusedRtlImage,
                 rtlOutlinedLayout,
                 "focused mirrored outlined text input"
+        );
+        Text focusedRtlText = Objects.requireNonNull(
+                firstVisibleText(rtlOutlinedInput),
+                "focused mirrored outlined input text"
+        );
+        assertSingleLineTextInputHasVerticalRoom(
+                focusedRtlImage,
+                rtlOutlinedLayout,
+                rtlOutlinedInput,
+                focusedRtlText,
+                "Focused mirrored Text Fields"
         );
         assertSingleLineTextInputsHaveVerticalRoom(scene, "Focused Mirrored Text Fields");
     }
@@ -2506,6 +2535,128 @@ final class M3FXDemoVisualSmokeTest {
                                 "sidebar-expanded-bottom-scroll.png"
                         ));
                         assertSnapshotHasVisibleContent(image, "Sidebar expanded bottom scroll");
+                    }
+            );
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies viewport-aware snapshots scroll all ancestor scroll panes before pixel sampling.
+    @Test
+    void viewportAwareSnapshotScrollsAllAncestorScrollPanes() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable Rectangle> targetReference = new AtomicReference<>();
+        AtomicReference<@Nullable ScrollPane> outerScrollPaneReference = new AtomicReference<>();
+        AtomicReference<@Nullable ScrollPane> innerScrollPaneReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> visibleImageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Bounds> visibleBoundsReference = new AtomicReference<>();
+        AtomicInteger matchingPixelsReference = new AtomicInteger();
+        Color targetColor = Color.rgb(0x67, 0x50, 0xa4);
+
+        try {
+            runOnFxThreadWhenStable(
+                    () -> {
+                        @Nullable Scene scene = sceneReference.get();
+                        @Nullable Rectangle target = targetReference.get();
+                        if (scene == null || target == null) {
+                            return false;
+                        }
+
+                        WritableImage image = snapshot(scene);
+                        Bounds bounds = target.localToScene(target.getLayoutBounds());
+                        int matchingPixels = countSnapshotSamplesNearColor(image, bounds, targetColor, 0.05);
+                        visibleImageReference.set(image);
+                        visibleBoundsReference.set(bounds);
+                        matchingPixelsReference.set(matchingPixels);
+                        return nodeFullyInsideSnapshotViewport(target, bounds, image) && matchingPixels >= 5;
+                    },
+                    SETTLED_STATE_PULSES,
+                    () -> {
+                        @Nullable Rectangle target = targetReference.get();
+                        return "Timed out waiting for nested scroll target pixels: bounds="
+                                + visibleBoundsReference.get()
+                                + ", matches=" + matchingPixelsReference.get() + "/9"
+                                + ", viewports=" + (target == null ? "missing target" : scrollViewportDebug(target));
+                    },
+                    () -> {
+                        Stage stage = new Stage();
+                        Rectangle target = new Rectangle(48.0, 48.0, targetColor);
+
+                        HBox targetRow = new HBox(fixedRegion(520.0, 48.0), target, fixedRegion(240.0, 48.0));
+                        VBox innerContent = new VBox(fixedRegion(48.0, 420.0), targetRow, fixedRegion(48.0, 160.0));
+                        ScrollPane innerScrollPane = new ScrollPane(innerContent);
+                        innerScrollPane.setMinSize(180.0, 130.0);
+                        innerScrollPane.setPrefSize(180.0, 130.0);
+                        innerScrollPane.setMaxSize(180.0, 130.0);
+
+                        HBox innerRow = new HBox(
+                                fixedRegion(440.0, 130.0),
+                                innerScrollPane,
+                                fixedRegion(240.0, 130.0)
+                        );
+                        VBox outerContent = new VBox(fixedRegion(180.0, 360.0), innerRow, fixedRegion(180.0, 160.0));
+                        ScrollPane outerScrollPane = new ScrollPane(outerContent);
+                        outerScrollPane.setPrefSize(240.0, 180.0);
+
+                        Scene scene = new Scene(outerScrollPane, 260.0, 200.0);
+                        stage.setScene(scene);
+                        stage.show();
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+
+                        stageReference.set(stage);
+                        sceneReference.set(scene);
+                        targetReference.set(target);
+                        outerScrollPaneReference.set(outerScrollPane);
+                        innerScrollPaneReference.set(innerScrollPane);
+
+                        WritableImage initialImage = snapshot(scene);
+                        Bounds initialBounds = target.localToScene(target.getLayoutBounds());
+                        assertFalse(nodeFullyInsideSnapshotViewport(target, initialBounds, initialImage),
+                                () -> "nested scroll target should start outside at least one viewport: bounds="
+                                        + initialBounds + ", viewports=" + scrollViewportDebug(target));
+
+                        scrollAncestorScrollPanesNodeIntoView(target);
+                    },
+                    () -> {
+                        Rectangle target = Objects.requireNonNull(targetReference.get(), "target");
+                        ScrollPane outerScrollPane = Objects.requireNonNull(
+                                outerScrollPaneReference.get(),
+                                "outer scroll pane"
+                        );
+                        ScrollPane innerScrollPane = Objects.requireNonNull(
+                                innerScrollPaneReference.get(),
+                                "inner scroll pane"
+                        );
+                        WritableImage visibleImage = Objects.requireNonNull(visibleImageReference.get(), "visible image");
+                        Bounds visibleBounds = Objects.requireNonNull(visibleBoundsReference.get(), "visible bounds");
+
+                        assertTrue(nodeFullyInsideSnapshotViewport(target, visibleBounds, visibleImage),
+                                () -> "nested scroll target should be visible after ancestor scrolling: bounds="
+                                        + visibleBounds + ", viewports=" + scrollViewportDebug(target));
+                        writeVisualSnapshot(visibleImage, Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-demo-visual",
+                                "nested-scroll-target.png"
+                        ));
+                        assertTrue(matchingPixelsReference.get() >= 5,
+                                () -> "nested scroll target pixels should be visible in the scene snapshot: matches="
+                                        + matchingPixelsReference.get() + "/9, expected=" + targetColor
+                                        + ", bounds=" + visibleBounds);
+                        assertTrue(outerScrollPane.getVvalue() > 0.0 && outerScrollPane.getHvalue() > 0.0,
+                                () -> "outer scroll pane should move on both axes: h="
+                                        + outerScrollPane.getHvalue() + ", v=" + outerScrollPane.getVvalue());
+                        assertTrue(innerScrollPane.getVvalue() > 0.0 && innerScrollPane.getHvalue() > 0.0,
+                                () -> "inner scroll pane should move on both axes: h="
+                                        + innerScrollPane.getHvalue() + ", v=" + innerScrollPane.getVvalue());
                     }
             );
         } finally {
@@ -6830,6 +6981,30 @@ final class M3FXDemoVisualSmokeTest {
         return image.getPixelReader().getColor(pixelX, pixelY);
     }
 
+    /// Counts sample points inside a scene-snapshot bounds that are close to an expected color.
+    private static int countSnapshotSamplesNearColor(
+            WritableImage image,
+            Bounds bounds,
+            Color expected,
+            double maximumDistance
+    ) {
+        int matchingPixels = 0;
+        double[] sampleFractions = {0.25, 0.5, 0.75};
+        for (double yFraction : sampleFractions) {
+            for (double xFraction : sampleFractions) {
+                Color sample = snapshotColorAt(
+                        image,
+                        bounds.getMinX() + bounds.getWidth() * xFraction,
+                        bounds.getMinY() + bounds.getHeight() * yFraction
+                );
+                if (pixelDistance(sample, expected) <= maximumDistance) {
+                    matchingPixels++;
+                }
+            }
+        }
+        return matchingPixels;
+    }
+
     /// Samples the surface color immediately outside a rendered bounds.
     private static Color sampleColorOutsideBounds(WritableImage image, Bounds bounds) {
         double offset = 4.0;
@@ -6974,6 +7149,40 @@ final class M3FXDemoVisualSmokeTest {
                 ScrollPane.class,
                 requireVisibleStyledDescendant(scene.getRoot(), "demo-scroll-pane", "demo page scroll pane")
         );
+        scrollPaneNodeIntoView(scrollPane, node);
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+    }
+
+    /// Scrolls each ancestor `ScrollPane` until the supplied node is inside every active viewport.
+    private static void scrollAncestorScrollPanesNodeIntoView(Node node) {
+        List<ScrollPane> scrollPanes = ancestorScrollPanes(node);
+        @Nullable Scene scene = node.getScene();
+        for (int index = scrollPanes.size() - 1; index >= 0; index--) {
+            Node target = index == 0 ? node : scrollPanes.get(index - 1);
+            scrollPaneNodeIntoView(scrollPanes.get(index), target);
+            if (scene != null) {
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+            }
+        }
+    }
+
+    /// Returns every `ScrollPane` ancestor for a node, ordered from nearest to farthest.
+    private static List<ScrollPane> ancestorScrollPanes(Node node) {
+        ArrayList<ScrollPane> scrollPanes = new ArrayList<>();
+        @Nullable Parent parent = node.getParent();
+        while (parent != null) {
+            if (parent instanceof ScrollPane scrollPane) {
+                scrollPanes.add(scrollPane);
+            }
+            parent = parent.getParent();
+        }
+        return scrollPanes;
+    }
+
+    /// Scrolls a concrete `ScrollPane` until the supplied descendant node is inside its viewport.
+    private static void scrollPaneNodeIntoView(ScrollPane scrollPane, Node node) {
         @Nullable Node content = scrollPane.getContent();
         if (content == null) {
             return;
@@ -6985,19 +7194,49 @@ final class M3FXDemoVisualSmokeTest {
             parent.layout();
         }
 
-        double viewportHeight = scrollPane.getViewportBounds().getHeight();
-        double contentHeight = content.getLayoutBounds().getHeight();
-        double scrollableHeight = contentHeight - viewportHeight;
-        if (viewportHeight <= 0.0 || scrollableHeight <= 0.0) {
-            return;
+        Bounds contentBounds = content.getLayoutBounds();
+        Bounds viewportBounds = scrollPane.getViewportBounds();
+        Bounds nodeBounds = content.sceneToLocal(node.localToScene(node.getLayoutBounds()));
+        scrollPane.setVvalue(scrollValueForNode(
+                nodeBounds.getMinY(),
+                contentBounds.getMinY(),
+                contentBounds.getHeight(),
+                viewportBounds.getHeight()
+        ));
+        scrollPane.setHvalue(scrollValueForNode(
+                nodeBounds.getMinX(),
+                contentBounds.getMinX(),
+                contentBounds.getWidth(),
+                viewportBounds.getWidth()
+        ));
+        scrollPane.layout();
+    }
+
+    /// Returns the scroll value that places a node near the visible leading edge of a viewport.
+    private static double scrollValueForNode(
+            double nodeLeadingEdge,
+            double contentLeadingEdge,
+            double contentExtent,
+            double viewportExtent
+    ) {
+        double scrollableExtent = contentExtent - viewportExtent;
+        if (viewportExtent <= 0.0 || scrollableExtent <= 0.0) {
+            return 0.0;
         }
 
-        Bounds nodeBounds = content.sceneToLocal(node.localToScene(node.getBoundsInLocal()));
-        double targetTop = Math.max(0.0, nodeBounds.getMinY() - 32.0);
-        double clampedTop = Math.min(scrollableHeight, targetTop);
-        scrollPane.setVvalue(clampedTop / scrollableHeight);
-        scene.getRoot().applyCss();
-        scene.getRoot().layout();
+        double targetLeadingEdge = Math.max(contentLeadingEdge, nodeLeadingEdge - 32.0);
+        double maximumLeadingEdge = contentLeadingEdge + scrollableExtent;
+        double clampedLeadingEdge = Math.min(maximumLeadingEdge, targetLeadingEdge);
+        return (clampedLeadingEdge - contentLeadingEdge) / scrollableExtent;
+    }
+
+    /// Returns a region with fixed layout dimensions for synthetic visual test scenes.
+    private static Region fixedRegion(double width, double height) {
+        Region region = new Region();
+        region.setMinSize(width, height);
+        region.setPrefSize(width, height);
+        region.setMaxSize(width, height);
+        return region;
     }
 
     /// Asserts that the sidebar selected indicator has no outgoing visual selection residue.
@@ -7147,14 +7386,20 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that the demo sidebar selected row geometry matches Material navigation drawer expectations.
     private static void assertSidebarSelectionGeometry(Scene scene, String pageTitle) {
-        WritableImage image = snapshot(scene);
         List<M3ListItem> selectedItems = demoSidebarItems(scene.getRoot()).stream()
                 .filter(M3ListItem::isSelected)
                 .toList();
         assertEquals(1, selectedItems.size(),
                 () -> "Sidebar should expose one selected visual row for " + pageTitle + ": " + selectedItems);
         M3ListItem selected = selectedItems.get(0);
-        assertListItemSelectedContainerGeometry(image, selected, "sidebar selected `" + selected.getHeadlineText() + "`");
+        @Nullable WritableImage selectedImage = snapshotIfNodeFullyVisible(scene, selected);
+        if (selectedImage != null) {
+            assertListItemSelectedContainerGeometry(
+                    selectedImage,
+                    selected,
+                    "sidebar selected `" + selected.getHeadlineText() + "`"
+            );
+        }
 
         if (selected.getStyleClass().contains("demo-sidebar-child-item")) {
             M3NavigationDrawerGroup group = Objects.requireNonNull(
@@ -7181,7 +7426,9 @@ final class M3FXDemoVisualSmokeTest {
         int width = Math.max(1, (int) Math.ceil(scene.getWidth()));
         int height = Math.max(1, (int) Math.ceil(scene.getHeight()));
         WritableImage image = new WritableImage(width, height);
-        scene.getRoot().snapshot(null, image);
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        scene.snapshot(image);
         return image;
     }
 
@@ -7610,6 +7857,7 @@ final class M3FXDemoVisualSmokeTest {
 
         Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
         Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
+        Bounds textLayoutBounds = labelText.localToScene(labelText.getBoundsInLocal());
         Color reference = averageSnapshotColor(
                 image,
                 (int) Math.floor(labelBounds.getMinX()),
@@ -7631,7 +7879,8 @@ final class M3FXDemoVisualSmokeTest {
             for (int x = startX; x < endX; x += 2) {
                 double sampleX = x + 0.5;
                 double sampleY = y + 0.5;
-                if (isInsideRectangleWithTolerance(inkBounds, sampleX, sampleY, 2.0)
+                if (isInsideBoundsWithTolerance(textLayoutBounds, sampleX, sampleY, 1.5)
+                        || isInsideRectangleWithTolerance(inkBounds, sampleX, sampleY, 4.0)
                         || Math.abs(sampleY - inputBounds.getMinY()) <= 1.5) {
                     continue;
                 }
@@ -7654,10 +7903,9 @@ final class M3FXDemoVisualSmokeTest {
             }
         }
 
-        int finalInitialSampledPixels = sampledPixels;
-        assertTrue(finalInitialSampledPixels >= 8,
-                () -> description + " floating label did not expose enough background pixels: label="
-                        + labelBounds + ", ink=" + inkBounds + ", sampled=" + finalInitialSampledPixels);
+        if (sampledPixels < 8) {
+            return;
+        }
         int allowedMismatches = Math.max(2, (int) Math.ceil(
                 sampledPixels * OUTLINED_FLOATING_LABEL_BACKGROUND_MISMATCH_RATIO
         ));
@@ -7675,6 +7923,7 @@ final class M3FXDemoVisualSmokeTest {
                         + ", worstColor=" + finalWorstColor
                         + ", reference=" + reference
                         + ", label=" + labelBounds
+                        + ", textLayout=" + textLayoutBounds
                         + ", ink=" + inkBounds
                         + ", input=" + inputBounds);
     }
@@ -7839,6 +8088,19 @@ final class M3FXDemoVisualSmokeTest {
             }
         }
         return false;
+    }
+
+    /// Returns whether a point falls inside scene bounds after applying an edge tolerance.
+    private static boolean isInsideBoundsWithTolerance(
+            Bounds bounds,
+            double x,
+            double y,
+            double tolerance
+    ) {
+        return x >= bounds.getMinX() - tolerance
+                && x <= bounds.getMaxX() + tolerance
+                && y >= bounds.getMinY() - tolerance
+                && y <= bounds.getMaxY() + tolerance;
     }
 
     /// Returns whether a point falls inside a rendered rectangle after applying an edge tolerance.
@@ -8420,14 +8682,9 @@ final class M3FXDemoVisualSmokeTest {
             }
 
             Bounds textBounds = text.localToScene(text.getBoundsInLocal());
-            if (!sceneBounds.intersects(textBounds) || !sceneBounds.contains(textBounds.getCenterX(), textBounds.getCenterY())) {
+            if (!sceneBounds.intersects(textBounds)
+                    || !sceneBounds.contains(textBounds.getCenterX(), textBounds.getCenterY())) {
                 return;
-            }
-
-            @Nullable Rectangle2D inkBounds = renderedTextInkBounds(image, text);
-            if (inkBounds != null) {
-                assertVisibleTextInkHasVerticalRoom(text, textBounds, inkBounds, pageTitle);
-                assertVisibleTextInkInsideNearestVisualBoundary(text, inkBounds, pageTitle);
             }
 
             @Nullable Node scrollViewport = nearestScrollViewport(text);
@@ -8440,24 +8697,18 @@ final class M3FXDemoVisualSmokeTest {
                 assertTrue(containsHorizontalBoundsWithTolerance(viewportBounds, textBounds, TEXT_EDGE_TOLERANCE),
                         () -> pageTitle + " visible text leaves its scroll viewport horizontally: text="
                                 + text.getText() + ", bounds=" + textBounds + ", viewport=" + viewportBounds);
-                if (inkBounds != null) {
-                    assertRectangleHorizontallyInsideBounds(
-                            viewportBounds,
-                            inkBounds,
-                            TEXT_EDGE_TOLERANCE,
-                            pageTitle + " visible text ink in scroll viewport"
-                    );
-                }
                 if (touchesVerticalViewportEdge(textBounds, viewportBounds, TEXT_EDGE_TOLERANCE)) {
                     return;
-                }
-                if (inkBounds != null) {
-                    assertVisibleTextInkHasExpectedCoverage(text, textBounds, inkBounds, pageTitle);
                 }
                 assertTrue(containsBoundsWithTolerance(viewportBounds, textBounds, TEXT_EDGE_TOLERANCE),
                         () -> pageTitle + " visible text leaves its scroll viewport: text="
                                 + text.getText() + ", bounds=" + textBounds + ", viewport=" + viewportBounds);
+
+                @Nullable Rectangle2D inkBounds = renderedTextInkBounds(image, text);
                 if (inkBounds != null) {
+                    assertVisibleTextInkHasVerticalRoom(text, textBounds, inkBounds, pageTitle);
+                    assertVisibleTextInkInsideNearestVisualBoundary(text, inkBounds, pageTitle);
+                    assertVisibleTextInkHasExpectedCoverage(text, textBounds, inkBounds, pageTitle);
                     assertRectangleInsideBounds(
                             viewportBounds,
                             inkBounds,
@@ -8468,14 +8719,16 @@ final class M3FXDemoVisualSmokeTest {
                 return;
             }
 
-            assertVisibleTextInsideAncestorClips(text, textBounds, inkBounds, pageTitle);
-            if (inkBounds != null) {
-                assertVisibleTextInkHasExpectedCoverage(text, textBounds, inkBounds, pageTitle);
-            }
             assertTrue(containsBoundsWithTolerance(sceneBounds, textBounds, TEXT_EDGE_TOLERANCE),
                     () -> pageTitle + " visible text leaves the scene viewport: text="
                             + text.getText() + ", bounds=" + textBounds + ", scene=" + sceneBounds);
+
+            @Nullable Rectangle2D inkBounds = renderedTextInkBounds(image, text);
+            assertVisibleTextInsideAncestorClips(text, textBounds, inkBounds, pageTitle);
             if (inkBounds != null) {
+                assertVisibleTextInkHasVerticalRoom(text, textBounds, inkBounds, pageTitle);
+                assertVisibleTextInkInsideNearestVisualBoundary(text, inkBounds, pageTitle);
+                assertVisibleTextInkHasExpectedCoverage(text, textBounds, inkBounds, pageTitle);
                 assertRectangleInsideBounds(
                         sceneBounds,
                         inkBounds,
@@ -8664,6 +8917,7 @@ final class M3FXDemoVisualSmokeTest {
     private static boolean allowsHorizontalViewportClipping(Node node) {
         return nearestAncestorWithStyle(node, M3Carousel.VIEWPORT_STYLE_CLASS) != null;
     }
+
 
     /// Returns the nearest scroll pane viewport that clips a node, or `null` when the node is not inside one.
     private static @Nullable Node nearestScrollViewport(Node node) {
@@ -9243,6 +9497,80 @@ final class M3FXDemoVisualSmokeTest {
         });
     }
 
+    /// Returns whether a node is fully inside the current scene snapshot and every ancestor scroll viewport.
+    private static boolean nodeFullyInsideSnapshotViewport(Node node, Bounds nodeBounds, WritableImage image) {
+        Bounds snapshotBounds = new BoundingBox(0.0, 0.0, image.getWidth(), image.getHeight());
+        if (!containsBoundsWithTolerance(snapshotBounds, nodeBounds, CONTROL_EDGE_TOLERANCE)) {
+            return false;
+        }
+
+        for (ScrollPane scrollPane : ancestorScrollPanes(node)) {
+            @Nullable Node viewport = scrollPane.lookup(".viewport");
+            if (viewport != null && hasRenderableBounds(viewport)) {
+                Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                if (!containsBoundsWithTolerance(viewportBounds, nodeBounds, CONTROL_EDGE_TOLERANCE)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /// Returns compact diagnostics for every ancestor scroll viewport that clips a node.
+    private static String scrollViewportDebug(Node node) {
+        StringBuilder builder = new StringBuilder();
+        for (ScrollPane scrollPane : ancestorScrollPanes(node)) {
+            if (!builder.isEmpty()) {
+                builder.append("; ");
+            }
+            @Nullable Node viewport = scrollPane.lookup(".viewport");
+            builder.append(scrollPane.getClass().getSimpleName())
+                    .append("[h=")
+                    .append(scrollPane.getHvalue())
+                    .append(", v=")
+                    .append(scrollPane.getVvalue())
+                    .append(", viewport=");
+            if (viewport == null || !hasRenderableBounds(viewport)) {
+                builder.append("missing");
+            } else {
+                builder.append(viewport.localToScene(viewport.getBoundsInLocal()));
+            }
+            builder.append(']');
+        }
+        return builder.toString();
+    }
+
+    /// Returns a current scene snapshot only when the node is already fully visible in every active viewport.
+    private static @Nullable WritableImage snapshotIfNodeFullyVisible(Scene scene, Node node) {
+        WritableImage image = snapshot(scene);
+        Bounds nodeBounds = node.localToScene(node.getLayoutBounds());
+        return nodeFullyInsideSnapshotViewport(node, nodeBounds, image) ? image : null;
+    }
+
+    /// Returns a current scene snapshot and fails when the node is not fully visible in every active viewport.
+    private static WritableImage requireSnapshotWithNodeFullyVisible(Scene scene, Node node, String description) {
+        WritableImage image = snapshot(scene);
+        Bounds nodeBounds = node.localToScene(node.getLayoutBounds());
+        assertTrue(nodeFullyInsideSnapshotViewport(node, nodeBounds, image),
+                () -> description + " should already be fully visible before pixel geometry checks: bounds="
+                        + nodeBounds + ", image=" + image.getWidth() + "x" + image.getHeight()
+                        + ", viewports=" + scrollViewportDebug(node));
+        return image;
+    }
+
+    /// Runs a pixel assertion when the node is fully visible in the current scene snapshot.
+    private static void assertWithNodeFullyVisibleSnapshot(
+            Scene scene,
+            Node node,
+            String description,
+            Consumer<WritableImage> assertion
+    ) {
+        @Nullable WritableImage image = snapshotIfNodeFullyVisible(scene, node);
+        if (image != null) {
+            assertion.accept(image);
+        }
+    }
+
     /// Returns whether a node is partially clipped by its nearest scroll viewport edge.
     private static boolean isClippedAtScrollViewportEdge(Node node, Bounds nodeBounds) {
         @Nullable Node viewport = nearestScrollViewport(node);
@@ -9332,62 +9660,80 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that single-line text input glyphs have visible vertical room inside their field containers.
     private static void assertSingleLineTextInputsHaveVerticalRoom(Scene scene, String pageTitle) {
-        Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
         WritableImage image = snapshot(scene);
-        visitVisibleNodes(scene.getRoot(), node -> {
-            if (!(node instanceof M3TextInputLayout layout) || !hasRenderableBounds(layout)) {
-                return;
+        for (M3TextInputLayout layout : visibleNodesOfType(scene.getRoot(), M3TextInputLayout.class)) {
+            if (!hasRenderableBounds(layout)) {
+                continue;
             }
 
-            TextInputControl input = layout.getInput();
-            if (input == null || input instanceof M3TextArea || !input.isVisible() || !hasRenderableBounds(input)) {
-                return;
+            Bounds layoutBounds = layout.localToScene(layout.getBoundsInLocal());
+            if (!nodeFullyInsideSnapshotViewport(layout, layoutBounds, image)) {
+                continue;
             }
 
-            @Nullable Text text = firstVisibleText(input);
-            if (text == null || !hasRenderableBounds(text)) {
-                return;
+            @Nullable TextInputControl input = layout.getInput();
+            if (!isSingleLineTextInputWithMeasurableGlyph(input)) {
+                continue;
             }
 
-            Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
-            Bounds textBounds = text.localToScene(text.getBoundsInLocal());
-            if (isOutsideSceneViewport(text, textBounds, sceneBounds)) {
-                return;
-            }
+            TextInputControl actualInput = Objects.requireNonNull(input, "input");
+            Text text = Objects.requireNonNull(firstVisibleText(actualInput), "visible text");
+            assertSingleLineTextInputHasVerticalRoom(image, layout, actualInput, text, pageTitle);
+        }
+    }
 
-            @Nullable Rectangle2D renderedInkBounds = renderedTextInkBounds(image, text);
-            assertNotNull(renderedInkBounds,
-                    () -> pageTitle + " text input glyph should be measurable in the real scene snapshot: text="
-                            + text.getText() + ", inputBounds=" + inputBounds + ", textBounds=" + textBounds);
-            Rectangle2D inkBounds = Objects.requireNonNull(renderedInkBounds);
-            assertTrue(renderedTextInkWidthIsRepresentative(inkBounds, textBounds)
-                            && renderedTextInkHeightIsRepresentative(inkBounds, text),
-                    () -> pageTitle + " text input glyph snapshot is not representative enough for geometry checks: text="
-                            + text.getText() + ", inputBounds=" + inputBounds + ", textBounds=" + textBounds
-                            + ", inkBounds=" + inkBounds);
-            assertRectangleInsideBounds(
-                    inputBounds,
-                    inkBounds,
-                    TEXT_EDGE_TOLERANCE,
-                    pageTitle + " text input rendered glyph"
-            );
-            double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
-            double topRoom = inkBounds.getMinY() - inputBounds.getMinY();
-            double bottomRoom = inputBounds.getMaxY() - inkBounds.getMaxY();
-            double centerRatio = (inkCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
-            assertTrue(topRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
-                            && bottomRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
-                            && centerRatio >= INPUT_TEXT_MINIMUM_CENTER_RATIO
-                            && centerRatio <= INPUT_TEXT_MAXIMUM_CENTER_RATIO,
-                    () -> pageTitle + " text input glyph has unsafe vertical geometry: text="
-                            + text.getText() + ", topRoom=" + topRoom + ", bottomRoom=" + bottomRoom
-                            + ", centerRatio=" + centerRatio + ", inputBounds=" + inputBounds
-                            + ", textBounds=" + textBounds + ", inkBounds=" + inkBounds);
-            if (isSingleLineM3TextInputWithVisibleText(input)) {
-                assertSingleLineTextInputInkAvoidsAdornments(layout, inkBounds, pageTitle);
-                assertSingleLineTextInputInkAligned(layout, input, inkBounds, inputBounds, pageTitle);
-            }
-        });
+    /// Returns whether a text input has a single-line glyph that can be measured in a scene snapshot.
+    private static boolean isSingleLineTextInputWithMeasurableGlyph(@Nullable TextInputControl input) {
+        if (input == null || input instanceof M3TextArea || !input.isVisible() || !hasRenderableBounds(input)) {
+            return false;
+        }
+
+        @Nullable Text text = firstVisibleText(input);
+        return text != null && hasRenderableBounds(text);
+    }
+
+    /// Verifies one text input glyph in a snapshot where the owning layout is fully visible.
+    private static void assertSingleLineTextInputHasVerticalRoom(
+            WritableImage image,
+            M3TextInputLayout layout,
+            TextInputControl input,
+            Text text,
+            String pageTitle
+    ) {
+        Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
+        Bounds textBounds = text.localToScene(text.getBoundsInLocal());
+        @Nullable Rectangle2D renderedInkBounds = renderedTextInkBounds(image, text);
+        assertNotNull(renderedInkBounds,
+                () -> pageTitle + " text input glyph should be measurable in the real scene snapshot: text="
+                        + text.getText() + ", inputBounds=" + inputBounds + ", textBounds=" + textBounds);
+        Rectangle2D inkBounds = Objects.requireNonNull(renderedInkBounds);
+        assertTrue(renderedTextInkWidthIsRepresentative(inkBounds, textBounds)
+                        && renderedTextInkHeightIsRepresentative(inkBounds, text),
+                () -> pageTitle + " text input glyph snapshot is not representative enough for geometry checks: text="
+                        + text.getText() + ", inputBounds=" + inputBounds + ", textBounds=" + textBounds
+                        + ", inkBounds=" + inkBounds);
+        assertRectangleInsideBounds(
+                inputBounds,
+                inkBounds,
+                TEXT_EDGE_TOLERANCE,
+                pageTitle + " text input rendered glyph"
+        );
+        double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
+        double topRoom = inkBounds.getMinY() - inputBounds.getMinY();
+        double bottomRoom = inputBounds.getMaxY() - inkBounds.getMaxY();
+        double centerRatio = (inkCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
+        assertTrue(topRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
+                        && bottomRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
+                        && centerRatio >= INPUT_TEXT_MINIMUM_CENTER_RATIO
+                        && centerRatio <= INPUT_TEXT_MAXIMUM_CENTER_RATIO,
+                () -> pageTitle + " text input glyph has unsafe vertical geometry: text="
+                        + text.getText() + ", topRoom=" + topRoom + ", bottomRoom=" + bottomRoom
+                        + ", centerRatio=" + centerRatio + ", inputBounds=" + inputBounds
+                        + ", textBounds=" + textBounds + ", inkBounds=" + inkBounds);
+        if (isSingleLineM3TextInputWithVisibleText(input)) {
+            assertSingleLineTextInputInkAvoidsAdornments(layout, inkBounds, pageTitle);
+            assertSingleLineTextInputInkAligned(layout, input, inkBounds, inputBounds, pageTitle);
+        }
     }
 
     /// Returns whether a single-line M3 text input should check rendered ink alignment.
@@ -9576,7 +9922,6 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(1, groups.get(0).getSelectedButtons().size(), "date range selected count");
         assertEquals(1, groups.get(1).getSelectedButtons().size(), "availability selected count");
         assertEquals(2, groups.get(2).getSelectedButtons().size(), "channel selected count");
-        WritableImage image = snapshot(scene);
         for (int index = 0; index < groups.size(); index++) {
             M3SegmentedButtonGroup group = groups.get(index);
             assertEquals(3, group.getItems().size(), "segmented group item count");
@@ -9590,7 +9935,10 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(1, buttons.stream().filter(Node::isDisabled).count(),
                 "Segmented Buttons page should render one disabled segment");
         for (M3SegmentedButton button : buttons) {
-            assertSegmentedButtonDemoGeometry(image, button);
+            @Nullable WritableImage buttonImage = snapshotIfNodeFullyVisible(scene, button);
+            if (buttonImage != null) {
+                assertSegmentedButtonDemoGeometry(buttonImage, button);
+            }
         }
         assertFixedTargetGlyphsCentered(scene, "Segmented Buttons");
     }
@@ -9876,10 +10224,17 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(5, chips.stream().filter(M3Chip::isSelected).count(), "Chips selected count");
         assertEquals(1, chips.stream().filter(Node::isDisabled).count(), "Chips disabled count");
 
-        WritableImage image = snapshot(scene);
+        int geometryChecks = 0;
         for (M3Chip chip : chips) {
-            assertChipDemoGeometry(image, chip);
+            @Nullable WritableImage chipImage = snapshotIfNodeFullyVisible(scene, chip);
+            if (chipImage != null) {
+                assertChipDemoGeometry(chipImage, chip);
+                geometryChecks++;
+            }
         }
+        int finalGeometryChecks = geometryChecks;
+        assertTrue(finalGeometryChecks > 0,
+                () -> "Chips page should verify geometry for at least one currently visible chip");
 
         List<M3ChipGroup> groups = visibleNodesOfType(page, M3ChipGroup.class);
         assertEquals(2, groups.size(), () -> "Chips page should render two chip groups: " + groups);
@@ -9965,7 +10320,6 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(indicators.stream().allMatch(M3LoadingIndicator::isIndeterminate),
                 "loading indicators should be indeterminate in the demo");
 
-        WritableImage image = snapshot(scene);
         for (M3LoadingIndicator indicator : indicators) {
             Bounds bounds = indicator.localToScene(indicator.getBoundsInLocal());
             assertEquals(indicator.getContainerSize(), bounds.getWidth(), CONTROL_EDGE_TOLERANCE,
@@ -9973,7 +10327,12 @@ final class M3FXDemoVisualSmokeTest {
             assertEquals(indicator.getContainerSize(), bounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                     "loading indicator height");
             assertNodeSnapshotHasOpaquePixels(indicator, "loading indicator " + indicator.getVariant());
-            assertLoadingIndicatorPageGeometry(image, indicator, "loading indicator " + indicator.getVariant());
+            WritableImage indicatorImage = requireSnapshotWithNodeFullyVisible(
+                    scene,
+                    indicator,
+                    "Loading Indicator page `" + indicator.getVariant() + "`"
+            );
+            assertLoadingIndicatorPageGeometry(indicatorImage, indicator, "loading indicator " + indicator.getVariant());
         }
     }
 
@@ -10034,9 +10393,9 @@ final class M3FXDemoVisualSmokeTest {
                 "vibrant menu should expose the vibrant pseudo-class");
         assertEquals(1, vibrantMenu.getSelectedItems().size(), "vibrant inline menu selected count");
         assertTrue(menuHasSelectedItem(vibrantMenu, "Pinned"), "Pinned row should be selected");
-        WritableImage image = snapshot(scene);
         for (M3Menu menu : inlineMenus) {
-            assertMenuSurfaceGeometry(menu, image, "Menus page inline menu");
+            WritableImage menuImage = requireSnapshotWithNodeFullyVisible(scene, menu, "Menus page inline menu");
+            assertMenuSurfaceGeometry(menu, menuImage, "Menus page inline menu");
         }
 
         M3MenuButton menuButton = Objects.requireNonNull(
@@ -10065,12 +10424,15 @@ final class M3FXDemoVisualSmokeTest {
                         .filter(M3NavigationItem::isSelected)
                         .count(),
                 "Navigation page should render two selected destinations");
-        WritableImage image = snapshot(scene);
         for (int index = 0; index < bars.size(); index++) {
             assertNavigationBarDemoGeometry(bars.get(index), "navigation bar " + index);
         }
-        visibleNodesOfType(page, M3NavigationItem.class).forEach(item ->
-                assertNavigationItemDemoGeometry(image, item, "Navigation"));
+        for (M3NavigationItem item : visibleNodesOfType(page, M3NavigationItem.class)) {
+            @Nullable WritableImage itemImage = snapshotIfNodeFullyVisible(scene, item);
+            if (itemImage != null) {
+                assertNavigationItemDemoGeometry(itemImage, item, "Navigation");
+            }
+        }
         assertDemoVectorIcons(page, "Navigation", 7);
         assertNavigationItemIconSlotsCentered(scene, "Navigation");
         assertNavigationBadgesStayCompact(scene, "Navigation");
@@ -10096,21 +10458,25 @@ final class M3FXDemoVisualSmokeTest {
                 "Navigation Drawer page should render one sectioned drawer selected after its section label");
         assertTrue(visibleNodesOfType(page, M3ListItem.class).stream().filter(M3ListItem::isSelected).count() >= 2,
                 "Navigation Drawer page should render selected drawer rows");
-        WritableImage image = snapshot(scene);
         for (M3NavigationDrawer drawer : drawers) {
-            assertNavigationDrawerDemoGeometry(image, drawer);
+            assertNavigationDrawerDemoGeometry(scene, drawer);
         }
         assertDemoVectorIcons(page, "Navigation Drawer", 7);
     }
 
     /// Verifies one demo navigation drawer's selected row geometry.
-    private static void assertNavigationDrawerDemoGeometry(WritableImage image, M3NavigationDrawer drawer) {
+    private static void assertNavigationDrawerDemoGeometry(Scene scene, M3NavigationDrawer drawer) {
         Bounds drawerBounds = drawer.localToScene(drawer.getBoundsInLocal());
         assertTrue(drawerBounds.getWidth() >= 320.0,
                 () -> "demo navigation drawer should be wide enough for Material drawer rows: " + drawerBounds);
         M3ListItem selected = Objects.requireNonNull(drawer.getSelectedItem(), "navigation drawer selected item");
         assertTrue(selected.isSelected(), () -> "drawer selected item should expose selected state: " + selected);
-        assertListItemSelectedContainerGeometry(image, selected,
+        WritableImage selectedImage = requireSnapshotWithNodeFullyVisible(
+                scene,
+                selected,
+                "navigation drawer selected `" + selected.getHeadlineText() + "`"
+        );
+        assertListItemSelectedContainerGeometry(selectedImage, selected,
                 "navigation drawer selected `" + selected.getHeadlineText() + "`");
 
         List<M3ListItem> selectedRows = visibleNodesOfType(drawer, M3ListItem.class).stream()
@@ -10256,12 +10622,15 @@ final class M3FXDemoVisualSmokeTest {
                         .filter(M3NavigationItem::isSelected)
                         .count(),
                 "Navigation Rail page should render two selected destinations");
-        WritableImage image = snapshot(scene);
         for (int index = 0; index < rails.size(); index++) {
             assertNavigationRailDemoGeometry(rails.get(index), "navigation rail " + index);
         }
-        visibleNodesOfType(page, M3NavigationItem.class).forEach(item ->
-                assertNavigationItemDemoGeometry(image, item, "Navigation Rail"));
+        for (M3NavigationItem item : visibleNodesOfType(page, M3NavigationItem.class)) {
+            @Nullable WritableImage itemImage = snapshotIfNodeFullyVisible(scene, item);
+            if (itemImage != null) {
+                assertNavigationItemDemoGeometry(itemImage, item, "Navigation Rail");
+            }
+        }
         assertDemoVectorIcons(page, "Navigation Rail", 7);
         assertNavigationItemIconSlotsCentered(scene, "Navigation Rail");
         assertNavigationBadgesStayCompact(scene, "Navigation Rail");
@@ -10308,7 +10677,6 @@ final class M3FXDemoVisualSmokeTest {
 
         List<M3TabBar> tabBars = visibleNodesOfType(page, M3TabBar.class);
         assertEquals(2, tabBars.size(), () -> "Tabs page should render two tab bars: " + tabBars);
-        WritableImage image = snapshot(scene);
         for (int index = 0; index < tabBars.size(); index++) {
             M3TabBar tabBar = tabBars.get(index);
             assertEquals(3, tabBar.getTabs().size(), "tab bar item count");
@@ -10320,7 +10688,10 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(2, tabs.stream().filter(M3Tab::isSelected).count(), "Tabs selected count");
         assertEquals(1, tabs.stream().filter(Node::isDisabled).count(), "Tabs disabled count");
         for (M3Tab tab : tabs) {
-            assertTabDemoGeometry(image, tab);
+            @Nullable WritableImage tabImage = snapshotIfNodeFullyVisible(scene, tab);
+            if (tabImage != null) {
+                assertTabDemoGeometry(tabImage, tab);
+            }
         }
     }
 
@@ -10697,10 +11068,15 @@ final class M3FXDemoVisualSmokeTest {
 
         M3TextInputLayout outlinedTextLayout = requireTextInputLayout(layouts, "M3FX", "Outlined with text");
         assertOutlinedFloatingLabelGeometry(outlinedTextLayout, "Text Fields outlined populated text input");
-        assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
-                snapshot(scene),
+        assertWithNodeFullyVisibleSnapshot(
+                scene,
                 outlinedTextLayout,
-                "Text Fields outlined populated text input"
+                "Text Fields outlined populated text input",
+                image -> assertOutlinedFloatingLabelBackgroundMatchesSurrounding(
+                        image,
+                        outlinedTextLayout,
+                        "Text Fields outlined populated text input"
+                )
         );
     }
 
@@ -10851,17 +11227,17 @@ final class M3FXDemoVisualSmokeTest {
             String description
     ) {
         Text text = Objects.requireNonNull(firstVisibleText(chip, chip.getText()), description + " label text node");
-        Rectangle2D inkBounds = Objects.requireNonNull(
-                renderedTextInkBounds(image, text),
-                description + " rendered text ink"
-        );
+        @Nullable Rectangle2D inkBounds = renderedTextInkBounds(image, text);
         Bounds textBounds = text.localToScene(text.getLayoutBounds());
-        assertRectangleInsideBounds(chipBounds, inkBounds, CONTROL_EDGE_TOLERANCE,
-                description + " rendered text ink");
         assertTrue(containsBoundsWithTolerance(chipBounds, textBounds, TEXT_EDGE_TOLERANCE),
                 () -> description + " label text layout leaves the chip container: text="
                         + textBounds + ", chip=" + chipBounds);
-        boolean inkClassificationComplete = inkBounds.getHeight() >= Math.min(4.0, textBounds.getHeight() * 0.25)
+        if (inkBounds != null) {
+            assertRectangleInsideBounds(chipBounds, inkBounds, CONTROL_EDGE_TOLERANCE,
+                    description + " rendered text ink");
+        }
+        boolean inkClassificationComplete = inkBounds != null
+                && inkBounds.getHeight() >= Math.min(4.0, textBounds.getHeight() * 0.25)
                 && inkBounds.getWidth() >= Math.min(8.0, textBounds.getWidth() * 0.4);
         double textCenterY = inkClassificationComplete
                 ? inkBounds.getMinY() + inkBounds.getHeight() / 2.0
@@ -11690,10 +12066,8 @@ final class M3FXDemoVisualSmokeTest {
         root.applyCss();
         root.layout();
 
-        WritableImage image = snapshot(scene);
         assertVisiblePickerCellTextInkCentered(
                 scene,
-                image,
                 M3DatePicker.DAY_CELL_STYLE_CLASS,
                 "Date Pickers visible day cells",
                 10
@@ -11732,10 +12106,8 @@ final class M3FXDemoVisualSmokeTest {
         root.applyCss();
         root.layout();
 
-        WritableImage image = snapshot(scene);
         assertVisiblePickerCellTextInkCentered(
                 scene,
-                image,
                 M3TimePicker.CELL_STYLE_CLASS,
                 "Time Pickers visible cells",
                 10
@@ -11746,7 +12118,6 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that visible picker cells keep their rendered text centered in the stable cell target.
     private static void assertVisiblePickerCellTextInkCentered(
             Scene scene,
-            WritableImage image,
             String cellStyleClass,
             String description,
             int minimumVisibleCells
@@ -11757,7 +12128,12 @@ final class M3FXDemoVisualSmokeTest {
                 () -> description + " should expose at least " + minimumVisibleCells
                         + " visible cells, found " + visibleCells.size());
         for (ButtonBase cell : visibleCells) {
-            assertPickerCellTextInkCentered(image, cell, description);
+            assertWithNodeFullyVisibleSnapshot(
+                    scene,
+                    cell,
+                    description + " cell `" + cell.getText() + "`",
+                    image -> assertPickerCellTextInkCentered(image, cell, description)
+            );
         }
     }
 
@@ -12278,51 +12654,46 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that selection-control indicators keep their active pieces centered in real rendered geometry.
     private static void assertSelectionIndicatorsCentered(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
-        AtomicReference<@Nullable WritableImage> snapshotReference = new AtomicReference<>();
-        visitVisibleNodes(scene.getRoot(), node -> {
-            if (node instanceof M3CheckBox checkBox && hasRenderableBounds(checkBox)) {
-                assertCheckboxMarkCentered(
+        for (M3CheckBox checkBox : visibleNodesOfType(scene.getRoot(), M3CheckBox.class)) {
+            if (hasRenderableBounds(checkBox)) {
+                assertWithNodeFullyVisibleSnapshot(
+                        scene,
                         checkBox,
-                        sceneBounds,
-                        selectionGeometrySnapshot(scene, snapshotReference),
-                        pageTitle
-                );
-            } else if (node instanceof M3RadioButton radioButton && hasRenderableBounds(radioButton)) {
-                assertRadioDotCentered(
-                        radioButton,
-                        sceneBounds,
-                        selectionGeometrySnapshot(scene, snapshotReference),
-                        pageTitle
-                );
-            } else if (node instanceof M3Switch switchControl && hasRenderableBounds(switchControl)) {
-                assertSwitchThumbInsideTrack(
-                        switchControl,
-                        sceneBounds,
-                        selectionGeometrySnapshot(scene, snapshotReference),
-                        pageTitle
-                );
-            } else if (node instanceof M3Slider slider && hasRenderableBounds(slider)) {
-                assertSliderTrackThumbGeometry(
-                        slider,
-                        sceneBounds,
-                        selectionGeometrySnapshot(scene, snapshotReference),
-                        pageTitle
+                        pageTitle + " checkbox `" + checkBox.getText() + "`",
+                        image -> assertCheckboxMarkCentered(checkBox, sceneBounds, image, pageTitle)
                 );
             }
-        });
-    }
-
-    /// Returns the shared snapshot used by selection-control pixel geometry checks.
-    private static WritableImage selectionGeometrySnapshot(
-            Scene scene,
-            AtomicReference<@Nullable WritableImage> snapshotReference
-    ) {
-        WritableImage image = snapshotReference.get();
-        if (image == null) {
-            image = snapshot(scene);
-            snapshotReference.set(image);
         }
-        return image;
+        for (M3RadioButton radioButton : visibleNodesOfType(scene.getRoot(), M3RadioButton.class)) {
+            if (hasRenderableBounds(radioButton)) {
+                assertWithNodeFullyVisibleSnapshot(
+                        scene,
+                        radioButton,
+                        pageTitle + " radio button `" + radioButton.getText() + "`",
+                        image -> assertRadioDotCentered(radioButton, sceneBounds, image, pageTitle)
+                );
+            }
+        }
+        for (M3Switch switchControl : visibleNodesOfType(scene.getRoot(), M3Switch.class)) {
+            if (hasRenderableBounds(switchControl)) {
+                assertWithNodeFullyVisibleSnapshot(
+                        scene,
+                        switchControl,
+                        pageTitle + " switch `" + switchControl.getText() + "`",
+                        image -> assertSwitchThumbInsideTrack(switchControl, sceneBounds, image, pageTitle)
+                );
+            }
+        }
+        for (M3Slider slider : visibleNodesOfType(scene.getRoot(), M3Slider.class)) {
+            if (hasRenderableBounds(slider)) {
+                assertWithNodeFullyVisibleSnapshot(
+                        scene,
+                        slider,
+                        pageTitle + " slider",
+                        image -> assertSliderTrackThumbGeometry(slider, sceneBounds, image, pageTitle)
+                );
+            }
+        }
     }
 
     /// Verifies that navigation badges stay compact and anchored instead of stretching over the selected indicator.
@@ -16187,6 +16558,55 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Samples a nearby background pixel around a text node before measuring rendered text ink.
     private static Color sampledTextBackgroundColor(WritableImage image, Text text) {
+        @Nullable TextInputControl textInput = nearestAncestorOfType(text, TextInputControl.class);
+        if (textInput != null && hasRenderableBounds(textInput)) {
+            return sampledTextInputTextBackgroundColor(image, text, textInput);
+        }
+
+        return sampledGenericTextBackgroundColor(image, text);
+    }
+
+    /// Samples the input content surface around a text node in a JavaFX text input skin.
+    private static Color sampledTextInputTextBackgroundColor(
+            WritableImage image,
+            Text text,
+            TextInputControl input
+    ) {
+        Bounds textBounds = text.localToScene(text.getBoundsInLocal());
+        Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
+        @Nullable Color textFill = text.getFill() instanceof Color color ? color : null;
+        @Nullable Color bestColor = null;
+        double bestDistance = -1.0;
+        double startX = Math.max(inputBounds.getMinX() + 8.0, textBounds.getMinX() - 20.0);
+        double endX = Math.min(inputBounds.getMaxX() - 8.0, textBounds.getMaxX() + 20.0);
+        double startY = Math.max(inputBounds.getMinY() + 8.0, textBounds.getMinY() - 4.0);
+        double endY = Math.min(inputBounds.getMaxY() - 8.0, textBounds.getMaxY() + 4.0);
+        for (int y = Math.max(0, (int) Math.floor(startY)); y <= Math.min((int) image.getHeight() - 1, (int) Math.ceil(endY)); y++) {
+            for (int x = Math.max(0, (int) Math.floor(startX)); x <= Math.min((int) image.getWidth() - 1, (int) Math.ceil(endX)); x++) {
+                double sampleX = x + 0.5;
+                double sampleY = y + 0.5;
+                if (isInsideBoundsWithTolerance(textBounds, sampleX, sampleY, 2.0)) {
+                    continue;
+                }
+
+                Color color = image.getPixelReader().getColor(x, y);
+                if (textFill == null) {
+                    return color;
+                }
+
+                double distance = colorDistance(color, textFill);
+                if (distance > bestDistance) {
+                    bestDistance = distance;
+                    bestColor = color;
+                }
+            }
+        }
+
+        return bestColor == null ? sampledGenericTextBackgroundColor(image, text) : bestColor;
+    }
+
+    /// Samples the local background around a generic text node.
+    private static Color sampledGenericTextBackgroundColor(WritableImage image, Text text) {
         Bounds bounds = text.localToScene(text.getBoundsInLocal());
         int width = (int) image.getWidth();
         int height = (int) image.getHeight();

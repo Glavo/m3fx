@@ -17,6 +17,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import org.glavo.m3fx.internal.M3FocusRequests;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// A base skin for Material Design 3 selection controls.
@@ -71,7 +73,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         container.getStyleClass().add("m3-selection-container");
         indicatorSlot.getStyleClass().add("m3-selection-indicator");
         label.getStyleClass().add("m3-selection-label");
-        container.setAlignment(Pos.CENTER_LEFT);
+        container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         indicatorSlot.setAlignment(Pos.CENTER);
         bindLabel(control);
@@ -90,6 +92,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         resetInteractionState();
         stateLayer.uninstallStateTransitions();
         control.disabledProperty().removeListener(disabledListener);
+        container.alignmentProperty().unbind();
         container.nodeOrientationProperty().unbind();
         unbindLabel();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
@@ -266,9 +269,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         }
 
         mousePressed = true;
-        if (control.isFocusTraversable()) {
-            control.requestFocus();
-        }
+        M3FocusRequests.requestFocusIfTraversable(control);
         playRipple(event);
         control.arm();
         event.consume();

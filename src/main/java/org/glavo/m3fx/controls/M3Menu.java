@@ -17,7 +17,6 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.css.PseudoClass;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -28,6 +27,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3MenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -287,8 +287,7 @@ public class M3Menu extends Control {
     /// Focuses the current, selected, or first enabled visible menu item.
     final boolean focusDefaultItem() {
         @Nullable Node focusNode = focusedAccessibleNode();
-        if (focusNode != null) {
-            M3Accessible.showItem(focusNode);
+        if (focusNode != null && M3Accessible.showItem(this, focusNode)) {
             notifyFocusNodeChanged();
             return true;
         }
@@ -473,13 +472,9 @@ public class M3Menu extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> {
-                if (!focusDefaultItem()) {
-                    requestFocus();
-                }
-            }
+            case REQUEST_FOCUS -> requestAccessibleFocus();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
-            case SHOW_ITEM -> focusAccessibleItem(parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -565,9 +560,7 @@ public class M3Menu extends Control {
 
     /// Returns whether a key opens a submenu for the current node orientation.
     private boolean isOpenSubMenuKey(KeyCode keyCode) {
-        KeyCode openKey = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
-                ? KeyCode.LEFT
-                : KeyCode.RIGHT;
+        KeyCode openKey = M3NodeLayout.isRightToLeft(this) ? KeyCode.LEFT : KeyCode.RIGHT;
         return keyCode == openKey;
     }
 
@@ -668,8 +661,8 @@ public class M3Menu extends Control {
         @Nullable M3SubMenuItem retainedSubMenu =
                 item instanceof M3SubMenuItem subMenuItem && subMenuItem.isSubMenuShowing() ? subMenuItem : null;
         hideSubMenusExcept(retainedSubMenu);
-        if (item.isFocusTraversable()) {
-            item.requestFocus();
+        if (!M3Accessible.showItem(this, item)) {
+            return false;
         }
         notifyFocusNodeChanged();
         return true;
@@ -707,24 +700,40 @@ public class M3Menu extends Control {
         }
     }
 
+    /// Requests focus for the default menu item or this menu surface when no enabled item exists.
+    final boolean requestAccessibleFocus() {
+        if (focusDefaultItem()) {
+            return true;
+        }
+        if (M3Accessible.showDirectItem(this, this)) {
+            notifyFocusNodeChanged();
+            return true;
+        }
+        return false;
+    }
+
     /// Focuses the item supplied by an accessibility action parameter.
-    private void focusAccessibleItem(Object... parameters) {
+    final boolean showAccessibleItem(Object... parameters) {
         if (parameters.length == 0 && focusDefaultItem()) {
-            return;
+            return true;
         }
 
         @Nullable Node item = M3Accessible.actionItem(getItems(), parameters);
         if (item instanceof M3MenuItem menuItem && focusMenuItem(menuItem)) {
-            return;
+            return true;
         }
         if (focusNestedAccessibleItem(parameters)) {
-            return;
+            return true;
         }
-        if (M3Accessible.showAccessibleActionTarget(getItems(), parameters)) {
+        if (M3Accessible.showAccessibleActionTarget(this, getItems(), parameters)) {
             notifyFocusNodeChanged();
-            return;
+            return true;
         }
-        M3Accessible.showItem(item);
+        if (M3Accessible.showItem(this, item)) {
+            notifyFocusNodeChanged();
+            return true;
+        }
+        return false;
     }
 
     /// Opens a nested submenu branch and focuses the requested descendant item when possible.
@@ -738,9 +747,7 @@ public class M3Menu extends Control {
             if (child instanceof M3SubMenuItem subMenuItem
                     && containsNestedAccessibleTarget(subMenuItem.getItems(), parameters)
                     && focusMenuItem(subMenuItem)) {
-                subMenuItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
-                notifyFocusNodeChanged();
-                return true;
+                return subMenuItem.showAccessibleSubMenuItem(parameters);
             }
         }
         return false;

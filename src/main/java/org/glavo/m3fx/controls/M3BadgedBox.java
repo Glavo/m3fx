@@ -33,13 +33,13 @@ public class M3BadgedBox extends Control {
     /// The base style class for M3FX badged boxes.
     public static final String STYLE_CLASS = "m3-badged-box";
 
-    // The optional content node property.
+    /// The optional content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    // The optional badge property.
+    /// The optional badge property.
     private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
 
-    // The badge alignment inside this container.
+    /// The badge alignment inside this container, resolved horizontally against the effective node orientation.
     private final ObjectProperty<Pos> badgeAlignment = new SimpleObjectProperty<>(this, "badgeAlignment", Pos.TOP_RIGHT) {
         /// Restores the default badge alignment when the property is set to null.
         @Override
@@ -52,7 +52,7 @@ public class M3BadgedBox extends Control {
         }
     };
 
-    // The horizontal badge translation after alignment is applied.
+    /// The horizontal badge translation after alignment is applied.
     private final DoubleProperty badgeOffsetX = new SimpleDoubleProperty(this, "badgeOffsetX") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -61,7 +61,7 @@ public class M3BadgedBox extends Control {
         }
     };
 
-    // The vertical badge translation after alignment is applied.
+    /// The vertical badge translation after alignment is applied.
     private final DoubleProperty badgeOffsetY = new SimpleDoubleProperty(this, "badgeOffsetY") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -144,6 +144,9 @@ public class M3BadgedBox extends Control {
 
     /// Returns the badge alignment inside this container.
     ///
+    /// Horizontal left and right alignments are interpreted as logical start and end and are resolved by the skin
+    /// against the control's effective node orientation.
+    ///
     /// @return the badge alignment
     public final Pos getBadgeAlignment() {
         return badgeAlignment.get();
@@ -151,12 +154,18 @@ public class M3BadgedBox extends Control {
 
     /// Sets the badge alignment inside this container.
     ///
+    /// Horizontal left and right alignments are interpreted as logical start and end and are resolved by the skin
+    /// against the control's effective node orientation.
+    ///
     /// @param badgeAlignment the badge alignment
     public final void setBadgeAlignment(Pos badgeAlignment) {
         this.badgeAlignment.set(Objects.requireNonNull(badgeAlignment, "badgeAlignment"));
     }
 
     /// Returns the badge alignment property.
+    ///
+    /// Horizontal left and right alignments are interpreted as logical start and end and are resolved by the skin
+    /// against the control's effective node orientation.
     ///
     /// @return the badge alignment property
     public final ObjectProperty<Pos> badgeAlignmentProperty() {
@@ -234,10 +243,30 @@ public class M3BadgedBox extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getContent(), getBadge());
-            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getContent(), getBadge(), parameters);
+            case REQUEST_FOCUS -> focusAccessibleItem();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current or first accessibility item.
+    private void focusAccessibleItem() {
+        if (M3Accessible.showCurrentOrItem(this, getContent(), getBadge())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showCurrentOrItem(this, getContent(), getBadge(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the container focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Initializes style classes and property listeners.
@@ -252,10 +281,6 @@ public class M3BadgedBox extends Control {
 
     /// Handles horizontal keyboard traversal between the content and badge targets.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
-            return;
-        }
-
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,

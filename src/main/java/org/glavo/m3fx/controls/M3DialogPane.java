@@ -190,14 +190,16 @@ public class M3DialogPane extends DialogPane {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case REQUEST_FOCUS -> {
-                M3Accessible.showItem(currentOrFirstFocusableItem());
-                M3Accessible.notifyFocusNodeChanged(this);
-                focusNotifier.refresh();
+                if (M3Accessible.showItem(this, currentOrFirstFocusableItem())) {
+                    M3Accessible.notifyFocusNodeChanged(this);
+                    focusNotifier.refresh();
+                }
             }
             case SHOW_ITEM -> {
-                showAccessibleItem(parameters);
-                M3Accessible.notifyFocusNodeChanged(this);
-                focusNotifier.refresh();
+                if (showAccessibleItem(parameters)) {
+                    M3Accessible.notifyFocusNodeChanged(this);
+                    focusNotifier.refresh();
+                }
             }
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -269,7 +271,7 @@ public class M3DialogPane extends DialogPane {
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double padding = getContentPadding();
-        setPadding(new Insets(padding));
+        M3Css.setPaddingIfUnbound(this, new Insets(padding));
     }
 
     /// Requests a style pass when the runtime container shape token changes.
@@ -392,24 +394,23 @@ public class M3DialogPane extends DialogPane {
     }
 
     /// Focuses a requested dialog item or delegates deep popup targets to the content control.
-    private void showAccessibleItem(Object... parameters) {
+    private boolean showAccessibleItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         @Nullable Node item = accessibleActionOrCurrentItem(parameters);
         if (item != null) {
-            if (!M3Accessible.showAccessibleActionTarget(item, parameters)) {
-                M3Accessible.showItem(item);
-            }
-            return;
+            return M3Accessible.showAccessibleActionTarget(this, item, parameters)
+                    || M3Accessible.showItem(this, item);
         }
 
-        if (M3Accessible.showAccessibleActionTarget(getContent(), parameters)) {
-            return;
+        if (M3Accessible.showAccessibleActionTarget(this, getContent(), parameters)) {
+            return true;
         }
         for (ButtonType buttonType : getButtonTypes()) {
-            if (M3Accessible.showAccessibleActionTarget(lookupButton(buttonType), parameters)) {
-                return;
+            if (M3Accessible.showAccessibleActionTarget(this, lookupButton(buttonType), parameters)) {
+                return true;
             }
         }
+        return false;
     }
 
     /// Returns the item requested by accessibility action parameters.

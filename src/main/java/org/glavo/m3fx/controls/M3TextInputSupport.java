@@ -333,9 +333,12 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
         double height = getContainerHeight();
         double horizontalPadding = getHorizontalPadding();
         double verticalPadding = getVerticalPadding();
-        control.setMinHeight(height);
-        control.setPrefHeight(height);
-        control.setPadding(new Insets(verticalPadding, horizontalPadding, verticalPadding, horizontalPadding));
+        M3Css.setMinHeightIfUnbound(control, height);
+        M3Css.setPrefHeightIfUnbound(control, height);
+        M3Css.setPaddingIfUnbound(
+                control,
+                new Insets(verticalPadding, horizontalPadding, verticalPadding, horizontalPadding)
+        );
     }
 
     /// Creates a non-negative styleable double property.

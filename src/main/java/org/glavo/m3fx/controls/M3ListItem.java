@@ -522,7 +522,7 @@ public class M3ListItem extends Control {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fire();
-            case REQUEST_FOCUS -> M3Accessible.showItem(accessibleFocusNode());
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -540,19 +540,32 @@ public class M3ListItem extends Control {
 
     /// Focuses the current row or slot target, or an explicitly requested slot target.
     private void showAccessibleItem(Object... parameters) {
-        if (parameters.length == 0) {
-            M3Accessible.showItem(accessibleFocusNode());
-        } else {
-            M3Accessible.showCurrentOrItem(this, getLeading(), getTrailing(), parameters);
+        boolean shown = parameters.length == 0
+                ? M3Accessible.showItem(this, accessibleFocusNode())
+                : M3Accessible.showCurrentOrItem(this, getLeading(), getTrailing(), parameters);
+        if (shown) {
+            notifyAccessibleFocusChanged();
         }
+    }
+
+    /// Requests focus on the current list item accessibility focus node.
+    private void focusAccessibleNode() {
+        if (M3Accessible.showItem(this, accessibleFocusNode())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the list item focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Notifies accessibility clients that leading or trailing accessibility slots changed.
     private void notifyAccessibleSlotsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        M3Accessible.notifyFocusNodeChanged(this);
-        focusNotifier.refresh();
+        notifyAccessibleFocusChanged();
     }
 
     /// Returns the one-line item height token.

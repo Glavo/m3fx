@@ -10,6 +10,9 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.FxTestUtils;
@@ -23,6 +26,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -200,6 +205,34 @@ final class M3FormControlsTest {
         });
     }
 
+    /// Verifies that form validators can reveal the first invalid input through an owner scroll pane.
+    @Test
+    void formValidatorOwnerFocusRevealsInvalidInput() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextField field = new M3TextField();
+            M3TextInputLayout layout = new M3TextInputLayout(field, "Name", "Required");
+            layout.setValidator(M3TextInputValidators.required("Name is required"));
+            M3FormValidator validator = new M3FormValidator(layout);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(spacer, layout);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(320.0, 120.0);
+
+            new Scene(scrollPane, 320.0, 120.0);
+            scrollPane.applyCss();
+            scrollPane.resize(320.0, 120.0);
+            scrollPane.layout();
+            content.layout();
+
+            assertFalse(validator.validateAndFocusFirstInvalidInput(content));
+
+            assertTrue(field.isFocused());
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
     /// Verifies that form validators track external validation updates.
     @Test
     void formValidatorTracksExternalValidationChanges() {
@@ -332,6 +365,61 @@ final class M3FormControlsTest {
             assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
             assertTrue(summary.focusInput(nameLayout));
         });
+    }
+
+    /// Verifies keyboard navigation inside validation summary rows reveals the focused row in a scroll pane.
+    @Test
+    void validationSummaryKeyboardNavigationRevealsFocusedItem() {
+        FxTestUtils.runOnFxThread(() -> {
+            ArrayList<M3TextInputLayout> layouts = new ArrayList<>();
+            for (int index = 0; index < 8; index++) {
+                M3TextField field = new M3TextField();
+                M3TextInputLayout layout = new M3TextInputLayout(field, "Field " + index, "Required");
+                layout.setValidator(M3TextInputValidators.required("Field " + index + " is required"));
+                layouts.add(layout);
+            }
+
+            M3FormValidator validator = new M3FormValidator(layouts.toArray(M3TextInputLayout[]::new));
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            assertFalse(validator.validate());
+
+            VBox content = new VBox(summary);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(280.0, 120.0);
+            Scene scene = new Scene(scrollPane, 280.0, 120.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            scrollPane.applyCss();
+            scrollPane.resize(280.0, 120.0);
+            scrollPane.layout();
+            content.layout();
+            summary.layout();
+
+            ArrayList<Node> rows = new ArrayList<>(summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS));
+            rows.sort(Comparator.comparingDouble(row -> row.getBoundsInParent().getMinY()));
+            assertEquals(8, rows.size());
+            Node firstRow = rows.get(0);
+            Node lastRow = rows.get(rows.size() - 1);
+
+            firstRow.requestFocus();
+            firstRow.fireEvent(keyPressed(KeyCode.END));
+
+            assertSame(lastRow, scene.getFocusOwner());
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+    /// Creates a key-pressed event for control keyboard behavior tests.
+    private static KeyEvent keyPressed(KeyCode code) {
+        return new KeyEvent(
+                KeyEvent.KEY_PRESSED,
+                code.getName(),
+                code.getName(),
+                code,
+                false,
+                false,
+                false,
+                false
+        );
     }
 
     /// Applies the M3FX theme to a node and creates its skin.

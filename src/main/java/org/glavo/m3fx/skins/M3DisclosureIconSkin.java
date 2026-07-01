@@ -8,13 +8,13 @@ import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.control.SkinBase;
 import javafx.scene.shape.SVGPath;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3DisclosureIcon].
@@ -183,6 +183,6 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
 
     /// Returns whether the icon is rendered in right-to-left orientation.
     private boolean isRightToLeft() {
-        return getSkinnable().getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        return M3NodeLayout.isRightToLeft(getSkinnable());
     }
 }

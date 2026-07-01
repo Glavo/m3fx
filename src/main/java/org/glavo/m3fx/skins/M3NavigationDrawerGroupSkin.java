@@ -12,7 +12,6 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.Parent;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
@@ -24,6 +23,7 @@ import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,8 +75,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             (observable, oldValue, newValue) -> setExpandedState(newValue, shouldAnimateExpansion());
 
     /// Requests layout when the effective node orientation changes at runtime.
-    private final ChangeListener<NodeOrientation> orientationListener = (observable, oldValue, newValue) ->
-            getSkinnable().requestLayout();
+    private final InvalidationListener orientationInvalidation = observable -> getSkinnable().requestLayout();
 
     /// Whether child items are currently mounted in the viewport.
     private boolean childItemsMounted;
@@ -96,7 +95,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         getChildren().addAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
         control.expandedProperty().addListener(expandedListener);
-        control.effectiveNodeOrientationProperty().addListener(orientationListener);
+        control.effectiveNodeOrientationProperty().addListener(orientationInvalidation);
         setExpandedState(control.isExpanded(), false);
     }
 
@@ -107,7 +106,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         getSkinnable().getItems().removeListener(itemsListener);
         motionSettingsObserver.dispose();
         getSkinnable().expandedProperty().removeListener(expandedListener);
-        getSkinnable().effectiveNodeOrientationProperty().removeListener(orientationListener);
+        getSkinnable().effectiveNodeOrientationProperty().removeListener(orientationInvalidation);
         childViewport.nodeOrientationProperty().unbind();
         childrenContainer.nodeOrientationProperty().unbind();
         childrenContainer.getChildren().clear();
@@ -359,18 +358,23 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private void updateChildrenContainerPadding(double childEdgeInset) {
         Insets padding = childEdgeInset == 0.0
                 ? EMPTY_CHILD_PADDING
-                : new Insets(0.0, 0.0, 0.0, childEdgeInset);
+                : childContainerPadding(childEdgeInset);
         if (!padding.equals(childrenContainer.getPadding())) {
             childrenContainer.setPadding(padding);
         }
     }
 
+    /// Returns the physical padding that indents child rows from the visual leading edge.
+    private Insets childContainerPadding(double childEdgeInset) {
+        return M3NodeLayout.logicalInsets(getSkinnable(), 0.0, childEdgeInset, 0.0, 0.0);
+    }
+
     /// Keeps one list item container inside the group content area.
     private static void updateListItemWidth(M3ListItem item, double itemWidth) {
-        if (Double.compare(item.getMinWidth(), 0.0) != 0) {
+        if (!item.minWidthProperty().isBound() && Double.compare(item.getMinWidth(), 0.0) != 0) {
             item.setMinWidth(0.0);
         }
-        if (Double.compare(item.getMaxWidth(), itemWidth) != 0) {
+        if (!item.maxWidthProperty().isBound() && Double.compare(item.getMaxWidth(), itemWidth) != 0) {
             item.setMaxWidth(itemWidth);
         }
     }

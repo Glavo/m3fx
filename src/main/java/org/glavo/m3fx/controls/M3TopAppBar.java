@@ -535,10 +535,30 @@ public class M3TopAppBar extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getNavigation(), getActions());
-            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getNavigation(), getActions(), parameters);
+            case REQUEST_FOCUS -> focusAccessibleItem();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current or first accessibility item.
+    private void focusAccessibleItem() {
+        if (M3Accessible.showCurrentOrItem(this, getNavigation(), getActions())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showCurrentOrItem(this, getNavigation(), getActions(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the container focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Creates the default Material Design 3 top app bar skin.
@@ -549,10 +569,6 @@ public class M3TopAppBar extends Control {
 
     /// Handles keyboard traversal between focusable navigation and action items.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, true, false)) {
-            return;
-        }
-
         M3FocusTraversal.handleHorizontalKeyFocus(
                 this,
                 event,
@@ -612,9 +628,9 @@ public class M3TopAppBar extends Control {
             case SMALL, CENTER_ALIGNED -> 0.0;
         };
         double horizontalPadding = getHorizontalPadding();
-        setMinHeight(height);
-        setPrefHeight(height);
-        setPadding(new Insets(0.0, horizontalPadding, bottomPadding, horizontalPadding));
+        M3Css.setMinHeightIfUnbound(this, height);
+        M3Css.setPrefHeightIfUnbound(this, height);
+        M3Css.setPaddingIfUnbound(this, new Insets(0.0, horizontalPadding, bottomPadding, horizontalPadding));
         requestLayout();
     }
 

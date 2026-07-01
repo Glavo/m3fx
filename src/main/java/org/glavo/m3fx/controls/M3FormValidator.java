@@ -249,14 +249,15 @@ public final class M3FormValidator {
     ///
     /// @return `true` when an invalid input existed and focus was requested
     public boolean focusFirstInvalidInput() {
-        for (M3TextInputLayout invalidInput : invalidInputs) {
-            @Nullable Node focusTarget = invalidInputFocusTarget(invalidInput);
-            if (focusTarget != null) {
-                M3Accessible.showItem(focusTarget);
-                return true;
-            }
-        }
-        return false;
+        return focusFirstInvalidInputWithOwner(null);
+    }
+
+    /// Requests focus on the first invalid input layout and reveals it through the supplied owner when possible.
+    ///
+    /// @param owner the node whose enclosing scroll pane should reveal the focused invalid input
+    /// @return `true` when an invalid input existed and focus was requested
+    public boolean focusFirstInvalidInput(Node owner) {
+        return focusFirstInvalidInputWithOwner(Objects.requireNonNull(owner, "owner"));
     }
 
     /// Runs validation, focuses the first invalid input layout, and returns whether all inputs are valid.
@@ -268,6 +269,34 @@ public final class M3FormValidator {
             focusFirstInvalidInput();
         }
         return valid;
+    }
+
+    /// Runs validation, focuses the first invalid input layout, reveals it through the owner, and returns validity.
+    ///
+    /// @param owner the node whose enclosing scroll pane should reveal the focused invalid input
+    /// @return `true` when all registered input layouts validate successfully
+    public boolean validateAndFocusFirstInvalidInput(Node owner) {
+        boolean valid = validate();
+        if (!valid) {
+            focusFirstInvalidInput(owner);
+        }
+        return valid;
+    }
+
+    /// Requests focus on the first invalid input layout with an optional reveal owner.
+    private boolean focusFirstInvalidInputWithOwner(@Nullable Node owner) {
+        for (M3TextInputLayout invalidInput : invalidInputs) {
+            @Nullable Node focusTarget = invalidInputFocusTarget(invalidInput);
+            if (focusTarget != null) {
+                if (owner == null) {
+                    M3Accessible.showItem(focusTarget);
+                } else {
+                    M3Accessible.showItem(owner, focusTarget);
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Installs validation listeners on a group of input layouts.

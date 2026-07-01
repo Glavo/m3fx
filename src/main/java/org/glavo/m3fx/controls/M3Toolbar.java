@@ -394,10 +394,30 @@ public class M3Toolbar extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> M3Accessible.showCurrentOrItem(this, getItems());
-            case SHOW_ITEM -> M3Accessible.showCurrentOrItem(this, getItems(), parameters);
+            case REQUEST_FOCUS -> focusAccessibleItem();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Requests focus on the current or first accessibility item.
+    private void focusAccessibleItem() {
+        if (M3Accessible.showCurrentOrItem(this, getItems())) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Shows an item requested by an accessibility client.
+    private void showAccessibleItem(Object... parameters) {
+        if (M3Accessible.showCurrentOrItem(this, getItems(), parameters)) {
+            notifyAccessibleFocusChanged();
+        }
+    }
+
+    /// Notifies accessibility clients that the container focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
+        focusNotifier.refresh();
     }
 
     /// Creates the default Material Design 3 toolbar skin.
@@ -422,14 +442,7 @@ public class M3Toolbar extends Control {
     private void handleNavigationKeyPressed(KeyEvent event) {
         Objects.requireNonNull(event, "event");
         Orientation orientation = getOrientation();
-        if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(
-                this,
-                event,
-                orientation == Orientation.HORIZONTAL,
-                orientation == Orientation.VERTICAL
-        )) {
-            return;
-        }
+
         M3FocusTraversal.handleDirectionalKeyFocus(
                 this,
                 event,
@@ -472,17 +485,17 @@ public class M3Toolbar extends Control {
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double contentPadding = getContentPadding();
-        setPadding(new Insets(contentPadding));
+        M3Css.setPaddingIfUnbound(this, new Insets(contentPadding));
         if (getOrientation() == Orientation.HORIZONTAL) {
-            setMinHeight(getContainerHeight());
-            setPrefHeight(getContainerHeight());
-            setMinWidth(USE_COMPUTED_SIZE);
-            setPrefWidth(USE_COMPUTED_SIZE);
+            M3Css.setMinHeightIfUnbound(this, getContainerHeight());
+            M3Css.setPrefHeightIfUnbound(this, getContainerHeight());
+            M3Css.setMinWidthIfUnbound(this, USE_COMPUTED_SIZE);
+            M3Css.setPrefWidthIfUnbound(this, USE_COMPUTED_SIZE);
         } else {
-            setMinWidth(getContainerWidth());
-            setPrefWidth(getContainerWidth());
-            setMinHeight(USE_COMPUTED_SIZE);
-            setPrefHeight(USE_COMPUTED_SIZE);
+            M3Css.setMinWidthIfUnbound(this, getContainerWidth());
+            M3Css.setPrefWidthIfUnbound(this, getContainerWidth());
+            M3Css.setMinHeightIfUnbound(this, USE_COMPUTED_SIZE);
+            M3Css.setPrefHeightIfUnbound(this, USE_COMPUTED_SIZE);
         }
         requestLayout();
     }
